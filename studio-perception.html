@@ -255,9 +255,20 @@
     <script>
         let currentCode = '';
         let remainingImages = 0;
+        const STORAGE_KEY = 'studio_perception_codes';
+
+        // Fonctions de stockage localStorage
+        function getAllCodes() {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            return stored ? JSON.parse(stored) : {};
+        }
+
+        function saveAllCodes(codes) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(codes));
+        }
 
         // Validation du code
-        document.getElementById('validateBtn').addEventListener('click', async function() {
+        document.getElementById('validateBtn').addEventListener('click', function() {
             const codeInput = document.getElementById('codeInput').value.trim().toUpperCase();
             const statusMsg = document.getElementById('statusMessage');
 
@@ -266,37 +277,30 @@
                 return;
             }
 
-            try {
-                // Vérifier le code dans le stockage
-                const codeData = await window.storage.get(`code:${codeInput}`, true);
-                
-                if (!codeData) {
-                    showStatus('error', 'Code invalide ou inexistant');
-                    return;
-                }
+            const allCodes = getAllCodes();
+            const codeData = allCodes[codeInput];
 
-                const data = JSON.parse(codeData.value);
-
-                if (data.used >= 2) {
-                    showStatus('error', 'Ce code a déjà été utilisé pour générer 2 images');
-                    return;
-                }
-
-                // Code valide
-                currentCode = codeInput;
-                remainingImages = 2 - data.used;
-                
-                showStatus('success', `Code validé ! Vous pouvez générer ${remainingImages} image(s)`);
-                
-                setTimeout(() => {
-                    document.getElementById('codeSection').style.display = 'none';
-                    document.getElementById('generationSection').classList.add('active');
-                    updateCounter();
-                }, 1500);
-
-            } catch (error) {
+            if (!codeData) {
                 showStatus('error', 'Code invalide ou inexistant');
+                return;
             }
+
+            if (codeData.used >= 2) {
+                showStatus('error', 'Ce code a déjà été utilisé pour générer 2 images');
+                return;
+            }
+
+            // Code valide
+            currentCode = codeInput;
+            remainingImages = 2 - codeData.used;
+            
+            showStatus('success', `Code validé ! Vous pouvez générer ${remainingImages} image(s)`);
+            
+            setTimeout(() => {
+                document.getElementById('codeSection').style.display = 'none';
+                document.getElementById('generationSection').classList.add('active');
+                updateCounter();
+            }, 1500);
         });
 
         // Génération d'image
@@ -337,11 +341,16 @@
                 const result = await response.json();
 
                 // Mettre à jour le compteur
-                await updateCodeUsage();
+                updateCodeUsage();
 
                 // Afficher l'image
+                let imageUrl = result.image_url || result.url;
+                if (!imageUrl && result.image) {
+                    imageUrl = 'data:image/png;base64,' + result.image;
+                }
+
                 document.getElementById('imageResult').innerHTML = `
-                    <img src="${result.image_url || result.url || 'data:image/png;base64,' + result.image}" alt="Image générée">
+                    <img src="${imageUrl}" alt="Image générée">
                 `;
 
                 remainingImages--;
@@ -364,15 +373,12 @@
             }
         });
 
-        async function updateCodeUsage() {
-            try {
-                const codeData = await window.storage.get(`code:${currentCode}`, true);
-                const data = JSON.parse(codeData.value);
-                data.used++;
-                data.lastUsed = new Date().toISOString();
-                await window.storage.set(`code:${currentCode}`, JSON.stringify(data), true);
-            } catch (error) {
-                console.error('Erreur mise à jour code:', error);
+        function updateCodeUsage() {
+            const allCodes = getAllCodes();
+            if (allCodes[currentCode]) {
+                allCodes[currentCode].used++;
+                allCodes[currentCode].lastUsed = new Date().toISOString();
+                saveAllCodes(allCodes);
             }
         }
 
