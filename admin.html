@@ -205,6 +205,20 @@
         .filter-btn.active {
             background: #f5576c;
         }
+
+        .export-section {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .export-btn {
+            background: #28a745;
+            margin: 0 5px;
+        }
+
+        .export-btn:hover {
+            background: #218838;
+        }
     </style>
 </head>
 <body>
@@ -237,6 +251,11 @@
             </div>
             <button onclick="generateCodes()">🎯 Générer les codes</button>
             <div class="status success" id="generateStatus"></div>
+            
+            <div class="export-section">
+                <button class="export-btn" onclick="exportCodes()">📥 Exporter tous les codes</button>
+                <button class="export-btn" onclick="exportActiveCodes()">📥 Exporter codes actifs</button>
+            </div>
         </div>
 
         <div class="section">
@@ -254,8 +273,19 @@
 
     <script>
         let currentFilter = 'all';
+        const STORAGE_KEY = 'studio_perception_codes';
 
-        async function generateCodes() {
+        // Fonctions de stockage localStorage
+        function getAllCodes() {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            return stored ? JSON.parse(stored) : {};
+        }
+
+        function saveAllCodes(codes) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(codes));
+        }
+
+        function generateCodes() {
             const quantity = parseInt(document.getElementById('quantity').value);
             const statusEl = document.getElementById('generateStatus');
             
@@ -264,10 +294,16 @@
                 return;
             }
 
-            const codes = [];
+            const allCodes = getAllCodes();
+            const newCodes = [];
             
             for (let i = 0; i < quantity; i++) {
-                const code = generateSecureCode();
+                let code;
+                // Générer un code unique
+                do {
+                    code = generateSecureCode();
+                } while (allCodes[code]); // Vérifier que le code n'existe pas déjà
+
                 const codeData = {
                     code: code,
                     created: new Date().toISOString(),
@@ -275,22 +311,20 @@
                     lastUsed: null
                 };
 
-                try {
-                    await window.storage.set(`code:${code}`, JSON.stringify(codeData), true);
-                    codes.push(code);
-                } catch (error) {
-                    console.error('Erreur création code:', error);
-                }
+                allCodes[code] = codeData;
+                newCodes.push(code);
             }
 
-            statusEl.textContent = `✅ ${codes.length} code(s) généré(s) avec succès !`;
+            saveAllCodes(allCodes);
+
+            statusEl.textContent = `✅ ${newCodes.length} code(s) généré(s) avec succès !`;
             statusEl.style.display = 'block';
 
             setTimeout(() => {
                 statusEl.style.display = 'none';
             }, 3000);
 
-            await loadCodes();
+            loadCodes();
         }
 
         function generateSecureCode() {
@@ -309,43 +343,30 @@
             return code;
         }
 
-        async function loadCodes() {
-            try {
-                const result = await window.storage.list('code:', true);
-                
-                if (!result || !result.keys || result.keys.length === 0) {
-                    document.getElementById('codesList').innerHTML = 
-                        '<p style="text-align: center; color: #999;">Aucun code généré pour le moment</p>';
-                    updateStats(0, 0, 0);
-                    return;
-                }
+        function loadCodes() {
+            const allCodes = getAllCodes();
+            const codesArray = Object.values(allCodes);
 
-                const codes = [];
-                let activeCount = 0;
-                let usedCount = 0;
-
-                for (const key of result.keys) {
-                    try {
-                        const codeData = await window.storage.get(key, true);
-                        const data = JSON.parse(codeData.value);
-                        codes.push(data);
-                        
-                        if (data.used >= 2) {
-                            usedCount++;
-                        } else {
-                            activeCount++;
-                        }
-                    } catch (error) {
-                        console.error('Erreur lecture code:', error);
-                    }
-                }
-
-                updateStats(codes.length, activeCount, usedCount);
-                displayCodes(codes);
-
-            } catch (error) {
-                console.error('Erreur chargement codes:', error);
+            if (codesArray.length === 0) {
+                document.getElementById('codesList').innerHTML = 
+                    '<p style="text-align: center; color: #999;">Aucun code généré pour le moment</p>';
+                updateStats(0, 0, 0);
+                return;
             }
+
+            let activeCount = 0;
+            let usedCount = 0;
+
+            codesArray.forEach(code => {
+                if (code.used >= 2) {
+                    usedCount++;
+                } else {
+                    activeCount++;
+                }
+            });
+
+            updateStats(codesArray.length, activeCount, usedCount);
+            displayCodes(codesArray);
         }
 
         function displayCodes(codes) {
@@ -354,6 +375,9 @@
                 if (currentFilter === 'used') return code.used >= 2;
                 return true;
             });
+
+            // Trier par date de création (plus récent en premier)
+            filteredCodes.sort((a, b) => new Date(b.created) - new Date(a.created));
 
             if (filteredCodes.length === 0) {
                 document.getElementById('codesList').innerHTML = 
@@ -390,21 +414,27 @@
         function copyCode(code) {
             navigator.clipboard.writeText(code).then(() => {
                 alert('Code copié : ' + code);
+            }).catch(() => {
+                // Fallback pour navigateurs anciens
+                const textarea = document.createElement('textarea');
+                textarea.value = code;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                alert('Code copié : ' + code);
             });
         }
 
-        async function deleteCode(code) {
+        function deleteCode(code) {
             if (!confirm('Êtes-vous sûr de vouloir supprimer ce code ?')) {
                 return;
             }
 
-            try {
-                await window.storage.delete(`code:${code}`, true);
-                await loadCodes();
-            } catch (error) {
-                console.error('Erreur suppression code:', error);
-                alert('Erreur lors de la suppression');
-            }
+            const allCodes = getAllCodes();
+            delete allCodes[code];
+            saveAllCodes(allCodes);
+            loadCodes();
         }
 
         function filterCodes(filter) {
@@ -414,6 +444,34 @@
             });
             event.target.classList.add('active');
             loadCodes();
+        }
+
+        function exportCodes() {
+            const allCodes = getAllCodes();
+            const codesArray = Object.values(allCodes);
+            const text = codesArray.map(c => 
+                `${c.code} | ${c.used}/2 utilisations | Créé: ${new Date(c.created).toLocaleDateString('fr-FR')}`
+            ).join('\n');
+            
+            downloadTextFile('tous_les_codes.txt', text);
+        }
+
+        function exportActiveCodes() {
+            const allCodes = getAllCodes();
+            const activeCodes = Object.values(allCodes).filter(c => c.used < 2);
+            const text = activeCodes.map(c => c.code).join('\n');
+            
+            downloadTextFile('codes_actifs.txt', text);
+        }
+
+        function downloadTextFile(filename, text) {
+            const element = document.createElement('a');
+            element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+            element.setAttribute('download', filename);
+            element.style.display = 'none';
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
         }
 
         // Charger les codes au démarrage
