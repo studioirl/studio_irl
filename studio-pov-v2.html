@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>STUDIO POV — V2025</title>
+<title>STUDIO POV V2 — 2025</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:ital,wght@0,400;0,500;0,700;0,900;1,700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -290,10 +290,10 @@ footer p{font-size:.75rem;font-weight:900;text-transform:uppercase;letter-spacin
     </div>
   </div>
 
-  <h1 class="splash-title">STUDIO POV</h1>
+  <h1 class="splash-title">STUDIO POV V2</h1>
   <div class="splash-bar"></div>
   <p class="splash-quote">« Place le regard là où le cerveau y croit. »</p>
-  <p class="splash-year">STUDIO POV — 2025</p>
+  <p class="splash-year">STUDIO POV V2 — 2025</p>
 
   <div class="key-box">
     <label>Clé Google AI Studio</label>
@@ -317,7 +317,7 @@ footer p{font-size:.75rem;font-weight:900;text-transform:uppercase;letter-spacin
         <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
       </div>
       <div>
-        <div class="h-title">STUDIO POV</div>
+        <div class="h-title">STUDIO POV V2</div>
         <div class="h-badges">
           <span class="badge-pro">RENDU PRO 4K</span>
           <span class="badge-v">V2025</span>
@@ -528,7 +528,7 @@ footer p{font-size:.75rem;font-weight:900;text-transform:uppercase;letter-spacin
   </main>
 
   <footer>
-    <p>STUDIO POV — 2025</p>
+    <p>STUDIO POV V2 — 2025</p>
     <div class="footer-deco">
       <div class="footer-line l"></div>
       <div class="footer-dot"></div>
@@ -852,16 +852,17 @@ async function generatePOVImage(settings) {
       const body = {
         system_instruction: { parts: [{ text: systemInstruction }] },
         contents: [{ parts }],
-        generation_config: {
-          response_modalities: ["IMAGE", "TEXT"]
-        },
-        image_generation_config: {
-          aspect_ratio: apiAspectRatio
+        generationConfig: {
+          responseModalities: ["TEXT", "IMAGE"],
+          imageConfig: {
+            aspectRatio: apiAspectRatio,
+            imageSize: "4K"
+          }
         }
       };
 
       const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent?key=${API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent?key=${API_KEY}`,
         { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
       );
 
@@ -921,14 +922,22 @@ async function handleGenerate() {
 
     let base64Url = await generatePOVImage(settings);
 
-    // base64 → blob URL (identique à App.tsx pour libérer mémoire)
-    const byteString = atob(base64Url.split(',')[1]);
-    const mimeString = base64Url.split(',')[0].split(':')[1].split(';')[0];
-    base64Url = null;
-    const ab = new ArrayBuffer(byteString.length);
-    const ia = new Uint8Array(ab);
-    for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
-    const blobUrl = URL.createObjectURL(new Blob([ab], { type: mimeString }));
+    // PNG -> JPEG 0.95 via canvas (taille reduite, qualite preservee)
+    const blobUrl = await new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+        canvas.toBlob(blob => resolve(URL.createObjectURL(blob)), 'image/jpeg', 0.95);
+      };
+      img.src = base64Url;
+      base64Url = null;
+    });
 
     const newImg = { id: Date.now().toString(), url: blobUrl, prompt: subject, aspectRatio: currentAspectRatio, timestamp: Date.now() };
 
@@ -1023,7 +1032,7 @@ function renderResults() {
 
 function downloadImg(url, idx) {
   const a = document.createElement('a');
-  a.href = url; a.download = `studio-pov-capture-${idx}.png`;
+  a.href = url; a.download = `studio-pov-capture-${idx}.jpg`;
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
 function downloadAll() { results.forEach((res, idx) => setTimeout(() => downloadImg(res.url, idx+1), idx * 300)); }
