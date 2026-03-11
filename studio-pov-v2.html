@@ -609,79 +609,53 @@ function renderAvGrid(){
 
 // ── PROMPT BUILDER ───────────────────────────────────────────────
 function buildSys(){
-  const baseRealism=`
-LOIS ABSOLUES DU RÉALISME PHOTOGRAPHIQUE — NE JAMAIS VIOLER :
-1. PEAU VIVANTE : Pores visibles, micro-relief cutané, légères variations de teinte (rougeurs naturelles sur les joues, nez, front). Veines subtiles sur les mains et tempes. Duvet fin visible sur les bras et visage en lumière rasante. AUCUN LISSAGE, AUCUN FILTRE BEAUTÉ, AUCUNE PEAU EN PLASTIQUE.
-2. LUMIÈRE PHYSIQUE : Une seule source lumineuse dominante (soleil, fenêtre, lampe). Les ombres portées doivent être cohérentes avec cette source. Pas de lumière venue de nulle part. Pas de HDR. Sous-exposition légère acceptable — c'est humain.
-3. GRAIN PHOTOGRAPHIQUE : Présence d'un grain de capteur subtil, surtout dans les zones d'ombre. Pas de netteté uniforme sur toute l'image — le centre du sujet est net, les bords légèrement moins.
-4. MOMENT VOLÉ : L'image doit sembler prise sur le vif, pas posée. Micro-mouvement possible (cheveu qui bouge, main en légère dépose), regard pas parfaitement dans l'axe, expression transitoire pas fixée.
-5. IDENTITÉ ABSOLUE : Si une référence visuelle est fournie, préserver l'identité exacte. Pas d'embellissement, pas de rajeunissement, pas de symétrie artificielle du visage.
-6. COHÉRENCE PHYSIQUE : Gravité sur les vêtements (tissu qui pèse, épaules qui tirent), poids du corps sur un appui réel, mains naturellement positionnées pas parfaitement ouvertes.`;
+  const perceptionInstructions = hpm ? `
+- SKIN TEXTURE MODULE: Simulate realistic skin with visible pores, fine lines, subtle blemishes, natural oil variation, and micro-shadows. Absolutely no AI smoothing, beauty filters, or plastic-like skin. Preserve all natural skin characteristics including redness, unevenness, and texture.
+- MICRO-EXPRESSION MODULE: Capture subtle, authentic facial expressions with natural asymmetry in lip tension, eye focus, and facial muscle engagement. Avoid frozen smiles or artificially perfect expressions.
+- BODY DYNAMICS MODULE: Show realistic body weight distribution, natural posture imperfections, breathing movement, clothing physics with gravity and fabric tension.
+- OPTICAL IMPERFECTIONS MODULE: Include subtle lens characteristics — very slight vignetting, natural chromatic aberration at edges, authentic depth-of-field rendering with organic bokeh.
+- PHYSICAL LOGIC MODULE: Ensure all physical interactions are coherent — hair movement, fabric draping, shadow casting, reflections, and environmental interactions.` : '';
 
-  const percModule=hpm?`
+  return \`You are STUDIO POV — a specialized AI photography director focused on creating ultra-realistic Point of View imagery that simulates authentic human camera perspectives.
 
-MODE PERCEPTION HUMAINE ACTIVÉ — COUCHE NEUROLOGIQUE :
-Ce mode simule non pas un appareil photo mais un CERVEAU HUMAIN qui regarde.
-Le cerveau humain ne voit pas tout — il sélectionne, il flou ce qui est secondaire, il amplifie ce qui est émotionnel.
+CORE PHOTOREALISM MODULES (ALWAYS ACTIVE):
+- ULTRA-REALISTIC 4K rendering with photographic grain and natural noise
+- Natural lighting physics with coherent shadows and highlights
+- Authentic color science — no oversaturated HDR processing
+- Preserve exact physical appearance of any provided reference images${perceptionInstructions}
 
-- HIÉRARCHIE ATTENTIONNELLE : Le sujet principal attire l'œil de façon organique. Pas par un flou artificiel mais par la composition, la lumière, le contraste naturel. Le cerveau va vers ce qui bouge, ce qui vit, ce qui est chaud.
-- MICRO-INSTABILITÉ DU REGARD : Le cadre n'est pas parfaitement droit. Légère inclinaison (0.5° à 2°) comme si quelqu'un tenait vraiment l'appareil. Pas de trépied. Présence physique du photographe ressentie.
-- TENSION ÉMOTIONNELLE : Les micro-expressions du visage doivent raconter quelque chose. Une légère tension dans la mâchoire, un regard qui hésite, des lèvres pas tout à fait détendues. La vie n'est pas neutre.
-- RESPIRATION DANS L'IMAGE : Sentiment que la scène existait une seconde avant et existera une seconde après. Pas une image figée — un moment arraché au temps.
-- CHALEUR SENSORIELLE : Simuler la sensation que le cerveau reconstruit : on "sent" la température de la lumière, la texture du tissu, le poids de l'air. L'image doit déclencher une réponse sensorielle pas seulement visuelle.
-- IMPERFECTION COHÉRENTE : Une mèche de cheveu pas à sa place, un col légèrement froissé, une ombre portée qui tombe un peu de travers. Jamais parfait. Toujours vrai.`:
-`
-
-MODE PERCEPTION STANDARD — RENDU PHOTOGRAPHIQUE :
-Rendu réaliste basé sur les paramètres de composition. Appliquer les lois absolues du réalisme.`;
-
-  return `TU ES STUDIO POV — MOTEUR DE RÉALITÉ PHOTOGRAPHIQUE.
-TON SEUL OBJECTIF : Produire une image que le cerveau humain croit VRAIE.
-Pas belle. Pas parfaite. VRAIE.
-${baseRealism}${percModule}
-
-INTERDICTIONS ABSOLUES :
-- Peau lisse, uniforme, sans texture → INTERDIT
-- Lumière venue de plusieurs sources non cohérentes → INTERDIT  
-- Expression figée, sourire posé, regard dans l'axe → INTERDIT si mode perception activé
-- Embellissement automatique du sujet → INTERDIT
-- Décor redessiné ou "amélioré" → INTERDIT
-- Symétrie parfaite du visage → INTERDIT
-- Netteté uniforme sur toute l'image → INTERDIT`;
+POV PHOTOGRAPHY PRINCIPLES:
+- Create images that feel genuinely captured by a human photographer
+- Avoid AI-generated aesthetic markers (over-sharpness, uniform lighting, artificial perfection)
+- Maintain physical plausibility in all scene elements
+- Generate images that could be mistaken for real photographs\`;
 }
 
 function buildPrompt(subj){
-  const fmt={'9:16':'Cadrage vertical smartphone 9:16 — intimité, proximité, plein écran','16:9':'Cadrage cinématique 16:9 — amplitude, contexte, profondeur','1:1':'Cadrage carré 1:1 — équilibre frontal, regard direct','4:5':'Cadrage feed vertical 4:5 — naturel, ancré, présence'}[ar]||'';
+  const aspectRatioMap = {'9:16': '9:16 vertical/portrait', '4:5': '4:5 portrait', '1:1': '1:1 square', '16:9': '16:9 landscape/cinematic'};
+  const povMap = {'exterior': 'exterior observer (not in scene)', 'interior': 'interior participant (in scene)'};
+  const involvementMap = {'discreet': 'discreet/candid observer', 'involved': 'actively involved participant'};
+  const angleMap = {'face': 'facing subject directly', 'side': 'side angle', 'back': 'behind subject', 'shoulder': 'over shoulder', 'offset': 'slightly offset angle'};
+  const heightMap = {'eye-level': 'eye level', 'shoulder': 'shoulder height', 'low': 'low angle', 'high': 'high angle'};
+  const distanceMap = {'close': 'very close/intimate', 'medium': 'medium distance', 'far': 'far/establishing'};
 
-  // Traduire les valeurs numériques en instructions précises
-  const asymDesc=asym>70?'asymétrie forte, corps déporté, cadre déséquilibré volontairement':asym>40?'légère asymétrie naturelle, épaule plus haute d\'un côté':'quasi-symétrie, centré mais pas parfait';
-  const impDesc=imp>70?'imperfections marquées visibles : pores prononcés, micro-rougeurs, légères irrégularités cutanées':imp>40?'imperfections naturelles subtiles, peau réelle non retouchée':'peau naturelle avec traces légères du temps et de la vie';
-  const intimDesc=intim>70?'distance très proche, on sent la chaleur, le souffle, le détail de la peau':intim>40?'proximité comfortable, présence physique ressentie':'distance sociale, présence sans intrusion';
-  const focDesc=foc>70?'focus serré sur le sujet, arrière-plan fondu organiquement':foc>40?'focus naturel avec légère profondeur de champ':'focus large, sujet et environnement coexistent';
+  return \`POV Photography Request:
+Subject/Scene: ${subj}
 
-  const povLabel=pov==='interior'?'PRÉSENT DANS LA SCÈNE — le photographe fait partie du moment':'EXTÉRIEUR À LA SCÈNE — observateur discret, regard volé';
-  const invLabel=inv==='involved'?'PARTICIPANT — implication physique, proximité assumée':'OBSERVATEUR — présence effacée, non-intrusive';
-  const angLabel={'face':'angle face — confrontation directe, regard dans les yeux','side':'angle latéral — profil, vie de côté, intimité du mouvement','back':'angle dos — mystère, départ, intériorité','shoulder':'angle épaule — regard par-dessus, complicité, inclusion','offset':'angle désaxé — légèrement de côté, regard naturel non posé'}[ang]||ang;
-  const htLabel={'eye-level':'hauteur yeux — égalité, connexion directe','shoulder':'hauteur épaule — légère domination douce, regard plongeant subtil','low':'hauteur basse — puissance du sujet, monumentalité','high':'hauteur haute — vulnérabilité, petitesse, contexte élargi'}[ht]||ht;
-  const distLabel={'close':'très proche — détail, texture, souffle','medium':'distance naturelle — relation normale, confort','far':'distance lointaine — contexte, solitude, espace'}[dist]||dist;
+Camera Position: ${povMap[pov]}, ${involvementMap[inv]}
+Angle: ${angleMap[ang]}
+Height: ${heightMap[ht]}
+Distance: ${distanceMap[dist]}
+Format: ${aspectRatioMap[ar]}
 
-  return `SUJET ET ÉMOTION : ${subj}
+Perception Settings:
+- Asymmetry: ${asym}% (higher = more natural camera tilt and compositional asymmetry)
+- Imperfection: ${imp}% (higher = more authentic imperfections, grain, natural flaws)
+- Intimacy: ${intim}% (higher = closer emotional and physical proximity feel)
+- Focus: ${foc}% (higher = tighter focus on subject, more background blur)
+- Human Perception Mode: ${hpm ? 'ENABLED — apply all perceptual realism modules' : 'DISABLED — standard photographic rendering'}
 
-PARAMÈTRES POV :
-- Statut : ${povLabel}
-- Implication : ${invLabel}  
-- Angle caméra : ${angLabel}
-- Hauteur de prise de vue : ${htLabel}
-- Distance : ${distLabel}
-- ${fmt}
-
-CALIBRAGE SENSORIEL :
-- Asymétrie (${asym}%) : ${asymDesc}
-- Imperfection cutanée (${imp}%) : ${impDesc}
-- Intimité (${intim}%) : ${intimDesc}
-- Focus (${foc}%) : ${focDesc}
-
-RENDU : Photographie ultra-réaliste 4K. Grain de capteur présent. Lumière physique cohérente. Moment volé, pas posé. Peau vivante. Le résultat doit être indiscernable d'une vraie photographie.`;
+Generate an ultra-realistic 4K photograph from this exact POV perspective.\`;
 }
 
 // ── API CALL ─────────────────────────────────────────────────────
