@@ -1,284 +1,561 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>STUDIO POV V2</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
-  <style>
-    body { font-family: 'Inter', sans-serif; background-color: #f0f4ff; }
-    input[type=range] { -webkit-appearance: none; width: 100%; height: 12px; background: #eff6ff; border-radius: 9999px; }
-    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%; background: #2563eb; cursor: pointer; box-shadow: 0 4px 12px rgba(37,99,235,0.4); }
-    .animate-spin { animation: spin 1s linear infinite; }
-    .animate-pulse { animation: pulse 2s cubic-bezier(0.4,0,0.6,1) infinite; }
-    .animate-ping { animation: ping 1s cubic-bezier(0,0,0.2,1) infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
-    @keyframes ping { 75%,100%{transform:scale(2);opacity:0} }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>STUDIO POV — V2025</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:ital,wght@0,400;0,500;0,700;0,900;1,700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#f0f4ff;--white:#fff;--blue:#2563eb;--blue-light:#3b82f6;
+  --indigo:#4f46e5;--violet:#7c3aed;--slate:#0f172a;--slate-mid:#334155;
+  --slate-dim:#94a3b8;--border:#e2e8f0;--border-blue:#bfdbfe;
+  --shadow:0 25px 50px -12px rgba(0,0,0,.08);
+  --shadow-blue:0 20px 40px -12px rgba(37,99,235,.25)
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--slate);min-height:100vh}
 
-    /* SCREENS — une seule existe dans le DOM, les autres sont cachées */
-    .screen { display: none; }
-    .screen.active { display: flex; }
-  </style>
+/* SPLASH */
+#splash{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;text-align:center;transition:opacity .6s,transform .6s;overflow-y:auto}
+#splash.hidden{opacity:0;pointer-events:none;transform:scale(.97)}
+.splash-hero{width:min(520px,88vw);aspect-ratio:16/9;border-radius:4rem;overflow:hidden;position:relative;margin-bottom:2.5rem;box-shadow:0 50px 100px -20px rgba(0,0,0,.3);border:4px solid white}
+.splash-hero img{width:100%;height:100%;object-fit:cover;transition:transform 2s ease}
+.splash-hero:hover img{transform:scale(1.08)}
+.splash-glow{position:absolute;inset:0;background:linear-gradient(to right,rgba(37,99,235,.3),rgba(124,58,237,.3));filter:blur(150px);opacity:.3;transition:opacity .3s;pointer-events:none}
+.splash-hero:hover .splash-glow{opacity:.5}
+.splash-hero::after{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.8) 0%,rgba(0,0,0,.2) 50%,transparent 100%)}
+.rec-tag{position:absolute;top:2rem;left:2rem;z-index:2;display:flex;align-items:center;gap:.75rem;font-size:.65rem;font-weight:900;letter-spacing:.3em;text-transform:uppercase;color:white}
+.rec-dot{width:10px;height:10px;border-radius:50%;background:#dc2626;animation:rp 1.2s infinite;box-shadow:0 0 15px rgba(220,38,38,1)}
+@keyframes rp{0%,100%{opacity:1}50%{opacity:.2}}
+.splash-crosshair{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:2}
+.crosshair{width:96px;height:96px;border:2px solid rgba(255,255,255,.2);border-radius:50%;position:relative}
+.crosshair::before{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:2px;height:32px;background:rgba(255,255,255,.4);border-radius:999px}
+.crosshair::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);height:2px;width:32px;background:rgba(255,255,255,.4);border-radius:999px}
+.splash-meta-bottom{position:absolute;bottom:2rem;right:2rem;text-align:right;z-index:2}
+.splash-meta-bottom p:first-child{color:rgba(255,255,255,.4);font-size:.6rem;font-family:'JetBrains Mono',monospace;letter-spacing:.2em;text-transform:uppercase;margin-bottom:.25rem}
+.splash-meta-bottom p:last-child{color:white;font-size:.7rem;font-weight:900;letter-spacing:.2em;text-transform:uppercase}
+.splash-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(5rem,15vw,9rem);line-height:.9;background:linear-gradient(135deg,var(--blue),var(--violet),var(--indigo));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:.8rem}
+.splash-bar{width:14rem;height:6px;background:linear-gradient(90deg,var(--blue),var(--violet));border-radius:999px;margin:0 auto 2.5rem}
+.splash-quote{font-size:clamp(1.1rem,3vw,1.8rem);font-weight:700;font-style:italic;color:var(--slate);max-width:32rem;line-height:1.5;margin-bottom:2rem}
+.splash-year{font-size:.6rem;font-weight:900;letter-spacing:.8em;text-transform:uppercase;color:var(--slate-dim);margin-bottom:3rem}
+.key-box{background:white;border:2px solid var(--border-blue);border-radius:2rem;padding:1.75rem;width:min(460px,90vw);margin-bottom:1.25rem;box-shadow:var(--shadow)}
+.key-box label{display:block;font-size:.6rem;font-weight:900;letter-spacing:.2em;text-transform:uppercase;color:var(--blue);margin-bottom:.6rem}
+.key-box input{width:100%;background:#f8faff;border:2px solid var(--border);border-radius:.9rem;padding:.8rem 1.1rem;font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--slate);outline:none;margin-bottom:.9rem;transition:border-color .2s}
+.key-box input:focus{border-color:var(--blue)}
+.key-box input::placeholder{color:var(--slate-dim)}
+.btn-enter{width:100%;padding:1.25rem 2rem;background:var(--blue);color:white;border:none;cursor:pointer;border-radius:2.5rem;font-family:'Inter',sans-serif;font-size:.85rem;font-weight:900;letter-spacing:.4em;text-transform:uppercase;box-shadow:0 30px 60px rgba(37,99,235,.4);transition:transform .2s,box-shadow .2s;display:flex;align-items:center;justify-content:center;gap:.75rem;position:relative;overflow:hidden}
+.btn-enter::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--blue),var(--indigo),var(--violet));transition:transform .3s;transform-origin:left}
+.btn-enter:hover::before{transform:scaleX(1.1)}
+.btn-enter:hover{transform:scale(1.03);box-shadow:0 40px 80px rgba(37,99,235,.5)}
+.btn-enter:active{transform:scale(.97)}
+.btn-enter span,.btn-enter svg{position:relative;z-index:1}
+.btn-enter svg{width:28px;height:28px;fill:white;stroke:none}
+.key-link{font-size:.6rem;font-weight:900;letter-spacing:.15em;text-transform:uppercase;color:var(--slate-dim);text-decoration:none;display:flex;align-items:center;gap:.4rem;transition:color .2s;margin-top:.75rem;justify-content:center}
+.key-link:hover{color:var(--blue)}
+.key-link svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2}
+
+/* APP */
+#app{display:none;flex-direction:column;min-height:100vh;animation:fadeIn .7s ease}
+#app.visible{display:flex}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+/* HEADER */
+header{border-bottom:1px solid var(--border-blue);padding:1.5rem 1.75rem;display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.95);backdrop-filter:blur(20px);position:sticky;top:0;z-index:50;gap:1rem;flex-wrap:wrap}
+.h-brand{display:flex;align-items:center;gap:1rem}
+.h-logo{width:52px;height:52px;background:linear-gradient(135deg,var(--blue),var(--violet));border-radius:1.25rem;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .3s;box-shadow:0 6px 20px rgba(37,99,235,.3);flex-shrink:0}
+.h-logo:hover{transform:rotate(12deg)}
+.h-logo svg{width:28px;height:28px;stroke:white;fill:none;stroke-width:1.5}
+.h-title{font-size:1.4rem;font-weight:900;text-transform:uppercase;letter-spacing:.3em;color:var(--slate);line-height:1}
+.h-badges{display:flex;align-items:center;gap:.5rem;margin-top:.5rem}
+.badge-pro{font-size:.55rem;font-weight:900;background:var(--blue);color:white;padding:.2rem .6rem;border-radius:999px;letter-spacing:.1em;text-transform:uppercase}
+.badge-v{font-size:.55rem;font-weight:900;color:var(--violet);letter-spacing:.1em;text-transform:uppercase}
+.h-status{display:flex;align-items:center;gap:1.5rem}
+.h-status-text{display:flex;flex-direction:column;align-items:flex-end}
+.h-status-text span:first-child{font-size:.65rem;font-weight:900;text-transform:uppercase;letter-spacing:.2em;color:var(--slate)}
+.h-status-text span:last-child{font-size:.6rem;font-weight:700;color:var(--blue-light);text-transform:uppercase;letter-spacing:.1em}
+.h-dot-ring{width:48px;height:48px;border-radius:50%;border:4px solid #e0e7ff;display:flex;align-items:center;justify-content:center}
+.h-dot{width:16px;height:16px;background:var(--blue-light);border-radius:50%;box-shadow:0 0 15px rgba(59,130,246,.8);animation:pulseDot 2s infinite}
+@keyframes pulseDot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.7;transform:scale(.9)}}
+
+/* MOBILE BANNER */
+.mobile-banner{margin:1.5rem 2rem 0;padding:1.25rem 1.5rem;border-radius:1.25rem;border:2px solid #fef08a;background:#fefce8;display:flex;gap:1rem;align-items:flex-start;box-shadow:0 4px 20px rgba(234,179,8,.1)}
+.mobile-banner svg{width:24px;height:24px;stroke:#ca8a04;fill:none;stroke-width:1.5;flex-shrink:0}
+.mobile-banner-text p:first-child{font-size:.6rem;font-weight:900;text-transform:uppercase;letter-spacing:.15em;color:#92400e;margin-bottom:.35rem}
+.mobile-banner-text p:last-child{font-size:.75rem;font-weight:700;color:#b45309;line-height:1.6}
+
+/* MAIN GRID */
+main{flex:1;max-width:1600px;margin:0 auto;width:100%;padding:2rem;display:grid;grid-template-columns:1fr;gap:3rem}
+@media(min-width:1024px){main{grid-template-columns:5fr 7fr}}
+
+/* SECTIONS */
+.section-card{background:white;padding:2.5rem;border-radius:2.5rem;box-shadow:0 25px 60px rgba(37,99,235,.04);border:1px solid #eff6ff}
+.section-title{font-size:.65rem;font-weight:900;text-transform:uppercase;letter-spacing:.6em;display:flex;align-items:center;gap:.75rem;margin-bottom:1.75rem}
+.section-title svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2}
+.section-title.blue{color:var(--blue)}
+.section-title.indigo{color:var(--indigo)}
+.section-title.violet{color:var(--violet)}
+
+/* AVATARS */
+.avatar-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
+.avatar-slot{position:relative;aspect-ratio:1;border-radius:2rem;overflow:hidden;border:2px solid var(--border-blue);box-shadow:0 4px 20px rgba(0,0,0,.08)}
+.avatar-slot img{width:100%;height:100%;object-fit:cover}
+.avatar-remove{position:absolute;top:.6rem;right:.6rem;background:rgba(255,255,255,.9);backdrop-filter:blur(8px);border:none;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#dc2626;transition:background .2s;z-index:2}
+.avatar-remove:hover{background:#fef2f2}
+.avatar-remove svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
+.avatar-badge{position:absolute;bottom:.6rem;left:.6rem;font-size:.5rem;font-weight:900;text-transform:uppercase;letter-spacing:.15em;background:var(--blue);color:white;padding:.2rem .5rem;border-radius:.4rem}
+.avatar-add{border:2px dashed var(--border-blue);border-radius:2rem;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(239,246,255,.2);cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.avatar-add:hover{background:white;border-color:var(--blue)}
+.avatar-add-icon{width:52px;height:52px;background:white;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(0,0,0,.1);border:1px solid #e0e7ff;margin-bottom:.5rem;transition:transform .2s}
+.avatar-add:hover .avatar-add-icon{transform:scale(1.1)}
+.avatar-add-icon svg{width:22px;height:22px;stroke:var(--blue);fill:none;stroke-width:1.5}
+.avatar-add span{font-size:.55rem;font-weight:900;text-transform:uppercase;letter-spacing:.2em;color:var(--slate-dim);text-align:center;padding:0 1rem;line-height:1.4}
+.avatar-add:hover span{color:var(--blue)}
+.avatar-add input{position:absolute;inset:0;opacity:0;cursor:pointer}
+
+/* TEXTAREA */
+textarea{width:100%;background:rgba(239,246,255,.3);border:1px solid #e0e7ff;border-radius:2rem;padding:2rem;font-family:'Inter',sans-serif;font-size:.95rem;font-weight:700;color:var(--slate);outline:none;min-height:160px;resize:none;transition:all .2s;line-height:1.6;margin-top:1.25rem}
+textarea:focus{background:white;border-color:var(--blue);box-shadow:0 0 0 4px rgba(37,99,235,.08)}
+textarea::placeholder{color:#cbd5e1;font-weight:400}
+
+/* ASPECT RATIO */
+.ratio-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem}
+.ratio-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.6rem;padding:1.25rem .5rem;border-radius:1.25rem;border:2px solid #eff6ff;cursor:pointer;transition:all .2s;background:rgba(239,246,255,.2);color:#94a3b8;font-size:.6rem;font-weight:900;text-transform:uppercase;letter-spacing:.05em}
+.ratio-btn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.5}
+.ratio-btn:hover{border-color:var(--blue);background:white}
+.ratio-btn.active{background:var(--slate);border-color:var(--slate);color:white;transform:scale(1.05)}
+
+/* CALIBRAGE */
+.label-sm{font-size:.65rem;font-weight:900;text-transform:uppercase;letter-spacing:.15em;color:#94a3b8;display:block;margin-bottom:.75rem}
+.btn-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:2rem}
+.btn-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-bottom:2rem}
+.option-btn{width:100%;padding:1.1rem;font-size:.65rem;font-weight:900;text-transform:uppercase;letter-spacing:.1em;border:2px solid #eff6ff;border-radius:1.25rem;cursor:pointer;transition:all .2s;background:rgba(239,246,255,.2);color:#94a3b8}
+.option-btn:hover{border-color:#93c5fd}
+.option-btn.active-violet{background:var(--violet);border-color:var(--violet);color:white;box-shadow:0 8px 24px rgba(124,58,237,.25)}
+.option-btn.active-indigo{background:var(--indigo);border-color:var(--indigo);color:white;box-shadow:0 8px 24px rgba(79,70,229,.25)}
+.option-btn.active-blue{background:var(--blue);border-color:var(--blue);color:white;box-shadow:0 8px 24px rgba(37,99,235,.25)}
+
+/* TAGS */
+.tags-wrap{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:2rem}
+.tag-btn{padding:.6rem 1rem;font-size:.6rem;font-weight:900;text-transform:uppercase;letter-spacing:.05em;border:2px solid #eff6ff;border-radius:.75rem;cursor:pointer;transition:all .2s;background:rgba(239,246,255,.2);color:#94a3b8}
+.tag-btn:hover{border-color:#93c5fd}
+.tag-btn.active-slate{background:var(--slate);border-color:var(--slate);color:white}
+.divider{width:100%;height:1px;background:#eff6ff;margin:.5rem 0}
+
+/* PERCEPTION */
+.perception-row{display:flex;align-items:center;justify-content:space-between;padding:1.25rem;background:rgba(239,246,255,.3);border-radius:1.75rem;border:1px solid #e0e7ff;margin-bottom:1.75rem;transition:all .2s}
+.perception-row:hover{background:white;border-color:var(--blue)}
+.perception-left{display:flex;align-items:center;gap:.9rem}
+.perception-icon{padding:.75rem;border-radius:1.25rem;transition:all .2s}
+.perception-icon svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.5}
+.perception-icon.off{background:#f1f5f9;color:#94a3b8}
+.perception-icon.on{background:var(--blue);color:white;box-shadow:0 4px 16px rgba(37,99,235,.3)}
+.perception-text span:first-child{display:block;font-size:.65rem;font-weight:900;text-transform:uppercase;letter-spacing:.1em;color:var(--slate)}
+.perception-text span:last-child{display:block;font-size:.55rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;margin-top:.15rem}
+.toggle{width:54px;height:30px;border-radius:999px;border:none;cursor:pointer;position:relative;transition:background .3s;flex-shrink:0}
+.toggle.off{background:#e2e8f0}
+.toggle.on{background:var(--blue)}
+.toggle-knob{position:absolute;top:3px;width:24px;height:24px;background:white;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.15);transition:left .3s}
+.toggle.off .toggle-knob{left:3px}
+.toggle.on .toggle-knob{left:27px}
+
+/* SLIDERS */
+.slider-row{margin-bottom:1.5rem}
+.slider-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem}
+.slider-label{font-size:.65rem;font-weight:900;text-transform:uppercase;letter-spacing:.2em;color:#64748b}
+.slider-val{font-size:.65rem;font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--blue);background:#eff6ff;padding:.2rem .5rem;border-radius:.5rem}
+input[type=range]{width:100%;height:10px;border-radius:999px;appearance:none;-webkit-appearance:none;outline:none;cursor:pointer}
+input[type=range].blue{background:#dbeafe;accent-color:var(--blue)}
+input[type=range].violet{background:#ede9fe;accent-color:var(--violet)}
+input[type=range].indigo{background:#e0e7ff;accent-color:var(--indigo)}
+input[type=range].dark{background:#f1f5f9;accent-color:var(--slate)}
+.border-top{border-top:1px solid #eff6ff;padding-top:2rem;margin-top:.5rem}
+
+/* GENERATE */
+.btn-generate{width:100%;padding:2.5rem 2rem;border-radius:3rem;font-size:.9rem;font-weight:900;text-transform:uppercase;letter-spacing:.6em;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.75rem;cursor:pointer;transition:all .2s;box-shadow:0 25px 50px rgba(37,99,235,.3);border:none;position:relative;overflow:hidden;background:linear-gradient(135deg,var(--blue),var(--indigo),var(--violet));color:white}
+.btn-generate:hover:not(.loading){transform:scale(1.02)}
+.btn-generate:active:not(.loading){transform:scale(.98)}
+.btn-generate.loading{background:#f1f5f9;color:#94a3b8;cursor:not-allowed;box-shadow:none}
+.btn-generate.loading::before{content:'';position:absolute;inset:0;background:rgba(37,99,235,.08);animation:shimmer 1.5s infinite}
+@keyframes shimmer{0%,100%{opacity:0}50%{opacity:1}}
+.btn-generate-inner{display:flex;align-items:center;gap:2rem;position:relative;z-index:1}
+.btn-generate-inner svg{width:36px;height:36px}
+.btn-generate.loading .btn-generate-inner svg{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.btn-generate-sub{font-size:.6rem;font-weight:900;letter-spacing:.15em;color:rgba(59,130,246,.8);position:relative;z-index:1}
+
+/* ERROR */
+.error-box{padding:1.5rem;border-radius:2rem;border:2px solid #fecaca;background:#fff5f5;display:flex;gap:1rem;align-items:flex-start}
+.error-box svg{width:28px;height:28px;stroke:#dc2626;fill:none;stroke-width:1.5;flex-shrink:0}
+.error-title{font-size:.65rem;font-weight:900;text-transform:uppercase;letter-spacing:.1em;color:#b91c1c;line-height:1.6}
+.error-link{font-size:.6rem;font-weight:700;color:#ef4444;text-decoration:underline;cursor:pointer;display:block;margin-top:.35rem;text-align:left;background:none;border:none;padding:0;font-family:'Inter',sans-serif}
+
+/* RESULTS HEADER */
+.results-header{display:flex;flex-direction:column;gap:1rem;border-bottom:4px solid #eff6ff;padding-bottom:2rem;margin-bottom:2rem}
+@media(min-width:768px){.results-header{flex-direction:row;justify-content:space-between;align-items:flex-end}}
+.results-title{font-size:1rem;font-weight:900;text-transform:uppercase;letter-spacing:.8em;color:var(--slate)}
+.results-live{display:flex;align-items:center;gap:.6rem;margin-top:.5rem}
+.results-live .ping{width:10px;height:10px;border-radius:50%;background:var(--blue);animation:pingAnim 1.5s infinite}
+@keyframes pingAnim{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
+.results-live-label{font-size:.65rem;font-weight:900;letter-spacing:.3em;color:var(--blue);text-transform:uppercase}
+.results-count{font-size:.85rem;font-family:'JetBrains Mono',monospace;color:#94a3b8;font-weight:700;margin-left:1rem}
+.results-actions{display:flex;gap:.75rem;align-items:center}
+.btn-reset{display:flex;align-items:center;gap:.5rem;padding:.75rem 1.5rem;background:#fff5f5;color:#dc2626;border:2px solid #fecaca;border-radius:1.25rem;font-size:.6rem;font-weight:900;text-transform:uppercase;letter-spacing:.1em;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif}
+.btn-reset svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
+.btn-reset:hover{background:#dc2626;color:white}
+.btn-reset:active{transform:scale(.95)}
+.btn-dl-all{display:flex;align-items:center;gap:.5rem;padding:.75rem 1.5rem;background:var(--slate);color:white;border:none;border-radius:1.25rem;font-size:.6rem;font-weight:900;text-transform:uppercase;letter-spacing:.1em;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif}
+.btn-dl-all svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
+.btn-dl-all:hover{background:var(--blue)}
+.btn-dl-all:active{transform:scale(.95)}
+
+/* IMAGE CARDS */
+.results-list{display:flex;flex-direction:column;gap:4rem}
+.img-card{background:white;border-radius:3.5rem;overflow:hidden;border:2px solid white;box-shadow:0 25px 60px rgba(0,0,0,.08);transition:transform .7s}
+.img-card:hover{transform:scale(1.01)}
+.img-wrap{position:relative;cursor:pointer;overflow:hidden}
+.img-wrap.r9x16{aspect-ratio:9/16}
+.img-wrap.r4x5{aspect-ratio:4/5}
+.img-wrap.r16x9{aspect-ratio:16/9}
+.img-wrap.r1x1{aspect-ratio:1}
+.img-wrap img{width:100%;height:100%;object-fit:cover;transition:all 1s;-webkit-user-select:none;user-select:none}
+.img-tags{position:absolute;top:2rem;left:2rem;display:flex;flex-direction:column;gap:.75rem;pointer-events:none}
+.img-tag-white{padding:.5rem 1.5rem;background:rgba(255,255,255,.95);backdrop-filter:blur(8px);color:var(--slate);font-size:.6rem;font-weight:900;text-transform:uppercase;letter-spacing:.15em;border-radius:1rem;box-shadow:0 8px 30px rgba(0,0,0,.1);border:1px solid #eff6ff}
+.img-tag-blue{padding:.5rem 1.5rem;background:linear-gradient(135deg,var(--blue),var(--violet));color:white;font-size:.6rem;font-weight:900;text-transform:uppercase;letter-spacing:.15em;border-radius:1rem;box-shadow:0 8px 30px rgba(37,99,235,.3)}
+.img-hover-dl{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .3s;background:rgba(0,0,0,.2);backdrop-filter:blur(2px);pointer-events:none}
+.img-card:hover .img-hover-dl{opacity:1}
+.img-hover-dl-btn{background:var(--blue);width:80px;height:80px;border-radius:50%;display:flex;align-items:center;justify-content:center;transform:scale(.75);transition:transform .5s}
+.img-card:hover .img-hover-dl-btn{transform:scale(1)}
+.img-hover-dl-btn svg{width:36px;height:36px;stroke:white;fill:none;stroke-width:2}
+.img-hover-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.6),transparent 50%);opacity:0;transition:opacity .3s;pointer-events:none}
+.img-card:hover .img-hover-overlay{opacity:1}
+.img-card-info{padding:3rem;background:white}
+.img-prompt{font-size:1rem;font-weight:700;color:#1e293b;line-height:1.6;font-style:italic;border-left:8px solid var(--blue);padding:1.75rem;background:rgba(239,246,255,.2);border-radius:0 2rem 2rem 0;margin-bottom:1.5rem}
+.img-meta{display:flex;justify-content:space-between;align-items:center;padding-top:1rem;opacity:.4;transition:opacity .3s}
+.img-card:hover .img-meta{opacity:1}
+.img-meta-left span{display:block;font-size:.6rem;font-family:'JetBrains Mono',monospace;font-weight:900;text-transform:uppercase;letter-spacing:.1em;color:var(--slate)}
+.img-meta-right{display:flex;flex-direction:column;align-items:flex-end;gap:.35rem}
+.btn-dl-img{padding:.6rem 1.25rem;background:var(--blue);color:white;border:none;border-radius:.75rem;font-size:.6rem;font-weight:900;text-transform:uppercase;letter-spacing:.1em;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif}
+.btn-dl-img:hover{transform:scale(1.05)}
+.mobile-save-hint{font-size:.55rem;font-weight:900;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em}
+
+/* EMPTY */
+.empty-state{height:800px;display:flex;flex-direction:column;align-items:center;justify-content:center;border:4px dashed #bfdbfe;border-radius:4rem;gap:3rem;background:rgba(255,255,255,.5)}
+.empty-glow{position:relative}
+.empty-glow::before{content:'';position:absolute;inset:-20px;background:rgba(37,99,235,.15);filter:blur(80px);border-radius:50%;animation:glowPulse 3s infinite}
+@keyframes glowPulse{0%,100%{opacity:.5}50%{opacity:1}}
+.empty-icon-wrap{position:relative;padding:4rem;background:white;border-radius:50%;box-shadow:0 30px 70px rgba(0,0,0,.08);border:2px solid #eff6ff}
+.empty-icon-wrap svg{width:80px;height:80px;stroke:#dbeafe;fill:none;stroke-width:.5}
+.empty-text{text-align:center}
+.empty-text p:first-child{font-size:.75rem;text-transform:uppercase;letter-spacing:1.2em;font-weight:900;color:#bfdbfe;margin-bottom:.75rem}
+.empty-text p:last-child{font-size:.8rem;font-weight:700;color:#94a3b8;font-style:italic;max-width:320px;margin:0 auto;line-height:1.7}
+
+/* FOOTER */
+footer{padding:4rem 2rem;text-align:center;border-top:4px solid #eff6ff;background:rgba(255,255,255,.6);margin-top:4rem}
+footer p{font-size:.75rem;font-weight:900;text-transform:uppercase;letter-spacing:1.2em;color:#93c5fd;margin-bottom:1.5rem}
+.footer-deco{display:flex;align-items:center;justify-content:center;gap:2rem}
+.footer-line{width:120px;height:2px;border-radius:999px}
+.footer-line.l{background:linear-gradient(to right,transparent,#bfdbfe)}
+.footer-line.r{background:linear-gradient(to left,transparent,#bfdbfe)}
+.footer-dot{width:14px;height:14px;border-radius:50%;border:4px solid #bfdbfe}
+
+.left-col{display:flex;flex-direction:column;gap:2rem}
+
+@media(max-width:767px){
+  .h-status-text,.h-dot-ring{display:none}
+  header{padding:1rem 1.25rem}
+  main{padding:1rem}
+  .section-card{padding:1.5rem}
+  .splash-title{font-size:5rem}
+}
+</style>
 </head>
-<body class="bg-[#f0f4ff] min-h-screen">
+<body>
 
-<!-- ═══════════ SCREEN 1 : SAISIE CLÉ API ═══════════ -->
-<div id="screen-apikey" class="screen flex-col min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-900 p-6">
-  <div class="w-full max-w-md bg-white/10 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20">
-    <div class="text-center mb-8">
-      <div class="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center" style="background:linear-gradient(135deg,#2563eb,#7c3aed)">
-        <svg width="32" height="32" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><path d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
-      </div>
-      <h1 class="text-2xl font-black text-white tracking-wider mb-2">STUDIO POV V2</h1>
-      <p class="text-blue-200 text-sm">Entre ta clé API Google pour accéder à l'application</p>
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-hero">
+    <div class="splash-glow"></div>
+    <img src="https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&q=80&w=1200" alt="Hands holding a camera">
+    <div class="rec-tag">
+      <div class="rec-dot"></div>
+      REC ● 4K LIVE
     </div>
-    <div class="space-y-4">
-      <div>
-        <label class="text-blue-200 text-xs uppercase tracking-widest font-bold mb-2 block">Clé API Google AI Studio</label>
-        <input id="api-key-input" type="password" placeholder="AIza..."
-          class="w-full bg-white/10 border border-white/20 rounded-2xl px-4 py-4 text-white placeholder-white/30 text-sm"
-          style="outline:none"
-        />
-      </div>
-      <p class="text-white/40 text-xs text-center">Ta clé reste sur ton appareil et n'est jamais partagée</p>
-      <button id="btn-save-key" class="w-full py-4 rounded-2xl font-black text-sm uppercase tracking-widest text-white" style="background:linear-gradient(135deg,#2563eb,#7c3aed)">
-        Accéder à l'application →
-      </button>
-      <p class="text-white/40 text-xs text-center">Pas de clé ? <a href="https://aistudio.google.com/apikey" target="_blank" class="text-blue-300 underline">Obtenir une clé gratuite</a></p>
+    <div class="splash-crosshair"><div class="crosshair"></div></div>
+    <div class="splash-meta-bottom">
+      <p>Optical Focus</p>
+      <p>Precision Lens 2025</p>
     </div>
+  </div>
+
+  <h1 class="splash-title">STUDIO POV</h1>
+  <div class="splash-bar"></div>
+  <p class="splash-quote">« Place le regard là où le cerveau y croit. »</p>
+  <p class="splash-year">STUDIO POV — 2025</p>
+
+  <div class="key-box">
+    <label>Clé Google AI Studio</label>
+    <input type="password" id="apiKeyInput" placeholder="AIza..." autocomplete="off">
+    <button class="btn-enter" onclick="enterStudio()">
+      <span>ENTRER DANS LE STUDIO</span>
+      <svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+    </button>
+    <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" class="key-link">
+      Billing &amp; Project Info
+      <svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+    </a>
   </div>
 </div>
 
-<!-- ═══════════ SCREEN 2 : SPLASH ═══════════ -->
-<div id="screen-splash" class="screen flex-col min-h-screen items-center justify-center p-6 text-center overflow-hidden bg-[#f0f4ff]">
-  <div class="relative mb-12 w-full max-w-2xl" style="transform:scale(1.05)">
-    <div class="absolute inset-0 blur-[150px] opacity-30" style="background:linear-gradient(to right,#2563eb,#7c3aed)"></div>
-    <div class="relative z-10 w-full overflow-hidden shadow-2xl border-4 border-white" style="aspect-ratio:16/9;border-radius:4rem">
-      <img src="https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&q=80&w=1200" alt="Camera" class="w-full h-full object-cover"/>
-      <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(0,0,0,0.8),rgba(0,0,0,0.2),transparent)"></div>
-      <div class="absolute top-8 left-8 flex items-center gap-4">
-        <div class="w-3 h-3 rounded-full bg-red-600 animate-pulse" style="box-shadow:0 0 15px rgba(220,38,38,1)"></div>
-        <span class="text-white font-black uppercase" style="font-size:12px;letter-spacing:0.3em">REC ● 4K LIVE</span>
-      </div>
-    </div>
-  </div>
-  <h1 class="font-black uppercase text-transparent mb-6" style="font-size:clamp(2.5rem,8vw,6rem);letter-spacing:-0.02em;background:linear-gradient(to right,#2563eb,#7c3aed,#4338ca);-webkit-background-clip:text;background-clip:text">
-    STUDIO POV V2
-  </h1>
-  <div class="h-2 w-56 rounded-full mb-10" style="background:linear-gradient(to right,#2563eb,#7c3aed,#4338ca)"></div>
-  <p class="font-bold text-slate-800 italic mb-12 max-w-3xl leading-tight" style="font-size:clamp(1.1rem,2.5vw,2rem)">« Place le regard là où le cerveau y croit. »</p>
-  <p class="text-slate-400 font-black uppercase mb-16" style="font-size:14px;letter-spacing:0.8em">STUDIO POV V2</p>
-  <button id="btn-enter-studio" class="relative px-16 py-8 text-white font-black uppercase rounded-[2.5rem] shadow-2xl hover:scale-105 active:scale-95 transition-all"
-    style="letter-spacing:0.4em;background:linear-gradient(to right,#2563eb,#4338ca,#7c3aed);font-size:1.1rem;box-shadow:0 30px 60px rgba(37,99,235,0.4)">
-    ENTRER DANS LE STUDIO ⚡
-  </button>
-</div>
-
-<!-- ═══════════ SCREEN 3 : APP PRINCIPALE ═══════════ -->
-<div id="screen-main" class="screen flex-col min-h-screen bg-[#f0f4ff] text-slate-900">
-
-  <header class="border-b border-blue-200 p-6 flex flex-wrap justify-between items-center gap-6 sticky top-0 bg-white/95 backdrop-blur-xl z-50">
-    <div class="flex items-center gap-6">
-      <div id="btn-go-splash" class="p-4 rounded-2xl shadow-xl cursor-pointer hover:rotate-12 transition-transform" style="background:linear-gradient(135deg,#2563eb,#7c3aed)">
-        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+<!-- APP -->
+<div id="app">
+  <header>
+    <div class="h-brand">
+      <div class="h-logo" onclick="goSplash()">
+        <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
       </div>
       <div>
-        <h1 class="text-2xl font-black uppercase tracking-[0.3em] text-slate-900">STUDIO POV V2</h1>
-        <div class="flex items-center gap-2 mt-1">
-          <span class="text-[10px] font-black bg-blue-600 text-white px-3 py-1 rounded-full tracking-widest uppercase">RENDU PRO 4K</span>
-          <span class="text-[10px] font-black text-violet-600 tracking-widest uppercase ml-2">V2025</span>
+        <div class="h-title">STUDIO POV</div>
+        <div class="h-badges">
+          <span class="badge-pro">RENDU PRO 4K</span>
+          <span class="badge-v">V2025</span>
         </div>
       </div>
     </div>
-    <div class="flex items-center gap-6">
-      <button id="btn-change-key" class="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-blue-600 transition-colors">🔑 Changer clé</button>
-      <div class="flex flex-col items-end">
-        <span class="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em]">Focale Humaine</span>
-        <span class="text-[10px] font-bold text-blue-500 uppercase tracking-widest">Opérationnel</span>
+    <div class="h-status">
+      <div class="h-status-text">
+        <span>Focale Humaine</span>
+        <span>Opérationnel</span>
       </div>
-      <div class="w-12 h-12 rounded-full border-4 border-blue-100 flex items-center justify-center">
-        <div class="w-4 h-4 bg-blue-500 rounded-full animate-pulse" style="box-shadow:0 0 15px rgba(59,130,246,0.8)"></div>
-      </div>
+      <div class="h-dot-ring"><div class="h-dot"></div></div>
     </div>
   </header>
 
-  <!-- MOBILE WARNING -->
-  <div id="mobile-warn" class="hidden max-w-7xl mx-auto w-full px-8 pt-6">
-    <div class="p-6 rounded-2xl border-2 border-yellow-200 bg-yellow-50 flex gap-4 items-start shadow-lg">
-      <span style="font-size:20px">📱</span>
-      <div>
-        <p class="text-[11px] uppercase tracking-wider font-black text-yellow-800">MODE MOBILE DÉTECTÉ</p>
-        <p class="text-[13px] font-bold text-yellow-700 leading-relaxed mt-1">Sur mobile, la génération peut prendre 15-30 secondes. Le système effectuera automatiquement jusqu'à 5 tentatives si nécessaire.</p>
-      </div>
+  <div id="mobileBanner" style="display:none" class="mobile-banner">
+    <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+    <div class="mobile-banner-text">
+      <p>📱 MODE MOBILE DÉTECTÉ</p>
+      <p>Sur mobile, la génération peut prendre 15-30 secondes. Le système effectuera automatiquement jusqu'à 5 tentatives si nécessaire. Merci de votre patience !</p>
     </div>
   </div>
 
-  <main class="flex-1 max-w-[1600px] mx-auto w-full p-8 grid grid-cols-1 lg:grid-cols-12 gap-12">
-    <div class="lg:col-span-5 space-y-10">
+  <main>
+    <!-- LEFT COL -->
+    <div class="left-col">
 
       <!-- 01. RÉFÉRENTIELS -->
-      <section class="bg-white p-10 rounded-[2.5rem] shadow-2xl border border-blue-50 space-y-6">
-        <h2 class="text-[12px] uppercase tracking-[0.6em] font-black text-blue-600 flex items-center gap-4">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+      <div class="section-card">
+        <h2 class="section-title blue">
+          <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
           01. RÉFÉRENTIELS
         </h2>
-        <div class="space-y-8">
-          <div id="avatar-grid" class="grid grid-cols-2 gap-4">
-            <!-- rempli par JS -->
+        <div class="avatar-grid" id="avatarGrid"></div>
+        <div class="avatar-add" id="avatarAddSlot">
+          <div class="avatar-add-icon">
+            <svg viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
           </div>
-          <textarea id="subject-input" placeholder="Décrivez l'émotion et l'atmosphère de la scène..."
-            class="w-full bg-blue-50/30 border border-blue-100 rounded-[2rem] p-8 text-[15px] min-h-[160px] resize-none placeholder:text-slate-300 font-bold tracking-tight text-slate-800 transition-all"
-            style="outline:none"
-          ></textarea>
+          <span id="avatarAddLabel">Charger Image Source</span>
+          <input type="file" id="avatarInput" multiple accept="image/*" onchange="handleFileUpload(event)">
         </div>
-      </section>
+        <textarea id="subject" placeholder="Décrivez l'émotion et l'atmosphère de la scène..."></textarea>
+      </div>
 
       <!-- 02. CADRAGE NARRATIF -->
-      <section class="bg-white p-10 rounded-[2.5rem] shadow-2xl border border-blue-50 space-y-6">
-        <h2 class="text-[12px] uppercase tracking-[0.6em] font-black text-indigo-600 flex items-center gap-4">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+      <div class="section-card">
+        <h2 class="section-title indigo">
+          <svg viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
           02. CADRAGE NARRATIF
         </h2>
-        <div id="ratio-grid" class="grid grid-cols-4 gap-4">
-          <!-- rempli par JS -->
-        </div>
-      </section>
-
-      <!-- 03. CALIBRAGE OPTIQUE -->
-      <section class="bg-white p-10 rounded-[2.5rem] shadow-2xl border border-blue-50 space-y-10">
-        <h2 class="text-[12px] uppercase tracking-[0.6em] font-black text-violet-600 flex items-center gap-4">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-          03. CALIBRAGE OPTIQUE
-        </h2>
-        <div class="space-y-4">
-          <label class="text-[11px] uppercase tracking-widest font-black text-slate-400">Statut</label>
-          <div id="pov-grid" class="grid grid-cols-2 gap-4"></div>
-        </div>
-        <div class="space-y-4">
-          <label class="text-[11px] uppercase tracking-widest font-black text-slate-400">Implication</label>
-          <div id="involvement-grid" class="grid grid-cols-2 gap-4"></div>
-        </div>
-        <div class="space-y-5">
-          <label class="text-[11px] uppercase tracking-widest font-black text-slate-400">Angle & Hauteur</label>
-          <div id="angle-grid" class="flex flex-wrap gap-3"></div>
-        </div>
-        <div class="space-y-4">
-          <label class="text-[11px] uppercase tracking-widest font-black text-slate-400">Distance</label>
-          <div id="distance-grid" class="grid grid-cols-3 gap-3"></div>
-        </div>
-
-        <!-- MODE PERCEPTION HUMAINE -->
-        <div class="flex items-center justify-between p-6 bg-blue-50/30 rounded-3xl border border-blue-100 hover:bg-white hover:border-blue-400 transition-all">
-          <div class="flex items-center gap-4">
-            <div id="hpm-icon" class="p-3 rounded-2xl transition-all bg-slate-100">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46 2.5 2.5 0 0 1-1.96-3 2.5 2.5 0 0 1 1.96-4.54 2.5 2.5 0 0 1 3.46-3.5zm5 0a2.5 2.5 0 0 0-3.46 3.5 2.5 2.5 0 0 0 1.96 4.54 2.5 2.5 0 0 0 1.96 3 2.5 2.5 0 0 0 4.96-.46V4.5A2.5 2.5 0 0 0 14.5 2z"/></svg>
-            </div>
-            <div>
-              <span class="text-[11px] font-black uppercase tracking-widest text-slate-900 block">Mode Perception Humaine</span>
-              <span id="hpm-label" class="text-[9px] font-bold text-slate-400 uppercase">Moteur standard</span>
-            </div>
-          </div>
-          <button id="hpm-toggle" class="relative w-14 h-8 rounded-full transition-all duration-300 bg-slate-200">
-            <div id="hpm-thumb" class="absolute top-1 left-1 w-6 h-6 bg-white rounded-full shadow-md transition-transform duration-300"></div>
+        <div class="ratio-grid">
+          <button class="ratio-btn active" data-ratio="9:16" onclick="setRatio(this,'9:16')">
+            <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/></svg>9:16
+          </button>
+          <button class="ratio-btn" data-ratio="16:9" onclick="setRatio(this,'16:9')">
+            <svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/></svg>16:9
+          </button>
+          <button class="ratio-btn" data-ratio="4:5" onclick="setRatio(this,'4:5')">
+            <svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/></svg>4:5
+          </button>
+          <button class="ratio-btn" data-ratio="1:1" onclick="setRatio(this,'1:1')">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>1:1
           </button>
         </div>
+      </div>
 
-        <!-- SLIDERS -->
-        <div class="space-y-8 pt-6 border-t border-blue-50">
-          <div class="space-y-4">
-            <div class="flex justify-between items-end">
-              <label class="text-[11px] uppercase tracking-[0.2em] font-black text-slate-500">Asymétrie</label>
-              <span id="val-asymmetry" class="text-[11px] font-mono font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-lg">70%</span>
+      <!-- 03. CALIBRAGE OPTIQUE -->
+      <div class="section-card">
+        <h2 class="section-title violet">
+          <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          03. CALIBRAGE OPTIQUE
+        </h2>
+
+        <span class="label-sm">Statut</span>
+        <div class="btn-grid-2">
+          <button class="option-btn" id="pov-exterior" onclick="setOpt('pov','exterior')">Extérieur</button>
+          <button class="option-btn" id="pov-interior" onclick="setOpt('pov','interior')">Présent</button>
+        </div>
+
+        <span class="label-sm">Implication</span>
+        <div class="btn-grid-2">
+          <button class="option-btn" id="inv-discreet" onclick="setOpt('inv','discreet')">Observateur</button>
+          <button class="option-btn" id="inv-involved" onclick="setOpt('inv','involved')">Participant</button>
+        </div>
+
+        <span class="label-sm">Angle & Hauteur</span>
+        <div class="tags-wrap">
+          <button class="tag-btn" id="angle-face" onclick="setTag('angle','face')">Face</button>
+          <button class="tag-btn" id="angle-side" onclick="setTag('angle','side')">Côté</button>
+          <button class="tag-btn" id="angle-back" onclick="setTag('angle','back')">Dos</button>
+          <button class="tag-btn" id="angle-shoulder" onclick="setTag('angle','shoulder')">Épaule</button>
+          <button class="tag-btn" id="angle-offset" onclick="setTag('angle','offset')">Désaxé</button>
+          <div class="divider"></div>
+          <button class="tag-btn" id="height-eye-level" onclick="setTag('height','eye-level')">Yeux</button>
+          <button class="tag-btn" id="height-shoulder" onclick="setTag('height','shoulder')">Épaule</button>
+          <button class="tag-btn" id="height-low" onclick="setTag('height','low')">Bas</button>
+          <button class="tag-btn" id="height-high" onclick="setTag('height','high')">Haut</button>
+        </div>
+
+        <span class="label-sm">Distance</span>
+        <div class="btn-grid-3">
+          <button class="option-btn" id="dist-close" onclick="setOpt('dist','close')">Proche</button>
+          <button class="option-btn" id="dist-medium" onclick="setOpt('dist','medium')">Moyenne</button>
+          <button class="option-btn" id="dist-far" onclick="setOpt('dist','far')">Loin</button>
+        </div>
+
+        <div class="border-top">
+          <div class="perception-row">
+            <div class="perception-left">
+              <div class="perception-icon off" id="perceptionIcon">
+                <svg viewBox="0 0 24 24"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="12" r="10"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              </div>
+              <div class="perception-text">
+                <span>Mode Perception Humaine</span>
+                <span id="perceptionStatus">Moteur standard</span>
+              </div>
             </div>
-            <input id="slider-asymmetry" type="range" min="0" max="100" value="70" style="accent-color:#2563eb">
+            <button class="toggle off" id="perceptionToggle" onclick="togglePerception()">
+              <div class="toggle-knob"></div>
+            </button>
           </div>
-          <div class="space-y-4">
-            <div class="flex justify-between items-end">
-              <label class="text-[11px] uppercase tracking-[0.2em] font-black text-slate-500">Imperfection</label>
-              <span id="val-imperfection" class="text-[11px] font-mono font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-lg">60%</span>
+
+          <div class="slider-row">
+            <div class="slider-header">
+              <span class="slider-label">Asymétrie</span>
+              <span class="slider-val" id="asymVal">70%</span>
             </div>
-            <input id="slider-imperfection" type="range" min="0" max="100" value="60" style="accent-color:#7c3aed">
+            <input type="range" class="blue" id="asymSlider" min="0" max="100" value="70" oninput="updateSlider('asym',this.value)">
           </div>
-          <div class="space-y-4">
-            <div class="flex justify-between items-end">
-              <label class="text-[11px] uppercase tracking-[0.2em] font-black text-slate-500">Intimité</label>
-              <span id="val-intimacy" class="text-[11px] font-mono font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-lg">40%</span>
+          <div class="slider-row">
+            <div class="slider-header">
+              <span class="slider-label">Imperfection</span>
+              <span class="slider-val" id="impVal">60%</span>
             </div>
-            <input id="slider-intimacy" type="range" min="0" max="100" value="40" style="accent-color:#4338ca">
+            <input type="range" class="violet" id="impSlider" min="0" max="100" value="60" oninput="updateSlider('imp',this.value)">
           </div>
-          <div class="space-y-4">
-            <div class="flex justify-between items-end">
-              <label class="text-[11px] uppercase tracking-[0.2em] font-black text-slate-500">Focus</label>
-              <span id="val-focus" class="text-[11px] font-mono font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-lg">50%</span>
+          <div class="slider-row">
+            <div class="slider-header">
+              <span class="slider-label">Intimité</span>
+              <span class="slider-val" id="intVal">40%</span>
             </div>
-            <input id="slider-focus" type="range" min="0" max="100" value="50" style="accent-color:#0f172a">
+            <input type="range" class="indigo" id="intSlider" min="0" max="100" value="40" oninput="updateSlider('int',this.value)">
+          </div>
+          <div class="slider-row">
+            <div class="slider-header">
+              <span class="slider-label">Focus</span>
+              <span class="slider-val" id="focusVal">50%</span>
+            </div>
+            <input type="range" class="dark" id="focusSlider" min="0" max="100" value="50" oninput="updateSlider('focus',this.value)">
           </div>
         </div>
-      </section>
+      </div>
 
-      <!-- BOUTON GÉNÉRER -->
-      <button id="btn-generate"
-        class="w-full py-12 rounded-[3rem] font-black uppercase flex flex-col items-center justify-center gap-4 transition-all shadow-2xl relative overflow-hidden text-white hover:scale-[1.02] active:scale-[0.98]"
-        style="background:linear-gradient(to right,#2563eb,#4338ca,#7c3aed);box-shadow:0 30px 60px rgba(37,99,235,0.4);letter-spacing:0.6em">
-        <div class="flex items-center gap-8">
-          <svg id="gen-icon" width="40" height="40" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-          <span id="gen-label">DÉCLENCHER CAPTURE 4K</span>
+      <!-- GENERATE -->
+      <button class="btn-generate" id="generateBtn" onclick="handleGenerate()">
+        <div class="btn-generate-inner">
+          <svg id="genIcon" viewBox="0 0 24 24" fill="white" stroke="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          <span id="genLabel">DÉCLENCHER CAPTURE 4K</span>
         </div>
-        <span id="loading-msg" class="hidden text-[10px] font-black tracking-widest text-blue-200"></span>
+        <span class="btn-generate-sub" id="genSub" style="display:none"></span>
       </button>
 
-      <!-- ERREUR -->
-      <div id="error-box" class="hidden p-8 rounded-[2.5rem] border-2 border-red-200 bg-red-50 flex gap-6 items-center">
-        <span style="font-size:32px">⚠️</span>
-        <p id="error-msg" class="text-[12px] uppercase tracking-widest font-black leading-relaxed text-red-700"></p>
+      <div id="errorBox" style="display:none" class="error-box">
+        <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <div>
+          <p class="error-title" id="errorMsg"></p>
+          <button class="error-link" onclick="goSplash()">Changer de clé API</button>
+        </div>
       </div>
     </div>
 
-    <!-- RIGHT PANEL -->
-    <div class="lg:col-span-7 space-y-12">
-      <div class="flex flex-col md:flex-row justify-between items-end border-b-4 border-blue-100 pb-10 gap-6">
-        <div class="space-y-2">
-          <h2 class="text-[18px] uppercase tracking-[0.8em] font-black text-slate-900">ARCHIVES RÉALISTES</h2>
-          <div class="flex items-center gap-3">
-            <span class="w-3 h-3 rounded-full bg-blue-600 animate-ping inline-block"></span>
-            <span class="text-[11px] font-black text-blue-600 tracking-[0.3em]">LIVE RENDER 4K</span>
-            <span id="result-count" class="text-[14px] font-mono text-slate-400 font-bold ml-4">0 CAPTURES</span>
+    <!-- RIGHT COL -->
+    <div>
+      <div class="results-header">
+        <div>
+          <div class="results-title">ARCHIVES RÉALISTES</div>
+          <div class="results-live">
+            <div class="ping"></div>
+            <span class="results-live-label">LIVE RENDER 4K</span>
+            <span class="results-count" id="captureCount">0 CAPTURES</span>
           </div>
         </div>
-        <div class="flex items-center gap-4">
-          <button id="btn-clear" class="hidden flex items-center gap-3 px-8 py-4 bg-red-50 text-red-600 border-2 border-red-100 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all active:scale-95">
-            ↺ Vider
+        <div class="results-actions" id="resultsActions" style="display:none">
+          <button class="btn-reset" onclick="resetAll()">
+            <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Réinitialiser
           </button>
-          <button id="btn-dl-all" class="hidden flex items-center gap-3 px-8 py-4 bg-slate-900 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-xl active:scale-95">
-            ⬇ Télécharger tout
+          <button class="btn-dl-all" id="dlAllBtn" style="display:none" onclick="downloadAll()">
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Télécharger tout
           </button>
         </div>
       </div>
-      <div id="results-container" class="flex flex-col gap-20">
-        <!-- rempli par JS -->
+      <div class="results-list" id="resultsList">
+        <div class="empty-state">
+          <div class="empty-glow">
+            <div class="empty-icon-wrap">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="2" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            </div>
+          </div>
+          <div class="empty-text">
+            <p>INITIER LE SIGNAL</p>
+            <p>Le studio est prêt. Configurez l'optique pour capturer la réalité.</p>
+          </div>
+        </div>
       </div>
     </div>
   </main>
 
-  <footer class="p-24 text-center border-t-4 border-blue-50 mt-32 bg-white/60">
-    <p class="text-[14px] uppercase tracking-[1.5em] font-black mb-10 text-blue-400">STUDIO POV V2</p>
-    <div class="flex justify-center gap-20 items-center">
-      <div class="w-40 h-0.5" style="background:linear-gradient(to right,transparent,#bfdbfe,transparent)"></div>
-      <div class="w-4 h-4 rounded-full border-4 border-blue-200"></div>
-      <div class="w-40 h-0.5" style="background:linear-gradient(to left,transparent,#bfdbfe,transparent)"></div>
+  <footer>
+    <p>STUDIO POV — 2025</p>
+    <div class="footer-deco">
+      <div class="footer-line l"></div>
+      <div class="footer-dot"></div>
+      <div class="footer-line r"></div>
     </div>
   </footer>
-</div><!-- /screen-main -->
+</div>
 
 <script>
-'use strict';
+// ─── STATE (identique à App.tsx) ──────────────────────────
+let API_KEY = '';
+let avatarImages = [];
+let results = [];
+let loading = false;
+let humanPerceptionMode = false;
+let currentAspectRatio = '9:16';
+let currentPov = 'exterior';
+let currentInv = 'discreet';
+let currentAngle = 'offset';
+let currentHeight = 'shoulder';
+let currentDist = 'medium';
+let loadingMsgIdx = 0;
+let loadingInterval = null;
 
-// ═══════════════════════════════════════════════
-// CONFIG & ÉTAT
-// ═══════════════════════════════════════════════
-const LOADING_MSGS = [
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+const LOADING_MESSAGES = [
   "Initialisation de l'optique humaine...",
   "Calcul de la texture cutanée...",
   "Simulation du champ de vision...",
@@ -290,379 +567,235 @@ const LOADING_MSGS = [
   "Files d'attente saturées, nouvel essai imminent..."
 ];
 
-const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+// ─── IndexedDB (identique à dbService.ts) ─────────────────
+const DB_NAME = 'StudioPOV_DB';
+const DB_STORE = 'ResultsStore';
 
-let API_KEY = localStorage.getItem('studio_pov_apikey') || '';
-
-// État persisté dans localStorage (sauf avatarImages → IndexedDB)
-const DEFAULTS = {
-  subject: '',
-  pov: 'exterior',
-  involvement: 'discreet',
-  angle: 'offset',
-  height: 'shoulder',
-  distance: 'medium',
-  aspectRatio: '9:16',
-  asymmetry: 70,
-  imperfection: 60,
-  intimacy: 40,
-  focus: 50,
-  humanPerceptionMode: false
-};
-
-let S = { ...DEFAULTS }; // settings
-let avatarImages = [];   // base64 — stockés dans IndexedDB
-let results = [];        // images générées (session uniquement)
-let loading = false;
-let loadingInterval = null;
-let loadingMsgIdx = 0;
-
-// ═══════════════════════════════════════════════
-// PERSISTANCE SETTINGS (localStorage)
-// ═══════════════════════════════════════════════
-function loadSettings() {
-  try {
-    const raw = localStorage.getItem('studio-pov-settings');
-    if (raw) Object.assign(S, JSON.parse(raw));
-  } catch(e) {}
-}
-function saveSettings() {
-  try { localStorage.setItem('studio-pov-settings', JSON.stringify(S)); } catch(e) {}
-}
-
-// ═══════════════════════════════════════════════
-// PERSISTANCE AVATARS (IndexedDB)
-// ═══════════════════════════════════════════════
-let db = null;
-
-function openDB() {
+function initDB() {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open('studio-pov', 1);
-    req.onupgradeneeded = e => e.target.result.createObjectStore('avatars', { keyPath: 'id' });
-    req.onsuccess = e => { db = e.target.result; resolve(db); };
-    req.onerror = () => resolve(null); // silently fail
-  });
-}
-
-async function loadAvatarsFromDB() {
-  if (!db) return;
-  return new Promise(resolve => {
-    const tx = db.transaction('avatars', 'readonly');
-    const req = tx.objectStore('avatars').getAll();
-    req.onsuccess = e => {
-      const rows = e.target.result || [];
-      rows.sort((a,b) => a.id - b.id);
-      avatarImages = rows.map(r => r.data);
-      resolve();
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(DB_STORE)) db.createObjectStore(DB_STORE, { keyPath: 'id' });
     };
-    req.onerror = () => resolve();
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
   });
 }
-
-async function saveAvatarsToDB() {
-  if (!db) return;
-  return new Promise(resolve => {
-    const tx = db.transaction('avatars', 'readwrite');
-    const store = tx.objectStore('avatars');
-    store.clear();
-    avatarImages.forEach((data, i) => store.put({ id: i, data }));
-    tx.oncomplete = resolve;
-    tx.onerror = resolve;
-  });
+async function dbSave(item) {
+  const db = await initDB();
+  return new Promise((res,rej) => { const tx = db.transaction(DB_STORE,'readwrite'); tx.objectStore(DB_STORE).put(item).onsuccess = () => res(true); tx.onerror = () => rej(tx.error); });
+}
+async function dbGetAll() {
+  try {
+    const db = await initDB();
+    return new Promise((res,rej) => { const tx = db.transaction(DB_STORE,'readonly'); const req = tx.objectStore(DB_STORE).getAll(); req.onsuccess = () => res(req.result); req.onerror = () => rej(req.error); });
+  } catch(e) { return []; }
+}
+async function dbDelete(id) {
+  try { const db = await initDB(); return new Promise((res,rej) => { const tx = db.transaction(DB_STORE,'readwrite'); tx.objectStore(DB_STORE).delete(id).onsuccess = () => res(true); tx.onerror = () => rej(tx.error); }); } catch(e) {}
+}
+async function dbClear() {
+  try { const db = await initDB(); return new Promise((res,rej) => { const tx = db.transaction(DB_STORE,'readwrite'); tx.objectStore(DB_STORE).clear().onsuccess = () => res(true); tx.onerror = () => rej(tx.error); }); } catch(e) {}
 }
 
-// ═══════════════════════════════════════════════
-// NAVIGATION ENTRE SCREENS (pas de innerHTML global!)
-// ═══════════════════════════════════════════════
-function showScreen(name) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-' + name).classList.add('active');
-}
+// ─── INIT ─────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', async () => {
+  if (isMobile) document.getElementById('mobileBanner').style.display = 'flex';
 
-// ═══════════════════════════════════════════════
-// RENDER PARTIEL : uniquement les parties dynamiques
-// ═══════════════════════════════════════════════
-
-function renderAvatarGrid() {
-  const grid = document.getElementById('avatar-grid');
-  if (!grid) return;
-  grid.innerHTML = '';
-
-  avatarImages.forEach((img, idx) => {
-    const div = document.createElement('div');
-    div.className = 'relative group aspect-square rounded-[2rem] overflow-hidden border-2 border-blue-200 shadow-lg';
-    div.innerHTML = `
-      <img src="${img}" class="w-full h-full object-cover" alt="Avatar ${idx+1}"/>
-      <button class="remove-avatar absolute top-3 right-3 bg-white/90 shadow-xl p-2 text-red-600 hover:bg-red-50 transition-all rounded-full z-10" data-idx="${idx}">✕</button>
-      <div class="absolute bottom-3 left-3">
-        <span class="text-[8px] font-black uppercase tracking-widest bg-blue-600 text-white px-2 py-1 rounded-md">REF ${idx+1}</span>
-      </div>`;
-    grid.appendChild(div);
-  });
-
-  if (avatarImages.length < 4) {
-    const add = document.createElement('div');
-    add.className = 'relative group border-2 border-dashed border-blue-200 rounded-[2rem] aspect-square flex flex-col items-center justify-center bg-blue-50/20 hover:bg-white hover:border-blue-500 transition-all cursor-pointer overflow-hidden';
-    add.innerHTML = `
-      <div class="p-4 bg-white rounded-full mb-2 shadow-xl border border-blue-100">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="1.5"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
-      </div>
-      <span class="text-[9px] font-black uppercase tracking-widest text-blue-400 text-center px-4">
-        ${avatarImages.length === 0 ? 'Charger Image Source' : `Ajouter Ref (${avatarImages.length}/4)`}
-      </span>
-      <input type="file" class="avatar-file-input absolute inset-0 opacity-0 cursor-pointer" multiple accept="image/*">`;
-    grid.appendChild(add);
-  }
-}
-
-function renderButtonGroup(containerId, options, currentVal, onSelect, activeClass) {
-  const el = document.getElementById(containerId);
-  if (!el) return;
-  el.innerHTML = '';
-  options.forEach(o => {
-    const btn = document.createElement('button');
-    const isActive = currentVal === o.id;
-    btn.className = `px-5 py-3 text-[10px] uppercase font-black transition-all rounded-xl border-2 ${isActive ? activeClass : 'border-blue-50 bg-blue-50/20 text-slate-400 hover:border-blue-400'}`;
-    if (containerId === 'pov-grid' || containerId === 'involvement-grid') {
-      btn.className = `w-full py-5 text-[11px] uppercase font-black tracking-widest transition-all rounded-2xl border-2 ${isActive ? activeClass : 'border-blue-50 bg-blue-50/20 text-slate-400 hover:border-blue-300'}`;
+  // localStorage (identique à App.tsx useEffect)
+  try {
+    const saved = localStorage.getItem('studio-pov-state');
+    if (saved) {
+      const s = JSON.parse(saved);
+      avatarImages = s.avatarImages || [];
+      document.getElementById('subject').value = s.subject || '';
+      currentPov = s.pov || 'exterior';
+      currentInv = s.involvement || 'discreet';
+      currentAngle = s.angle || 'offset';
+      currentHeight = s.height || 'shoulder';
+      currentDist = s.distance || 'medium';
+      currentAspectRatio = s.aspectRatio || '9:16';
+      humanPerceptionMode = s.humanPerceptionMode || false;
+      document.getElementById('asymSlider').value = s.asymmetry ?? 70;
+      document.getElementById('impSlider').value = s.imperfection ?? 60;
+      document.getElementById('intSlider').value = s.intimacy ?? 40;
+      document.getElementById('focusSlider').value = s.focus ?? 50;
+      document.getElementById('asymVal').textContent = (s.asymmetry ?? 70) + '%';
+      document.getElementById('impVal').textContent = (s.imperfection ?? 60) + '%';
+      document.getElementById('intVal').textContent = (s.intimacy ?? 40) + '%';
+      document.getElementById('focusVal').textContent = (s.focus ?? 50) + '%';
     }
-    if (containerId === 'distance-grid') {
-      btn.className = `py-4 text-[10px] uppercase font-black transition-all rounded-xl border-2 ${isActive ? activeClass : 'border-blue-50 bg-blue-50/20 text-slate-400 hover:border-blue-400'}`;
+  } catch(e) {}
+
+  applyAllUI();
+  renderAvatars();
+
+  // IndexedDB (identique à App.tsx useEffect)
+  try {
+    const saved = await dbGetAll();
+    if (saved && saved.length > 0) {
+      results = saved.sort((a,b) => b.timestamp - a.timestamp);
+      renderResults();
     }
-    btn.textContent = o.label;
-    btn.addEventListener('click', () => onSelect(o.id));
-    el.appendChild(btn);
-  });
+  } catch(e) {}
+});
+
+// ─── UI STATE HELPERS ─────────────────────────────────────
+function applyAllUI() {
+  // POV
+  document.getElementById('pov-exterior').classList.toggle('active-violet', currentPov === 'exterior');
+  document.getElementById('pov-interior').classList.toggle('active-violet', currentPov === 'interior');
+  // INV
+  document.getElementById('inv-discreet').classList.toggle('active-indigo', currentInv === 'discreet');
+  document.getElementById('inv-involved').classList.toggle('active-indigo', currentInv === 'involved');
+  // DIST
+  ['close','medium','far'].forEach(v => document.getElementById('dist-'+v).classList.toggle('active-blue', currentDist === v));
+  // RATIO
+  document.querySelectorAll('[data-ratio]').forEach(b => b.classList.toggle('active', b.dataset.ratio === currentAspectRatio));
+  // ANGLE
+  ['face','side','back','shoulder','offset'].forEach(v => document.getElementById('angle-'+v).classList.toggle('active-slate', currentAngle === v));
+  // HEIGHT
+  ['eye-level','shoulder','low','high'].forEach(v => document.getElementById('height-'+v).classList.toggle('active-slate', currentHeight === v));
+  // PERCEPTION
+  applyPerceptionUI(humanPerceptionMode);
 }
 
-function renderAngleGrid() {
-  const el = document.getElementById('angle-grid');
-  if (!el) return;
-  el.innerHTML = '';
-  const angles = [{id:'face',label:'Face'},{id:'side',label:'Côté'},{id:'back',label:'Dos'},{id:'shoulder',label:'Épaule'},{id:'offset',label:'Désaxé'}];
-  const heights = [{id:'eye-level',label:'Yeux'},{id:'shoulder',label:'Épaule'},{id:'low',label:'Bas'},{id:'high',label:'Haut'}];
-  const cls = (active) => `px-5 py-3 text-[10px] uppercase font-black transition-all rounded-xl border-2 ${active ? 'bg-slate-900 text-white border-slate-900 shadow-lg' : 'border-blue-50 bg-blue-50/20 text-slate-400 hover:border-blue-400'}`;
-
-  angles.forEach(o => {
-    const btn = document.createElement('button');
-    btn.className = cls(S.angle === o.id);
-    btn.textContent = o.label;
-    btn.addEventListener('click', () => { S.angle = o.id; saveSettings(); renderAngleGrid(); });
-    el.appendChild(btn);
-  });
-
-  const sep = document.createElement('div');
-  sep.className = 'w-full h-px bg-blue-50 my-1';
-  el.appendChild(sep);
-
-  heights.forEach(o => {
-    const btn = document.createElement('button');
-    btn.className = cls(S.height === o.id);
-    btn.textContent = o.label;
-    btn.addEventListener('click', () => { S.height = o.id; saveSettings(); renderAngleGrid(); });
-    el.appendChild(btn);
-  });
+// ─── SPLASH ───────────────────────────────────────────────
+function enterStudio() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key || !key.startsWith('AIza')) { alert('Veuillez saisir votre clé Google AI Studio (commence par AIza...)'); return; }
+  API_KEY = key;
+  document.getElementById('splash').classList.add('hidden');
+  document.getElementById('app').classList.add('visible');
+  setTimeout(() => document.getElementById('splash').style.display = 'none', 650);
 }
-
-function renderRatioGrid() {
-  const el = document.getElementById('ratio-grid');
-  if (!el) return;
-  el.innerHTML = '';
-  const ratios = [{id:'9:16',label:'9:16',icon:'📱'},{id:'16:9',label:'16:9',icon:'🖥'},{id:'4:5',label:'4:5',icon:'🖼'},{id:'1:1',label:'1:1',icon:'⬛'}];
-  ratios.forEach(f => {
-    const btn = document.createElement('button');
-    const active = S.aspectRatio === f.id;
-    btn.className = `flex flex-col items-center justify-center gap-3 py-6 rounded-2xl border-2 transition-all ${active ? 'bg-slate-900 border-slate-900 text-white shadow-xl scale-105' : 'border-blue-50 bg-blue-50/20 text-slate-400 hover:border-blue-400 hover:bg-white'}`;
-    btn.innerHTML = `<span style="font-size:20px">${f.icon}</span><span class="text-[10px] font-black">${f.label}</span>`;
-    btn.addEventListener('click', () => { S.aspectRatio = f.id; saveSettings(); renderRatioGrid(); });
-    el.appendChild(btn);
-  });
+function goSplash() {
+  document.getElementById('splash').style.display = 'flex';
+  document.getElementById('splash').classList.remove('hidden');
+  document.getElementById('app').classList.remove('visible');
 }
+document.getElementById('apiKeyInput').addEventListener('keydown', e => { if (e.key === 'Enter') enterStudio(); });
 
-function renderHPM() {
-  const icon = document.getElementById('hpm-icon');
-  const label = document.getElementById('hpm-label');
-  const toggle = document.getElementById('hpm-toggle');
-  const thumb = document.getElementById('hpm-thumb');
-  if (!icon) return;
-  icon.style.background = S.humanPerceptionMode ? '#2563eb' : '#f1f5f9';
-  icon.querySelector('svg').setAttribute('stroke', S.humanPerceptionMode ? 'white' : '#94a3b8');
-  label.textContent = S.humanPerceptionMode ? 'Simulation active' : 'Moteur standard';
-  toggle.style.background = S.humanPerceptionMode ? '#2563eb' : '#e2e8f0';
-  thumb.style.transform = S.humanPerceptionMode ? 'translateX(24px)' : 'translateX(0)';
-}
-
-function renderResults() {
-  const container = document.getElementById('results-container');
-  const countEl = document.getElementById('result-count');
-  const btnClear = document.getElementById('btn-clear');
-  const btnDlAll = document.getElementById('btn-dl-all');
-  if (!container) return;
-
-  countEl.textContent = `${results.length} CAPTURES`;
-  btnClear.classList.toggle('hidden', results.length === 0);
-  btnDlAll.classList.toggle('hidden', results.length < 2);
-
-  if (results.length === 0) {
-    container.innerHTML = `
-      <div class="flex flex-col items-center justify-center border-4 border-dashed border-blue-200 rounded-[5rem] space-y-16 bg-white/50" style="min-height:600px">
-        <div class="relative">
-          <div class="absolute inset-0 rounded-full animate-pulse" style="background:rgba(37,99,235,0.2);filter:blur(120px)"></div>
-          <div class="relative p-20 bg-white rounded-full border-2 border-blue-50" style="box-shadow:0 40px 80px -20px rgba(0,0,0,0.1)">
-            <svg width="128" height="128" viewBox="0 0 24 24" fill="none" stroke="#dbeafe" stroke-width="0.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
-          </div>
-        </div>
-        <div class="text-center space-y-6">
-          <p class="text-[16px] uppercase tracking-[1.5em] font-black text-blue-200">INITIER LE SIGNAL</p>
-          <p class="text-[13px] font-bold text-slate-400 italic max-w-md mx-auto leading-relaxed">Le studio est prêt. Configurez l'optique pour capturer la réalité.</p>
-        </div>
-      </div>`;
-    return;
-  }
-
-  const aspectClass = {'9:16':'aspect-[9/16]','4:5':'aspect-[4/5]','16:9':'aspect-[16/9]','1:1':'aspect-square'};
-
-  container.innerHTML = results.map((res, idx) => `
-    <div class="group relative bg-white rounded-[4rem] overflow-hidden border-2 border-white shadow-2xl transition-all duration-700 hover:scale-[1.02]">
-      <div class="relative cursor-pointer overflow-hidden ${aspectClass[res.aspectRatio] || 'aspect-[9/16]'}" data-download="${idx}">
-        <img src="${res.url}" class="w-full h-full object-cover select-none" alt="${res.prompt}"/>
-        <div class="absolute top-10 left-10 flex flex-col gap-4 pointer-events-none">
-          <span class="px-8 py-3 bg-white/95 shadow-2xl text-slate-900 text-[11px] rounded-2xl uppercase font-black tracking-widest border border-blue-50">FORMAT ${res.aspectRatio}</span>
-          <span class="px-8 py-3 text-white text-[11px] rounded-2xl uppercase font-black tracking-widest shadow-2xl" style="background:linear-gradient(to right,#2563eb,#7c3aed)">NANO BANANA 4K</span>
-        </div>
-      </div>
-      <div class="p-16 space-y-8 bg-white">
-        <p class="text-[18px] font-bold text-slate-800 leading-relaxed italic border-l-8 border-blue-600 pl-10 bg-blue-50/20 py-10 rounded-r-[3rem]">"${res.prompt}"</p>
-        <div class="flex justify-between items-center pt-8 opacity-60 hover:opacity-100 transition-opacity">
-          <div>
-            <span class="text-[11px] font-mono text-slate-900 font-black uppercase tracking-widest block">CAPTURED_AT: ${new Date(res.timestamp).toLocaleTimeString()}</span>
-            <span class="text-[11px] font-mono text-slate-900 font-black uppercase tracking-widest block">UUID: TR_${res.id.slice(-8)}</span>
-          </div>
-          <div class="flex flex-col items-end gap-2">
-            <button class="btn-dl-one px-6 py-3 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-lg" data-download="${idx}">
-              TÉLÉCHARGER L'IMAGE
-            </button>
-            <span class="text-[10px] font-black text-slate-400 uppercase tracking-tight">APPUI LONG POUR MOBILE</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  `).join('');
-}
-
-function renderGenerateBtn() {
-  const btn = document.getElementById('btn-generate');
-  const icon = document.getElementById('gen-icon');
-  const label = document.getElementById('gen-label');
-  const msg = document.getElementById('loading-msg');
-  if (!btn) return;
-
-  if (loading) {
-    btn.style.background = '';
-    btn.style.boxShadow = '';
-    btn.classList.remove('hover:scale-[1.02]','active:scale-[0.98]');
-    btn.classList.add('bg-slate-100','text-slate-300','cursor-not-allowed');
-    btn.disabled = true;
-    icon.innerHTML = `<line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>`;
-    icon.setAttribute('fill','none');
-    icon.classList.add('animate-spin');
-    label.textContent = 'CALCUL EN COURS...';
-    msg.classList.remove('hidden');
-    msg.textContent = LOADING_MSGS[loadingMsgIdx];
-  } else {
-    btn.style.background = 'linear-gradient(to right,#2563eb,#4338ca,#7c3aed)';
-    btn.style.boxShadow = '0 30px 60px rgba(37,99,235,0.4)';
-    btn.classList.add('hover:scale-[1.02]','active:scale-[0.98]');
-    btn.classList.remove('bg-slate-100','text-slate-300','cursor-not-allowed');
-    btn.disabled = false;
-    icon.innerHTML = `<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>`;
-    icon.setAttribute('fill','currentColor');
-    icon.classList.remove('animate-spin');
-    label.textContent = 'DÉCLENCHER CAPTURE 4K';
-    msg.classList.add('hidden');
-  }
-}
-
-function showError(msg) {
-  const box = document.getElementById('error-box');
-  const el = document.getElementById('error-msg');
-  if (!box || !el) return;
-  if (msg) { el.textContent = msg; box.classList.remove('hidden'); }
-  else { box.classList.add('hidden'); }
-}
-
-// ═══════════════════════════════════════════════
-// GÉNÉRATION IMAGE
-// ═══════════════════════════════════════════════
-const sleep = ms => new Promise(r => setTimeout(r, ms));
-
-// Compresse une image base64 en JPEG qualité optimale pour réseaux sociaux (< 3MB)
-function compressImage(dataUrl, aspectRatio) {
+// ─── AVATARS (identique à App.tsx) ───────────────────────
+function resizeImage(base64) {
   return new Promise(resolve => {
-    const img = new Image();
+    const img = new Image(); img.src = base64;
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      // Dimensions max selon format — qualité réseaux sociaux
-      const maxDim = 1920;
-      let w = img.width, h = img.height;
-      if (w > maxDim || h > maxDim) {
-        if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
-        else { w = Math.round(w * maxDim / h); h = maxDim; }
-      }
-      canvas.width = w;
-      canvas.height = h;
+      const MAX = 1024; let w = img.width, h = img.height;
+      if (w > h) { if (w > MAX) { h = h * MAX / w; w = MAX; } }
+      else { if (h > MAX) { w = w * MAX / h; h = MAX; } }
+      canvas.width = w; canvas.height = h;
       canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      // Qualité 0.88 = excellent rendu, ~1-3MB selon format
-      resolve(canvas.toDataURL('image/jpeg', 0.88));
+      resolve(canvas.toDataURL('image/jpeg', 0.8));
     };
-    img.src = dataUrl;
   });
 }
+async function handleFileUpload(e) {
+  const files = Array.from(e.target.files).slice(0, 4 - avatarImages.length);
+  for (const file of files) {
+    const b64 = await new Promise(res => { const r = new FileReader(); r.onloadend = () => res(r.result); r.readAsDataURL(file); });
+    const resized = await resizeImage(b64);
+    avatarImages.push(resized);
+    if (avatarImages.length >= 4) break;
+  }
+  renderAvatars(); saveState();
+}
+function removeAvatar(idx) { avatarImages.splice(idx, 1); renderAvatars(); saveState(); }
+function renderAvatars() {
+  const grid = document.getElementById('avatarGrid');
+  grid.innerHTML = '';
+  avatarImages.forEach((img, idx) => {
+    const slot = document.createElement('div');
+    slot.className = 'avatar-slot';
+    slot.innerHTML = `<img src="${img}" alt="Avatar ${idx+1}"><button class="avatar-remove" onclick="removeAvatar(${idx})"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button><div class="avatar-badge">REF ${idx+1}</div>`;
+    grid.appendChild(slot);
+  });
+  const addSlot = document.getElementById('avatarAddSlot');
+  if (avatarImages.length >= 4) { addSlot.style.display = 'none'; }
+  else {
+    addSlot.style.display = 'flex';
+    document.getElementById('avatarAddLabel').textContent = avatarImages.length === 0 ? 'Charger Image Source' : `Ajouter Ref (${avatarImages.length}/4)`;
+    document.getElementById('avatarInput').value = '';
+  }
+}
 
-async function generateImage() {
-  if (loading) return;
-  const subjectEl = document.getElementById('subject-input');
-  const subject = subjectEl ? subjectEl.value.trim() : S.subject;
-  if (!subject) { showError("Définissez le contexte émotionnel de la scène."); return; }
-  if (!API_KEY) { showError("⚠️ Entre ta clé API Google pour continuer."); return; }
+// ─── CONTROLS ─────────────────────────────────────────────
+function setRatio(btn, val) {
+  currentAspectRatio = val;
+  document.querySelectorAll('[data-ratio]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  saveState();
+}
+function setOpt(group, val) {
+  if (group === 'pov') { currentPov = val; ['exterior','interior'].forEach(v => document.getElementById('pov-'+v).classList.toggle('active-violet', v === val)); }
+  else if (group === 'inv') { currentInv = val; ['discreet','involved'].forEach(v => document.getElementById('inv-'+v).classList.toggle('active-indigo', v === val)); }
+  else if (group === 'dist') { currentDist = val; ['close','medium','far'].forEach(v => document.getElementById('dist-'+v).classList.toggle('active-blue', v === val)); }
+  saveState();
+}
+function setTag(group, val) {
+  if (group === 'angle') { currentAngle = val; ['face','side','back','shoulder','offset'].forEach(v => document.getElementById('angle-'+v).classList.toggle('active-slate', v === val)); }
+  else { currentHeight = val; ['eye-level','shoulder','low','high'].forEach(v => document.getElementById('height-'+v).classList.toggle('active-slate', v === val)); }
+  saveState();
+}
+function updateSlider(key, val) {
+  const map = { asym:'asymVal', imp:'impVal', int:'intVal', focus:'focusVal' };
+  document.getElementById(map[key]).textContent = val + '%';
+  saveState();
+}
+function togglePerception() { humanPerceptionMode = !humanPerceptionMode; applyPerceptionUI(humanPerceptionMode); saveState(); }
+function applyPerceptionUI(on) {
+  document.getElementById('perceptionToggle').className = 'toggle ' + (on ? 'on' : 'off');
+  document.getElementById('perceptionIcon').className = 'perception-icon ' + (on ? 'on' : 'off');
+  document.getElementById('perceptionStatus').textContent = on ? 'Simulation active' : 'Moteur standard';
+}
 
-  S.subject = subject;
-  saveSettings();
+// ─── SAVE STATE (identique à App.tsx useEffect) ───────────
+function saveState() {
+  try {
+    localStorage.setItem('studio-pov-state', JSON.stringify({
+      avatarImages,
+      subject: document.getElementById('subject').value,
+      pov: currentPov, involvement: currentInv, angle: currentAngle,
+      height: currentHeight, distance: currentDist, aspectRatio: currentAspectRatio,
+      asymmetry: parseInt(document.getElementById('asymSlider').value),
+      imperfection: parseInt(document.getElementById('impSlider').value),
+      intimacy: parseInt(document.getElementById('intSlider').value),
+      focus: parseInt(document.getElementById('focusSlider').value),
+      humanPerceptionMode
+    }));
+  } catch(e) {}
+}
+document.getElementById('subject').addEventListener('input', saveState);
 
-  loading = true;
-  loadingMsgIdx = 0;
-  showError(null);
-  renderGenerateBtn();
+// ─── API (identique à geminiService.ts) ───────────────────
+const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-  loadingInterval = setInterval(() => {
-    loadingMsgIdx = (loadingMsgIdx + 1) % LOADING_MSGS.length;
-    const el = document.getElementById('loading-msg');
-    if (el) el.textContent = LOADING_MSGS[loadingMsgIdx];
-  }, 3000);
+async function generatePOVImage(settings) {
+  const apiAspectRatio = settings.aspectRatio === '4:5' ? '3:4' : settings.aspectRatio;
 
-  const apiAspectRatio = S.aspectRatio === '4:5' ? '3:4' : S.aspectRatio;
-
-  let formatInfluence = '';
-  if (S.aspectRatio === '9:16') formatInfluence = "FORMAT STORY (9:16): Vertical smartphone feel, intimate and visceral.";
-  else if (S.aspectRatio === '16:9') formatInfluence = "FORMAT CINEMA (16:9): Wide scope, cinematic distance.";
-  else if (S.aspectRatio === '1:1') formatInfluence = "FORMAT CARRÉ (1:1): Balanced and frontal.";
+  let formatInfluence;
+  if (settings.aspectRatio === '9:16') formatInfluence = "FORMAT STORY (9:16): Vertical smartphone feel, intimate and visceral.";
+  else if (settings.aspectRatio === '16:9') formatInfluence = "FORMAT CINEMA (16:9): Wide scope, cinematic distance.";
+  else if (settings.aspectRatio === '1:1') formatInfluence = "FORMAT CARRÉ (1:1): Balanced and frontal.";
   else formatInfluence = "FORMAT FEED (4:5): Realistic vertical composition.";
 
   const povSpecs = `
-    POSITION: ${S.pov === 'interior' ? 'Intérieur' : 'Extérieur'}
-    STATUT: ${S.involvement === 'discreet' ? 'Discret' : 'Impliqué'}
-    ANGLE: ${S.angle}
-    HAUTEUR: ${S.height}
-    DISTANCE: ${S.distance}
-    ASYMÉTRIE: ${S.asymmetry}%
-    IMPERFECTION: ${S.imperfection}%
-    INTIMITÉ: ${S.intimacy}%
-    FOCUS: ${S.focus}% (${S.focus < 30 ? 'Spontané' : S.focus < 60 ? 'Naturel' : S.focus < 85 ? 'Intentionnel' : 'Dirigé'})
-    MODE PERCEPTION: ${S.humanPerceptionMode ? 'ACTIVÉ (Simulation perceptive avancée)' : 'DÉSACTIVÉ'}
+    POSITION: ${settings.pov === 'interior' ? 'Intérieur' : 'Extérieur'}
+    STATUT: ${settings.involvement === 'discreet' ? 'Discret' : 'Impliqué'}
+    ANGLE: ${settings.angle}
+    HAUTEUR: ${settings.height}
+    DISTANCE: ${settings.distance}
+    ASYMÉTRIE: ${settings.asymmetry}%
+    IMPERFECTION: ${settings.imperfection}%
+    INTIMITÉ: ${settings.intimacy}%
+    FOCUS: ${settings.focus}% (${settings.focus < 30 ? 'Spontané' : settings.focus < 60 ? 'Naturel' : settings.focus < 85 ? 'Intentionnel' : 'Dirigé'})
+    MODE PERCEPTION: ${settings.humanPerceptionMode ? 'ACTIVÉ (Simulation perceptive avancée)' : 'DÉSACTIVÉ'}
     ${formatInfluence}
   `;
 
-  const perceptionInstructions = S.humanPerceptionMode ? `
+  const perceptionInstructions = settings.humanPerceptionMode ? `
     MODE PERCEPTION HUMAINE ACTIVÉ :
     - AMPLIFIER LA COHÉRENCE HUMAINE : Respecter les micro-logiques corporelles et gestuelles.
     - TEXTURE PEAU RÉALISTE : Micro-relief visible, pores subtils, irrégularités naturelles. INTERDICTION DE LISSAGE.
@@ -671,12 +804,13 @@ async function generateImage() {
     - MICRO-STABILITÉ : Légère respiration du cadre, équilibre organique.
   ` : '';
 
+  const focusLabel = settings.focus < 30 ? 'Spontané' : settings.focus < 60 ? 'Naturel' : settings.focus < 85 ? 'Intentionnel' : 'Dirigé';
   const focusInstructions = `
-    FOCUS (${S.focus}%) :
+    FOCUS (${settings.focus}%) : 
     - Hiérarchie locale de netteté : Priorité légère du sujet.
     - Cohérence du regard : Stabilisation naturelle de l'attention.
     - Micro-contraste local : Renforcer la texture naturelle (jamais de lissage).
-    ${S.humanPerceptionMode ? "- En mode Perception ON, le focus agit de manière plus organique et protège la texture peau." : ""}
+    ${settings.humanPerceptionMode ? "- En mode Perception ON, le focus agit de manière plus organique et protège la texture peau." : ""}
   `;
 
   const systemInstruction = `
@@ -685,7 +819,7 @@ async function generateImage() {
     AUCUN LISSAGE ARTIFICIEL. RENDU 4K NATIVE.
     ${perceptionInstructions}
     ${focusInstructions}
-
+    
     MODULES DE RÉALISME PHOTOGRAPHIQUE (COMPLÉMENTAIRES) :
     - MICRO-TEXTURES VISAGE : Grain de peau naturel, pores subtils visibles, micro-variations de couleur, relief naturel (nez, pommettes, front), micro-ombres. AUCUN LISSAGE. Mise au point sur yeux/visage/mains.
     - MICRO-EXPRESSIONS HUMAINES : Asymétrie légère des lèvres, tension subtile yeux, expressions naturelles non figées, micro-variations musculaires.
@@ -699,284 +833,210 @@ async function generateImage() {
     GARDE-FOUS : Interdiction de redesign décor, beauté automatique, sourire figé, peau lisse, mains irréalistes.
   `;
 
-  const prompt = `Sujet : ${subject}. POV Specs : ${povSpecs}. Photographie ultra-réaliste 4K, texture de peau humaine vivante.`;
+  const prompt = `Sujet : ${settings.subject}. POV Specs : ${povSpecs}. Photographie ultra-réaliste 4K, texture de peau humaine vivante.`;
 
-  let parts = [];
-  if (avatarImages.length > 0) {
-    avatarImages.forEach(img => {
-      const base64 = img.split(',')[1];
-      parts.push({ inlineData: { mimeType: 'image/jpeg', data: base64 } });
+  // Build parts (identique à geminiService.ts)
+  const parts = [];
+  if (settings.avatarImages && settings.avatarImages.length > 0) {
+    settings.avatarImages.forEach(img => {
+      parts.push({ inlineData: { data: img.split(',')[1], mimeType: 'image/jpeg' } });
     });
   }
   parts.push({ text: prompt });
-  const contents = [{ role: 'user', parts }];
+
   const maxAttempts = isMobile ? 5 : 3;
+  let lastError;
 
-  try {
-    let imageUrl = null;
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent?key=${API_KEY}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents,
-            systemInstruction: { parts: [{ text: systemInstruction }] },
-            generationConfig: { responseModalities: ['IMAGE', 'TEXT'] }
-          })
-        });
-
-        if (!response.ok) {
-          const err = await response.json().catch(() => ({}));
-          const msg = err?.error?.message || `HTTP ${response.status}`;
-          throw new Error(msg);
-        }
-
-        const data = await response.json();
-        const resParts = data.candidates?.[0]?.content?.parts;
-        if (Array.isArray(resParts)) {
-          for (const p of resParts) {
-            if (p.inlineData?.mimeType?.startsWith('image/')) {
-              imageUrl = `data:${p.inlineData.mimeType};base64,${p.inlineData.data}`;
-              break;
-            }
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const body = {
+        system_instruction: { parts: [{ text: systemInstruction }] },
+        contents: [{ parts }],
+        generation_config: {
+          response_modalities: ["IMAGE", "TEXT"],
+          image_generation_config: {
+            aspect_ratio: apiAspectRatio,
+            image_size: "4K"
           }
         }
-        if (!imageUrl) throw new Error("Image introuvable dans la réponse.");
-        // Compression JPEG pour compatibilité réseaux sociaux
-        imageUrl = await compressImage(imageUrl, S.aspectRatio);
-        break;
-      } catch (err) {
-        const isRetryable = err.message?.includes('503') || err.message?.toLowerCase().includes('overloaded') || err.message?.includes('502');
-        if (isRetryable && attempt < maxAttempts) { await sleep(Math.pow(2, attempt) * 1500); continue; }
-        throw err;
-      }
-    }
+      };
 
-    results = [{ id: Date.now().toString(), url: imageUrl, prompt: subject, aspectRatio: S.aspectRatio, timestamp: Date.now() }, ...results].slice(0, 5);
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent?key=${API_KEY}`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+      );
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        const msg = errData?.error?.message || `HTTP ${res.status}`;
+        if ((res.status === 503 || res.status === 502) && attempt < maxAttempts) {
+          await sleep(Math.pow(2, attempt) * 1500); continue;
+        }
+        if (res.status === 403 || msg.includes('entity was not found') || msg.includes('API_KEY')) throw new Error('API_KEY_RESET_REQUIRED');
+        throw new Error(msg);
+      }
+
+      const data = await res.json();
+      if (!data.candidates || data.candidates.length === 0) throw new Error("Le modèle n'a renvoyé aucun résultat.");
+      const candidate = data.candidates[0];
+      if (candidate.finishReason === 'SAFETY' || candidate.finishReason === 'RECITATION') throw new Error("La génération a été bloquée par les filtres de sécurité. Essayez de reformuler votre demande.");
+      if (!candidate.content || !candidate.content.parts) throw new Error("Contenu de réponse vide ou malformé.");
+      for (const part of candidate.content.parts) {
+        if (part.inlineData) return `data:image/png;base64,${part.inlineData.data}`;
+      }
+      throw new Error("L'image n'a pas pu être extraite de la réponse.");
+
+    } catch(err) {
+      lastError = err;
+      const msg = err.message || '';
+      if ((msg.includes('503') || msg.toLowerCase().includes('overloaded') || msg.includes('502')) && attempt < maxAttempts) {
+        await sleep(Math.pow(2, attempt) * 1500); continue;
+      }
+      throw err;
+    }
+  }
+  throw lastError;
+}
+
+// ─── GENERATE (identique à App.tsx handleGenerate) ────────
+async function handleGenerate() {
+  if (loading) return;
+  const subject = document.getElementById('subject').value.trim();
+  if (!subject) { showError("Définissez le contexte émotionnel de la scène."); return; }
+
+  setLoadingState(true);
+  hideError();
+
+  try {
+    const settings = {
+      pov: currentPov, involvement: currentInv, angle: currentAngle,
+      height: currentHeight, distance: currentDist, aspectRatio: currentAspectRatio,
+      subject,
+      avatarImages: avatarImages.length > 0 ? avatarImages : undefined,
+      asymmetry: parseInt(document.getElementById('asymSlider').value),
+      imperfection: parseInt(document.getElementById('impSlider').value),
+      intimacy: parseInt(document.getElementById('intSlider').value),
+      focus: parseInt(document.getElementById('focusSlider').value),
+      humanPerceptionMode
+    };
+
+    let base64Url = await generatePOVImage(settings);
+
+    // base64 → blob URL (identique à App.tsx pour libérer mémoire)
+    const byteString = atob(base64Url.split(',')[1]);
+    const mimeString = base64Url.split(',')[0].split(':')[1].split(';')[0];
+    base64Url = null;
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+    const blobUrl = URL.createObjectURL(new Blob([ab], { type: mimeString }));
+
+    const newImg = { id: Date.now().toString(), url: blobUrl, prompt: subject, aspectRatio: currentAspectRatio, timestamp: Date.now() };
+
+    // Max 5 images, révoquer la plus ancienne (identique à App.tsx)
+    if (results.length >= 5) {
+      const last = results[results.length - 1];
+      dbDelete(last.id).catch(console.error);
+      if (last.url.startsWith('blob:')) URL.revokeObjectURL(last.url);
+    }
+    results = [newImg, ...results].slice(0, 5);
+    dbSave(newImg).catch(console.error);
     renderResults();
-  } catch (err) {
-    showError(err.message || 'Erreur de génération.');
+
+  } catch(err) {
+    const msg = err?.message || String(err);
+    if (msg === 'API_KEY_RESET_REQUIRED' || msg.includes('entity was not found')) {
+      showError("Clé API non valide ou projet facturé requis. Cliquez sur « Changer de clé API ».");
+    } else {
+      showError(msg || "Erreur de génération. Le serveur est peut-être trop sollicité.");
+    }
   } finally {
-    loading = false;
-    clearInterval(loadingInterval);
-    renderGenerateBtn();
+    setLoadingState(false);
   }
 }
 
-// ═══════════════════════════════════════════════
-// DOWNLOAD
-// ═══════════════════════════════════════════════
-function downloadImage(idx) {
-  const res = results[idx];
-  if (!res) return;
+function setLoadingState(on) {
+  loading = on;
+  const btn = document.getElementById('generateBtn');
+  const sub = document.getElementById('genSub');
+  document.getElementById('genLabel').textContent = on ? 'CALCUL EN COURS...' : 'DÉCLENCHER CAPTURE 4K';
+  const icon = document.getElementById('genIcon');
+  if (on) {
+    btn.classList.add('loading');
+    icon.innerHTML = '<circle cx="12" cy="12" r="10" stroke="#94a3b8" stroke-width="2" fill="none"/><polyline points="12 6 12 12 16 14" stroke="#94a3b8" stroke-width="2" fill="none"/>';
+    sub.style.display = 'block';
+    sub.textContent = LOADING_MESSAGES[0];
+    loadingMsgIdx = 0;
+    loadingInterval = setInterval(() => {
+      loadingMsgIdx = (loadingMsgIdx + 1) % LOADING_MESSAGES.length;
+      sub.textContent = LOADING_MESSAGES[loadingMsgIdx];
+    }, 3000);
+  } else {
+    btn.classList.remove('loading');
+    icon.innerHTML = '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="white" stroke="none"/>';
+    sub.style.display = 'none';
+    clearInterval(loadingInterval);
+  }
+}
+
+// ─── RENDER RESULTS ───────────────────────────────────────
+const RATIO_CLASS = { '9:16':'r9x16', '16:9':'r16x9', '4:5':'r4x5', '1:1':'r1x1' };
+
+function renderResults() {
+  const list = document.getElementById('resultsList');
+  const actions = document.getElementById('resultsActions');
+  document.getElementById('captureCount').textContent = results.length + ' CAPTURES';
+  actions.style.display = results.length > 0 ? 'flex' : 'none';
+  document.getElementById('dlAllBtn').style.display = results.length > 1 ? 'flex' : 'none';
+
+  if (results.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-glow"><div class="empty-icon-wrap"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="2" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div></div><div class="empty-text"><p>INITIER LE SIGNAL</p><p>Le studio est prêt. Configurez l'optique pour capturer la réalité.</p></div></div>`;
+    return;
+  }
+
+  list.innerHTML = results.map((res, idx) => `
+    <div class="img-card">
+      <div class="img-wrap ${RATIO_CLASS[res.aspectRatio]||'r9x16'}" onclick="downloadImg('${res.url}','${idx+1}')">
+        <img src="${res.url}" alt="${res.prompt.replace(/"/g,'&quot;')}" draggable="false">
+        <div class="img-tags">
+          <div class="img-tag-white">FORMAT ${res.aspectRatio}</div>
+          <div class="img-tag-blue">STUDIO POV 4K</div>
+        </div>
+        <div class="img-hover-dl"><div class="img-hover-dl-btn"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div></div>
+        <div class="img-hover-overlay"></div>
+      </div>
+      <div class="img-card-info">
+        <p class="img-prompt">"${res.prompt.replace(/</g,'&lt;').replace(/>/g,'&gt;')}"</p>
+        <div class="img-meta">
+          <div class="img-meta-left">
+            <span>CAPTURED_AT: ${new Date(res.timestamp).toLocaleTimeString()}</span>
+            <span>UUID: TR_${res.id.slice(-8)}</span>
+          </div>
+          <div class="img-meta-right">
+            <button class="btn-dl-img" onclick="downloadImg('${res.url}','${idx+1}')">TÉLÉCHARGER L'IMAGE</button>
+            <span class="mobile-save-hint">APPUI LONG POUR ENREGISTRER SUR MOBILE</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function downloadImg(url, idx) {
   const a = document.createElement('a');
-  a.href = res.url;
-  a.download = `studio-pov-action_${idx+1}.jpg`;
+  a.href = url; a.download = `studio-pov-capture-${idx}.png`;
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
-
-// ═══════════════════════════════════════════════
-// UPLOAD AVATAR
-// ═══════════════════════════════════════════════
-function resizeImage(base64Str) {
-  return new Promise(resolve => {
-    const img = new Image();
-    img.src = base64Str;
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const MAX = 1024;
-      let w = img.width, h = img.height;
-      if (w > h) { if (w > MAX) { h *= MAX/w; w = MAX; } }
-      else { if (h > MAX) { w *= MAX/h; h = MAX; } }
-      canvas.width = w; canvas.height = h;
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      resolve(canvas.toDataURL('image/jpeg', 0.8));
-    };
-  });
+function downloadAll() { results.forEach((res, idx) => setTimeout(() => downloadImg(res.url, idx+1), idx * 300)); }
+async function resetAll() {
+  if (!confirm("Voulez-vous vraiment supprimer toutes les captures et réinitialiser les réglages ?")) return;
+  results.forEach(res => { if (res.url.startsWith('blob:')) URL.revokeObjectURL(res.url); });
+  await dbClear();
+  localStorage.removeItem('studio-pov-state');
+  window.location.reload();
 }
-
-async function handleAvatarFiles(files) {
-  if (!files || files.length === 0) return;
-  const remaining = 4 - avatarImages.length;
-  const toProcess = Array.from(files).slice(0, remaining);
-  for (const file of toProcess) {
-    await new Promise(resolve => {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const resized = await resizeImage(reader.result);
-        avatarImages = [...avatarImages, resized].slice(0, 4);
-        resolve();
-      };
-      reader.readAsDataURL(file);
-    });
-  }
-  await saveAvatarsToDB();
-  renderAvatarGrid();
-  rebindAvatarGrid();
-}
-
-// ═══════════════════════════════════════════════
-// REBIND — attache les event listeners aux éléments dynamiques
-// ═══════════════════════════════════════════════
-function rebindAvatarGrid() {
-  document.querySelectorAll('.remove-avatar').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const idx = parseInt(btn.dataset.idx);
-      avatarImages = avatarImages.filter((_, i) => i !== idx);
-      await saveAvatarsToDB();
-      renderAvatarGrid();
-      rebindAvatarGrid();
-    });
-  });
-  document.querySelectorAll('.avatar-file-input').forEach(input => {
-    input.addEventListener('change', e => handleAvatarFiles(e.target.files));
-  });
-}
-
-function rebindResults() {
-  // delegated sur le container
-  const container = document.getElementById('results-container');
-  if (!container) return;
-  container.addEventListener('click', e => {
-    const dlBtn = e.target.closest('[data-download]');
-    if (dlBtn) downloadImage(parseInt(dlBtn.dataset.download));
-  });
-}
-
-// ═══════════════════════════════════════════════
-// INIT SLIDERS
-// ═══════════════════════════════════════════════
-function initSliders() {
-  const sliders = [
-    { id: 'asymmetry', key: 'asymmetry' },
-    { id: 'imperfection', key: 'imperfection' },
-    { id: 'intimacy', key: 'intimacy' },
-    { id: 'focus', key: 'focus' }
-  ];
-  sliders.forEach(({ id, key }) => {
-    const slider = document.getElementById(`slider-${id}`);
-    const val = document.getElementById(`val-${id}`);
-    if (!slider) return;
-    slider.value = S[key];
-    val.textContent = S[key] + '%';
-    slider.addEventListener('input', () => {
-      S[key] = parseInt(slider.value);
-      val.textContent = slider.value + '%';
-      saveSettings();
-    });
-  });
-}
-
-// ═══════════════════════════════════════════════
-// INIT TEXTAREA
-// ═══════════════════════════════════════════════
-function initTextarea() {
-  const ta = document.getElementById('subject-input');
-  if (!ta) return;
-  ta.value = S.subject;
-  ta.addEventListener('input', () => { S.subject = ta.value; saveSettings(); });
-}
-
-// ═══════════════════════════════════════════════
-// INIT BOUTONS FIXES
-// ═══════════════════════════════════════════════
-function initFixedButtons() {
-  // Clé API
-  document.getElementById('btn-save-key')?.addEventListener('click', () => {
-    const input = document.getElementById('api-key-input');
-    const key = input?.value.trim() || '';
-    if (!key || !key.startsWith('AIza')) { alert('Entre une clé API Google valide (commence par AIza...)'); return; }
-    API_KEY = key;
-    localStorage.setItem('studio_pov_apikey', key);
-    showScreen('splash');
-  });
-  document.getElementById('api-key-input')?.addEventListener('keydown', e => {
-    if (e.key === 'Enter') document.getElementById('btn-save-key')?.click();
-  });
-
-  // Splash → Main
-  document.getElementById('btn-enter-studio')?.addEventListener('click', () => showScreen('main'));
-
-  // Header logo → Splash
-  document.getElementById('btn-go-splash')?.addEventListener('click', () => showScreen('splash'));
-
-  // Changer clé
-  document.getElementById('btn-change-key')?.addEventListener('click', () => {
-    localStorage.removeItem('studio_pov_apikey');
-    API_KEY = '';
-    showScreen('apikey');
-  });
-
-  // HPM toggle
-  document.getElementById('hpm-toggle')?.addEventListener('click', () => {
-    S.humanPerceptionMode = !S.humanPerceptionMode;
-    saveSettings();
-    renderHPM();
-  });
-
-  // Générer
-  document.getElementById('btn-generate')?.addEventListener('click', generateImage);
-
-  // Vider résultats
-  document.getElementById('btn-clear')?.addEventListener('click', () => { results = []; renderResults(); });
-
-  // Télécharger tout
-  document.getElementById('btn-dl-all')?.addEventListener('click', () => {
-    results.forEach((res, i) => setTimeout(() => downloadImage(i), i * 300));
-  });
-}
-
-function initButtonGroups() {
-  renderButtonGroup('pov-grid',
-    [{id:'exterior',label:'Extérieur'},{id:'interior',label:'Présent'}],
-    S.pov, v => { S.pov = v; saveSettings(); renderButtonGroup('pov-grid', [{id:'exterior',label:'Extérieur'},{id:'interior',label:'Présent'}], S.pov, arguments.callee, 'bg-violet-600 border-violet-600 text-white shadow-xl'); },
-    'bg-violet-600 border-violet-600 text-white shadow-xl'
-  );
-  renderButtonGroup('involvement-grid',
-    [{id:'discreet',label:'Observateur'},{id:'involved',label:'Participant'}],
-    S.involvement, v => { S.involvement = v; saveSettings(); renderButtonGroup('involvement-grid', [{id:'discreet',label:'Observateur'},{id:'involved',label:'Participant'}], S.involvement, arguments.callee, 'bg-indigo-600 border-indigo-600 text-white shadow-xl'); },
-    'bg-indigo-600 border-indigo-600 text-white shadow-xl'
-  );
-  renderButtonGroup('distance-grid',
-    [{id:'close',label:'Proche'},{id:'medium',label:'Moyenne'},{id:'far',label:'Loin'}],
-    S.distance, v => { S.distance = v; saveSettings(); renderButtonGroup('distance-grid', [{id:'close',label:'Proche'},{id:'medium',label:'Moyenne'},{id:'far',label:'Loin'}], S.distance, arguments.callee, 'bg-blue-600 text-white border-blue-600 shadow-lg'); },
-    'bg-blue-600 text-white border-blue-600 shadow-lg'
-  );
-}
-
-// ═══════════════════════════════════════════════
-// DÉMARRAGE
-// ═══════════════════════════════════════════════
-async function init() {
-  loadSettings();
-  await openDB();
-  await loadAvatarsFromDB();
-
-  if (isMobile) {
-    document.getElementById('mobile-warn')?.classList.remove('hidden');
-  }
-
-  // Déterminer l'écran initial
-  if (!API_KEY) showScreen('apikey');
-  else showScreen('splash');
-
-  // Init tous les composants de l'écran main (ils sont dans le DOM, juste cachés)
-  initFixedButtons();
-  initSliders();
-  initTextarea();
-  initButtonGroups();
-  renderAngleGrid();
-  renderRatioGrid();
-  renderAvatarGrid();
-  rebindAvatarGrid();
-  renderHPM();
-  renderResults();
-  renderGenerateBtn();
-  rebindResults();
-}
-
-init();
+function showError(msg) { document.getElementById('errorMsg').textContent = msg; document.getElementById('errorBox').style.display = 'flex'; }
+function hideError() { document.getElementById('errorBox').style.display = 'none'; }
 </script>
 </body>
 </html>
