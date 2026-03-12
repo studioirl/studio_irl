@@ -368,18 +368,14 @@ function pageApiKey() {
   });
 
   const btn = el('button',{class:'btn-gen',style:'margin-bottom:.75rem'},"ACCÉDER À L'APPLICATION");
-  btn.addEventListener('click', async()=>{
-    if (!S.apiKey.trim()) { alert('Veuillez entrer une clé API.'); return; }
-    btn.disabled=true; btn.textContent='Vérification...';
-    try {
-      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${S.apiKey.trim()}`,
-        {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:'Hi'}]}]})});
-      if (!r.ok) throw new Error();
-      S.apiKey=S.apiKey.trim(); localStorage.setItem('sg_key',S.apiKey); S.apiOk=true; render();
-    } catch {
-      alert('Clé API invalide. Vérifiez sur aistudio.google.com');
-      btn.disabled=false; btn.textContent="ACCÉDER À L'APPLICATION";
-    }
+  btn.addEventListener('click', ()=>{
+    const key = S.apiKey.trim();
+    if (!key) { alert('Veuillez entrer une clé API.'); return; }
+    if (!key.startsWith('AIza')) { alert('Format invalide. La clé doit commencer par "AIza".'); return; }
+    S.apiKey = key;
+    localStorage.setItem('sg_key', key);
+    S.apiOk = true;
+    render();
   });
 
   const note = el('p',{style:'color:#4b5563;font-size:.67rem;text-align:center;line-height:1.6;font-family:var(--mono)'},'🔒 Stockée localement, jamais partagée. Générations décomptées sur votre compte Google AI Studio.');
@@ -981,7 +977,7 @@ async function doGenerate() {
     if(S.p1)parts.push({inlineData:{data:S.p1.split(',')[1],mimeType:'image/jpeg'}});
     if(S.p2)parts.push({inlineData:{data:S.p2.split(',')[1],mimeType:'image/jpeg'}});
 
-    const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent?key=${S.apiKey}`,
+    const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent?key=${S.apiKey}`,
       {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts}],generationConfig:{}})});
 
     if(!res.ok){const err=await res.json().catch(()=>({}));if(res.status===400||res.status===403)throw new Error('API_KEY_ERROR');throw new Error(err.error?.message||'Erreur API');}
