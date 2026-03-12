@@ -291,42 +291,49 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
 <script>
-// Ces fonctions doivent être en script classique pour être accessibles via onclick HTML
+let GoogleGenAI, Type;
+
+async function initSDK() {
+  const mod = await import("https://esm.sh/@google/genai@^1.34.0");
+  GoogleGenAI = mod.GoogleGenAI;
+  Type = mod.Type;
+}
+initSDK();
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let API_KEY = sessionStorage.getItem('studio_scene_key') || null;
+
+// ─── API KEY ──────────────────────────────────────────────────────────────────
 function activateApiKey() {
   const key = document.getElementById('apiKeyInput').value.trim();
   if (!key || !key.startsWith('AIza')) {
     document.getElementById('apiKeyError').classList.remove('hidden');
     return;
   }
+  API_KEY = key;
   sessionStorage.setItem('studio_scene_key', key);
   document.getElementById('apiKeyModal').classList.add('hidden');
   document.getElementById('mainApp').classList.remove('hidden');
-  // Update API_KEY in module scope via custom event
-  window.dispatchEvent(new CustomEvent('apikeyset', { detail: key }));
 }
 
 function resetApiKey() {
   sessionStorage.removeItem('studio_scene_key');
+  API_KEY = null;
   document.getElementById('apiKeyInput').value = '';
   document.getElementById('apiKeyModal').classList.remove('hidden');
   document.getElementById('mainApp').classList.add('hidden');
-  window.dispatchEvent(new CustomEvent('apikeyeset', { detail: null }));
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('apiKeyInput').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') activateApiKey();
-  });
+document.getElementById('apiKeyInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') activateApiKey();
 });
-</script>
-<script type="module">
-import { GoogleGenAI, Type } from "https://esm.sh/@google/genai@^1.34.0";
 
-// ─── STATE ────────────────────────────────────────────────────────────────────
-let API_KEY = sessionStorage.getItem('studio_scene_key') || null;
+// Auto-show app if key exists in session
+if (API_KEY) {
+  document.getElementById('apiKeyModal').classList.add('hidden');
+  document.getElementById('mainApp').classList.remove('hidden');
+}
 
-window.addEventListener('apikeyset', (e) => { API_KEY = e.detail; });
-window.addEventListener('apikeyeset', () => { API_KEY = null; });
 let referenceImage = null;
 let referenceMime = 'image/jpeg';
 let analysisData = null;
@@ -349,7 +356,7 @@ function showError(msg) {
   b.classList.remove('hidden');
   b.style.display = 'flex';
 }
-window.hideError = function() { document.getElementById('errorBanner').classList.add('hidden'); };
+function hideError() { document.getElementById('errorBanner').classList.add('hidden'); };
 
 function showSuccess(msg) {
   const b = document.getElementById('successBanner');
@@ -371,7 +378,7 @@ function setButtonLoading(btnId, loading, defaultContent) {
 }
 
 // ─── IMAGE UPLOAD ─────────────────────────────────────────────────────────────
-window.handleImageUpload = function(e) {
+function handleImageUpload(e) {
   const file = e.target.files?.[0];
   if (!file) return;
   const reader = new FileReader();
@@ -395,7 +402,7 @@ window.handleImageUpload = function(e) {
   reader.readAsDataURL(file);
 };
 
-window.resetImage = function() {
+function resetImage() {
   referenceImage = null;
   analysisData = null;
   generatedPrompts = [];
@@ -405,14 +412,14 @@ window.resetImage = function() {
 };
 
 // ─── MODE & ASPECT RATIO ──────────────────────────────────────────────────────
-window.setMode = function(auto) {
+function setMode(auto) {
   isAutoMode = auto;
   document.getElementById('modeAutoBtn').className = `px-10 py-3 rounded-full text-[10px] font-black transition-all ${auto ? 'bg-white text-[#050b18] shadow-xl' : 'opacity-40 hover:opacity-100'}`;
   document.getElementById('modeManualBtn').className = `px-10 py-3 rounded-full text-[10px] font-black transition-all ${!auto ? 'bg-white text-[#050b18] shadow-xl' : 'opacity-40 hover:opacity-100'}`;
   document.getElementById('actionInputSection').classList.toggle('hidden', auto);
 };
 
-window.setAspectRatio = function(ratio) {
+function setAspectRatio(ratio) {
   aspectRatio = ratio;
   ['1:1','16:9','9:16'].forEach(r => {
     const id = 'ratio_' + r.replace(':','_');
@@ -426,7 +433,7 @@ window.setAspectRatio = function(ratio) {
 };
 
 // ─── ANALYZE ─────────────────────────────────────────────────────────────────
-window.handleAnalyze = async function() {
+async function handleAnalyze() {
   if (!referenceImage) return;
   setButtonLoading('analyzeBtn', true, '');
   hideError();
@@ -484,7 +491,7 @@ window.handleAnalyze = async function() {
 };
 
 // ─── GENERATE SEQUENCE ────────────────────────────────────────────────────────
-window.handleGenerateSequence = async function() {
+async function handleGenerateSequence() {
   if (!analysisData) { showError("Veuillez d'abord analyser l'image source."); return; }
   const btn = document.getElementById('generateBtn');
   btn.disabled = true;
@@ -578,7 +585,7 @@ function renderStoryboard() {
 }
 
 // ─── RENDER IMAGE ─────────────────────────────────────────────────────────────
-window.renderPlan = async function(id, index) {
+async function renderPlan(id, index) {
   if (!referenceImage || !analysisData) return;
   const p = generatedPrompts[index];
   if (!p) return;
@@ -654,7 +661,7 @@ window.renderPlan = async function(id, index) {
 
 // ─── DOWNLOAD ─────────────────────────────────────────────────────────────────
 
-window.downloadImage = function(id, num) {
+function downloadImage(id, num) {
   const url = generatedImages[id];
   if (!url) return;
   const link = document.createElement('a');
@@ -665,7 +672,7 @@ window.downloadImage = function(id, num) {
   document.body.removeChild(link);
 };
 
-window.downloadAllAsZip = async function() {
+async function downloadAllAsZip() {
   const zip = new JSZip();
   const folder = zip.folder("studio-scene-sequence");
   Object.entries(generatedImages).forEach(([id, base64], index) => {
