@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Studio ARCHITECTE AI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .font-serif { font-family: 'Playfair Display', serif; }
+    @keyframes progress { 0%{width:0%} 50%{width:70%} 100%{width:100%} }
+    .animate-progress { animation: progress 30s ease-in-out infinite; }
+    @keyframes bounce { 0%,100%{transform:translateY(-10%)} 50%{transform:translateY(0)} }
+    .animate-bounce { animation: bounce 1s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+    .animate-pulse { animation: pulse 2s cubic-bezier(.4,0,.6,1) infinite; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+    .animate-in { animation: fadeIn 0.5s ease forwards; }
+    ::-webkit-scrollbar{width:6px} ::-webkit-scrollbar-thumb{background:#475569;border-radius:4px}
+  </style>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-950">
+<div id="root"></div>
+
+<script type="module">
+// ============================================================
+// IMPORTS
+// ============================================================
+import { GoogleGenAI } from "https://esm.sh/@google/genai@^1.34.0";
+
+// ============================================================
+// REACT + REACT-DOM
+// ============================================================
+import React, { useState, useEffect, useRef } from "https://esm.sh/react@^19.2.3";
+import ReactDOM from "https://esm.sh/react-dom@^19.2.3/client";
+
+// ============================================================
+// LUCIDE ICONS
+// ============================================================
+import {
+  Home, ArrowRight, Download, X, ChevronLeft, Sparkles, LayoutGrid, Building2,
+  AlertCircle, Construction, Trees, Droplet, Waves, Layers, Box, CheckCircle2,
+  Gamepad2, Palmtree, Wind, Lightbulb, MapPin, Building, Hammer, Upload, Trash2,
+  Dumbbell, Scissors, Camera, Info, Key, Eye, EyeOff
+} from "https://esm.sh/lucide-react@^0.562.0";
+
+// ============================================================
+// JSZIP
+// ============================================================
+import JSZip from "https://esm.sh/jszip@^3.10.1";
+
+// ============================================================
+// CONSTANTS
+// ============================================================
+const BEDROOM_TYPES = [
+  { key: 'Adulte', label: 'Adulte (parentale)' },
+  { key: 'Enfant', label: 'Enfant' },
+  { key: 'Adolescent', label: 'Adolescent' },
+  { key: 'Bébé', label: 'Bébé' },
+  { key: 'Amis', label: 'Amis' },
+];
+const BATHROOM_TYPES = [
+  { key: 'Douche', label: 'Douche' },
+  { key: 'Baignoire', label: 'Baignoire' },
+  { key: 'Mixte', label: 'Mixte' },
+];
+const VILLA_ROOMS_EXHAUSTIVE = [
+  { id: 'Entrée', label: 'Entrée', mandatory: false },
+  { id: 'Escalier', label: 'Escalier', mandatory: true },
+  { id: 'Salon', label: 'Salon', mandatory: false },
+  { id: 'Salle à manger', label: 'Salle à manger', mandatory: false },
+  { id: 'Cuisine', label: 'Cuisine', mandatory: false },
+  { id: 'Cellier', label: 'Cellier (Nourriture)', mandatory: false },
+  { id: 'Bureau', label: 'Bureau', mandatory: false },
+  { id: 'Buanderie', label: 'Buanderie', mandatory: false },
+  { id: 'Cave à vin', label: 'Cave à vin', mandatory: false },
+  { id: 'WC RDC', label: 'WC RDC', mandatory: false },
+  { id: 'Salle de jeu', label: 'Salle de jeu', mandatory: false },
+  { id: 'Salle de sport', label: 'Salle de sport', mandatory: false },
+  { id: 'Jardin', label: 'Jardin', mandatory: false },
+  { id: 'Terrasse', label: 'Terrasse', mandatory: false },
+  { id: 'Garage', label: 'Garage (Technique)', mandatory: false },
+  { id: 'Atelier', label: 'Atelier Bricolage', mandatory: false },
+  { id: 'Dressing', label: 'Dressing', mandatory: false },
+  { id: 'Vanity', label: 'Coin Coiffeuse', mandatory: false },
+];
+const APPART_ROOMS_CHECKLIST = [
+  { id: 'Entrée', label: 'Entrée', mandatory: false },
+  { id: 'Salon', label: 'Salon', mandatory: false },
+  { id: 'Salle à manger', label: 'Salle à manger', mandatory: false },
+  { id: 'Cuisine', label: 'Cuisine', mandatory: false },
+  { id: 'Bureau', label: 'Bureau', mandatory: false },
+  { id: 'Salle de jeu', label: 'Salle de jeu', mandatory: false },
+  { id: 'Salle de sport', label: 'Salle de sport', mandatory: false },
+  { id: 'Dressing', label: 'Dressing', mandatory: false },
+  { id: 'Vanity', label: 'Coin Coiffeuse', mandatory: false },
+  { id: 'Balcon', label: 'Balcon', mandatory: false },
+  { id: 'Terrasse fermée', label: 'Terrasse fermée', mandatory: false },
+  { id: 'Cellier', label: 'Cellier (Nourriture)', mandatory: false },
+  { id: 'Buanderie', label: 'Buanderie', mandatory: false },
+  { id: 'Cave à vin', label: 'Cave à vin', mandatory: false },
+];
+const HOUSE_STYLES = ['Moderne','Contemporain','Minimaliste','Méditerranéen','Colonial','Urbain Chic','Luxe'];
+const APPART_STYLES = ['Moderne','Contemporain','Scandinave','Minimaliste','Industriel','Haussmannien','Luxe','Japandi','Bohème Chic'];
+const FURNITURE_STYLES = ['IKEA (Accessible & Réaliste)','Moderne','Bohème','Scandinave','Classique','Mixte'];
+const WALL_COLORS = [
+  'Blanc Albâtre','Beige Sable','Gris Perle','Gris Minéral','Gris Anthracite',
+  'Noir Mat','Bleu Canard','Bleu Nuit','Bleu Glacier','Vert Sauge',
+  'Vert Olive','Vert Forêt','Rose Poudré','Terracotta','Ocre Jaune',
+  'Bordeaux','Prune','Taupe','Greige','Crème'
+];
+const LOADING_MESSAGES = [
+  "Coulage des fondations en béton armé...",
+  "Élévation de la structure brute...",
+  "Installation des volumes architecturaux...",
+  "Vérification des accès et de la circulation...",
+  "Finalisation du squelette béton...",
+  "Intégration de la domotique et des réseaux...",
+  "Préparation du rendu 4K final..."
+];
+const GLOBAL_PROMPT_RULES = `
+MANDATORY TECHNICAL RULES:
+- VISIBLE LIGHT SWITCHES in every room near the door.
+- FUNCTIONAL LIGHTING (MUST have a visible chandelier or decorative pendant light in main rooms).
+- BATHROOMS/WC MUST HAVE VISIBLE VMC (Ventilation) on ceiling.
+- ALL CEILINGS MUST BE COMPLETELY FINISHED.
+- ALL SURFACES must show professional finishing in final renders.
+- JACUZZI MUST BE PERFECTLY ROUND AND FILLED WITH BUBBLING WATER.
+- NO RUGS in Bathrooms, Kitchens, or Garages.
+- GARAGE is strictly technical.
+- CELLIER = Food storage. CAVE = Wine racks.
+- APARTMENT MODE: NO POOLS, NO GARDENS, NO GARAGES.
+- T3/T4 APARTMENTS: PLAIN-PIED ONLY.
+`;
+
+// ============================================================
+// ARCHISPLIT SERVICE
+// ============================================================
+const getAllPossibleCameraSlices = () => [
+  { id:'CAMERA_SLICE_03', label:'🔄 Vue latérale gauche complète', camera_position:'mur_A', camera_orientation:'vers_mur_lateral', depth:'plan_moyen', visible_volume:'Côté gauche de la pièce isolé', excluded_volume:'Côté droit', camera_fov:75 },
+  { id:'CAMERA_SLICE_04', label:'🔄 Vue latérale droite complète', camera_position:'mur_B', camera_orientation:'vers_mur_lateral', depth:'plan_moyen', visible_volume:'Côté droit de la pièce isolé', excluded_volume:'Côté gauche', camera_fov:75 },
+  { id:'CAMERA_SLICE_07', label:'📐 Angle gauche (perspective diagonale)', camera_position:'angle', camera_orientation:'vers_angle', depth:'plan_large', visible_volume:'Angle gauche, profondeur spatiale, 2 murs visibles', excluded_volume:'Angle opposé', camera_fov:85 },
+  { id:'CAMERA_SLICE_08', label:'📐 Angle droit (perspective diagonale)', camera_position:'angle', camera_orientation:'vers_angle', depth:'plan_large', visible_volume:'Angle droit, profondeur spatiale, 2 murs visibles', excluded_volume:'Angle opposé', camera_fov:85 },
+  { id:'CAMERA_SLICE_10', label:'🎯 Vue centrée sur élément principal', camera_position:'centre', camera_orientation:'vers_mur_oppose', depth:'plan_moyen', visible_volume:'Centré sur élément principal (miroir, fenêtre, meuble central)', excluded_volume:'Éléments périphériques', camera_fov:65 },
+];
+
+// ============================================================
+// GEMINI SERVICE
+// ============================================================
+const getPieceConstraints = (piece, type, subType, isEmpty, gardenType, decorationParams = {}) => {
+  const lightingRule = isEmpty
+    ? "Construction site temporary lighting"
+    : "Modern CHANDELIER or PENDANT LIGHT fixture hanging from ceiling";
+  const base = {
+    mandatory: ["Visible wall light switch near door", lightingRule, "Finished ceiling (no raw concrete in final render)"],
+    forbidden: [],
+    context: ""
+  };
+  if (type === 'appartement' && piece.includes('Entrée immeuble')) {
+    base.mandatory.push("EXTERIOR STREET-LEVEL VIEW of modern residential apartment building entrance","LARGE GLASS DOOR","DIGITAL INTERCOM SYSTEM clearly visible","VISIBLE MAILBOX WALL through the glass door","Sidewalk and street pavement visible in foreground","NO interior furniture visible from outside");
+    base.forbidden.push("NO chairs, sofas, tables inside entrance area","NO people in shot","NO villa or house facade");
+    base.context = "EXTERIOR STREET VIEW of modern French apartment building glass entrance door";
+    return base;
+  }
+  if (type === 'appartement' && piece.includes('Hall immeuble')) {
+    base.mandatory.push("INTERIOR ground floor entrance hall of apartment building","WALL OF MAILBOXES prominently displayed","ELEVATOR DOOR clearly visible","Clean polished floor","Minimal functional space");
+    base.forbidden.push("ABSOLUTELY NO sofas, armchairs, benches","NO reception desk","NO people");
+    base.context = "FUNCTIONAL APARTMENT BUILDING ENTRANCE HALL";
+    return base;
+  }
+  if (piece === 'Ascenseur immeuble') {
+    base.mandatory.push("Modern elevator cabin INTERIOR view","Stainless steel walls","Elevator control panel with floor buttons","Mirror on back wall","Handrail mounted on walls");
+    base.forbidden.push("NO living room furniture","NO people");
+    base.context = "Interior of modern apartment building elevator cabin";
+    return base;
+  }
+  if (piece.includes('WC')) {
+    base.mandatory.push("Wall-mounted toilet bowl","Small wall-mounted sink (40cm max)","Toilet paper holder","Ceiling VMC vent");
+    base.forbidden.push("NO bathtubs","NO showers","NO large vanities","NO beds","NO sofas");
+    base.context = "TINY separate toilet room, MAXIMUM 2m²";
+  }
+  if (piece.includes('Salle de bain') || piece.includes("Salle d'eau")) {
+    base.mandatory.push("Visible ceiling VMC ventilation grill","Large mirror above sink","Towel rack","Modern rectangular tiles");
+    if (subType === 'Douche') { base.mandatory.push("Walk-in RECTANGULAR glass shower cabin","Rain showerhead"); base.forbidden.push("NO bathtubs"); }
+    else if (subType === 'Baignoire') { base.mandatory.push("RECTANGULAR freestanding bathtub"); base.forbidden.push("NO showers"); }
+    else if (subType === 'Mixte') base.mandatory.push("RECTANGULAR freestanding bathtub AND separate walk-in shower");
+    base.forbidden.push("NO carpets","NO rugs","NO beds","NO sofas");
+    base.context = "Modern wet room with waterproof materials";
+  }
+  if (piece.includes('Chambre') || piece.includes('Suite')) {
+    if (subType === 'Enfant' || subType === 'Bébé') {
+      base.mandatory.push(subType === 'Bébé' ? "Baby CRIB with mobile" : "Child's bed with colorful bedding","BUILT-IN WALL WARDROBE with sliding doors","TOY CHEST filled with toys","Bookshelf with children's books");
+      if (subType === 'Enfant') base.mandatory.push("Desk with chair for homework");
+    } else {
+      base.mandatory.push("Bed as focal point","Bedside tables with lamps","Wardrobe or closet");
+    }
+    base.forbidden.push("NO water taps","NO sinks","NO showers","NO pools");
+    base.context = "Bedroom located on UPPER FLOOR";
+  }
+  if (piece === 'Salon') {
+    const s = decorationParams.salonOptions || {};
+    base.mandatory.push("Large comfortable SECTIONAL SOFA","Coffee table in front of sofa","Modern CHANDELIER","Area rug under sofa");
+    if (s.tv === 'Murale') base.mandatory.push("LARGE FLAT-SCREEN TV mounted on wall");
+    else if (s.tv === 'Sur meuble') base.mandatory.push("LARGE FLAT-SCREEN TV on modern media console");
+    if (s.cadres) base.mandatory.push("2-3 EMPTY PICTURE FRAMES on wall");
+    if (s.plantes) base.mandatory.push("1-2 DECORATIVE POTTED PLANTS");
+    if (s.meubleDecoratif) base.mandatory.push("Decorative SIDEBOARD with family PHOTO FRAMES");
+    base.context = type === 'maison' ? "Spacious 60m² luxury villa living room" : "Modern living room";
+  }
+  if (piece === 'Cuisine') {
+    const hasBaby = decorationParams.chambresDetail?.includes('Bébé');
+    base.mandatory.push("Modern kitchen with full cabinetry and appliances","LARGE DINING TABLE for 8 PEOPLE","8 DINING CHAIRS around table","Pendant chandelier above dining table");
+    if (hasBaby) base.mandatory.push("HIGH CHAIR for baby positioned at table");
+  }
+  if (piece === 'Dressing') {
+    base.mandatory.push("Walk-in closet with organized storage","Clothing rods with hanging garments","Shelving units","Full-length mirror");
+    if (subType === 'Homme') { base.mandatory.push("Hanging SUITS and dress shirts","TIE RACK visible","Men's dress shoes","Dark wood palette"); base.forbidden.push("NO dresses","NO makeup"); }
+    else { base.mandatory.push("Hanging DRESSES and elegant coats","SHOE DISPLAY with HIGH HEELS","Handbag shelves","Soft colors palette"); base.forbidden.push("NO men's suits"); }
+  }
+  if (piece === 'Salle de jeu') {
+    base.mandatory.push("CHILDREN'S PLAYROOM","Colorful foam floor mats","TOY STORAGE UNITS","PLAY KITCHEN SET","BUILDING BLOCKS");
+    base.forbidden.push("NO adult furniture","NO beds");
+  }
+  if (piece === 'Salle de sport') {
+    base.mandatory.push("HOME GYM","RUBBER FLOOR MATS","DUMBBELL RACK","WEIGHT BENCH","YOGA MAT","Large WALL MIRROR");
+    base.forbidden.push("NO beds","NO kitchen appliances","NO children's toys");
+  }
+  if (piece === 'Jardin') {
+    base.mandatory.push("Green grass lawn","Trees and bushes","Outdoor landscaping");
+    if (gardenType === 'Jeux') base.mandatory.push("Wooden playground structure: swing set, slide");
+    if (gardenType === 'Mare') base.mandatory.push("Small NATURAL pond with aquatic plants");
+    if (gardenType === 'Mixte') base.mandatory.push("LEFT SIDE: Wooden playground; RIGHT SIDE: Natural pond");
+    base.context = "EXTERIOR BACKYARD garden";
+  }
+  return base;
+};
+
+const buildPrompt = (piece, type, subType, isEmpty, decorationParams, gardenType) => {
+  const constraints = getPieceConstraints(piece, type, subType, isEmpty, gardenType, decorationParams);
+  if (isEmpty) {
+    return `Professional architectural photography, 4K HDR, 16:9 landscape.
+SCENE: RAW CONCRETE CONSTRUCTION PHASE of ${piece} in ${type === 'maison' ? 'luxury villa R+1' : 'urban apartment'}.
+- Grey concrete walls, floors, and ceilings (unfinished state)
+- Visible door openings, Window frames visible
+- NO furniture, NO decoration
+${constraints.context ? `- ${constraints.context}` : ''}
+MANDATORY:
+${constraints.mandatory.map(m => `- ${m}`).join('\n')}
+FORBIDDEN:
+${constraints.forbidden.map(f => `- ${f}`).join('\n')}
+CAMERA: Wide-angle architectural shot.
+${GLOBAL_PROMPT_RULES}`;
+  }
+  const style = decorationParams.style || 'Moderne';
+  const furnitureStyle = decorationParams.furnitureStyle || 'Contemporary';
+  const wallColor = decorationParams.wallColor || 'Off-white';
+  return `Ultra-high-end architectural interior photography, 4K cinematic render, 16:9 landscape.
+SCENE: ${piece} ${subType ? `(${subType})` : ''} in ${type === 'maison' ? 'luxury villa R+1' : 'premium apartment'}.
+DESIGN STYLE: Architecture: ${style}, Furniture: ${furnitureStyle}, Wall color: ${wallColor}
+${decorationParams.desc ? `- Custom: ${decorationParams.desc}` : ''}
+MANDATORY:
+${constraints.mandatory.map(m => `- ${m}`).join('\n')}
+STRICTLY FORBIDDEN:
+${constraints.forbidden.map(f => `- ${f}`).join('\n')}
+${GLOBAL_PROMPT_RULES}`;
+};
+
+const generateImage = async (apiKey, piece, type, subType, isEmpty = false, decorationParams = {}, gardenType, structureImageBase64, referencePhoto) => {
+  const ai = new GoogleGenAI({ apiKey });
+  const mainPrompt = buildPrompt(piece, type, subType, isEmpty, decorationParams, gardenType);
+  const parts = [{ text: mainPrompt }];
+  if (structureImageBase64 && !isEmpty) {
+    const data = structureImageBase64.includes(',') ? structureImageBase64.split(',')[1] : structureImageBase64;
+    parts.push({ inlineData: { data, mimeType: 'image/png' } });
+    parts.push({ text: `REFERENCE 1 (STRUCTURE): Use the EXACT room dimensions and door placements from this concrete structure. Transform ALL concrete surfaces into finished materials. ZERO raw concrete.` });
+  }
+  if (referencePhoto && !isEmpty) {
+    const refData = referencePhoto.includes(',') ? referencePhoto.split(',')[1] : referencePhoto;
+    parts.push({ inlineData: { data: refData, mimeType: 'image/jpeg' } });
+    parts.push({ text: `REFERENCE 2 (STYLE INSPIRATION): Replicate EXACTLY the color palette, materials, furniture style, and lighting mood of this image.` });
+  }
+  const response = await ai.models.generateContent({
+    model: 'gemini-3.1-flash-image-preview',
+    contents: { parts },
+    config: { imageConfig: { aspectRatio: "16:9", imageSize: "4K" } }
+  });
+  const url = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+  if (!url) throw new Error("Generation failed");
+  return `data:image/png;base64,${url}`;
+};
+
+const generateSliceImage = async (apiKey, roomLabel, slice, originalImageUrl) => {
+  const ai = new GoogleGenAI({ apiKey });
+  const prompt = `
+╔═══════════════════════════════════════════════════════════════╗
+║ ARCHI_SPLIT — DÉCOUPAGE RÉEL D'IMAGE                          ║
+╚═══════════════════════════════════════════════════════════════╝
+🎯 OBJECTIF: GÉNÉRER UNE NOUVELLE IMAGE montrant UNIQUEMENT: ${slice.visible_volume}.
+REFERENCE IMAGE: C'est la pièce entière. Vous devez en extraire une vue spécifique.
+🔒 RÈGLES: Gardez exactement les mêmes murs, meubles, objets et éclairage que dans l'image de référence.
+CAMERA: Cadrage ${slice.depth}, FOV ${slice.camera_fov}°, Position ${slice.camera_position}.
+INTERDICTIONS: NE PAS ajouter d'objets, NE PAS modifier les textures.
+🎬 RÉSULTAT: Un plan technique zoomé et précis de cette zone.
+`;
+  const data = originalImageUrl.includes(',') ? originalImageUrl.split(',')[1] : originalImageUrl;
+  const response = await ai.models.generateContent({
+    model: 'gemini-3.1-flash-image-preview',
+    contents: { parts: [{ inlineData: { data, mimeType: 'image/png' } }, { text: prompt }] },
+    config: { imageConfig: { aspectRatio: "16:9", imageSize: "4K" } }
+  });
+  const url = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+  if (!url) throw new Error("Slice generation failed");
+  return `data:image/png;base64,${url}`;
+};
+
+// ============================================================
+// API KEY GATE COMPONENT
+// ============================================================
+const ApiKeyGate = ({ onKeyValidated }) => {
+  const [keyInput, setKeyInput] = useState('');
+  const [showKey, setShowKey] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleValidate = async () => {
+    if (!keyInput.trim()) { setError("Veuillez saisir votre clé API."); return; }
+    setTesting(true);
+    setError('');
+    try {
+      const ai = new GoogleGenAI({ apiKey: keyInput.trim() });
+      await ai.models.generateContent({
+        model: 'gemini-3.1-flash-image-preview',
+        contents: { parts: [{ text: 'test' }] },
+        config: { imageConfig: { aspectRatio: "16:9" } }
+      });
+      onKeyValidated(keyInput.trim());
+    } catch (e) {
+      const msg = e?.message || '';
+      if (msg.includes('API_KEY_INVALID') || msg.includes('401') || msg.includes('403')) {
+        setError("❌ Clé API invalide. Vérifie dans Google AI Studio → Get API key.");
+      } else {
+        // Key seems valid, model might have returned no image but no auth error
+        onKeyValidated(keyInput.trim());
+      }
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  return React.createElement('div', {
+    className: "min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6"
+  },
+    React.createElement('div', { className: "w-full max-w-lg space-y-8 animate-in" },
+      React.createElement('div', { className: "text-center space-y-4" },
+        React.createElement('div', { className: "text-6xl" }, "🏛️"),
+        React.createElement('h1', { className: "text-5xl font-serif text-white italic" }, "Studio ARCHITECTE"),
+        React.createElement('p', { className: "text-blue-400 font-bold" }, "Entrez votre clé API Google AI Studio"),
+        React.createElement('p', { className: "text-slate-500 text-sm" }, "Vos crédits seront utilisés depuis votre propre compte Google AI Studio.")
+      ),
+      React.createElement('div', { className: "bg-slate-900 border border-white/10 rounded-3xl p-8 space-y-6" },
+        React.createElement('div', { className: "space-y-2" },
+          React.createElement('label', { className: "text-xs font-black text-blue-400 uppercase tracking-widest" }, "Clé API Google AI Studio"),
+          React.createElement('div', { className: "relative" },
+            React.createElement('input', {
+              type: showKey ? 'text' : 'password',
+              value: keyInput,
+              onChange: e => setKeyInput(e.target.value),
+              onKeyDown: e => e.key === 'Enter' && handleValidate(),
+              placeholder: "AIza...",
+              className: "w-full p-5 pr-14 bg-slate-800 border border-white/10 rounded-2xl text-white font-mono text-sm outline-none focus:border-blue-500 transition-all placeholder-slate-600"
+            }),
+            React.createElement('button', {
+              onClick: () => setShowKey(s => !s),
+              className: "absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
+            }, showKey
+              ? React.createElement(EyeOff, { size: 20 })
+              : React.createElement(Eye, { size: 20 })
+            )
+          )
+        ),
+        error && React.createElement('p', { className: "text-red-400 text-sm font-bold bg-red-900/30 px-4 py-3 rounded-xl border border-red-800" }, error),
+        React.createElement('button', {
+          onClick: handleValidate,
+          disabled: testing,
+          className: "w-full py-5 bg-blue-600 text-white rounded-2xl font-black text-xl hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-3"
+        },
+          testing
+            ? React.createElement('span', null, "Vérification...")
+            : React.createElement(React.Fragment, null,
+                React.createElement(Key, { size: 22 }),
+                "Accéder au Studio"
+              )
+        )
+      ),
+      React.createElement('p', { className: "text-center text-slate-600 text-xs" },
+        "Clé non stockée — uniquement utilisée pendant votre session."
+      )
+    )
+  );
+};
+
+// ============================================================
+// MAIN APP COMPONENT
+// ============================================================
+const App = ({ apiKey }) => {
+  const [state, setState] = useState({
+    page: 'accueil',
+    config: {
+      type: '', appartementType: '', pieces: [], options: [],
+      nbChambres: 1, chambresDetail: ['Adulte'],
+      jacuzziType: 'Aucun', poolType: 'Aucune',
+      nbBathrooms: 1, bathroomTypes: ['Douche'], nbToilets: 1,
+      modeAutomatique: true, stairType: 'Classique', gardenType: 'Simple',
+      houseStyle: '', furnitureStyle: FURNITURE_STYLES[0], wallColor: WALL_COLORS[0],
+      tvOption: 'Murale',
+      salonOptions: { tv: 'Murale', cadres: true, plantes: true, meubleDecoratif: true, tableaux: true },
+      dressingGender: 'Femme', modeOptionnel: false, pieceOptionnelle: '', typePieceOptionnelle: ''
+    },
+    imagesVides: [], modeDecoration: 'description', descriptionsPieces: [],
+    descriptionDecoration: '', photosReference: [], imagesFinales: [],
+    loading: false, loadingMessage: ''
+  });
+
+  const [step, setStep] = useState(0);
+  const [activeSplitId, setActiveSplitId] = useState(null);
+  const [selectedSlices, setSelectedSlices] = useState([]);
+  const [masterImageForSplit, setMasterImageForSplit] = useState(null);
+  const [error, setError] = useState(null);
+  const isGeneratingRef = useRef(false);
+
+  const updateState = (updates) => {
+    setState(prev => typeof updates === 'function' ? updates(prev) : { ...prev, ...updates });
+  };
+
+  useEffect(() => {
+    let interval;
+    if (state.loading) {
+      let idx = 0;
+      updateState({ loadingMessage: LOADING_MESSAGES[0] });
+      interval = setInterval(() => {
+        idx = (idx + 1) % LOADING_MESSAGES.length;
+        updateState({ loadingMessage: LOADING_MESSAGES[idx] });
+      }, 3000);
+    }
+    return () => clearInterval(interval);
+  }, [state.loading]);
+
+  const handleStart = () => {
+    updateState(p => ({ ...p, config: { ...p.config, modeOptionnel: false } }));
+    updateState({ page: 'construction' });
+    setStep(1);
+  };
+
+  const isVilla = state.config.type === 'maison';
+  const isT5 = state.config.appartementType === 'T5';
+  const totalSteps = isVilla ? 8 : (isT5 ? 7 : 5);
+
+  const nextStep = () => {
+    setError(null);
+    if (step === 5) {
+      if (state.config.pieces.includes('Dressing')) { setStep(5.1); return; }
+      if (state.config.pieces.includes('Salon')) { setStep(5.5); return; }
+      if (!isVilla && (state.config.appartementType === 'T3' || state.config.appartementType === 'T4')) { runStructureGeneration(); return; }
+      setStep(6); return;
+    }
+    if (step === 5.1) {
+      if (state.config.pieces.includes('Salon')) { setStep(5.5); return; }
+      if (!isVilla && (state.config.appartementType === 'T3' || state.config.appartementType === 'T4')) { runStructureGeneration(); return; }
+      setStep(6); return;
+    }
+    if (step === 5.5) {
+      if (!isVilla && (state.config.appartementType === 'T3' || state.config.appartementType === 'T4')) { runStructureGeneration(); return; }
+      setStep(6); return;
+    }
+    setStep(s => s + 1);
+  };
+
+  const prevStep = () => {
+    if (step === 5.1) setStep(5);
+    else if (step === 5.5) setStep(state.config.pieces.includes('Dressing') ? 5.1 : 5);
+    else if (step === 6) {
+      if (state.config.pieces.includes('Salon')) setStep(5.5);
+      else if (state.config.pieces.includes('Dressing')) setStep(5.1);
+      else setStep(5);
+    } else setStep(s => s - 1);
+  };
+
+  const togglePiece = (room) => {
+    updateState(p => {
+      const next = p.config.pieces.includes(room)
+        ? p.config.pieces.filter(r => r !== room)
+        : [...p.config.pieces, room];
+      return { ...p, config: { ...p.config, pieces: next } };
+    });
+  };
+
+  const runStructureGeneration = async () => {
+    if (isGeneratingRef.current) return;
+    isGeneratingRef.current = true;
+    updateState({ loading: true });
+    try {
+      const results = [];
+      const plan = [];
+      if (state.config.type === 'maison') {
+        plan.push({ name: 'Extérieur Villa' });
+        if (state.config.poolType === 'Intérieure') plan.push({ name: 'Piscine Intérieure' });
+        plan.push({ name: 'Escalier', sub: state.config.stairType });
+        state.config.pieces.forEach(p => {
+          if (['Jardin','Garage','Terrasse','Dressing','Vanity','Escalier','Salle de jeu','Salle de sport'].includes(p)) return;
+          plan.push({ name: p });
+        });
+        state.config.chambresDetail.forEach((t, i) => plan.push({ name: i === 0 ? 'Suite Parentale' : 'Chambre', sub: t }));
+        state.config.bathroomTypes.forEach((t, i) => plan.push({ name: `Salle de bain ${i+1}`, sub: t }));
+        for (let i = 0; i < state.config.nbToilets; i++) plan.push({ name: `WC ${i+1}` });
+        if (state.config.pieces.includes('Dressing')) plan.push({ name: 'Dressing', sub: state.config.dressingGender });
+        if (state.config.pieces.includes('Vanity')) plan.push({ name: 'Coin Vanity' });
+        if (state.config.pieces.includes('Salle de jeu')) plan.push({ name: 'Salle de jeu' });
+        if (state.config.pieces.includes('Salle de sport')) plan.push({ name: 'Salle de sport' });
+        if (state.config.pieces.includes('Garage')) plan.push({ name: 'Garage' });
+        if (state.config.poolType === 'Extérieure') plan.push({ name: 'Piscine Extérieure' });
+        if (state.config.jacuzziType !== 'Aucun') plan.push({ name: 'Jacuzzi', sub: state.config.jacuzziType });
+        if (state.config.pieces.includes('Jardin')) plan.push({ name: 'Jardin' });
+      } else {
+        plan.push({ name: 'Entrée immeuble (extérieur)' });
+        plan.push({ name: 'Hall immeuble (intérieur)' });
+        plan.push({ name: 'Ascenseur immeuble' });
+        if (state.config.appartementType === 'T5') {
+          plan.push({ name: 'Escalier Duplex', sub: state.config.stairType });
+          if (state.config.jacuzziType === 'Intérieur') plan.push({ name: 'Jacuzzi', sub: 'Intérieur' });
+        }
+        state.config.pieces.forEach(p => {
+          if (['Dressing','Vanity','Balcon','Terrasse fermée','Salle de jeu','Salle de sport'].includes(p)) return;
+          plan.push({ name: p });
+        });
+        state.config.chambresDetail.forEach((t, i) => plan.push({ name: `Chambre ${i+1}`, sub: t }));
+        state.config.bathroomTypes.forEach((t, i) => plan.push({ name: `Salle d'eau ${i+1}`, sub: t }));
+        for (let i = 0; i < state.config.nbToilets; i++) plan.push({ name: `WC ${i+1}` });
+        if (state.config.pieces.includes('Dressing')) plan.push({ name: 'Dressing', sub: state.config.dressingGender });
+        if (state.config.pieces.includes('Vanity')) plan.push({ name: 'Coin Vanity' });
+        if (state.config.pieces.includes('Salle de jeu')) plan.push({ name: 'Salle de jeu' });
+        if (state.config.pieces.includes('Salle de sport')) plan.push({ name: 'Salle de sport' });
+        if (state.config.pieces.includes('Balcon') && state.config.appartementType !== 'T5') plan.push({ name: 'Balcon', sub: state.config.appartementType });
+        if (state.config.pieces.includes('Terrasse fermée') && state.config.appartementType === 'T5') plan.push({ name: 'Terrasse fermée T5' });
+      }
+      for (const item of plan) {
+        updateState({ loadingMessage: `Volume : ${item.name}...` });
+        const url = await generateImage(apiKey, item.name, state.config.type, item.sub, true, {}, state.config.gardenType);
+        results.push({ id: `${item.name}-${Date.now()}`, piece: item.name + (item.sub ? ` (${item.sub})` : ''), url, prompt: 'Raw' });
+      }
+      updateState({ imagesVides: results, page: 'decoration', loading: false });
+    } catch (err) {
+      setError("Erreur API : " + (err?.message || "Vérifiez votre clé API."));
+      updateState({ loading: false });
+    } finally { isGeneratingRef.current = false; }
+  };
+
+  const runFinalRender = async () => {
+    updateState({ loading: true });
+    try {
+      const finalResults = [];
+      const decoParams = {
+        style: state.config.houseStyle || 'Moderne',
+        furnitureStyle: state.config.furnitureStyle,
+        wallColor: state.config.wallColor,
+        desc: state.descriptionDecoration,
+        salonOptions: state.config.salonOptions,
+        chambresDetail: state.config.chambresDetail
+      };
+      for (const empty of state.imagesVides) {
+        updateState({ loadingMessage: `Rendu final : ${empty.piece}...` });
+        const sub = empty.piece.match(/\(([^)]+)\)/)?.[1];
+        const baseName = empty.piece.split(' (')[0];
+        const url = await generateImage(apiKey, baseName, state.config.type, sub, false, decoParams, state.config.gardenType, empty.url, empty.referencePhoto);
+        finalResults.push({ id: `f-${empty.id}`, piece: empty.piece, url, prompt: 'Final', referencePhoto: empty.referencePhoto });
+      }
+      updateState({ imagesFinales: finalResults, page: 'resultat', loading: false });
+    } catch (err) {
+      setError("Erreur API : " + (err?.message || "Vérifiez votre clé API."));
+      updateState({ loading: false });
+    }
+  };
+
+  const runArchiSplit = async (imageId) => {
+    const image = state.imagesFinales.find(img => img.id === imageId);
+    const masterUrl = masterImageForSplit || image?.url;
+    if (!masterUrl || selectedSlices.length === 0) return;
+    updateState({ loading: true });
+    try {
+      const allPossible = getAllPossibleCameraSlices();
+      const slicesToGen = allPossible.filter(s => selectedSlices.includes(s.id));
+      const newSlices = [];
+      for (const slice of slicesToGen) {
+        updateState({ loadingMessage: `ArchiSplit : ${slice.label}...` });
+        const url = await generateSliceImage(apiKey, image?.piece || "Master", slice, masterUrl);
+        newSlices.push({ ...slice, url });
+      }
+      if (state.page === 'mode-isole') {
+        updateState({ imagesFinales: [{ id: 'archi-master', piece: 'Master Image', url: masterUrl, prompt: 'Master', slices: newSlices }], page: 'resultat', loading: false });
+      } else {
+        updateState(prev => ({
+          ...prev,
+          imagesFinales: prev.imagesFinales.map(img => img.id === imageId ? { ...img, slices: newSlices } : img),
+          loading: false
+        }));
+      }
+      setActiveSplitId(null);
+      setSelectedSlices([]);
+      setMasterImageForSplit(null);
+    } catch (err) {
+      setError("Erreur ArchiSplit : " + (err?.message || ""));
+      updateState({ loading: false });
+    }
+  };
+
+  // ---- RENDER ----
+  return React.createElement(React.Fragment, null,
+    // LOADING OVERLAY
+    state.loading && React.createElement('div', {
+      className: "fixed inset-0 z-[1000] bg-slate-950/98 flex flex-col items-center justify-center p-10 animate-in"
+    },
+      React.createElement(Construction, { size: 100, className: "text-blue-500 mb-8 animate-bounce" }),
+      React.createElement('h2', { className: "text-4xl font-serif text-white mb-6 italic text-center" }, state.loadingMessage),
+      React.createElement('div', { className: "w-64 h-1 bg-white/10 rounded-full overflow-hidden" },
+        React.createElement('div', { className: "h-full bg-blue-500 animate-progress" })
+      )
+    ),
+
+    // MODAL ARCHISPLIT
+    activeSplitId && state.page === 'resultat' && React.createElement('div', {
+      className: "fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-md animate-in"
+    },
+      React.createElement('div', { className: "bg-white rounded-[3rem] w-full max-w-4xl p-12 space-y-10 shadow-2xl relative" },
+        React.createElement('button', { onClick: () => setActiveSplitId(null), className: "absolute top-8 right-8 p-3 hover:bg-slate-100 rounded-full" }, React.createElement(X, {})),
+        React.createElement('div', { className: "space-y-2" },
+          React.createElement('h3', { className: "text-4xl font-black flex items-center gap-4" }, React.createElement(Scissors, { className: "text-blue-600" }), " ArchiSplit — Découpage technique"),
+          React.createElement('p', { className: "text-slate-500 text-lg" }, "Générez des vues isolées et précises de cette pièce.")
+        ),
+        React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[50vh] overflow-y-auto pr-4" },
+          getAllPossibleCameraSlices().map(slice =>
+            React.createElement('button', {
+              key: slice.id,
+              onClick: () => setSelectedSlices(prev => prev.includes(slice.id) ? prev.filter(id => id !== slice.id) : [...prev, slice.id]),
+              className: `p-6 rounded-2xl border-4 text-left transition-all ${selectedSlices.includes(slice.id) ? 'border-blue-600 bg-blue-50' : 'border-slate-100 bg-slate-50 hover:bg-white hover:border-slate-300'}`
+            },
+              React.createElement('div', { className: "flex items-center gap-4" },
+                React.createElement('div', { className: `w-6 h-6 rounded-full border-2 flex items-center justify-center ${selectedSlices.includes(slice.id) ? 'border-blue-600 bg-blue-600' : 'border-slate-300'}` },
+                  selectedSlices.includes(slice.id) && React.createElement(CheckCircle2, { size: 14, className: "text-white" })
+                ),
+                React.createElement('div', {},
+                  React.createElement('div', { className: "font-bold text-slate-900" }, slice.label),
+                  React.createElement('div', { className: "text-[10px] text-slate-500 uppercase font-black tracking-widest mt-1" }, `FOV: ${slice.camera_fov}°`)
+                )
+              )
+            )
+          )
+        ),
+        React.createElement('button', {
+          onClick: () => runArchiSplit(activeSplitId),
+          disabled: selectedSlices.length === 0,
+          className: "w-full py-8 bg-blue-600 text-white rounded-full font-black text-2xl shadow-xl disabled:opacity-50"
+        }, "Extraire les plans")
+      )
+    ),
+
+    // ---- PAGE ACCUEIL ----
+    state.page === 'accueil' && React.createElement('div', {
+      className: "min-h-screen relative overflow-hidden flex flex-col items-center justify-center p-6 text-center"
+    },
+      React.createElement('div', {
+        className: "absolute inset-0 z-0",
+        style: { backgroundImage: `url('https://images.unsplash.com/photo-1503387762-592deb58ef4e?q=80&w=2831&auto=format&fit=crop')`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'brightness(0.3) blur(2px)' }
+      }),
+      React.createElement('div', { className: "absolute inset-0 z-0 bg-gradient-to-b from-slate-950/95 via-slate-950/90 to-slate-950/95" }),
+      React.createElement('div', { className: "relative z-10 flex flex-col items-center" },
+        React.createElement(Sparkles, { className: "text-blue-500 mb-8 animate-pulse", size: 80 }),
+        React.createElement('h1', { className: "text-8xl md:text-[9rem] font-serif text-white mb-2 font-bold leading-none tracking-tighter animate-in" },
+          "Studio ", React.createElement('span', { className: "text-blue-500 italic" }, "ARCHITECTE")
+        ),
+        React.createElement('p', { className: "text-blue-400 text-xl md:text-2xl font-bold mb-8 animate-in" }, "Donnez vie à vos projets immobiliers les plus fous."),
+        React.createElement('div', { className: "flex flex-col gap-6 mt-8 animate-in" },
+          React.createElement('button', {
+            onClick: handleStart,
+            className: "px-20 py-10 bg-white text-slate-950 rounded-full font-black text-3xl hover:bg-blue-600 hover:text-white transition-all transform hover:scale-105 flex items-center gap-6 shadow-2xl"
+          }, "Projet Complet ", React.createElement(Home, { size: 40 })),
+          React.createElement('button', {
+            onClick: () => { updateState(p => ({ ...p, config: { ...p.config, modeOptionnel: true } })); updateState({ page: 'mode-optionnel' }); },
+            className: "px-20 py-10 bg-blue-600 text-white rounded-full font-black text-3xl hover:bg-blue-700 transition-all transform hover:scale-105 flex items-center gap-6 shadow-2xl"
+          }, "Pièce Unique ", React.createElement(Sparkles, { size: 40 })),
+          React.createElement('button', {
+            onClick: () => updateState({ page: 'mode-isole' }),
+            className: "px-20 py-10 bg-slate-900 text-blue-400 border-4 border-blue-600 rounded-full font-black text-3xl hover:bg-blue-600 hover:text-white transition-all transform hover:scale-105 flex items-center gap-6 shadow-2xl"
+          }, "ArchiSplit - Mode Isolé ", React.createElement(Scissors, { size: 40 }))
+        )
+      )
+    ),
+
+    // ---- PAGE MODE ISOLÉ ----
+    state.page === 'mode-isole' && React.createElement('div', { className: "min-h-screen bg-slate-50 pb-40" },
+      React.createElement('header', { className: "p-8 border-b bg-white sticky top-0 z-30 flex justify-between items-center shadow-sm" },
+        React.createElement('button', { onClick: () => updateState({ page: 'accueil' }), className: "p-4 hover:bg-slate-100 rounded-full" }, React.createElement(ChevronLeft, { size: 24 })),
+        React.createElement('h2', { className: "text-2xl font-serif font-bold italic" }, "ArchiSplit - Laboratoire de Découpage"),
+        React.createElement('div', { className: "w-10" })
+      ),
+      React.createElement('main', { className: "max-w-6xl mx-auto p-12 space-y-16" },
+        React.createElement('div', { className: "grid grid-cols-1 lg:grid-cols-2 gap-12" },
+          // IMPORT
+          React.createElement('div', { className: "space-y-8 bg-white p-12 rounded-[3rem] shadow-xl border" },
+            React.createElement('div', { className: "space-y-2" },
+              React.createElement('h3', { className: "text-3xl font-black flex items-center gap-3" }, React.createElement(Camera, { className: "text-blue-600" }), " 1. Image Master"),
+              React.createElement('p', { className: "text-slate-500" }, "Importez le rendu ou la photo à découper.")
+            ),
+            !masterImageForSplit
+              ? React.createElement('label', { className: "block w-full aspect-video border-4 border-dashed border-slate-200 rounded-[2rem] hover:border-blue-500 transition-all cursor-pointer bg-slate-50 group" },
+                  React.createElement('input', { type: "file", accept: "image/*", className: "hidden", onChange: (e) => {
+                    const file = e.target.files?.[0];
+                    if (file) { const r = new FileReader(); r.onload = (ev) => setMasterImageForSplit(ev.target?.result); r.readAsDataURL(file); }
+                  }}),
+                  React.createElement('div', { className: "w-full h-full flex flex-col items-center justify-center gap-4 text-slate-400 group-hover:text-blue-500" },
+                    React.createElement(Upload, { size: 64 }),
+                    React.createElement('span', { className: "font-black text-xl" }, "DÉPOSER L'IMAGE")
+                  )
+                )
+              : React.createElement('div', { className: "relative aspect-video rounded-[2rem] overflow-hidden border-4 border-blue-500 shadow-2xl" },
+                  React.createElement('img', { src: masterImageForSplit, className: "w-full h-full object-cover", alt: "Master" }),
+                  React.createElement('button', { onClick: () => setMasterImageForSplit(null), className: "absolute top-4 right-4 p-3 bg-red-500 text-white rounded-full shadow-lg" }, React.createElement(Trash2, {}))
+                )
+          ),
+          // SÉLECTION SLICES
+          React.createElement('div', { className: "space-y-8 bg-white p-12 rounded-[3rem] shadow-xl border" },
+            React.createElement('div', { className: "space-y-2" },
+              React.createElement('h3', { className: "text-3xl font-black flex items-center gap-3" }, React.createElement(Camera, { className: "text-blue-600" }), " 2. Plans Techniques"),
+              React.createElement('p', { className: "text-slate-500" }, "Sélectionnez les angles à extraire.")
+            ),
+            React.createElement('div', { className: "grid grid-cols-1 gap-3 max-h-[400px] overflow-y-auto pr-4" },
+              getAllPossibleCameraSlices().map(slice =>
+                React.createElement('button', {
+                  key: slice.id,
+                  onClick: () => setSelectedSlices(prev => prev.includes(slice.id) ? prev.filter(id => id !== slice.id) : [...prev, slice.id]),
+                  className: `p-5 rounded-2xl border-4 text-left transition-all flex items-center justify-between ${selectedSlices.includes(slice.id) ? 'border-blue-600 bg-blue-50' : 'border-slate-100 bg-slate-50'}`
+                },
+                  React.createElement('span', { className: "font-bold text-slate-900" }, slice.label),
+                  React.createElement('div', { className: `w-6 h-6 rounded-full border-2 flex items-center justify-center ${selectedSlices.includes(slice.id) ? 'border-blue-600 bg-blue-600' : 'border-slate-300'}` },
+                    selectedSlices.includes(slice.id) && React.createElement(CheckCircle2, { size: 14, className: "text-white" })
+                  )
+                )
+              )
+            ),
+            React.createElement('button', {
+              onClick: () => runArchiSplit('archi-isole'),
+              disabled: !masterImageForSplit || selectedSlices.length === 0,
+              className: "w-full py-8 bg-blue-600 text-white rounded-full font-black text-2xl shadow-xl hover:bg-blue-700 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-4 transition-all"
+            }, "Démarrer le Découpage ", React.createElement(Sparkles, {}))
+          )
+        )
+      )
+    ),
+
+    // ---- PAGE MODE OPTIONNEL ----
+    state.page === 'mode-optionnel' && React.createElement('div', { className: "min-h-screen bg-slate-50 pb-40" },
+      React.createElement('header', { className: "p-8 border-b bg-white sticky top-0 z-30 flex justify-between items-center shadow-sm" },
+        React.createElement('button', { onClick: () => updateState({ page: 'accueil' }), className: "p-4 hover:bg-slate-100 rounded-full" }, React.createElement(ChevronLeft, { size: 24 })),
+        React.createElement('h2', { className: "text-2xl font-serif font-bold italic" }, "Mode Pièce Unique"),
+        React.createElement('div', { className: "w-10" })
+      ),
+      React.createElement('main', { className: "max-w-6xl mx-auto p-12 space-y-16" },
+        React.createElement('div', { className: "text-center space-y-4" },
+          React.createElement('h3', { className: "text-5xl font-black" }, "Quelle pièce veux-tu créer ?"),
+          React.createElement('p', { className: "text-slate-500 text-xl" }, "Sélectionne UNE pièce à générer en mode 4K")
+        ),
+        React.createElement('div', { className: "grid grid-cols-2 gap-8 max-w-3xl mx-auto" },
+          React.createElement('button', {
+            onClick: () => updateState(p => ({ ...p, config: { ...p.config, type: 'maison' } })),
+            className: `p-12 rounded-3xl border-4 transition-all ${state.config.type === 'maison' ? 'border-blue-600 bg-blue-50' : 'border-slate-200 bg-white'}`
+          }, React.createElement(Home, { size: 48, className: "mx-auto mb-4 text-blue-500" }), React.createElement('div', { className: "font-black text-2xl text-slate-900" }, "Villa")),
+          React.createElement('button', {
+            onClick: () => updateState(p => ({ ...p, config: { ...p.config, type: 'appartement' } })),
+            className: `p-12 rounded-3xl border-4 transition-all ${state.config.type === 'appartement' ? 'border-blue-600 bg-blue-50' : 'border-slate-200 bg-white'}`
+          }, React.createElement(Building2, { size: 48, className: "mx-auto mb-4 text-blue-500" }), React.createElement('div', { className: "font-black text-2xl text-slate-900" }, "Appartement"))
+        ),
+        state.config.type && React.createElement('div', { className: "grid grid-cols-2 md:grid-cols-4 gap-6 animate-in" },
+          ['Salon','Cuisine','Chambre Adulte','Chambre Enfant','Chambre Bébé','Salle de bain','WC','Bureau','Dressing Femme','Dressing Homme','Salle de jeu','Salle de sport','Cellier','Buanderie','Cave à vin',...(state.config.type==='maison'?['Garage','Jardin','Terrasse','Atelier']:['Balcon'])].map(piece =>
+            React.createElement('button', {
+              key: piece,
+              onClick: () => { const parts2 = piece.split(' '); updateState(p => ({ ...p, config: { ...p.config, pieceOptionnelle: parts2[0], typePieceOptionnelle: parts2.slice(1).join(' ') } })); },
+              className: `p-8 rounded-3xl border-4 flex flex-col items-center gap-4 transition-all ${state.config.pieceOptionnelle === piece.split(' ')[0] && (piece.split(' ').length===1 || state.config.typePieceOptionnelle===piece.split(' ').slice(1).join(' ')) ? 'border-blue-600 bg-blue-600 text-white shadow-lg' : 'border-slate-200 bg-white hover:border-slate-300 text-slate-700'}`
+            },
+              React.createElement(LayoutGrid, { size: 32 }),
+              React.createElement('span', { className: "font-black text-xs text-center uppercase tracking-tighter" }, piece)
+            )
+          )
+        ),
+        state.config.pieceOptionnelle && React.createElement('div', { className: "text-center animate-in" },
+          error && React.createElement('p', { className: "text-red-600 mb-4 font-bold" }, error),
+          React.createElement('button', {
+            onClick: async () => {
+              setError(null);
+              updateState({ loading: true });
+              try {
+                const url = await generateImage(apiKey, state.config.pieceOptionnelle, state.config.type, state.config.typePieceOptionnelle, true, {}, 'Simple');
+                updateState({ imagesVides: [{ id: `${state.config.pieceOptionnelle}-${Date.now()}`, piece: state.config.pieceOptionnelle + (state.config.typePieceOptionnelle ? ` (${state.config.typePieceOptionnelle})` : ''), url, prompt: 'Raw' }], page: 'decoration', loading: false });
+              } catch (err) { setError("Erreur : " + err?.message); updateState({ loading: false }); }
+            },
+            className: "px-32 py-12 bg-blue-600 text-white rounded-full font-black text-4xl hover:bg-blue-700 shadow-2xl transform hover:scale-105 transition-all"
+          }, "Générer cette pièce")
+        )
+      )
+    ),
+
+    // ---- PAGE CONSTRUCTION ----
+    state.page === 'construction' && React.createElement('div', { className: "pb-40 animate-in" },
+      React.createElement('header', { className: "p-8 border-b bg-white sticky top-0 z-30 flex justify-between items-center shadow-sm" },
+        React.createElement('button', { onClick: prevStep, className: "p-4 hover:bg-slate-100 rounded-full" }, React.createElement(ChevronLeft, { size: 24 })),
+        React.createElement('h2', { className: "text-2xl font-serif font-bold italic" }, `Chantier - Étape ${step} / ${totalSteps}`),
+        React.createElement('div', { className: "w-10" })
+      ),
+      React.createElement('main', { className: "max-w-5xl mx-auto p-12 space-y-16" },
+        error && React.createElement('div', { className: "p-8 bg-red-50 text-red-700 rounded-3xl flex items-center gap-6 border border-red-100" },
+          React.createElement(AlertCircle, { size: 32 }), React.createElement('p', { className: "font-bold" }, error)
+        ),
+
+        // STEP 1
+        step === 1 && React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-10" },
+          React.createElement('button', {
+            onClick: () => { updateState(p => ({ ...p, config: { ...p.config, type: 'maison' } })); nextStep(); },
+            className: "p-16 rounded-[3rem] border-4 border-slate-200 bg-white hover:border-blue-500 transition-all text-left shadow-sm"
+          }, React.createElement(Home, { size: 64, className: "text-blue-500 mb-8" }), React.createElement('div', { className: "font-black text-4xl mb-4" }, "Villa R+1"), React.createElement('p', { className: "text-slate-500 text-xl" }, "Jardin, Garage, Piscine possible.")),
+          React.createElement('button', {
+            onClick: () => { updateState(p => ({ ...p, config: { ...p.config, type: 'appartement' } })); nextStep(); },
+            className: "p-16 rounded-[3rem] border-4 border-slate-200 bg-white hover:border-blue-500 transition-all text-left shadow-sm"
+          }, React.createElement(Building2, { size: 64, className: "text-blue-500 mb-8" }), React.createElement('div', { className: "font-black text-4xl mb-4" }, "Appartement"), React.createElement('p', { className: "text-slate-500 text-xl" }, "T3 à T5 Duplex. Immeuble urbain."))
+        ),
+
+        // STEP 2
+        step === 2 && React.createElement('div', { className: "space-y-12 text-center" },
+          React.createElement('h3', { className: "text-5xl font-black" }, isVilla ? 'Nombre de Chambres' : 'Configuration Appartement'),
+          React.createElement('div', { className: "flex justify-center flex-wrap gap-6" },
+            isVilla
+              ? [1,2,3,4,5].map(n => React.createElement('button', { key: n, onClick: () => { updateState(p => ({ ...p, config: { ...p.config, nbChambres: n, chambresDetail: Array(n).fill('Adulte') } })); nextStep(); }, className: "w-28 h-28 rounded-3xl border-4 text-4xl font-black hover:border-blue-600 transition-all" }, n))
+              : ['T3','T4','T5'].map(t => React.createElement('button', { key: t, onClick: () => { const nb = t==='T3'?2:t==='T4'?3:4; updateState(p => ({ ...p, config: { ...p.config, appartementType: t, nbChambres: nb, chambresDetail: Array(nb).fill('Adulte') } })); nextStep(); }, className: "py-12 px-16 rounded-3xl border-4 text-4xl font-black hover:border-blue-600 transition-all" }, t))
+          )
+        ),
+
+        // STEP 3
+        step === 3 && React.createElement('div', { className: "space-y-12" },
+          React.createElement('h3', { className: "text-5xl font-black text-center" }, "Type de Chambres"),
+          React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-8" },
+            state.config.chambresDetail.map((type, idx) =>
+              React.createElement('div', { key: idx, className: "p-8 bg-white border border-slate-100 rounded-3xl space-y-4" },
+                React.createElement('span', { className: "text-sm font-black text-blue-500" }, `Chambre ${idx+1} ${isVilla && idx===0 ? '(Suite Parentale)' : ''}`),
+                React.createElement('div', { className: "grid grid-cols-2 gap-2" },
+                  BEDROOM_TYPES.map(bt => React.createElement('button', {
+                    key: bt.key,
+                    onClick: () => { const detail = [...state.config.chambresDetail]; detail[idx] = bt.key; updateState(p => ({ ...p, config: { ...p.config, chambresDetail: detail } })); },
+                    className: `py-4 rounded-xl text-sm font-bold border-2 ${state.config.chambresDetail[idx]===bt.key ? 'bg-blue-50 border-blue-500' : 'bg-slate-50 border-transparent'}`
+                  }, bt.label))
+                )
+              )
+            )
+          ),
+          React.createElement('div', { className: "flex justify-center" }, React.createElement('button', { onClick: nextStep, className: "px-20 py-8 bg-slate-950 text-white rounded-full font-bold text-2xl hover:bg-blue-600" }, "Continuer"))
+        ),
+
+        // STEP 4
+        step === 4 && React.createElement('div', { className: "space-y-12" },
+          React.createElement('h3', { className: "text-5xl font-black text-center" }, "Salles d'Eau & WC"),
+          React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-10" },
+            React.createElement('div', { className: "space-y-4" },
+              React.createElement('label', { className: "font-black text-xs uppercase text-slate-400" }, "Nb Salles de bain (max 3)"),
+              React.createElement('div', { className: "flex gap-4" }, [1,2,3].map(n => React.createElement('button', { key: n, onClick: () => updateState(p => ({ ...p, config: { ...p.config, nbBathrooms: n, bathroomTypes: Array(n).fill('Douche') } })), className: `flex-1 py-6 rounded-2xl border-4 font-black ${state.config.nbBathrooms===n ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-200'}` }, n)))
+            ),
+            React.createElement('div', { className: "space-y-4" },
+              React.createElement('label', { className: "font-black text-xs uppercase text-slate-400" }, "Nb WC Séparés (max 2)"),
+              React.createElement('div', { className: "flex gap-4" }, [1,2].map(n => React.createElement('button', { key: n, onClick: () => updateState(p => ({ ...p, config: { ...p.config, nbToilets: n } })), className: `flex-1 py-6 rounded-2xl border-4 font-black ${state.config.nbToilets===n ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-200'}` }, n)))
+            )
+          ),
+          React.createElement('div', { className: "space-y-6" },
+            state.config.bathroomTypes.map((type, idx) =>
+              React.createElement('div', { key: idx, className: "flex items-center justify-between p-6 bg-white rounded-2xl border" },
+                React.createElement('span', { className: "font-bold" }, `Sanitaire ${idx+1}`),
+                React.createElement('div', { className: "flex gap-2" },
+                  BATHROOM_TYPES.map(bt => React.createElement('button', {
+                    key: bt.key,
+                    onClick: () => { const btTypes = [...state.config.bathroomTypes]; btTypes[idx] = bt.key; updateState(p => ({ ...p, config: { ...p.config, bathroomTypes: btTypes } })); },
+                    className: `px-4 py-2 rounded-lg text-sm font-bold border ${state.config.bathroomTypes[idx]===bt.key ? 'bg-blue-600 text-white' : 'bg-slate-50'}`
+                  }, bt.label))
+                )
+              )
+            )
+          ),
+          React.createElement('div', { className: "flex justify-center" }, React.createElement('button', { onClick: nextStep, className: "px-24 py-8 bg-slate-950 text-white rounded-full font-bold" }, "Suivant"))
+        ),
+
+        // STEP 5 - PIÈCES
+        step === 5 && React.createElement('div', { className: "space-y-12" },
+          React.createElement('h3', { className: "text-5xl font-black text-center" }, "Pièces de Vie"),
+          React.createElement('div', { className: "grid grid-cols-2 md:grid-cols-3 gap-6" },
+            (isVilla ? VILLA_ROOMS_EXHAUSTIVE : APPART_ROOMS_CHECKLIST).map(room => {
+              if (!isVilla) {
+                if (!isT5 && room.id === 'Cave à vin') return null;
+                if (isT5 && room.id === 'Balcon') return null;
+                if (!isT5 && room.id === 'Terrasse fermée') return null;
+                if (!isT5 && room.id === 'Salle de sport') return null;
+                if (state.config.appartementType === 'T3' && (room.id === 'Dressing' || room.id === 'Vanity')) return null;
+                if (['Piscine','Jardin','Atelier','Garage'].includes(room.id)) return null;
+              }
+              return React.createElement('button', {
+                key: room.id,
+                onClick: () => !room.mandatory && togglePiece(room.id),
+                className: `p-8 rounded-3xl border-4 flex flex-col items-center gap-4 transition-all ${state.config.pieces.includes(room.id) || room.mandatory ? 'border-blue-600 bg-blue-600 text-white shadow-lg' : 'border-slate-200 bg-white hover:border-slate-300'}`
+              },
+                room.id === 'Garage' ? React.createElement(Box, { size: 32 }) :
+                room.id === 'Jardin' ? React.createElement(Trees, { size: 32 }) :
+                room.id === 'Dressing' ? React.createElement(LayoutGrid, { size: 32 }) :
+                room.id === 'Salle de jeu' ? React.createElement(Gamepad2, { size: 32 }) :
+                room.id === 'Salle de sport' ? React.createElement(Dumbbell, { size: 32 }) :
+                React.createElement(LayoutGrid, { size: 32 }),
+                React.createElement('span', { className: "font-black text-xs uppercase text-center" }, room.label),
+                (state.config.pieces.includes(room.id) || room.mandatory) && React.createElement(CheckCircle2, { size: 20 })
+              );
+            })
+          ),
+          React.createElement('div', { className: "flex justify-center" },
+            React.createElement('button', { onClick: nextStep, className: "px-24 py-8 bg-slate-950 text-white rounded-full font-black text-2xl hover:bg-blue-600 transition-colors shadow-xl" }, "Continuer")
+          )
+        ),
+
+        // STEP 5.1 - DRESSING
+        step === 5.1 && React.createElement('div', { className: "space-y-12" },
+          React.createElement('h3', { className: "text-5xl font-black text-center" }, "Configuration du Dressing"),
+          React.createElement('div', { className: "max-w-2xl mx-auto grid grid-cols-2 gap-8" },
+            React.createElement('button', {
+              onClick: () => updateState(p => ({ ...p, config: { ...p.config, dressingGender: 'Femme' } })),
+              className: `p-12 rounded-[3rem] border-4 flex flex-col items-center gap-6 transition-all ${state.config.dressingGender==='Femme' ? 'border-blue-600 bg-blue-600 text-white shadow-lg' : 'border-slate-200 bg-white hover:border-slate-300'}`
+            }, React.createElement(Sparkles, { size: 56 }), React.createElement('div', { className: "font-black text-3xl" }, "Dressing Femme")),
+            React.createElement('button', {
+              onClick: () => updateState(p => ({ ...p, config: { ...p.config, dressingGender: 'Homme' } })),
+              className: `p-12 rounded-[3rem] border-4 flex flex-col items-center gap-6 transition-all ${state.config.dressingGender==='Homme' ? 'border-blue-600 bg-blue-600 text-white shadow-lg' : 'border-slate-200 bg-white hover:border-slate-300'}`
+            }, React.createElement(LayoutGrid, { size: 56 }), React.createElement('div', { className: "font-black text-3xl" }, "Dressing Homme"))
+          ),
+          React.createElement('div', { className: "flex justify-center" }, React.createElement('button', { onClick: nextStep, className: "px-24 py-8 bg-slate-950 text-white rounded-full font-bold" }, "Continuer"))
+        ),
+
+        // STEP 5.5 - SALON
+        step === 5.5 && React.createElement('div', { className: "space-y-12" },
+          React.createElement('h3', { className: "text-5xl font-black text-center" }, "Configuration du Salon"),
+          React.createElement('div', { className: "max-w-4xl mx-auto space-y-8 bg-white p-12 rounded-3xl shadow-lg border" },
+            React.createElement('div', { className: "space-y-4" },
+              React.createElement('label', { className: "text-sm font-black text-slate-600 uppercase" }, "Télévision"),
+              React.createElement('div', { className: "grid grid-cols-3 gap-4" },
+                ['Aucune','Murale','Sur meuble'].map(opt => React.createElement('button', {
+                  key: opt,
+                  onClick: () => updateState(p => ({ ...p, config: { ...p.config, salonOptions: { ...p.config.salonOptions, tv: opt } } })),
+                  className: `p-6 rounded-2xl border-4 font-bold transition-all ${state.config.salonOptions.tv===opt ? 'border-blue-600 bg-blue-50 text-blue-600' : 'border-slate-200'}`
+                }, opt === 'Aucune' ? 'Sans TV' : opt))
+              )
+            ),
+            React.createElement('div', { className: "space-y-4" },
+              React.createElement('label', { className: "text-sm font-black text-slate-600 uppercase" }, "Éléments décoratifs"),
+              React.createElement('div', { className: "grid grid-cols-2 gap-4" },
+                [{ key:'cadres', label:'Cadres vierges au mur' },{ key:'plantes', label:'Plantes décoratives' },{ key:'meubleDecoratif', label:'Meuble avec cadres photos' },{ key:'tableaux', label:'Tableaux muraux' }].map(item =>
+                  React.createElement('button', {
+                    key: item.key,
+                    onClick: () => updateState(p => ({ ...p, config: { ...p.config, salonOptions: { ...p.config.salonOptions, [item.key]: !p.config.salonOptions[item.key] } } })),
+                    className: `p-6 rounded-2xl border-4 text-left transition-all ${state.config.salonOptions[item.key] ? 'border-blue-600 bg-blue-50' : 'border-slate-200'}`
+                  },
+                    React.createElement('div', { className: "flex items-center gap-3" },
+                      state.config.salonOptions[item.key]
+                        ? React.createElement(CheckCircle2, { size: 24, className: "text-blue-600" })
+                        : React.createElement('div', { className: "w-6 h-6 rounded-full border-2 border-slate-300" }),
+                      React.createElement('span', { className: "font-bold" }, item.label)
+                    )
+                  )
+                )
+              )
+            )
+          ),
+          React.createElement('div', { className: "flex justify-center" }, React.createElement('button', { onClick: nextStep, className: "px-24 py-8 bg-slate-950 text-white rounded-full font-bold" }, "Continuer"))
+        ),
+
+        // STEP 6 - ESCALIER
+        step === 6 && (isVilla || isT5) && React.createElement('div', { className: "space-y-12" },
+          React.createElement('h3', { className: "text-5xl font-black text-center" }, isVilla ? "Accès Étage" : "Escalier Duplex"),
+          React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-10" },
+            React.createElement('button', { onClick: () => { updateState(p => ({ ...p, config: { ...p.config, stairType: 'Classique' } })); nextStep(); }, className: "p-16 rounded-[3rem] border-4 flex flex-col items-center gap-6 hover:border-blue-500 bg-white shadow-sm" }, React.createElement(Layers, { size: 48, className: "text-blue-500" }), React.createElement('div', { className: "text-center font-black text-2xl" }, "Escalier Classique")),
+            React.createElement('button', { onClick: () => { updateState(p => ({ ...p, config: { ...p.config, stairType: 'Escamotable' } })); nextStep(); }, className: "p-16 rounded-[3rem] border-4 flex flex-col items-center gap-6 hover:border-blue-500 bg-white shadow-sm" }, React.createElement(Construction, { size: 48, className: "text-blue-500" }), React.createElement('div', { className: "text-center font-black text-2xl" }, "Escalier Escamotable"))
+          )
+        ),
+
+        // STEP 7 VILLA
+        step === 7 && isVilla && React.createElement('div', { className: "space-y-12" },
+          React.createElement('h3', { className: "text-5xl font-black text-center" }, "Équipements Extérieurs"),
+          React.createElement('div', { className: "space-y-6" },
+            React.createElement('h4', { className: "text-2xl font-bold text-center text-slate-600" }, "Piscine"),
+            React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-3 gap-6" },
+              ['Aucune','Intérieure','Extérieure'].map(poolType => React.createElement('button', {
+                key: poolType,
+                onClick: () => updateState(p => ({ ...p, config: { ...p.config, poolType } })),
+                className: `p-12 rounded-3xl border-4 flex flex-col items-center gap-4 transition-all ${state.config.poolType===poolType ? 'border-blue-600 bg-blue-600 text-white shadow-xl' : 'border-slate-200 bg-white'}`
+              }, React.createElement(Droplet, { size: 48 }), React.createElement('div', { className: "font-black text-xl" }, poolType)))
+            )
+          ),
+          React.createElement('div', { className: "space-y-6" },
+            React.createElement('h4', { className: "text-2xl font-bold text-center text-slate-600" }, "Jacuzzi (Rond)"),
+            React.createElement('div', { className: "flex flex-col gap-4 max-w-2xl mx-auto" },
+              ['Aucun','Intérieur','Extérieur'].map(t => React.createElement('button', {
+                key: t,
+                onClick: () => updateState(p => ({ ...p, config: { ...p.config, jacuzziType: t } })),
+                className: `flex-1 p-6 rounded-2xl border-4 font-black ${state.config.jacuzziType===t ? 'border-blue-600 bg-blue-600 text-white shadow-lg' : 'border-slate-200 bg-white'}`
+              }, `Jacuzzi ${t}`))
+            )
+          ),
+          React.createElement('div', { className: "flex justify-center" },
+            React.createElement('button', {
+              onClick: state.config.pieces.includes('Jardin') ? nextStep : runStructureGeneration,
+              className: "px-24 py-8 bg-blue-600 text-white rounded-full font-black text-2xl shadow-xl hover:bg-blue-700"
+            }, state.config.pieces.includes('Jardin') ? "Suivant" : "Générer la Structure")
+          )
+        ),
+
+        // STEP 7 T5
+        step === 7 && !isVilla && isT5 && React.createElement('div', { className: "space-y-12" },
+          React.createElement('h3', { className: "text-5xl font-black text-center" }, "Jacuzzi Duplex"),
+          React.createElement('div', { className: "flex flex-col gap-4 max-w-md mx-auto" },
+            ['Aucun','Intérieur'].map(t => React.createElement('button', {
+              key: t,
+              onClick: () => updateState(p => ({ ...p, config: { ...p.config, jacuzziType: t } })),
+              className: `p-8 rounded-2xl border-4 font-black text-xl transition-all ${state.config.jacuzziType===t ? 'border-blue-600 bg-blue-600 text-white shadow-lg' : 'border-slate-200 bg-white'}`
+            }, t === 'Aucun' ? 'Pas de Jacuzzi' : 'Jacuzzi Intérieur Rond'))
+          ),
+          React.createElement('div', { className: "flex justify-center" },
+            React.createElement('button', { onClick: runStructureGeneration, className: "px-24 py-8 bg-blue-600 text-white rounded-full font-black text-2xl shadow-xl" }, "Lancer le Chantier")
+          )
+        ),
+
+        // STEP 8 VILLA JARDIN
+        step === 8 && isVilla && React.createElement('div', { className: "space-y-12" },
+          React.createElement('h3', { className: "text-5xl font-black text-center" }, "Aménagement Jardin"),
+          React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-8" },
+            [{ id:'Simple', label:'Herbe & Végétation', icon: Trees },{ id:'Jeux', label:'Espace Jeux Enfants', icon: Gamepad2 },{ id:'Mare', label:'Mare Naturelle', icon: Droplet },{ id:'Mixte', label:'Mixte (Jeux + Mare)', icon: Sparkles }].map(opt =>
+              React.createElement('button', {
+                key: opt.id,
+                onClick: () => updateState(p => ({ ...p, config: { ...p.config, gardenType: opt.id } })),
+                className: `p-10 rounded-[2.5rem] border-4 flex flex-col items-center gap-4 transition-all ${state.config.gardenType===opt.id ? 'border-blue-600 bg-blue-600 text-white shadow-lg' : 'border-slate-200 bg-white hover:border-slate-300'}`
+              }, React.createElement(opt.icon, { size: 48 }), React.createElement('div', { className: "font-black text-xl" }, opt.label))
+            )
+          ),
+          React.createElement('div', { className: "flex justify-center" },
+            React.createElement('button', { onClick: runStructureGeneration, className: "px-40 py-10 bg-blue-600 text-white rounded-full font-black text-4xl shadow-2xl hover:bg-blue-700 transform hover:scale-105 transition-all" }, "Lancer le Chantier")
+          )
+        )
+      )
+    ),
+
+    // ---- PAGE DECORATION ----
+    state.page === 'decoration' && React.createElement('div', { className: "min-h-screen bg-slate-900 text-white pb-40" },
+      React.createElement('header', { className: "p-8 border-b border-white/10 sticky top-0 bg-slate-900/90 backdrop-blur-xl z-50 flex justify-between items-center" },
+        React.createElement('h2', { className: "text-3xl font-serif font-bold italic" }, "Squelette Béton Validé"),
+        React.createElement('div', { className: "flex items-center gap-4 text-xs font-black uppercase tracking-widest text-blue-400" },
+          React.createElement(Lightbulb, { size: 16, className: "animate-pulse" }), " Équipement technique en attente"
+        )
+      ),
+      React.createElement('main', { className: "max-w-7xl mx-auto p-12 space-y-24" },
+        React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" },
+          state.imagesVides.map(img =>
+            React.createElement('div', { key: img.id, className: "space-y-4 bg-white/5 p-6 rounded-3xl border border-white/10 flex flex-col" },
+              React.createElement('div', { className: "relative aspect-video rounded-2xl overflow-hidden border border-white/10 bg-slate-800" },
+                React.createElement('img', { src: img.url, className: "w-full h-full object-cover opacity-70", alt: img.piece }),
+                React.createElement('div', { className: "absolute top-4 left-4 bg-black/60 px-3 py-1 rounded-full text-[10px] font-black" }, "BRUT")
+              ),
+              React.createElement('h4', { className: "font-bold text-center text-slate-400 my-2" }, img.piece),
+              React.createElement('div', { className: "mt-auto space-y-3" },
+                React.createElement('label', { className: "text-[10px] font-black text-blue-400 uppercase tracking-wider" }, "Photo de référence (Style)"),
+                !img.referencePhoto
+                  ? React.createElement('label', { className: "block cursor-pointer" },
+                      React.createElement('input', { type: "file", accept: "image/*", className: "hidden", onChange: (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) { const r = new FileReader(); r.onload = (ev) => updateState(pr => ({ ...pr, imagesVides: pr.imagesVides.map(i => i.id===img.id ? { ...i, referencePhoto: ev.target?.result } : i) })); r.readAsDataURL(file); }
+                      }}),
+                      React.createElement('div', { className: "p-4 border-2 border-dashed border-white/20 rounded-xl hover:border-blue-500 transition-all text-center group" },
+                        React.createElement('div', { className: "flex flex-col items-center gap-2 text-slate-500 group-hover:text-blue-400" },
+                          React.createElement(Upload, { size: 24 }),
+                          React.createElement('span', { className: "text-[10px] font-bold" }, "AJOUTER UNE INSPIRATION")
+                        )
+                      )
+                    )
+                  : React.createElement('div', { className: "relative rounded-xl overflow-hidden border-2 border-blue-500 aspect-video group" },
+                      React.createElement('img', { src: img.referencePhoto, className: "w-full h-full object-cover", alt: "Référence" }),
+                      React.createElement('button', { onClick: () => updateState(pr => ({ ...pr, imagesVides: pr.imagesVides.map(i => i.id===img.id ? { ...i, referencePhoto: undefined } : i) })), className: "absolute top-2 right-2 p-1.5 bg-red-500 rounded-lg hover:bg-red-600 transition-all opacity-0 group-hover:opacity-100" }, React.createElement(Trash2, { size: 14 })),
+                      React.createElement('div', { className: "absolute bottom-2 left-2 bg-blue-600 px-2 py-1 rounded text-[9px] font-black uppercase" }, "INSPIRATION OK")
+                    )
+              )
+            )
+          )
+        ),
+        React.createElement('div', { className: "max-w-4xl mx-auto p-16 bg-white/5 rounded-[4rem] border border-white/10 backdrop-blur-xl shadow-2xl space-y-12" },
+          React.createElement('div', { className: "text-center space-y-4" },
+            React.createElement('h3', { className: "text-5xl font-serif font-bold italic" }, "Finition & Domotique"),
+            React.createElement('p', { className: "text-slate-400" }, "Paramètres globaux pour toutes les pièces")
+          ),
+          error && React.createElement('p', { className: "text-red-400 font-bold text-center bg-red-900/30 p-4 rounded-xl" }, error),
+          React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-8" },
+            React.createElement('div', { className: "space-y-2" },
+              React.createElement('label', { className: "text-[10px] font-black text-blue-400" }, "STYLE ARCHITECTURAL"),
+              React.createElement('select', {
+                value: state.config.houseStyle,
+                onChange: e => updateState(p => ({ ...p, config: { ...p.config, houseStyle: e.target.value } })),
+                className: "w-full p-6 bg-slate-800 border border-white/10 rounded-2xl text-white"
+              }, React.createElement('option', { value: "" }, "-- Choisir un style --"), (isVilla ? HOUSE_STYLES : APPART_STYLES).map(s => React.createElement('option', { key: s, value: s }, s)))
+            ),
+            React.createElement('div', { className: "space-y-2" },
+              React.createElement('label', { className: "text-[10px] font-black text-blue-400" }, "MOBILIER"),
+              React.createElement('select', {
+                value: state.config.furnitureStyle,
+                onChange: e => updateState(p => ({ ...p, config: { ...p.config, furnitureStyle: e.target.value } })),
+                className: "w-full p-6 bg-slate-800 border border-white/10 rounded-2xl text-white"
+              }, FURNITURE_STYLES.map(s => React.createElement('option', { key: s, value: s }, s)))
+            )
+          ),
+          React.createElement('div', { className: "space-y-2" },
+            React.createElement('label', { className: "text-[10px] font-black text-blue-400" }, "NUANCIER MURS"),
+            React.createElement('div', { className: "flex flex-wrap gap-2" },
+              WALL_COLORS.map(c => React.createElement('button', {
+                key: c,
+                onClick: () => updateState(p => ({ ...p, config: { ...p.config, wallColor: c } })),
+                className: `px-4 py-2 rounded-full border text-xs font-bold transition-all ${state.config.wallColor===c ? 'bg-blue-600 border-blue-600 text-white' : 'bg-slate-800 border-white/10 text-slate-300'}`
+              }, c))
+            )
+          ),
+          React.createElement('textarea', {
+            value: state.descriptionDecoration,
+            onChange: e => updateState({ descriptionDecoration: e.target.value }),
+            placeholder: "Description globale...",
+            className: "w-full p-8 bg-slate-800 border border-white/10 rounded-3xl h-32 text-white outline-none focus:border-blue-500 transition-all"
+          }),
+          React.createElement('button', {
+            onClick: runFinalRender,
+            className: "w-full py-12 bg-blue-600 rounded-full font-black text-3xl hover:bg-blue-500 shadow-2xl flex items-center justify-center gap-6 transition-transform hover:scale-105"
+          }, "Lancer le Rendu Final ", React.createElement(Sparkles, {}))
+        )
+      )
+    ),
+
+    // ---- PAGE RÉSULTAT ----
+    state.page === 'resultat' && React.createElement('div', { className: "min-h-screen bg-slate-950 text-white pb-40" },
+      React.createElement('header', { className: "p-8 border-b border-white/10 flex justify-between items-center sticky top-0 bg-slate-950 z-50" },
+        React.createElement('h2', { className: "text-3xl font-serif font-bold italic" }, "Dossier Architecte AI Pro"),
+        React.createElement('button', { onClick: () => updateState({ page: 'accueil' }), className: "p-4 bg-white/10 rounded-full hover:bg-white/20 transition-all" }, React.createElement(X, {}))
+      ),
+      React.createElement('main', { className: "max-w-7xl mx-auto p-12 space-y-20" },
+        React.createElement('div', { className: "space-y-32" },
+          state.imagesFinales.map(img =>
+            React.createElement('div', { key: img.id, className: "space-y-12" },
+              React.createElement('div', { className: "flex flex-col md:flex-row justify-between items-start md:items-end gap-6 px-4" },
+                React.createElement('h4', { className: "text-6xl font-black" }, img.piece),
+                React.createElement('div', { className: "flex gap-4" },
+                  React.createElement('button', {
+                    onClick: () => setActiveSplitId(img.id),
+                    className: "px-8 py-4 bg-white text-slate-950 rounded-2xl hover:bg-blue-600 hover:text-white transition-all font-black flex items-center gap-3 shadow-lg"
+                  }, React.createElement(Scissors, { size: 20 }), " ArchiSplit"),
+                  React.createElement('button', {
+                    onClick: () => { const a = document.createElement('a'); a.href = img.url; a.download = `${img.piece}.png`; a.click(); },
+                    className: "p-4 bg-blue-600 rounded-2xl hover:bg-blue-500 transition-colors shadow-lg"
+                  }, React.createElement(Download, { size: 24 }))
+                )
+              ),
+              React.createElement('div', { className: "relative aspect-video rounded-[4rem] overflow-hidden shadow-2xl bg-slate-900 border border-white/5 group" },
+                React.createElement('img', { src: img.url, className: "w-full h-full object-cover transition-transform duration-[5s] group-hover:scale-105", alt: img.piece }),
+                React.createElement('div', { className: "absolute top-8 left-8 px-6 py-3 bg-white/10 backdrop-blur-md rounded-full border border-white/20 text-[12px] font-black uppercase tracking-widest" }, "Master View 4K")
+              ),
+              img.slices && img.slices.length > 0 && React.createElement('div', { className: "space-y-8 animate-in" },
+                React.createElement('div', { className: "flex items-center gap-3 px-6" },
+                  React.createElement(Camera, { className: "text-blue-500" }),
+                  React.createElement('span', { className: "font-black text-sm uppercase tracking-widest text-slate-400" }, "Plans techniques extraits")
+                ),
+                React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" },
+                  img.slices.map(slice =>
+                    React.createElement('div', { key: slice.id, className: "space-y-4 group/slice" },
+                      React.createElement('div', { className: "relative aspect-video rounded-3xl overflow-hidden border border-white/10 shadow-xl bg-slate-800" },
+                        React.createElement('img', { src: slice.url, className: "w-full h-full object-cover group-hover/slice:scale-110 transition-transform duration-700", alt: slice.label }),
+                        React.createElement('div', { className: "absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover/slice:opacity-100 transition-opacity flex items-end p-6" },
+                          React.createElement('button', {
+                            onClick: () => { const a = document.createElement('a'); a.href = slice.url; a.download = `${img.piece}_${slice.id}.png`; a.click(); },
+                            className: "p-4 bg-white text-slate-950 rounded-xl font-bold flex items-center gap-2"
+                          }, React.createElement(Download, { size: 18 }), " Télécharger")
+                        )
+                      ),
+                      React.createElement('div', { className: "px-4" },
+                        React.createElement('div', { className: "font-black text-blue-400 text-xs uppercase tracking-widest" }, slice.label),
+                        React.createElement('div', { className: "text-slate-500 text-[10px] mt-1 font-bold uppercase" }, `Angle: ${slice.camera_fov}° | Position: ${slice.camera_position}`)
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        ),
+        React.createElement('div', { className: "text-center py-20 bg-white/5 rounded-[5rem] border border-white/10 shadow-2xl mt-20" },
+          React.createElement('h2', { className: "text-6xl font-serif font-bold italic mb-10" }, "Projet Finalisé."),
+          React.createElement('button', {
+            onClick: async () => {
+              const zip = new JSZip();
+              state.imagesFinales.forEach(img => {
+                zip.file(`${img.piece.replace(/\s+/g,'_')}_MASTER.png`, img.url.split(',')[1], { base64: true });
+                img.slices?.forEach(s => zip.file(`${img.piece.replace(/\s+/g,'_')}_SLICE_${s.id}.png`, s.url.split(',')[1], { base64: true }));
+              });
+              const blob = await zip.generateAsync({ type: 'blob' });
+              const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "Projet_Architecte_Full.zip"; a.click();
+            },
+            className: "px-32 py-10 bg-blue-600 rounded-full font-black text-4xl hover:scale-105 transition-all flex items-center gap-8 mx-auto shadow-2xl"
+          }, "Télécharger le Pack Complet ZIP ", React.createElement(Download, { size: 40 }))
+        )
+      )
+    )
+  );
+};
+
+// ============================================================
+// ROOT RENDER WITH API KEY GATE
+// ============================================================
+const Root = () => {
+  const [apiKey, setApiKey] = useState(null);
+  if (!apiKey) return React.createElement(ApiKeyGate, { onKeyValidated: setApiKey });
+  return React.createElement(App, { apiKey });
+};
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(React.createElement(React.StrictMode, null, React.createElement(Root)));
+</script>
+</body>
+</html>
