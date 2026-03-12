@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Studio Scène — Récits Temporels</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,700;0,900;1,300;1,700;1,900&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #050b18; color: white; }
+    .glass-card { background: rgba(255,255,255,0.03); backdrop-filter: blur(30px); border: 1px solid rgba(255,255,255,0.08); }
+    .text-glow { text-shadow: 0 0 20px rgba(255,255,255,0.2); }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #050b18; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: white; }
+    @keyframes float { 0%,100% { transform: translateY(0) rotate(12deg); } 50% { transform: translateY(-20px) rotate(15deg); } }
+    .animate-float { animation: float 6s ease-in-out infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .animate-spin { animation: spin 1s linear infinite; }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+    .animate-pulse { animation: pulse 2s ease-in-out infinite; }
+    @keyframes fadeIn { from { opacity:0; transform: translateY(20px); } to { opacity:1; transform: translateY(0); } }
+    .animate-in { animation: fadeIn 0.5s ease-out forwards; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body style="background: radial-gradient(circle at top right, #0a192f, #050b18 70%);" class="min-h-screen">
+
+<!-- API KEY MODAL -->
+<div id="apiKeyModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-xl">
+  <div class="glass-card rounded-[3rem] p-12 max-w-lg w-full mx-6 shadow-[0_50px_100px_rgba(0,0,0,0.8)] border border-white/10">
+    <div class="flex items-center gap-4 mb-8">
+      <div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-lg">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-[#050b18]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+      </div>
+      <div>
+        <h2 class="text-xl font-black uppercase italic tracking-tighter">Studio Scène</h2>
+        <p class="text-[10px] font-bold text-white/30 tracking-widest uppercase">Activation requise</p>
+      </div>
+    </div>
+    <p class="text-sm text-white/60 font-light leading-relaxed mb-8">
+      Entrez votre clé API <strong class="text-white font-bold">Google AI Studio</strong> pour activer le moteur de génération. Vos crédits personnels seront utilisés.
+    </p>
+    <div class="space-y-4">
+      <input id="apiKeyInput" type="password" placeholder="AIza..." 
+        class="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm outline-none focus:border-white focus:bg-white/10 transition-all placeholder:text-white/20 font-mono"
+      />
+      <div id="apiKeyError" class="hidden text-red-400 text-xs px-2">Clé invalide. Vérifiez et réessayez.</div>
+      <button id="activateBtn" onclick="activateApiKey()"
+        class="w-full bg-white text-[#050b18] py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-blue-50 transition-all shadow-2xl active:scale-95"
+      >
+        ⚡ Activer le Studio
+      </button>
+    </div>
+    <p class="text-[9px] text-white/20 text-center mt-6 font-medium">
+      Votre clé reste dans votre navigateur et n'est jamais partagée.
+    </p>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="mainApp" class="hidden min-h-screen text-white font-light pb-20 relative">
+
+  <!-- BG -->
+  <div class="fixed inset-0 z-[-1] overflow-hidden pointer-events-none">
+    <img src="https://images.unsplash.com/photo-1594909122845-11baa439b7bf?q=80&w=2000&auto=format&fit=crop" alt="" class="w-full h-full object-cover opacity-[0.03] scale-110 blur-[2px] grayscale" />
+    <div class="absolute inset-0 bg-gradient-to-b from-[#050b18] via-transparent to-[#050b18]"></div>
+  </div>
+
+  <!-- HEADER -->
+  <header class="border-b border-white/10 bg-black/40 backdrop-blur-xl sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-[#050b18]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.6l13.5-4.6c1-.3 2.1.2 2.4 1.2zm-5 3L3 11"/><path d="M1.93 11.5A2 2 0 0 0 1 13v5a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2v-5a2 2 0 0 0-.93-1.5"/><rect width="4" height="5" x="10" y="13" rx="1"/></svg>
+        </div>
+        <h1 class="text-xl font-black uppercase italic tracking-tighter leading-none">Studio Scène</h1>
+      </div>
+      <button onclick="resetApiKey()" class="px-6 py-2.5 rounded-full text-[10px] font-black border bg-white/5 border-white/20 text-white hover:bg-white/10 transition-all">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 inline mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+        SYSTÈME ACTIF
+      </button>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-6 py-12 relative z-10">
+    
+    <!-- ALERTS -->
+    <div id="errorBanner" class="hidden mb-8 p-6 bg-red-500/10 border border-red-500/20 rounded-3xl text-red-100 text-sm flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-red-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span id="errorText"></span>
+      </div>
+      <button onclick="hideError()" class="p-2 hover:bg-white/10 rounded-full ml-4">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+      </button>
+    </div>
+    <div id="successBanner" class="hidden mb-8 p-6 bg-white/5 border border-white/10 rounded-3xl text-white text-sm flex items-center gap-4">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      <span id="successText"></span>
+    </div>
+
+    <!-- LANDING / UPLOAD -->
+    <div id="landingSection" class="flex flex-col items-center py-20 animate-in">
+      <div class="w-full max-w-6xl glass-card rounded-[4rem] overflow-hidden border border-white/10 shadow-[0_50px_100px_rgba(0,0,0,0.5)] relative mb-20 group">
+        <div class="grid grid-cols-1 md:grid-cols-12">
+          <div class="md:col-span-7 p-12 md:p-16 flex flex-col justify-center bg-gradient-to-br from-white/10 to-transparent relative z-10">
+            <div class="mb-6 flex items-center gap-3">
+              <span class="px-3 py-1 bg-white text-[#050b18] text-[9px] font-black uppercase tracking-widest rounded shadow-sm">Production Studio</span>
+              <div class="h-[1px] w-8 bg-white/20"></div>
+              <span class="text-[9px] font-bold text-white/40 tracking-widest uppercase">Édition 2025</span>
+            </div>
+            <h2 class="text-7xl md:text-9xl font-black mb-8 tracking-tighter uppercase italic leading-[0.8] text-white text-glow">Studio <br/>Scène</h2>
+            <p class="text-xl font-light text-white/80 mb-12 leading-relaxed italic max-w-lg border-l border-white/20 pl-6">
+              "prolonge un instant dans le temps et transforme une image figée en une suite de moments vécus."
+            </p>
+            <div class="flex flex-wrap items-center gap-6">
+              <label class="relative bg-white text-[#050b18] w-fit px-14 py-6 rounded-full font-black text-xs cursor-pointer hover:bg-blue-50 transition-all shadow-2xl active:scale-95 overflow-hidden">
+                <span class="relative z-10 uppercase tracking-[0.2em] flex items-center gap-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                  DÉMARRER LE TOURNAGE
+                </span>
+                <input type="file" class="hidden" accept="image/*" onchange="handleImageUpload(event)" />
+              </label>
+            </div>
+          </div>
+          <div class="md:col-span-5 relative h-[35rem] md:h-auto overflow-hidden bg-[#050b18]">
+            <img src="https://images.unsplash.com/photo-1585647347384-2593bc35786b?q=80&w=1200&auto=format&fit=crop" alt="" class="w-full h-full object-cover transition-all duration-[3000ms] group-hover:scale-110 opacity-80" />
+            <div class="absolute inset-0 bg-gradient-to-r from-[#050b18] via-[#050b18]/40 to-transparent"></div>
+            <div class="absolute bottom-10 right-10 w-48 h-48 animate-float">
+              <img src="https://images.unsplash.com/photo-1594909122845-11baa439b7bf?q=80&w=500&auto=format&fit=crop" alt="" class="w-full h-full object-contain drop-shadow-[0_30px_60px_rgba(0,0,0,0.9)] scale-110" />
+            </div>
+            <div class="absolute top-12 left-12">
+              <div class="px-4 py-2 bg-white/10 backdrop-blur-3xl border border-white/20 rounded-xl">
+                <p class="text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-2">
+                  <span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span> REC
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center gap-8 opacity-20">
+        <div class="h-[1px] w-24 bg-white"></div>
+        <p class="text-[10px] font-black uppercase tracking-[1em] text-white">Action • Narration • Temps</p>
+        <div class="h-[1px] w-24 bg-white"></div>
+      </div>
+    </div>
+
+    <!-- WORKSPACE -->
+    <div id="workspaceSection" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-16 animate-in">
+
+      <!-- LEFT PANEL -->
+      <div class="lg:col-span-4 space-y-10">
+        <div class="glass-card rounded-[3rem] p-10 sticky top-32 shadow-2xl">
+          <div class="relative group rounded-[2.5rem] overflow-hidden mb-10 shadow-2xl border border-white/10">
+            <img id="refImagePreview" src="" class="w-full aspect-[3/4] object-cover" alt="Référence" />
+            <div class="absolute inset-0 bg-blue-900/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center backdrop-blur-sm">
+              <button onclick="resetImage()" class="p-5 bg-white rounded-full text-[#050b18] shadow-2xl hover:scale-110 transition-transform">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+              </button>
+            </div>
+            <div class="absolute top-6 left-6 px-4 py-2 bg-white text-[#050b18] rounded-full text-[10px] font-black tracking-widest uppercase">Scène Alpha</div>
+          </div>
+
+          <!-- ANALYZE BUTTON -->
+          <div id="analyzeSection">
+            <button onclick="handleAnalyze()" id="analyzeBtn" class="w-full bg-white text-[#050b18] py-6 rounded-2xl font-black text-xs flex items-center justify-center gap-4 transition-all hover:bg-blue-50 shadow-2xl active:scale-[0.98]">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              VERROUILLER L'ADN VISUEL
+            </button>
+          </div>
+
+          <!-- ANALYSIS RESULT -->
+          <div id="analysisResult" class="hidden space-y-6 animate-in">
+            <div class="p-6 bg-white/10 border border-white/10 rounded-3xl flex items-center gap-5">
+              <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-[#050b18]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              </div>
+              <div>
+                <p class="text-xs font-black text-white uppercase tracking-widest">Réalité Définie</p>
+                <p class="text-[10px] text-white/40 font-medium">Continuité physique OK</p>
+              </div>
+            </div>
+            <div class="p-8 bg-white/[0.02] rounded-3xl border border-white/5 space-y-4">
+              <p class="text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">Inventaire Spatial</p>
+              <p class="text-sm text-white/70 italic leading-relaxed font-light" id="analysisSummary"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT PANEL -->
+      <div class="lg:col-span-8 space-y-16">
+
+        <!-- SEQUENCE CONFIG -->
+        <div id="sequenceConfig" class="hidden glass-card rounded-[4rem] p-12 border border-white/10 relative overflow-hidden shadow-2xl animate-in">
+          <div class="absolute top-0 right-0 p-8 opacity-5">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-64 h-64 -rotate-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.6l13.5-4.6c1-.3 2.1.2 2.4 1.2zm-5 3L3 11"/><path d="M1.93 11.5A2 2 0 0 0 1 13v5a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2v-5a2 2 0 0 0-.93-1.5"/><rect width="4" height="5" x="10" y="13" rx="1"/></svg>
+          </div>
+          <div class="flex flex-col gap-10 relative z-10">
+            <div class="flex flex-wrap items-center justify-between gap-8">
+              <div class="flex gap-3 bg-white/5 p-2 rounded-full border border-white/10 shadow-inner">
+                <button id="modeAutoBtn" onclick="setMode(true)" class="px-10 py-3 rounded-full text-[10px] font-black transition-all bg-white text-[#050b18] shadow-xl">FLUX NATUREL</button>
+                <button id="modeManualBtn" onclick="setMode(false)" class="px-10 py-3 rounded-full text-[10px] font-black transition-all opacity-40 hover:opacity-100">DIRECTION ARTISTIQUE</button>
+              </div>
+              <h2 class="text-2xl font-black italic uppercase tracking-tighter text-glow">Ligne de Temps</h2>
+            </div>
+
+            <!-- FORMAT -->
+            <div class="space-y-4">
+              <p class="text-[10px] font-black text-white/30 uppercase tracking-[0.3em]">Format de l'image</p>
+              <div class="flex gap-4 flex-wrap">
+                <button onclick="setAspectRatio('1:1')" id="ratio_1_1" class="flex items-center gap-3 px-6 py-4 rounded-2xl border transition-all text-[11px] font-black uppercase tracking-wider bg-white text-[#050b18] border-white shadow-xl">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+                  Carré (1:1)
+                </button>
+                <button onclick="setAspectRatio('16:9')" id="ratio_16_9" class="flex items-center gap-3 px-6 py-4 rounded-2xl border transition-all text-[11px] font-black uppercase tracking-wider bg-white/5 border-white/10 hover:border-white/30 text-white/50">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="3" width="20" height="14" rx="2"/><polyline points="8 21 12 17 16 21"/></svg>
+                  Cinéma (16:9)
+                </button>
+                <button onclick="setAspectRatio('9:16')" id="ratio_9_16" class="flex items-center gap-3 px-6 py-4 rounded-2xl border transition-all text-[11px] font-black uppercase tracking-wider bg-white/5 border-white/10 hover:border-white/30 text-white/50">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="5" y="2" width="14" height="20" rx="2"/></svg>
+                  Portrait (9:16)
+                </button>
+              </div>
+            </div>
+
+            <!-- MANUAL INPUT -->
+            <div id="actionInputSection" class="hidden">
+              <textarea id="actionDescription" placeholder="Décrivez l'évolution de la scène..." 
+                class="w-full h-44 bg-white/5 border border-white/10 rounded-[2.5rem] p-10 text-xl outline-none focus:border-white focus:bg-white/10 transition-all placeholder:text-white/10 font-light resize-none shadow-inner">
+              </textarea>
+            </div>
+
+            <button onclick="handleGenerateSequence()" id="generateBtn" class="w-full bg-white text-[#050b18] py-7 rounded-3xl font-black text-sm shadow-[0_20px_50px_rgba(255,255,255,0.1)] hover:bg-blue-50 active:scale-95 transition-all flex items-center justify-center gap-4">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+              DÉPLOYER LA SÉQUENCE VÉCUE
+            </button>
+          </div>
+        </div>
+
+        <!-- EMPTY STATE (before analysis) -->
+        <div id="emptyState" class="h-[40rem] flex flex-col items-center justify-center border border-white/5 bg-white/[0.01] rounded-[4rem] opacity-20 border-dashed relative overflow-hidden">
+          <div class="absolute inset-0 opacity-5 pointer-events-none grayscale">
+            <img src="https://images.unsplash.com/photo-1594909122845-11baa439b7bf?q=80&w=1000&auto=format&fit=crop" class="w-full h-full object-cover" alt="" />
+          </div>
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-20 h-20 mb-10 opacity-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.6l13.5-4.6c1-.3 2.1.2 2.4 1.2zm-5 3L3 11"/><path d="M1.93 11.5A2 2 0 0 0 1 13v5a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2v-5a2 2 0 0 0-.93-1.5"/><rect width="4" height="5" x="10" y="13" rx="1"/></svg>
+          <p class="font-black uppercase tracking-[0.8em] text-[10px] text-center px-20 leading-loose relative z-10">
+            Prêt pour le tournage ?<br/>Analysez votre image source.
+          </p>
+        </div>
+
+        <!-- STORYBOARD GRID -->
+        <div id="storyboardSection" class="hidden space-y-12 animate-in">
+          <div class="flex items-center justify-between px-8">
+            <div class="flex items-center gap-4">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white/30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.6l13.5-4.6c1-.3 2.1.2 2.4 1.2zm-5 3L3 11"/><path d="M1.93 11.5A2 2 0 0 0 1 13v5a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2v-5a2 2 0 0 0-.93-1.5"/><rect width="4" height="5" x="10" y="13" rx="1"/></svg>
+              <h3 class="text-sm font-black uppercase tracking-[0.5em] text-white/30">Storyboard Temporel</h3>
+            </div>
+            <button id="zipBtn" onclick="downloadAllAsZip()" class="hidden flex items-center gap-3 px-10 py-4 bg-white/5 border border-white/20 rounded-full text-[10px] font-black hover:bg-white hover:text-[#050b18] transition-all shadow-xl">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              EXPORTER TOUT (.ZIP)
+            </button>
+          </div>
+          <div id="storyboardGrid" class="grid grid-cols-1 md:grid-cols-2 gap-10"></div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <footer class="mt-40 py-24 border-t border-white/5 bg-black/40 backdrop-blur-md text-center relative z-10">
+    <div class="max-w-7xl mx-auto px-6 flex flex-col items-center">
+      <p class="text-[12px] font-medium text-white/40 italic max-w-2xl leading-loose mb-12">
+        "prolonge un instant dans le temps et transforme une image figée en une suite de moments vécus."
+      </p>
+      <div class="flex items-center gap-6 opacity-10 mb-12">
+        <div class="h-[1px] w-24 bg-white"></div>
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.6l13.5-4.6c1-.3 2.1.2 2.4 1.2zm-5 3L3 11"/><path d="M1.93 11.5A2 2 0 0 0 1 13v5a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2v-5a2 2 0 0 0-.93-1.5"/><rect width="4" height="5" x="10" y="13" rx="1"/></svg>
+        <div class="h-[1px] w-24 bg-white"></div>
+      </div>
+      <p class="text-[9px] font-black uppercase tracking-[1em] text-white/5">© 2025 Studio Scène • Laboratoire de Narration Temporelle</p>
+    </div>
+  </footer>
+</div>
+
+<!-- JSZip -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<script type="module">
+import { GoogleGenAI, Type } from "https://esm.sh/@google/genai@^1.34.0";
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let API_KEY = sessionStorage.getItem('studio_scene_key') || null;
+let referenceImage = null;
+let referenceMime = 'image/jpeg';
+let analysisData = null;
+let isAutoMode = true;
+let aspectRatio = '1:1';
+let generatedPrompts = [];
+let generatedImages = {};
+let imageGeneratingIds = new Set();
+
+// ─── API KEY ──────────────────────────────────────────────────────────────────
+window.activateApiKey = function() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key || !key.startsWith('AIza')) {
+    document.getElementById('apiKeyError').classList.remove('hidden');
+    return;
+  }
+  API_KEY = key;
+  sessionStorage.setItem('studio_scene_key', key);
+  document.getElementById('apiKeyModal').classList.add('hidden');
+  document.getElementById('mainApp').classList.remove('hidden');
+};
+
+window.resetApiKey = function() {
+  sessionStorage.removeItem('studio_scene_key');
+  API_KEY = null;
+  document.getElementById('apiKeyInput').value = '';
+  document.getElementById('apiKeyModal').classList.remove('hidden');
+  document.getElementById('mainApp').classList.add('hidden');
+};
+
+// Allow Enter key
+document.getElementById('apiKeyInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') window.activateApiKey();
+});
+
+// Auto-show app if key exists in session
+if (API_KEY) {
+  document.getElementById('apiKeyModal').classList.add('hidden');
+  document.getElementById('mainApp').classList.remove('hidden');
+}
+
+// ─── UI HELPERS ───────────────────────────────────────────────────────────────
+function showError(msg) {
+  const b = document.getElementById('errorBanner');
+  document.getElementById('errorText').textContent = msg;
+  b.classList.remove('hidden');
+  b.style.display = 'flex';
+}
+window.hideError = function() { document.getElementById('errorBanner').classList.add('hidden'); };
+
+function showSuccess(msg) {
+  const b = document.getElementById('successBanner');
+  document.getElementById('successText').textContent = msg;
+  b.classList.remove('hidden');
+  b.style.display = 'flex';
+  setTimeout(() => b.classList.add('hidden'), 3000);
+}
+
+function setButtonLoading(btnId, loading, defaultContent) {
+  const btn = document.getElementById(btnId);
+  if (loading) {
+    btn.disabled = true;
+    btn.innerHTML = `<svg class="animate-spin w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg> En cours...`;
+  } else {
+    btn.disabled = false;
+    btn.innerHTML = defaultContent;
+  }
+}
+
+// ─── IMAGE UPLOAD ─────────────────────────────────────────────────────────────
+window.handleImageUpload = function(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    const result = event.target.result;
+    referenceMime = result.match(/^data:(image\/[a-z]+);base64,/)?.[1] || 'image/jpeg';
+    referenceImage = result.split(',')[1];
+    document.getElementById('refImagePreview').src = result;
+    analysisData = null;
+    generatedPrompts = [];
+    generatedImages = {};
+    document.getElementById('landingSection').classList.add('hidden');
+    document.getElementById('workspaceSection').classList.remove('hidden');
+    document.getElementById('workspaceSection').style.display = 'grid';
+    document.getElementById('analyzeSection').classList.remove('hidden');
+    document.getElementById('analysisResult').classList.add('hidden');
+    document.getElementById('sequenceConfig').classList.add('hidden');
+    document.getElementById('emptyState').classList.remove('hidden');
+    document.getElementById('storyboardSection').classList.add('hidden');
+  };
+  reader.readAsDataURL(file);
+};
+
+window.resetImage = function() {
+  referenceImage = null;
+  analysisData = null;
+  generatedPrompts = [];
+  generatedImages = {};
+  document.getElementById('landingSection').classList.remove('hidden');
+  document.getElementById('workspaceSection').classList.add('hidden');
+};
+
+// ─── MODE & ASPECT RATIO ──────────────────────────────────────────────────────
+window.setMode = function(auto) {
+  isAutoMode = auto;
+  document.getElementById('modeAutoBtn').className = `px-10 py-3 rounded-full text-[10px] font-black transition-all ${auto ? 'bg-white text-[#050b18] shadow-xl' : 'opacity-40 hover:opacity-100'}`;
+  document.getElementById('modeManualBtn').className = `px-10 py-3 rounded-full text-[10px] font-black transition-all ${!auto ? 'bg-white text-[#050b18] shadow-xl' : 'opacity-40 hover:opacity-100'}`;
+  document.getElementById('actionInputSection').classList.toggle('hidden', auto);
+};
+
+window.setAspectRatio = function(ratio) {
+  aspectRatio = ratio;
+  ['1:1','16:9','9:16'].forEach(r => {
+    const id = 'ratio_' + r.replace(':','_');
+    const btn = document.getElementById(id);
+    if (r === ratio) {
+      btn.className = btn.className.replace('bg-white/5 border-white/10 hover:border-white/30 text-white/50', 'bg-white text-[#050b18] border-white shadow-xl');
+    } else {
+      btn.className = btn.className.replace('bg-white text-[#050b18] border-white shadow-xl', 'bg-white/5 border-white/10 hover:border-white/30 text-white/50');
+    }
+  });
+};
+
+// ─── ANALYZE ─────────────────────────────────────────────────────────────────
+window.handleAnalyze = async function() {
+  if (!referenceImage) return;
+  setButtonLoading('analyzeBtn', true, '');
+  hideError();
+  try {
+    const ai = new GoogleGenAI({ apiKey: API_KEY });
+    const prompt = `CAPTURER L'ADN DE L'INSTANT. 
+    Analysez cette image comme le point Zéro d'un récit cinématographique.
+    Identifiez avec une précision absolue :
+    1. personnage : identité visuelle, tenue exacte, posture émotionnelle, énergie.
+    2. environnement : géométrie du lieu, textures, mobilier, petits objets de décor.
+    3. lumière : ambiance lumineuse, ombres portées, température.
+    Le but est de pouvoir recréer cette scène sous d'autres angles temporels sans aucune invention.
+    Répondez EXCLUSIVEMENT en JSON.`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.1-pro-preview',
+      contents: [{
+        parts: [
+          { inlineData: { mimeType: referenceMime, data: referenceImage } },
+          { text: prompt }
+        ]
+      }],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            personnage: { type: Type.OBJECT, properties: { apparence: {type:Type.STRING}, expression_faciale:{type:Type.STRING}, posture:{type:Type.STRING}, vetements:{type:Type.OBJECT, properties:{haut:{type:Type.STRING},bas:{type:Type.STRING},chaussures:{type:Type.STRING}},required:["haut","bas","chaussures"]}, objets_tenus:{type:Type.ARRAY,items:{type:Type.OBJECT,properties:{objet:{type:Type.STRING},couleur:{type:Type.STRING},matiere:{type:Type.STRING},position:{type:Type.STRING},contenu:{type:Type.STRING}},required:["objet","couleur","matiere","position","contenu"]}}}, required:["apparence","expression_faciale","posture","vetements","objets_tenus"] },
+            environnement: { type: Type.OBJECT, properties: { lieu:{type:Type.STRING}, murs:{type:Type.STRING}, sol:{type:Type.STRING}, meubles:{type:Type.ARRAY,items:{type:Type.OBJECT,properties:{type:{type:Type.STRING},couleur:{type:Type.STRING},position:{type:Type.STRING}},required:["type","couleur","position"]}}, objets_visibles:{type:Type.ARRAY,items:{type:Type.OBJECT,properties:{type:{type:Type.STRING},couleur:{type:Type.STRING},emplacement:{type:Type.STRING}},required:["type","couleur","emplacement"]}}}, required:["lieu","murs","sol","meubles","objets_visibles"] },
+            lumiere: { type: Type.OBJECT, properties: {type:{type:Type.STRING},direction:{type:Type.STRING},intensite:{type:Type.STRING}}, required:["type","direction","intensite"] }
+          },
+          required: ["personnage","environnement","lumiere"]
+        }
+      }
+    });
+
+    const text = response.text;
+    if (!text) throw new Error("Réponse vide de l'IA lors de l'analyse.");
+    const jsonMatch = text.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+    analysisData = JSON.parse(jsonMatch ? jsonMatch[0] : text);
+
+    const objets = analysisData.personnage.objets_tenus.map(o => o.objet).join(', ') || 'Aucun objet';
+    document.getElementById('analysisSummary').innerHTML = `<span class="text-white font-bold not-italic mr-2">Lieu :</span> ${analysisData.environnement.lieu}<br/><span class="text-white font-bold not-italic mr-2">Acteurs :</span> ${objets}`;
+    document.getElementById('analyzeSection').classList.add('hidden');
+    document.getElementById('analysisResult').classList.remove('hidden');
+    document.getElementById('sequenceConfig').classList.remove('hidden');
+    document.getElementById('emptyState').classList.add('hidden');
+    showSuccess('Analyse temporelle terminée. Séquence prête.');
+  } catch(err) {
+    showError(err.message || "Erreur lors de l'analyse.");
+  }
+  setButtonLoading('analyzeBtn', false, `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> VERROUILLER L'ADN VISUEL`);
+};
+
+// ─── GENERATE SEQUENCE ────────────────────────────────────────────────────────
+window.handleGenerateSequence = async function() {
+  if (!analysisData) { showError("Veuillez d'abord analyser l'image source."); return; }
+  const btn = document.getElementById('generateBtn');
+  btn.disabled = true;
+  btn.innerHTML = `<svg class="animate-spin w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg> Écriture du scénario...`;
+  hideError();
+  generatedPrompts = [];
+  generatedImages = {};
+
+  const action = isAutoMode ? null : document.getElementById('actionDescription').value;
+
+  try {
+    const ai = new GoogleGenAI({ apiKey: API_KEY });
+    const prompt = `ARC NARRATIF CINÉMATOGRAPHIQUE.
+    ACTION PRINCIPALE : ${action || "Une séquence narrative complète commençant par l'image source"}.
+    CONTEXTE SOURCE (POINT ZÉRO) : 
+    - Lieu : ${analysisData.environnement.lieu}
+    - Personnage : ${analysisData.personnage.apparence}
+    - Position initiale : ${analysisData.personnage.posture}
+    CONSIGNES DE NARRATION :
+    1. Décomposez l'action en 5 étapes clés (beats) qui forment une mini-histoire cohérente.
+    2. Les actions doivent être suffisamment espacées pour montrer une progression réelle et significative.
+    3. Maintenez une continuité absolue : même personnage, même tenue, même décor, mêmes objets.
+    4. Décrivez l'évolution précise de la posture et de l'intention à chaque étape.
+    5. Chaque étape doit être visuellement distincte tout en restant dans le même espace physique.
+    Répondez EXCLUSIVEMENT en JSON avec une liste "scenes".`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.1-pro-preview',
+      contents: [{ parts: [{ text: prompt }] }],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            scenes: { type: Type.ARRAY, items: { type: Type.STRING } }
+          },
+          required: ["scenes"]
+        }
+      }
+    });
+
+    const text = response.text;
+    if (!text) throw new Error("Réponse vide.");
+    const jsonMatch = text.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+    const data = JSON.parse(jsonMatch ? jsonMatch[0] : text);
+    const scenes = data.scenes || [];
+    if (!scenes.length) throw new Error("L'IA n'a pas pu générer de scènes.");
+
+    generatedPrompts = scenes.map((s, i) => ({ id: `${Date.now()}-${i}`, scene: s, prompt: s }));
+    renderStoryboard();
+    showSuccess('Storyboard généré avec succès.');
+  } catch(err) {
+    showError(err.message || "Échec de la génération du storyboard.");
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg> DÉPLOYER LA SÉQUENCE VÉCUE`;
+};
+
+// ─── STORYBOARD RENDER ────────────────────────────────────────────────────────
+function getAspectClass() {
+  if (aspectRatio === '16:9') return 'aspect-video';
+  if (aspectRatio === '9:16') return 'aspect-[9/16]';
+  return 'aspect-square';
+}
+
+function renderStoryboard() {
+  const grid = document.getElementById('storyboardGrid');
+  grid.innerHTML = '';
+  document.getElementById('storyboardSection').classList.remove('hidden');
+  document.getElementById('zipBtn').classList.add('hidden');
+
+  generatedPrompts.forEach((p, i) => {
+    const card = document.createElement('div');
+    card.id = `card-${p.id}`;
+    card.className = 'glass-card rounded-[3.5rem] overflow-hidden group border border-white/5 hover:border-white/40 transition-all hover:shadow-[0_40px_80px_rgba(0,0,0,0.5)] flex flex-col';
+    card.innerHTML = `
+      <div class="bg-white/5 flex items-center justify-center relative overflow-hidden ${getAspectClass()}" id="imgContainer-${p.id}">
+        <button onclick="renderPlan('${p.id}', ${i})" id="renderBtn-${p.id}" class="w-full h-full flex flex-col items-center justify-center gap-8 hover:bg-white/[0.04] transition-all min-h-[300px]">
+          <div class="w-24 h-24 border border-white/10 rounded-full flex items-center justify-center group-hover:bg-white group-hover:border-transparent transition-all shadow-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 opacity-20 group-hover:opacity-100 group-hover:text-[#050b18] transition-all" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          </div>
+          <span class="text-[10px] font-black uppercase text-white/20 tracking-[0.5em] group-hover:text-white transition-all">Générer le moment</span>
+        </button>
+      </div>
+      <div class="p-12 bg-white/[0.01] flex-grow flex items-center border-t border-white/5">
+        <p class="text-base font-light italic text-white/40 leading-relaxed border-l border-white/10 pl-8 group-hover:text-white/70 transition-colors">"${p.scene}"</p>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+// ─── RENDER IMAGE ─────────────────────────────────────────────────────────────
+window.renderPlan = async function(id, index) {
+  if (!referenceImage || !analysisData) return;
+  const p = generatedPrompts[index];
+  if (!p) return;
+
+  imageGeneratingIds.add(id);
+  const container = document.getElementById(`imgContainer-${id}`);
+  container.innerHTML = `
+    <div class="flex flex-col items-center justify-center gap-6 w-full h-full min-h-[300px]">
+      <svg class="animate-spin text-white w-14 h-14 opacity-20" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>
+      <span class="text-[10px] font-black text-white/30 tracking-[0.4em] uppercase animate-pulse">Développement...</span>
+    </div>`;
+
+  try {
+    const ai = new GoogleGenAI({ apiKey: API_KEY });
+    const instruction = `PROTOCOLE DE CONTINUITÉ NARRATIVE.
+    - SOURCE FRAME: Utilisez l'image fournie comme référence spatiale et d'identité absolue.
+    - DÉCOR: ${analysisData.environnement.lieu}. Conservez chaque détail, texture et position des meubles.
+    - PERSONNAGE: ${analysisData.personnage.apparence}. Même visage, même morphologie, même tenue (${analysisData.personnage.vetements.haut}, ${analysisData.personnage.vetements.bas}).
+    - ÉTAPE NARRATIVE: ${p.prompt}.
+    - PROGRESSION: Assurez-vous que le mouvement est fluide par rapport à la source mais montre une avancée réelle dans l'action.
+    - STYLE: Cinématographique, haute fidélité, rendu photoréaliste.
+    - CONTRAINTE: Zéro invention d'objets. Si un élément n'est pas dans la source, il n'apparaît pas.
+    - AMBIANCE: Lumière ${analysisData.lumiere.type} venant de ${analysisData.lumiere.direction}.`;
+
+    const generate = async () => await ai.models.generateContent({
+      model: 'gemini-3.1-flash-image-preview',
+      contents: { parts: [
+        { inlineData: { data: referenceImage, mimeType: referenceMime } },
+        { text: instruction }
+      ]},
+      config: { imageConfig: { aspectRatio, imageSize: "1K" } }
+    });
+
+    let response;
+    try {
+      response = await generate();
+    } catch(e) {
+      if (e.message?.includes("500") || e.message?.includes("Internal") || e.message?.includes("overloaded")) {
+        await new Promise(r => setTimeout(r, 3000));
+        response = await generate();
+      } else throw e;
+    }
+
+    const part = response?.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+    if (!part?.inlineData?.data) throw new Error("La continuité temporelle a été brisée par le moteur de rendu.");
+
+    const imgUrl = `data:image/png;base64,${part.inlineData.data}`;
+    generatedImages[id] = imgUrl;
+
+    container.innerHTML = `
+      <img src="${imgUrl}" class="w-full h-full object-cover transition-transform duration-[6s] group-hover:scale-110" alt="Instant ${index+1}" />
+      <button onclick="downloadImage('${id}', ${index+1})" class="absolute top-8 right-8 p-5 bg-white text-[#050b18] rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-2xl hover:scale-110">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      </button>
+      <div class="absolute bottom-8 left-8 px-6 py-2.5 bg-white/10 backdrop-blur-2xl rounded-full text-[10px] font-black border border-white/20 uppercase tracking-widest">Prise 0${index+1}</div>
+    `;
+
+    if (Object.keys(generatedImages).length > 0) {
+      document.getElementById('zipBtn').classList.remove('hidden');
+    }
+  } catch(err) {
+    showError(`Erreur de rendu pour ce moment : ${err.message}`);
+    container.innerHTML = `
+      <button onclick="renderPlan('${id}', ${index})" class="w-full h-full flex flex-col items-center justify-center gap-8 hover:bg-white/[0.04] transition-all min-h-[300px]">
+        <div class="w-24 h-24 border border-red-500/20 rounded-full flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-red-400/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <span class="text-[10px] font-black uppercase text-red-400/40 tracking-widest">Réessayer</span>
+      </button>`;
+  }
+  imageGeneratingIds.delete(id);
+};
+
+// ─── DOWNLOAD ─────────────────────────────────────────────────────────────────
+window.downloadImage = function(id, num) {
+  const url = generatedImages[id];
+  if (!url) return;
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `studio_scene_moment_${num}.png`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+window.downloadAllAsZip = async function() {
+  const zip = new JSZip();
+  const folder = zip.folder("studio-scene-sequence");
+  Object.entries(generatedImages).forEach(([id, base64], index) => {
+    const data = base64.split(',')[1];
+    folder.file(`sequence_moment_${index+1}.png`, data, { base64: true });
+  });
+  const content = await zip.generateAsync({ type: "blob" });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(content);
+  link.download = "studio_scene_sequence.zip";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+</script>
+</body>
+</html>
