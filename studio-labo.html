@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Studio Labo — Studio IRL</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .font-serif { font-family: 'Playfair Display', serif !important; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f1f1; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    .animate-spin { animation: spin 1s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+    .touch-manipulation { touch-action: manipulation; }
+    .backdrop-blur-sm { backdrop-filter: blur(4px); }
+  </style>
+</head>
+<body class="bg-stone-50 text-stone-900 antialiased">
+<div id="root"></div>
+
+<script type="module">
+// ============================================================
+// IMPORTS
+// ============================================================
+import { createElement as h, useState, useRef, useEffect } from 'https://esm.sh/react@19';
+import { createRoot } from 'https://esm.sh/react-dom@19/client';
+import { GoogleGenAI } from 'https://esm.sh/@google/genai@1.31.0';
+
+// ============================================================
+// TYPES / CONSTANTS
+// ============================================================
+const AspectRatio = { LANDSCAPE: '16:9', PORTRAIT: '9:16', SQUARE: '1:1' };
+
+const MANICURE_POSES = [
+  { id: 'elegant', label: 'Élégance Studio', description: 'Mains croisées sur un fond neutre et soyeux.' },
+  { id: 'closeup', label: 'Macro Focus', description: 'Gros plan extrême sur les détails des ongles.' },
+  { id: 'lifestyle', label: 'Lifestyle Chic', description: 'Main tenant délicatement une tasse ou un accessoire.' },
+];
+
+// ============================================================
+// API SERVICE
+// ============================================================
+let consecutiveFailures = 0;
+const MAX_CIRCUIT_BREAKER = 10;
+
+async function withRetry(fn, retries = 5, baseDelay = 2000) {
+  if (consecutiveFailures >= MAX_CIRCUIT_BREAKER) {
+    throw new Error("🔴 CIRCUIT BREAKER ACTIVÉ : Trop d'échecs consécutifs. Réessayez dans 5-10 minutes.");
+  }
+  try {
+    const result = await fn();
+    consecutiveFailures = 0;
+    return result;
+  } catch (error) {
+    const msg = (error?.message || '').toLowerCase();
+    const isRetryable = msg.includes('503') || msg.includes('overloaded') || msg.includes('500')
+      || msg.includes('429') || msg.includes('rate limit') || msg.includes('network');
+    if (isRetryable && retries > 0) {
+      consecutiveFailures++;
+      const delay = Math.round(baseDelay * (1 + Math.random() * 0.6 - 0.3));
+      console.warn(`⚠️ Retry dans ${delay}ms... (${retries} restants)`);
+      await new Promise(r => setTimeout(r, delay));
+      return withRetry(fn, retries - 1, baseDelay * 1.8);
+    }
+    consecutiveFailures++;
+    if (msg.includes('503')) throw new Error("🔴 SERVEUR SURCHARGÉ : Réessayez dans 2-5 minutes.");
+    if (msg.includes('429')) throw new Error("🔴 QUOTA DÉPASSÉ : Attendez quelques minutes.");
+    throw new Error("🔴 ERREUR API : " + (error?.message || 'Erreur inconnue.'));
+  }
+}
+
+const SYSTEM_INSTRUCTIONS = `
+TU ES UN GÉNÉRATEUR D'IMAGES ULTRA-RÉALISTES.
+TA MISSION : Créer des photographies qui ressemblent à de vraies photos prises par un humain, jamais à de l'IA.
+
+DIRECTIVE TECHNIQUE : Générer l'image en format JPEG haute performance avec une compression optimisée pour la clarté, sans perte de qualité perceptible.
+
+CRITÈRES DE VÉRITÉ PHOTOGRAPHIQUE :
+1. PEAU HUMAINE : Ne JAMAIS lisser. Toujours afficher les pores, micro-veines, textures réelles, légères rougeurs naturelles, imperfections subtiles. Zéro effet beauté.
+2. RENDU OPTIQUE : Simuler une vraie caméra (smartphone ou appareil photo). Léger grain naturel, netteté variable, aberrations chromatiques subtiles si pertinent.
+3. ÉCLAIRAGE : Toujours naturel et crédible. Pas d'éclairage parfait studio, privilégier les sources de lumière réelles.
+4. COMPOSITION : Cadrage naturel et imparfait comme pris par un humain. Pas de symétrie parfaite.
+
+RÈGLES ABSOLUES POUR STUDIO LABO :
+- Conserve STRICTEMENT l'identité des sujets fournis en référence
+- Le nombre de personnes dans l'image finale DOIT être égal au nombre d'avatars fournis
+- Ne crée JAMAIS de nouveaux visages
+- Évite tout rendu "typique IA" trop lisse ou esthétique
+- Préfère TOUJOURS le "vrai" au "beau"
+- Texture brute, éclairage naturel, zéro post-traitement artificiel
+- Génère en ULTRA-HAUTE DÉFINITION 4K
+
+POLITIQUE STUDIO LABO · FAMILY — FIDELITY LOOK MULTI-AVATARS :
+1. FIDELITY LOOK PAR AVATAR : Le verrouillage d'identité est activé individuellement pour chaque photo fournie. Aucune altération morphologique n'est autorisée.
+2. VERROUILLAGE DU NOMBRE DE PERSONNES : Le nombre de personnes visibles dans l'image finale DOIT être strictement égal au nombre d'avatars fournis en entrée. Interdiction d'ajouter ou de supprimer une personne.
+3. IDENTITÉS DISTINCTES : Chaque avatar représente une entité humaine distincte. Aucune fusion de visages, aucune "moyenne" de traits n'est autorisée.
+4. INTERDICTION DE SYNTHÈSE : L'IA n'est pas autorisée à générer de nouveaux visages pour compléter la scène.
+5. RÉALISME : Rendu 4K, textures de peau ultra-détaillées, éclairage de studio professionnel.
+`;
+
+const FIDELITY_CORE_TEMPLATE = `
+🔒 ADN CORE — FIDELITY LOCK
+
+IDENTITY LOCK:
+- Exact same person across all generations
+- No facial reshaping / No symmetry correction / No beautification bias
+
+FACE & STRUCTURE:
+- [Description factuelle de la géométrie faciale observée]
+
+SKIN REALISM:
+- [Topographie du grain de peau et pores]
+- No smoothing / No plastic effect
+
+AGE STABILITY:
+- Apparent age preserved exactly as observed
+
+GLOBAL CONSTRAINT:
+- Identity priority over style, lighting, pose or emotion
+`;
+
+async function extractAdnFromImage(base64Image, apiKey) {
+  return withRetry(async () => {
+    const ai = new GoogleGenAI({ apiKey });
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.1-pro-preview',
+      contents: { parts: [
+        { inlineData: { mimeType: 'image/jpeg', data: base64Image.split(',')[1] || base64Image } },
+        { text: `Analyse cet avatar de manière purement CLINIQUE. Extrait son ADN visuel selon ce format strict :\n${FIDELITY_CORE_TEMPLATE}` }
+      ]},
+      config: { temperature: 0.1, topK: 10, topP: 0.7 }
+    });
+    return response.text || "";
+  });
+}
+
+async function generateStudioImage(images, userPrompt, aspectRatio = "9:16", isFidelity = false, isFamily = false, apiKey) {
+  return withRetry(async () => {
+    const ai = new GoogleGenAI({ apiKey });
+    const personCount = images.length;
+    const modeText = isFamily ? 'FAMILY MULTI-AVATAR' : personCount > 0 ? 'SOLO STUDIO avec référence' : 'CRÉATION PURE (texte uniquement)';
+    const fidelityNote = isFidelity ? 'MODE FIDELITY LOCK ACTIF : Fidélité maximale exigée.' : '';
+
+    const promptText = personCount > 0
+      ? `${SYSTEM_INSTRUCTIONS}\nMODE : ${modeText}.\n${fidelityNote}\nCONTRAINTE : ${personCount} personne(s) attendue(s). Verrouillage des visages pour : ${images.map(i => i.role).join(', ')}.\nSCÈNE : "${userPrompt}"\nDIRECTIVES : Photographie brute, pores visibles, éclairage naturel, pas de lissage. RENDU EN ULTRA-HAUTE DÉFINITION.`
+      : `${SYSTEM_INSTRUCTIONS}\nMODE : CRÉATION PURE.\n${fidelityNote}\nSUJET : "${userPrompt}"\nDIRECTIVES : Photographie ultra-réaliste, peau brute, zéro effet beauté, éclairage naturel, léger grain. RENDU EN ULTRA-HAUTE DÉFINITION.`;
+
+    const imageParts = personCount > 0
+      ? images.flatMap(img => [
+          { inlineData: { mimeType: img.mimeType, data: img.data } },
+          { text: `Identité verrouillée : ${img.role}` }
+        ])
+      : [];
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.1-flash-image-preview',
+      contents: { parts: [...imageParts, { text: promptText }] },
+      config: {
+        responseModalities: ['TEXT', 'IMAGE'],
+        imageConfig: { imageSize: "4K", aspectRatio: aspectRatio }
+      }
+    });
+
+    let imageUrl = "";
+    if (response.candidates?.[0]?.content?.parts) {
+      for (const part of response.candidates[0].content.parts) {
+        if (part.inlineData) {
+          imageUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+          break;
+        }
+      }
+    }
+    if (!imageUrl) throw new Error("Échec de la production d'image studio.");
+
+    let adnCore;
+    if (isFidelity && !isFamily) {
+      try { adnCore = await extractAdnFromImage(imageUrl, apiKey); }
+      catch (e) { console.warn("⚠️ Extraction ADN échouée:", e); }
+    }
+    return { imageUrl, adnCore: adnCore?.trim() };
+  });
+}
+
+async function generateManicureImage(avatar, manicure, poseDescription, userPrompt, aspectRatio = "9:16", apiKey) {
+  return withRetry(async () => {
+    const ai = new GoogleGenAI({ apiKey });
+    const promptText = `${SYSTEM_INSTRUCTIONS}\nMODE : MANICURE STUDIO.\nOBJECTIF : Appliquer le style de manucure de l'image de référence sur les mains de l'avatar.\nPOSE : ${poseDescription}\nSCÈNE : "${userPrompt}"\nDIRECTIVES : Fusionner le design des ongles sur les mains de l'avatar. Conserver texture de peau et identité. Rendu ultra-réaliste.`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.1-flash-image-preview',
+      contents: { parts: [
+        { inlineData: { mimeType: avatar.mimeType, data: avatar.data } },
+        { text: "Avatar original (mains et peau de référence)." },
+        { inlineData: { mimeType: manicure.mimeType, data: manicure.data } },
+        { text: "Design de manucure à appliquer." },
+        { text: promptText }
+      ]},
+      config: { responseModalities: ['TEXT', 'IMAGE'], imageConfig: { imageSize: "4K", aspectRatio: aspectRatio } }
+    });
+
+    let imageUrl = "";
+    if (response.candidates?.[0]?.content?.parts) {
+      for (const part of response.candidates[0].content.parts) {
+        if (part.inlineData) {
+          imageUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+          break;
+        }
+      }
+    }
+    if (!imageUrl) throw new Error("Échec du rendu manucure.");
+    return { imageUrl };
+  });
+}
+
+// ============================================================
+// ICONS
+// ============================================================
+const LoaderIcon = ({ className }) => h('svg', { className, viewBox:"0 0 24 24", fill:"none", stroke:"currentColor", strokeWidth:"2", strokeLinecap:"round", strokeLinejoin:"round" },
+  h('path', { d:"M21 12a9 9 0 1 1-6.219-8.56" })
+);
+const UploadIcon = ({ className }) => h('svg', { className, viewBox:"0 0 24 24", fill:"none", stroke:"currentColor", strokeWidth:"2", strokeLinecap:"round", strokeLinejoin:"round" },
+  h('path', { d:"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" }),
+  h('polyline', { points:"17 8 12 3 7 8" }),
+  h('line', { x1:"12", y1:"3", x2:"12", y2:"15" })
+);
+const SparklesIcon = ({ className }) => h('svg', { className, viewBox:"0 0 24 24", fill:"none", stroke:"currentColor", strokeWidth:"2", strokeLinecap:"round", strokeLinejoin:"round" },
+  h('path', { d:"m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" })
+);
+const CameraIcon = ({ className }) => h('svg', { className, viewBox:"0 0 24 24", fill:"none", stroke:"currentColor", strokeWidth:"2", strokeLinecap:"round", strokeLinejoin:"round" },
+  h('path', { d:"M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" }),
+  h('circle', { cx:"12", cy:"13", r:"4" })
+);
+const XIcon = ({ className }) => h('svg', { className, viewBox:"0 0 24 24", fill:"none", stroke:"currentColor", strokeWidth:"2", strokeLinecap:"round", strokeLinejoin:"round" },
+  h('path', { d:"M18 6 6 18" }),
+  h('path', { d:"m6 6 12 12" })
+);
+const ArrowIcon = ({ className }) => h('svg', { className, viewBox:"0 0 24 24", fill:"none", stroke:"currentColor", strokeWidth:"2", strokeLinecap:"round", strokeLinejoin:"round" },
+  h('line', { x1:"7", y1:"17", x2:"17", y2:"7" }),
+  h('polyline', { points:"7 7 17 7 17 17" })
+);
+
+// ============================================================
+// FILE UPLOAD COMPONENT
+// ============================================================
+function FileUpload({ label, onFileSelect, accept = "image/*", previewUrl, onClear }) {
+  const fileInputRef = useRef(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState(null);
+
+  const resizeImage = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_SIZE = 1920;
+        let w = img.width, ht = img.height;
+        if (w > ht) { if (w > MAX_SIZE) { ht *= MAX_SIZE/w; w = MAX_SIZE; } }
+        else { if (ht > MAX_SIZE) { w *= MAX_SIZE/ht; ht = MAX_SIZE; } }
+        canvas.width = w; canvas.height = ht;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, ht);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        resolve({ base64: dataUrl.split(',')[1], mimeType: 'image/jpeg' });
+      };
+      img.onerror = reject;
+    };
+    reader.onerror = reject;
+  });
+
+  const handleFileChange = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { setError("Veuillez sélectionner une image valide"); return; }
+    if (file.size > 50 * 1024 * 1024) { setError("Image trop volumineuse (max 50MB)"); return; }
+    setIsProcessing(true); setError(null);
+    try {
+      const { base64, mimeType } = await resizeImage(file);
+      onFileSelect(base64, mimeType);
+    } catch (e) { setError("Erreur lors du traitement de l'image"); }
+    finally {
+      setIsProcessing(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const displayUrl = previewUrl ? (previewUrl.startsWith('data:') ? previewUrl : `data:image/jpeg;base64,${previewUrl}`) : null;
+
+  return h('div', { className: "w-full" },
+    h('label', { className: "block text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-2" }, label),
+    !displayUrl
+      ? h('div', {
+          onClick: () => !isProcessing && fileInputRef.current?.click(),
+          className: `border-2 border-dashed rounded-2xl p-4 sm:p-6 flex flex-col items-center justify-center cursor-pointer transition-all bg-stone-50/50 h-40 ${isProcessing ? 'border-rose-300 bg-rose-50 cursor-wait' : 'border-stone-200 hover:border-rose-300 hover:bg-white active:scale-[0.98]'}`
+        },
+        isProcessing
+          ? h('div', null,
+              h('div', { className: "animate-spin w-6 h-6 border-4 border-rose-500 border-t-transparent rounded-full mb-2 mx-auto" }),
+              h('span', { className: "text-[10px] font-bold text-stone-500 uppercase tracking-widest" }, "Compression...")
+            )
+          : h('div', null,
+              h(UploadIcon, { className: "w-6 h-6 text-stone-300 mb-2 mx-auto" }),
+              h('span', { className: "text-[10px] font-bold text-stone-400 uppercase tracking-widest" }, "Ajouter photo")
+            ),
+        h('input', { type:"file", ref:fileInputRef, onChange:handleFileChange, accept, className:"hidden", disabled:isProcessing })
+      )
+      : h('div', { className: "relative rounded-2xl overflow-hidden border border-stone-100 h-40 bg-stone-50 group shadow-sm" },
+          h('img', { src: displayUrl, alt: "Preview", className: "w-full h-full object-cover" }),
+          h('button', {
+            onClick: (e) => { e.stopPropagation(); setError(null); onClear?.(); },
+            className: "absolute top-2 right-2 p-2 bg-black/60 hover:bg-rose-500 active:bg-rose-600 rounded-full text-white transition-all touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center shadow-lg"
+          }, h(XIcon, { className: "w-4 h-4" }))
+        ),
+    error && h('div', { className: "mt-2 p-2 bg-rose-50 border border-rose-200 rounded-lg" },
+      h('p', { className: "text-xs text-rose-600" }, error)
+    )
+  );
+}
+
+// ============================================================
+// MANICURE GENERATOR
+// ============================================================
+function ManicureGenerator({ apiKey }) {
+  const [avatar, setAvatar] = useState(null);
+  const [manicure, setManicure] = useState(null);
+  const [selectedPose, setSelectedPose] = useState(MANICURE_POSES[0].id);
+  const [customPrompt, setCustomPrompt] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState(null);
+
+  const handleGenerate = async () => {
+    if (!avatar || !manicure) { setError("Veuillez uploader votre avatar et une inspiration manucure."); return; }
+    setIsGenerating(true); setError(null); setResult(null);
+    const pose = MANICURE_POSES.find(p => p.id === selectedPose);
+    try {
+      const res = await generateManicureImage(
+        { data: avatar.data, mimeType: avatar.mime, role: 'Avatar' },
+        { data: manicure.data, mimeType: manicure.mime, role: 'Style Manucure' },
+        pose?.description || "", customPrompt, AspectRatio.PORTRAIT, apiKey
+      );
+      setResult(res);
+    } catch (err) { setError(err instanceof Error ? err.message : "Une erreur est survenue."); }
+    finally { setIsGenerating(false); }
+  };
+
+  return h('div', { className: "grid grid-cols-1 lg:grid-cols-2 gap-12" },
+    h('div', { className: "space-y-8" },
+      h('div', { className: "bg-white p-8 rounded-3xl shadow-sm border border-stone-200" },
+        h('h2', { className: "text-xl font-serif font-bold text-stone-800 mb-6 flex items-center gap-2" },
+          h(SparklesIcon, { className: "w-5 h-5 text-rose-500" }), "Studio Manucure Lab"
+        ),
+        h('div', { className: "grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8" },
+          h(FileUpload, { label:"1. Votre Avatar (Portrait/Mains)", onFileSelect:(d,m)=>setAvatar({data:d,mime:m}), previewUrl:avatar?.data, onClear:()=>setAvatar(null) }),
+          h(FileUpload, { label:"2. Style de Manucure", onFileSelect:(d,m)=>setManicure({data:d,mime:m}), previewUrl:manicure?.data, onClear:()=>setManicure(null) })
+        ),
+        h('div', { className: "space-y-4" },
+          h('label', { className: "block text-xs font-bold uppercase tracking-widest text-stone-400" }, "Pose & Cadrage"),
+          h('div', { className: "grid grid-cols-1 gap-2" },
+            MANICURE_POSES.map(pose => h('button', {
+              key: pose.id, type:"button", onClick:()=>setSelectedPose(pose.id),
+              className: `flex items-center justify-between p-4 rounded-2xl border text-left transition-all ${selectedPose===pose.id ? 'border-rose-500 bg-rose-50 ring-1 ring-rose-500' : 'border-stone-100 hover:border-stone-300'}`
+            },
+              h('div', null,
+                h('div', { className: `text-sm font-bold ${selectedPose===pose.id?'text-rose-900':'text-stone-700'}` }, pose.label),
+                h('div', { className: "text-[10px] text-stone-400 mt-0.5" }, pose.description)
+              ),
+              selectedPose === pose.id && h(ArrowIcon, { className: "w-4 h-4 text-rose-500" })
+            ))
+          )
+        ),
+        h('div', { className: "mt-8" },
+          h('label', { className: "block text-xs font-bold uppercase tracking-widest text-stone-400 mb-2" }, "Instructions Créatives (Optionnel)"),
+          h('textarea', {
+            value: customPrompt, onChange: e=>setCustomPrompt(e.target.value),
+            placeholder: "Ex: Fond luxueux en velours noir, éclairage dramatique...",
+            className: "w-full p-4 rounded-2xl border border-stone-100 bg-stone-50 text-sm focus:outline-none focus:ring-2 focus:ring-rose-200 transition-all h-20 resize-none"
+          })
+        )
+      ),
+      h('button', {
+        onClick: handleGenerate, type:"button", disabled: isGenerating || !avatar || !manicure,
+        className: `w-full py-6 rounded-3xl flex items-center justify-center gap-3 font-bold text-lg transition-all active:scale-95 touch-manipulation min-h-[64px] ${!isGenerating&&avatar&&manicure ? 'bg-stone-900 hover:bg-black text-white shadow-2xl' : 'bg-stone-100 text-stone-300 cursor-not-allowed'}`
+      },
+        isGenerating ? h('span', { className: "flex items-center gap-3" }, h(LoaderIcon, { className: "animate-spin w-6 h-6" }), "Rendu en cours...")
+                     : h('span', { className: "flex items-center gap-3" }, h(CameraIcon, { className: "w-6 h-6" }), "Générer Rendu 4K")
+      ),
+      error && h('div', { className: "p-4 bg-rose-50 text-rose-600 rounded-2xl text-[11px] font-bold border border-rose-100" }, error)
+    ),
+    h('div', { className: "bg-stone-100 rounded-[3rem] overflow-hidden shadow-inner border border-stone-200 relative min-h-[600px] flex flex-col items-center justify-center" },
+      result
+        ? h('div', { className: "w-full h-full p-6 flex flex-col items-center overflow-y-auto" },
+            h('div', { className: "relative mb-8 w-full max-w-sm" },
+              h('img', { src: result.imageUrl, alt: "Rendu Manucure", className: "w-full rounded-3xl shadow-2xl border-4 border-white object-contain bg-white" })
+            ),
+            h('button', {
+              type:"button",
+              onClick: () => { const a=document.createElement('a'); a.href=result.imageUrl; a.download=`studioprompt-nails-${Date.now()}.png`; document.body.appendChild(a); a.click(); document.body.removeChild(a); },
+              className: "px-12 py-5 bg-stone-900 text-white rounded-full font-bold hover:bg-black transition-all shadow-xl text-sm uppercase tracking-widest active:scale-95 touch-manipulation min-h-[56px]"
+            }, "Télécharger le visuel")
+          )
+        : h('div', { className: "text-center p-12" },
+            h('div', { className: "relative w-40 h-40 mx-auto mb-8 flex items-center justify-center opacity-20" },
+              h(SparklesIcon, { className: "w-20 h-20 text-stone-900" })
+            ),
+            h('h3', { className: "text-stone-800 font-serif text-2xl mb-2 tracking-tight" }, "Studio Manucure Lab"),
+            h('p', { className: "text-stone-400 max-w-xs mx-auto text-sm lowercase font-medium tracking-wide" }, "Uploadez votre visage et votre manucure de rêve.")
+          )
+    )
+  );
+}
+
+// ============================================================
+// PHOTO STUDIO
+// ============================================================
+function PhotoStudio({ apiKey }) {
+  const [avatars, setAvatars] = useState({});
+  const [prompt, setPrompt] = useState("");
+  const [aspectRatio, setAspectRatio] = useState(AspectRatio.PORTRAIT);
+  const [isFidelityMode, setIsFidelityMode] = useState(true);
+  const [isFamilyMode, setIsFamilyMode] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState(null);
+  const [visibleSlots, setVisibleSlots] = useState(4);
+
+  const handleAvatarSelect = (key, data, mime) => {
+    setAvatars(prev => ({ ...prev, [key]: { data, mime } }));
+    if (error) setError(null);
+  };
+  const handleAvatarClear = (key) => {
+    const n = { ...avatars }; delete n[key]; setAvatars(n);
+  };
+
+  const handleGenerate = async () => {
+    const count = Object.keys(avatars).length;
+    if (count === 0 && !prompt.trim()) { setError("Ajoutez au moins une photo OU décrivez le sujet."); return; }
+    if (isFamilyMode && count < 2 && count > 0) { setError("Le mode Family nécessite au moins deux avatars."); return; }
+    setIsGenerating(true); setResult(null); setError(null);
+    try {
+      const images = Object.entries(avatars).map(([role, img]) => ({ data: img.data, mimeType: img.mime, role }));
+      const res = await generateStudioImage(images, prompt || "Portrait professionnel haute qualité", aspectRatio, isFidelityMode, isFamilyMode, apiKey);
+      setResult(res);
+    } catch (err) { setError(err.message || "Erreur lors du rendu."); }
+    finally { setIsGenerating(false); }
+  };
+
+  const familySlots = [
+    { key:'Mère', label:'📸 Mère (Avatar 1)', required:true },
+    { key:'Père', label:'📸 Père (Avatar 2)', required:true },
+    { key:'Enfant 1', label:'📸 Enfant 1', required:false },
+    { key:'Enfant 2', label:'📸 Enfant 2', required:false },
+    { key:'Membre 5', label:'📸 Membre 5', required:false },
+    { key:'Membre 6', label:'📸 Membre 6', required:false },
+    { key:'Membre 7', label:'📸 Membre 7', required:false },
+    { key:'Membre 8', label:'📸 Membre 8', required:false },
+    { key:'Membre 9', label:'📸 Membre 9', required:false },
+    { key:'Membre 10', label:'📸 Membre 10', required:false },
+  ];
+
+  const soloTags = ['Studio minimaliste','Portrait extérieur','Noir et blanc luxe','Haute couture','Cinématique'];
+  const familyTags = ['Grande famille au complet','Photo de famille posée','Scène de vie au salon','Spontané au parc','Vacances à la plage'];
+
+  return h('div', { className: "grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12" },
+    h('div', { className: "space-y-6" },
+      h('div', { className: "bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-stone-100" },
+        h('div', { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6" },
+          h('h2', { className: "text-xl font-serif font-bold text-stone-800" }, isFamilyMode ? 'Studio Family' : 'Studio Solo'),
+          h('button', {
+            type:"button",
+            onClick: () => { setIsFamilyMode(!isFamilyMode); setAvatars({}); setAspectRatio(isFamilyMode ? AspectRatio.PORTRAIT : AspectRatio.SQUARE); setVisibleSlots(4); },
+            className: `px-4 py-2 rounded-full text-[10px] font-bold tracking-widest uppercase transition-all shadow-sm ${isFamilyMode ? 'bg-rose-500 text-white' : 'bg-stone-50 text-stone-500 border border-stone-100'}`
+          }, isFamilyMode ? 'Mode Family Actif' : 'Activer Mode Family')
+        ),
+        !isFamilyMode && h('p', { className: "text-xs text-stone-500 mb-3 italic" }, "💡 Tip : Laissez vide pour créer un avatar de zéro (mode texte uniquement)"),
+        h('div', { className: "grid grid-cols-1 sm:grid-cols-2 gap-4" },
+          !isFamilyMode
+            ? h(FileUpload, { label:"Photo de référence", onFileSelect:(d,m)=>handleAvatarSelect('Solo',d,m), previewUrl:avatars['Solo']?.data, onClear:()=>handleAvatarClear('Solo') })
+            : familySlots.slice(0, visibleSlots).map(slot =>
+                h('div', { key: slot.key, className: "relative" },
+                  h(FileUpload, { label:slot.label, onFileSelect:(d,m)=>handleAvatarSelect(slot.key,d,m), previewUrl:avatars[slot.key]?.data, onClear:()=>handleAvatarClear(slot.key) }),
+                  slot.required && !avatars[slot.key] && h('span', { className: "absolute top-0 right-0 text-[8px] text-rose-500 font-bold uppercase tracking-wider px-2 py-1 bg-rose-50 rounded-bl-lg" }, "Requis")
+                )
+              )
+        ),
+        isFamilyMode && visibleSlots < familySlots.length && h('button', {
+          type:"button",
+          onClick: () => setVisibleSlots(p => Math.min(p+2, familySlots.length)),
+          className: "mt-4 w-full py-3 bg-stone-50 border border-dashed border-stone-200 rounded-xl text-stone-400 text-[10px] font-bold hover:bg-stone-100 uppercase tracking-widest transition-colors"
+        }, "+ Ajouter d'autres membres (Max 10)"),
+        h('div', { className: "mt-6" },
+          h('button', {
+            type:"button", onClick:()=>setIsFidelityMode(!isFidelityMode),
+            className: `w-full p-4 rounded-2xl border transition-all duration-300 ${isFidelityMode ? 'bg-stone-900 border-rose-500 text-white shadow-lg' : 'bg-white border-stone-200 text-stone-500'}`
+          },
+            h('div', { className: "flex items-center justify-center gap-2" },
+              h(SparklesIcon, { className: "w-4 h-4" }),
+              h('span', { className: "text-xs font-bold uppercase tracking-widest" }, isFidelityMode ? 'Fidelity Lock Activé' : 'Activer Fidelity Lock')
+            )
+          )
+        ),
+        h('div', { className: "mt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3" },
+          h('label', { className: "text-xs font-bold uppercase tracking-widest text-stone-400" }, "Format de sortie"),
+          h('div', { className: "flex flex-wrap gap-2 w-full sm:w-auto" },
+            [{ val: AspectRatio.SQUARE, label:'1:1' },{ val: AspectRatio.PORTRAIT, label:'9:16' },{ val: AspectRatio.LANDSCAPE, label:'16:9' }].map(({ val, label }) =>
+              h('button', {
+                key: val, type:"button", onClick:()=>setAspectRatio(val),
+                className: `flex-1 sm:flex-none px-4 py-2 rounded-lg border text-xs font-bold transition-all touch-manipulation min-h-[44px] sm:min-h-0 ${aspectRatio===val ? 'border-stone-900 bg-stone-900 text-white' : 'border-stone-200 text-stone-400 active:bg-stone-50'}`
+              }, label)
+            )
+          )
+        ),
+        h('div', { className: "mt-8 pt-6 border-t border-stone-50" },
+          h('label', { className: "block text-[10px] font-bold uppercase tracking-widest text-stone-400 mb-3" }, "Mise en scène"),
+          h('div', { className: "flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-hide" },
+            (isFamilyMode ? familyTags : soloTags).map(tag =>
+              h('button', {
+                key: tag, type:"button", onClick:()=>setPrompt(tag),
+                className: `flex-shrink-0 px-3 py-1.5 rounded-full text-[10px] font-medium transition-all ${prompt===tag ? 'bg-stone-900 text-white' : 'bg-stone-50 text-stone-500 border border-stone-100'}`
+              }, tag)
+            )
+          ),
+          h('textarea', {
+            value: prompt, onChange: e=>setPrompt(e.target.value),
+            className: "w-full p-4 rounded-2xl border border-stone-100 focus:border-rose-200 outline-none transition-all h-24 text-sm bg-stone-50/30",
+            placeholder: isFamilyMode ? "Ex: Famille marchant dans un parc..." : "Décrivez l'ambiance, le style, les vêtements..."
+          })
+        )
+      ),
+      h('button', {
+        onClick: handleGenerate, type:"button", disabled: isGenerating,
+        className: `w-full py-5 rounded-2xl flex items-center justify-center gap-3 font-bold text-lg transition-all shadow-xl active:scale-95 touch-manipulation min-h-[56px] ${!isGenerating ? 'bg-stone-900 text-white hover:bg-black' : 'bg-stone-100 text-stone-300'}`
+      },
+        isGenerating
+          ? h('span', { className:"flex items-center gap-3" }, h(LoaderIcon, { className:"animate-spin w-5 h-5" }), `Génération ${isFamilyMode ? 'Family' : 'Fidelity'}...`)
+          : h('span', { className:"flex items-center gap-3" }, h(CameraIcon, { className:"w-5 h-5" }), "Lancer le Shooting 4K")
+      ),
+      error && h('div', { className: "p-4 bg-rose-50 text-rose-600 rounded-2xl text-[11px] font-bold border border-rose-100 flex items-start gap-3" },
+        h('span', { className:"mt-0.5" }, "⚠️"), h('p', null, error)
+      )
+    ),
+    h('div', { className: "bg-stone-100 rounded-[2.5rem] lg:rounded-[3rem] overflow-hidden shadow-inner border border-stone-200 relative min-h-[500px] flex flex-col items-center justify-center" },
+      result
+        ? h('div', { className: "w-full h-full p-6 flex flex-col items-center overflow-y-auto" },
+            h('img', { src: result.imageUrl, alt:"Rendu Labo", className:"w-full max-w-sm rounded-2xl shadow-2xl border-2 border-white mb-6" }),
+            h('button', {
+              type:"button",
+              onClick: () => { const a=document.createElement('a'); a.href=result.imageUrl; a.download=`studio-labo-${Date.now()}.png`; document.body.appendChild(a); a.click(); document.body.removeChild(a); },
+              className: "px-10 py-4 bg-stone-900 text-white rounded-full font-bold shadow-xl text-xs uppercase tracking-widest active:scale-95 transition-transform touch-manipulation min-h-[56px] mb-6"
+            }, "Télécharger l'image"),
+            result.adnCore && h('div', { className: "w-full max-w-2xl bg-stone-900 rounded-2xl p-6 border border-stone-700" },
+              h('div', { className: "flex items-center justify-between mb-3" },
+                h('h3', { className: "text-sm font-bold uppercase tracking-widest text-rose-400" }, "🔒 ADN Core — Fidelity Lock"),
+                h('button', {
+                  type:"button",
+                  onClick: () => { navigator.clipboard.writeText(result.adnCore); alert('✅ ADN Core copié !'); },
+                  className: "px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold rounded-lg transition-colors"
+                }, "📋 Copier")
+              ),
+              h('div', { className: "bg-stone-950 rounded-xl p-4 overflow-auto max-h-64" },
+                h('pre', { className: "text-[10px] text-stone-300 font-mono leading-relaxed whitespace-pre-wrap" }, result.adnCore)
+              ),
+              h('p', { className: "text-[10px] text-stone-500 mt-3 italic" }, "💡 Copiez cet ADN pour régénérer exactement la même personne.")
+            )
+          )
+        : h('div', { className: "text-center p-12 opacity-40" },
+            h(SparklesIcon, { className: "w-16 h-16 mx-auto mb-4 text-stone-400" }),
+            h('p', { className: "text-xs uppercase tracking-[0.2em] font-bold text-stone-400" }, isFamilyMode ? 'Prêt pour le shooting famille' : 'Prêt pour le shooting')
+          )
+    )
+  );
+}
+
+// ============================================================
+// API KEY SCREEN
+// ============================================================
+function ApiKeyScreen({ onKeySet }) {
+  const [inputKey, setInputKey] = useState('');
+  const [testing, setTesting] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleSubmit = async () => {
+    const key = inputKey.trim();
+    if (!key.startsWith('AIza') || key.length < 30) {
+      setError("Clé API invalide. Elle doit commencer par 'AIza'.");
+      return;
+    }
+    setTesting(true); setError(null);
+    try {
+      // Quick validation test
+      const ai = new GoogleGenAI({ apiKey: key });
+      await ai.models.generateContent({
+        model: 'gemini-3.1-flash-lite-preview',
+        contents: { parts: [{ text: 'test' }] }
+      });
+      localStorage.setItem('studio_labo_api_key', key);
+      onKeySet(key);
+    } catch (e) {
+      setError("Clé API invalide ou sans accès. Vérifiez votre clé Google AI Studio.");
+    } finally { setTesting(false); }
+  };
+
+  return h('div', { className: "min-h-screen flex items-center justify-center bg-stone-50 px-4" },
+    h('div', { className: "max-w-md w-full bg-white p-8 rounded-2xl shadow-xl text-center" },
+      h('div', { className: "w-16 h-16 bg-rose-500 rounded-xl flex items-center justify-center text-white font-serif font-bold text-2xl mx-auto mb-6" }, "SL"),
+      h('h1', { className: "text-3xl font-serif font-bold text-stone-900 mb-2" }, "Studio Labo"),
+      h('p', { className: "text-stone-600 mb-6 text-sm" }, "Entrez votre clé API Google AI Studio pour accéder à l'application. Vos crédits seront utilisés sur votre propre compte."),
+      h('input', {
+        type: "password",
+        value: inputKey,
+        onChange: e => { setInputKey(e.target.value); setError(null); },
+        onKeyDown: e => e.key === 'Enter' && handleSubmit(),
+        placeholder: "AIzaSy...",
+        className: "w-full p-4 border border-stone-200 rounded-xl text-sm mb-4 outline-none focus:ring-2 focus:ring-rose-200 transition-all font-mono"
+      }),
+      error && h('div', { className: "mb-4 p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-600 text-xs font-medium" }, error),
+      h('button', {
+        onClick: handleSubmit, disabled: testing || !inputKey.trim(),
+        className: `w-full py-3 px-6 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${testing || !inputKey.trim() ? 'bg-stone-100 text-stone-400 cursor-not-allowed' : 'bg-stone-900 hover:bg-rose-600 text-white'}`
+      },
+        testing
+          ? h('span', { className: "flex items-center gap-2" }, h(LoaderIcon, { className: "animate-spin w-4 h-4" }), "Vérification...")
+          : "Accéder à Studio Labo"
+      ),
+      h('div', { className: "mt-4 text-xs text-stone-400" },
+        h('a', { href:"https://aistudio.google.com/app/apikey", target:"_blank", rel:"noopener noreferrer", className:"underline hover:text-stone-500" }, "Obtenir une clé API gratuite →")
+      ),
+      h('div', { className: "mt-3 text-[10px] text-stone-400" }, "🔒 Votre clé est stockée localement, jamais envoyée à nos serveurs.")
+    )
+  );
+}
+
+// ============================================================
+// MAIN APP
+// ============================================================
+function App() {
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('studio_labo_api_key') || null);
+  const [hasStarted, setHasStarted] = useState(false);
+  const [activeTab, setActiveTab] = useState('portrait');
+
+  const handleKeySet = (key) => setApiKey(key);
+  const handleLogout = () => { localStorage.removeItem('studio_labo_api_key'); setApiKey(null); setHasStarted(false); };
+
+  if (!apiKey) return h(ApiKeyScreen, { onKeySet: handleKeySet });
+
+  if (!hasStarted) return h('div', { className: "relative h-screen w-full flex items-center justify-center overflow-hidden" },
+    h('div', { className: "absolute inset-0 z-0" },
+      h('img', { src:"https://images.unsplash.com/photo-1590483734724-38fa19dd24f0?auto=format&fit=crop&q=80&w=1200", alt:"Studio", className:"w-full h-full object-cover", loading:"eager" }),
+      h('div', { className: "absolute inset-0 bg-gradient-to-b from-black/60 to-black/80" })
+    ),
+    h('div', { className: "relative z-10 text-center px-6" },
+      h('div', { className: "mb-6 sm:mb-8 flex justify-center" },
+        h('div', { className: "w-16 h-16 sm:w-20 sm:h-20 bg-rose-500 rounded-2xl sm:rounded-3xl flex items-center justify-center text-white font-serif font-bold text-2xl sm:text-3xl shadow-2xl" }, "SL")
+      ),
+      h('h1', { className: "text-4xl sm:text-5xl md:text-7xl font-serif font-bold text-white mb-3 sm:mb-4 tracking-tight leading-[1.1]" },
+        "Studio", h('span', { className: "text-rose-500" }, " Labo")
+      ),
+      h('p', { className: "text-base sm:text-lg text-stone-300 font-light tracking-[0.2em] sm:tracking-[0.3em] mb-8 sm:mb-10 lowercase" }, "fidélité visuelle absolue"),
+      h('button', {
+        onClick: () => setHasStarted(true),
+        className: "px-8 sm:px-10 py-4 sm:py-5 bg-white text-stone-900 rounded-full font-bold text-base sm:text-lg hover:bg-rose-500 hover:text-white active:bg-rose-600 active:scale-95 transition-all duration-300 shadow-2xl flex items-center gap-2 mx-auto touch-manipulation min-h-[56px]"
+      },
+        "Commencer", h(SparklesIcon, { className: "w-5 h-5" })
+      )
+    )
+  );
+
+  return h('div', { className: "min-h-screen bg-stone-50 flex flex-col" },
+    h('header', { className: "bg-white/95 backdrop-blur-sm border-b border-stone-100 sticky top-0 z-50 px-3 sm:px-4 py-3 sm:py-4 shadow-sm" },
+      h('div', { className: "max-w-7xl mx-auto flex items-center justify-between" },
+        h('div', { className: "flex items-center gap-2 sm:gap-3 cursor-pointer touch-manipulation", onClick: () => setHasStarted(false) },
+          h('div', { className: "w-7 h-7 sm:w-8 sm:h-8 bg-rose-500 rounded-lg flex items-center justify-center text-white font-serif font-bold text-xs sm:text-sm" }, "SL"),
+          h('h1', { className: "text-base sm:text-lg font-serif font-bold text-stone-900" },
+            "Studio", h('span', { className: "text-rose-500" }, " Labo")
+          )
+        ),
+        h('div', { className: "flex items-center gap-3" },
+          h('div', { className: "hidden sm:flex items-center gap-2" },
+            h('span', { className: "w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" }),
+            h('span', { className: "text-[9px] font-bold text-stone-400 uppercase tracking-widest" }, "Rendu 4K Actif")
+          ),
+          h('button', {
+            onClick: handleLogout,
+            className: "text-[9px] font-bold text-stone-400 uppercase tracking-widest hover:text-rose-500 transition-colors px-2 py-1"
+          }, "Changer de clé")
+        )
+      ),
+      h('div', { className: "max-w-7xl mx-auto flex gap-1 mt-3" },
+        h('button', {
+          onClick: () => setActiveTab('portrait'),
+          className: `px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${activeTab==='portrait' ? 'bg-stone-900 text-white' : 'text-stone-400 hover:text-stone-600'}`
+        }, "📸 Portrait"),
+        h('button', {
+          onClick: () => setActiveTab('manicure'),
+          className: `px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${activeTab==='manicure' ? 'bg-stone-900 text-white' : 'text-stone-400 hover:text-stone-600'}`
+        }, "💅 Manucure")
+      )
+    ),
+    h('main', { className: "flex-1 max-w-7xl mx-auto w-full px-3 sm:px-4 py-6 sm:py-8 md:py-12" },
+      activeTab === 'portrait' ? h(PhotoStudio, { apiKey }) : h(ManicureGenerator, { apiKey })
+    ),
+    h('footer', { className: "py-4 sm:py-6 border-t border-stone-100 bg-white" },
+      h('p', { className: "text-center text-[9px] sm:text-[10px] text-stone-400 uppercase tracking-wider sm:tracking-widest" },
+        `© ${new Date().getFullYear()} Studio Labo — Rendu Haute Fidélité`
+      )
+    )
+  );
+}
+
+// ============================================================
+// MOUNT
+// ============================================================
+createRoot(document.getElementById('root')).render(h(App, null));
+</script>
+</body>
+</html>
