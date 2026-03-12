@@ -426,13 +426,15 @@ window.handleAnalyze = async function() {
   hideError();
   try {
     const ai = new GoogleGenAI({ apiKey: API_KEY });
-    const prompt = `CAPTURER L'ADN DE L'INSTANT. 
-    Analysez cette image comme le point Zéro d'un récit cinématographique.
-    Identifiez avec une précision absolue :
-    1. personnage : identité visuelle, tenue exacte, posture émotionnelle, énergie.
-    2. environnement : géométrie du lieu, textures, mobilier, petits objets de décor.
-    3. lumière : ambiance lumineuse, ombres portées, température.
-    Le but est de pouvoir recréer cette scène sous d'autres angles temporels sans aucune invention.
+    const prompt = `CAPTURER L'ADN DE L'INSTANT — INVENTAIRE EXHAUSTIF ET DÉFINITIF.
+    Analysez cette image comme le point Zéro absolu d'un récit cinématographique.
+    Identifiez avec une précision chirurgicale :
+    1. personnage : identité visuelle complète, tenue exacte (couleurs, matières, coupes), posture émotionnelle, énergie corporelle.
+    2. environnement : géométrie du lieu, textures des surfaces, mobilier avec positions exactes, chaque petit objet visible.
+    3. lumière : ambiance lumineuse précise, direction des ombres portées, température colorimétrique.
+    RÈGLE ABSOLUE — ZÉRO INVENTION : Cataloguez UNIQUEMENT ce qui est visuellement présent dans l'image.
+    Aucun élément ne doit être déduit, supposé ou inventé. Si un objet n'est pas clairement visible, il n'existe pas.
+    Ce catalogue est une contrainte stricte et immuable pour toutes les générations futures.
     Répondez EXCLUSIVEMENT en JSON.`;
 
     const response = await ai.models.generateContent({
@@ -489,18 +491,17 @@ window.handleGenerateSequence = async function() {
 
   try {
     const ai = new GoogleGenAI({ apiKey: API_KEY });
-    const prompt = `ARC NARRATIF CINÉMATOGRAPHIQUE.
+    const prompt = `ARC NARRATIF CINÉMATOGRAPHIQUE — PROTOCOLE 3 RÈGLES.
     ACTION PRINCIPALE : ${action || "Une séquence narrative complète commençant par l'image source"}.
-    CONTEXTE SOURCE (POINT ZÉRO) : 
+    CONTEXTE SOURCE (POINT ZÉRO) :
     - Lieu : ${analysisData.environnement.lieu}
     - Personnage : ${analysisData.personnage.apparence}
     - Position initiale : ${analysisData.personnage.posture}
-    CONSIGNES DE NARRATION :
-    1. Décomposez l'action en 5 étapes clés (beats) qui forment une mini-histoire cohérente.
-    2. Les actions doivent être suffisamment espacées pour montrer une progression réelle et significative.
-    3. Maintenez une continuité absolue : même personnage, même tenue, même décor, mêmes objets.
-    4. Décrivez l'évolution précise de la posture et de l'intention à chaque étape.
-    5. Chaque étape doit être visuellement distincte tout en restant dans le même espace physique.
+    - Objets présents : ${analysisData.personnage.objets_tenus.map(o => o.objet).join(', ') || 'aucun'}
+    RÈGLE 1 — ZÉRO INVENTION : INTERDIT d'ajouter des objets ou éléments absents de l'image source. Seuls les éléments catalogués ci-dessus existent.
+    RÈGLE 2 — PROGRESSION IMMÉDIATE : La scène 1 doit obligatoirement montrer un mouvement déjà commencé. Reproduire la pose de départ est INTERDIT pour la première étape.
+    RÈGLE 3 — NARRATION LINÉAIRE : Chaque scène est une suite logique et distincte. Zéro redondance. Chaque beat doit être visuellement différent du précédent et montrer une avancée narrative réelle.
+    GÉNÉREZ 5 scènes formant un arc narratif complet et dynamique.
     Répondez EXCLUSIVEMENT en JSON avec une liste "scenes".`;
 
     const response = await ai.models.generateContent({
@@ -586,15 +587,15 @@ window.renderPlan = async function(id, index) {
 
   try {
     const ai = new GoogleGenAI({ apiKey: API_KEY });
-    const instruction = `PROTOCOLE DE CONTINUITÉ NARRATIVE.
-    - SOURCE FRAME: Utilisez l'image fournie comme référence spatiale et d'identité absolue.
-    - DÉCOR: ${analysisData.environnement.lieu}. Conservez chaque détail, texture et position des meubles.
-    - PERSONNAGE: ${analysisData.personnage.apparence}. Même visage, même morphologie, même tenue (${analysisData.personnage.vetements.haut}, ${analysisData.personnage.vetements.bas}).
-    - ÉTAPE NARRATIVE: ${p.prompt}.
-    - PROGRESSION: Assurez-vous que le mouvement est fluide par rapport à la source mais montre une avancée réelle dans l'action.
+    const instruction = `PROTOCOLE DE CONTINUITÉ NARRATIVE STRICTE.
+    - SOURCE FRAME: Utilisez l'image fournie comme référence spatiale et d'identité absolue et immuable.
+    - DÉCOR VERROUILLÉ: ${analysisData.environnement.lieu}. Conservez chaque détail, texture et position des meubles. Zéro élément ajouté.
+    - PERSONNAGE VERROUILLÉ: ${analysisData.personnage.apparence}. Même visage, même morphologie, même tenue exacte (${analysisData.personnage.vetements.haut}, ${analysisData.personnage.vetements.bas}, ${analysisData.personnage.vetements.chaussures}).
+    - RÈGLE 1 — ZÉRO INVENTION: INTERDIT d'ajouter tout objet ou élément absent de l'image source. Uniquement ce qui était déjà présent.
+    - RÈGLE 2 — PROGRESSION IMMÉDIATE: Cette image doit montrer un mouvement déjà en cours. La pose statique initiale est INTERDITE.
+    - RÈGLE 3 — ÉTAPE NARRATIVE: ${p.prompt}. Cette étape doit être visuellement distincte et montrer une avancée narrative claire.
     - STYLE: Cinématographique, haute fidélité, rendu photoréaliste.
-    - CONTRAINTE: Zéro invention d'objets. Si un élément n'est pas dans la source, il n'apparaît pas.
-    - AMBIANCE: Lumière ${analysisData.lumiere.type} venant de ${analysisData.lumiere.direction}.`;
+    - AMBIANCE: Lumière ${analysisData.lumiere.type} venant de ${analysisData.lumiere.direction}, intensité ${analysisData.lumiere.intensite}.`;
 
     const generate = async () => await ai.models.generateContent({
       model: 'gemini-3.1-flash-image-preview',
