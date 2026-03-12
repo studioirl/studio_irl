@@ -1,1148 +1,1005 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>STUDIO GÉNÉTIQUE — IRL</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <title>STUDIO GÉNÉTIQUE</title>
   <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; }
-    body { font-family: 'Syne', sans-serif; background: #080810; color: #f0f0f8; margin: 0; }
-    .mono { font-family: 'Space Mono', monospace; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
       --blue: #3b82f6;
-      --blue-dim: rgba(59,130,246,0.15);
+      --blue-dim: rgba(59,130,246,0.12);
       --blue-border: rgba(59,130,246,0.25);
       --surface: rgba(255,255,255,0.03);
-      --border: rgba(255,255,255,0.06);
+      --border: rgba(255,255,255,0.07);
       --amber: #f59e0b;
+      --bg: #080810;
+      --font: 'Syne', sans-serif;
+      --mono: 'Space Mono', monospace;
+      --sb: env(safe-area-inset-bottom, 0px);
+      --st: env(safe-area-inset-top, 0px);
     }
+
+    html, body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: #f0f0f8;
+      height: 100%;
+      overflow-x: hidden;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    #app { min-height: 100vh; }
 
     .glass {
       background: var(--surface);
       backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       border: 1px solid var(--border);
     }
 
-    .gradient-bg {
-      background: radial-gradient(ellipse 80% 60% at 70% -10%, rgba(59,130,246,0.08) 0%, transparent 60%),
-                  radial-gradient(ellipse 60% 40% at 10% 100%, rgba(99,102,241,0.06) 0%, transparent 60%),
-                  #080810;
-    }
+    /* SCROLLBARS */
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
 
+    /* RANGE INPUT */
     input[type=range] {
       -webkit-appearance: none;
-      width: 100%;
-      height: 4px;
-      background: rgba(255,255,255,0.08);
-      border-radius: 4px;
-      outline: none;
-      cursor: pointer;
+      width: 100%; height: 6px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 6px; outline: none; cursor: pointer;
     }
     input[type=range]::-webkit-slider-thumb {
       -webkit-appearance: none;
-      width: 16px;
-      height: 16px;
+      width: 24px; height: 24px;
       border-radius: 50%;
       background: var(--blue);
-      cursor: pointer;
-      box-shadow: 0 0 8px rgba(59,130,246,0.5);
+      box-shadow: 0 0 10px rgba(59,130,246,0.5);
+    }
+    input[type=range]::-moz-range-thumb {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      background: var(--blue); border: none;
     }
 
-    .scrollbar-hide::-webkit-scrollbar { display: none; }
-    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    /* ANIMATIONS */
+    @keyframes spin      { to { transform: rotate(360deg); } }
+    @keyframes bounce-s  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+    @keyframes fadein    { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes ping      { 0%{transform:scale(1);opacity:1} 75%,100%{transform:scale(2);opacity:0} }
+    @keyframes pulse     { 0%,100%{opacity:1} 50%{opacity:.45} }
+    @keyframes slidein   { from{transform:translateX(-100%)} to{transform:translateX(0)} }
 
-    @keyframes spin-slow { to { transform: rotate(360deg); } }
-    @keyframes bounce-slow { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
-    @keyframes fade-in { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
-    @keyframes ping { 0%{transform:scale(1);opacity:1} 75%,100%{transform:scale(2);opacity:0} }
+    /* BUTTON RESET */
+    button { font-family: var(--font); cursor: pointer; -webkit-appearance: none; }
+    button:active { opacity: .85; }
 
-    .animate-bounce-slow { animation: bounce-slow 4s ease-in-out infinite; }
-    .animate-fade-in { animation: fade-in 0.5s ease forwards; }
-    .animate-ping { animation: ping 1.5s cubic-bezier(0,0,0.2,1) infinite; }
-    .animate-pulse { animation: pulse 2s cubic-bezier(0.4,0,0.6,1) infinite; }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
-    .animate-spin-slow { animation: spin-slow 20s linear infinite; }
-
-    .api-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
-
-    /* Range wrapper for generating */
-    .gen-btn {
-      background: #fff;
-      color: #000;
-      font-weight: 800;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      border: none;
-      border-radius: 1rem;
-      padding: 1rem 1.5rem;
-      width: 100%;
-      cursor: pointer;
-      font-size: 0.875rem;
-      transition: all 0.2s;
+    /* GENERATE BTN */
+    .btn-gen {
+      width: 100%; padding: 1.1rem;
+      background: #fff; color: #000;
+      font-weight: 800; font-size: .9rem;
+      letter-spacing: .12em; text-transform: uppercase;
+      border: none; border-radius: 1rem;
+      transition: background .2s, transform .1s;
     }
-    .gen-btn:hover { background: #dbeafe; }
-    .gen-btn:disabled { background: #1f2937; color: #4b5563; cursor: not-allowed; }
+    .btn-gen:active  { transform: scale(.98); }
+    .btn-gen:disabled { background: #1f2937; color: #4b5563; cursor: not-allowed; }
 
-    .mode-btn {
-      display: flex; align-items: center; gap: 0.75rem;
-      width: 100%; padding: 0.75rem; border-radius: 0.75rem;
-      border: 1px solid transparent;
+    /* MODE BTN */
+    .btn-mode {
+      display: flex; align-items: center; gap: .75rem;
+      width: 100%; padding: .9rem 1rem;
+      border-radius: .9rem; border: 1px solid transparent;
       background: transparent; color: #9ca3af;
-      cursor: pointer; font-size: 0.875rem; font-weight: 500;
-      transition: all 0.2s; text-align: left; font-family: 'Syne', sans-serif;
+      font-size: .9rem; font-weight: 600;
+      transition: all .2s; text-align: left;
     }
-    .mode-btn:hover { background: rgba(255,255,255,0.05); color: #e5e7eb; }
-    .mode-btn.active {
-      background: var(--blue-dim);
-      color: var(--blue);
-      border-color: var(--blue-border);
-      box-shadow: 0 0 15px rgba(59,130,246,0.1);
-    }
+    .btn-mode.active { background: var(--blue-dim); color: var(--blue); border-color: var(--blue-border); }
 
-    .upload-zone {
-      aspect-ratio: 1;
-      border-radius: 1rem;
-      border: 2px dashed rgba(255,255,255,0.1);
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      cursor: pointer; overflow: hidden; position: relative;
-      transition: border-color 0.2s; background: rgba(255,255,255,0.02);
-    }
-    .upload-zone:hover { border-color: rgba(59,130,246,0.5); }
-    .upload-zone img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
-    .upload-zone-overlay {
-      position: absolute; inset: 0;
-      background: rgba(0,0,0,0.6);
-      display: flex; align-items: center; justify-content: center;
-      opacity: 0; transition: opacity 0.2s;
-    }
-    .upload-zone:hover .upload-zone-overlay { opacity: 1; }
-
+    /* TAG BTN */
     .tag-btn {
-      padding: 0.25rem 0.75rem; border-radius: 0.5rem;
-      font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
+      padding: .45rem .85rem;
+      border-radius: .55rem;
+      font-size: .65rem; font-weight: 700; text-transform: uppercase;
       border: 1px solid rgba(255,255,255,0.1);
-      background: transparent; color: #4b5563; cursor: pointer;
-      transition: all 0.2s; font-family: 'Space Mono', monospace;
+      background: transparent; color: #6b7280;
+      transition: all .2s; font-family: var(--mono);
+      min-height: 38px;
     }
     .tag-btn.active { background: var(--blue-dim); border-color: var(--blue); color: var(--blue); }
 
+    /* SEX BTN */
     .sex-btn {
-      flex: 1; padding: 1rem; border-radius: 0.75rem; border: 2px solid rgba(255,255,255,0.05);
-      background: transparent; color: #6b7280; cursor: pointer;
-      display: flex; flex-direction: column; align-items: center; gap: 0.25rem;
-      transition: all 0.2s; font-family: 'Syne', sans-serif;
+      flex: 1; padding: 1rem .5rem;
+      border-radius: .9rem; border: 2px solid rgba(255,255,255,0.07);
+      background: transparent; color: #6b7280;
+      display: flex; flex-direction: column; align-items: center; gap: .3rem;
+      transition: all .2s; min-height: 74px;
     }
-    .sex-btn.active {
-      background: var(--blue-dim); border-color: var(--blue); color: var(--blue);
-      box-shadow: 0 0 20px rgba(59,130,246,0.2);
+    .sex-btn.active { background: var(--blue-dim); border-color: var(--blue); color: var(--blue); box-shadow: 0 0 18px rgba(59,130,246,0.18); }
+
+    /* PANELS */
+    .panel      { padding: 1rem; background: rgba(255,255,255,0.03); border-radius: 1rem; border: 1px solid rgba(255,255,255,0.06); }
+    .panel-blue { padding: 1rem; background: rgba(59,130,246,0.05); border-radius: 1rem; border: 1px solid rgba(59,130,246,0.15); }
+
+    .section-label {
+      display: block;
+      font-size: .6rem; color: var(--blue); font-weight: 800;
+      text-transform: uppercase; letter-spacing: .18em;
+      font-family: var(--mono); margin-bottom: .6rem;
     }
 
-    .result-img-wrap {
-      position: relative; border-radius: 1rem; overflow: hidden;
-      border: 1px solid rgba(255,255,255,0.1);
-      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    /* UPLOAD ZONE */
+    .upload-zone {
+      aspect-ratio: 1;
+      border-radius: 1rem; border: 2px dashed rgba(255,255,255,0.12);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      cursor: pointer; overflow: hidden; position: relative;
+      transition: border-color .2s; background: rgba(255,255,255,0.02);
+      min-height: 90px;
     }
-    .result-img-wrap img { width: 100%; height: auto; display: block; }
-    .result-overlay {
+    .upload-zone:active { border-color: var(--blue); }
+    .upload-zone img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
+    .upload-ov {
       position: absolute; inset: 0;
-      background: rgba(0,0,0,0.4);
-      opacity: 0; transition: opacity 0.2s;
+      background: rgba(0,0,0,0.55);
       display: flex; align-items: center; justify-content: center;
+      opacity: 0; transition: opacity .2s;
     }
-    .result-img-wrap:hover .result-overlay { opacity: 1; }
+    .upload-zone:active .upload-ov,
+    .upload-zone:hover  .upload-ov { opacity: 1; }
+
+    /* RESULT CARD */
+    .result-card { position: relative; border-radius: 1rem; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 16px 48px rgba(0,0,0,.5); }
+    .result-card img { width: 100%; display: block; }
     .result-label {
-      position: absolute; top: 1rem; left: 1rem;
-      background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
-      padding: 0.25rem 0.75rem; border-radius: 9999px;
-      font-size: 0.6rem; font-weight: 700; color: var(--blue);
-      text-transform: uppercase; letter-spacing: 0.15em;
-      border: 1px solid rgba(255,255,255,0.1);
+      position: absolute; top: .75rem; left: .75rem;
+      background: rgba(0,0,0,0.65); backdrop-filter: blur(6px);
+      padding: .2rem .6rem; border-radius: 9999px;
+      font-size: .55rem; font-weight: 700; color: var(--blue);
+      text-transform: uppercase; letter-spacing: .1em;
+      border: 1px solid rgba(255,255,255,0.1); font-family: var(--mono);
+    }
+    .result-dl {
+      position: absolute; bottom: .75rem; right: .75rem;
+      background: rgba(255,255,255,0.92); color: #000;
+      border: none; border-radius: .65rem; padding: .5rem .9rem;
+      font-size: .7rem; font-weight: 800; display: flex; align-items: center; gap: .35rem;
+    }
+    .result-dl:active { transform: scale(.95); }
+
+    /* HEADER */
+    .app-header {
+      height: 56px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 1rem;
+      padding-top: var(--st);
+      height: calc(56px + var(--st));
+      background: rgba(8,8,16,0.97);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 100;
     }
 
-    .progress-bar-inner { height: 100%; background: var(--blue); transition: width 1s ease-in-out; border-radius: 4px; }
+    /* BOTTOM NAV */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(8,8,16,0.97);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid var(--border);
+      display: flex;
+      padding-bottom: var(--sb);
+    }
+    .bottom-nav-btn {
+      flex: 1; display: flex; flex-direction: column; align-items: center; gap: .2rem;
+      padding: .65rem .5rem;
+      background: none; border: none; color: #6b7280;
+      font-size: .58rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .08em;
+      font-family: var(--mono); transition: color .2s;
+    }
+    .bottom-nav-btn.active { color: var(--blue); }
+    .bottom-nav-btn .nav-icon { font-size: 1.25rem; }
 
-    .section-header {
-      font-size: 0.625rem; color: var(--blue); font-weight: 800;
-      text-transform: uppercase; letter-spacing: 0.2em; margin-bottom: 0.5rem;
+    /* DRAWER */
+    .drawer-backdrop {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.65);
+      backdrop-filter: blur(4px);
+    }
+    .drawer {
+      position: fixed; top: 0; left: 0; bottom: 0; z-index: 201;
+      width: min(84vw, 300px);
+      background: #0c0c18;
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      padding: 1rem;
+      padding-top: calc(1rem + var(--st));
+      padding-bottom: calc(1rem + var(--sb));
+      overflow-y: auto;
+      animation: slidein .3s cubic-bezier(.16,1,.3,1) forwards;
     }
 
-    .panel-block {
-      padding: 1rem; background: rgba(255,255,255,0.03);
-      border-radius: 1rem; border: 1px solid rgba(255,255,255,0.06);
-    }
+    /* PROGRESS */
+    .prog-bar  { height: 4px; background: rgba(255,255,255,.07); border-radius: 4px; overflow: hidden; }
+    .prog-fill { height: 100%; background: var(--blue); border-radius: 4px; transition: width 1s ease-in-out; }
 
+    /* AMBER NOTE */
     .amber-note {
-      padding: 0.75rem 1rem;
-      border-left: 2px solid rgba(245,158,11,0.5);
-      background: rgba(245,158,11,0.05);
-      border-radius: 0 0.5rem 0.5rem 0;
+      padding: .75rem 1rem;
+      border-left: 2px solid rgba(245,158,11,.5);
+      background: rgba(245,158,11,.05);
+      border-radius: 0 .65rem .65rem 0;
     }
 
-    /* Checkbox */
-    input[type=checkbox] { accent-color: var(--blue); width: 1rem; height: 1rem; cursor: pointer; }
+    /* DESKTOP OVERRIDES */
+    @media (min-width: 768px) {
+      .bottom-nav  { display: none; }
+      .mobile-only { display: none !important; }
+
+      .lab-shell {
+        display: grid;
+        grid-template-columns: 230px 1fr;
+        height: calc(100vh - calc(56px + var(--st)));
+        overflow: hidden;
+      }
+      .desktop-sidebar {
+        border-right: 1px solid var(--border);
+        overflow-y: auto;
+        padding: 1rem;
+        background: #0a0a0f;
+        display: flex;
+        flex-direction: column;
+      }
+      .desktop-main {
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 1.5rem;
+      }
+      .lab-grid {
+        display: grid;
+        grid-template-columns: 1fr 1.65fr;
+        gap: 1.5rem;
+        align-items: start;
+      }
+      .controls-scroll { max-height: calc(100vh - 160px); overflow-y: auto; }
+      .results-min { min-height: 480px; }
+    }
+
+    @media (min-width: 1024px) {
+      .lab-shell { grid-template-columns: 260px 1fr; }
+    }
   </style>
 </head>
 <body>
 <div id="app"></div>
 
-<script type="module">
-// ===================== STATE =====================
-const APP_MODES = {
-  CHILD: 'CHILD', SIBLING: 'SIBLING', GRANDPARENT: 'GRANDPARENT',
-  UNCLE_AUNT: 'UNCLE_AUNT', COUSIN: 'COUSIN', PREGNANCY: 'PREGNANCY', EVOLUTION: 'EVOLUTION'
-};
-const MODE_LABELS = {
-  CHILD: 'Enfant', SIBLING: 'Frères & Sœurs', GRANDPARENT: 'Grands-Parents',
-  UNCLE_AUNT: 'Oncles / Tantes', COUSIN: 'Cousins / Cousines',
-  PREGNANCY: 'Mode Grossesse', EVOLUTION: 'Évolution Temporelle'
-};
-const MODE_ICONS = {
-  CHILD: '👶', SIBLING: '👧👦', GRANDPARENT: '👵👴',
-  UNCLE_AUNT: '👨‍👩‍👦', COUSIN: '🧑‍🤝‍🧑', PREGNANCY: '🤰', EVOLUTION: '⏳'
-};
-const EYE_COLORS = ['Marron','Noisette','Vert','Bleu','Gris','Ambre'];
+<script>
+/* ════════════════════════════════════════
+   CONSTANTS
+════════════════════════════════════════ */
+const M = { PREGNANCY:'PREGNANCY', CHILD:'CHILD', SIBLING:'SIBLING', GRANDPARENT:'GRANDPARENT', UNCLE_AUNT:'UNCLE_AUNT', COUSIN:'COUSIN', EVOLUTION:'EVOLUTION' };
+const MLABELS = { PREGNANCY:'Mode Grossesse', CHILD:'Enfant', SIBLING:'Frères & Sœurs', GRANDPARENT:'Grands-Parents', UNCLE_AUNT:'Oncles / Tantes', COUSIN:'Cousins / Cousines', EVOLUTION:'Évolution Temporelle' };
+const MICONS  = { PREGNANCY:'🤰', CHILD:'👶', SIBLING:'👧👦', GRANDPARENT:'👵👴', UNCLE_AUNT:'👨‍👩‍👦', COUSIN:'🧑‍🤝‍🧑', EVOLUTION:'⏳' };
+const EYES    = ['Marron','Noisette','Vert','Bleu','Gris','Ambre'];
+const WMAP    = {1:.5,2:1,3:2.5,4:5,5:8,6:11,7:13,8:15,9:18};
 
-let state = {
-  apiKey: localStorage.getItem('studio_gen_api_key') || '',
-  apiKeyValid: !!localStorage.getItem('studio_gen_api_key'),
-  view: 'home', // 'home' | 'lab' | 'gallery'
-  activeMode: APP_MODES.PREGNANCY,
-  parent1: null, parent2: null,
-  results: [], isGenerating: false, generatingStep: 0,
-  selectedSex: 'female',
-  selectedEyeColor: 'Marron',
-  siblingChoice: { brother: true, sister: false },
-  siblingAges: { brother: 5, sister: 5 },
-  familySide: 'mother',
-  gpAges: { grandpa: 70, grandma: 68 },
-  relationChoice: { male: true, female: true },
-  relationAges: { male: 30, female: 30 },
-  familyResemblance: 50,
-  dominance: 50,
-  childAge: 5,
-  pregnancyStep: 1,
-  pregMonth: 3,
-  weightGain: 2.5,
-  initialWeight: 60,
-  initialCupSize: 'B',
-  initialBust: 90,
-  initialThigh: 55,
-  pelvisWidening: 1,
-  breastVolume: 1,
-  breastfeedingPrep: false,
-  morphoIntensity: 1,
-  stretchIntensity: 0,
-  stretchZones: ['Ventre'],
-  evolutionAgeInput: '18 mois',
+/* ════════════════════════════════════════
+   STATE
+════════════════════════════════════════ */
+let S = {
+  apiKey: localStorage.getItem('sg_key')||'', apiOk: !!localStorage.getItem('sg_key'),
+  screen: 'home', drawer: false, mode: M.PREGNANCY,
+  p1: null, p2: null, results: [], generating: false, step: 0,
+  sex: 'female', eye: 'Marron',
+  sibC: {b:true,s:false}, sibA: {b:5,s:5},
+  fSide: 'mother',
+  gpA: {gp:70,gm:68},
+  relC: {m:true,f:true}, relA: {m:30,f:30},
+  resem: 50, dom: 50, cAge: 5,
+  pregStep: 1, pregMo: 3, wGain: 2.5,
+  iWt: 60, cup: 'B', iBust: 90, iThigh: 55,
+  pelvis: 1, bVol: 1, bfPrep: false,
+  strInt: 0, strZones: ['Ventre'],
+  evoAge: '18 mois',
 };
 
-// ===================== HELPERS =====================
-function el(tag, attrs={}, ...children) {
+/* ════════════════════════════════════════
+   HELPERS
+════════════════════════════════════════ */
+function el(tag, p={}, ...kids) {
   const e = document.createElement(tag);
-  for (const [k,v] of Object.entries(attrs)) {
-    if (k === 'class') e.className = v;
-    else if (k === 'style') Object.assign(e.style, v);
+  for (const [k,v] of Object.entries(p)) {
+    if (k==='class') e.className = v;
+    else if (k==='style') (typeof v==='string' ? e.style.cssText=v : Object.assign(e.style,v));
+    else if (k==='html') e.innerHTML = v;
     else if (k.startsWith('on')) e.addEventListener(k.slice(2).toLowerCase(), v);
     else e.setAttribute(k, v);
   }
-  for (const c of children.flat()) {
-    if (c == null) continue;
-    if (typeof c === 'string' || typeof c === 'number') e.appendChild(document.createTextNode(c));
-    else e.appendChild(c);
+  for (const c of kids.flat()) {
+    if (c==null||c===false) continue;
+    e.appendChild(typeof c==='string'||typeof c==='number' ? document.createTextNode(c) : c);
   }
   return e;
 }
 
-function html(strings, ...values) {
-  const d = document.createElement('div');
-  d.innerHTML = strings.reduce((acc, str, i) => acc + str + (values[i]??''), '');
-  return d.firstElementChild || d;
-}
+const $ = id => document.getElementById(id);
+const div  = (cls, ...k) => el('div',  {class:cls}, ...k);
+const span = (cls, ...k) => el('span', {class:cls}, ...k);
 
-function h(tag, cls, ...children) { return el(tag, {class:cls}, ...children); }
-
-function weightMapForMonth(m) {
-  const map = {1:0.5,2:1,3:2.5,4:5,5:8,6:11,7:13,8:15,9:18};
-  return map[m] || 0;
-}
-
-// ===================== COMPONENTS =====================
-function Slider(label, value, min, max, onChange, opts={}) {
-  const { suffix='', labels=null } = opts;
-  const wrap = el('div', {class:'space-y-2'});
-  const row = el('div', {class:'flex justify-between items-center px-1'});
-  const lbl = el('label', {class:'text-xs text-gray-500 font-bold uppercase tracking-widest mono'}, label);
-  const val = el('span', {class:'text-xs text-blue-400 mono'}, `${value}${suffix}`);
-  row.append(lbl, val);
-
-  const inp = el('input', {type:'range', min, max, value, class:''});
-  inp.addEventListener('input', e => {
-    val.textContent = e.target.value + suffix;
-    onChange(parseInt(e.target.value));
-  });
-
-  wrap.append(row, inp);
-  if (labels) {
-    const labRow = el('div', {class:'flex justify-between px-1 mt-1'});
-    labels.forEach(l => labRow.append(el('span', {class:'text-xs text-gray-600 uppercase font-bold mono'}, l)));
-    wrap.append(labRow);
-  }
-  return wrap;
-}
-
-function ImageUploader(onUpload, image, placeholder) {
-  const wrap = el('div', {class:'upload-zone'});
-  const inp = el('input', {type:'file', accept:'image/*', style:{display:'none'}});
-  wrap.append(inp);
-
-  if (image) {
-    const img = el('img', {src:image, alt:''});
-    const overlay = el('div', {class:'upload-zone-overlay'});
-    overlay.append(el('span', {class:'text-white text-xs font-bold uppercase tracking-widest'}, 'Changer'));
-    wrap.append(img, overlay);
-  } else {
-    wrap.append(
-      el('div', {class:'text-2xl opacity-40 mb-1'}, '📸'),
-      el('span', {class:'text-xs text-gray-500 font-bold uppercase tracking-tight mono'}, placeholder),
-      el('span', {class:'text-xs text-gray-700 mono mt-1'}, 'PNG / JPG')
-    );
-  }
-
-  inp.addEventListener('change', e => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => onUpload(ev.target.result);
-    reader.readAsDataURL(file);
-  });
-  wrap.addEventListener('click', () => inp.click());
-  return wrap;
-}
-
-function TagButton(label, active, onClick) {
-  const btn = el('button', {class:`tag-btn${active?' active':''}`}, label);
-  btn.addEventListener('click', onClick);
-  return btn;
-}
-
-function SexButton(emoji, label, active, onClick) {
-  const btn = el('button', {class:`sex-btn${active?' active':''}`});
-  btn.append(el('span', {class:'text-xl'}, emoji), el('span', {class:'text-xs font-bold uppercase tracking-widest'}, label));
-  btn.addEventListener('click', onClick);
-  return btn;
-}
-
-// ===================== GENERATE =====================
-async function callGeminiAPI(prompt, p1, p2) {
-  const parts = [{ text: prompt }];
-  if (p1) parts.push({ inlineData: { data: p1.split(',')[1], mimeType: 'image/jpeg' } });
-  if (p2) parts.push({ inlineData: { data: p2.split(',')[1], mimeType: 'image/jpeg' } });
-
-  const body = {
-    contents: [{ parts }],
-    generationConfig: {}
-  };
-
-  const model = 'gemini-2.0-flash-preview-image-generation';
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${state.apiKey}`,
-    { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) }
-  );
-
-  if (!res.ok) {
-    const err = await res.json().catch(()=>({}));
-    if (res.status === 400 || res.status === 403) throw new Error('API_KEY_ERROR');
-    throw new Error(err.error?.message || 'Génération échouée');
-  }
-
-  const data = await res.json();
-  const images = [];
-  for (const part of (data.candidates?.[0]?.content?.parts || [])) {
-    if (part.inlineData) images.push(`data:image/png;base64,${part.inlineData.data}`);
-  }
-  if (!images.length) throw new Error('Aucune image générée.');
-  return images;
-}
-
-function buildPrompt() {
-  const s = state;
-  const resemblanceLabel = s.familyResemblance < 33 ? "FAIBLE (éloignée, subtile)" : s.familyResemblance < 66 ? "RÉALISTE (naturelle, standard)" : "FORTE (mâchoire, yeux, nez, expressions très marqués)";
-  const resemblanceRule = `RÈGLE DE RESSEMBLANCE : Intensité ${resemblanceLabel} (${s.familyResemblance}%). Le lien génétique doit être identifiable sans jamais être un clone. INTERDICTION FORMELLE DU CLONAGE.`;
-  const common = `QUALITÉ : ultra-photoréaliste 4K. FORMAT : portrait 9:16. IMAGE UNIQUE : Ne jamais générer de collages.`;
-  const sexLabel = s.selectedSex === 'female' ? "Fille / Femme (XX)" : "Garçon / Homme (XY)";
-
-  switch (s.activeMode) {
-    case APP_MODES.EVOLUTION:
-      return `MODE : ÉVOLUTION TEMPORELLE ADN
-RÈGLE ABSOLUE : L'âge indiqué est PRIORITAIRE et DOIT être respecté strictement.
-PARAMÈTRES :
-- Âge exact : ${s.evolutionAgeInput}
-- Sexe biologique : ${sexLabel}
-- Couleur des yeux : ${s.selectedEyeColor}
-ADAPTATIONS OBLIGATOIRES SELON L'ÂGE :
-- Morphologie corporelle réaliste correspondant EXACTEMENT à l'âge indiqué
-- Taille, proportions, posture, motricité adaptées
-- Structure faciale et osseuse cohérente
-- Cheveux : longueur, densité et implantation réalistes selon l'âge
-- Texture de peau adaptée à l'âge
-IDENTITÉ : Conserver rigoureusement l'identité de la personne en photo source.
-SORTIE : PNG, Format 9:16, Ultra-réalisme humain 4K`;
-
-    case APP_MODES.SIBLING:
-      return `BIOLOGIE FRATRIE : Génère EXACTEMENT 3 IMAGES DISTINCTES.
-1. IMAGE DE GROUPE : Frère (${s.siblingAges.brother} ans, XY) et Sœur (${s.siblingAges.sister} ans, XX) ensemble.
-2. INDIVIDUEL : Le frère seul (XY, 9:16).
-3. INDIVIDUEL : La sœur seule (XX, 9:16).
-${resemblanceRule} ${common}`;
-
-    case APP_MODES.GRANDPARENT: {
-      const persons = [];
-      if (s.relationChoice.male) persons.push(`Grand-père (${s.gpAges.grandpa} ans, XY)`);
-      if (s.relationChoice.female) persons.push(`Grand-mère (${s.gpAges.grandma} ans, XX)`);
-      const lien = s.familySide === 'mother' ? 'MATERNELLE' : 'PATERNELLE';
-      const instr = persons.length === 2
-        ? `Génère EXACTEMENT 3 IMAGES DISTINCTES : 1. Individuel ${persons[0]}. 2. Individuel ${persons[1]}. 3. Image de groupe.`
-        : `Génère 1 image INDIVIDUELLE : ${persons[0]}.`;
-      return `VIEILLISSEMENT GÉNÉTIQUE - BRANCHE ${lien} : ${instr} ${resemblanceRule} ${common}`;
-    }
-
-    case APP_MODES.UNCLE_AUNT:
-    case APP_MODES.COUSIN: {
-      const roleM = s.activeMode === APP_MODES.UNCLE_AUNT ? "Oncle" : "Cousin";
-      const roleF = s.activeMode === APP_MODES.UNCLE_AUNT ? "Tante" : "Cousine";
-      const persons = [];
-      if (s.relationChoice.male) persons.push(`${roleM} (${s.relationAges.male} ans, XY)`);
-      if (s.relationChoice.female) persons.push(`${roleF} (${s.relationAges.female} ans, XX)`);
-      const lien = s.familySide === 'mother' ? 'MATERNEL(LE)' : 'PATERNEL(LE)';
-      const instr = persons.length === 2
-        ? `Génère EXACTEMENT 3 IMAGES DISTINCTES : 1. Individuel ${persons[0]}. 2. Individuel ${persons[1]}. 3. Image de groupe.`
-        : `Génère 1 image INDIVIDUELLE : ${persons[0]}.`;
-      return `LOGIQUE FAMILY ${s.activeMode} BRANCHE ${lien} : ${instr} ${resemblanceRule} ${common}`;
-    }
-
-    case APP_MODES.PREGNANCY: {
-      if (s.pregnancyStep === 3) {
-        return `PROTOCOLE NAISSANCE : Génère DEUX IMAGES SÉPARÉES.
-1. GROUPE : Mère + nouveau-né en maternité (Sexe : ${sexLabel}).
-2. INDIVIDUEL : Le bébé seul (9:16 PNG, ${sexLabel}).
-${common}`;
-      }
-      const thighGrowth = (s.weightGain * 0.45).toFixed(1);
-      const pelvisV = s.pregMonth > 4 ? (s.pelvisWidening + 1) * 2.5 : 0;
-      const breastVLabels = ['légère augmentation','augmentation naturelle','augmentation marquée'];
-      const stretchLabels = ['aucune','légères','visibles','marquées'];
-      return `BIOLOGIE GROSSESSE — COHÉRENCE GLOBALE STRICTE :
-DONNÉES INITIALES : Poids ${s.initialWeight}kg, Tour poitrine ${s.initialBust}cm, Bonnet ${s.initialCupSize}, Tour cuisse ${s.initialThigh}cm.
-STADE : Mois ${s.pregMonth}. GAIN DE POIDS TOTAL : +${s.weightGain}kg.
-RÈGLE DE COHÉRENCE GLOBALE (STRICTE) : Le corps évolue comme un ensemble cohérent. Ventre↑, Cuisses↑, Bassin↑, Poitrine↑, Bras↑, Joues↑.
-POITRINE : Augmentation volume ${breastVLabels[s.breastVolume]}. Préparation allaitement : ${s.breastfeedingPrep ? 'ACTIVÉE':'OFF'}.
-DISTRIBUTION PHYSIOLOGIQUE :
-- VENTRE (35%): Projection frontale massive, peau tendue.
-- BASSIN & HANCHES (20%): Élargissement osseux (+${pelvisV}cm).
-- CUISSES & FESSES (15%): Épaississement (+${thighGrowth}cm).
-- POITRINE (15%), BRAS/DOS (10%), VISAGE (5%).
-INTERDICTION : Poitrine figée, silhouette mince incohérente.
-VERGETURES : ${s.stretchIntensity > 0 ? `${stretchLabels[s.stretchIntensity]} sur ${s.stretchZones.join(', ')}.` : 'AUCUNE.'}
-Rendu individuel 9:16 PNG. ${common}`;
-    }
-
-    default: // CHILD
-      return `IDENTITÉ GÉNÉTIQUE : Enfant de ${s.childAge} ans. Sexe : ${sexLabel}.
-Dominance parentale : ${s.dominance}%.
-Génère 1 image INDIVIDUELLE (9:16 PNG).
-${resemblanceRule} ${common}`;
-  }
-}
-
-function getResultLabel(idx, count) {
-  const m = state.activeMode;
-  if (m === APP_MODES.SIBLING) {
-    if (idx === 0) return "PORTRAIT DE FRATRIE";
-    if (idx === 1) return "INDIVIDUEL : LE FRÈRE";
-    return "INDIVIDUEL : LA SŒUR";
-  }
-  if (m === APP_MODES.PREGNANCY && state.pregnancyStep === 3) {
-    return idx === 0 ? "MÈRE + BÉBÉ" : "BÉBÉ SEUL";
-  }
-  if ([APP_MODES.GRANDPARENT, APP_MODES.UNCLE_AUNT, APP_MODES.COUSIN].includes(m)) {
-    const roleM = m===APP_MODES.GRANDPARENT?"GRAND-PÈRE":m===APP_MODES.UNCLE_AUNT?"ONCLE":"COUSIN";
-    const roleF = m===APP_MODES.GRANDPARENT?"GRAND-MÈRE":m===APP_MODES.UNCLE_AUNT?"TANTE":"COUSINE";
-    const s = state;
-    const selected = [];
-    if (s.relationChoice.male) selected.push(roleM);
-    if (s.relationChoice.female) selected.push(roleF);
-    if (selected.length === 2) {
-      if (idx === 0) return `INDIVIDUEL : ${selected[0]}`;
-      if (idx === 1) return `INDIVIDUEL : ${selected[1]}`;
-      return "IMAGE DE GROUPE";
-    }
-    return `INDIVIDUEL : ${selected[0]||'ADN'}`;
-  }
-  return `UNITÉ ADN #${idx+1}`;
-}
-
-// ===================== RENDER =====================
 function render() {
-  const app = document.getElementById('app');
+  const app = $('app');
   app.innerHTML = '';
-  if (!state.apiKeyValid) { app.append(renderApiKeyScreen()); return; }
-  if (state.view === 'home') { app.append(renderHome()); return; }
-  app.append(renderLab());
+  if (!S.apiOk)          { app.append(pageApiKey()); return; }
+  if (S.screen==='home') { app.append(pageHome());   return; }
+  app.append(pageLab());
 }
 
-function renderApiKeyScreen() {
-  const wrap = el('div', {class:'api-screen gradient-bg'});
-  const card = el('div', {class:'glass', style:{maxWidth:'480px',width:'100%',padding:'2.5rem',borderRadius:'1.5rem'}});
+/* ════════════════════════════════════════
+   PAGE: API KEY
+════════════════════════════════════════ */
+function pageApiKey() {
+  const wrap = el('div',{style:'min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.25rem;background:radial-gradient(ellipse 80% 50% at 70% -10%,rgba(59,130,246,.08),transparent 60%),#080810'});
+  const card = el('div',{class:'glass',style:'width:100%;max-width:430px;padding:2rem;border-radius:1.5rem'});
 
-  card.append(
-    el('div', {style:{textAlign:'center',marginBottom:'2rem'}},
-      el('div', {style:{fontSize:'3rem',marginBottom:'1rem'}}, '🧬'),
-      el('h1', {style:{fontSize:'1.75rem',fontWeight:'800',textTransform:'uppercase',letterSpacing:'0.2em',marginBottom:'0.5rem'}}, 'STUDIO GÉNÉTIQUE'),
-      el('p', {style:{color:'#6b7280',fontSize:'0.875rem'}}, 'Entrez votre clé API Google AI Studio pour commencer')
-    )
+  const top = el('div',{style:'text-align:center;margin-bottom:1.75rem'});
+  top.append(
+    el('div',{style:'font-size:3rem;margin-bottom:.75rem'},'🧬'),
+    el('h1',{style:'font-size:1.5rem;font-weight:800;text-transform:uppercase;letter-spacing:.18em;margin-bottom:.4rem'},'STUDIO GÉNÉTIQUE'),
+    el('p',{style:'color:#6b7280;font-size:.85rem;line-height:1.5'},'Entrez votre clé API Google AI Studio')
   );
 
-  const label = el('label', {style:{display:'block',fontSize:'0.625rem',color:'#3b82f6',fontWeight:'800',textTransform:'uppercase',letterSpacing:'0.2em',marginBottom:'0.5rem',fontFamily:'Space Mono, monospace'}}, 'Clé API Google AI Studio');
-  const inp = el('input', {
-    type:'password',
-    placeholder:'AIza...',
-    value: state.apiKey,
-    style:{
-      width:'100%',background:'rgba(0,0,0,0.4)',border:'1px solid rgba(255,255,255,0.1)',
-      borderRadius:'0.75rem',padding:'0.875rem 1rem',color:'#fff',fontSize:'0.875rem',
-      outline:'none',fontFamily:'Space Mono, monospace',marginBottom:'1rem',boxSizing:'border-box'
-    }
-  });
-  inp.addEventListener('focus', e => e.target.style.borderColor='#3b82f6');
-  inp.addEventListener('blur', e => e.target.style.borderColor='rgba(255,255,255,0.1)');
-  inp.addEventListener('input', e => { state.apiKey = e.target.value; });
+  const lbl = el('label',{style:'display:block;font-size:.6rem;color:var(--blue);font-weight:800;text-transform:uppercase;letter-spacing:.18em;margin-bottom:.5rem;font-family:var(--mono)'},'Clé API Google AI Studio');
 
-  const btn = el('button', {class:'gen-btn'}, 'ACCÉDER À L\'APPLICATION');
-  btn.addEventListener('click', async () => {
-    if (!state.apiKey.trim()) return alert('Veuillez entrer une clé API.');
-    btn.disabled = true; btn.textContent = 'Vérification...';
+  const inp = el('input',{type:'password', placeholder:'AIza...', value:S.apiKey,
+    style:'width:100%;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.1);border-radius:.85rem;padding:1rem;color:#fff;font-size:.95rem;outline:none;font-family:var(--mono);display:block;margin-bottom:1rem',
+    onInput: e=>{ S.apiKey=e.target.value; },
+    onFocus: e=>{ e.target.style.borderColor='var(--blue)'; },
+    onBlur:  e=>{ e.target.style.borderColor='rgba(255,255,255,.1)'; }
+  });
+
+  const btn = el('button',{class:'btn-gen',style:'margin-bottom:.75rem'},"ACCÉDER À L'APPLICATION");
+  btn.addEventListener('click', async()=>{
+    if (!S.apiKey.trim()) { alert('Veuillez entrer une clé API.'); return; }
+    btn.disabled=true; btn.textContent='Vérification...';
     try {
-      // Test rapide avec un prompt minimal
-      const testRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${state.apiKey.trim()}`,
-        { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({contents:[{parts:[{text:'Hi'}]}]}) }
-      );
-      if (!testRes.ok) throw new Error('Clé invalide');
-      state.apiKey = state.apiKey.trim();
-      localStorage.setItem('studio_gen_api_key', state.apiKey);
-      state.apiKeyValid = true;
-      render();
+      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${S.apiKey.trim()}`,
+        {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:'Hi'}]}]})});
+      if (!r.ok) throw new Error();
+      S.apiKey=S.apiKey.trim(); localStorage.setItem('sg_key',S.apiKey); S.apiOk=true; render();
     } catch {
-      alert('Clé API invalide ou sans permission. Vérifiez votre clé Google AI Studio.');
-      btn.disabled = false; btn.textContent = 'ACCÉDER À L\'APPLICATION';
+      alert('Clé API invalide. Vérifiez sur aistudio.google.com');
+      btn.disabled=false; btn.textContent="ACCÉDER À L'APPLICATION";
     }
   });
 
-  const note = el('p', {style:{color:'#4b5563',fontSize:'0.7rem',textAlign:'center',marginTop:'1rem',lineHeight:'1.6'}},
-    '🔒 Votre clé est stockée localement et n\'est jamais partagée. Les générations sont décomptées de votre propre compte Google AI Studio.');
+  const note = el('p',{style:'color:#4b5563;font-size:.67rem;text-align:center;line-height:1.6;font-family:var(--mono)'},'🔒 Stockée localement, jamais partagée. Générations décomptées sur votre compte Google AI Studio.');
 
-  const changeLink = el('button', {style:{display:'block',margin:'0.75rem auto 0',color:'#6b7280',fontSize:'0.7rem',background:'none',border:'none',cursor:'pointer',textDecoration:'underline',fontFamily:'Space Mono'}}, 'Changer de clé');
-  changeLink.addEventListener('click', () => { localStorage.removeItem('studio_gen_api_key'); state.apiKey=''; state.apiKeyValid=false; render(); });
-
-  card.append(label, inp, btn, note, changeLink);
+  card.append(top,lbl,inp,btn,note);
   wrap.append(card);
   return wrap;
 }
 
-function renderHome() {
-  const wrap = el('div', {class:'gradient-bg', style:{minHeight:'100vh',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'2rem'}});
+/* ════════════════════════════════════════
+   PAGE: HOME
+════════════════════════════════════════ */
+function pageHome() {
+  const wrap = el('div',{style:'min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1.5rem 1.25rem;background:radial-gradient(ellipse 80% 50% at 70% -10%,rgba(59,130,246,.08),transparent 60%),#080810'});
+  const inner = el('div',{style:'width:100%;max-width:860px;text-align:center'});
 
-  const inner = el('div', {style:{maxWidth:'900px',width:'100%',textAlign:'center'}});
+  inner.append(
+    el('h1',{style:'font-size:clamp(2.2rem,9vw,5rem);font-weight:900;text-transform:uppercase;letter-spacing:.18em;line-height:1.05;margin-bottom:1.25rem'},'STUDIO\nGÉNÉTIQUE'),
+    el('div',{style:'font-size:clamp(3rem,10vw,4.5rem);margin:1rem auto;animation:bounce-s 4s ease-in-out infinite'},'🧬'),
+    el('p',{style:'color:#d1d5db;font-size:clamp(.85rem,2.5vw,1.05rem);font-weight:300;line-height:1.7;max-width:540px;margin:0 auto .85rem'},'Créez chaque membre de la famille en respectant les traits génétiques.'),
+    el('p',{style:'color:#6b7280;font-size:.82rem;max-width:420px;margin:0 auto 1.75rem;line-height:1.6'},"À partir de photos et de paramètres, générez des visages cohérents, évolutifs et crédibles.")
+  );
 
-  // Title
-  const title = el('h1', {style:{fontSize:'clamp(3rem,8vw,6rem)',fontWeight:'900',textTransform:'uppercase',letterSpacing:'0.2em',lineHeight:'1',marginBottom:'2rem'}}, 'STUDIO', el('br',{}), 'GÉNÉTIQUE');
-
-  // DNA animation
-  const dnaWrap = el('div', {style:{position:'relative',width:'12rem',height:'12rem',margin:'0 auto 2rem',display:'flex',alignItems:'center',justifyContent:'center'}});
-  const ring1 = el('div', {style:{position:'absolute',inset:'0',border:'1px solid rgba(245,158,11,0.1)',borderRadius:'50%',animation:'spin-slow 20s linear infinite'}});
-  const ring2 = el('div', {style:{position:'absolute',inset:'1rem',border:'1px solid rgba(245,158,11,0.05)',borderRadius:'50%',animation:'spin-slow 15s linear infinite reverse'}});
-  const dna = el('div', {class:'animate-bounce-slow', style:{fontSize:'5rem',filter:'drop-shadow(0 0 15px rgba(245,158,11,0.3))'}}, '🧬');
-  dnaWrap.append(ring1,ring2,dna);
-
-  // Description
-  const desc = el('p', {style:{color:'#d1d5db',fontSize:'1.125rem',fontWeight:'300',lineHeight:'1.7',maxWidth:'600px',margin:'0 auto 0.75rem'}},
-    'Créez chaque membre de la famille en respectant les traits entre parents, enfants et générations.');
-  const desc2 = el('p', {style:{color:'#6b7280',fontSize:'0.875rem',maxWidth:'500px',margin:'0 auto 2rem',lineHeight:'1.6'}},
-    "À partir de photos, d'âges et de paramètres simples, générez des visages cohérents, évolutifs et crédibles.");
-
-  // Features grid
-  const features = [
-    {icon:'🧒',title:'Enfants & bébés',desc:'Âge réel, morphologie crédible'},
-    {icon:'👨‍👩‍👧',title:'Fratrie & famille',desc:'Ressemblance contrôlée'},
-    {icon:'🤰',title:'Grossesse & évolution',desc:'Transformation mois par mois'},
-    {icon:'👵',title:'Générations & héritage',desc:'Traits familiaux cohérents'},
-  ];
-  const grid = el('div', {style:{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:'1rem',marginBottom:'3rem'}});
-  features.forEach(f => {
-    const card = el('div', {class:'glass', style:{padding:'1.5rem',borderRadius:'1.5rem',cursor:'default',transition:'background 0.2s'}});
-    card.append(
-      el('div', {style:{fontSize:'2rem',marginBottom:'0.75rem'}}, f.icon),
-      el('h3', {style:{fontSize:'0.7rem',fontWeight:'800',color:'#fff',textTransform:'uppercase',letterSpacing:'0.1em',marginBottom:'0.25rem'}}, f.title),
-      el('p', {style:{fontSize:'0.65rem',color:'#6b7280',fontWeight:'500'}}, f.desc)
-    );
-    grid.append(card);
+  const grid = el('div',{style:'display:grid;grid-template-columns:repeat(2,1fr);gap:.7rem;margin-bottom:1.75rem;max-width:500px;margin-left:auto;margin-right:auto'});
+  [{i:'🧒',t:'Enfants & bébés',d:'Âge réel, morphologie crédible'},{i:'👨‍👩‍👧',t:'Fratrie & famille',d:'Ressemblance contrôlée'},{i:'🤰',t:'Grossesse',d:'Transformation mois par mois'},{i:'👵',t:'Générations',d:'Traits familiaux cohérents'}].forEach(f=>{
+    const c = el('div',{class:'glass',style:'padding:1rem;border-radius:1.1rem;text-align:center'});
+    c.append(el('div',{style:'font-size:1.65rem;margin-bottom:.4rem'},f.i), el('h3',{style:'font-size:.65rem;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:.07em;margin-bottom:.2rem'},f.t), el('p',{style:'font-size:.6rem;color:#6b7280'},f.d));
+    grid.append(c);
   });
+  inner.append(grid);
 
-  // CTA
-  const cta = el('button', {style:{
-    padding:'1.25rem 3rem',background:'#f59e0b',color:'#000',fontWeight:'900',
-    textTransform:'uppercase',letterSpacing:'0.2em',borderRadius:'1rem',
-    border:'none',cursor:'pointer',fontSize:'1rem',
-    boxShadow:'0 0 30px rgba(245,158,11,0.25)',transition:'all 0.2s', fontFamily:'Syne, sans-serif'
-  }}, 'JE CRÉE MA FAMILLE');
-  cta.addEventListener('click', () => { state.view = 'lab'; state.results = []; render(); });
-  cta.addEventListener('mouseover', () => { cta.style.background='#fbbf24'; cta.style.transform='scale(1.05)'; });
-  cta.addEventListener('mouseout', () => { cta.style.background='#f59e0b'; cta.style.transform='scale(1)'; });
+  const cta = el('button',{
+    style:'padding:1.1rem 2.5rem;background:#f59e0b;color:#000;font-weight:900;text-transform:uppercase;letter-spacing:.18em;border-radius:1rem;border:none;font-size:.92rem;width:100%;max-width:320px;box-shadow:0 0 28px rgba(245,158,11,.2);font-family:var(--font)',
+    onClick:()=>{ S.screen='lab'; S.results=[]; render(); }
+  },'JE CRÉE MA FAMILLE');
 
-  // Change key link
-  const keyLink = el('button', {style:{display:'block',margin:'1.5rem auto 0',color:'#4b5563',fontSize:'0.7rem',background:'none',border:'none',cursor:'pointer',textDecoration:'underline',fontFamily:'Space Mono'}}, '🔑 Changer de clé API');
-  keyLink.addEventListener('click', () => { localStorage.removeItem('studio_gen_api_key'); state.apiKey=''; state.apiKeyValid=false; render(); });
+  const keyBtn = el('button',{
+    style:'display:block;margin:.85rem auto 0;color:#4b5563;font-size:.68rem;background:none;border:none;text-decoration:underline;font-family:var(--mono)',
+    onClick:()=>{ localStorage.removeItem('sg_key'); S.apiKey=''; S.apiOk=false; render(); }
+  },'🔑 Changer de clé API');
 
-  inner.append(title, dnaWrap, desc, desc2, grid, cta, keyLink);
+  inner.append(cta, keyBtn);
   wrap.append(inner);
   return wrap;
 }
 
-function renderLab() {
-  const wrap = el('div', {style:{display:'flex',flexDirection:'column',height:'100vh',overflow:'hidden'}});
+/* ════════════════════════════════════════
+   PAGE: LAB
+════════════════════════════════════════ */
+function pageLab() {
+  const root = el('div',{style:'display:flex;flex-direction:column;height:100vh;overflow:hidden'});
+  root.append(buildHeader());
 
-  // Header
-  const header = el('header', {style:{
-    height:'4rem',borderBottom:'1px solid rgba(255,255,255,0.05)',
-    display:'flex',alignItems:'center',justifyContent:'space-between',
-    padding:'0 2rem',background:'#0a0a0a',flexShrink:'0'
-  }});
-  const logo = el('div', {style:{display:'flex',alignItems:'center',gap:'0.75rem'}});
+  // Shell: desktop = sidebar+main grid, mobile = single scroll column
+  const shell = el('div',{id:'shell',style:'flex:1;overflow:hidden;display:flex'});
+
+  // Desktop sidebar (hidden on mobile via class + JS)
+  const dSide = el('div',{id:'dside',style:'display:none;flex-direction:column'});
+  dSide.append(buildSidebarContent());
+  shell.append(dSide);
+
+  // Main area
+  const main = el('div',{id:'main-area',style:'flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:1rem 1rem calc(72px + var(--sb));'});
+  main.append(buildLabMain());
+  shell.append(main);
+
+  root.append(shell);
+
+  // Drawer overlay (mobile)
+  if (S.drawer) root.append(buildDrawer());
+
+  // Bottom nav (mobile only)
+  root.append(buildBottomNav());
+
+  // Apply desktop layout after mount
+  requestAnimationFrame(applyDesktopLayout);
+  window.addEventListener('resize', applyDesktopLayout, {once:true});
+
+  return root;
+}
+
+function applyDesktopLayout() {
+  const shell=$('shell'), dside=$('dside'), main=$('main-area'), labGrid=$('lab-grid');
+  if (!shell) return;
+  if (window.innerWidth >= 768) {
+    shell.className = 'lab-shell';
+    if (dside) { dside.style.display='flex'; dside.className='desktop-sidebar'; }
+    if (main)  { main.style.padding='1.5rem 1.5rem 2rem'; }
+    if (labGrid) { labGrid.className='lab-grid'; labGrid.style.cssText=''; }
+  } else {
+    shell.className = '';
+    shell.style.cssText = 'flex:1;overflow:hidden;display:flex';
+    if (dside) dside.style.display = 'none';
+    if (main)  main.style.padding = '1rem 1rem calc(72px + var(--sb))';
+    if (labGrid) { labGrid.className=''; labGrid.style.cssText='display:flex;flex-direction:column;gap:1.1rem'; }
+  }
+}
+
+window.addEventListener('resize', applyDesktopLayout);
+
+function buildHeader() {
+  const h = el('header',{class:'app-header'});
+
+  // Left: hamburger + logo
+  const left = el('div',{style:'display:flex;align-items:center;gap:.65rem'});
+  const ham = el('button',{
+    class:'mobile-only',
+    style:'background:none;border:none;padding:.4rem;border-radius:.5rem;display:flex;flex-direction:column;gap:5px',
+    onClick:()=>{ S.drawer=true; render(); }
+  });
+  [0,1,2].forEach(()=> ham.append(el('span',{style:'display:block;width:19px;height:2px;background:#9ca3af;border-radius:2px'})));
+
+  const logo = el('div',{style:'display:flex;align-items:center;gap:.5rem'});
   logo.append(
-    el('div', {style:{width:'2rem',height:'2rem',background:'linear-gradient(135deg,#3b82f6,#6366f1)',borderRadius:'0.5rem',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1.1rem'}}, '🧬'),
-    el('h1', {style:{fontSize:'1.25rem',fontWeight:'700',letterSpacing:'0.05em',color:'#f0f0f8'}}, 'STUDIO GÉNÉTIQUE')
+    el('div',{style:'width:1.65rem;height:1.65rem;background:linear-gradient(135deg,#3b82f6,#6366f1);border-radius:.4rem;display:flex;align-items:center;justify-content:center;font-size:.85rem'},'🧬'),
+    el('span',{style:'font-size:.95rem;font-weight:800;letter-spacing:.07em'},'STUDIO GÉNÉTIQUE')
   );
-  const status = el('div', {style:{display:'flex',alignItems:'center',gap:'1.5rem',color:'#6b7280',fontSize:'0.875rem'}});
-  const dot = el('span', {style:{display:'inline-block',width:'0.5rem',height:'0.5rem',borderRadius:'50%',background:'#22c55e',marginRight:'0.5rem',animation:'pulse 2s infinite'}});
-  status.append(el('div',{}, dot, 'Système Opérationnel'),
-    el('div', {class:'mono', style:{background:'rgba(255,255,255,0.05)',padding:'0.25rem 0.75rem',borderRadius:'0.5rem',border:'1px solid rgba(255,255,255,0.1)',fontSize:'0.7rem'}}, 'CORE_GEN_v4.2.1'));
-  header.append(logo, status);
+  left.append(ham, logo);
 
-  // Body
-  const body = el('div', {style:{display:'flex',flex:'1',overflow:'hidden'}});
+  const right = el('div',{style:'display:flex;align-items:center;gap:.4rem'});
+  right.append(
+    el('span',{style:'width:.4rem;height:.4rem;border-radius:50%;background:#22c55e;display:inline-block;animation:pulse 2s infinite'}),
+    el('span',{style:'font-size:.62rem;color:#6b7280;font-family:var(--mono)'},'v4.2.1')
+  );
 
-  // Sidebar
-  const sidebar = el('aside', {style:{width:'16rem',borderRight:'1px solid rgba(255,255,255,0.05)',background:'#0a0a0a',display:'flex',flexDirection:'column',padding:'1rem',flexShrink:'0',overflowY:'auto'}});
-  const homeBtn = el('button', {class:'mode-btn', style:{marginBottom:'1rem',fontSize:'0.75rem',fontWeight:'800',textTransform:'uppercase',letterSpacing:'0.1em'}}, '← ACCUEIL');
-  homeBtn.addEventListener('click', () => { state.view='home'; render(); });
+  h.append(left, right);
+  return h;
+}
 
-  const proto = el('div', {style:{fontSize:'0.625rem',color:'#6b7280',fontWeight:'800',textTransform:'uppercase',letterSpacing:'0.2em',marginBottom:'0.75rem',padding:'0 0.5rem',fontFamily:'Space Mono'}}, 'Protocole de Sélection');
-  sidebar.append(homeBtn, proto);
+function buildBottomNav() {
+  const nav = el('div',{class:'bottom-nav'});
+  [{id:'lab',icon:'🧬',lbl:'Lab'},{id:'home',icon:'🏠',lbl:'Accueil'},{id:'gallery',icon:'🌳',lbl:'Archives'}].forEach(t=>{
+    const on = (t.id==='gallery'&&S.screen==='gallery')||(t.id==='lab'&&S.screen==='lab')||(t.id==='home'&&S.screen==='home');
+    const b = el('button',{class:`bottom-nav-btn${on?' active':''}`,onClick:()=>{ S.screen=t.id; if(t.id!=='lab') S.results=[]; render(); }});
+    b.append(el('span',{class:'nav-icon'},t.icon), document.createTextNode(t.lbl));
+    nav.append(b);
+  });
+  return nav;
+}
 
-  const modes = Object.values(APP_MODES);
-  modes.forEach(mode => {
-    const btn = el('button', {class:`mode-btn${state.activeMode===mode?' active':''}`});
-    btn.append(el('span', {style:{fontSize:'1.25rem'}}, MODE_ICONS[mode]), el('span',{}, MODE_LABELS[mode]));
-    btn.addEventListener('click', () => {
-      state.activeMode = mode;
-      state.results = [];
-      state.pregnancyStep = 1;
-      render();
-    });
-    sidebar.append(btn);
+function buildDrawer() {
+  const bd = el('div',{class:'drawer-backdrop',onClick:()=>{ S.drawer=false; render(); }});
+  const dr = el('div',{class:'drawer'});
+  dr.append(
+    el('button',{style:'align-self:flex-end;background:none;border:none;color:#9ca3af;font-size:1.2rem;margin-bottom:.5rem',onClick:()=>{ S.drawer=false; render(); }},'✕'),
+    buildSidebarContent()
+  );
+  const w = el('div');
+  w.append(bd, dr);
+  return w;
+}
+
+function buildSidebarContent() {
+  const w = el('div',{style:'display:flex;flex-direction:column;gap:.2rem;flex:1'});
+
+  const back = el('button',{class:'btn-mode',style:'margin-bottom:.4rem;font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af',
+    onClick:()=>{ S.screen='home'; S.drawer=false; render(); }
+  },'← ACCUEIL');
+  const proto = el('p',{style:'font-size:.56rem;color:#6b7280;font-weight:800;text-transform:uppercase;letter-spacing:.18em;padding:.4rem .5rem;font-family:var(--mono)'},'Protocole de Sélection');
+  w.append(back, proto);
+
+  Object.values(M).forEach(mode=>{
+    const b = el('button',{class:`btn-mode${S.mode===mode?' active':''}`,onClick:()=>{ S.mode=mode; S.results=[]; S.pregStep=1; S.drawer=false; render(); }});
+    b.append(el('span',{style:'font-size:1.15rem'},MICONS[mode]), document.createTextNode(MLABELS[mode]));
+    w.append(b);
   });
 
-  const conformite = el('div', {class:'glass', style:{marginTop:'auto',padding:'1rem',borderRadius:'1rem'}});
-  conformite.append(
-    el('h4', {style:{fontSize:'0.7rem',fontWeight:'700',color:'#d1d5db',marginBottom:'0.5rem',textTransform:'uppercase',letterSpacing:'0.05em'}}, 'Règle de Conformité'),
-    el('p', {style:{fontSize:'0.625rem',color:'#6b7280',lineHeight:'1.6',fontStyle:'italic'}}, '"Aucune optimisation esthétique. La génétique prime sur tout."')
+  const ft = el('div',{class:'glass',style:'margin-top:auto;padding:.9rem;border-radius:1rem;margin-top:1rem'});
+  ft.append(
+    el('h4',{style:'font-size:.62rem;font-weight:700;color:#d1d5db;margin-bottom:.35rem;text-transform:uppercase;letter-spacing:.05em'},'Règle de Conformité'),
+    el('p',{style:'font-size:.58rem;color:#6b7280;line-height:1.6;font-style:italic'},'"Aucune optimisation esthétique. La génétique prime sur tout."')
   );
-  sidebar.append(conformite);
+  w.append(ft);
+  return w;
+}
 
-  // Main
-  const main = el('main', {style:{flex:'1',overflowY:'auto',background:'#0d0d0d',padding:'1.5rem'}});
-  const mainInner = el('div', {style:{maxWidth:'72rem',margin:'0 auto',height:'100%'}});
+/* ════════════════════════════════════════
+   LAB MAIN CONTENT
+════════════════════════════════════════ */
+function buildLabMain() {
+  if (S.screen === 'gallery') return buildGallery();
+
+  const wrap = el('div');
 
   // Top bar
-  const topBar = el('div', {style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'2rem'}});
-  const modeTitle = el('h2', {style:{fontSize:'1.5rem',fontWeight:'300',letterSpacing:'0.2em',color:'#fff',textTransform:'uppercase'}});
-  modeTitle.append(document.createTextNode(MODE_LABELS[state.activeMode]+' '), el('span', {style:{color:'#3b82f6',fontSize:'0.7rem',verticalAlign:'super',marginLeft:'0.25rem',fontFamily:'Space Mono'}}, 'ADN v2.5'));
+  const tb = el('div',{style:'margin-bottom:1.1rem'});
+  const trow = el('div',{style:'display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-bottom:.65rem'});
+  const title = el('h2',{style:'font-size:clamp(.95rem,3vw,1.1rem);font-weight:300;letter-spacing:.13em;color:#fff;text-transform:uppercase'});
+  title.append(document.createTextNode(MLABELS[S.mode]+' '), el('span',{style:'color:var(--blue);font-size:.58rem;vertical-align:super;font-family:var(--mono)'},'ADN v2.5'));
+  trow.append(title);
 
-  const tabs = el('div', {style:{display:'flex',gap:'0.5rem'}});
-  ['lab','gallery'].forEach(v => {
-    const t = el('button', {style:{
-      padding:'0.5rem 1rem',borderRadius:'9999px',fontSize:'0.875rem',border:'none',cursor:'pointer',
-      background: state.view===v?'#3b82f6':'rgba(255,255,255,0.05)',
-      color: state.view===v?'#fff':'#9ca3af',
-      fontFamily:'Syne,sans-serif',fontWeight:'500',transition:'all 0.2s'
-    }}, v==='lab'?'Générateur':'Arbre Génétique');
-    t.addEventListener('click', () => { state.view=v; render(); });
-    tabs.append(t);
+  const tabs = el('div',{style:'display:flex;gap:.35rem'});
+  ['lab','gallery'].forEach(v=>{
+    const on=S.screen===v;
+    tabs.append(el('button',{
+      style:`padding:.4rem .85rem;border-radius:9999px;font-size:.78rem;border:none;font-family:var(--font);font-weight:600;background:${on?'var(--blue)':'rgba(255,255,255,.06)'};color:${on?'#fff':'#9ca3af'}`,
+      onClick:()=>{ S.screen=v; render(); }
+    }, v==='lab'?'Générateur':'Archives'));
   });
-  topBar.append(modeTitle, tabs);
+  tb.append(trow, tabs);
+  wrap.append(tb);
 
-  mainInner.append(topBar);
+  // Grid
+  const grid = el('div',{id:'lab-grid',style:'display:flex;flex-direction:column;gap:1.1rem'});
+  grid.append(buildControls(), buildResults());
+  wrap.append(grid);
 
-  if (state.view === 'gallery') {
-    mainInner.append(renderGallery());
-  } else {
-    mainInner.append(renderLabGrid());
-  }
-
-  main.append(mainInner);
-  body.append(sidebar, main);
-  wrap.append(header, body);
   return wrap;
 }
 
-function renderGallery() {
-  const wrap = el('div', {class:'glass', style:{padding:'3rem',borderRadius:'1.5rem',minHeight:'30rem',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',textAlign:'center',gap:'1rem'}});
-  wrap.append(
-    el('div', {style:{fontSize:'4rem',opacity:'0.2'}}, '🌳'),
-    el('h3', {style:{fontSize:'1.25rem',fontWeight:'300',color:'#d1d5db'}}, 'Archives Familiales'),
-    el('p', {style:{color:'#6b7280',fontSize:'0.875rem',maxWidth:'24rem',margin:'0 auto',lineHeight:'1.6'}}, "L'historique de vos générations sera listé ici. Pour le moment, vous n'avez pas encore validé de nouvelle identité génétique."),
-    el('button', {style:{marginTop:'2rem',padding:'0.75rem 1.5rem',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'1rem',background:'none',color:'#9ca3af',fontSize:'0.7rem',textTransform:'uppercase',letterSpacing:'0.15em',cursor:'pointer',fontFamily:'Syne'}}, 'Initialiser un nouvel Arbre')
+function buildGallery() {
+  const w = el('div',{class:'glass',style:'padding:2.5rem 1.5rem;border-radius:1.5rem;min-height:280px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:.85rem'});
+  w.append(
+    el('div',{style:'font-size:3rem;opacity:.2'},'🌳'),
+    el('h3',{style:'font-size:1rem;font-weight:300;color:#d1d5db'},'Archives Familiales'),
+    el('p',{style:'color:#6b7280;font-size:.82rem;max-width:18rem;line-height:1.6'},"L'historique de vos générations sera listé ici."),
+    el('button',{style:'margin-top:1.25rem;padding:.65rem 1.4rem;border:1px solid rgba(255,255,255,.1);border-radius:1rem;background:none;color:#9ca3af;font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;font-family:var(--font)'},'Initialiser un Arbre')
   );
+  return w;
+}
+
+/* ════════════════════════════════════════
+   CONTROLS
+════════════════════════════════════════ */
+function buildControls() {
+  const wrap = el('div',{class:'glass controls-scroll',style:'border-radius:1.25rem;padding:1.1rem;display:flex;flex-direction:column;gap:1.1rem'});
+
+  wrap.append(el('h3',{style:'font-size:.67rem;font-weight:800;color:var(--blue);text-transform:uppercase;letter-spacing:.18em;padding-bottom:.7rem;border-bottom:1px solid var(--border);font-family:var(--mono)'},'Séquençage ADN'));
+
+  // Uploaders
+  const m = S.mode;
+  if ([M.GRANDPARENT,M.UNCLE_AUNT,M.COUSIN].includes(m)) {
+    wrap.append(upZone(img=>S.p1=img, S.p1, S.fSide==='mother'?'Photo Mère':'Photo Père'));
+    wrap.append(el('p',{style:'font-size:.58rem;color:#4b5563;font-style:italic;text-align:center;font-family:var(--mono)'},'Photo du parent servant de lien direct'));
+  } else if ([M.PREGNANCY,M.EVOLUTION].includes(m)) {
+    wrap.append(upZone(img=>S.p1=img, S.p1, m===M.PREGNANCY?'Photo Mère':'Photo Source'));
+  } else {
+    const row = el('div',{style:'display:grid;grid-template-columns:1fr 1fr;gap:.7rem'});
+    row.append(upZone(img=>S.p1=img,S.p1,'Mère'), upZone(img=>S.p2=img,S.p2,'Père'));
+    wrap.append(row);
+  }
+
+  // Params divider
+  const pd = el('div',{style:'border-top:1px solid var(--border);padding-top:1rem;display:flex;flex-direction:column;gap:1rem'});
+  pd.append(el('h3',{style:'font-size:.67rem;font-weight:800;color:var(--blue);text-transform:uppercase;letter-spacing:.18em;font-family:var(--mono)'},'Paramètres Génétiques'));
+
+  if ([M.CHILD,M.PREGNANCY,M.COUSIN].includes(m)) pd.append(wSexSel());
+  if (m===M.EVOLUTION)   pd.append(wEvoParams());
+  if (m===M.GRANDPARENT) pd.append(wFamControls('Grand-Père','Grand-Mère'));
+  if (m===M.UNCLE_AUNT)  pd.append(wFamControls('Oncle','Tante'));
+  if (m===M.COUSIN)      pd.append(wFamControls('Cousin','Cousine'));
+  if (m===M.SIBLING)     pd.append(wSiblingParams());
+  if (m===M.CHILD)       pd.append(wChildParams());
+  if (m===M.PREGNANCY)   pd.append(wPregParams());
+
+  wrap.append(pd);
+
+  // Birth trigger
+  if (m===M.PREGNANCY && S.pregStep===2) {
+    const b = el('button',{
+      style:'width:100%;padding:1rem;background:rgba(34,197,94,.1);color:#86efac;border:1px solid rgba(34,197,94,.2);border-radius:1rem;font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;font-family:var(--font)',
+      onClick:()=>{ S.pregStep=3; render(); }
+    },'DÉCLENCHER LA NAISSANCE');
+    wrap.append(b);
+  }
+
+  // Generate btn
+  const gb = el('button',{class:'btn-gen'});
+  if (S.generating) {
+    gb.disabled=true; gb.style.cssText='background:#1f2937;color:#4b5563;cursor:not-allowed';
+    const sp=el('span',{style:'display:inline-block;width:.9rem;height:.9rem;border:2px solid #4b5563;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;margin-right:.4rem;vertical-align:middle'});
+    gb.append(sp,'Séquençage...');
+  } else {
+    gb.textContent = S.pregStep===3 ? 'Générer la Naissance' : "Générer l'Identité";
+    gb.addEventListener('click', doGenerate);
+  }
+  wrap.append(gb);
   return wrap;
 }
 
-function renderLabGrid() {
-  const grid = el('div', {style:{display:'grid',gridTemplateColumns:'1fr 2fr',gap:'2rem',height:'calc(100vh - 12rem)'}});
-  grid.append(renderControls(), renderResults());
-  return grid;
+function upZone(onUp, img, lbl) {
+  const z = el('div',{class:'upload-zone'});
+  const inp = el('input',{type:'file',accept:'image/*',style:'display:none'});
+  inp.addEventListener('change',e=>{ const f=e.target.files?.[0]; if(!f)return; const r=new FileReader(); r.onload=ev=>{ onUp(ev.target.result); render(); }; r.readAsDataURL(f); });
+  z.append(inp);
+  if (img) {
+    z.append(el('img',{src:img,alt:''}));
+    const ov=el('div',{class:'upload-ov'}); ov.append(el('span',{style:'color:#fff;font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em'},'Changer')); z.append(ov);
+  } else {
+    z.append(el('div',{style:'font-size:1.5rem;opacity:.4;margin-bottom:.25rem'},'📸'), el('span',{style:'font-size:.62rem;color:#6b7280;font-weight:700;text-transform:uppercase;font-family:var(--mono)'},lbl), el('span',{style:'font-size:.58rem;color:#374151;font-family:var(--mono);margin-top:.15rem'},'PNG / JPG'));
+  }
+  z.addEventListener('click',()=>inp.click());
+  return z;
 }
 
-function renderControls() {
-  const wrap = el('div', {class:'glass', style:{padding:'1.5rem',borderRadius:'1.5rem',display:'flex',flexDirection:'column',gap:'1.5rem',overflowY:'auto'}});
-
-  // Title
-  wrap.append(el('h3', {style:{fontSize:'0.75rem',fontWeight:'800',color:'#3b82f6',textTransform:'uppercase',letterSpacing:'0.2em',paddingBottom:'0.75rem',borderBottom:'1px solid rgba(255,255,255,0.05)'}}, 'Séquençage ADN'));
-
-  // Image uploaders
-  const uploaderSection = el('div');
-  const m = state.activeMode;
-
-  if ([APP_MODES.GRANDPARENT, APP_MODES.UNCLE_AUNT, APP_MODES.COUSIN].includes(m)) {
-    uploaderSection.append(
-      ImageUploader(img => { state.parent1=img; render(); }, state.parent1, state.familySide==='mother'?'Photo Mère':'Photo Père'),
-      el('p', {style:{fontSize:'0.6rem',color:'#4b5563',fontStyle:'italic',textAlign:'center',marginTop:'0.5rem',fontFamily:'Space Mono'}}, 'Importez la photo du parent servant de lien direct.')
-    );
-  } else if ([APP_MODES.PREGNANCY, APP_MODES.EVOLUTION].includes(m)) {
-    uploaderSection.append(ImageUploader(img => { state.parent1=img; render(); }, state.parent1, m===APP_MODES.PREGNANCY?'Photo Mère':'Photo Source'));
-  } else {
-    const row = el('div', {style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.75rem'}});
-    row.append(
-      ImageUploader(img => { state.parent1=img; render(); }, state.parent1, 'Mère'),
-      ImageUploader(img => { state.parent2=img; render(); }, state.parent2, 'Père')
-    );
-    uploaderSection.append(row);
-  }
-  wrap.append(uploaderSection);
-
-  // Params section
-  const paramsSection = el('div', {style:{borderTop:'1px solid rgba(255,255,255,0.05)',paddingTop:'1rem',overflowY:'auto',maxHeight:'55vh',display:'flex',flexDirection:'column',gap:'1.25rem'}});
-  paramsSection.append(el('h3', {style:{fontSize:'0.75rem',fontWeight:'800',color:'#3b82f6',textTransform:'uppercase',letterSpacing:'0.2em'}}, 'Paramètres Génétiques'));
-
-  // Mode-specific params
-  if ([APP_MODES.CHILD, APP_MODES.PREGNANCY, APP_MODES.COUSIN].includes(m)) paramsSection.append(renderSexSelector());
-  if (m === APP_MODES.EVOLUTION) paramsSection.append(renderEvolutionParams());
-  if (m === APP_MODES.GRANDPARENT) paramsSection.append(renderFamilyMemberControls('Grand-Père','Grand-Mère'));
-  if (m === APP_MODES.UNCLE_AUNT) paramsSection.append(renderFamilyMemberControls('Oncle','Tante'));
-  if (m === APP_MODES.COUSIN) paramsSection.append(renderFamilyMemberControls('Cousin','Cousine'));
-  if (m === APP_MODES.SIBLING) paramsSection.append(renderSiblingParams());
-  if (m === APP_MODES.CHILD) paramsSection.append(renderChildParams());
-  if (m === APP_MODES.PREGNANCY) paramsSection.append(renderPregnancyParams());
-
-  wrap.append(paramsSection);
-
-  // Generate button
-  const btnText = state.pregnancyStep === 3 ? 'Générer la Naissance' : "Générer l'Identité";
-  const genBtn = el('button', {class:'gen-btn'});
-
-  if (state.isGenerating) {
-    genBtn.disabled = true;
-    const spinner = el('span', {style:{display:'inline-block',width:'1rem',height:'1rem',border:'2px solid #4b5563',borderTopColor:'transparent',borderRadius:'50%',animation:'spin-slow 0.8s linear infinite',marginRight:'0.5rem',verticalAlign:'middle'}});
-    genBtn.append(spinner, 'Séquençage...');
-    genBtn.style.background='#1f2937'; genBtn.style.color='#4b5563';
-  } else {
-    genBtn.textContent = btnText;
-    genBtn.addEventListener('click', handleGenerate);
-  }
-
-  // Birth button
-  if (m === APP_MODES.PREGNANCY && state.pregnancyStep === 2) {
-    const birthBtn = el('button', {style:{
-      width:'100%',padding:'1rem',background:'rgba(34,197,94,0.1)',color:'#86efac',
-      border:'1px solid rgba(34,197,94,0.2)',borderRadius:'1rem',fontSize:'0.625rem',
-      fontWeight:'800',textTransform:'uppercase',letterSpacing:'0.15em',cursor:'pointer',fontFamily:'Syne'
-    }}, 'DÉCLENCHER LA NAISSANCE');
-    birthBtn.addEventListener('click', () => { state.pregnancyStep=3; render(); });
-    wrap.append(birthBtn);
-  }
-
-  wrap.append(genBtn);
-  return wrap;
-}
-
-function renderSexSelector() {
-  const wrap = el('div', {class:'panel-block space-y-3'});
-  wrap.append(el('div', {class:'section-header'}, 'Sexe Biologique (XX/XY)'));
-  const row = el('div', {style:{display:'flex',gap:'0.75rem'}});
+/* ─── SLIDERS ─── */
+function mkSlider(lbl, val, min, max, onChange, opts={}) {
+  const {suffix='',labels=null}=opts;
+  const uid = 'sv_'+lbl.replace(/\W/g,'_');
+  const w=el('div',{style:'display:flex;flex-direction:column;gap:.35rem'});
+  const row=el('div',{style:'display:flex;justify-content:space-between;align-items:center'});
   row.append(
-    SexButton('👧','Fille (XX)', state.selectedSex==='female', () => { state.selectedSex='female'; render(); }),
-    SexButton('👦','Garçon (XY)', state.selectedSex==='male', () => { state.selectedSex='male'; render(); })
+    el('label',{style:'font-size:.62rem;color:#6b7280;font-weight:800;text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono)'},lbl),
+    el('span',{id:uid,style:'font-size:.75rem;color:var(--blue);font-family:var(--mono)'},`${val}${suffix}`)
   );
-  wrap.append(row);
-  return wrap;
-}
-
-function renderEyeColorSelector() {
-  const wrap = el('div', {class:'panel-block'});
-  wrap.append(el('div', {class:'section-header', style:{marginBottom:'0.75rem'}}, 'Couleur des Yeux'));
-  const row = el('div', {style:{display:'flex',flexWrap:'wrap',gap:'0.5rem'}});
-  EYE_COLORS.forEach(c => {
-    row.append(TagButton(c, state.selectedEyeColor===c, () => { state.selectedEyeColor=c; render(); }));
-  });
-  wrap.append(row);
-  return wrap;
-}
-
-function renderLienGenetique() {
-  const wrap = el('div', {class:'panel-block'});
-  wrap.append(el('div', {class:'section-header'}, 'Origine Génétique'));
-  const row = el('div', {style:{display:'flex',gap:'0.5rem',marginTop:'0.5rem'}});
-  ['mother','father'].forEach(side => {
-    const btn = el('button', {style:{
-      flex:'1',padding:'0.5rem',fontSize:'0.625rem',fontWeight:'800',textTransform:'uppercase',
-      letterSpacing:'0.1em',borderRadius:'0.75rem',border:'none',cursor:'pointer',
-      fontFamily:'Space Mono',
-      background:state.familySide===side?'#3b82f6':'rgba(255,255,255,0.05)',
-      color:state.familySide===side?'#fff':'#6b7280',
-      transition:'all 0.2s'
-    }}, side==='mother'?'CÔTÉ MÈRE':'CÔTÉ PÈRE');
-    btn.addEventListener('click', () => { state.familySide=side; render(); });
-    row.append(btn);
-  });
-  wrap.append(row);
-  return wrap;
-}
-
-function renderRessemblance() {
-  const wrap = el('div', {class:'panel-block'});
-  wrap.append(
-    Slider('Ressemblance Familiale', state.familyResemblance, 0, 100, v => { state.familyResemblance=v; }, {labels:['Faible','Réaliste','Forte']}),
-    el('p', {style:{fontSize:'0.6rem',color:'#4b5563',fontStyle:'italic',marginTop:'0.5rem',lineHeight:'1.5',fontFamily:'Space Mono'}}, "Définit l'héritage direct des traits de la branche familiale choisie.")
-  );
-  return wrap;
-}
-
-function renderFamilyMemberControls(roleM, roleF) {
-  const wrap = el('div', {style:{display:'flex',flexDirection:'column',gap:'1rem'}});
-  wrap.append(renderLienGenetique());
-
-  const checks = el('div', {class:'panel-block', style:{display:'flex',justifyContent:'space-around',alignItems:'center',padding:'0.75rem'}});
-  const makeCb = (label, checked, key) => {
-    const lbl = el('label', {style:{display:'flex',alignItems:'center',gap:'0.5rem',cursor:'pointer'}});
-    const cb = el('input', {type:'checkbox', checked:checked?'true':''}); cb.checked = checked;
-    cb.addEventListener('change', e => { state.relationChoice[key]=e.target.checked; render(); });
-    lbl.append(cb, el('span', {style:{fontSize:'0.75rem',color:'#d1d5db'}}, label));
-    return lbl;
-  };
-  checks.append(makeCb(roleM, state.relationChoice.male, 'male'), makeCb(roleF, state.relationChoice.female, 'female'));
-  wrap.append(checks);
-
-  const ages = el('div', {style:{display:'flex',flexDirection:'column',gap:'0.75rem'}});
-  const isGP = state.activeMode === APP_MODES.GRANDPARENT;
-  if (state.relationChoice.male) {
-    ages.append(Slider(`Âge ${roleM}`, isGP?state.gpAges.grandpa:state.relationAges.male, isGP?55:0, 99,
-      v => isGP?state.gpAges.grandpa=v:state.relationAges.male=v, {suffix:' ans'}));
+  const inp=el('input',{type:'range',min,max,value:val});
+  inp.addEventListener('input',e=>{ const v=parseInt(e.target.value); const sv=$(uid); if(sv)sv.textContent=v+suffix; onChange(v); });
+  w.append(row,inp);
+  if (labels) {
+    const lr=el('div',{style:'display:flex;justify-content:space-between'});
+    labels.forEach(l=>lr.append(el('span',{style:'font-size:.56rem;color:#4b5563;text-transform:uppercase;font-weight:800;font-family:var(--mono)'},l)));
+    w.append(lr);
   }
-  if (state.relationChoice.female) {
-    ages.append(Slider(`Âge ${roleF}`, isGP?state.gpAges.grandma:state.relationAges.female, isGP?55:0, 99,
-      v => isGP?state.gpAges.grandma=v:state.relationAges.female=v, {suffix:' ans'}));
+  return w;
+}
+
+/* ─── WIDGETS ─── */
+function wSexSel() {
+  const w=el('div',{class:'panel',style:'display:flex;flex-direction:column;gap:.7rem'});
+  w.append(el('span',{class:'section-label'},'Sexe Biologique (XX/XY)'));
+  const row=el('div',{style:'display:flex;gap:.65rem'});
+  const mkSB=(e,l,v)=>{ const b=el('button',{class:`sex-btn${S.sex===v?' active':''}`,onClick:()=>{S.sex=v;render();}}); b.append(el('span',{style:'font-size:1.25rem'},e),el('span',{style:'font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.09em'},l)); return b; };
+  row.append(mkSB('👧','Fille (XX)','female'),mkSB('👦','Garçon (XY)','male'));
+  w.append(row);
+  return w;
+}
+
+function wEyeColors() {
+  const w=el('div',{class:'panel'});
+  w.append(el('span',{class:'section-label'},'Couleur des Yeux'));
+  const row=el('div',{style:'display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.1rem'});
+  EYES.forEach(c=>{ row.append(el('button',{class:`tag-btn${S.eye===c?' active':''}`,onClick:()=>{S.eye=c;render();}},c)); });
+  w.append(row);
+  return w;
+}
+
+function wFamSide() {
+  const w=el('div',{class:'panel'});
+  w.append(el('span',{class:'section-label'},'Origine Génétique'));
+  const row=el('div',{style:'display:flex;gap:.5rem;margin-top:.3rem'});
+  ['mother','father'].forEach(s=>{
+    row.append(el('button',{
+      style:`flex:1;padding:.65rem;font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;border-radius:.75rem;border:none;font-family:var(--mono);background:${S.fSide===s?'var(--blue)':'rgba(255,255,255,.05)'};color:${S.fSide===s?'#fff':'#6b7280'}`,
+      onClick:()=>{S.fSide=s;render();}
+    },s==='mother'?'CÔTÉ MÈRE':'CÔTÉ PÈRE'));
+  });
+  w.append(row);
+  return w;
+}
+
+function wResem() {
+  const w=el('div',{class:'panel'});
+  w.append(mkSlider('Ressemblance Familiale',S.resem,0,100,v=>S.resem=v,{labels:['Faible','Réaliste','Forte']}));
+  w.append(el('p',{style:'font-size:.58rem;color:#4b5563;font-style:italic;margin-top:.45rem;line-height:1.5;font-family:var(--mono)'},"Héritage direct des traits de la branche familiale."));
+  return w;
+}
+
+function wFamControls(roleM,roleF) {
+  const w=el('div',{style:'display:flex;flex-direction:column;gap:.85rem'});
+  w.append(wFamSide());
+
+  const checks=el('div',{class:'panel',style:'display:flex;justify-content:space-around;align-items:center'});
+  const mkCb=(l,ch,k)=>{const lb=el('label',{style:'display:flex;align-items:center;gap:.5rem;cursor:pointer'});const cb=el('input',{type:'checkbox'});cb.checked=ch;cb.addEventListener('change',e=>{S.relC[k]=e.target.checked;render();});lb.append(cb,el('span',{style:'font-size:.82rem;color:#d1d5db'},l));return lb;};
+  checks.append(mkCb(roleM,S.relC.m,'m'),mkCb(roleF,S.relC.f,'f'));
+  w.append(checks);
+
+  const isGP=S.mode===M.GRANDPARENT;
+  const ages=el('div',{style:'display:flex;flex-direction:column;gap:.7rem'});
+  if(S.relC.m) ages.append(mkSlider(`Âge ${roleM}`,isGP?S.gpA.gp:S.relA.m,isGP?55:0,99,v=>isGP?S.gpA.gp=v:S.relA.m=v,{suffix:' ans'}));
+  if(S.relC.f) ages.append(mkSlider(`Âge ${roleF}`,isGP?S.gpA.gm:S.relA.f,isGP?55:0,99,v=>isGP?S.gpA.gm=v:S.relA.f=v,{suffix:' ans'}));
+  w.append(ages,wResem());
+  return w;
+}
+
+function wSiblingParams() {
+  const w=el('div',{class:'panel',style:'display:flex;flex-direction:column;gap:.85rem'});
+  const checks=el('div',{style:'display:flex;justify-content:space-around;margin-bottom:.25rem'});
+  const mkCb=(l,ch,k)=>{const lb=el('label',{style:'display:flex;align-items:center;gap:.5rem;cursor:pointer'});const cb=el('input',{type:'checkbox'});cb.checked=ch;cb.addEventListener('change',e=>{S.sibC[k]=e.target.checked;render();});lb.append(cb,el('span',{style:'font-size:.82rem;color:#d1d5db'},l));return lb;};
+  checks.append(mkCb('Frère',S.sibC.b,'b'),mkCb('Sœur',S.sibC.s,'s'));
+  w.append(checks);
+  if(S.sibC.b) w.append(mkSlider('Âge du Frère',S.sibA.b,1,17,v=>S.sibA.b=v,{suffix:' ans'}));
+  if(S.sibC.s) w.append(mkSlider('Âge de la Sœur',S.sibA.s,1,17,v=>S.sibA.s=v,{suffix:' ans'}));
+  w.append(wResem());
+  return w;
+}
+
+function wChildParams() {
+  const w=el('div',{class:'panel',style:'display:flex;flex-direction:column;gap:.85rem'});
+  w.append(mkSlider("Âge de l'Enfant",S.cAge,0,17,v=>S.cAge=v,{suffix:' ans'}), mkSlider('Héritage Dominant',S.dom,0,100,v=>S.dom=v,{labels:['Mère','Mixte','Père']}), wResem());
+  return w;
+}
+
+function wPregParams() {
+  const w=el('div',{style:'display:flex;flex-direction:column;gap:.9rem'});
+
+  // A
+  const a=el('div',{class:'panel',style:'display:flex;flex-direction:column;gap:.85rem'});
+  a.append(el('span',{style:'font-size:.58rem;color:#6b7280;font-weight:800;text-transform:uppercase;letter-spacing:.16em;font-family:var(--mono)'},'A. Données Initiales'));
+  a.append(mkSlider('Poids avant grossesse',S.iWt,40,120,v=>S.iWt=v,{suffix:' kg'}));
+  const gr=el('div',{style:'display:grid;grid-template-columns:1fr 1fr;gap:.75rem'});
+  gr.append(mkSlider('Tour cuisse',S.iThigh,40,85,v=>S.iThigh=v,{suffix:' cm'}), mkSlider('Tour poitrine',S.iBust,70,120,v=>S.iBust=v,{suffix:' cm'}));
+  a.append(gr);
+  const cw=el('div');
+  cw.append(el('label',{style:'font-size:.58rem;color:#6b7280;font-weight:800;text-transform:uppercase;letter-spacing:.13em;display:block;margin-bottom:.45rem;font-family:var(--mono)'},'Bonnet initial'));
+  const cups=el('div',{style:'display:flex;flex-wrap:wrap;gap:.3rem'});
+  ['A','B','C','D','E','F+'].forEach(c=>cups.append(el('button',{class:`tag-btn${S.cup===c?' active':''}`,onClick:()=>{S.cup=c;render();}},c)));
+  cw.append(cups); a.append(cw); w.append(a);
+
+  // B
+  const b=el('div',{class:'panel-blue',style:'display:flex;flex-direction:column;gap:.85rem'});
+  const bh=el('span',{style:'font-size:.6rem;color:var(--blue);font-weight:800;text-transform:uppercase;letter-spacing:.16em;font-family:var(--mono);display:flex;align-items:center;gap:.4rem'});
+  bh.append('B. ÉVOLUTION CORPORELLE ',el('span',{style:'width:.38rem;height:.38rem;border-radius:50%;background:var(--blue);display:inline-block;animation:pulse 2s infinite'}));
+  b.append(bh);
+  b.append(mkSlider('Stade de la grossesse',S.pregMo,1,9,v=>{S.pregMo=v;S.wGain=WMAP[v]||0;render();},{suffix:' mois'}));
+  b.append(mkSlider('POIDS GLOBAL',S.iWt+S.wGain,S.iWt,S.iWt+35,v=>{S.wGain=v-S.iWt;},{suffix:' kg'}));
+  const gn=el('div',{style:'display:flex;justify-content:space-between;margin-top:-.2rem'});
+  gn.append(el('span',{style:'font-size:.58rem;color:rgba(59,130,246,.6);font-family:var(--mono)'},`Gain : +${S.wGain.toFixed(1)} kg`), el('span',{style:'font-size:.58rem;color:rgba(59,130,246,.6);font-family:var(--mono)'},`Cuisse : +${(S.wGain*.45).toFixed(1)} cm`));
+  b.append(gn);
+
+  const pt=el('div',{class:'panel',style:'display:flex;flex-direction:column;gap:.7rem'});
+  pt.append(el('span',{style:'font-size:.57rem;color:#6b7280;font-weight:800;text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono)'},'ÉVOLUTION POITRINE'));
+  pt.append(mkSlider('Volume mammaire',S.bVol,0,2,v=>S.bVol=v,{labels:['Légère','Naturelle','Marquée']}));
+  const bfr=el('div',{style:'display:flex;justify-content:space-between;align-items:center;padding-top:.2rem'});
+  bfr.append(el('label',{style:'font-size:.6rem;color:#9ca3af;font-weight:800;text-transform:uppercase;font-family:var(--mono)'},'Préparation allaitement'));
+  bfr.append(el('button',{style:`padding:.28rem .7rem;border-radius:9999px;font-size:.58rem;font-weight:800;text-transform:uppercase;border:none;font-family:var(--mono);background:${S.bfPrep?'var(--blue)':'rgba(255,255,255,.07)'};color:${S.bfPrep?'#fff':'#6b7280'}`,onClick:()=>{S.bfPrep=!S.bfPrep;render();}},S.bfPrep?'ACTIVÉ':'OFF'));
+  pt.append(bfr); b.append(pt);
+  b.append(mkSlider('Élargissement du bassin',S.pelvis,0,2,v=>S.pelvis=v,{labels:['Faible','Moyen','Marqué']}));
+  w.append(b);
+
+  w.append(wStretch());
+
+  const note=el('div',{class:'amber-note'});
+  note.append(el('p',{style:'font-size:.58rem;color:rgba(245,158,11,.8);font-weight:800;text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono);margin-bottom:.2rem'},'🧬 COHÉRENCE GLOBALE'), el('p',{style:'font-size:.58rem;color:#6b7280;line-height:1.5;font-style:italic;font-family:var(--mono)'},'"Ventre↑, Cuisses↑, Bassin↑, Poitrine↑, Bras↑, Joues↑"'));
+  w.append(note);
+  return w;
+}
+
+function wStretch() {
+  const w=el('div',{class:'panel',style:'display:flex;flex-direction:column;gap:.85rem'});
+  w.append(mkSlider('Intensité vergetures',S.strInt,0,3,v=>{S.strInt=v;render();},{labels:['Aucune','Légères','Moyennes','Marquées']}));
+  if (S.strInt>0) {
+    const zw=el('div',{style:'display:flex;flex-direction:column;gap:.45rem'});
+    zw.append(el('label',{style:'font-size:.58rem;color:#6b7280;font-weight:800;text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono)'},'Zones actives'));
+    const zr=el('div',{style:'display:flex;flex-wrap:wrap;gap:.35rem'});
+    ['Ventre','Hanches','Cuisses','Fesses','Dos','Poitrine'].forEach(z=>zr.append(el('button',{class:`tag-btn${S.strZones.includes(z)?' active':''}`,onClick:()=>{S.strZones=S.strZones.includes(z)?S.strZones.filter(x=>x!==z):[...S.strZones,z];render();}},z)));
+    zw.append(zr); w.append(zw);
   }
-  wrap.append(ages);
-  wrap.append(renderRessemblance());
-  return wrap;
+  return w;
 }
 
-function renderSiblingParams() {
-  const wrap = el('div', {class:'panel-block', style:{display:'flex',flexDirection:'column',gap:'1rem'}});
-  const checks = el('div', {style:{display:'flex',justifyContent:'space-around',marginBottom:'0.5rem'}});
-  const makeCb = (label, checked, key) => {
-    const lbl = el('label', {style:{display:'flex',alignItems:'center',gap:'0.5rem',cursor:'pointer'}});
-    const cb = el('input', {type:'checkbox'}); cb.checked = checked;
-    cb.addEventListener('change', e => { state.siblingChoice[key]=e.target.checked; render(); });
-    lbl.append(cb, el('span', {style:{fontSize:'0.75rem',color:'#d1d5db'}}, label));
-    return lbl;
-  };
-  checks.append(makeCb('Frère',state.siblingChoice.brother,'brother'), makeCb('Sœur',state.siblingChoice.sister,'sister'));
-  wrap.append(checks);
-  if (state.siblingChoice.brother) wrap.append(Slider('Âge du Frère',state.siblingAges.brother,1,17,v=>state.siblingAges.brother=v,{suffix:' ans'}));
-  if (state.siblingChoice.sister) wrap.append(Slider('Âge de la Sœur',state.siblingAges.sister,1,17,v=>state.siblingAges.sister=v,{suffix:' ans'}));
-  wrap.append(renderRessemblance());
-  return wrap;
-}
+function wEvoParams() {
+  const w=el('div',{class:'panel-blue',style:'display:flex;flex-direction:column;gap:.9rem'});
+  w.append(el('h3',{style:'font-size:.67rem;font-weight:800;color:var(--blue);text-transform:uppercase;letter-spacing:.16em;font-family:var(--mono)'},'🧬 Évolution temporelle'));
 
-function renderChildParams() {
-  const wrap = el('div', {class:'panel-block', style:{display:'flex',flexDirection:'column',gap:'1rem'}});
-  wrap.append(
-    Slider("Âge de l'Enfant", state.childAge, 0, 17, v => state.childAge=v, {suffix:' ans'}),
-    Slider('Héritage Dominant', state.dominance, 0, 100, v => state.dominance=v, {labels:['Mère','Mixte','Père']}),
-    renderRessemblance()
-  );
-  return wrap;
-}
+  const sr=el('div',{style:'display:flex;gap:.5rem'});
+  const mkSB=(e,l,v)=>{const b=el('button',{class:`sex-btn${S.sex===v?' active':''}`,onClick:()=>{S.sex=v;render();}});b.append(el('span',{style:'font-size:1.1rem'},e),el('span',{style:'font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em'},l));return b;};
+  sr.append(mkSB('👧','Fille (XX)','female'),mkSB('👦','Garçon (XY)','male'));
+  w.append(el('span',{class:'section-label'},'Sexe biologique'), sr, wEyeColors());
 
-function renderPregnancyParams() {
-  const wrap = el('div', {style:{display:'flex',flexDirection:'column',gap:'1rem'}});
+  const ab=el('div',{class:'panel',style:'display:flex;flex-direction:column;gap:.7rem'});
+  const ah=el('label',{style:'font-size:.6rem;color:var(--blue);font-weight:800;text-transform:uppercase;letter-spacing:.16em;font-family:var(--mono);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.35rem'});
+  ah.append("🕰️ Indique l'âge (libre)");
+  if(S.evoAge) ah.append(el('span',{style:'font-size:.54rem;background:rgba(34,197,94,.15);color:#86efac;padding:.1rem .4rem;border-radius:.4rem;border:1px solid rgba(34,197,94,.2);font-family:var(--mono)'},'✅ Pris en compte'));
 
-  // Section A
-  const secA = el('div', {class:'panel-block', style:{display:'flex',flexDirection:'column',gap:'1rem'}});
-  secA.append(el('h4', {style:{fontSize:'0.6rem',color:'#6b7280',fontWeight:'800',textTransform:'uppercase',letterSpacing:'0.2em',fontFamily:'Space Mono'}}, 'A. Données Initiales'));
-  secA.append(Slider('Poids avant grossesse', state.initialWeight, 40, 120, v => state.initialWeight=v, {suffix:' kg'}));
-  const row1 = el('div', {style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem'}});
-  row1.append(Slider('Tour cuisse', state.initialThigh, 40, 85, v => state.initialThigh=v, {suffix:' cm'}));
-  row1.append(Slider('Tour poitrine', state.initialBust, 70, 120, v => state.initialBust=v, {suffix:' cm'}));
-  secA.append(row1);
-
-  const cupRow = el('div');
-  cupRow.append(el('label', {style:{fontSize:'0.625rem',color:'#6b7280',fontWeight:'800',textTransform:'uppercase',letterSpacing:'0.15em',display:'block',marginBottom:'0.5rem',fontFamily:'Space Mono'}}, 'Bonnet initial'));
-  const cups = el('div', {style:{display:'flex',flexWrap:'wrap',gap:'0.25rem'}});
-  ['A','B','C','D','E','F+'].forEach(c => {
-    cups.append(TagButton(c, state.initialCupSize===c, () => { state.initialCupSize=c; render(); }));
+  const ai=el('input',{type:'text',value:S.evoAge,placeholder:'Ex: 0 mois, 7 mois, 2 ans, 40 ans…',
+    style:'width:100%;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.1);border-radius:.75rem;padding:.75rem 1rem;color:#fff;font-size:.82rem;outline:none;font-family:var(--mono)',
+    onInput:e=>{S.evoAge=e.target.value;render();},
+    onFocus:e=>{e.target.style.borderColor='var(--blue)';},
+    onBlur: e=>{e.target.style.borderColor='rgba(255,255,255,.1)';}
   });
-  cupRow.append(cups);
-  secA.append(cupRow);
-  wrap.append(secA);
 
-  // Section B
-  const secB = el('div', {style:{padding:'1rem',background:'rgba(59,130,246,0.05)',borderRadius:'1rem',border:'1px solid rgba(59,130,246,0.15)',display:'flex',flexDirection:'column',gap:'1rem',boxShadow:'0 0 20px rgba(59,130,246,0.06)'}});
-  const bTitle = el('h4', {style:{fontSize:'0.625rem',color:'#3b82f6',fontWeight:'800',textTransform:'uppercase',letterSpacing:'0.2em',display:'flex',alignItems:'center',gap:'0.5rem',fontFamily:'Space Mono'}});
-  bTitle.append('B. ÉVOLUTION CORPORELLE ', el('span', {style:{width:'0.375rem',height:'0.375rem',borderRadius:'50%',background:'#3b82f6',display:'inline-block',animation:'pulse 2s infinite'}}));
-  secB.append(bTitle);
-  secB.append(Slider('Stade de la grossesse', state.pregMonth, 1, 9, v => { state.pregMonth=v; state.weightGain=weightMapForMonth(v); render(); }, {suffix:' mois'}));
-
-  const weightSlider = Slider('POIDS GLOBAL (VARIABLE MAÎTRE)', state.initialWeight+state.weightGain, state.initialWeight, state.initialWeight+35,
-    v => { state.weightGain = v-state.initialWeight; }, {suffix:' kg'});
-  const gainNote = el('div', {style:{display:'flex',justifyContent:'space-between',marginTop:'0.25rem',padding:'0 0.25rem'}});
-  gainNote.append(
-    el('span', {style:{fontSize:'0.6rem',color:'rgba(59,130,246,0.6)',fontFamily:'Space Mono'}}, `Gain : +${state.weightGain.toFixed(1)} kg`),
-    el('span', {style:{fontSize:'0.6rem',color:'rgba(59,130,246,0.6)',fontFamily:'Space Mono'}}, `Cuisse : +${(state.weightGain*0.45).toFixed(1)} cm`)
-  );
-  secB.append(weightSlider, gainNote);
-
-  const poitBlock = el('div', {style:{padding:'0.75rem',background:'rgba(255,255,255,0.03)',borderRadius:'0.75rem',border:'1px solid rgba(255,255,255,0.05)',display:'flex',flexDirection:'column',gap:'0.75rem'}});
-  poitBlock.append(el('h5', {style:{fontSize:'0.6rem',color:'#6b7280',fontWeight:'800',textTransform:'uppercase',letterSpacing:'0.15em',fontFamily:'Space Mono'}}, 'ÉVOLUTION POITRINE'));
-  poitBlock.append(Slider('Volume mammaire', state.breastVolume, 0, 2, v => state.breastVolume=v, {labels:['Légère','Naturelle','Marquée']}));
-  const bfRow = el('div', {style:{display:'flex',justifyContent:'space-between',alignItems:'center',paddingTop:'0.25rem'}});
-  bfRow.append(el('label', {style:{fontSize:'0.625rem',color:'#9ca3af',fontWeight:'800',textTransform:'uppercase',letterSpacing:'0.05em'}}, 'Préparation allaitement'));
-  const bfBtn = el('button', {style:{
-    padding:'0.25rem 0.75rem',borderRadius:'9999px',fontSize:'0.6rem',fontWeight:'800',
-    textTransform:'uppercase',border:'none',cursor:'pointer',transition:'all 0.2s',fontFamily:'Space Mono',
-    background:state.breastfeedingPrep?'#3b82f6':'rgba(255,255,255,0.05)',
-    color:state.breastfeedingPrep?'#fff':'#6b7280'
-  }}, state.breastfeedingPrep?'ACTIVÉ':'OFF');
-  bfBtn.addEventListener('click', () => { state.breastfeedingPrep=!state.breastfeedingPrep; render(); });
-  bfRow.append(bfBtn);
-  poitBlock.append(bfRow);
-  secB.append(poitBlock);
-  secB.append(Slider('Élargissement du bassin', state.pelvisWidening, 0, 2, v => state.pelvisWidening=v, {labels:['Faible','Moyen','Marqué']}));
-  wrap.append(secB);
-
-  // Vergetures
-  wrap.append(renderStretchMarks());
-
-  // Amber note
-  const note = el('div', {class:'amber-note'});
-  note.append(
-    el('p', {style:{fontSize:'0.625rem',color:'rgba(245,158,11,0.8)',fontWeight:'800',textTransform:'uppercase',letterSpacing:'0.15em',fontFamily:'Space Mono',marginBottom:'0.25rem'}}, '🧬 COHÉRENCE GLOBALE STRICTE'),
-    el('p', {style:{fontSize:'0.6rem',color:'#6b7280',lineHeight:'1.6',fontStyle:'italic',fontFamily:'Space Mono'}}, '"Ventre ↑, Cuisses ↑, Bassin ↑, Poitrine ↑, Bras ↑, Joues ↑."')
-  );
-  wrap.append(note);
-  return wrap;
-}
-
-function renderStretchMarks() {
-  const wrap = el('div', {class:'panel-block', style:{display:'flex',flexDirection:'column',gap:'1rem'}});
-  wrap.append(Slider('Intensité des vergetures', state.stretchIntensity, 0, 3, v => { state.stretchIntensity=v; render(); }, {labels:['Aucune','Légères','Moyennes','Marquées']}));
-  if (state.stretchIntensity > 0) {
-    const zoneWrap = el('div', {style:{paddingTop:'0.5rem',display:'flex',flexDirection:'column',gap:'0.5rem'}});
-    zoneWrap.append(el('label', {style:{fontSize:'0.625rem',color:'#6b7280',fontWeight:'800',textTransform:'uppercase',letterSpacing:'0.15em',fontFamily:'Space Mono'}}, 'Zones actives'));
-    const zones = el('div', {style:{display:'flex',flexWrap:'wrap',gap:'0.5rem'}});
-    ['Ventre','Hanches','Cuisses','Fesses','Dos','Poitrine'].forEach(z => {
-      zones.append(TagButton(z, state.stretchZones.includes(z), () => {
-        state.stretchZones = state.stretchZones.includes(z) ? state.stretchZones.filter(x=>x!==z) : [...state.stretchZones,z];
-        render();
-      }));
-    });
-    zoneWrap.append(zones);
-    wrap.append(zoneWrap);
-  }
-  return wrap;
-}
-
-function renderEvolutionParams() {
-  const wrap = el('div', {style:{display:'flex',flexDirection:'column',gap:'1.25rem',padding:'1.25rem',background:'rgba(59,130,246,0.04)',borderRadius:'1rem',border:'1px solid rgba(59,130,246,0.15)'}});
-  wrap.append(el('h3', {style:{fontSize:'0.75rem',fontWeight:'800',color:'#3b82f6',textTransform:'uppercase',letterSpacing:'0.2em'}}, '🧬 Évolution temporelle'));
-
-  // Sex
-  const sexRow = el('div', {style:{display:'flex',gap:'0.5rem'}});
-  sexRow.append(
-    SexButton('👧','Fille / Femme (XX)',state.selectedSex==='female',()=>{state.selectedSex='female';render();}),
-    SexButton('👦','Garçon / Homme (XY)',state.selectedSex==='male',()=>{state.selectedSex='male';render();})
-  );
-  wrap.append(el('label',{style:{fontSize:'0.625rem',color:'#3b82f6',fontWeight:'800',textTransform:'uppercase',letterSpacing:'0.2em',fontFamily:'Space Mono'}},'Sexe biologique'), sexRow);
-
-  wrap.append(renderEyeColorSelector());
-
-  // Age input
-  const ageBlock = el('div', {class:'panel-block', style:{display:'flex',flexDirection:'column',gap:'0.75rem'}});
-  const ageHeader = el('label', {style:{fontSize:'0.625rem',color:'#3b82f6',fontWeight:'800',textTransform:'uppercase',letterSpacing:'0.2em',fontFamily:'Space Mono',display:'flex',justifyContent:'space-between',alignItems:'center'}});
-  ageHeader.append('🕰️ Indique l\'âge (libre)');
-  if (state.evolutionAgeInput) ageHeader.append(el('span', {style:{fontSize:'0.6rem',background:'rgba(34,197,94,0.15)',color:'#86efac',padding:'0.125rem 0.5rem',borderRadius:'0.5rem',border:'1px solid rgba(34,197,94,0.2)',fontFamily:'Space Mono'}}, '✅ Pris en compte'));
-
-  const ageInp = el('input', {
-    type:'text', value:state.evolutionAgeInput,
-    placeholder:'Ex : 0 mois, 7 mois, 18 mois, 2 ans, 27 ans, 99 ans',
-    style:{
-      width:'100%',background:'rgba(0,0,0,0.4)',border:'1px solid rgba(255,255,255,0.1)',
-      borderRadius:'0.75rem',padding:'0.75rem 1rem',color:'#fff',fontSize:'0.75rem',
-      outline:'none',fontFamily:'Space Mono',boxSizing:'border-box'
-    }
+  const ag=el('div',{style:'display:grid;grid-template-columns:repeat(4,1fr);gap:.35rem'});
+  ['0 mois','7 mois','11 mois','15 mois','18 mois','2 ans','12 ans','18 ans','25 ans','40 ans','60 ans','99 ans'].forEach(age=>{
+    ag.append(el('button',{
+      style:`padding:.4rem;border-radius:.5rem;border:1px solid;font-size:.58rem;font-weight:700;font-family:var(--mono);background:${S.evoAge===age?'var(--blue)':'rgba(255,255,255,.05)'};border-color:${S.evoAge===age?'var(--blue)':'rgba(255,255,255,.05)'};color:${S.evoAge===age?'#fff':'#6b7280'}`,
+      onClick:()=>{S.evoAge=age;render();}
+    },age));
   });
-  ageInp.addEventListener('focus', e => e.target.style.borderColor='#3b82f6');
-  ageInp.addEventListener('blur', e => e.target.style.borderColor='rgba(255,255,255,0.1)');
-  ageInp.addEventListener('input', e => { state.evolutionAgeInput=e.target.value; render(); });
-
-  const ageBtns = el('div', {style:{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'0.5rem'}});
-  ['0 mois','7 mois','11 mois','15 mois','18 mois','2 ans','12 ans','18 ans','25 ans','40 ans','60 ans','99 ans'].forEach(age => {
-    const b = el('button', {style:{
-      padding:'0.375rem',borderRadius:'0.5rem',border:'1px solid',
-      fontSize:'0.6rem',fontWeight:'700',cursor:'pointer',transition:'all 0.2s',fontFamily:'Space Mono',
-      background: state.evolutionAgeInput===age?'#3b82f6':'rgba(255,255,255,0.05)',
-      borderColor: state.evolutionAgeInput===age?'#3b82f6':'rgba(255,255,255,0.05)',
-      color: state.evolutionAgeInput===age?'#fff':'#6b7280'
-    }}, age);
-    b.addEventListener('click', () => { state.evolutionAgeInput=age; render(); });
-    ageBtns.append(b);
-  });
-  ageBlock.append(ageHeader, ageInp, ageBtns);
-  wrap.append(ageBlock);
-
-  const rule = el('div', {style:{padding:'0.75rem 1rem',borderLeft:'2px solid #3b82f6',background:'rgba(59,130,246,0.05)',borderRadius:'0 0.5rem 0.5rem 0'}});
-  rule.append(el('p', {style:{fontSize:'0.6rem',color:'#9ca3af',fontStyle:'italic',lineHeight:'1.5',fontFamily:'Space Mono'}}, '"RÈGLE ABSOLUE : L\'âge indiqué est PRIORITAIRE. Morphologie, proportions, posture et texture peau sont adaptées biologiquement."'));
-  wrap.append(rule);
-  return wrap;
+  ab.append(ah,ai,ag);
+  w.append(ab);
+  w.append(el('div',{style:'padding:.6rem .9rem;border-left:2px solid var(--blue);background:rgba(59,130,246,.05);border-radius:0 .5rem .5rem 0'},
+    el('p',{style:'font-size:.58rem;color:#9ca3af;font-style:italic;line-height:1.5;font-family:var(--mono)'},'"RÈGLE ABSOLUE : L\'âge indiqué est PRIORITAIRE. Morphologie et texture peau adaptées biologiquement."')
+  ));
+  return w;
 }
 
-function renderResults() {
-  const wrap = el('div', {class:'glass', style:{borderRadius:'1.5rem',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'flex-start',overflowY:'auto',border:'2px solid rgba(255,255,255,0.05)',minHeight:'500px',padding:'1.5rem',scrollbarWidth:'none'}});
+/* ════════════════════════════════════════
+   RESULTS
+════════════════════════════════════════ */
+function buildResults() {
+  const wrap=el('div',{class:'glass results-min',style:'border-radius:1.25rem;padding:1.1rem;display:flex;flex-direction:column;align-items:center;justify-content:flex-start'});
 
-  if (state.isGenerating) {
-    wrap.append(renderProgressView());
-  } else if (state.results.length > 0) {
-    const grid = el('div', {style:{width:'100%',display:'grid',gridTemplateColumns:state.results.length===1?'1fr':'1fr 1fr',gap:'1.5rem',animation:'fade-in 0.7s ease forwards'}});
-    state.results.forEach((imgSrc, idx) => {
-      const imgWrap = el('div', {class:'result-img-wrap', style:state.results.length===1?{maxWidth:'28rem',margin:'0 auto'}:{}});
-      const img = el('img', {src:imgSrc, alt:''});
-      const overlay = el('div', {class:'result-overlay'});
-      const dlBtn = el('button', {style:{background:'#fff',color:'#000',padding:'0.75rem 1.5rem',borderRadius:'9999px',border:'none',cursor:'pointer',display:'flex',alignItems:'center',gap:'0.5rem',fontWeight:'800',fontFamily:'Syne',transition:'all 0.2s'}});
-      dlBtn.append(el('span',{style:{fontSize:'1.25rem'}},'⬇️'), el('span',{style:{fontSize:'0.75rem',textTransform:'uppercase',letterSpacing:'0.1em'}},'Download'));
-      dlBtn.addEventListener('click', () => {
-        const a = document.createElement('a');
-        a.href = imgSrc;
-        a.download = `studio_genetique_${state.activeMode}_${idx}.png`;
-        a.click();
-      });
-      overlay.append(dlBtn);
-      imgWrap.append(img, overlay);
-      imgWrap.append(el('div', {class:'result-label'}, getResultLabel(idx, state.results.length)));
-      grid.append(imgWrap);
+  if (S.generating) {
+    wrap.append(buildProgress());
+  } else if (S.results.length>0) {
+    const grid=el('div',{style:`display:grid;grid-template-columns:${S.results.length===1?'1fr':'1fr 1fr'};gap:.9rem;width:100%;animation:fadein .7s ease forwards`});
+    S.results.forEach((src,i)=>{
+      const c=el('div',{class:'result-card'});
+      c.append(el('img',{src,alt:''}));
+      c.append(el('div',{class:'result-label'},getLabel(i)));
+      const dl=el('button',{class:'result-dl',onClick:()=>{const a=document.createElement('a');a.href=src;a.download=`studio_gen_${S.mode}_${i}.png`;a.click();}});
+      dl.append(el('span',{},'⬇️'),el('span',{},'Sauvegarder'));
+      c.append(dl);
+      grid.append(c);
     });
     wrap.append(grid);
   } else {
-    const empty = el('div', {style:{flex:'1',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',textAlign:'center',gap:'1rem',padding:'3rem',opacity:'0.5',height:'100%'}});
-    empty.append(
-      el('div', {style:{fontSize:'4rem',marginBottom:'1.5rem',filter:'grayscale(1)'}}, '🧬'),
-      el('h2', {style:{fontSize:'1.25rem',fontWeight:'300',color:'#9ca3af',textTransform:'uppercase',letterSpacing:'0.2em'}}, 'STATION ADN'),
-      el('p', {style:{color:'#4b5563',fontSize:'0.875rem',maxWidth:'20rem',lineHeight:'1.6',fontStyle:'italic'}}, '"Aucune optimisation esthétique. La génétique prime sur tout."')
-    );
-    wrap.append(empty);
+    const emp=el('div',{style:'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:.65rem;padding:2rem;opacity:.5'});
+    emp.append(el('div',{style:'font-size:3.5rem;filter:grayscale(1)'},'🧬'), el('h2',{style:'font-size:1rem;font-weight:300;color:#9ca3af;text-transform:uppercase;letter-spacing:.18em'},'STATION ADN'), el('p',{style:'color:#4b5563;font-size:.78rem;max-width:16rem;line-height:1.6;font-style:italic'},'"Aucune optimisation esthétique. La génétique prime."'));
+    wrap.append(emp);
   }
   return wrap;
 }
 
-function renderProgressView() {
-  const steps = [
-    "Numérisation de l'ADN Visage","Identification des traits dominants",
-    "Simulation de la structure osseuse","Application de la pigmentation épidermique",
-    "Vérification de la continuité génétique","Finalisation du rendu photoréaliste"
-  ];
-  const wrap = el('div', {style:{display:'flex',flexDirection:'column',alignItems:'center',gap:'2rem',padding:'3rem',width:'100%',maxWidth:'28rem'}});
-
-  const iconWrap = el('div', {style:{position:'relative',width:'8rem',height:'8rem',display:'flex',alignItems:'center',justifyContent:'center'}});
-  const ping = el('div', {style:{position:'absolute',inset:'0',border:'4px solid rgba(59,130,246,0.2)',borderRadius:'50%',animation:'ping 1.5s cubic-bezier(0,0,0.2,1) infinite'}});
-  const pulse = el('div', {style:{position:'absolute',inset:'0',border:'2px solid rgba(59,130,246,0.4)',borderRadius:'50%',animation:'pulse 2s infinite'}});
-  const dna = el('div', {style:{fontSize:'2.5rem'}}, '🧬');
-  iconWrap.append(ping, pulse, dna);
-
-  const barWrap = el('div', {style:{width:'100%'}});
-  const bar = el('div', {style:{height:'4px',background:'rgba(255,255,255,0.05)',borderRadius:'4px',overflow:'hidden',marginBottom:'1rem'}});
-  const progress = el('div', {class:'progress-bar-inner', style:{width:`${((state.generatingStep+1)/steps.length)*100}%`}});
-  bar.append(progress);
-
-  const stepText = el('p', {style:{fontSize:'0.875rem',fontWeight:'700',color:'#e5e7eb',textAlign:'center',animation:'pulse 2s infinite',marginBottom:'0.25rem'}}, steps[state.generatingStep]+'...');
-  const idText = el('p', {style:{fontSize:'0.6rem',color:'#4b5563',fontFamily:'Space Mono',textAlign:'center'}}, `ID_SESSION: ${Math.random().toString(36).substr(2,9).toUpperCase()}`);
-  barWrap.append(bar, stepText, idText);
-
-  wrap.append(iconWrap, barWrap);
-  return wrap;
+function buildProgress() {
+  const steps=['Numérisation ADN','Traits dominants','Structure osseuse','Pigmentation','Continuité génétique','Rendu 4K'];
+  const w=el('div',{style:'display:flex;flex-direction:column;align-items:center;gap:1.4rem;padding:2rem;width:100%;max-width:24rem'});
+  const ic=el('div',{style:'position:relative;width:6.5rem;height:6.5rem;display:flex;align-items:center;justify-content:center'});
+  ic.append(el('div',{style:'position:absolute;inset:0;border:3px solid rgba(59,130,246,.2);border-radius:50%;animation:ping 1.5s cubic-bezier(0,0,.2,1) infinite'}), el('div',{style:'position:absolute;inset:0;border:2px solid rgba(59,130,246,.4);border-radius:50%;animation:pulse 2s infinite'}), el('div',{style:'font-size:2rem'},'🧬'));
+  w.append(ic);
+  const bw=el('div',{style:'width:100%'});
+  bw.append(el('div',{class:'prog-bar',style:'margin-bottom:.7rem'},el('div',{class:'prog-fill',style:`width:${((S.step+1)/steps.length)*100}%`})));
+  bw.append(el('p',{style:'text-align:center;font-size:.78rem;font-weight:700;color:#e5e7eb;animation:pulse 2s infinite;margin-bottom:.2rem'},steps[S.step]+'...'));
+  bw.append(el('p',{style:'text-align:center;font-size:.58rem;color:#4b5563;font-family:var(--mono)'},`ID: ${Math.random().toString(36).substr(2,9).toUpperCase()}`));
+  w.append(bw);
+  return w;
 }
 
-// ===================== EVENT HANDLER =====================
-async function handleGenerate() {
-  const m = state.activeMode;
-  if ([APP_MODES.SIBLING, APP_MODES.CHILD].includes(m) && (!state.parent1||!state.parent2)) return alert("Photos des deux parents obligatoires.");
-  if ([APP_MODES.GRANDPARENT, APP_MODES.UNCLE_AUNT, APP_MODES.COUSIN].includes(m) && !state.parent1) return alert("Photo du parent obligatoire.");
-  if ([APP_MODES.PREGNANCY, APP_MODES.EVOLUTION].includes(m) && !state.parent1) return alert("Photo source obligatoire.");
+function getLabel(i) {
+  const m=S.mode;
+  if(m===M.SIBLING){if(i===0)return'FRATRIE';if(i===1)return'LE FRÈRE';return'LA SŒUR';}
+  if(m===M.PREGNANCY&&S.pregStep===3){return i===0?'MÈRE + BÉBÉ':'BÉBÉ SEUL';}
+  if([M.GRANDPARENT,M.UNCLE_AUNT,M.COUSIN].includes(m)){
+    const rM=m===M.GRANDPARENT?'GRAND-PÈRE':m===M.UNCLE_AUNT?'ONCLE':'COUSIN';
+    const rF=m===M.GRANDPARENT?'GRAND-MÈRE':m===M.UNCLE_AUNT?'TANTE':'COUSINE';
+    const sel=[];if(S.relC.m)sel.push(rM);if(S.relC.f)sel.push(rF);
+    if(sel.length===2){if(i===0)return sel[0];if(i===1)return sel[1];return'GROUPE';}
+    return sel[0]||'ADN';
+  }
+  return `ADN #${i+1}`;
+}
 
-  state.isGenerating = true;
-  state.results = [];
-  state.generatingStep = 0;
+/* ════════════════════════════════════════
+   PROMPT
+════════════════════════════════════════ */
+function buildPrompt() {
+  const rl=S.resem<33?'FAIBLE':S.resem<66?'RÉALISTE':'FORTE';
+  const rR=`RESSEMBLANCE : ${rl} (${S.resem}%). Lien génétique identifiable, jamais un clone.`;
+  const common='QUALITÉ : ultra-photoréaliste 4K. FORMAT : portrait 9:16. IMAGE UNIQUE.';
+  const sexL=S.sex==='female'?'Fille/Femme (XX)':'Garçon/Homme (XY)';
+
+  switch(S.mode) {
+    case M.EVOLUTION:
+      return `MODE ÉVOLUTION TEMPORELLE\nRÈGLE : Âge PRIORITAIRE, respecté strictement.\nÂge : ${S.evoAge} | Sexe : ${sexL} | Yeux : ${S.eye}\nAdaptations : morphologie, proportions, posture, cheveux, texture peau selon l'âge.\nIDENTITÉ : conserver rigoureusement le sujet source.\nSORTIE : PNG 9:16 4K.`;
+    case M.SIBLING:
+      return `FRATRIE – 3 IMAGES : 1.Groupe Frère(${S.sibA.b}ans,XY)+Sœur(${S.sibA.s}ans,XX). 2.Frère seul(9:16). 3.Sœur seule(9:16).\n${rR} ${common}`;
+    case M.GRANDPARENT:{
+      const p=[];if(S.relC.m)p.push(`Grand-père(${S.gpA.gp}ans,XY)`);if(S.relC.f)p.push(`Grand-mère(${S.gpA.gm}ans,XX)`);
+      const lien=S.fSide==='mother'?'MATERNELLE':'PATERNELLE';
+      const ins=p.length===2?`3 IMAGES : 1.${p[0]}. 2.${p[1]}. 3.Groupe.`:`1 image : ${p[0]}.`;
+      return `VIEILLISSEMENT GÉNÉTIQUE – ${lien} : ${ins} ${rR} ${common}`;
+    }
+    case M.UNCLE_AUNT:case M.COUSIN:{
+      const rM=S.mode===M.UNCLE_AUNT?'Oncle':'Cousin';
+      const rF=S.mode===M.UNCLE_AUNT?'Tante':'Cousine';
+      const p=[];if(S.relC.m)p.push(`${rM}(${S.relA.m}ans,XY)`);if(S.relC.f)p.push(`${rF}(${S.relA.f}ans,XX)`);
+      const lien=S.fSide==='mother'?'MATERNEL':'PATERNEL';
+      const ins=p.length===2?`3 IMAGES : 1.${p[0]}. 2.${p[1]}. 3.Groupe.`:`1 image : ${p[0]}.`;
+      return `${S.mode} – ${lien} : ${ins} ${rR} ${common}`;
+    }
+    case M.PREGNANCY:{
+      if(S.pregStep===3) return `NAISSANCE – 2 IMAGES : 1.Mère+nouveau-né maternité(${sexL}). 2.Bébé seul(9:16,${sexL}). ${common}`;
+      const tg=(S.wGain*.45).toFixed(1); const pw=S.pregMo>4?(S.pelvis+1)*2.5:0;
+      const bvL=['légère augmentation','augmentation naturelle','augmentation marquée'];
+      const svL=['aucune','légères','visibles','marquées'];
+      return `GROSSESSE COHÉRENCE GLOBALE STRICTE :\n${S.iWt}kg, poitrine ${S.iBust}cm, bonnet ${S.cup}, cuisse ${S.iThigh}cm.\nMois ${S.pregMo}, gain +${S.wGain}kg.\nCorps entier évolue ensemble – Ventre↑ Cuisses↑ Bassin↑ Poitrine↑ Bras↑ Joues↑.\nPoitrine : ${bvL[S.bVol]}. Allaitement : ${S.bfPrep?'ACTIVÉ':'OFF'}.\nDist: Ventre 35%, Bassin+Hanches 20%(+${pw}cm), Cuisses 15%(+${tg}cm), Poitrine 15%, Bras+Dos 10%, Visage 5%.\nVERGETURES : ${S.strInt>0?`${svL[S.strInt]} sur ${S.strZones.join(', ')}`:'AUCUNE'}.\n${common}`;
+    }
+    default:
+      return `ENFANT ${S.cAge} ans. Sexe : ${sexL}. Dominance : ${S.dom}%. 1 image 9:16 PNG.\n${rR} ${common}`;
+  }
+}
+
+/* ════════════════════════════════════════
+   GENERATE
+════════════════════════════════════════ */
+async function doGenerate() {
+  const m=S.mode;
+  if([M.SIBLING,M.CHILD].includes(m)&&(!S.p1||!S.p2))return alert("📸 Photos des deux parents obligatoires.");
+  if([M.GRANDPARENT,M.UNCLE_AUNT,M.COUSIN].includes(m)&&!S.p1)return alert("📸 Photo du parent obligatoire.");
+  if([M.PREGNANCY,M.EVOLUTION].includes(m)&&!S.p1)return alert("📸 Photo source obligatoire.");
+
+  S.generating=true; S.results=[]; S.step=0;
   render();
 
-  // Progress simulation
-  const interval = setInterval(() => {
-    state.generatingStep = (state.generatingStep + 1) % 6;
-    const stepEl = document.querySelector('.progress-bar-inner');
-    if (stepEl) stepEl.style.width = `${((state.generatingStep+1)/6)*100}%`;
-  }, 2500);
+  const iv=setInterval(()=>{ S.step=(S.step+1)%6; const pf=document.querySelector('.prog-fill'); if(pf)pf.style.width=`${((S.step+1)/6)*100}%`; },2500);
 
   try {
-    const prompt = buildPrompt();
-    const images = await callGeminiAPI(prompt, state.parent1, state.parent2);
-    state.results = images;
-    if (m === APP_MODES.PREGNANCY && state.pregnancyStep === 1) state.pregnancyStep = 2;
-  } catch (err) {
-    if (err.message === 'API_KEY_ERROR') {
-      alert('Clé API invalide ou expirée. Veuillez en changer.');
-      localStorage.removeItem('studio_gen_api_key');
-      state.apiKeyValid = false;
-    } else {
-      alert('La génération a échoué : ' + err.message);
-    }
+    const parts=[{text:buildPrompt()}];
+    if(S.p1)parts.push({inlineData:{data:S.p1.split(',')[1],mimeType:'image/jpeg'}});
+    if(S.p2)parts.push({inlineData:{data:S.p2.split(',')[1],mimeType:'image/jpeg'}});
+
+    const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent?key=${S.apiKey}`,
+      {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts}],generationConfig:{}})});
+
+    if(!res.ok){const err=await res.json().catch(()=>({}));if(res.status===400||res.status===403)throw new Error('API_KEY_ERROR');throw new Error(err.error?.message||'Erreur API');}
+
+    const data=await res.json();
+    const imgs=[];
+    for(const p of (data.candidates?.[0]?.content?.parts||[]))if(p.inlineData)imgs.push(`data:image/png;base64,${p.inlineData.data}`);
+    if(!imgs.length)throw new Error('Aucune image générée.');
+    S.results=imgs;
+    if(m===M.PREGNANCY&&S.pregStep===1)S.pregStep=2;
+  } catch(err){
+    if(err.message==='API_KEY_ERROR'){alert('❌ Clé API invalide. Veuillez en changer.');localStorage.removeItem('sg_key');S.apiOk=false;}
+    else alert('⚠️ Génération échouée : '+err.message);
   } finally {
-    clearInterval(interval);
-    state.isGenerating = false;
-    render();
+    clearInterval(iv); S.generating=false; render();
   }
 }
 
-// ===================== INIT =====================
 render();
 </script>
 </body>
