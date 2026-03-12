@@ -312,6 +312,9 @@ let S = {
   strInt: 0, strZones: ['Ventre'],
   evoAge: '18 mois',
   isTwins: false,
+  twinSexA: 'female',
+  twinSexB: 'female',
+  twinType: 'fraternels',
 };
 
 /* ════════════════════════════════════════
@@ -813,8 +816,10 @@ function wPregParams() {
   w.append(note);
 
   // MODE JUMEAUX TOGGLE
-  const twBlock=el('div',{style:`padding:1rem;border-radius:1rem;border:2px solid ${S.isTwins?'rgba(168,85,247,.5)':'rgba(255,255,255,.08)'};background:${S.isTwins?'rgba(168,85,247,.08)':'rgba(255,255,255,.02)'};transition:all .3s`});
-  const twRow=el('div',{style:'display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem'});
+  const twBlock=el('div',{style:`padding:1rem;border-radius:1rem;border:2px solid ${S.isTwins?'rgba(168,85,247,.5)':'rgba(255,255,255,.08)'};background:${S.isTwins?'rgba(168,85,247,.08)':'rgba(255,255,255,.02)'};transition:all .3s;display:flex;flex-direction:column;gap:.75rem`});
+
+  // Header row
+  const twRow=el('div',{style:'display:flex;justify-content:space-between;align-items:center'});
   const twLabel=el('div');
   twLabel.append(el('p',{style:'font-size:.68rem;font-weight:800;color:#e9d5ff;text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono)'},'👶👶 GROSSESSE GÉMELLAIRE'));
   twLabel.append(el('p',{style:'font-size:.58rem;color:#9ca3af;margin-top:.15rem;font-family:var(--mono)'},'Jumeaux / Jumelles'));
@@ -824,9 +829,58 @@ function wPregParams() {
   }, S.isTwins?'ACTIVÉ ✓':'OFF');
   twRow.append(twLabel,twBtn);
   twBlock.append(twRow);
+
   if(S.isTwins){
+    // Sexe Bébé A
+    const mkTwSex=(label, current, onSet)=>{
+      const wrap=el('div',{style:'display:flex;flex-direction:column;gap:.4rem'});
+      wrap.append(el('span',{style:'font-size:.58rem;color:#c4b5fd;font-weight:800;text-transform:uppercase;letter-spacing:.12em;font-family:var(--mono)'},label));
+      const row=el('div',{style:'display:flex;gap:.4rem'});
+      const mkB=(ico,lbl,val)=>{
+        const b=el('button',{
+          style:`flex:1;padding:.5rem .25rem;border-radius:.6rem;border:2px solid;font-size:.6rem;font-weight:800;text-transform:uppercase;font-family:var(--font);display:flex;flex-direction:column;align-items:center;gap:.2rem;transition:all .2s;border-color:${current===val?'#a855f7':'rgba(255,255,255,.1)'};background:${current===val?'rgba(168,85,247,.2)':'transparent'};color:${current===val?'#e9d5ff':'#6b7280'}`,
+          onClick: onSet
+        });
+        b.append(el('span',{style:'font-size:1rem'},ico), el('span',{},lbl));
+        return b;
+      };
+      row.append(mkB('👧','Fille (XX)','female',()=>{ onSet('female'); }), mkB('👦','Garçon (XY)','male',()=>{ onSet('male'); }));
+      // fix: rebuild with correct handlers
+      row.innerHTML='';
+      ['female','male'].forEach(val=>{
+        const ico=val==='female'?'👧':'👦';
+        const lbl=val==='female'?'Fille (XX)':'Garçon (XY)';
+        const b=el('button',{
+          style:`flex:1;padding:.5rem .25rem;border-radius:.6rem;border:2px solid;font-size:.6rem;font-weight:800;text-transform:uppercase;font-family:var(--font);display:flex;flex-direction:column;align-items:center;gap:.2rem;transition:all .2s;border-color:${current===val?'#a855f7':'rgba(255,255,255,.1)'};background:${current===val?'rgba(168,85,247,.2)':'transparent'};color:${current===val?'#e9d5ff':'#6b7280'}`,
+          onClick:()=>{ onSet(val); render(); }
+        });
+        b.append(el('span',{style:'font-size:1rem'},ico),el('span',{},lbl));
+        row.append(b);
+      });
+      wrap.append(row);
+      return wrap;
+    };
+
+    twBlock.append(mkTwSex('Sexe Bébé A', S.twinSexA, v=>S.twinSexA=v));
+    twBlock.append(mkTwSex('Sexe Bébé B', S.twinSexB, v=>S.twinSexB=v));
+
+    // Type jumeaux (identiques / fraternels)
+    const twTypeRow=el('div',{style:'display:flex;flex-direction:column;gap:.35rem'});
+    twTypeRow.append(el('span',{style:'font-size:.58rem;color:#c4b5fd;font-weight:800;text-transform:uppercase;letter-spacing:.12em;font-family:var(--mono)'},'Type de jumeaux'));
+    const twTypeBtn=el('div',{style:'display:flex;gap:.4rem'});
+    ['fraternels','identiques'].forEach(type=>{
+      const active=S.twinType===type;
+      const b=el('button',{
+        style:`flex:1;padding:.5rem;border-radius:.6rem;border:2px solid;font-size:.6rem;font-weight:800;text-transform:uppercase;font-family:var(--mono);transition:all .2s;border-color:${active?'#a855f7':'rgba(255,255,255,.1)'};background:${active?'rgba(168,85,247,.2)':'transparent'};color:${active?'#e9d5ff':'#6b7280'}`,
+        onClick:()=>{S.twinType=type;render();}
+      }, type==='fraternels'?'👶🏻👶🏼 Fraternels':'👶👶 Identiques');
+      twTypeBtn.append(b);
+    });
+    twTypeRow.append(twTypeBtn);
+    twBlock.append(twTypeRow);
+
     const twInfo=el('div',{style:'padding:.6rem .8rem;background:rgba(168,85,247,.1);border-radius:.6rem;border:1px solid rgba(168,85,247,.2)'});
-    twInfo.append(el('p',{style:'font-size:.58rem;color:#d8b4fe;line-height:1.6;font-family:var(--mono)'},'⚡ Abdomen maximalement distendu • Poids +30% • Dos voûté • Prise de poids antérieure massive • Deux pôles céphaliques distincts visibles sous la peau'));
+    twInfo.append(el('p',{style:'font-size:.58rem;color:#d8b4fe;line-height:1.6;font-family:var(--mono)'},'⚡ Abdomen maximalement distendu • Poids +30% • Dos voûté • Deux pôles céphaliques distincts visibles'));
     twBlock.append(twInfo);
   }
   w.append(twBlock);
@@ -968,6 +1022,9 @@ function buildPrompt() {
       return `${S.mode} – ${lien} : ${ins} ${rR} ${common}`;
     }
     case M.PREGNANCY:{
+      const twSexALabel=S.twinSexA==='female'?'Fille (XX)':'Garçon (XY)';
+      const twSexBLabel=S.twinSexB==='female'?'Fille (XX)':'Garçon (XY)';
+      const twTypeLabel=S.twinType==='identiques'?'MONOZYGOTES (identiques)':'DIZYGOTES (fraternels)';
       const twinBlock = S.isTwins ? `
 TYPE : GROSSESSE GÉMELLAIRE — JUMEAUX / JUMELLES.
 RÈGLES PHYSIOLOGIQUES GÉMELLAIRES STRICTES :
@@ -982,12 +1039,17 @@ RÈGLES PHYSIOLOGIQUES GÉMELLAIRES STRICTES :
 - INTERDICTION FORMELLE : ventre de grossesse simple — ce doit être clairement une grossesse de jumeaux.` : '';
 
       if(S.pregStep===3){
-        if(S.isTwins) return `PROTOCOLE NAISSANCE GÉMELLAIRE — GÉNÈRE 3 IMAGES DISTINCTES :
-1. GROUPE : Mère + DEUX nouveau-nés jumeaux en maternité. Les deux bébés sont visibles, enveloppés, côte à côte ou dans les bras de la mère.
-2. BÉBÉ A : Premier nouveau-né seul (9:16, ${sexL}).
-3. BÉBÉ B : Second nouveau-né seul (9:16, ${sexL}). Traits légèrement différents du premier — jumeaux fraternels, pas identiques sauf si demandé.
-RÉALISME MÉDICAL : bracelets d'identification, couvertures maternité, moniteurs, lumière douce de salle d'accouchement.
+        if(S.isTwins){
+          const sA=S.twinSexA==='female'?'Fille (XX)':'Garçon (XY)';
+          const sB=S.twinSexB==='female'?'Fille (XX)':'Garçon (XY)';
+          const identRule=S.twinType==='identiques'?'JUMEAUX IDENTIQUES (monozygotes) : traits du visage quasi-identiques, même morphologie, seuls détails mineurs diffèrent.':'JUMEAUX FRATERNELS (dizygotes) : traits du visage clairement différents, ressemblance familiale mais personnalités visuelles distinctes.';
+          return `PROTOCOLE NAISSANCE GÉMELLAIRE — GÉNÈRE 3 IMAGES DISTINCTES :
+1. GROUPE : Mère rayonnante et épuisée + DEUX nouveau-nés jumeaux en maternité. Les deux bébés visibles, enveloppés dans des couvertures distinctes (couleurs différentes), côte à côte ou dans les bras de la mère. Bracelets d'identification aux poignets.
+2. BÉBÉ A : Nouveau-né seul en gros plan (9:16). Sexe : ${sA}. Peau rosée de nouveau-né, yeux mi-clos, traits délicats.
+3. BÉBÉ B : Nouveau-né seul en gros plan (9:16). Sexe : ${sB}. ${identRule}
+RÉALISME MÉDICAL : bracelets d'identification, couvertures maternité colorées, lumière tamisée de salle d'accouchement, moniteurs en arrière-plan.
 ${common}`;
+        }
         return `PROTOCOLE NAISSANCE — 2 IMAGES :
 1. GROUPE : Mère épuisée mais rayonnante + nouveau-né en maternité (${sexL}). Peau à peau ou bébé dans les bras. Décor réaliste : lit médicalisé, lumière tamisée, perfusion visible.
 2. INDIVIDUEL : Bébé seul en gros plan (9:16, ${sexL}). Traits du visage nets, peau légèrement rosée de nouveau-né, yeux mi-clos.
