@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>STUDIO GÉNÉTIQUE — IRL</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Syne', sans-serif; background: #080810; color: #f0f0f8; margin: 0; }
+    .mono { font-family: 'Space Mono', monospace; }
+
+    :root {
+      --blue: #3b82f6;
+      --blue-dim: rgba(59,130,246,0.15);
+      --blue-border: rgba(59,130,246,0.25);
+      --surface: rgba(255,255,255,0.03);
+      --border: rgba(255,255,255,0.06);
+      --amber: #f59e0b;
+    }
+
+    .glass {
+      background: var(--surface);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+    }
+
+    .gradient-bg {
+      background: radial-gradient(ellipse 80% 60% at 70% -10%, rgba(59,130,246,0.08) 0%, transparent 60%),
+                  radial-gradient(ellipse 60% 40% at 10% 100%, rgba(99,102,241,0.06) 0%, transparent 60%),
+                  #080810;
+    }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 4px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 4px;
+      outline: none;
+      cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--blue);
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(59,130,246,0.5);
+    }
+
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+    @keyframes spin-slow { to { transform: rotate(360deg); } }
+    @keyframes bounce-slow { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+    @keyframes fade-in { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes ping { 0%{transform:scale(1);opacity:1} 75%,100%{transform:scale(2);opacity:0} }
+
+    .animate-bounce-slow { animation: bounce-slow 4s ease-in-out infinite; }
+    .animate-fade-in { animation: fade-in 0.5s ease forwards; }
+    .animate-ping { animation: ping 1.5s cubic-bezier(0,0,0.2,1) infinite; }
+    .animate-pulse { animation: pulse 2s cubic-bezier(0.4,0,0.6,1) infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+    .animate-spin-slow { animation: spin-slow 20s linear infinite; }
+
+    .api-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+
+    /* Range wrapper for generating */
+    .gen-btn {
+      background: #fff;
+      color: #000;
+      font-weight: 800;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      border: none;
+      border-radius: 1rem;
+      padding: 1rem 1.5rem;
+      width: 100%;
+      cursor: pointer;
+      font-size: 0.875rem;
+      transition: all 0.2s;
+    }
+    .gen-btn:hover { background: #dbeafe; }
+    .gen-btn:disabled { background: #1f2937; color: #4b5563; cursor: not-allowed; }
+
+    .mode-btn {
+      display: flex; align-items: center; gap: 0.75rem;
+      width: 100%; padding: 0.75rem; border-radius: 0.75rem;
+      border: 1px solid transparent;
+      background: transparent; color: #9ca3af;
+      cursor: pointer; font-size: 0.875rem; font-weight: 500;
+      transition: all 0.2s; text-align: left; font-family: 'Syne', sans-serif;
+    }
+    .mode-btn:hover { background: rgba(255,255,255,0.05); color: #e5e7eb; }
+    .mode-btn.active {
+      background: var(--blue-dim);
+      color: var(--blue);
+      border-color: var(--blue-border);
+      box-shadow: 0 0 15px rgba(59,130,246,0.1);
+    }
+
+    .upload-zone {
+      aspect-ratio: 1;
+      border-radius: 1rem;
+      border: 2px dashed rgba(255,255,255,0.1);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      cursor: pointer; overflow: hidden; position: relative;
+      transition: border-color 0.2s; background: rgba(255,255,255,0.02);
+    }
+    .upload-zone:hover { border-color: rgba(59,130,246,0.5); }
+    .upload-zone img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
+    .upload-zone-overlay {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,0.6);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; transition: opacity 0.2s;
+    }
+    .upload-zone:hover .upload-zone-overlay { opacity: 1; }
+
+    .tag-btn {
+      padding: 0.25rem 0.75rem; border-radius: 0.5rem;
+      font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: transparent; color: #4b5563; cursor: pointer;
+      transition: all 0.2s; font-family: 'Space Mono', monospace;
+    }
+    .tag-btn.active { background: var(--blue-dim); border-color: var(--blue); color: var(--blue); }
+
+    .sex-btn {
+      flex: 1; padding: 1rem; border-radius: 0.75rem; border: 2px solid rgba(255,255,255,0.05);
+      background: transparent; color: #6b7280; cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; gap: 0.25rem;
+      transition: all 0.2s; font-family: 'Syne', sans-serif;
+    }
+    .sex-btn.active {
+      background: var(--blue-dim); border-color: var(--blue); color: var(--blue);
+      box-shadow: 0 0 20px rgba(59,130,246,0.2);
+    }
+
+    .result-img-wrap {
+      position: relative; border-radius: 1rem; overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    .result-img-wrap img { width: 100%; height: auto; display: block; }
+    .result-overlay {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,0.4);
+      opacity: 0; transition: opacity 0.2s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .result-img-wrap:hover .result-overlay { opacity: 1; }
+    .result-label {
+      position: absolute; top: 1rem; left: 1rem;
+      background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+      padding: 0.25rem 0.75rem; border-radius: 9999px;
+      font-size: 0.6rem; font-weight: 700; color: var(--blue);
+      text-transform: uppercase; letter-spacing: 0.15em;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .progress-bar-inner { height: 100%; background: var(--blue); transition: width 1s ease-in-out; border-radius: 4px; }
+
+    .section-header {
+      font-size: 0.625rem; color: var(--blue); font-weight: 800;
+      text-transform: uppercase; letter-spacing: 0.2em; margin-bottom: 0.5rem;
+    }
+
+    .panel-block {
+      padding: 1rem; background: rgba(255,255,255,0.03);
+      border-radius: 1rem; border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .amber-note {
+      padding: 0.75rem 1rem;
+      border-left: 2px solid rgba(245,158,11,0.5);
+      background: rgba(245,158,11,0.05);
+      border-radius: 0 0.5rem 0.5rem 0;
+    }
+
+    /* Checkbox */
+    input[type=checkbox] { accent-color: var(--blue); width: 1rem; height: 1rem; cursor: pointer; }
+  </style>
+</head>
+<body>
+<div id="app"></div>
+
+<script type="module">
+// ===================== STATE =====================
+const APP_MODES = {
+  CHILD: 'CHILD', SIBLING: 'SIBLING', GRANDPARENT: 'GRANDPARENT',
+  UNCLE_AUNT: 'UNCLE_AUNT', COUSIN: 'COUSIN', PREGNANCY: 'PREGNANCY', EVOLUTION: 'EVOLUTION'
+};
+const MODE_LABELS = {
+  CHILD: 'Enfant', SIBLING: 'Frères & Sœurs', GRANDPARENT: 'Grands-Parents',
+  UNCLE_AUNT: 'Oncles / Tantes', COUSIN: 'Cousins / Cousines',
+  PREGNANCY: 'Mode Grossesse', EVOLUTION: 'Évolution Temporelle'
+};
+const MODE_ICONS = {
+  CHILD: '👶', SIBLING: '👧👦', GRANDPARENT: '👵👴',
+  UNCLE_AUNT: '👨‍👩‍👦', COUSIN: '🧑‍🤝‍🧑', PREGNANCY: '🤰', EVOLUTION: '⏳'
+};
+const EYE_COLORS = ['Marron','Noisette','Vert','Bleu','Gris','Ambre'];
+
+let state = {
+  apiKey: localStorage.getItem('studio_gen_api_key') || '',
+  apiKeyValid: !!localStorage.getItem('studio_gen_api_key'),
+  view: 'home', // 'home' | 'lab' | 'gallery'
+  activeMode: APP_MODES.PREGNANCY,
+  parent1: null, parent2: null,
+  results: [], isGenerating: false, generatingStep: 0,
+  selectedSex: 'female',
+  selectedEyeColor: 'Marron',
+  siblingChoice: { brother: true, sister: false },
+  siblingAges: { brother: 5, sister: 5 },
+  familySide: 'mother',
+  gpAges: { grandpa: 70, grandma: 68 },
+  relationChoice: { male: true, female: true },
+  relationAges: { male: 30, female: 30 },
+  familyResemblance: 50,
+  dominance: 50,
+  childAge: 5,
+  pregnancyStep: 1,
+  pregMonth: 3,
+  weightGain: 2.5,
+  initialWeight: 60,
+  initialCupSize: 'B',
+  initialBust: 90,
+  initialThigh: 55,
+  pelvisWidening: 1,
+  breastVolume: 1,
+  breastfeedingPrep: false,
+  morphoIntensity: 1,
+  stretchIntensity: 0,
+  stretchZones: ['Ventre'],
+  evolutionAgeInput: '18 mois',
+};
+
+// ===================== HELPERS =====================
+function el(tag, attrs={}, ...children) {
+  const e = document.createElement(tag);
+  for (const [k,v] of Object.entries(attrs)) {
+    if (k === 'class') e.className = v;
+    else if (k === 'style') Object.assign(e.style, v);
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2).toLowerCase(), v);
+    else e.setAttribute(k, v);
+  }
+  for (const c of children.flat()) {
+    if (c == null) continue;
+    if (typeof c === 'string' || typeof c === 'number') e.appendChild(document.createTextNode(c));
+    else e.appendChild(c);
+  }
+  return e;
+}
+
+function html(strings, ...values) {
+  const d = document.createElement('div');
+  d.innerHTML = strings.reduce((acc, str, i) => acc + str + (values[i]??''), '');
+  return d.firstElementChild || d;
+}
+
+function h(tag, cls, ...children) { return el(tag, {class:cls}, ...children); }
+
+function weightMapForMonth(m) {
+  const map = {1:0.5,2:1,3:2.5,4:5,5:8,6:11,7:13,8:15,9:18};
+  return map[m] || 0;
+}
+
+// ===================== COMPONENTS =====================
+function Slider(label, value, min, max, onChange, opts={}) {
+  const { suffix='', labels=null } = opts;
+  const wrap = el('div', {class:'space-y-2'});
+  const row = el('div', {class:'flex justify-between items-center px-1'});
+  const lbl = el('label', {class:'text-xs text-gray-500 font-bold uppercase tracking-widest mono'}, label);
+  const val = el('span', {class:'text-xs text-blue-400 mono'}, `${value}${suffix}`);
+  row.append(lbl, val);
+
+  const inp = el('input', {type:'range', min, max, value, class:''});
+  inp.addEventListener('input', e => {
+    val.textContent = e.target.value + suffix;
+    onChange(parseInt(e.target.value));
+  });
+
+  wrap.append(row, inp);
+  if (labels) {
+    const labRow = el('div', {class:'flex justify-between px-1 mt-1'});
+    labels.forEach(l => labRow.append(el('span', {class:'text-xs text-gray-600 uppercase font-bold mono'}, l)));
+    wrap.append(labRow);
+  }
+  return wrap;
+}
+
+function ImageUploader(onUpload, image, placeholder) {
+  const wrap = el('div', {class:'upload-zone'});
+  const inp = el('input', {type:'file', accept:'image/*', style:{display:'none'}});
+  wrap.append(inp);
+
+  if (image) {
+    const img = el('img', {src:image, alt:''});
+    const overlay = el('div', {class:'upload-zone-overlay'});
+    overlay.append(el('span', {class:'text-white text-xs font-bold uppercase tracking-widest'}, 'Changer'));
+    wrap.append(img, overlay);
+  } else {
+    wrap.append(
+      el('div', {class:'text-2xl opacity-40 mb-1'}, '📸'),
+      el('span', {class:'text-xs text-gray-500 font-bold uppercase tracking-tight mono'}, placeholder),
+      el('span', {class:'text-xs text-gray-700 mono mt-1'}, 'PNG / JPG')
+    );
+  }
+
+  inp.addEventListener('change', e => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => onUpload(ev.target.result);
+    reader.readAsDataURL(file);
+  });
+  wrap.addEventListener('click', () => inp.click());
+  return wrap;
+}
+
+function TagButton(label, active, onClick) {
+  const btn = el('button', {class:`tag-btn${active?' active':''}`}, label);
+  btn.addEventListener('click', onClick);
+  return btn;
+}
+
+function SexButton(emoji, label, active, onClick) {
+  const btn = el('button', {class:`sex-btn${active?' active':''}`});
+  btn.append(el('span', {class:'text-xl'}, emoji), el('span', {class:'text-xs font-bold uppercase tracking-widest'}, label));
+  btn.addEventListener('click', onClick);
+  return btn;
+}
+
+// ===================== GENERATE =====================
+async function callGeminiAPI(prompt, p1, p2) {
+  const parts = [{ text: prompt }];
+  if (p1) parts.push({ inlineData: { data: p1.split(',')[1], mimeType: 'image/jpeg' } });
+  if (p2) parts.push({ inlineData: { data: p2.split(',')[1], mimeType: 'image/jpeg' } });
+
+  const body = {
+    contents: [{ parts }],
+    generationConfig: {}
+  };
+
+  const model = 'gemini-2.0-flash-preview-image-generation';
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${state.apiKey}`,
+    { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) }
+  );
+
+  if (!res.ok) {
+    const err = await res.json().catch(()=>({}));
+    if (res.status === 400 || res.status === 403) throw new Error('API_KEY_ERROR');
+    throw new Error(err.error?.message || 'Génération échouée');
+  }
+
+  const data = await res.json();
+  const images = [];
+  for (const part of (data.candidates?.[0]?.content?.parts || [])) {
+    if (part.inlineData) images.push(`data:image/png;base64,${part.inlineData.data}`);
+  }
+  if (!images.length) throw new Error('Aucune image générée.');
+  return images;
+}
+
+function buildPrompt() {
+  const s = state;
+  const resemblanceLabel = s.familyResemblance < 33 ? "FAIBLE (éloignée, subtile)" : s.familyResemblance < 66 ? "RÉALISTE (naturelle, standard)" : "FORTE (mâchoire, yeux, nez, expressions très marqués)";
+  const resemblanceRule = `RÈGLE DE RESSEMBLANCE : Intensité ${resemblanceLabel} (${s.familyResemblance}%). Le lien génétique doit être identifiable sans jamais être un clone. INTERDICTION FORMELLE DU CLONAGE.`;
+  const common = `QUALITÉ : ultra-photoréaliste 4K. FORMAT : portrait 9:16. IMAGE UNIQUE : Ne jamais générer de collages.`;
+  const sexLabel = s.selectedSex === 'female' ? "Fille / Femme (XX)" : "Garçon / Homme (XY)";
+
+  switch (s.activeMode) {
+    case APP_MODES.EVOLUTION:
+      return `MODE : ÉVOLUTION TEMPORELLE ADN
+RÈGLE ABSOLUE : L'âge indiqué est PRIORITAIRE et DOIT être respecté strictement.
+PARAMÈTRES :
+- Âge exact : ${s.evolutionAgeInput}
+- Sexe biologique : ${sexLabel}
+- Couleur des yeux : ${s.selectedEyeColor}
+ADAPTATIONS OBLIGATOIRES SELON L'ÂGE :
+- Morphologie corporelle réaliste correspondant EXACTEMENT à l'âge indiqué
+- Taille, proportions, posture, motricité adaptées
+- Structure faciale et osseuse cohérente
+- Cheveux : longueur, densité et implantation réalistes selon l'âge
+- Texture de peau adaptée à l'âge
+IDENTITÉ : Conserver rigoureusement l'identité de la personne en photo source.
+SORTIE : PNG, Format 9:16, Ultra-réalisme humain 4K`;
+
+    case APP_MODES.SIBLING:
+      return `BIOLOGIE FRATRIE : Génère EXACTEMENT 3 IMAGES DISTINCTES.
+1. IMAGE DE GROUPE : Frère (${s.siblingAges.brother} ans, XY) et Sœur (${s.siblingAges.sister} ans, XX) ensemble.
+2. INDIVIDUEL : Le frère seul (XY, 9:16).
+3. INDIVIDUEL : La sœur seule (XX, 9:16).
+${resemblanceRule} ${common}`;
+
+    case APP_MODES.GRANDPARENT: {
+      const persons = [];
+      if (s.relationChoice.male) persons.push(`Grand-père (${s.gpAges.grandpa} ans, XY)`);
+      if (s.relationChoice.female) persons.push(`Grand-mère (${s.gpAges.grandma} ans, XX)`);
+      const lien = s.familySide === 'mother' ? 'MATERNELLE' : 'PATERNELLE';
+      const instr = persons.length === 2
+        ? `Génère EXACTEMENT 3 IMAGES DISTINCTES : 1. Individuel ${persons[0]}. 2. Individuel ${persons[1]}. 3. Image de groupe.`
+        : `Génère 1 image INDIVIDUELLE : ${persons[0]}.`;
+      return `VIEILLISSEMENT GÉNÉTIQUE - BRANCHE ${lien} : ${instr} ${resemblanceRule} ${common}`;
+    }
+
+    case APP_MODES.UNCLE_AUNT:
+    case APP_MODES.COUSIN: {
+      const roleM = s.activeMode === APP_MODES.UNCLE_AUNT ? "Oncle" : "Cousin";
+      const roleF = s.activeMode === APP_MODES.UNCLE_AUNT ? "Tante" : "Cousine";
+      const persons = [];
+      if (s.relationChoice.male) persons.push(`${roleM} (${s.relationAges.male} ans, XY)`);
+      if (s.relationChoice.female) persons.push(`${roleF} (${s.relationAges.female} ans, XX)`);
+      const lien = s.familySide === 'mother' ? 'MATERNEL(LE)' : 'PATERNEL(LE)';
+      const instr = persons.length === 2
+        ? `Génère EXACTEMENT 3 IMAGES DISTINCTES : 1. Individuel ${persons[0]}. 2. Individuel ${persons[1]}. 3. Image de groupe.`
+        : `Génère 1 image INDIVIDUELLE : ${persons[0]}.`;
+      return `LOGIQUE FAMILY ${s.activeMode} BRANCHE ${lien} : ${instr} ${resemblanceRule} ${common}`;
+    }
+
+    case APP_MODES.PREGNANCY: {
+      if (s.pregnancyStep === 3) {
+        return `PROTOCOLE NAISSANCE : Génère DEUX IMAGES SÉPARÉES.
+1. GROUPE : Mère + nouveau-né en maternité (Sexe : ${sexLabel}).
+2. INDIVIDUEL : Le bébé seul (9:16 PNG, ${sexLabel}).
+${common}`;
+      }
+      const thighGrowth = (s.weightGain * 0.45).toFixed(1);
+      const pelvisV = s.pregMonth > 4 ? (s.pelvisWidening + 1) * 2.5 : 0;
+      const breastVLabels = ['légère augmentation','augmentation naturelle','augmentation marquée'];
+      const stretchLabels = ['aucune','légères','visibles','marquées'];
+      return `BIOLOGIE GROSSESSE — COHÉRENCE GLOBALE STRICTE :
+DONNÉES INITIALES : Poids ${s.initialWeight}kg, Tour poitrine ${s.initialBust}cm, Bonnet ${s.initialCupSize}, Tour cuisse ${s.initialThigh}cm.
+STADE : Mois ${s.pregMonth}. GAIN DE POIDS TOTAL : +${s.weightGain}kg.
+RÈGLE DE COHÉRENCE GLOBALE (STRICTE) : Le corps évolue comme un ensemble cohérent. Ventre↑, Cuisses↑, Bassin↑, Poitrine↑, Bras↑, Joues↑.
+POITRINE : Augmentation volume ${breastVLabels[s.breastVolume]}. Préparation allaitement : ${s.breastfeedingPrep ? 'ACTIVÉE':'OFF'}.
+DISTRIBUTION PHYSIOLOGIQUE :
+- VENTRE (35%): Projection frontale massive, peau tendue.
+- BASSIN & HANCHES (20%): Élargissement osseux (+${pelvisV}cm).
+- CUISSES & FESSES (15%): Épaississement (+${thighGrowth}cm).
+- POITRINE (15%), BRAS/DOS (10%), VISAGE (5%).
+INTERDICTION : Poitrine figée, silhouette mince incohérente.
+VERGETURES : ${s.stretchIntensity > 0 ? `${stretchLabels[s.stretchIntensity]} sur ${s.stretchZones.join(', ')}.` : 'AUCUNE.'}
+Rendu individuel 9:16 PNG. ${common}`;
+    }
+
+    default: // CHILD
+      return `IDENTITÉ GÉNÉTIQUE : Enfant de ${s.childAge} ans. Sexe : ${sexLabel}.
+Dominance parentale : ${s.dominance}%.
+Génère 1 image INDIVIDUELLE (9:16 PNG).
+${resemblanceRule} ${common}`;
+  }
+}
+
+function getResultLabel(idx, count) {
+  const m = state.activeMode;
+  if (m === APP_MODES.SIBLING) {
+    if (idx === 0) return "PORTRAIT DE FRATRIE";
+    if (idx === 1) return "INDIVIDUEL : LE FRÈRE";
+    return "INDIVIDUEL : LA SŒUR";
+  }
+  if (m === APP_MODES.PREGNANCY && state.pregnancyStep === 3) {
+    return idx === 0 ? "MÈRE + BÉBÉ" : "BÉBÉ SEUL";
+  }
+  if ([APP_MODES.GRANDPARENT, APP_MODES.UNCLE_AUNT, APP_MODES.COUSIN].includes(m)) {
+    const roleM = m===APP_MODES.GRANDPARENT?"GRAND-PÈRE":m===APP_MODES.UNCLE_AUNT?"ONCLE":"COUSIN";
+    const roleF = m===APP_MODES.GRANDPARENT?"GRAND-MÈRE":m===APP_MODES.UNCLE_AUNT?"TANTE":"COUSINE";
+    const s = state;
+    const selected = [];
+    if (s.relationChoice.male) selected.push(roleM);
+    if (s.relationChoice.female) selected.push(roleF);
+    if (selected.length === 2) {
+      if (idx === 0) return `INDIVIDUEL : ${selected[0]}`;
+      if (idx === 1) return `INDIVIDUEL : ${selected[1]}`;
+      return "IMAGE DE GROUPE";
+    }
+    return `INDIVIDUEL : ${selected[0]||'ADN'}`;
+  }
+  return `UNITÉ ADN #${idx+1}`;
+}
+
+// ===================== RENDER =====================
+function render() {
+  const app = document.getElementById('app');
+  app.innerHTML = '';
+  if (!state.apiKeyValid) { app.append(renderApiKeyScreen()); return; }
+  if (state.view === 'home') { app.append(renderHome()); return; }
+  app.append(renderLab());
+}
+
+function renderApiKeyScreen() {
+  const wrap = el('div', {class:'api-screen gradient-bg'});
+  const card = el('div', {class:'glass', style:{maxWidth:'480px',width:'100%',padding:'2.5rem',borderRadius:'1.5rem'}});
+
+  card.append(
+    el('div', {style:{textAlign:'center',marginBottom:'2rem'}},
+      el('div', {style:{fontSize:'3rem',marginBottom:'1rem'}}, '🧬'),
+      el('h1', {style:{fontSize:'1.75rem',fontWeight:'800',textTransform:'uppercase',letterSpacing:'0.2em',marginBottom:'0.5rem'}}, 'STUDIO GÉNÉTIQUE'),
+      el('p', {style:{color:'#6b7280',fontSize:'0.875rem'}}, 'Entrez votre clé API Google AI Studio pour commencer')
+    )
+  );
+
+  const label = el('label', {style:{display:'block',fontSize:'0.625rem',color:'#3b82f6',fontWeight:'800',textTransform:'uppercase',letterSpacing:'0.2em',marginBottom:'0.5rem',fontFamily:'Space Mono, monospace'}}, 'Clé API Google AI Studio');
+  const inp = el('input', {
+    type:'password',
+    placeholder:'AIza...',
+    value: state.apiKey,
+    style:{
+      width:'100%',background:'rgba(0,0,0,0.4)',border:'1px solid rgba(255,255,255,0.1)',
+      borderRadius:'0.75rem',padding:'0.875rem 1rem',color:'#fff',fontSize:'0.875rem',
+      outline:'none',fontFamily:'Space Mono, monospace',marginBottom:'1rem',boxSizing:'border-box'
+    }
+  });
+  inp.addEventListener('focus', e => e.target.style.borderColor='#3b82f6');
+  inp.addEventListener('blur', e => e.target.style.borderColor='rgba(255,255,255,0.1)');
+  inp.addEventListener('input', e => { state.apiKey = e.target.value; });
+
+  const btn = el('button', {class:'gen-btn'}, 'ACCÉDER À L\'APPLICATION');
+  btn.addEventListener('click', async () => {
+    if (!state.apiKey.trim()) return alert('Veuillez entrer une clé API.');
+    btn.disabled = true; btn.textContent = 'Vérification...';
+    try {
+      // Test rapide avec un prompt minimal
+      const testRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${state.apiKey.trim()}`,
+        { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({contents:[{parts:[{text:'Hi'}]}]}) }
+      );
+      if (!testRes.ok) throw new Error('Clé invalide');
+      state.apiKey = state.apiKey.trim();
+      localStorage.setItem('studio_gen_api_key', state.apiKey);
+      state.apiKeyValid = true;
+      render();
+    } catch {
+      alert('Clé API invalide ou sans permission. Vérifiez votre clé Google AI Studio.');
+      btn.disabled = false; btn.textContent = 'ACCÉDER À L\'APPLICATION';
+    }
+  });
+
+  const note = el('p', {style:{color:'#4b5563',fontSize:'0.7rem',textAlign:'center',marginTop:'1rem',lineHeight:'1.6'}},
+    '🔒 Votre clé est stockée localement et n\'est jamais partagée. Les générations sont décomptées de votre propre compte Google AI Studio.');
+
+  const changeLink = el('button', {style:{display:'block',margin:'0.75rem auto 0',color:'#6b7280',fontSize:'0.7rem',background:'none',border:'none',cursor:'pointer',textDecoration:'underline',fontFamily:'Space Mono'}}, 'Changer de clé');
+  changeLink.addEventListener('click', () => { localStorage.removeItem('studio_gen_api_key'); state.apiKey=''; state.apiKeyValid=false; render(); });
+
+  card.append(label, inp, btn, note, changeLink);
+  wrap.append(card);
+  return wrap;
+}
+
+function renderHome() {
+  const wrap = el('div', {class:'gradient-bg', style:{minHeight:'100vh',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'2rem'}});
+
+  const inner = el('div', {style:{maxWidth:'900px',width:'100%',textAlign:'center'}});
+
+  // Title
+  const title = el('h1', {style:{fontSize:'clamp(3rem,8vw,6rem)',fontWeight:'900',textTransform:'uppercase',letterSpacing:'0.2em',lineHeight:'1',marginBottom:'2rem'}}, 'STUDIO', el('br',{}), 'GÉNÉTIQUE');
+
+  // DNA animation
+  const dnaWrap = el('div', {style:{position:'relative',width:'12rem',height:'12rem',margin:'0 auto 2rem',display:'flex',alignItems:'center',justifyContent:'center'}});
+  const ring1 = el('div', {style:{position:'absolute',inset:'0',border:'1px solid rgba(245,158,11,0.1)',borderRadius:'50%',animation:'spin-slow 20s linear infinite'}});
+  const ring2 = el('div', {style:{position:'absolute',inset:'1rem',border:'1px solid rgba(245,158,11,0.05)',borderRadius:'50%',animation:'spin-slow 15s linear infinite reverse'}});
+  const dna = el('div', {class:'animate-bounce-slow', style:{fontSize:'5rem',filter:'drop-shadow(0 0 15px rgba(245,158,11,0.3))'}}, '🧬');
+  dnaWrap.append(ring1,ring2,dna);
+
+  // Description
+  const desc = el('p', {style:{color:'#d1d5db',fontSize:'1.125rem',fontWeight:'300',lineHeight:'1.7',maxWidth:'600px',margin:'0 auto 0.75rem'}},
+    'Créez chaque membre de la famille en respectant les traits entre parents, enfants et générations.');
+  const desc2 = el('p', {style:{color:'#6b7280',fontSize:'0.875rem',maxWidth:'500px',margin:'0 auto 2rem',lineHeight:'1.6'}},
+    "À partir de photos, d'âges et de paramètres simples, générez des visages cohérents, évolutifs et crédibles.");
+
+  // Features grid
+  const features = [
+    {icon:'🧒',title:'Enfants & bébés',desc:'Âge réel, morphologie crédible'},
+    {icon:'👨‍👩‍👧',title:'Fratrie & famille',desc:'Ressemblance contrôlée'},
+    {icon:'🤰',title:'Grossesse & évolution',desc:'Transformation mois par mois'},
+    {icon:'👵',title:'Générations & héritage',desc:'Traits familiaux cohérents'},
+  ];
+  const grid = el('div', {style:{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:'1rem',marginBottom:'3rem'}});
+  features.forEach(f => {
+    const card = el('div', {class:'glass', style:{padding:'1.5rem',borderRadius:'1.5rem',cursor:'default',transition:'background 0.2s'}});
+    card.append(
+      el('div', {style:{fontSize:'2rem',marginBottom:'0.75rem'}}, f.icon),
+      el('h3', {style:{fontSize:'0.7rem',fontWeight:'800',color:'#fff',textTransform:'uppercase',letterSpacing:'0.1em',marginBottom:'0.25rem'}}, f.title),
+      el('p', {style:{fontSize:'0.65rem',color:'#6b7280',fontWeight:'500'}}, f.desc)
+    );
+    grid.append(card);
+  });
+
+  // CTA
+  const cta = el('button', {style:{
+    padding:'1.25rem 3rem',background:'#f59e0b',color:'#000',fontWeight:'900',
+    textTransform:'uppercase',letterSpacing:'0.2em',borderRadius:'1rem',
+    border:'none',cursor:'pointer',fontSize:'1rem',
+    boxShadow:'0 0 30px rgba(245,158,11,0.25)',transition:'all 0.2s', fontFamily:'Syne, sans-serif'
+  }}, 'JE CRÉE MA FAMILLE');
+  cta.addEventListener('click', () => { state.view = 'lab'; state.results = []; render(); });
+  cta.addEventListener('mouseover', () => { cta.style.background='#fbbf24'; cta.style.transform='scale(1.05)'; });
+  cta.addEventListener('mouseout', () => { cta.style.background='#f59e0b'; cta.style.transform='scale(1)'; });
+
+  // Change key link
+  const keyLink = el('button', {style:{display:'block',margin:'1.5rem auto 0',color:'#4b5563',fontSize:'0.7rem',background:'none',border:'none',cursor:'pointer',textDecoration:'underline',fontFamily:'Space Mono'}}, '🔑 Changer de clé API');
+  keyLink.addEventListener('click', () => { localStorage.removeItem('studio_gen_api_key'); state.apiKey=''; state.apiKeyValid=false; render(); });
+
+  inner.append(title, dnaWrap, desc, desc2, grid, cta, keyLink);
+  wrap.append(inner);
+  return wrap;
+}
+
+function renderLab() {
+  const wrap = el('div', {style:{display:'flex',flexDirection:'column',height:'100vh',overflow:'hidden'}});
+
+  // Header
+  const header = el('header', {style:{
+    height:'4rem',borderBottom:'1px solid rgba(255,255,255,0.05)',
+    display:'flex',alignItems:'center',justifyContent:'space-between',
+    padding:'0 2rem',background:'#0a0a0a',flexShrink:'0'
+  }});
+  const logo = el('div', {style:{display:'flex',alignItems:'center',gap:'0.75rem'}});
+  logo.append(
+    el('div', {style:{width:'2rem',height:'2rem',background:'linear-gradient(135deg,#3b82f6,#6366f1)',borderRadius:'0.5rem',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1.1rem'}}, '🧬'),
+    el('h1', {style:{fontSize:'1.25rem',fontWeight:'700',letterSpacing:'0.05em',color:'#f0f0f8'}}, 'STUDIO GÉNÉTIQUE')
+  );
+  const status = el('div', {style:{display:'flex',alignItems:'center',gap:'1.5rem',color:'#6b7280',fontSize:'0.875rem'}});
+  const dot = el('span', {style:{display:'inline-block',width:'0.5rem',height:'0.5rem',borderRadius:'50%',background:'#22c55e',marginRight:'0.5rem',animation:'pulse 2s infinite'}});
+  status.append(el('div',{}, dot, 'Système Opérationnel'),
+    el('div', {class:'mono', style:{background:'rgba(255,255,255,0.05)',padding:'0.25rem 0.75rem',borderRadius:'0.5rem',border:'1px solid rgba(255,255,255,0.1)',fontSize:'0.7rem'}}, 'CORE_GEN_v4.2.1'));
+  header.append(logo, status);
+
+  // Body
+  const body = el('div', {style:{display:'flex',flex:'1',overflow:'hidden'}});
+
+  // Sidebar
+  const sidebar = el('aside', {style:{width:'16rem',borderRight:'1px solid rgba(255,255,255,0.05)',background:'#0a0a0a',display:'flex',flexDirection:'column',padding:'1rem',flexShrink:'0',overflowY:'auto'}});
+  const homeBtn = el('button', {class:'mode-btn', style:{marginBottom:'1rem',fontSize:'0.75rem',fontWeight:'800',textTransform:'uppercase',letterSpacing:'0.1em'}}, '← ACCUEIL');
+  homeBtn.addEventListener('click', () => { state.view='home'; render(); });
+
+  const proto = el('div', {style:{fontSize:'0.625rem',color:'#6b7280',fontWeight:'800',textTransform:'uppercase',letterSpacing:'0.2em',marginBottom:'0.75rem',padding:'0 0.5rem',fontFamily:'Space Mono'}}, 'Protocole de Sélection');
+  sidebar.append(homeBtn, proto);
+
+  const modes = Object.values(APP_MODES);
+  modes.forEach(mode => {
+    const btn = el('button', {class:`mode-btn${state.activeMode===mode?' active':''}`});
+    btn.append(el('span', {style:{fontSize:'1.25rem'}}, MODE_ICONS[mode]), el('span',{}, MODE_LABELS[mode]));
+    btn.addEventListener('click', () => {
+      state.activeMode = mode;
+      state.results = [];
+      state.pregnancyStep = 1;
+      render();
+    });
+    sidebar.append(btn);
+  });
+
+  const conformite = el('div', {class:'glass', style:{marginTop:'auto',padding:'1rem',borderRadius:'1rem'}});
+  conformite.append(
+    el('h4', {style:{fontSize:'0.7rem',fontWeight:'700',color:'#d1d5db',marginBottom:'0.5rem',textTransform:'uppercase',letterSpacing:'0.05em'}}, 'Règle de Conformité'),
+    el('p', {style:{fontSize:'0.625rem',color:'#6b7280',lineHeight:'1.6',fontStyle:'italic'}}, '"Aucune optimisation esthétique. La génétique prime sur tout."')
+  );
+  sidebar.append(conformite);
+
+  // Main
+  const main = el('main', {style:{flex:'1',overflowY:'auto',background:'#0d0d0d',padding:'1.5rem'}});
+  const mainInner = el('div', {style:{maxWidth:'72rem',margin:'0 auto',height:'100%'}});
+
+  // Top bar
+  const topBar = el('div', {style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'2rem'}});
+  const modeTitle = el('h2', {style:{fontSize:'1.5rem',fontWeight:'300',letterSpacing:'0.2em',color:'#fff',textTransform:'uppercase'}});
+  modeTitle.append(document.createTextNode(MODE_LABELS[state.activeMode]+' '), el('span', {style:{color:'#3b82f6',fontSize:'0.7rem',verticalAlign:'super',marginLeft:'0.25rem',fontFamily:'Space Mono'}}, 'ADN v2.5'));
+
+  const tabs = el('div', {style:{display:'flex',gap:'0.5rem'}});
+  ['lab','gallery'].forEach(v => {
+    const t = el('button', {style:{
+      padding:'0.5rem 1rem',borderRadius:'9999px',fontSize:'0.875rem',border:'none',cursor:'pointer',
+      background: state.view===v?'#3b82f6':'rgba(255,255,255,0.05)',
+      color: state.view===v?'#fff':'#9ca3af',
+      fontFamily:'Syne,sans-serif',fontWeight:'500',transition:'all 0.2s'
+    }}, v==='lab'?'Générateur':'Arbre Génétique');
+    t.addEventListener('click', () => { state.view=v; render(); });
+    tabs.append(t);
+  });
+  topBar.append(modeTitle, tabs);
+
+  mainInner.append(topBar);
+
+  if (state.view === 'gallery') {
+    mainInner.append(renderGallery());
+  } else {
+    mainInner.append(renderLabGrid());
+  }
+
+  main.append(mainInner);
+  body.append(sidebar, main);
+  wrap.append(header, body);
+  return wrap;
+}
+
+function renderGallery() {
+  const wrap = el('div', {class:'glass', style:{padding:'3rem',borderRadius:'1.5rem',minHeight:'30rem',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',textAlign:'center',gap:'1rem'}});
+  wrap.append(
+    el('div', {style:{fontSize:'4rem',opacity:'0.2'}}, '🌳'),
+    el('h3', {style:{fontSize:'1.25rem',fontWeight:'300',color:'#d1d5db'}}, 'Archives Familiales'),
+    el('p', {style:{color:'#6b7280',fontSize:'0.875rem',maxWidth:'24rem',margin:'0 auto',lineHeight:'1.6'}}, "L'historique de vos générations sera listé ici. Pour le moment, vous n'avez pas encore validé de nouvelle identité génétique."),
+    el('button', {style:{marginTop:'2rem',padding:'0.75rem 1.5rem',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'1rem',background:'none',color:'#9ca3af',fontSize:'0.7rem',textTransform:'uppercase',letterSpacing:'0.15em',cursor:'pointer',fontFamily:'Syne'}}, 'Initialiser un nouvel Arbre')
+  );
+  return wrap;
+}
+
+function renderLabGrid() {
+  const grid = el('div', {style:{display:'grid',gridTemplateColumns:'1fr 2fr',gap:'2rem',height:'calc(100vh - 12rem)'}});
+  grid.append(renderControls(), renderResults());
+  return grid;
+}
+
+function renderControls() {
+  const wrap = el('div', {class:'glass', style:{padding:'1.5rem',borderRadius:'1.5rem',display:'flex',flexDirection:'column',gap:'1.5rem',overflowY:'auto'}});
+
+  // Title
+  wrap.append(el('h3', {style:{fontSize:'0.75rem',fontWeight:'800',color:'#3b82f6',textTransform:'uppercase',letterSpacing:'0.2em',paddingBottom:'0.75rem',borderBottom:'1px solid rgba(255,255,255,0.05)'}}, 'Séquençage ADN'));
+
+  // Image uploaders
+  const uploaderSection = el('div');
+  const m = state.activeMode;
+
+  if ([APP_MODES.GRANDPARENT, APP_MODES.UNCLE_AUNT, APP_MODES.COUSIN].includes(m)) {
+    uploaderSection.append(
+      ImageUploader(img => { state.parent1=img; render(); }, state.parent1, state.familySide==='mother'?'Photo Mère':'Photo Père'),
+      el('p', {style:{fontSize:'0.6rem',color:'#4b5563',fontStyle:'italic',textAlign:'center',marginTop:'0.5rem',fontFamily:'Space Mono'}}, 'Importez la photo du parent servant de lien direct.')
+    );
+  } else if ([APP_MODES.PREGNANCY, APP_MODES.EVOLUTION].includes(m)) {
+    uploaderSection.append(ImageUploader(img => { state.parent1=img; render(); }, state.parent1, m===APP_MODES.PREGNANCY?'Photo Mère':'Photo Source'));
+  } else {
+    const row = el('div', {style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.75rem'}});
+    row.append(
+      ImageUploader(img => { state.parent1=img; render(); }, state.parent1, 'Mère'),
+      ImageUploader(img => { state.parent2=img; render(); }, state.parent2, 'Père')
+    );
+    uploaderSection.append(row);
+  }
+  wrap.append(uploaderSection);
+
+  // Params section
+  const paramsSection = el('div', {style:{borderTop:'1px solid rgba(255,255,255,0.05)',paddingTop:'1rem',overflowY:'auto',maxHeight:'55vh',display:'flex',flexDirection:'column',gap:'1.25rem'}});
+  paramsSection.append(el('h3', {style:{fontSize:'0.75rem',fontWeight:'800',color:'#3b82f6',textTransform:'uppercase',letterSpacing:'0.2em'}}, 'Paramètres Génétiques'));
+
+  // Mode-specific params
+  if ([APP_MODES.CHILD, APP_MODES.PREGNANCY, APP_MODES.COUSIN].includes(m)) paramsSection.append(renderSexSelector());
+  if (m === APP_MODES.EVOLUTION) paramsSection.append(renderEvolutionParams());
+  if (m === APP_MODES.GRANDPARENT) paramsSection.append(renderFamilyMemberControls('Grand-Père','Grand-Mère'));
+  if (m === APP_MODES.UNCLE_AUNT) paramsSection.append(renderFamilyMemberControls('Oncle','Tante'));
+  if (m === APP_MODES.COUSIN) paramsSection.append(renderFamilyMemberControls('Cousin','Cousine'));
+  if (m === APP_MODES.SIBLING) paramsSection.append(renderSiblingParams());
+  if (m === APP_MODES.CHILD) paramsSection.append(renderChildParams());
+  if (m === APP_MODES.PREGNANCY) paramsSection.append(renderPregnancyParams());
+
+  wrap.append(paramsSection);
+
+  // Generate button
+  const btnText = state.pregnancyStep === 3 ? 'Générer la Naissance' : "Générer l'Identité";
+  const genBtn = el('button', {class:'gen-btn'});
+
+  if (state.isGenerating) {
+    genBtn.disabled = true;
+    const spinner = el('span', {style:{display:'inline-block',width:'1rem',height:'1rem',border:'2px solid #4b5563',borderTopColor:'transparent',borderRadius:'50%',animation:'spin-slow 0.8s linear infinite',marginRight:'0.5rem',verticalAlign:'middle'}});
+    genBtn.append(spinner, 'Séquençage...');
+    genBtn.style.background='#1f2937'; genBtn.style.color='#4b5563';
+  } else {
+    genBtn.textContent = btnText;
+    genBtn.addEventListener('click', handleGenerate);
+  }
+
+  // Birth button
+  if (m === APP_MODES.PREGNANCY && state.pregnancyStep === 2) {
+    const birthBtn = el('button', {style:{
+      width:'100%',padding:'1rem',background:'rgba(34,197,94,0.1)',color:'#86efac',
+      border:'1px solid rgba(34,197,94,0.2)',borderRadius:'1rem',fontSize:'0.625rem',
+      fontWeight:'800',textTransform:'uppercase',letterSpacing:'0.15em',cursor:'pointer',fontFamily:'Syne'
+    }}, 'DÉCLENCHER LA NAISSANCE');
+    birthBtn.addEventListener('click', () => { state.pregnancyStep=3; render(); });
+    wrap.append(birthBtn);
+  }
+
+  wrap.append(genBtn);
+  return wrap;
+}
+
+function renderSexSelector() {
+  const wrap = el('div', {class:'panel-block space-y-3'});
+  wrap.append(el('div', {class:'section-header'}, 'Sexe Biologique (XX/XY)'));
+  const row = el('div', {style:{display:'flex',gap:'0.75rem'}});
+  row.append(
+    SexButton('👧','Fille (XX)', state.selectedSex==='female', () => { state.selectedSex='female'; render(); }),
+    SexButton('👦','Garçon (XY)', state.selectedSex==='male', () => { state.selectedSex='male'; render(); })
+  );
+  wrap.append(row);
+  return wrap;
+}
+
+function renderEyeColorSelector() {
+  const wrap = el('div', {class:'panel-block'});
+  wrap.append(el('div', {class:'section-header', style:{marginBottom:'0.75rem'}}, 'Couleur des Yeux'));
+  const row = el('div', {style:{display:'flex',flexWrap:'wrap',gap:'0.5rem'}});
+  EYE_COLORS.forEach(c => {
+    row.append(TagButton(c, state.selectedEyeColor===c, () => { state.selectedEyeColor=c; render(); }));
+  });
+  wrap.append(row);
+  return wrap;
+}
+
+function renderLienGenetique() {
+  const wrap = el('div', {class:'panel-block'});
+  wrap.append(el('div', {class:'section-header'}, 'Origine Génétique'));
+  const row = el('div', {style:{display:'flex',gap:'0.5rem',marginTop:'0.5rem'}});
+  ['mother','father'].forEach(side => {
+    const btn = el('button', {style:{
+      flex:'1',padding:'0.5rem',fontSize:'0.625rem',fontWeight:'800',textTransform:'uppercase',
+      letterSpacing:'0.1em',borderRadius:'0.75rem',border:'none',cursor:'pointer',
+      fontFamily:'Space Mono',
+      background:state.familySide===side?'#3b82f6':'rgba(255,255,255,0.05)',
+      color:state.familySide===side?'#fff':'#6b7280',
+      transition:'all 0.2s'
+    }}, side==='mother'?'CÔTÉ MÈRE':'CÔTÉ PÈRE');
+    btn.addEventListener('click', () => { state.familySide=side; render(); });
+    row.append(btn);
+  });
+  wrap.append(row);
+  return wrap;
+}
+
+function renderRessemblance() {
+  const wrap = el('div', {class:'panel-block'});
+  wrap.append(
+    Slider('Ressemblance Familiale', state.familyResemblance, 0, 100, v => { state.familyResemblance=v; }, {labels:['Faible','Réaliste','Forte']}),
+    el('p', {style:{fontSize:'0.6rem',color:'#4b5563',fontStyle:'italic',marginTop:'0.5rem',lineHeight:'1.5',fontFamily:'Space Mono'}}, "Définit l'héritage direct des traits de la branche familiale choisie.")
+  );
+  return wrap;
+}
+
+function renderFamilyMemberControls(roleM, roleF) {
+  const wrap = el('div', {style:{display:'flex',flexDirection:'column',gap:'1rem'}});
+  wrap.append(renderLienGenetique());
+
+  const checks = el('div', {class:'panel-block', style:{display:'flex',justifyContent:'space-around',alignItems:'center',padding:'0.75rem'}});
+  const makeCb = (label, checked, key) => {
+    const lbl = el('label', {style:{display:'flex',alignItems:'center',gap:'0.5rem',cursor:'pointer'}});
+    const cb = el('input', {type:'checkbox', checked:checked?'true':''}); cb.checked = checked;
+    cb.addEventListener('change', e => { state.relationChoice[key]=e.target.checked; render(); });
+    lbl.append(cb, el('span', {style:{fontSize:'0.75rem',color:'#d1d5db'}}, label));
+    return lbl;
+  };
+  checks.append(makeCb(roleM, state.relationChoice.male, 'male'), makeCb(roleF, state.relationChoice.female, 'female'));
+  wrap.append(checks);
+
+  const ages = el('div', {style:{display:'flex',flexDirection:'column',gap:'0.75rem'}});
+  const isGP = state.activeMode === APP_MODES.GRANDPARENT;
+  if (state.relationChoice.male) {
+    ages.append(Slider(`Âge ${roleM}`, isGP?state.gpAges.grandpa:state.relationAges.male, isGP?55:0, 99,
+      v => isGP?state.gpAges.grandpa=v:state.relationAges.male=v, {suffix:' ans'}));
+  }
+  if (state.relationChoice.female) {
+    ages.append(Slider(`Âge ${roleF}`, isGP?state.gpAges.grandma:state.relationAges.female, isGP?55:0, 99,
+      v => isGP?state.gpAges.grandma=v:state.relationAges.female=v, {suffix:' ans'}));
+  }
+  wrap.append(ages);
+  wrap.append(renderRessemblance());
+  return wrap;
+}
+
+function renderSiblingParams() {
+  const wrap = el('div', {class:'panel-block', style:{display:'flex',flexDirection:'column',gap:'1rem'}});
+  const checks = el('div', {style:{display:'flex',justifyContent:'space-around',marginBottom:'0.5rem'}});
+  const makeCb = (label, checked, key) => {
+    const lbl = el('label', {style:{display:'flex',alignItems:'center',gap:'0.5rem',cursor:'pointer'}});
+    const cb = el('input', {type:'checkbox'}); cb.checked = checked;
+    cb.addEventListener('change', e => { state.siblingChoice[key]=e.target.checked; render(); });
+    lbl.append(cb, el('span', {style:{fontSize:'0.75rem',color:'#d1d5db'}}, label));
+    return lbl;
+  };
+  checks.append(makeCb('Frère',state.siblingChoice.brother,'brother'), makeCb('Sœur',state.siblingChoice.sister,'sister'));
+  wrap.append(checks);
+  if (state.siblingChoice.brother) wrap.append(Slider('Âge du Frère',state.siblingAges.brother,1,17,v=>state.siblingAges.brother=v,{suffix:' ans'}));
+  if (state.siblingChoice.sister) wrap.append(Slider('Âge de la Sœur',state.siblingAges.sister,1,17,v=>state.siblingAges.sister=v,{suffix:' ans'}));
+  wrap.append(renderRessemblance());
+  return wrap;
+}
+
+function renderChildParams() {
+  const wrap = el('div', {class:'panel-block', style:{display:'flex',flexDirection:'column',gap:'1rem'}});
+  wrap.append(
+    Slider("Âge de l'Enfant", state.childAge, 0, 17, v => state.childAge=v, {suffix:' ans'}),
+    Slider('Héritage Dominant', state.dominance, 0, 100, v => state.dominance=v, {labels:['Mère','Mixte','Père']}),
+    renderRessemblance()
+  );
+  return wrap;
+}
+
+function renderPregnancyParams() {
+  const wrap = el('div', {style:{display:'flex',flexDirection:'column',gap:'1rem'}});
+
+  // Section A
+  const secA = el('div', {class:'panel-block', style:{display:'flex',flexDirection:'column',gap:'1rem'}});
+  secA.append(el('h4', {style:{fontSize:'0.6rem',color:'#6b7280',fontWeight:'800',textTransform:'uppercase',letterSpacing:'0.2em',fontFamily:'Space Mono'}}, 'A. Données Initiales'));
+  secA.append(Slider('Poids avant grossesse', state.initialWeight, 40, 120, v => state.initialWeight=v, {suffix:' kg'}));
+  const row1 = el('div', {style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem'}});
+  row1.append(Slider('Tour cuisse', state.initialThigh, 40, 85, v => state.initialThigh=v, {suffix:' cm'}));
+  row1.append(Slider('Tour poitrine', state.initialBust, 70, 120, v => state.initialBust=v, {suffix:' cm'}));
+  secA.append(row1);
+
+  const cupRow = el('div');
+  cupRow.append(el('label', {style:{fontSize:'0.625rem',color:'#6b7280',fontWeight:'800',textTransform:'uppercase',letterSpacing:'0.15em',display:'block',marginBottom:'0.5rem',fontFamily:'Space Mono'}}, 'Bonnet initial'));
+  const cups = el('div', {style:{display:'flex',flexWrap:'wrap',gap:'0.25rem'}});
+  ['A','B','C','D','E','F+'].forEach(c => {
+    cups.append(TagButton(c, state.initialCupSize===c, () => { state.initialCupSize=c; render(); }));
+  });
+  cupRow.append(cups);
+  secA.append(cupRow);
+  wrap.append(secA);
+
+  // Section B
+  const secB = el('div', {style:{padding:'1rem',background:'rgba(59,130,246,0.05)',borderRadius:'1rem',border:'1px solid rgba(59,130,246,0.15)',display:'flex',flexDirection:'column',gap:'1rem',boxShadow:'0 0 20px rgba(59,130,246,0.06)'}});
+  const bTitle = el('h4', {style:{fontSize:'0.625rem',color:'#3b82f6',fontWeight:'800',textTransform:'uppercase',letterSpacing:'0.2em',display:'flex',alignItems:'center',gap:'0.5rem',fontFamily:'Space Mono'}});
+  bTitle.append('B. ÉVOLUTION CORPORELLE ', el('span', {style:{width:'0.375rem',height:'0.375rem',borderRadius:'50%',background:'#3b82f6',display:'inline-block',animation:'pulse 2s infinite'}}));
+  secB.append(bTitle);
+  secB.append(Slider('Stade de la grossesse', state.pregMonth, 1, 9, v => { state.pregMonth=v; state.weightGain=weightMapForMonth(v); render(); }, {suffix:' mois'}));
+
+  const weightSlider = Slider('POIDS GLOBAL (VARIABLE MAÎTRE)', state.initialWeight+state.weightGain, state.initialWeight, state.initialWeight+35,
+    v => { state.weightGain = v-state.initialWeight; }, {suffix:' kg'});
+  const gainNote = el('div', {style:{display:'flex',justifyContent:'space-between',marginTop:'0.25rem',padding:'0 0.25rem'}});
+  gainNote.append(
+    el('span', {style:{fontSize:'0.6rem',color:'rgba(59,130,246,0.6)',fontFamily:'Space Mono'}}, `Gain : +${state.weightGain.toFixed(1)} kg`),
+    el('span', {style:{fontSize:'0.6rem',color:'rgba(59,130,246,0.6)',fontFamily:'Space Mono'}}, `Cuisse : +${(state.weightGain*0.45).toFixed(1)} cm`)
+  );
+  secB.append(weightSlider, gainNote);
+
+  const poitBlock = el('div', {style:{padding:'0.75rem',background:'rgba(255,255,255,0.03)',borderRadius:'0.75rem',border:'1px solid rgba(255,255,255,0.05)',display:'flex',flexDirection:'column',gap:'0.75rem'}});
+  poitBlock.append(el('h5', {style:{fontSize:'0.6rem',color:'#6b7280',fontWeight:'800',textTransform:'uppercase',letterSpacing:'0.15em',fontFamily:'Space Mono'}}, 'ÉVOLUTION POITRINE'));
+  poitBlock.append(Slider('Volume mammaire', state.breastVolume, 0, 2, v => state.breastVolume=v, {labels:['Légère','Naturelle','Marquée']}));
+  const bfRow = el('div', {style:{display:'flex',justifyContent:'space-between',alignItems:'center',paddingTop:'0.25rem'}});
+  bfRow.append(el('label', {style:{fontSize:'0.625rem',color:'#9ca3af',fontWeight:'800',textTransform:'uppercase',letterSpacing:'0.05em'}}, 'Préparation allaitement'));
+  const bfBtn = el('button', {style:{
+    padding:'0.25rem 0.75rem',borderRadius:'9999px',fontSize:'0.6rem',fontWeight:'800',
+    textTransform:'uppercase',border:'none',cursor:'pointer',transition:'all 0.2s',fontFamily:'Space Mono',
+    background:state.breastfeedingPrep?'#3b82f6':'rgba(255,255,255,0.05)',
+    color:state.breastfeedingPrep?'#fff':'#6b7280'
+  }}, state.breastfeedingPrep?'ACTIVÉ':'OFF');
+  bfBtn.addEventListener('click', () => { state.breastfeedingPrep=!state.breastfeedingPrep; render(); });
+  bfRow.append(bfBtn);
+  poitBlock.append(bfRow);
+  secB.append(poitBlock);
+  secB.append(Slider('Élargissement du bassin', state.pelvisWidening, 0, 2, v => state.pelvisWidening=v, {labels:['Faible','Moyen','Marqué']}));
+  wrap.append(secB);
+
+  // Vergetures
+  wrap.append(renderStretchMarks());
+
+  // Amber note
+  const note = el('div', {class:'amber-note'});
+  note.append(
+    el('p', {style:{fontSize:'0.625rem',color:'rgba(245,158,11,0.8)',fontWeight:'800',textTransform:'uppercase',letterSpacing:'0.15em',fontFamily:'Space Mono',marginBottom:'0.25rem'}}, '🧬 COHÉRENCE GLOBALE STRICTE'),
+    el('p', {style:{fontSize:'0.6rem',color:'#6b7280',lineHeight:'1.6',fontStyle:'italic',fontFamily:'Space Mono'}}, '"Ventre ↑, Cuisses ↑, Bassin ↑, Poitrine ↑, Bras ↑, Joues ↑."')
+  );
+  wrap.append(note);
+  return wrap;
+}
+
+function renderStretchMarks() {
+  const wrap = el('div', {class:'panel-block', style:{display:'flex',flexDirection:'column',gap:'1rem'}});
+  wrap.append(Slider('Intensité des vergetures', state.stretchIntensity, 0, 3, v => { state.stretchIntensity=v; render(); }, {labels:['Aucune','Légères','Moyennes','Marquées']}));
+  if (state.stretchIntensity > 0) {
+    const zoneWrap = el('div', {style:{paddingTop:'0.5rem',display:'flex',flexDirection:'column',gap:'0.5rem'}});
+    zoneWrap.append(el('label', {style:{fontSize:'0.625rem',color:'#6b7280',fontWeight:'800',textTransform:'uppercase',letterSpacing:'0.15em',fontFamily:'Space Mono'}}, 'Zones actives'));
+    const zones = el('div', {style:{display:'flex',flexWrap:'wrap',gap:'0.5rem'}});
+    ['Ventre','Hanches','Cuisses','Fesses','Dos','Poitrine'].forEach(z => {
+      zones.append(TagButton(z, state.stretchZones.includes(z), () => {
+        state.stretchZones = state.stretchZones.includes(z) ? state.stretchZones.filter(x=>x!==z) : [...state.stretchZones,z];
+        render();
+      }));
+    });
+    zoneWrap.append(zones);
+    wrap.append(zoneWrap);
+  }
+  return wrap;
+}
+
+function renderEvolutionParams() {
+  const wrap = el('div', {style:{display:'flex',flexDirection:'column',gap:'1.25rem',padding:'1.25rem',background:'rgba(59,130,246,0.04)',borderRadius:'1rem',border:'1px solid rgba(59,130,246,0.15)'}});
+  wrap.append(el('h3', {style:{fontSize:'0.75rem',fontWeight:'800',color:'#3b82f6',textTransform:'uppercase',letterSpacing:'0.2em'}}, '🧬 Évolution temporelle'));
+
+  // Sex
+  const sexRow = el('div', {style:{display:'flex',gap:'0.5rem'}});
+  sexRow.append(
+    SexButton('👧','Fille / Femme (XX)',state.selectedSex==='female',()=>{state.selectedSex='female';render();}),
+    SexButton('👦','Garçon / Homme (XY)',state.selectedSex==='male',()=>{state.selectedSex='male';render();})
+  );
+  wrap.append(el('label',{style:{fontSize:'0.625rem',color:'#3b82f6',fontWeight:'800',textTransform:'uppercase',letterSpacing:'0.2em',fontFamily:'Space Mono'}},'Sexe biologique'), sexRow);
+
+  wrap.append(renderEyeColorSelector());
+
+  // Age input
+  const ageBlock = el('div', {class:'panel-block', style:{display:'flex',flexDirection:'column',gap:'0.75rem'}});
+  const ageHeader = el('label', {style:{fontSize:'0.625rem',color:'#3b82f6',fontWeight:'800',textTransform:'uppercase',letterSpacing:'0.2em',fontFamily:'Space Mono',display:'flex',justifyContent:'space-between',alignItems:'center'}});
+  ageHeader.append('🕰️ Indique l\'âge (libre)');
+  if (state.evolutionAgeInput) ageHeader.append(el('span', {style:{fontSize:'0.6rem',background:'rgba(34,197,94,0.15)',color:'#86efac',padding:'0.125rem 0.5rem',borderRadius:'0.5rem',border:'1px solid rgba(34,197,94,0.2)',fontFamily:'Space Mono'}}, '✅ Pris en compte'));
+
+  const ageInp = el('input', {
+    type:'text', value:state.evolutionAgeInput,
+    placeholder:'Ex : 0 mois, 7 mois, 18 mois, 2 ans, 27 ans, 99 ans',
+    style:{
+      width:'100%',background:'rgba(0,0,0,0.4)',border:'1px solid rgba(255,255,255,0.1)',
+      borderRadius:'0.75rem',padding:'0.75rem 1rem',color:'#fff',fontSize:'0.75rem',
+      outline:'none',fontFamily:'Space Mono',boxSizing:'border-box'
+    }
+  });
+  ageInp.addEventListener('focus', e => e.target.style.borderColor='#3b82f6');
+  ageInp.addEventListener('blur', e => e.target.style.borderColor='rgba(255,255,255,0.1)');
+  ageInp.addEventListener('input', e => { state.evolutionAgeInput=e.target.value; render(); });
+
+  const ageBtns = el('div', {style:{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'0.5rem'}});
+  ['0 mois','7 mois','11 mois','15 mois','18 mois','2 ans','12 ans','18 ans','25 ans','40 ans','60 ans','99 ans'].forEach(age => {
+    const b = el('button', {style:{
+      padding:'0.375rem',borderRadius:'0.5rem',border:'1px solid',
+      fontSize:'0.6rem',fontWeight:'700',cursor:'pointer',transition:'all 0.2s',fontFamily:'Space Mono',
+      background: state.evolutionAgeInput===age?'#3b82f6':'rgba(255,255,255,0.05)',
+      borderColor: state.evolutionAgeInput===age?'#3b82f6':'rgba(255,255,255,0.05)',
+      color: state.evolutionAgeInput===age?'#fff':'#6b7280'
+    }}, age);
+    b.addEventListener('click', () => { state.evolutionAgeInput=age; render(); });
+    ageBtns.append(b);
+  });
+  ageBlock.append(ageHeader, ageInp, ageBtns);
+  wrap.append(ageBlock);
+
+  const rule = el('div', {style:{padding:'0.75rem 1rem',borderLeft:'2px solid #3b82f6',background:'rgba(59,130,246,0.05)',borderRadius:'0 0.5rem 0.5rem 0'}});
+  rule.append(el('p', {style:{fontSize:'0.6rem',color:'#9ca3af',fontStyle:'italic',lineHeight:'1.5',fontFamily:'Space Mono'}}, '"RÈGLE ABSOLUE : L\'âge indiqué est PRIORITAIRE. Morphologie, proportions, posture et texture peau sont adaptées biologiquement."'));
+  wrap.append(rule);
+  return wrap;
+}
+
+function renderResults() {
+  const wrap = el('div', {class:'glass', style:{borderRadius:'1.5rem',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'flex-start',overflowY:'auto',border:'2px solid rgba(255,255,255,0.05)',minHeight:'500px',padding:'1.5rem',scrollbarWidth:'none'}});
+
+  if (state.isGenerating) {
+    wrap.append(renderProgressView());
+  } else if (state.results.length > 0) {
+    const grid = el('div', {style:{width:'100%',display:'grid',gridTemplateColumns:state.results.length===1?'1fr':'1fr 1fr',gap:'1.5rem',animation:'fade-in 0.7s ease forwards'}});
+    state.results.forEach((imgSrc, idx) => {
+      const imgWrap = el('div', {class:'result-img-wrap', style:state.results.length===1?{maxWidth:'28rem',margin:'0 auto'}:{}});
+      const img = el('img', {src:imgSrc, alt:''});
+      const overlay = el('div', {class:'result-overlay'});
+      const dlBtn = el('button', {style:{background:'#fff',color:'#000',padding:'0.75rem 1.5rem',borderRadius:'9999px',border:'none',cursor:'pointer',display:'flex',alignItems:'center',gap:'0.5rem',fontWeight:'800',fontFamily:'Syne',transition:'all 0.2s'}});
+      dlBtn.append(el('span',{style:{fontSize:'1.25rem'}},'⬇️'), el('span',{style:{fontSize:'0.75rem',textTransform:'uppercase',letterSpacing:'0.1em'}},'Download'));
+      dlBtn.addEventListener('click', () => {
+        const a = document.createElement('a');
+        a.href = imgSrc;
+        a.download = `studio_genetique_${state.activeMode}_${idx}.png`;
+        a.click();
+      });
+      overlay.append(dlBtn);
+      imgWrap.append(img, overlay);
+      imgWrap.append(el('div', {class:'result-label'}, getResultLabel(idx, state.results.length)));
+      grid.append(imgWrap);
+    });
+    wrap.append(grid);
+  } else {
+    const empty = el('div', {style:{flex:'1',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',textAlign:'center',gap:'1rem',padding:'3rem',opacity:'0.5',height:'100%'}});
+    empty.append(
+      el('div', {style:{fontSize:'4rem',marginBottom:'1.5rem',filter:'grayscale(1)'}}, '🧬'),
+      el('h2', {style:{fontSize:'1.25rem',fontWeight:'300',color:'#9ca3af',textTransform:'uppercase',letterSpacing:'0.2em'}}, 'STATION ADN'),
+      el('p', {style:{color:'#4b5563',fontSize:'0.875rem',maxWidth:'20rem',lineHeight:'1.6',fontStyle:'italic'}}, '"Aucune optimisation esthétique. La génétique prime sur tout."')
+    );
+    wrap.append(empty);
+  }
+  return wrap;
+}
+
+function renderProgressView() {
+  const steps = [
+    "Numérisation de l'ADN Visage","Identification des traits dominants",
+    "Simulation de la structure osseuse","Application de la pigmentation épidermique",
+    "Vérification de la continuité génétique","Finalisation du rendu photoréaliste"
+  ];
+  const wrap = el('div', {style:{display:'flex',flexDirection:'column',alignItems:'center',gap:'2rem',padding:'3rem',width:'100%',maxWidth:'28rem'}});
+
+  const iconWrap = el('div', {style:{position:'relative',width:'8rem',height:'8rem',display:'flex',alignItems:'center',justifyContent:'center'}});
+  const ping = el('div', {style:{position:'absolute',inset:'0',border:'4px solid rgba(59,130,246,0.2)',borderRadius:'50%',animation:'ping 1.5s cubic-bezier(0,0,0.2,1) infinite'}});
+  const pulse = el('div', {style:{position:'absolute',inset:'0',border:'2px solid rgba(59,130,246,0.4)',borderRadius:'50%',animation:'pulse 2s infinite'}});
+  const dna = el('div', {style:{fontSize:'2.5rem'}}, '🧬');
+  iconWrap.append(ping, pulse, dna);
+
+  const barWrap = el('div', {style:{width:'100%'}});
+  const bar = el('div', {style:{height:'4px',background:'rgba(255,255,255,0.05)',borderRadius:'4px',overflow:'hidden',marginBottom:'1rem'}});
+  const progress = el('div', {class:'progress-bar-inner', style:{width:`${((state.generatingStep+1)/steps.length)*100}%`}});
+  bar.append(progress);
+
+  const stepText = el('p', {style:{fontSize:'0.875rem',fontWeight:'700',color:'#e5e7eb',textAlign:'center',animation:'pulse 2s infinite',marginBottom:'0.25rem'}}, steps[state.generatingStep]+'...');
+  const idText = el('p', {style:{fontSize:'0.6rem',color:'#4b5563',fontFamily:'Space Mono',textAlign:'center'}}, `ID_SESSION: ${Math.random().toString(36).substr(2,9).toUpperCase()}`);
+  barWrap.append(bar, stepText, idText);
+
+  wrap.append(iconWrap, barWrap);
+  return wrap;
+}
+
+// ===================== EVENT HANDLER =====================
+async function handleGenerate() {
+  const m = state.activeMode;
+  if ([APP_MODES.SIBLING, APP_MODES.CHILD].includes(m) && (!state.parent1||!state.parent2)) return alert("Photos des deux parents obligatoires.");
+  if ([APP_MODES.GRANDPARENT, APP_MODES.UNCLE_AUNT, APP_MODES.COUSIN].includes(m) && !state.parent1) return alert("Photo du parent obligatoire.");
+  if ([APP_MODES.PREGNANCY, APP_MODES.EVOLUTION].includes(m) && !state.parent1) return alert("Photo source obligatoire.");
+
+  state.isGenerating = true;
+  state.results = [];
+  state.generatingStep = 0;
+  render();
+
+  // Progress simulation
+  const interval = setInterval(() => {
+    state.generatingStep = (state.generatingStep + 1) % 6;
+    const stepEl = document.querySelector('.progress-bar-inner');
+    if (stepEl) stepEl.style.width = `${((state.generatingStep+1)/6)*100}%`;
+  }, 2500);
+
+  try {
+    const prompt = buildPrompt();
+    const images = await callGeminiAPI(prompt, state.parent1, state.parent2);
+    state.results = images;
+    if (m === APP_MODES.PREGNANCY && state.pregnancyStep === 1) state.pregnancyStep = 2;
+  } catch (err) {
+    if (err.message === 'API_KEY_ERROR') {
+      alert('Clé API invalide ou expirée. Veuillez en changer.');
+      localStorage.removeItem('studio_gen_api_key');
+      state.apiKeyValid = false;
+    } else {
+      alert('La génération a échoué : ' + err.message);
+    }
+  } finally {
+    clearInterval(interval);
+    state.isGenerating = false;
+    render();
+  }
+}
+
+// ===================== INIT =====================
+render();
+</script>
+</body>
+</html>
