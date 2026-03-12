@@ -953,19 +953,24 @@ async function handleGenerate() {
       humanPerceptionMode
     };
 
-    let base64Url = await generatePOVImage(settings);
+    const base64Url = await generatePOVImage(settings);
 
-    // PNG natif — pas de conversion, qualite maximale preservee
-    const byteString = atob(base64Url.split(',')[1]);
-    base64Url = null;
-    const ab = new ArrayBuffer(byteString.length);
-    const ia = new Uint8Array(ab);
-    for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
-    const blobUrl = URL.createObjectURL(new Blob([ab], { type: 'image/png' }));
+    // iOS Safari : on garde le data URL base64 directement (blob URLs instables sur iOS)
+    // Desktop : blob URL pour économiser la mémoire
+    let imageUrl;
+    if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+      imageUrl = base64Url; // base64 direct — stable sur iOS
+    } else {
+      const byteString = atob(base64Url.split(',')[1]);
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+      for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+      imageUrl = URL.createObjectURL(new Blob([ab], { type: 'image/png' }));
+    }
 
-    const newImg = { id: Date.now().toString(), url: blobUrl, prompt: subject, aspectRatio: currentAspectRatio, timestamp: Date.now() };
+    const newImg = { id: Date.now().toString(), url: imageUrl, prompt: subject, aspectRatio: currentAspectRatio, timestamp: Date.now() };
 
-    // Max 5 images, révoquer la plus ancienne (identique à App.tsx)
+    // Max 5 images, révoquer la plus ancienne
     if (results.length >= 5) {
       const last = results[results.length - 1];
       dbDelete(last.id).catch(console.error);
@@ -1055,9 +1060,14 @@ function renderResults() {
 }
 
 function downloadImg(url, idx) {
-  const a = document.createElement('a');
-  a.href = url; a.download = `studio-pov-capture-${idx}.png`;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+    // iOS : ouvrir dans nouvel onglet -> appui long -> Enregistrer
+    window.open(url, '_blank');
+  } else {
+    const a = document.createElement('a');
+    a.href = url; a.download = `studio-pov-capture-${idx}.png`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  }
 }
 function downloadAll() { results.forEach((res, idx) => setTimeout(() => downloadImg(res.url, idx+1), idx * 300)); }
 async function resetAll() {
