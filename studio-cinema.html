@@ -1,4 +1,4 @@
-studio-cinema.h<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -35,12 +35,28 @@ studio-cinema.h<!DOCTYPE html>
   .dur-btn { transition:all 0.2s; }
   .dur-btn.selected { background:#fff; color:#000; border-color:#fff; transform:scale(1.02); }
   .dur-btn.unselected { border-color:rgba(255,255,255,0.1); color:rgba(255,255,255,0.3); }
-  video { border-radius:2.5rem; background:#000; }
+  video { background:#000; }
   .face-overlay { position:absolute; inset:0; background:rgba(0,0,0,0.85); display:flex; align-items:center; justify-content:center; gap:1rem; padding:1.5rem; backdrop-filter:blur(8px); border-radius:2rem; z-index:10; }
   .camera-controls { position:absolute; bottom:1rem; left:0; right:0; display:flex; justify-content:center; gap:0.75rem; }
   .portrait-hover-overlay { position:absolute; inset:0; background:rgba(0,0,0,0.5); opacity:0; transition:opacity 0.2s; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0.5rem; border-radius:1.8rem; }
   #portraitLoaded:hover .portrait-hover-overlay { opacity:1; }
   .hidden { display:none !important; }
+
+  /* KEY INPUT */
+  #apiKeyInput {
+    width:100%;
+    background:rgba(255,255,255,0.05);
+    border:1px solid rgba(255,255,255,0.15);
+    border-radius:1rem;
+    padding:1rem 3rem 1rem 1.25rem;
+    color:#fff;
+    font-family:'DM Sans',sans-serif;
+    font-size:0.95rem;
+    outline:none;
+    transition: border-color 0.2s;
+  }
+  #apiKeyInput:focus { border-color: rgba(255,255,255,0.4); }
+  #apiKeyInput::placeholder { color: rgba(255,255,255,0.25); }
 </style>
 </head>
 <body>
@@ -57,39 +73,37 @@ studio-cinema.h<!DOCTYPE html>
     <h2 class="serif" style="font-size:2rem;font-weight:700;margin:0 0 0.5rem;">Activer Production</h2>
     <p style="color:rgba(255,255,255,0.4);font-size:0.85rem;line-height:1.6;margin-bottom:2rem;">Entre ta clé API Google AI Studio. Elle est utilisée directement depuis ton navigateur — <strong style="color:rgba(255,255,255,0.7);">jamais envoyée à un serveur tiers.</strong></p>
     <label style="font-size:0.65rem;font-weight:900;text-transform:uppercase;letter-spacing:0.2em;color:rgba(255,255,255,0.4);display:block;margin-bottom:0.75rem;">Clé API Google AI Studio</label>
-    <div style="position:relative;margin-bottom:1rem;">
-      <input id="apiKeyInput" type="password" placeholder="AIza..." autocomplete="off"
-        style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:1rem;padding:1rem 3rem 1rem 1.25rem;color:#fff;font-family:'DM Sans',sans-serif;font-size:0.9rem;outline:none;"
-        oninput="validateKeyInput()"/>
-      <button onclick="toggleKeyVisibility()" style="position:absolute;right:1rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:rgba(255,255,255,0.4);">
+    <div style="position:relative;margin-bottom:0.75rem;">
+      <input id="apiKeyInput" type="password" placeholder="AIza..." autocomplete="off" spellcheck="false">
+      <button id="eyeBtn" style="position:absolute;right:1rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:rgba(255,255,255,0.4);padding:0;">
         <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
       </button>
     </div>
-    <div id="keyError" class="hidden" style="color:#f87171;font-size:0.75rem;margin-bottom:1rem;font-weight:600;">⚠ Format invalide. La clé doit commencer par "AIza".</div>
+    <div id="keyError" class="hidden" style="color:#f87171;font-size:0.75rem;margin-bottom:0.75rem;font-weight:600;">⚠ Format invalide. La clé doit commencer par "AIza".</div>
     <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:1rem;padding:1rem;margin-bottom:1.5rem;">
       <p style="font-size:0.72rem;color:rgba(255,255,255,0.35);line-height:1.6;margin:0;">
-        💡 <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" style="color:rgba(255,255,255,0.5);text-decoration:underline;">Comment obtenir une clé ?</a> — Va sur Google AI Studio → Compte → API Keys. Les crédits décomptent sur <strong style="color:rgba(255,255,255,0.6);">ton quota.</strong>
+        💡 <a href="https://aistudio.google.com/apikey" target="_blank" style="color:rgba(255,255,255,0.6);text-decoration:underline;">Obtenir ma clé sur Google AI Studio</a> — Les crédits décomptent directement sur <strong style="color:rgba(255,255,255,0.6);">ton quota.</strong>
       </p>
     </div>
-    <button id="activateBtn" onclick="activateKey()" disabled style="width:100%;padding:1.1rem;border-radius:1rem;font-weight:900;font-size:0.85rem;text-transform:uppercase;letter-spacing:0.15em;cursor:pointer;background:#fff;color:#000;border:none;opacity:0.3;">Activer la Production Master</button>
-    <p style="text-align:center;margin-top:1rem;font-size:0.65rem;color:rgba(255,255,255,0.2);text-transform:uppercase;letter-spacing:0.1em;">Ta clé est stockée localement dans ce navigateur uniquement</p>
+    <button id="activateBtn" disabled style="width:100%;padding:1.1rem;border-radius:1rem;font-weight:900;font-size:0.85rem;text-transform:uppercase;letter-spacing:0.15em;background:#fff;color:#000;border:none;opacity:0.3;transition:opacity 0.2s;">Activer la Production Master</button>
+    <p style="text-align:center;margin-top:1rem;font-size:0.65rem;color:rgba(255,255,255,0.2);text-transform:uppercase;letter-spacing:0.1em;">Clé stockée localement dans ce navigateur uniquement</p>
   </div>
 </div>
 
 <!-- HEADER -->
 <header class="glass" style="position:sticky;top:0;z-index:50;border-bottom:1px solid rgba(255,255,255,0.08);padding:1rem 1.5rem;">
   <div style="max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;">
-    <div style="display:flex;align-items:center;gap:0.75rem;cursor:pointer;" onclick="showHome()">
+    <div id="logoBtn" style="display:flex;align-items:center;gap:0.75rem;cursor:pointer;">
       <div style="width:38px;height:38px;background:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;">
         <svg width="20" height="20" fill="none" stroke="#000" viewBox="0 0 24 24" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="8" y="8" width="8" height="8"/></svg>
       </div>
       <span class="serif" style="font-size:1.1rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;">Studio Cinéma Pro</span>
     </div>
     <nav style="display:flex;align-items:center;gap:2rem;">
-      <button id="navHome" onclick="showHome()" style="font-size:0.7rem;font-weight:900;text-transform:uppercase;letter-spacing:0.15em;background:none;border:none;color:#fff;cursor:pointer;">Accueil</button>
-      <button id="navStudio" onclick="showStudio()" style="font-size:0.7rem;font-weight:900;text-transform:uppercase;letter-spacing:0.15em;background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;">Production Vidéo</button>
+      <button id="navHome" style="font-size:0.7rem;font-weight:900;text-transform:uppercase;letter-spacing:0.15em;background:none;border:none;color:#fff;cursor:pointer;">Accueil</button>
+      <button id="navStudio" style="font-size:0.7rem;font-weight:900;text-transform:uppercase;letter-spacing:0.15em;background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;">Production Vidéo</button>
     </nav>
-    <button id="keyStatusBtn" onclick="openKeyModal()" style="font-size:0.65rem;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;padding:0.5rem 1rem;border-radius:999px;cursor:pointer;"></button>
+    <button id="keyStatusBtn" style="font-size:0.65rem;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;padding:0.5rem 1rem;border-radius:999px;cursor:pointer;border:1px solid rgba(234,179,8,0.5);color:#facc15;background:rgba(234,179,8,0.1);">Activer Production</button>
   </div>
 </header>
 
@@ -101,12 +115,12 @@ studio-cinema.h<!DOCTYPE html>
       <h1 class="serif gradient-text" style="font-size:clamp(4rem,12vw,9rem);font-weight:700;line-height:0.85;letter-spacing:-0.02em;margin-bottom:2rem;">Studio Cinéma</h1>
       <p class="serif" style="font-size:clamp(1rem,2.5vw,1.5rem);color:rgba(255,255,255,0.4);font-style:italic;font-weight:300;line-height:1.6;">L'excellence du rendu cinématographique<br>avec synchronisation labiale émotionnelle.</p>
     </div>
-    <div onclick="showStudio()" style="width:100%;max-width:900px;height:480px;border-radius:3.5rem;overflow:hidden;position:relative;cursor:pointer;transition:transform 0.3s;" onmouseover="this.style.transform='scale(1.01)'" onmouseout="this.style.transform='scale(1)'">
+    <div id="homeCard" style="width:100%;max-width:900px;height:480px;border-radius:3.5rem;overflow:hidden;position:relative;cursor:pointer;transition:transform 0.3s;">
       <img src="https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=2059" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.3;filter:grayscale(1);" alt="">
       <div style="position:absolute;inset:0;background:linear-gradient(to top,#080808,rgba(8,8,8,0.6) 50%,transparent);padding:3rem;display:flex;flex-direction:column;justify-content:flex-end;text-align:left;gap:1rem;">
         <span style="font-size:0.65rem;font-weight:900;text-transform:uppercase;letter-spacing:0.2em;color:rgba(255,255,255,0.4);">Cinéma & Acting Cloning</span>
         <h2 class="serif" style="font-size:clamp(2.5rem,6vw,4.5rem);font-weight:700;margin:0;line-height:1;">Accéder au Studio</h2>
-        <p class="serif" style="color:rgba(255,255,255,0.5);font-size:1rem;font-style:italic;font-weight:300;max-width:500px;line-height:1.6;">Studio Cinéma transforme une image statique en séquence cinématographique immersive, avec mouvements de caméra fluides, cadrages maîtrisés et synchronisation vocale réaliste.</p>
+        <p class="serif" style="color:rgba(255,255,255,0.5);font-size:1rem;font-style:italic;font-weight:300;max-width:500px;line-height:1.6;">Studio Cinéma transforme une image statique en séquence cinématographique immersive, avec mouvements de caméra fluides et synchronisation vocale réaliste.</p>
         <div style="display:inline-block;background:#fff;color:#000;padding:0.9rem 2rem;border-radius:999px;font-weight:900;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.15em;width:fit-content;">Commencer la Production</div>
       </div>
     </div>
@@ -117,7 +131,6 @@ studio-cinema.h<!DOCTYPE html>
 <div id="studioView" class="hidden" style="padding:2rem 1.5rem 8rem;">
   <div style="max-width:1400px;margin:0 auto;display:flex;flex-direction:column;gap:2rem;">
 
-    <!-- MAIN CARD -->
     <div class="glass fade-in" style="padding:3rem;border-radius:3rem;">
 
       <!-- HEADER ROW -->
@@ -138,58 +151,56 @@ studio-cinema.h<!DOCTYPE html>
       <!-- PORTRAIT + AUDIO -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-bottom:2.5rem;">
 
-        <!-- Portrait -->
         <div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
             <label style="font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:0.2em;color:rgba(255,255,255,0.4);">Portrait Acteur</label>
             <span id="identityLock" class="hidden pulse" style="font-size:0.6rem;font-weight:900;text-transform:uppercase;color:#22c55e;">✓ Identity Locked</span>
           </div>
 
-          <!-- EMPTY STATE -->
+          <!-- EMPTY -->
           <div id="portraitEmpty" style="aspect-ratio:1;border-radius:2rem;border:2px dashed rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;">
             <div style="display:flex;gap:1rem;">
-              <div onclick="document.getElementById('fileInput').click()" style="padding:1.5rem;background:rgba(255,255,255,0.05);border-radius:1.5rem;border:1px solid rgba(255,255,255,0.1);cursor:pointer;text-align:center;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+              <div id="btnFile" style="padding:1.5rem;background:rgba(255,255,255,0.05);border-radius:1.5rem;border:1px solid rgba(255,255,255,0.1);cursor:pointer;text-align:center;transition:background 0.2s;">
                 <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" style="display:block;margin:0 auto 0.5rem;"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                 <span style="font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;opacity:0.6;">Fichier</span>
               </div>
-              <!-- ✅ MODIF 3 : bouton caméra -->
-              <div onclick="toggleCamera()" style="padding:1.5rem;background:rgba(255,255,255,0.05);border-radius:1.5rem;border:1px solid rgba(255,255,255,0.1);cursor:pointer;text-align:center;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+              <div id="btnCamEmpty" style="padding:1.5rem;background:rgba(255,255,255,0.05);border-radius:1.5rem;border:1px solid rgba(255,255,255,0.1);cursor:pointer;text-align:center;transition:background 0.2s;">
                 <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" style="display:block;margin:0 auto 0.5rem;"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                 <span style="font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;opacity:0.6;">Caméra</span>
               </div>
             </div>
           </div>
 
-          <!-- CAMERA STATE -->
+          <!-- CAMERA -->
           <div id="portraitCamera" class="hidden" style="aspect-ratio:1;border-radius:2rem;border:2px solid #3b82f6;overflow:hidden;position:relative;background:#000;">
-            <video id="cameraVideo" autoplay playsinline style="width:100%;height:100%;object-fit:cover;display:block;border-radius:0;"></video>
+            <video id="cameraVideo" autoplay playsinline style="width:100%;height:100%;object-fit:cover;display:block;"></video>
             <div class="camera-controls">
-              <button onclick="takePhoto()" style="background:#fff;color:#000;padding:0.6rem 1.5rem;border-radius:999px;font-weight:900;font-size:0.65rem;text-transform:uppercase;border:none;cursor:pointer;">📸 Capturer</button>
-              <button onclick="toggleCamera()" style="background:#ef4444;color:#fff;padding:0.6rem 1.5rem;border-radius:999px;font-weight:900;font-size:0.65rem;text-transform:uppercase;border:none;cursor:pointer;">Annuler</button>
+              <button id="btnCapture" style="background:#fff;color:#000;padding:0.6rem 1.5rem;border-radius:999px;font-weight:900;font-size:0.65rem;text-transform:uppercase;border:none;cursor:pointer;">📸 Capturer</button>
+              <button id="btnCamCancel" style="background:#ef4444;color:#fff;padding:0.6rem 1.5rem;border-radius:999px;font-weight:900;font-size:0.65rem;text-transform:uppercase;border:none;cursor:pointer;">Annuler</button>
             </div>
           </div>
 
-          <!-- LOADED STATE -->
+          <!-- LOADED -->
           <div id="portraitLoaded" class="hidden" style="aspect-ratio:1;border-radius:2rem;border:2px solid rgba(255,255,255,0.3);overflow:hidden;position:relative;">
             <img id="portraitPreview" style="width:100%;height:100%;object-fit:cover;display:block;" alt="">
             <div class="portrait-hover-overlay">
-              <button onclick="document.getElementById('fileInput').click()" style="background:rgba(255,255,255,0.2);backdrop-filter:blur(10px);color:#fff;padding:0.5rem 1.2rem;border-radius:0.75rem;font-size:0.6rem;font-weight:900;text-transform:uppercase;border:1px solid rgba(255,255,255,0.3);cursor:pointer;">Changer Fichier</button>
-              <button onclick="toggleCamera()" style="background:rgba(255,255,255,0.2);backdrop-filter:blur(10px);color:#fff;padding:0.5rem 1.2rem;border-radius:0.75rem;font-size:0.6rem;font-weight:900;text-transform:uppercase;border:1px solid rgba(255,255,255,0.3);cursor:pointer;">Utiliser Caméra</button>
+              <button id="btnChangeFile" style="background:rgba(255,255,255,0.2);backdrop-filter:blur(10px);color:#fff;padding:0.5rem 1.2rem;border-radius:0.75rem;font-size:0.6rem;font-weight:900;text-transform:uppercase;border:1px solid rgba(255,255,255,0.3);cursor:pointer;">Changer Fichier</button>
+              <button id="btnCamLoaded" style="background:rgba(255,255,255,0.2);backdrop-filter:blur(10px);color:#fff;padding:0.5rem 1.2rem;border-radius:0.75rem;font-size:0.6rem;font-weight:900;text-transform:uppercase;border:1px solid rgba(255,255,255,0.3);cursor:pointer;">Utiliser Caméra</button>
             </div>
             <div id="faceOverlay" class="hidden face-overlay">
-              <button onclick="selectFace(0,event)" style="padding:0.75rem 1.5rem;background:#fff;color:#000;border:none;border-radius:1rem;font-size:0.65rem;font-weight:900;text-transform:uppercase;cursor:pointer;">Cibler Acteur 1</button>
-              <button onclick="selectFace(1,event)" style="padding:0.75rem 1.5rem;background:#fff;color:#000;border:none;border-radius:1rem;font-size:0.65rem;font-weight:900;text-transform:uppercase;cursor:pointer;">Cibler Acteur 2</button>
+              <button id="btnFace0" style="padding:0.75rem 1.5rem;background:#fff;color:#000;border:none;border-radius:1rem;font-size:0.65rem;font-weight:900;text-transform:uppercase;cursor:pointer;">Cibler Acteur 1</button>
+              <button id="btnFace1" style="padding:0.75rem 1.5rem;background:#fff;color:#000;border:none;border-radius:1rem;font-size:0.65rem;font-weight:900;text-transform:uppercase;cursor:pointer;">Cibler Acteur 2</button>
             </div>
           </div>
 
-          <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
+          <input type="file" id="fileInput" accept="image/*" class="hidden">
           <canvas id="captureCanvas" class="hidden"></canvas>
         </div>
 
-        <!-- Audio -->
+        <!-- AUDIO -->
         <div>
           <label style="font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:0.2em;color:rgba(255,255,255,0.4);display:block;margin-bottom:0.75rem;">Audio (Lip-Sync fr-FR)</label>
-          <div id="audioZone" onclick="document.getElementById('audioInput').click()" style="aspect-ratio:1;border-radius:2rem;border:2px dashed rgba(255,255,255,0.1);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background=''">
+          <div id="audioZone" style="aspect-ratio:1;border-radius:2rem;border:2px dashed rgba(255,255,255,0.1);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s;">
             <div id="audioPlaceholder" style="text-align:center;opacity:0.2;">
               <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin:0 auto 0.5rem;display:block;" stroke-width="1.5"><path d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4"/></svg>
               <span style="font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:0.15em;display:block;">Upload Calibration</span>
@@ -199,9 +210,9 @@ studio-cinema.h<!DOCTYPE html>
                 <svg width="28" height="28" fill="none" stroke="#60a5fa" viewBox="0 0 24 24" stroke-width="2"><path d="M12 3v18m5-14v10m-10-7v4"/></svg>
               </div>
               <p style="font-size:0.65rem;font-weight:900;color:#60a5fa;text-transform:uppercase;letter-spacing:0.15em;">Calibration OK</p>
-              <button onclick="removeAudio(event)" style="margin-top:0.75rem;font-size:0.6rem;font-weight:700;color:#f87171;text-transform:uppercase;background:none;border:1px solid rgba(248,113,113,0.3);padding:0.4rem 1rem;border-radius:999px;cursor:pointer;">Désactiver</button>
+              <button id="btnRemoveAudio" style="margin-top:0.75rem;font-size:0.6rem;font-weight:700;color:#f87171;text-transform:uppercase;background:none;border:1px solid rgba(248,113,113,0.3);padding:0.4rem 1rem;border-radius:999px;cursor:pointer;">Désactiver</button>
             </div>
-            <input type="file" id="audioInput" accept="audio/*" class="hidden" onchange="handleAudioUpload(event)">
+            <input type="file" id="audioInput" accept="audio/*" class="hidden">
           </div>
         </div>
       </div>
@@ -213,21 +224,21 @@ studio-cinema.h<!DOCTYPE html>
             <label style="font-size:0.6rem;font-weight:900;text-transform:uppercase;color:#60a5fa;font-style:italic;">Segment 1 [0 – 7s]</label>
             <span id="wordCount1" style="font-size:0.6rem;font-weight:900;text-transform:uppercase;color:rgba(255,255,255,0.3);">0 / 20 mots</span>
           </div>
-          <textarea id="dialogue1" rows="3" placeholder="Premier dialogue..." style="width:100%;font-size:1.4rem;font-style:italic;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:0.75rem;min-height:70px;" class="serif" oninput="updateWordCount(this,'wordCount1',20)"></textarea>
+          <textarea id="dialogue1" rows="3" placeholder="Premier dialogue..." style="width:100%;font-size:1.4rem;font-style:italic;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:0.75rem;min-height:70px;" class="serif"></textarea>
         </div>
         <div id="segment2" class="hidden" style="padding:2rem;background:linear-gradient(135deg,rgba(168,85,247,0.05),rgba(59,130,246,0.05));border:1px solid rgba(168,85,247,0.2);border-radius:2rem;">
           <div style="display:flex;justify-content:space-between;margin-bottom:1rem;">
             <label style="font-size:0.6rem;font-weight:900;text-transform:uppercase;color:#c084fc;font-style:italic;">Segment 2 [8 – 13s]</label>
             <span id="wordCount2" style="font-size:0.6rem;font-weight:900;text-transform:uppercase;color:rgba(255,255,255,0.3);">0 / 15 mots</span>
           </div>
-          <textarea id="dialogue2" rows="3" placeholder="La suite..." style="width:100%;font-size:1.4rem;font-style:italic;border-bottom:1px solid rgba(168,85,247,0.2);padding-bottom:0.75rem;min-height:70px;" class="serif" oninput="updateWordCount(this,'wordCount2',15)"></textarea>
+          <textarea id="dialogue2" rows="3" placeholder="La suite..." style="width:100%;font-size:1.4rem;font-style:italic;border-bottom:1px solid rgba(168,85,247,0.2);padding-bottom:0.75rem;min-height:70px;" class="serif"></textarea>
         </div>
         <div id="segment3" class="hidden" style="padding:2rem;background:linear-gradient(135deg,rgba(59,130,246,0.05),rgba(34,211,238,0.05));border:1px solid rgba(34,211,238,0.2);border-radius:2rem;">
           <div style="display:flex;justify-content:space-between;margin-bottom:1rem;">
             <label style="font-size:0.6rem;font-weight:900;text-transform:uppercase;color:#22d3ee;font-style:italic;">Segment 3 [14 – 20s]</label>
             <span id="wordCount3" style="font-size:0.6rem;font-weight:900;text-transform:uppercase;color:rgba(255,255,255,0.3);">0 / 15 mots</span>
           </div>
-          <textarea id="dialogue3" rows="3" placeholder="Conclusion..." style="width:100%;font-size:1.4rem;font-style:italic;border-bottom:1px solid rgba(34,211,238,0.2);padding-bottom:0.75rem;min-height:70px;" class="serif" oninput="updateWordCount(this,'wordCount3',15)"></textarea>
+          <textarea id="dialogue3" rows="3" placeholder="Conclusion..." style="width:100%;font-size:1.4rem;font-style:italic;border-bottom:1px solid rgba(34,211,238,0.2);padding-bottom:0.75rem;min-height:70px;" class="serif"></textarea>
         </div>
       </div>
 
@@ -244,7 +255,7 @@ studio-cinema.h<!DOCTYPE html>
           <select id="cameraAngle" class="glass" style="width:100%;padding:0.75rem 1rem;border-radius:1rem;font-size:0.65rem;font-weight:700;border:1px solid rgba(255,255,255,0.1);">
             <option value="Face (Frontal)">Face (Frontal)</option>
             <option value="Incliné (Dutch Angle)">Incliné (Dutch Angle)</option>
-            <option value="Zénithale (Top-down)">Zénithale (Top-down)</option>
+            <option value="Zénithale (Top-down)">Zénithale</option>
             <option value="Plongée totale">Plongée totale</option>
             <option value="Plan taille (Waist-level)">Plan taille</option>
             <option value="Macro-focus (Lèvres/Yeux)">Macro-focus</option>
@@ -259,7 +270,7 @@ studio-cinema.h<!DOCTYPE html>
         <div>
           <label style="font-size:0.55rem;font-weight:900;text-transform:uppercase;color:rgba(255,255,255,0.3);display:block;margin-bottom:0.5rem;">Mouvement</label>
           <select id="cameraMovement" class="glass" style="width:100%;padding:0.75rem 1rem;border-radius:1rem;font-size:0.65rem;font-weight:700;border:1px solid rgba(255,255,255,0.1);">
-            <option value="Fixe (Émotionnel)">Fixe (Émotionnel)</option>
+            <option value="Fixe (Émotionnel)">Fixe</option>
             <option value="Travelling avant (Push-in)">Travelling avant</option>
             <option value="Travelling arrière (Pull-out)">Travelling arrière</option>
             <option value="Travelling latéral">Travelling latéral</option>
@@ -283,7 +294,6 @@ studio-cinema.h<!DOCTYPE html>
             <option value="Vulnérable & Fragile">Vulnérable & Fragile</option>
           </select>
         </div>
-        <!-- ✅ MODIF 5 : 1:1 supprimé — non supporté par Veo -->
         <div>
           <label style="font-size:0.55rem;font-weight:900;text-transform:uppercase;color:rgba(255,255,255,0.3);display:block;margin-bottom:0.5rem;">Aspect Ratio</label>
           <select id="aspectRatio" class="glass" style="width:100%;padding:0.75rem 1rem;border-radius:1rem;font-size:0.65rem;font-weight:700;border:1px solid rgba(255,255,255,0.1);">
@@ -297,9 +307,9 @@ studio-cinema.h<!DOCTYPE html>
       <div style="margin-bottom:1.5rem;">
         <label style="font-size:0.55rem;font-weight:900;text-transform:uppercase;color:rgba(255,255,255,0.3);font-style:italic;display:block;margin-bottom:0.75rem;">Durée Master</label>
         <div style="display:flex;gap:0.75rem;">
-          <button class="dur-btn selected" data-dur="6s" onclick="selectDuration('6s')" style="flex:1;padding:1rem;border-radius:1.25rem;border:1px solid;font-size:0.7rem;font-weight:900;">6s</button>
-          <button class="dur-btn unselected" data-dur="13s" onclick="selectDuration('13s')" style="flex:1;padding:1rem;border-radius:1.25rem;border:1px solid;font-size:0.7rem;font-weight:900;">13s</button>
-          <button class="dur-btn unselected" data-dur="20s" onclick="selectDuration('20s')" style="flex:1;padding:1rem;border-radius:1.25rem;border:1px solid;font-size:0.7rem;font-weight:900;">20s</button>
+          <button class="dur-btn selected" data-dur="6s" style="flex:1;padding:1rem;border-radius:1.25rem;border:1px solid;font-size:0.7rem;font-weight:900;">6s</button>
+          <button class="dur-btn unselected" data-dur="13s" style="flex:1;padding:1rem;border-radius:1.25rem;border:1px solid;font-size:0.7rem;font-weight:900;">13s</button>
+          <button class="dur-btn unselected" data-dur="20s" style="flex:1;padding:1rem;border-radius:1.25rem;border:1px solid;font-size:0.7rem;font-weight:900;">20s</button>
         </div>
       </div>
 
@@ -307,23 +317,23 @@ studio-cinema.h<!DOCTYPE html>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0.75rem;margin-bottom:2rem;">
         <div class="glass" style="display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem;border-radius:1rem;">
           <div><div style="font-size:0.6rem;font-weight:900;text-transform:uppercase;color:rgba(255,255,255,0.6);">🇫🇷 Accent fr-FR</div><div style="font-size:0.5rem;color:rgba(255,255,255,0.25);text-transform:uppercase;">Forcer Paris (Standard)</div></div>
-          <button id="toggleFrench" class="toggle-btn active" onclick="toggleOption('toggleFrench')" style="font-size:0.55rem;font-weight:900;text-transform:uppercase;padding:0.4rem 0.8rem;border-radius:0.5rem;border:1px solid;cursor:pointer;">Activé</button>
+          <button id="toggleFrench" class="toggle-btn active" style="font-size:0.55rem;font-weight:900;text-transform:uppercase;padding:0.4rem 0.8rem;border-radius:0.5rem;border:1px solid;cursor:pointer;">Activé</button>
         </div>
         <div class="glass" style="display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem;border-radius:1rem;">
           <div><div style="font-size:0.6rem;font-weight:900;text-transform:uppercase;color:rgba(255,255,255,0.6);">📝 Sans Sous-titres</div><div style="font-size:0.5rem;color:rgba(255,255,255,0.25);text-transform:uppercase;">Empêcher texte on-screen</div></div>
-          <button id="toggleSubs" class="toggle-btn active" onclick="toggleOption('toggleSubs')" style="font-size:0.55rem;font-weight:900;text-transform:uppercase;padding:0.4rem 0.8rem;border-radius:0.5rem;border:1px solid;cursor:pointer;">Activé</button>
+          <button id="toggleSubs" class="toggle-btn active" style="font-size:0.55rem;font-weight:900;text-transform:uppercase;padding:0.4rem 0.8rem;border-radius:0.5rem;border:1px solid;cursor:pointer;">Activé</button>
         </div>
         <div class="glass" style="display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem;border-radius:1rem;">
           <div><div style="font-size:0.6rem;font-weight:900;text-transform:uppercase;color:rgba(255,255,255,0.6);">🎵 Sans Musique</div><div style="font-size:0.5rem;color:rgba(255,255,255,0.25);text-transform:uppercase;">Garder l'audio pur</div></div>
-          <button id="toggleMusic" class="toggle-btn active" onclick="toggleOption('toggleMusic')" style="font-size:0.55rem;font-weight:900;text-transform:uppercase;padding:0.4rem 0.8rem;border-radius:0.5rem;border:1px solid;cursor:pointer;">Activé</button>
+          <button id="toggleMusic" class="toggle-btn active" style="font-size:0.55rem;font-weight:900;text-transform:uppercase;padding:0.4rem 0.8rem;border-radius:0.5rem;border:1px solid;cursor:pointer;">Activé</button>
         </div>
       </div>
 
       <!-- ERROR -->
-      <div id="errorBox" class="hidden" style="padding:1.5rem;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:1.5rem;color:#f87171;font-size:0.75rem;font-weight:700;font-style:italic;margin-bottom:1.5rem;line-height:1.7;white-space:pre-wrap;"></div>
+      <div id="errorBox" class="hidden" style="padding:1.5rem;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:1.5rem;color:#f87171;font-size:0.8rem;font-weight:700;font-style:italic;margin-bottom:1.5rem;line-height:1.7;white-space:pre-wrap;"></div>
 
       <!-- GENERATE -->
-      <button id="generateBtn" onclick="startProduction()" style="width:100%;padding:3rem 2rem;border-radius:2.5rem;font-weight:900;font-size:1.8rem;text-transform:uppercase;letter-spacing:-0.02em;border:none;cursor:pointer;transition:all 0.2s;background:#fff;color:#000;">
+      <button id="generateBtn" style="width:100%;padding:3rem 2rem;border-radius:2.5rem;font-weight:900;font-size:1.8rem;text-transform:uppercase;letter-spacing:-0.02em;border:none;cursor:pointer;background:#fff;color:#000;transition:all 0.2s;">
         <span id="btnText">Produire Séquence Master (0.60 €)</span>
       </button>
     </div>
@@ -340,11 +350,11 @@ studio-cinema.h<!DOCTYPE html>
       </div>
       <div id="videoResult" class="hidden fade-in">
         <div id="videoContainer" style="border-radius:2.5rem;overflow:hidden;background:#000;margin-bottom:1.5rem;">
-          <video id="videoPlayer" controls autoplay loop style="width:100%;display:block;border-radius:0;"></video>
+          <video id="videoPlayer" controls autoplay loop style="width:100%;display:block;"></video>
         </div>
         <div class="glass" style="padding:2rem;border-radius:2rem;display:flex;align-items:center;justify-content:space-between;">
           <div>
-            <p style="font-size:0.6rem;font-weight:900;text-transform:uppercase;color:#3b82f6;text-decoration:underline;text-decoration-color:rgba(59,130,246,0.4);text-underline-offset:6px;">Production Certifiée Identity Lock</p>
+            <p style="font-size:0.6rem;font-weight:900;text-transform:uppercase;color:#3b82f6;">Production Certifiée Identity Lock</p>
             <p class="serif" style="font-size:2.5rem;font-weight:700;text-transform:uppercase;line-height:1.1;margin-top:0.3rem;">Rendu OK</p>
           </div>
           <a id="downloadBtn" download="studio-master.mp4" style="padding:0.9rem 2rem;background:#fff;color:#000;border-radius:999px;font-size:0.65rem;font-weight:900;text-transform:uppercase;text-decoration:none;">Exporter</a>
@@ -364,442 +374,458 @@ studio-cinema.h<!DOCTYPE html>
   </div>
 </div>
 
-<script type="module">
-// ============================================================
-// ✅ MODIF 1 — Clé API injectée dynamiquement (pas de process.env écrasé)
-// ============================================================
-window.apiKey = localStorage.getItem('studio_cinema_api_key') || null;
-window.portraitBase64 = null;
-window.originalPortraitBase64 = null;
-window.portraitMime = 'image/jpeg';
-window.audioBase64 = null;
-window.audioMime = null;
-window.currentDuration = '6s';
-window.detectedFaces = [];
-window.isCameraActive = false;
+<!-- ============================================================
+     SCRIPT PARTIE 1 — MODAL (synchrone, répond immédiatement)
+     ============================================================ -->
+<script>
+const $ = id => document.getElementById(id);
+let apiKey = localStorage.getItem('studio_cinema_api_key') || null;
+let portraitBase64 = null, originalPortraitBase64 = null, portraitMime = 'image/jpeg';
+let audioBase64 = null, audioMime = null, currentDuration = '6s';
+let detectedFaces = [], isCameraActive = false;
+let GoogleGenAI = null, VideoGenerationReferenceType = null;
 
-const { GoogleGenAI, VideoGenerationReferenceType } = await import('https://esm.sh/@google/genai@^1.40.0');
-
-// --- MODAL ---
-window.validateKeyInput = function() {
-  const val = document.getElementById('apiKeyInput').value.trim();
-  const valid = val.startsWith('AIza') && val.length > 20;
-  document.getElementById('activateBtn').disabled = !valid;
-  document.getElementById('activateBtn').style.opacity = valid ? '1' : '0.3';
-  document.getElementById('keyError').classList.toggle('hidden', val.length < 5 || valid);
-};
-window.toggleKeyVisibility = function() {
-  const inp = document.getElementById('apiKeyInput');
-  inp.type = inp.type === 'password' ? 'text' : 'password';
-};
-window.activateKey = function() {
-  const key = document.getElementById('apiKeyInput').value.trim();
-  if (!key.startsWith('AIza')) return;
-  window.apiKey = key;
-  localStorage.setItem('studio_cinema_api_key', key);
-  document.getElementById('apiModal').classList.add('hidden');
-  updateKeyStatus(true);
-};
-window.openKeyModal = function() {
-  document.getElementById('apiModal').classList.remove('hidden');
-  document.getElementById('apiKeyInput').value = window.apiKey || '';
-  validateKeyInput();
-};
 function updateKeyStatus(active) {
-  const btn = document.getElementById('keyStatusBtn');
+  const btn = $('keyStatusBtn');
   btn.style.border = active ? '1px solid rgba(34,197,94,0.5)' : '1px solid rgba(234,179,8,0.5)';
   btn.style.color = active ? '#4ade80' : '#facc15';
   btn.style.background = active ? 'rgba(34,197,94,0.1)' : 'rgba(234,179,8,0.1)';
   btn.textContent = active ? 'Master Key Active' : 'Activer Production';
 }
-if (window.apiKey) { document.getElementById('apiModal').classList.add('hidden'); updateKeyStatus(true); }
+function openModal() {
+  $('apiModal').classList.remove('hidden');
+  $('apiKeyInput').value = apiKey || '';
+  validateInput();
+  setTimeout(() => $('apiKeyInput').focus(), 50);
+}
+function closeModal() { $('apiModal').classList.add('hidden'); }
+function validateInput() {
+  const val = $('apiKeyInput').value.trim();
+  const valid = val.startsWith('AIza') && val.length > 20;
+  $('activateBtn').disabled = !valid;
+  $('activateBtn').style.opacity = valid ? '1' : '0.3';
+  $('activateBtn').style.cursor = valid ? 'pointer' : 'not-allowed';
+  $('keyError').classList.toggle('hidden', val.length < 5 || valid);
+}
+function activateKey() {
+  const key = $('apiKeyInput').value.trim();
+  if (!key.startsWith('AIza') || key.length <= 20) return;
+  apiKey = key;
+  localStorage.setItem('studio_cinema_api_key', key);
+  closeModal();
+  updateKeyStatus(true);
+}
+// Listeners modal — immédiats, pas d'async
+$('apiKeyInput').addEventListener('input', validateInput);
+$('apiKeyInput').addEventListener('keydown', e => { if (e.key === 'Enter') activateKey(); });
+$('activateBtn').addEventListener('click', activateKey);
+$('eyeBtn').addEventListener('click', () => {
+  const inp = $('apiKeyInput');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+});
+if (apiKey) { closeModal(); updateKeyStatus(true); }
 else updateKeyStatus(false);
+</script>
 
-// --- NAV ---
-window.showHome = function() {
-  document.getElementById('homeView').classList.remove('hidden');
-  document.getElementById('studioView').classList.add('hidden');
-  document.getElementById('navHome').style.color = '#fff';
-  document.getElementById('navStudio').style.color = 'rgba(255,255,255,0.4)';
-};
-window.showStudio = function() {
-  if (!window.apiKey) { openKeyModal(); return; }
-  document.getElementById('homeView').classList.add('hidden');
-  document.getElementById('studioView').classList.remove('hidden');
-  document.getElementById('navHome').style.color = 'rgba(255,255,255,0.4)';
-  document.getElementById('navStudio').style.color = '#fff';
-};
+<!-- ============================================================
+     SCRIPT PARTIE 2 — STUDIO (async, attend la lib Google)
+     ============================================================ -->
+<script>
+(async () => {
+  // Import lib
+  try {
+    const mod = await import('https://esm.sh/@google/genai@^1.40.0');
+    GoogleGenAI = mod.GoogleGenAI;
+    VideoGenerationReferenceType = mod.VideoGenerationReferenceType;
+  } catch(e) { console.error('Impossible de charger @google/genai', e); }
 
-// --- DURATION ---
-window.selectDuration = function(dur) {
-  window.currentDuration = dur;
-  document.querySelectorAll('.dur-btn').forEach(b => {
-    b.classList.toggle('selected', b.dataset.dur === dur);
-    b.classList.toggle('unselected', b.dataset.dur !== dur);
+  function showHome() {
+    $('homeView').classList.remove('hidden');
+    $('studioView').classList.add('hidden');
+    $('navHome').style.color = '#fff';
+    $('navStudio').style.color = 'rgba(255,255,255,0.4)';
+  }
+  function showStudio() {
+    if (!apiKey) { openModal(); return; }
+    $('homeView').classList.add('hidden');
+    $('studioView').classList.remove('hidden');
+    $('navHome').style.color = 'rgba(255,255,255,0.4)';
+    $('navStudio').style.color = '#fff';
+  }
+
+  function setStatus(msg, loading) {
+    const btn = $('generateBtn');
+    const costs = { '6s':0.60,'13s':1.20,'20s':1.80 };
+    if (loading) {
+      $('btnText').textContent = msg || 'En cours...';
+      btn.style.background = 'rgba(255,255,255,0.05)';
+      btn.style.color = 'rgba(255,255,255,0.2)';
+      btn.disabled = true;
+      $('waitingSpinner').classList.add('spin');
+      $('waitingText').textContent = msg;
+    } else {
+      const cost = costs[currentDuration] || 0.60;
+      $('btnText').textContent = `Produire Séquence Master (${cost.toFixed(2)} €)`;
+      btn.style.background = '#fff';
+      btn.style.color = '#000';
+      btn.disabled = false;
+      $('waitingSpinner').classList.remove('spin');
+      if (!msg) $('waitingText').textContent = 'Transmission en attente...';
+    }
+  }
+
+  function showError(msg) {
+    $('errorBox').textContent = 'ERROR : ' + msg;
+    $('errorBox').classList.remove('hidden');
+  }
+
+  // ── HEADER ─────────────────────────────────────────────────
+  $('logoBtn').addEventListener('click', showHome);
+  $('navHome').addEventListener('click', showHome);
+  $('navStudio').addEventListener('click', showStudio);
+  $('keyStatusBtn').addEventListener('click', openModal);
+  $('homeCard').addEventListener('click', showStudio);
+
+  // ── DURATION ───────────────────────────────────────────────
+  document.querySelectorAll('.dur-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const dur = btn.dataset.dur;
+      currentDuration = dur;
+      document.querySelectorAll('.dur-btn').forEach(b => {
+        b.classList.toggle('selected', b.dataset.dur === dur);
+        b.classList.toggle('unselected', b.dataset.dur !== dur);
+      });
+      const costs = { '6s':0.60,'13s':1.20,'20s':1.80 };
+      $('costDisplay').textContent = costs[dur].toFixed(2) + ' €';
+      $('btnText').textContent = `Produire Séquence Master (${costs[dur].toFixed(2)} €)`;
+      $('segment2').classList.toggle('hidden', dur === '6s');
+      $('segment3').classList.toggle('hidden', dur !== '20s');
+    });
   });
-  const costs = { '6s': 0.60, '13s': 1.20, '20s': 1.80 };
-  document.getElementById('costDisplay').textContent = costs[dur].toFixed(2) + ' €';
-  document.getElementById('btnText').textContent = `Produire Séquence Master (${costs[dur].toFixed(2)} €)`;
-  document.getElementById('segment2').classList.toggle('hidden', dur === '6s');
-  document.getElementById('segment3').classList.toggle('hidden', dur !== '20s');
-};
 
-// --- WORD COUNT ---
-window.updateWordCount = function(el, id, max) {
-  const words = el.value.trim().split(/\s+/).filter(w => w.length > 0).length;
-  const span = document.getElementById(id);
-  span.textContent = `${words} / ${max} mots`;
-  span.style.color = words > max ? '#f87171' : 'rgba(255,255,255,0.3)';
-};
+  // ── TOGGLES ────────────────────────────────────────────────
+  ['toggleFrench','toggleSubs','toggleMusic'].forEach(id => {
+    $(id).addEventListener('click', () => {
+      const btn = $(id);
+      const active = btn.classList.contains('active');
+      btn.classList.toggle('active', !active);
+      btn.classList.toggle('inactive', active);
+      btn.textContent = active ? 'Off' : 'Activé';
+    });
+  });
 
-// --- TOGGLES ---
-window.toggleOption = function(id) {
-  const btn = document.getElementById(id);
-  const active = btn.classList.contains('active');
-  btn.classList.toggle('active', !active);
-  btn.classList.toggle('inactive', active);
-  btn.textContent = active ? 'Off' : 'Activé';
-};
+  // ── WORD COUNT ─────────────────────────────────────────────
+  [['dialogue1','wordCount1',20],['dialogue2','wordCount2',15],['dialogue3','wordCount3',15]].forEach(([tid,cid,max]) => {
+    $(tid).addEventListener('input', () => {
+      const words = $(tid).value.trim().split(/\s+/).filter(w=>w.length>0).length;
+      $(cid).textContent = `${words} / ${max} mots`;
+      $(cid).style.color = words > max ? '#f87171' : 'rgba(255,255,255,0.3)';
+    });
+  });
 
-// ✅ MODIF 3 — CAMÉRA
-window.toggleCamera = async function() {
-  if (window.isCameraActive) {
-    const v = document.getElementById('cameraVideo');
-    if (v.srcObject) v.srcObject.getTracks().forEach(t => t.stop());
-    v.srcObject = null;
-    window.isCameraActive = false;
-    document.getElementById('portraitCamera').classList.add('hidden');
-    if (window.portraitBase64) document.getElementById('portraitLoaded').classList.remove('hidden');
-    else document.getElementById('portraitEmpty').classList.remove('hidden');
-  } else {
+  // ── PORTRAIT / CAMERA ──────────────────────────────────────
+  function showPortraitState(state) {
+    $('portraitEmpty').classList.toggle('hidden', state !== 'empty');
+    $('portraitCamera').classList.toggle('hidden', state !== 'camera');
+    $('portraitLoaded').classList.toggle('hidden', state !== 'loaded');
+  }
+
+  async function startCamera() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
-      const v = document.getElementById('cameraVideo');
-      v.srcObject = stream;
-      window.isCameraActive = true;
-      document.getElementById('portraitEmpty').classList.add('hidden');
-      document.getElementById('portraitLoaded').classList.add('hidden');
-      document.getElementById('portraitCamera').classList.remove('hidden');
+      $('cameraVideo').srcObject = stream;
+      isCameraActive = true;
+      showPortraitState('camera');
     } catch {
       showError("Impossible d'accéder à la caméra. Vérifiez les permissions du navigateur.");
     }
   }
-};
-window.takePhoto = function() {
-  const v = document.getElementById('cameraVideo');
-  const c = document.getElementById('captureCanvas');
-  c.width = v.videoWidth; c.height = v.videoHeight;
-  c.getContext('2d').drawImage(v, 0, 0);
-  const base64 = c.toDataURL('image/jpeg').split(',')[1];
-  if (v.srcObject) v.srcObject.getTracks().forEach(t => t.stop());
-  v.srcObject = null;
-  window.isCameraActive = false;
-  document.getElementById('portraitCamera').classList.add('hidden');
-  handleNewImage(base64, 'image/jpeg');
-};
 
-// --- IMAGE ---
-window.handleImageUpload = function(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  window.portraitMime = file.type;
-  const reader = new FileReader();
-  reader.onload = () => handleNewImage(reader.result.split(',')[1], file.type);
-  reader.readAsDataURL(file);
-};
-
-async function handleNewImage(base64, mime) {
-  window.portraitMime = mime;
-  window.originalPortraitBase64 = base64;
-  window.portraitBase64 = base64;
-  document.getElementById('portraitEmpty').classList.add('hidden');
-  document.getElementById('portraitCamera').classList.add('hidden');
-  document.getElementById('portraitLoaded').classList.remove('hidden');
-  document.getElementById('portraitPreview').src = `data:${mime};base64,${base64}`;
-  document.getElementById('faceOverlay').classList.add('hidden');
-  document.getElementById('identityLock').classList.add('hidden');
-  try {
-    const faces = await detectFaces(base64, mime);
-    window.detectedFaces = faces;
-    if (faces.length > 1) {
-      document.getElementById('faceOverlay').classList.remove('hidden');
-    } else if (faces.length === 1) {
-      const cropped = await cropAroundFace(base64, mime, faces[0], 1.8);
-      window.portraitBase64 = cropped;
-      document.getElementById('portraitPreview').src = `data:${mime};base64,${cropped}`;
-      document.getElementById('identityLock').classList.remove('hidden');
-    } else {
-      document.getElementById('identityLock').classList.remove('hidden');
-    }
-  } catch { document.getElementById('identityLock').classList.remove('hidden'); }
-}
-
-window.selectFace = async function(idx, e) {
-  e.stopPropagation();
-  const face = window.detectedFaces[idx];
-  if (!face) return;
-  try {
-    const cropped = await cropAroundFace(window.originalPortraitBase64, window.portraitMime, face, 1.8);
-    window.portraitBase64 = cropped;
-    document.getElementById('portraitPreview').src = `data:${window.portraitMime};base64,${cropped}`;
-  } catch { window.portraitBase64 = window.originalPortraitBase64; }
-  document.getElementById('faceOverlay').classList.add('hidden');
-  document.getElementById('identityLock').classList.remove('hidden');
-};
-
-function detectFaces(imageBase64, mimeType) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      const { width, height } = img;
-      const faces = [];
-      if (width > height * 1.3) {
-        const fw = width/3, fh = height*0.6;
-        faces.push({ x:width*0.1,y:height*0.2,width:fw,height:fh,centerX:width*0.25,centerY:height*0.45 });
-        faces.push({ x:width*0.6,y:height*0.2,width:fw,height:fh,centerX:width*0.75,centerY:height*0.45 });
-      } else {
-        faces.push({ x:width*0.15,y:height*0.12,width:width*0.7,height:height*0.75,centerX:width*0.5,centerY:height*0.48 });
-      }
-      resolve(faces);
-    };
-    img.onerror = () => reject(new Error('image error'));
-    img.src = `data:${mimeType};base64,${imageBase64}`;
-  });
-}
-function cropAroundFace(imageBase64, mimeType, face, padding) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return reject(new Error('canvas error'));
-      const tw = face.width*padding, th = face.height*padding;
-      const cx = Math.max(0, face.centerX - tw/2), cy = Math.max(0, face.centerY - th/2);
-      const fw = Math.min(tw, img.width-cx), fh = Math.min(th, img.height-cy);
-      canvas.width = fw; canvas.height = fh;
-      ctx.fillStyle = '#000'; ctx.fillRect(0,0,fw,fh);
-      ctx.drawImage(img, cx, cy, fw, fh, 0, 0, fw, fh);
-      resolve(canvas.toDataURL(mimeType).split(',')[1]);
-    };
-    img.src = `data:${mimeType};base64,${imageBase64}`;
-  });
-}
-
-// --- AUDIO ---
-window.handleAudioUpload = async function(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = async () => {
-    const b64 = reader.result.split(',')[1];
-    window.audioBase64 = b64;
-    window.audioMime = file.type;
-    document.getElementById('audioPlaceholder').classList.add('hidden');
-    document.getElementById('audioLoaded').classList.remove('hidden');
-    document.getElementById('audioZone').style.borderColor = '#3b82f6';
-    document.getElementById('audioZone').style.background = 'rgba(59,130,246,0.05)';
-    document.getElementById('modeIndicator').innerHTML = `<span class="status-dot blue"></span><span style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;color:#60a5fa;font-style:italic;">Lip-Sync Identity Lock fr-FR</span>`;
-    if (!window.apiKey) return;
-    setStatus("⏳ TRANSCRIPTION...", true);
-    try {
-      const ai = new GoogleGenAI({ apiKey: window.apiKey });
-      const resp = await ai.models.generateContent({
-        model: 'gemini-3-pro-preview',
-        contents: [{ parts: [{ inlineData:{ data:b64, mimeType:file.type } },{ text:'Extract JSON only: { "isValid": boolean, "transcription": "exact text" }' }] }],
-        config: { responseMimeType:"application/json", temperature:0.1 }
-      });
-      const data = JSON.parse(resp.text || '{}');
-      if (data.transcription) {
-        document.getElementById('dialogue1').value = data.transcription;
-        updateWordCount(document.getElementById('dialogue1'), 'wordCount1', 20);
-      }
-      setStatus("✅ Calibration Prête", false);
-    } catch { setStatus("❌ Erreur audio", false); }
-  };
-  reader.readAsDataURL(file);
-};
-window.removeAudio = function(e) {
-  e.stopPropagation();
-  window.audioBase64 = null; window.audioMime = null;
-  document.getElementById('audioLoaded').classList.add('hidden');
-  document.getElementById('audioPlaceholder').classList.remove('hidden');
-  document.getElementById('audioZone').style.borderColor = 'rgba(255,255,255,0.1)';
-  document.getElementById('audioZone').style.background = '';
-  document.getElementById('modeIndicator').innerHTML = `<span class="status-dot"></span><span style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;color:#22c55e;font-style:italic;">Mode Acting Silencieux Pur</span>`;
-};
-
-// --- STATUS / ERROR ---
-function setStatus(msg, loading) {
-  const btn = document.getElementById('generateBtn');
-  const costs = { '6s':0.60,'13s':1.20,'20s':1.80 };
-  if (loading) {
-    document.getElementById('btnText').textContent = msg || 'En cours...';
-    btn.style.background = 'rgba(255,255,255,0.05)';
-    btn.style.color = 'rgba(255,255,255,0.2)';
-    btn.disabled = true;
-    document.getElementById('waitingSpinner').classList.add('spin');
-    document.getElementById('waitingText').textContent = msg;
-  } else {
-    const cost = costs[window.currentDuration] || 0.60;
-    document.getElementById('btnText').textContent = `Produire Séquence Master (${cost.toFixed(2)} €)`;
-    btn.style.background = '#fff'; btn.style.color = '#000'; btn.disabled = false;
-    document.getElementById('waitingSpinner').classList.remove('spin');
-    if (!msg) document.getElementById('waitingText').textContent = 'Transmission en attente...';
+  function stopCamera() {
+    const v = $('cameraVideo');
+    if (v.srcObject) v.srcObject.getTracks().forEach(t => t.stop());
+    v.srcObject = null;
+    isCameraActive = false;
   }
-}
-function showError(msg) {
-  const box = document.getElementById('errorBox');
-  box.textContent = 'ERROR : ' + msg;
-  box.classList.remove('hidden');
-}
 
-// ✅ MODIF 1 — validateAndExtractVisemes utilise window.apiKey (dynamique)
-async function validateAndExtractVisemes(audioData, mimeType) {
-  const ai = new GoogleGenAI({ apiKey: window.apiKey });
-  const resp = await ai.models.generateContent({
-    model: 'gemini-3-pro-preview',
-    contents: [{ parts: [
-      { inlineData:{ data:audioData, mimeType } },
-      { text:`PHONETIC CALIBRATION - STANDARD METROPOLITAN FRENCH (FRANCE) ONLY.
+  $('btnFile').addEventListener('click', () => $('fileInput').click());
+  $('btnCamEmpty').addEventListener('click', startCamera);
+  $('btnCamLoaded').addEventListener('click', startCamera);
+  $('btnChangeFile').addEventListener('click', e => { e.stopPropagation(); $('fileInput').click(); });
+  $('btnCamCancel').addEventListener('click', () => { stopCamera(); showPortraitState(portraitBase64 ? 'loaded' : 'empty'); });
+  $('btnCapture').addEventListener('click', () => {
+    const v = $('cameraVideo'), c = $('captureCanvas');
+    c.width = v.videoWidth; c.height = v.videoHeight;
+    c.getContext('2d').drawImage(v, 0, 0);
+    const b64 = c.toDataURL('image/jpeg').split(',')[1];
+    stopCamera();
+    handleNewImage(b64, 'image/jpeg');
+  });
+
+  $('btnFace0').addEventListener('click', e => { e.stopPropagation(); selectFace(0); });
+  $('btnFace1').addEventListener('click', e => { e.stopPropagation(); selectFace(1); });
+
+  $('fileInput').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    portraitMime = file.type;
+    const reader = new FileReader();
+    reader.onload = () => handleNewImage(reader.result.split(',')[1], file.type);
+    reader.readAsDataURL(file);
+  });
+
+  async function handleNewImage(b64, mime) {
+    portraitMime = mime;
+    originalPortraitBase64 = b64;
+    portraitBase64 = b64;
+    $('portraitPreview').src = `data:${mime};base64,${b64}`;
+    showPortraitState('loaded');
+    $('faceOverlay').classList.add('hidden');
+    $('identityLock').classList.add('hidden');
+    try {
+      const faces = await detectFaces(b64, mime);
+      detectedFaces = faces;
+      if (faces.length > 1) {
+        $('faceOverlay').classList.remove('hidden');
+      } else if (faces.length === 1) {
+        const cropped = await cropAroundFace(b64, mime, faces[0], 1.8);
+        portraitBase64 = cropped;
+        $('portraitPreview').src = `data:${mime};base64,${cropped}`;
+        $('identityLock').classList.remove('hidden');
+      } else {
+        $('identityLock').classList.remove('hidden');
+      }
+    } catch { $('identityLock').classList.remove('hidden'); }
+  }
+
+  async function selectFace(idx) {
+    const face = detectedFaces[idx];
+    if (!face) return;
+    try {
+      const cropped = await cropAroundFace(originalPortraitBase64, portraitMime, face, 1.8);
+      portraitBase64 = cropped;
+      $('portraitPreview').src = `data:${portraitMime};base64,${cropped}`;
+    } catch { portraitBase64 = originalPortraitBase64; }
+    $('faceOverlay').classList.add('hidden');
+    $('identityLock').classList.remove('hidden');
+  }
+
+  function detectFaces(b64, mime) {
+    return new Promise((res, rej) => {
+      const img = new Image();
+      img.onload = () => {
+        const { width: w, height: h } = img;
+        const faces = w > h * 1.3
+          ? [
+              { x:w*0.1,y:h*0.2,width:w/3,height:h*0.6,centerX:w*0.25,centerY:h*0.45 },
+              { x:w*0.6,y:h*0.2,width:w/3,height:h*0.6,centerX:w*0.75,centerY:h*0.45 }
+            ]
+          : [{ x:w*0.15,y:h*0.12,width:w*0.7,height:h*0.75,centerX:w*0.5,centerY:h*0.48 }];
+        res(faces);
+      };
+      img.onerror = () => rej(new Error('image'));
+      img.src = `data:${mime};base64,${b64}`;
+    });
+  }
+
+  function cropAroundFace(b64, mime, face, pad) {
+    return new Promise((res, rej) => {
+      const img = new Image();
+      img.onload = () => {
+        const cv = document.createElement('canvas');
+        const ctx = cv.getContext('2d');
+        if (!ctx) return rej(new Error('canvas'));
+        const tw = face.width*pad, th = face.height*pad;
+        const cx = Math.max(0, face.centerX-tw/2), cy = Math.max(0, face.centerY-th/2);
+        const fw = Math.min(tw, img.width-cx), fh = Math.min(th, img.height-cy);
+        cv.width = fw; cv.height = fh;
+        ctx.fillStyle = '#000'; ctx.fillRect(0,0,fw,fh);
+        ctx.drawImage(img, cx, cy, fw, fh, 0, 0, fw, fh);
+        res(cv.toDataURL(mime).split(',')[1]);
+      };
+      img.src = `data:${mime};base64,${b64}`;
+    });
+  }
+
+  // ── AUDIO ──────────────────────────────────────────────────
+  $('audioZone').addEventListener('click', () => $('audioInput').click());
+  $('audioInput').addEventListener('change', async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const b64 = reader.result.split(',')[1];
+      audioBase64 = b64;
+      audioMime = file.type;
+      $('audioPlaceholder').classList.add('hidden');
+      $('audioLoaded').classList.remove('hidden');
+      $('audioZone').style.borderColor = '#3b82f6';
+      $('audioZone').style.background = 'rgba(59,130,246,0.05)';
+      $('modeIndicator').innerHTML = `<span class="status-dot blue"></span><span style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;color:#60a5fa;font-style:italic;">Lip-Sync Identity Lock fr-FR</span>`;
+      if (!apiKey || !GoogleGenAI) return;
+      setStatus("⏳ TRANSCRIPTION...", true);
+      try {
+        const ai = new GoogleGenAI({ apiKey });
+        const resp = await ai.models.generateContent({
+          model: 'gemini-3-pro-preview',
+          contents: [{ parts: [{ inlineData:{ data:b64, mimeType:file.type } },{ text:'Extract JSON only: { "isValid": boolean, "transcription": "exact text" }' }] }],
+          config: { responseMimeType:"application/json", temperature:0.1 }
+        });
+        const data = JSON.parse(resp.text || '{}');
+        if (data.transcription) {
+          $('dialogue1').value = data.transcription;
+          $('dialogue1').dispatchEvent(new Event('input'));
+        }
+        setStatus("✅ Calibration Prête", false);
+      } catch { setStatus("❌ Erreur audio", false); }
+    };
+    reader.readAsDataURL(file);
+  });
+
+  $('btnRemoveAudio').addEventListener('click', e => {
+    e.stopPropagation();
+    audioBase64 = null; audioMime = null;
+    $('audioLoaded').classList.add('hidden');
+    $('audioPlaceholder').classList.remove('hidden');
+    $('audioZone').style.borderColor = 'rgba(255,255,255,0.1)';
+    $('audioZone').style.background = '';
+    $('modeIndicator').innerHTML = `<span class="status-dot"></span><span style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;color:#22c55e;font-style:italic;">Mode Acting Silencieux Pur</span>`;
+  });
+
+  // ── VALIDATION PHONÉTIQUE ──────────────────────────────────
+  async function validateAndExtractVisemes(b64, mime) {
+    const ai = new GoogleGenAI({ apiKey });
+    const resp = await ai.models.generateContent({
+      model: 'gemini-3-pro-preview',
+      contents: [{ parts: [
+        { inlineData:{ data:b64, mimeType:mime } },
+        { text:`PHONETIC CALIBRATION - STANDARD METROPOLITAN FRENCH (FRANCE) ONLY.
 Accept ONLY Standard French (fr-FR). Reject Quebec, Belgian, Swiss, African accents.
 EXTRACT JSON: { "isValid": boolean, "visemeScript": "string", "transcription": "exact text", "rejectionReason": "if invalid" }` }
-    ]}],
-    config: { responseMimeType:"application/json", temperature:0.1 }
-  });
-  const data = JSON.parse(resp.text || '{}');
-  return { ...data, confirmationMessage: data.isValid ? "Calibration validée (fr-FR France)." : "Accent non-conforme." };
-}
-
-// ============================================================
-// ✅ MODIF 2 — header x-goog-api-key pour le fetch vidéo
-// ✅ MODIF 4 — messages d'erreur explicites (filtre sécu vs technique)
-// ✅ MODIF 5 — pas de 1:1 dans le select
-// ============================================================
-window.startProduction = async function() {
-  if (!window.apiKey) { openKeyModal(); return; }
-  if (!window.portraitBase64) { showError("Portrait requis pour l'identité de l'acteur."); return; }
-  document.getElementById('errorBox').classList.add('hidden');
-  document.getElementById('videoResult').classList.add('hidden');
-  document.getElementById('videoWaiting').classList.remove('hidden');
-  setStatus("INITIALISATION MASTER V3.1...", true);
-
-  const dur = window.currentDuration;
-  const forceFrench = document.getElementById('toggleFrench').classList.contains('active');
-  const noSubtitles = document.getElementById('toggleSubs').classList.contains('active');
-  const noMusic = document.getElementById('toggleMusic').classList.contains('active');
-  const emotion = document.getElementById('emotionTone').value;
-  const angle = document.getElementById('cameraAngle').value;
-  const movement = document.getElementById('cameraMovement').value;
-  const aspectRatio = document.getElementById('aspectRatio').value;
-  const dialogues = [
-    document.getElementById('dialogue1').value,
-    document.getElementById('dialogue2').value,
-    document.getElementById('dialogue3').value,
-  ];
-  const directionPrompt = document.getElementById('directionPrompt').value;
-  const hasAudio = !!window.audioBase64;
-
-  try {
-    const ai = new GoogleGenAI({ apiKey: window.apiKey });
-    const modelId = 'veo-3.1-generate-preview';
-    let voiceAnalysis = null;
-
-    if (hasAudio) {
-      setStatus("CALIBRATION PHONÉTIQUE fr-FR...", true);
-      voiceAnalysis = await validateAndExtractVisemes(window.audioBase64, window.audioMime);
-      if (!voiceAnalysis || !voiceAnalysis.isValid)
-        throw new Error(`ACCENT NON-CONFORME : ${voiceAnalysis?.rejectionReason || 'Français France requis.'}`);
-    }
-
-    let cycles = dur === '20s' ? 3 : dur === '13s' ? 2 : 1;
-    const targetResolution = cycles > 1 ? '720p' : '1080p';
-    const skinGuard = "Natural skin texture, visible pores, no skin smoothing, no filters, hyper-realistic photographic rendering.";
-    const negativePrompt = [
-      noSubtitles ? 'no subtitles, no text on screen, no captions' : '',
-      noMusic ? 'no background music, no soundtrack' : '',
-      'no watermark, no blur'
-    ].filter(Boolean).join(', ');
-    const accentInstruction = forceFrench ? "Standard Metropolitan French accent from France (Parisian)." : "";
-
-    let lastVideoRef = null;
-    let finalUrl = "";
-
-    for (let i = 0; i < cycles; i++) {
-      const isExtension = !!lastVideoRef;
-      const currentDialogue = dialogues[i] || "";
-      setStatus(isExtension ? `PHASE EXTENSION [${i}/${cycles-1}]...` : `INITIALISATION MASTER V3.1...`, true);
-
-      const prompt = isExtension
-        ? `Continue naturally. ${hasAudio ? `Speaking: "${currentDialogue}"` : "Silent acting."} ${skinGuard} no text on screen.`
-        : [
-            "HIGH-END CINEMA PRODUCTION.",
-            hasAudio ? `The person is speaking in ${accentInstruction}: "${currentDialogue}" with perfect lip-sync.` : "Silent acting with natural facial expressions.",
-            `Emotion: ${emotion}.`, skinGuard,
-            `Camera: ${angle}. ${movement}.`, directionPrompt,
-            `negative prompt: ${negativePrompt}`
-          ].filter(Boolean).join(" ");
-
-      const config = { numberOfVideos:1, resolution:targetResolution, aspectRatio };
-      if (!isExtension) {
-        config.referenceImages = [{
-          image: { imageBytes: window.portraitBase64, mimeType: window.portraitMime },
-          referenceType: VideoGenerationReferenceType.ASSET,
-        }];
-      }
-
-      let operation = isExtension
-        ? await ai.models.generateVideos({ model:modelId, prompt, video:lastVideoRef, config })
-        : await ai.models.generateVideos({ model:modelId, prompt, config });
-
-      let attempts = 0;
-      while (!operation.done && attempts < 300) {
-        await new Promise(r => setTimeout(r, 8000));
-        operation = await ai.operations.getVideosOperation({ operation });
-        setStatus(`RENDU [${i+1}/${cycles}] : ${Math.min(99, Math.floor((attempts/300)*100))}%...`, true);
-        attempts++;
-      }
-
-      // ✅ MODIF 4 — Erreur explicite filtre sécurité vs erreur technique
-      if (operation.error) {
-        const msg = String(operation.error.message || '');
-        const isFilter = /safety|blocked|filter|content/i.test(msg);
-        throw new Error(isFilter
-          ? `Génération bloquée par les filtres de sécurité Google.\nModifiez votre prompt ou l'image source.\n\nDétail : ${msg}`
-          : `Erreur de génération : ${msg || 'Inconnue'}`);
-      }
-
-      const resVideo = operation.response?.generatedVideos?.[0]?.video;
-      if (!resVideo) {
-        throw new Error("Flux vidéo non détecté. La génération a peut-être été bloquée par les filtres de sécurité ou a échoué sans erreur explicite.\nEssayez de modifier l'image ou le prompt.");
-      }
-
-      lastVideoRef = resVideo;
-
-      // ✅ MODIF 2 — x-goog-api-key header (plus de ?key= dans l'URL)
-      const videoResponse = await fetch(resVideo.uri, {
-        method: 'GET',
-        headers: { 'x-goog-api-key': window.apiKey }
-      });
-      const blob = await videoResponse.blob();
-      if (finalUrl) URL.revokeObjectURL(finalUrl);
-      finalUrl = URL.createObjectURL(blob);
-    }
-
-    setStatus("", false);
-    document.getElementById('videoWaiting').classList.add('hidden');
-    document.getElementById('videoResult').classList.remove('hidden');
-    document.getElementById('videoPlayer').src = finalUrl;
-    document.getElementById('downloadBtn').href = finalUrl;
-    document.getElementById('videoContainer').style.aspectRatio = aspectRatio.replace(':', '/');
-
-  } catch (err) {
-    setStatus("", false);
-    showError(err.message || String(err));
-    document.getElementById('videoWaiting').classList.remove('hidden');
+      ]}],
+      config: { responseMimeType:"application/json", temperature:0.1 }
+    });
+    const data = JSON.parse(resp.text || '{}');
+    return { ...data, confirmationMessage: data.isValid ? "Calibration validée (fr-FR France)." : "Accent non-conforme." };
   }
-};
 
-updateKeyStatus(!!window.apiKey);
+  // ── PRODUCTION ─────────────────────────────────────────────
+  $('generateBtn').addEventListener('click', async () => {
+    if (!apiKey) { openModal(); return; }
+    if (!portraitBase64) { showError("Portrait requis pour l'identité de l'acteur."); return; }
+    if (!GoogleGenAI) { showError("Librairie Google GenAI non chargée. Rechargez la page."); return; }
+
+    $('errorBox').classList.add('hidden');
+    $('videoResult').classList.add('hidden');
+    $('videoWaiting').classList.remove('hidden');
+    setStatus("INITIALISATION MASTER V3.1...", true);
+
+    const dur = currentDuration;
+    const forceFrench = $('toggleFrench').classList.contains('active');
+    const noSubtitles = $('toggleSubs').classList.contains('active');
+    const noMusic = $('toggleMusic').classList.contains('active');
+    const emotion = $('emotionTone').value;
+    const angle = $('cameraAngle').value;
+    const movement = $('cameraMovement').value;
+    const aspectRatio = $('aspectRatio').value;
+    const dialogues = [$('dialogue1').value, $('dialogue2').value, $('dialogue3').value];
+    const directionPrompt = $('directionPrompt').value;
+    const hasAudio = !!audioBase64;
+
+    try {
+      const ai = new GoogleGenAI({ apiKey });
+      const modelId = 'veo-3.1-generate-preview';
+      let voiceAnalysis = null;
+
+      if (hasAudio) {
+        setStatus("CALIBRATION PHONÉTIQUE fr-FR...", true);
+        voiceAnalysis = await validateAndExtractVisemes(audioBase64, audioMime);
+        if (!voiceAnalysis || !voiceAnalysis.isValid)
+          throw new Error(`ACCENT NON-CONFORME : ${voiceAnalysis?.rejectionReason || 'Français France requis.'}`);
+      }
+
+      const cycles = dur === '20s' ? 3 : dur === '13s' ? 2 : 1;
+      const targetResolution = cycles > 1 ? '720p' : '1080p';
+      const skinGuard = "Natural skin texture, visible pores, no skin smoothing, no filters, hyper-realistic photographic rendering.";
+      const negativePrompt = [
+        noSubtitles ? 'no subtitles, no text on screen, no captions' : '',
+        noMusic ? 'no background music, no soundtrack' : '',
+        'no watermark, no blur'
+      ].filter(Boolean).join(', ');
+      const accentInstruction = forceFrench ? "Standard Metropolitan French accent from France (Parisian)." : "";
+
+      let lastVideoRef = null;
+      let finalUrl = "";
+
+      for (let i = 0; i < cycles; i++) {
+        const isExtension = !!lastVideoRef;
+        const currentDialogue = dialogues[i] || "";
+        setStatus(isExtension ? `PHASE EXTENSION [${i}/${cycles-1}]...` : `INITIALISATION MASTER V3.1...`, true);
+
+        const prompt = isExtension
+          ? `Continue naturally. ${hasAudio ? `Speaking: "${currentDialogue}"` : "Silent acting."} ${skinGuard} no text on screen.`
+          : [
+              "HIGH-END CINEMA PRODUCTION.",
+              hasAudio ? `The person is speaking in ${accentInstruction}: "${currentDialogue}" with perfect lip-sync.` : "Silent acting with natural facial expressions.",
+              `Emotion: ${emotion}.`, skinGuard,
+              `Camera: ${angle}. ${movement}.`, directionPrompt,
+              `negative prompt: ${negativePrompt}`
+            ].filter(Boolean).join(" ");
+
+        const config = { numberOfVideos:1, resolution:targetResolution, aspectRatio };
+        if (!isExtension) {
+          config.referenceImages = [{
+            image: { imageBytes: portraitBase64, mimeType: portraitMime },
+            referenceType: VideoGenerationReferenceType.ASSET,
+          }];
+        }
+
+        let operation = isExtension
+          ? await ai.models.generateVideos({ model:modelId, prompt, video:lastVideoRef, config })
+          : await ai.models.generateVideos({ model:modelId, prompt, config });
+
+        let attempts = 0;
+        while (!operation.done && attempts < 300) {
+          await new Promise(r => setTimeout(r, 8000));
+          operation = await ai.operations.getVideosOperation({ operation });
+          setStatus(`RENDU [${i+1}/${cycles}] : ${Math.min(99, Math.floor((attempts/300)*100))}%...`, true);
+          attempts++;
+        }
+
+        if (operation.error) {
+          const msg = String(operation.error.message || '');
+          const isFilter = /safety|blocked|filter|content/i.test(msg);
+          throw new Error(isFilter
+            ? `Génération bloquée par les filtres de sécurité Google.\nModifiez votre prompt ou l'image source.\n\nDétail : ${msg}`
+            : `Erreur de génération : ${msg || 'Inconnue'}`);
+        }
+
+        const resVideo = operation.response?.generatedVideos?.[0]?.video;
+        if (!resVideo) throw new Error("Flux vidéo non détecté. Génération peut-être bloquée par les filtres de sécurité.\nEssayez de modifier l'image ou le prompt.");
+
+        lastVideoRef = resVideo;
+        // ✅ header x-goog-api-key
+        const videoResponse = await fetch(resVideo.uri, { headers: { 'x-goog-api-key': apiKey } });
+        const blob = await videoResponse.blob();
+        if (finalUrl) URL.revokeObjectURL(finalUrl);
+        finalUrl = URL.createObjectURL(blob);
+      }
+
+      setStatus("", false);
+      $('videoWaiting').classList.add('hidden');
+      $('videoResult').classList.remove('hidden');
+      $('videoPlayer').src = finalUrl;
+      $('downloadBtn').href = finalUrl;
+      $('videoContainer').style.aspectRatio = aspectRatio.replace(':', '/');
+
+    } catch (err) {
+      setStatus("", false);
+      showError(err.message || String(err));
+      $('videoWaiting').classList.remove('hidden');
+    }
+  });
+
+})(); // fin IIFE async
 </script>
 </body>
-</html>tml
+</html>
