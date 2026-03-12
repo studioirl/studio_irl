@@ -290,11 +290,43 @@
 <!-- JSZip -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
+<script>
+// Ces fonctions doivent être en script classique pour être accessibles via onclick HTML
+function activateApiKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key || !key.startsWith('AIza')) {
+    document.getElementById('apiKeyError').classList.remove('hidden');
+    return;
+  }
+  sessionStorage.setItem('studio_scene_key', key);
+  document.getElementById('apiKeyModal').classList.add('hidden');
+  document.getElementById('mainApp').classList.remove('hidden');
+  // Update API_KEY in module scope via custom event
+  window.dispatchEvent(new CustomEvent('apikeyset', { detail: key }));
+}
+
+function resetApiKey() {
+  sessionStorage.removeItem('studio_scene_key');
+  document.getElementById('apiKeyInput').value = '';
+  document.getElementById('apiKeyModal').classList.remove('hidden');
+  document.getElementById('mainApp').classList.add('hidden');
+  window.dispatchEvent(new CustomEvent('apikeyeset', { detail: null }));
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('apiKeyInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') activateApiKey();
+  });
+});
+</script>
 <script type="module">
 import { GoogleGenAI, Type } from "https://esm.sh/@google/genai@^1.34.0";
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
 let API_KEY = sessionStorage.getItem('studio_scene_key') || null;
+
+window.addEventListener('apikeyset', (e) => { API_KEY = e.detail; });
+window.addEventListener('apikeyeset', () => { API_KEY = null; });
 let referenceImage = null;
 let referenceMime = 'image/jpeg';
 let analysisData = null;
@@ -303,32 +335,6 @@ let aspectRatio = '1:1';
 let generatedPrompts = [];
 let generatedImages = {};
 let imageGeneratingIds = new Set();
-
-// ─── API KEY ──────────────────────────────────────────────────────────────────
-window.activateApiKey = function() {
-  const key = document.getElementById('apiKeyInput').value.trim();
-  if (!key || !key.startsWith('AIza')) {
-    document.getElementById('apiKeyError').classList.remove('hidden');
-    return;
-  }
-  API_KEY = key;
-  sessionStorage.setItem('studio_scene_key', key);
-  document.getElementById('apiKeyModal').classList.add('hidden');
-  document.getElementById('mainApp').classList.remove('hidden');
-};
-
-window.resetApiKey = function() {
-  sessionStorage.removeItem('studio_scene_key');
-  API_KEY = null;
-  document.getElementById('apiKeyInput').value = '';
-  document.getElementById('apiKeyModal').classList.remove('hidden');
-  document.getElementById('mainApp').classList.add('hidden');
-};
-
-// Allow Enter key
-document.getElementById('apiKeyInput').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') window.activateApiKey();
-});
 
 // Auto-show app if key exists in session
 if (API_KEY) {
