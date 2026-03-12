@@ -955,22 +955,13 @@ async function handleGenerate() {
 
     let base64Url = await generatePOVImage(settings);
 
-    // PNG -> JPEG 0.95 via canvas (taille reduite, qualite preservee)
-    const blobUrl = await new Promise(resolve => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0);
-        canvas.toBlob(blob => resolve(URL.createObjectURL(blob)), 'image/jpeg', 0.95);
-      };
-      img.src = base64Url;
-      base64Url = null;
-    });
+    // PNG natif — pas de conversion, qualite maximale preservee
+    const byteString = atob(base64Url.split(',')[1]);
+    base64Url = null;
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+    const blobUrl = URL.createObjectURL(new Blob([ab], { type: 'image/png' }));
 
     const newImg = { id: Date.now().toString(), url: blobUrl, prompt: subject, aspectRatio: currentAspectRatio, timestamp: Date.now() };
 
@@ -1065,7 +1056,7 @@ function renderResults() {
 
 function downloadImg(url, idx) {
   const a = document.createElement('a');
-  a.href = url; a.download = `studio-pov-capture-${idx}.jpg`;
+  a.href = url; a.download = `studio-pov-capture-${idx}.png`;
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
 function downloadAll() { results.forEach((res, idx) => setTimeout(() => downloadImg(res.url, idx+1), idx * 300)); }
