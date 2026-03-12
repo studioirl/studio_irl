@@ -1,1134 +1,805 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <meta name="mobile-web-app-capable" content="yes"/>
-  <meta name="apple-mobile-web-app-capable" content="yes"/>
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-  <title>STUDIO GÉNÉTIQUE</title>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --blue: #3b82f6;
-      --blue-dim: rgba(59,130,246,0.12);
-      --blue-border: rgba(59,130,246,0.25);
-      --surface: rgba(255,255,255,0.03);
-      --border: rgba(255,255,255,0.07);
-      --amber: #f59e0b;
-      --bg: #080810;
-      --font: 'Syne', sans-serif;
-      --mono: 'Space Mono', monospace;
-      --sb: env(safe-area-inset-bottom, 0px);
-      --st: env(safe-area-inset-top, 0px);
-    }
-
-    html, body {
-      font-family: var(--font);
-      background: var(--bg);
-      color: #f0f0f8;
-      height: 100%;
-      overflow-x: hidden;
-      -webkit-tap-highlight-color: transparent;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    #app { min-height: 100vh; }
-
-    .glass {
-      background: var(--surface);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid var(--border);
-    }
-
-    /* SCROLLBARS */
-    ::-webkit-scrollbar { width: 3px; }
-    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
-
-    /* RANGE INPUT */
-    input[type=range] {
-      -webkit-appearance: none;
-      width: 100%; height: 6px;
-      background: rgba(255,255,255,0.1);
-      border-radius: 6px; outline: none; cursor: pointer;
-    }
-    input[type=range]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 24px; height: 24px;
-      border-radius: 50%;
-      background: var(--blue);
-      box-shadow: 0 0 10px rgba(59,130,246,0.5);
-    }
-    input[type=range]::-moz-range-thumb {
-      width: 24px; height: 24px;
-      border-radius: 50%;
-      background: var(--blue); border: none;
-    }
-
-    /* ANIMATIONS */
-    @keyframes spin      { to { transform: rotate(360deg); } }
-    @keyframes bounce-s  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
-    @keyframes fadein    { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
-    @keyframes ping      { 0%{transform:scale(1);opacity:1} 75%,100%{transform:scale(2);opacity:0} }
-    @keyframes pulse     { 0%,100%{opacity:1} 50%{opacity:.45} }
-    @keyframes slidein   { from{transform:translateX(-100%)} to{transform:translateX(0)} }
-
-    /* BUTTON RESET */
-    button { font-family: var(--font); cursor: pointer; -webkit-appearance: none; }
-    button:active { opacity: .85; }
-
-    /* GENERATE BTN */
-    .btn-gen {
-      width: 100%; padding: 1.1rem;
-      background: #fff; color: #000;
-      font-weight: 800; font-size: .9rem;
-      letter-spacing: .12em; text-transform: uppercase;
-      border: none; border-radius: 1rem;
-      transition: background .2s, transform .1s;
-    }
-    .btn-gen:active  { transform: scale(.98); }
-    .btn-gen:disabled { background: #1f2937; color: #4b5563; cursor: not-allowed; }
-
-    /* MODE BTN */
-    .btn-mode {
-      display: flex; align-items: center; gap: .75rem;
-      width: 100%; padding: .9rem 1rem;
-      border-radius: .9rem; border: 1px solid transparent;
-      background: transparent; color: #9ca3af;
-      font-size: .9rem; font-weight: 600;
-      transition: all .2s; text-align: left;
-    }
-    .btn-mode.active { background: var(--blue-dim); color: var(--blue); border-color: var(--blue-border); }
-
-    /* TAG BTN */
-    .tag-btn {
-      padding: .45rem .85rem;
-      border-radius: .55rem;
-      font-size: .65rem; font-weight: 700; text-transform: uppercase;
-      border: 1px solid rgba(255,255,255,0.1);
-      background: transparent; color: #6b7280;
-      transition: all .2s; font-family: var(--mono);
-      min-height: 38px;
-    }
-    .tag-btn.active { background: var(--blue-dim); border-color: var(--blue); color: var(--blue); }
-
-    /* SEX BTN */
-    .sex-btn {
-      flex: 1; padding: 1rem .5rem;
-      border-radius: .9rem; border: 2px solid rgba(255,255,255,0.07);
-      background: transparent; color: #6b7280;
-      display: flex; flex-direction: column; align-items: center; gap: .3rem;
-      transition: all .2s; min-height: 74px;
-    }
-    .sex-btn.active { background: var(--blue-dim); border-color: var(--blue); color: var(--blue); box-shadow: 0 0 18px rgba(59,130,246,0.18); }
-
-    /* PANELS */
-    .panel      { padding: 1rem; background: rgba(255,255,255,0.03); border-radius: 1rem; border: 1px solid rgba(255,255,255,0.06); }
-    .panel-blue { padding: 1rem; background: rgba(59,130,246,0.05); border-radius: 1rem; border: 1px solid rgba(59,130,246,0.15); }
-
-    .section-label {
-      display: block;
-      font-size: .6rem; color: var(--blue); font-weight: 800;
-      text-transform: uppercase; letter-spacing: .18em;
-      font-family: var(--mono); margin-bottom: .6rem;
-    }
-
-    /* UPLOAD ZONE */
-    .upload-zone {
-      aspect-ratio: 1;
-      border-radius: 1rem; border: 2px dashed rgba(255,255,255,0.12);
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      cursor: pointer; overflow: hidden; position: relative;
-      transition: border-color .2s; background: rgba(255,255,255,0.02);
-      min-height: 90px;
-    }
-    .upload-zone:active { border-color: var(--blue); }
-    .upload-zone img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
-    .upload-ov {
-      position: absolute; inset: 0;
-      background: rgba(0,0,0,0.55);
-      display: flex; align-items: center; justify-content: center;
-      opacity: 0; transition: opacity .2s;
-    }
-    .upload-zone:active .upload-ov,
-    .upload-zone:hover  .upload-ov { opacity: 1; }
-
-    /* RESULT CARD */
-    .result-card { position: relative; border-radius: 1rem; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 16px 48px rgba(0,0,0,.5); }
-    .result-card img { width: 100%; display: block; }
-    .result-label {
-      position: absolute; top: .75rem; left: .75rem;
-      background: rgba(0,0,0,0.65); backdrop-filter: blur(6px);
-      padding: .2rem .6rem; border-radius: 9999px;
-      font-size: .55rem; font-weight: 700; color: var(--blue);
-      text-transform: uppercase; letter-spacing: .1em;
-      border: 1px solid rgba(255,255,255,0.1); font-family: var(--mono);
-    }
-    .result-dl {
-      position: absolute; bottom: .75rem; right: .75rem;
-      background: rgba(255,255,255,0.92); color: #000;
-      border: none; border-radius: .65rem; padding: .5rem .9rem;
-      font-size: .7rem; font-weight: 800; display: flex; align-items: center; gap: .35rem;
-    }
-    .result-dl:active { transform: scale(.95); }
-
-    /* HEADER */
-    .app-header {
-      height: 56px;
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 1rem;
-      padding-top: var(--st);
-      height: calc(56px + var(--st));
-      background: rgba(8,8,16,0.97);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border-bottom: 1px solid var(--border);
-      position: sticky; top: 0; z-index: 100;
-    }
-
-    /* BOTTOM NAV */
-    .bottom-nav {
-      position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
-      background: rgba(8,8,16,0.97);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border-top: 1px solid var(--border);
-      display: flex;
-      padding-bottom: var(--sb);
-    }
-    .bottom-nav-btn {
-      flex: 1; display: flex; flex-direction: column; align-items: center; gap: .2rem;
-      padding: .65rem .5rem;
-      background: none; border: none; color: #6b7280;
-      font-size: .58rem; font-weight: 700;
-      text-transform: uppercase; letter-spacing: .08em;
-      font-family: var(--mono); transition: color .2s;
-    }
-    .bottom-nav-btn.active { color: var(--blue); }
-    .bottom-nav-btn .nav-icon { font-size: 1.25rem; }
-
-    /* DRAWER */
-    .drawer-backdrop {
-      position: fixed; inset: 0; z-index: 200;
-      background: rgba(0,0,0,0.65);
-      backdrop-filter: blur(4px);
-    }
-    .drawer {
-      position: fixed; top: 0; left: 0; bottom: 0; z-index: 201;
-      width: min(84vw, 300px);
-      background: #0c0c18;
-      border-right: 1px solid var(--border);
-      display: flex; flex-direction: column;
-      padding: 1rem;
-      padding-top: calc(1rem + var(--st));
-      padding-bottom: calc(1rem + var(--sb));
-      overflow-y: auto;
-      animation: slidein .3s cubic-bezier(.16,1,.3,1) forwards;
-    }
-
-    /* PROGRESS */
-    .prog-bar  { height: 4px; background: rgba(255,255,255,.07); border-radius: 4px; overflow: hidden; }
-    .prog-fill { height: 100%; background: var(--blue); border-radius: 4px; transition: width 1s ease-in-out; }
-
-    /* AMBER NOTE */
-    .amber-note {
-      padding: .75rem 1rem;
-      border-left: 2px solid rgba(245,158,11,.5);
-      background: rgba(245,158,11,.05);
-      border-radius: 0 .65rem .65rem 0;
-    }
-
-    /* DESKTOP OVERRIDES */
-    @media (min-width: 768px) {
-      .bottom-nav  { display: none; }
-      .mobile-only { display: none !important; }
-
-      .lab-shell {
-        display: grid;
-        grid-template-columns: 230px 1fr;
-        height: calc(100vh - calc(56px + var(--st)));
-        overflow: hidden;
-      }
-      .desktop-sidebar {
-        border-right: 1px solid var(--border);
-        overflow-y: auto;
-        padding: 1rem;
-        background: #0a0a0f;
-        display: flex;
-        flex-direction: column;
-      }
-      .desktop-main {
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-        padding: 1.5rem;
-      }
-      .lab-grid {
-        display: grid;
-        grid-template-columns: 1fr 1.65fr;
-        gap: 1.5rem;
-        align-items: start;
-      }
-      .controls-scroll { max-height: calc(100vh - 160px); overflow-y: auto; }
-      .results-min { min-height: 480px; }
-    }
-
-    @media (min-width: 1024px) {
-      .lab-shell { grid-template-columns: 260px 1fr; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studio Cinéma Pro — Studio IRL</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=DM+Sans:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: 'DM Sans', sans-serif; background: #080808; color: #fff; margin: 0; min-height: 100vh; }
+  .serif { font-family: 'Playfair Display', serif; }
+  .glass { background: rgba(255,255,255,0.04); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
+  .gradient-text { background: linear-gradient(135deg,#fff 0%,#666 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: #111; }
+  ::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 3px; }
+  #apiModal { position:fixed; inset:0; background:rgba(0,0,0,0.97); z-index:9999; display:flex; align-items:center; justify-content:center; }
+  #apiModal.hidden { display:none; }
+  .modal-box { max-width:560px; width:90%; padding:3rem; background:#0f0f0f; border:1px solid rgba(255,255,255,0.1); border-radius:2rem; }
+  textarea, select { background:transparent; color:#fff; outline:none; resize:none; font-family:'DM Sans',sans-serif; }
+  select option { background:#111; color:#fff; }
+  select { -webkit-appearance:none; appearance:none; cursor:pointer; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .spin { animation: spin 1s linear infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+  .pulse { animation: pulse 2s ease-in-out infinite; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+  .fade-in { animation: fadeIn 0.6s ease forwards; }
+  .status-live { display:inline-flex; align-items:center; gap:6px; }
+  .status-dot { width:8px; height:8px; border-radius:50%; background:#22c55e; box-shadow:0 0 10px rgba(34,197,94,0.6); }
+  .status-dot.blue { background:#3b82f6; box-shadow:0 0 10px rgba(59,130,246,0.6); }
+  .toggle-btn.active { background:#3b82f6; border-color:#3b82f6; color:#fff; }
+  .toggle-btn.inactive { border-color:rgba(255,255,255,0.1); color:rgba(255,255,255,0.3); }
+  .dur-btn { transition:all 0.2s; }
+  .dur-btn.selected { background:#fff; color:#000; border-color:#fff; transform:scale(1.02); }
+  .dur-btn.unselected { border-color:rgba(255,255,255,0.1); color:rgba(255,255,255,0.3); }
+  video { border-radius:2.5rem; background:#000; }
+  .face-overlay { position:absolute; inset:0; background:rgba(0,0,0,0.85); display:flex; align-items:center; justify-content:center; gap:1rem; padding:1.5rem; backdrop-filter:blur(8px); border-radius:2rem; z-index:10; }
+  .camera-controls { position:absolute; bottom:1rem; left:0; right:0; display:flex; justify-content:center; gap:0.75rem; }
+  .portrait-hover-overlay { position:absolute; inset:0; background:rgba(0,0,0,0.5); opacity:0; transition:opacity 0.2s; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0.5rem; border-radius:1.8rem; }
+  #portraitLoaded:hover .portrait-hover-overlay { opacity:1; }
+  .hidden { display:none !important; }
+</style>
 </head>
 <body>
-<div id="app"></div>
 
-<script>
-/* ════════════════════════════════════════
-   CONSTANTS
-════════════════════════════════════════ */
-const M = { PREGNANCY:'PREGNANCY', CHILD:'CHILD', SIBLING:'SIBLING', GRANDPARENT:'GRANDPARENT', UNCLE_AUNT:'UNCLE_AUNT', COUSIN:'COUSIN', EVOLUTION:'EVOLUTION' };
-const MLABELS = { PREGNANCY:'Mode Grossesse', CHILD:'Enfant', SIBLING:'Frères & Sœurs', GRANDPARENT:'Grands-Parents', UNCLE_AUNT:'Oncles / Tantes', COUSIN:'Cousins / Cousines', EVOLUTION:'Évolution Temporelle' };
-const MICONS  = { PREGNANCY:'🤰', CHILD:'👶', SIBLING:'👧👦', GRANDPARENT:'👵👴', UNCLE_AUNT:'👨‍👩‍👦', COUSIN:'🧑‍🤝‍🧑', EVOLUTION:'⏳' };
-const EYES    = ['Marron','Noisette','Vert','Bleu','Gris','Ambre'];
-const WMAP    = {1:.5,2:1,3:2.5,4:5,5:8,6:11,7:13,8:15,9:18};
+<!-- API KEY MODAL -->
+<div id="apiModal">
+  <div class="modal-box">
+    <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1.5rem;">
+      <div style="width:40px;height:40px;background:#fff;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="22" height="22" fill="none" stroke="#000" viewBox="0 0 24 24" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="8" y="8" width="8" height="8"/></svg>
+      </div>
+      <span class="serif" style="font-size:1.3rem;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;">Studio Cinéma Pro</span>
+    </div>
+    <h2 class="serif" style="font-size:2rem;font-weight:700;margin:0 0 0.5rem;">Activer Production</h2>
+    <p style="color:rgba(255,255,255,0.4);font-size:0.85rem;line-height:1.6;margin-bottom:2rem;">Entre ta clé API Google AI Studio. Elle est utilisée directement depuis ton navigateur — <strong style="color:rgba(255,255,255,0.7);">jamais envoyée à un serveur tiers.</strong></p>
+    <label style="font-size:0.65rem;font-weight:900;text-transform:uppercase;letter-spacing:0.2em;color:rgba(255,255,255,0.4);display:block;margin-bottom:0.75rem;">Clé API Google AI Studio</label>
+    <div style="position:relative;margin-bottom:1rem;">
+      <input id="apiKeyInput" type="password" placeholder="AIza..." autocomplete="off"
+        style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:1rem;padding:1rem 3rem 1rem 1.25rem;color:#fff;font-family:'DM Sans',sans-serif;font-size:0.9rem;outline:none;"
+        oninput="validateKeyInput()"/>
+      <button onclick="toggleKeyVisibility()" style="position:absolute;right:1rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:rgba(255,255,255,0.4);">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
+    </div>
+    <div id="keyError" class="hidden" style="color:#f87171;font-size:0.75rem;margin-bottom:1rem;font-weight:600;">⚠ Format invalide. La clé doit commencer par "AIza".</div>
+    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:1rem;padding:1rem;margin-bottom:1.5rem;">
+      <p style="font-size:0.72rem;color:rgba(255,255,255,0.35);line-height:1.6;margin:0;">
+        💡 <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" style="color:rgba(255,255,255,0.5);text-decoration:underline;">Comment obtenir une clé ?</a> — Va sur Google AI Studio → Compte → API Keys. Les crédits décomptent sur <strong style="color:rgba(255,255,255,0.6);">ton quota.</strong>
+      </p>
+    </div>
+    <button id="activateBtn" onclick="activateKey()" disabled style="width:100%;padding:1.1rem;border-radius:1rem;font-weight:900;font-size:0.85rem;text-transform:uppercase;letter-spacing:0.15em;cursor:pointer;background:#fff;color:#000;border:none;opacity:0.3;">Activer la Production Master</button>
+    <p style="text-align:center;margin-top:1rem;font-size:0.65rem;color:rgba(255,255,255,0.2);text-transform:uppercase;letter-spacing:0.1em;">Ta clé est stockée localement dans ce navigateur uniquement</p>
+  </div>
+</div>
 
-/* ════════════════════════════════════════
-   STATE
-════════════════════════════════════════ */
-let S = {
-  apiKey: localStorage.getItem('sg_key')||'', apiOk: !!localStorage.getItem('sg_key'),
-  screen: 'home', drawer: false, mode: M.PREGNANCY,
-  p1: null, p2: null, results: [], generating: false, step: 0,
-  sex: 'female', eye: 'Marron',
-  sibC: {b:true,s:false}, sibA: {b:5,s:5},
-  fSide: 'mother',
-  gpA: {gp:70,gm:68},
-  relC: {m:true,f:true}, relA: {m:30,f:30},
-  resem: 50, dom: 50, cAge: 5,
-  pregStep: 1, pregMo: 3, wGain: 2.5,
-  iWt: 60, cup: 'B', iBust: 90, iThigh: 55,
-  pelvis: 1, bVol: 1, bfPrep: false,
-  strInt: 0, strZones: ['Ventre'],
-  evoAge: '18 mois',
-  isTwins: false,
-  twinSexA: 'female',
-  twinSexB: 'female',
-  twinType: 'fraternels',
+<!-- HEADER -->
+<header class="glass" style="position:sticky;top:0;z-index:50;border-bottom:1px solid rgba(255,255,255,0.08);padding:1rem 1.5rem;">
+  <div style="max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;">
+    <div style="display:flex;align-items:center;gap:0.75rem;cursor:pointer;" onclick="showHome()">
+      <div style="width:38px;height:38px;background:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+        <svg width="20" height="20" fill="none" stroke="#000" viewBox="0 0 24 24" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="8" y="8" width="8" height="8"/></svg>
+      </div>
+      <span class="serif" style="font-size:1.1rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;">Studio Cinéma Pro</span>
+    </div>
+    <nav style="display:flex;align-items:center;gap:2rem;">
+      <button id="navHome" onclick="showHome()" style="font-size:0.7rem;font-weight:900;text-transform:uppercase;letter-spacing:0.15em;background:none;border:none;color:#fff;cursor:pointer;">Accueil</button>
+      <button id="navStudio" onclick="showStudio()" style="font-size:0.7rem;font-weight:900;text-transform:uppercase;letter-spacing:0.15em;background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;">Production Vidéo</button>
+    </nav>
+    <button id="keyStatusBtn" onclick="openKeyModal()" style="font-size:0.65rem;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;padding:0.5rem 1rem;border-radius:999px;cursor:pointer;"></button>
+  </div>
+</header>
+
+<!-- HOME -->
+<div id="homeView" style="padding:2rem 1.5rem;">
+  <div style="max-width:1000px;margin:0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:85vh;text-align:center;gap:4rem;">
+    <div style="max-width:800px;">
+      <div class="glass" style="display:inline-block;padding:0.5rem 1.5rem;border-radius:999px;font-size:0.65rem;font-weight:900;letter-spacing:0.3em;text-transform:uppercase;color:rgba(255,255,255,0.3);margin-bottom:2rem;">Système de Génération Vidéo Haute Fidélité</div>
+      <h1 class="serif gradient-text" style="font-size:clamp(4rem,12vw,9rem);font-weight:700;line-height:0.85;letter-spacing:-0.02em;margin-bottom:2rem;">Studio Cinéma</h1>
+      <p class="serif" style="font-size:clamp(1rem,2.5vw,1.5rem);color:rgba(255,255,255,0.4);font-style:italic;font-weight:300;line-height:1.6;">L'excellence du rendu cinématographique<br>avec synchronisation labiale émotionnelle.</p>
+    </div>
+    <div onclick="showStudio()" style="width:100%;max-width:900px;height:480px;border-radius:3.5rem;overflow:hidden;position:relative;cursor:pointer;transition:transform 0.3s;" onmouseover="this.style.transform='scale(1.01)'" onmouseout="this.style.transform='scale(1)'">
+      <img src="https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=2059" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.3;filter:grayscale(1);" alt="">
+      <div style="position:absolute;inset:0;background:linear-gradient(to top,#080808,rgba(8,8,8,0.6) 50%,transparent);padding:3rem;display:flex;flex-direction:column;justify-content:flex-end;text-align:left;gap:1rem;">
+        <span style="font-size:0.65rem;font-weight:900;text-transform:uppercase;letter-spacing:0.2em;color:rgba(255,255,255,0.4);">Cinéma & Acting Cloning</span>
+        <h2 class="serif" style="font-size:clamp(2.5rem,6vw,4.5rem);font-weight:700;margin:0;line-height:1;">Accéder au Studio</h2>
+        <p class="serif" style="color:rgba(255,255,255,0.5);font-size:1rem;font-style:italic;font-weight:300;max-width:500px;line-height:1.6;">Studio Cinéma transforme une image statique en séquence cinématographique immersive, avec mouvements de caméra fluides, cadrages maîtrisés et synchronisation vocale réaliste.</p>
+        <div style="display:inline-block;background:#fff;color:#000;padding:0.9rem 2rem;border-radius:999px;font-weight:900;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.15em;width:fit-content;">Commencer la Production</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STUDIO -->
+<div id="studioView" class="hidden" style="padding:2rem 1.5rem 8rem;">
+  <div style="max-width:1400px;margin:0 auto;display:flex;flex-direction:column;gap:2rem;">
+
+    <!-- MAIN CARD -->
+    <div class="glass fade-in" style="padding:3rem;border-radius:3rem;">
+
+      <!-- HEADER ROW -->
+      <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.05);padding-bottom:2rem;margin-bottom:2.5rem;">
+        <div>
+          <div style="font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:0.35em;color:rgba(255,255,255,0.3);">Studio Cinéma Master V3.1</div>
+          <div id="modeIndicator" class="status-live" style="margin-top:0.75rem;">
+            <span class="status-dot"></span>
+            <span style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;color:#22c55e;font-style:italic;">Mode Acting Silencieux Pur</span>
+          </div>
+        </div>
+        <div class="glass" style="padding:0.75rem 1.5rem;border-radius:1.5rem;text-align:right;">
+          <div style="font-size:0.55rem;font-weight:900;text-transform:uppercase;color:rgba(255,255,255,0.2);">Production Master</div>
+          <div id="costDisplay" style="font-size:1.8rem;font-weight:900;color:#eab308;">0.60 €</div>
+        </div>
+      </div>
+
+      <!-- PORTRAIT + AUDIO -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-bottom:2.5rem;">
+
+        <!-- Portrait -->
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+            <label style="font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:0.2em;color:rgba(255,255,255,0.4);">Portrait Acteur</label>
+            <span id="identityLock" class="hidden pulse" style="font-size:0.6rem;font-weight:900;text-transform:uppercase;color:#22c55e;">✓ Identity Locked</span>
+          </div>
+
+          <!-- EMPTY STATE -->
+          <div id="portraitEmpty" style="aspect-ratio:1;border-radius:2rem;border:2px dashed rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;">
+            <div style="display:flex;gap:1rem;">
+              <div onclick="document.getElementById('fileInput').click()" style="padding:1.5rem;background:rgba(255,255,255,0.05);border-radius:1.5rem;border:1px solid rgba(255,255,255,0.1);cursor:pointer;text-align:center;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+                <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" style="display:block;margin:0 auto 0.5rem;"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                <span style="font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;opacity:0.6;">Fichier</span>
+              </div>
+              <!-- ✅ MODIF 3 : bouton caméra -->
+              <div onclick="toggleCamera()" style="padding:1.5rem;background:rgba(255,255,255,0.05);border-radius:1.5rem;border:1px solid rgba(255,255,255,0.1);cursor:pointer;text-align:center;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+                <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" style="display:block;margin:0 auto 0.5rem;"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                <span style="font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;opacity:0.6;">Caméra</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- CAMERA STATE -->
+          <div id="portraitCamera" class="hidden" style="aspect-ratio:1;border-radius:2rem;border:2px solid #3b82f6;overflow:hidden;position:relative;background:#000;">
+            <video id="cameraVideo" autoplay playsinline style="width:100%;height:100%;object-fit:cover;display:block;border-radius:0;"></video>
+            <div class="camera-controls">
+              <button onclick="takePhoto()" style="background:#fff;color:#000;padding:0.6rem 1.5rem;border-radius:999px;font-weight:900;font-size:0.65rem;text-transform:uppercase;border:none;cursor:pointer;">📸 Capturer</button>
+              <button onclick="toggleCamera()" style="background:#ef4444;color:#fff;padding:0.6rem 1.5rem;border-radius:999px;font-weight:900;font-size:0.65rem;text-transform:uppercase;border:none;cursor:pointer;">Annuler</button>
+            </div>
+          </div>
+
+          <!-- LOADED STATE -->
+          <div id="portraitLoaded" class="hidden" style="aspect-ratio:1;border-radius:2rem;border:2px solid rgba(255,255,255,0.3);overflow:hidden;position:relative;">
+            <img id="portraitPreview" style="width:100%;height:100%;object-fit:cover;display:block;" alt="">
+            <div class="portrait-hover-overlay">
+              <button onclick="document.getElementById('fileInput').click()" style="background:rgba(255,255,255,0.2);backdrop-filter:blur(10px);color:#fff;padding:0.5rem 1.2rem;border-radius:0.75rem;font-size:0.6rem;font-weight:900;text-transform:uppercase;border:1px solid rgba(255,255,255,0.3);cursor:pointer;">Changer Fichier</button>
+              <button onclick="toggleCamera()" style="background:rgba(255,255,255,0.2);backdrop-filter:blur(10px);color:#fff;padding:0.5rem 1.2rem;border-radius:0.75rem;font-size:0.6rem;font-weight:900;text-transform:uppercase;border:1px solid rgba(255,255,255,0.3);cursor:pointer;">Utiliser Caméra</button>
+            </div>
+            <div id="faceOverlay" class="hidden face-overlay">
+              <button onclick="selectFace(0,event)" style="padding:0.75rem 1.5rem;background:#fff;color:#000;border:none;border-radius:1rem;font-size:0.65rem;font-weight:900;text-transform:uppercase;cursor:pointer;">Cibler Acteur 1</button>
+              <button onclick="selectFace(1,event)" style="padding:0.75rem 1.5rem;background:#fff;color:#000;border:none;border-radius:1rem;font-size:0.65rem;font-weight:900;text-transform:uppercase;cursor:pointer;">Cibler Acteur 2</button>
+            </div>
+          </div>
+
+          <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
+          <canvas id="captureCanvas" class="hidden"></canvas>
+        </div>
+
+        <!-- Audio -->
+        <div>
+          <label style="font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:0.2em;color:rgba(255,255,255,0.4);display:block;margin-bottom:0.75rem;">Audio (Lip-Sync fr-FR)</label>
+          <div id="audioZone" onclick="document.getElementById('audioInput').click()" style="aspect-ratio:1;border-radius:2rem;border:2px dashed rgba(255,255,255,0.1);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background=''">
+            <div id="audioPlaceholder" style="text-align:center;opacity:0.2;">
+              <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin:0 auto 0.5rem;display:block;" stroke-width="1.5"><path d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4"/></svg>
+              <span style="font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:0.15em;display:block;">Upload Calibration</span>
+            </div>
+            <div id="audioLoaded" class="hidden" style="text-align:center;padding:1.5rem;">
+              <div style="width:56px;height:56px;background:rgba(59,130,246,0.2);border-radius:50%;margin:0 auto 1rem;display:flex;align-items:center;justify-content:center;" class="pulse">
+                <svg width="28" height="28" fill="none" stroke="#60a5fa" viewBox="0 0 24 24" stroke-width="2"><path d="M12 3v18m5-14v10m-10-7v4"/></svg>
+              </div>
+              <p style="font-size:0.65rem;font-weight:900;color:#60a5fa;text-transform:uppercase;letter-spacing:0.15em;">Calibration OK</p>
+              <button onclick="removeAudio(event)" style="margin-top:0.75rem;font-size:0.6rem;font-weight:700;color:#f87171;text-transform:uppercase;background:none;border:1px solid rgba(248,113,113,0.3);padding:0.4rem 1rem;border-radius:999px;cursor:pointer;">Désactiver</button>
+            </div>
+            <input type="file" id="audioInput" accept="audio/*" class="hidden" onchange="handleAudioUpload(event)">
+          </div>
+        </div>
+      </div>
+
+      <!-- DIALOGUES -->
+      <div style="display:flex;flex-direction:column;gap:1rem;margin-bottom:2rem;">
+        <div style="padding:2rem;background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.05);border-radius:2rem;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:1rem;">
+            <label style="font-size:0.6rem;font-weight:900;text-transform:uppercase;color:#60a5fa;font-style:italic;">Segment 1 [0 – 7s]</label>
+            <span id="wordCount1" style="font-size:0.6rem;font-weight:900;text-transform:uppercase;color:rgba(255,255,255,0.3);">0 / 20 mots</span>
+          </div>
+          <textarea id="dialogue1" rows="3" placeholder="Premier dialogue..." style="width:100%;font-size:1.4rem;font-style:italic;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:0.75rem;min-height:70px;" class="serif" oninput="updateWordCount(this,'wordCount1',20)"></textarea>
+        </div>
+        <div id="segment2" class="hidden" style="padding:2rem;background:linear-gradient(135deg,rgba(168,85,247,0.05),rgba(59,130,246,0.05));border:1px solid rgba(168,85,247,0.2);border-radius:2rem;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:1rem;">
+            <label style="font-size:0.6rem;font-weight:900;text-transform:uppercase;color:#c084fc;font-style:italic;">Segment 2 [8 – 13s]</label>
+            <span id="wordCount2" style="font-size:0.6rem;font-weight:900;text-transform:uppercase;color:rgba(255,255,255,0.3);">0 / 15 mots</span>
+          </div>
+          <textarea id="dialogue2" rows="3" placeholder="La suite..." style="width:100%;font-size:1.4rem;font-style:italic;border-bottom:1px solid rgba(168,85,247,0.2);padding-bottom:0.75rem;min-height:70px;" class="serif" oninput="updateWordCount(this,'wordCount2',15)"></textarea>
+        </div>
+        <div id="segment3" class="hidden" style="padding:2rem;background:linear-gradient(135deg,rgba(59,130,246,0.05),rgba(34,211,238,0.05));border:1px solid rgba(34,211,238,0.2);border-radius:2rem;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:1rem;">
+            <label style="font-size:0.6rem;font-weight:900;text-transform:uppercase;color:#22d3ee;font-style:italic;">Segment 3 [14 – 20s]</label>
+            <span id="wordCount3" style="font-size:0.6rem;font-weight:900;text-transform:uppercase;color:rgba(255,255,255,0.3);">0 / 15 mots</span>
+          </div>
+          <textarea id="dialogue3" rows="3" placeholder="Conclusion..." style="width:100%;font-size:1.4rem;font-style:italic;border-bottom:1px solid rgba(34,211,238,0.2);padding-bottom:0.75rem;min-height:70px;" class="serif" oninput="updateWordCount(this,'wordCount3',15)"></textarea>
+        </div>
+      </div>
+
+      <!-- DIRECTION -->
+      <div style="margin-bottom:2rem;">
+        <label style="font-size:0.6rem;font-weight:900;text-transform:uppercase;color:rgba(255,255,255,0.3);font-style:italic;display:block;margin-bottom:0.75rem;">Mise en scène (Atmosphère)</label>
+        <textarea id="directionPrompt" rows="3" placeholder="Lumières, décor, intentions non-verbales..." style="width:100%;font-size:1.1rem;font-style:italic;border-bottom:1px solid rgba(255,255,255,0.05);padding-bottom:0.75rem;min-height:80px;" class="serif"></textarea>
+      </div>
+
+      <!-- CONTROLS -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1rem;border-top:1px solid rgba(255,255,255,0.05);padding-top:1.5rem;margin-bottom:1.5rem;">
+        <div>
+          <label style="font-size:0.55rem;font-weight:900;text-transform:uppercase;color:rgba(255,255,255,0.3);display:block;margin-bottom:0.5rem;">Angle</label>
+          <select id="cameraAngle" class="glass" style="width:100%;padding:0.75rem 1rem;border-radius:1rem;font-size:0.65rem;font-weight:700;border:1px solid rgba(255,255,255,0.1);">
+            <option value="Face (Frontal)">Face (Frontal)</option>
+            <option value="Incliné (Dutch Angle)">Incliné (Dutch Angle)</option>
+            <option value="Zénithale (Top-down)">Zénithale (Top-down)</option>
+            <option value="Plongée totale">Plongée totale</option>
+            <option value="Plan taille (Waist-level)">Plan taille</option>
+            <option value="Macro-focus (Lèvres/Yeux)">Macro-focus</option>
+            <option value="3/4 Profil latéral">3/4 Profil</option>
+            <option value="Plan miroir (Reflet)">Plan miroir</option>
+            <option value="Contre-plongée">Contre-plongée</option>
+            <option value="Point de vue (POV)">POV</option>
+            <option value="Caméra à l'épaule (Immersif)">Caméra épaule</option>
+            <option value="De dos (Mystérieux)">De dos</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:0.55rem;font-weight:900;text-transform:uppercase;color:rgba(255,255,255,0.3);display:block;margin-bottom:0.5rem;">Mouvement</label>
+          <select id="cameraMovement" class="glass" style="width:100%;padding:0.75rem 1rem;border-radius:1rem;font-size:0.65rem;font-weight:700;border:1px solid rgba(255,255,255,0.1);">
+            <option value="Fixe (Émotionnel)">Fixe (Émotionnel)</option>
+            <option value="Travelling avant (Push-in)">Travelling avant</option>
+            <option value="Travelling arrière (Pull-out)">Travelling arrière</option>
+            <option value="Travelling latéral">Travelling latéral</option>
+            <option value="Orbit 360° (Héroïque)">Orbit 360°</option>
+            <option value="Zoom fluide (Focus)">Zoom fluide</option>
+            <option value="Panoramique horizontal">Panoramique</option>
+            <option value="Tilt (Haut-Bas)">Tilt</option>
+            <option value="Caméra à l'épaule (Vibrations réelles)">Épaule vibrant</option>
+            <option value="Grue/Drone (Envolée)">Grue/Drone</option>
+            <option value="Travelling circulaire (180° Arc)">Arc 180°</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:0.55rem;font-weight:900;text-transform:uppercase;color:rgba(255,255,255,0.3);display:block;margin-bottom:0.5rem;">Ton Emotionnel</label>
+          <select id="emotionTone" class="glass" style="width:100%;padding:0.75rem 1rem;border-radius:1rem;font-size:0.65rem;font-weight:700;border:1px solid rgba(255,255,255,0.1);">
+            <option value="Sincère & Authentique">Sincère & Authentique</option>
+            <option value="Touchant & Ému">Touchant & Ému</option>
+            <option value="Calme & Serein">Calme & Serein</option>
+            <option value="Déterminé & Fort">Déterminé & Fort</option>
+            <option value="Joie & Éclats">Joie & Éclats</option>
+            <option value="Vulnérable & Fragile">Vulnérable & Fragile</option>
+          </select>
+        </div>
+        <!-- ✅ MODIF 5 : 1:1 supprimé — non supporté par Veo -->
+        <div>
+          <label style="font-size:0.55rem;font-weight:900;text-transform:uppercase;color:rgba(255,255,255,0.3);display:block;margin-bottom:0.5rem;">Aspect Ratio</label>
+          <select id="aspectRatio" class="glass" style="width:100%;padding:0.75rem 1rem;border-radius:1rem;font-size:0.65rem;font-weight:700;border:1px solid rgba(255,255,255,0.1);">
+            <option value="9:16">Portrait (9:16)</option>
+            <option value="16:9">Cinéma (16:9)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- DURATION -->
+      <div style="margin-bottom:1.5rem;">
+        <label style="font-size:0.55rem;font-weight:900;text-transform:uppercase;color:rgba(255,255,255,0.3);font-style:italic;display:block;margin-bottom:0.75rem;">Durée Master</label>
+        <div style="display:flex;gap:0.75rem;">
+          <button class="dur-btn selected" data-dur="6s" onclick="selectDuration('6s')" style="flex:1;padding:1rem;border-radius:1.25rem;border:1px solid;font-size:0.7rem;font-weight:900;">6s</button>
+          <button class="dur-btn unselected" data-dur="13s" onclick="selectDuration('13s')" style="flex:1;padding:1rem;border-radius:1.25rem;border:1px solid;font-size:0.7rem;font-weight:900;">13s</button>
+          <button class="dur-btn unselected" data-dur="20s" onclick="selectDuration('20s')" style="flex:1;padding:1rem;border-radius:1.25rem;border:1px solid;font-size:0.7rem;font-weight:900;">20s</button>
+        </div>
+      </div>
+
+      <!-- TOGGLES -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0.75rem;margin-bottom:2rem;">
+        <div class="glass" style="display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem;border-radius:1rem;">
+          <div><div style="font-size:0.6rem;font-weight:900;text-transform:uppercase;color:rgba(255,255,255,0.6);">🇫🇷 Accent fr-FR</div><div style="font-size:0.5rem;color:rgba(255,255,255,0.25);text-transform:uppercase;">Forcer Paris (Standard)</div></div>
+          <button id="toggleFrench" class="toggle-btn active" onclick="toggleOption('toggleFrench')" style="font-size:0.55rem;font-weight:900;text-transform:uppercase;padding:0.4rem 0.8rem;border-radius:0.5rem;border:1px solid;cursor:pointer;">Activé</button>
+        </div>
+        <div class="glass" style="display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem;border-radius:1rem;">
+          <div><div style="font-size:0.6rem;font-weight:900;text-transform:uppercase;color:rgba(255,255,255,0.6);">📝 Sans Sous-titres</div><div style="font-size:0.5rem;color:rgba(255,255,255,0.25);text-transform:uppercase;">Empêcher texte on-screen</div></div>
+          <button id="toggleSubs" class="toggle-btn active" onclick="toggleOption('toggleSubs')" style="font-size:0.55rem;font-weight:900;text-transform:uppercase;padding:0.4rem 0.8rem;border-radius:0.5rem;border:1px solid;cursor:pointer;">Activé</button>
+        </div>
+        <div class="glass" style="display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem;border-radius:1rem;">
+          <div><div style="font-size:0.6rem;font-weight:900;text-transform:uppercase;color:rgba(255,255,255,0.6);">🎵 Sans Musique</div><div style="font-size:0.5rem;color:rgba(255,255,255,0.25);text-transform:uppercase;">Garder l'audio pur</div></div>
+          <button id="toggleMusic" class="toggle-btn active" onclick="toggleOption('toggleMusic')" style="font-size:0.55rem;font-weight:900;text-transform:uppercase;padding:0.4rem 0.8rem;border-radius:0.5rem;border:1px solid;cursor:pointer;">Activé</button>
+        </div>
+      </div>
+
+      <!-- ERROR -->
+      <div id="errorBox" class="hidden" style="padding:1.5rem;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:1.5rem;color:#f87171;font-size:0.75rem;font-weight:700;font-style:italic;margin-bottom:1.5rem;line-height:1.7;white-space:pre-wrap;"></div>
+
+      <!-- GENERATE -->
+      <button id="generateBtn" onclick="startProduction()" style="width:100%;padding:3rem 2rem;border-radius:2.5rem;font-weight:900;font-size:1.8rem;text-transform:uppercase;letter-spacing:-0.02em;border:none;cursor:pointer;transition:all 0.2s;background:#fff;color:#000;">
+        <span id="btnText">Produire Séquence Master (0.60 €)</span>
+      </button>
+    </div>
+
+    <!-- VIDEO MONITOR -->
+    <div class="glass fade-in" style="padding:2rem;border-radius:3rem;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+        <span style="font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:0.2em;color:rgba(255,255,255,0.3);">Flux Monitoring 1080p Master</span>
+        <div class="status-live"><span class="status-dot"></span><span style="font-size:0.6rem;font-weight:700;text-transform:uppercase;color:rgba(255,255,255,0.3);">Signal Stable</span></div>
+      </div>
+      <div id="videoWaiting" style="border:3px dashed rgba(255,255,255,0.05);border-radius:2.5rem;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:5rem 2rem;min-height:300px;">
+        <div id="waitingSpinner" style="width:64px;height:64px;border:3px solid rgba(255,255,255,0.05);border-top-color:rgba(255,255,255,0.3);border-radius:50%;opacity:0.2;"></div>
+        <p id="waitingText" style="font-size:0.65rem;font-weight:900;text-transform:uppercase;letter-spacing:0.3em;color:rgba(255,255,255,0.2);margin-top:2rem;text-align:center;font-style:italic;max-width:250px;line-height:1.6;">Transmission en attente...</p>
+      </div>
+      <div id="videoResult" class="hidden fade-in">
+        <div id="videoContainer" style="border-radius:2.5rem;overflow:hidden;background:#000;margin-bottom:1.5rem;">
+          <video id="videoPlayer" controls autoplay loop style="width:100%;display:block;border-radius:0;"></video>
+        </div>
+        <div class="glass" style="padding:2rem;border-radius:2rem;display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <p style="font-size:0.6rem;font-weight:900;text-transform:uppercase;color:#3b82f6;text-decoration:underline;text-decoration-color:rgba(59,130,246,0.4);text-underline-offset:6px;">Production Certifiée Identity Lock</p>
+            <p class="serif" style="font-size:2.5rem;font-weight:700;text-transform:uppercase;line-height:1.1;margin-top:0.3rem;">Rendu OK</p>
+          </div>
+          <a id="downloadBtn" download="studio-master.mp4" style="padding:0.9rem 2rem;background:#fff;color:#000;border-radius:999px;font-size:0.65rem;font-weight:900;text-transform:uppercase;text-decoration:none;">Exporter</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROTOCOL -->
+    <div class="glass fade-in" style="padding:2rem;border-radius:2rem;">
+      <h4 style="font-size:0.6rem;font-weight:900;text-transform:uppercase;color:rgba(255,255,255,0.3);border-bottom:1px solid rgba(255,255,255,0.05);padding-bottom:1rem;margin-bottom:1rem;">Protocol Master V3.1</h4>
+      <div style="display:flex;flex-direction:column;gap:0.75rem;">
+        <div style="display:flex;justify-content:space-between;font-size:0.65rem;"><span style="color:rgba(255,255,255,0.2);text-transform:uppercase;font-weight:900;">Identity Lock</span><span style="color:#22c55e;font-weight:700;font-style:italic;">Activé</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:0.65rem;"><span style="color:rgba(255,255,255,0.2);text-transform:uppercase;font-weight:900;">Phonetic Guard</span><span style="color:#3b82f6;font-weight:700;font-style:italic;">fr-FR France</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:0.65rem;"><span style="color:rgba(255,255,255,0.2);text-transform:uppercase;font-weight:900;">Anti-Smoothing</span><span style="color:rgba(255,255,255,0.4);font-weight:700;font-style:italic;">Forensic Active</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+// ============================================================
+// ✅ MODIF 1 — Clé API injectée dynamiquement (pas de process.env écrasé)
+// ============================================================
+window.apiKey = localStorage.getItem('studio_cinema_api_key') || null;
+window.portraitBase64 = null;
+window.originalPortraitBase64 = null;
+window.portraitMime = 'image/jpeg';
+window.audioBase64 = null;
+window.audioMime = null;
+window.currentDuration = '6s';
+window.detectedFaces = [];
+window.isCameraActive = false;
+
+const { GoogleGenAI, VideoGenerationReferenceType } = await import('https://esm.sh/@google/genai@^1.40.0');
+
+// --- MODAL ---
+window.validateKeyInput = function() {
+  const val = document.getElementById('apiKeyInput').value.trim();
+  const valid = val.startsWith('AIza') && val.length > 20;
+  document.getElementById('activateBtn').disabled = !valid;
+  document.getElementById('activateBtn').style.opacity = valid ? '1' : '0.3';
+  document.getElementById('keyError').classList.toggle('hidden', val.length < 5 || valid);
+};
+window.toggleKeyVisibility = function() {
+  const inp = document.getElementById('apiKeyInput');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+};
+window.activateKey = function() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key.startsWith('AIza')) return;
+  window.apiKey = key;
+  localStorage.setItem('studio_cinema_api_key', key);
+  document.getElementById('apiModal').classList.add('hidden');
+  updateKeyStatus(true);
+};
+window.openKeyModal = function() {
+  document.getElementById('apiModal').classList.remove('hidden');
+  document.getElementById('apiKeyInput').value = window.apiKey || '';
+  validateKeyInput();
+};
+function updateKeyStatus(active) {
+  const btn = document.getElementById('keyStatusBtn');
+  btn.style.border = active ? '1px solid rgba(34,197,94,0.5)' : '1px solid rgba(234,179,8,0.5)';
+  btn.style.color = active ? '#4ade80' : '#facc15';
+  btn.style.background = active ? 'rgba(34,197,94,0.1)' : 'rgba(234,179,8,0.1)';
+  btn.textContent = active ? 'Master Key Active' : 'Activer Production';
+}
+if (window.apiKey) { document.getElementById('apiModal').classList.add('hidden'); updateKeyStatus(true); }
+else updateKeyStatus(false);
+
+// --- NAV ---
+window.showHome = function() {
+  document.getElementById('homeView').classList.remove('hidden');
+  document.getElementById('studioView').classList.add('hidden');
+  document.getElementById('navHome').style.color = '#fff';
+  document.getElementById('navStudio').style.color = 'rgba(255,255,255,0.4)';
+};
+window.showStudio = function() {
+  if (!window.apiKey) { openKeyModal(); return; }
+  document.getElementById('homeView').classList.add('hidden');
+  document.getElementById('studioView').classList.remove('hidden');
+  document.getElementById('navHome').style.color = 'rgba(255,255,255,0.4)';
+  document.getElementById('navStudio').style.color = '#fff';
 };
 
-/* ════════════════════════════════════════
-   HELPERS
-════════════════════════════════════════ */
-function el(tag, p={}, ...kids) {
-  const e = document.createElement(tag);
-  for (const [k,v] of Object.entries(p)) {
-    if (k==='class') e.className = v;
-    else if (k==='style') (typeof v==='string' ? e.style.cssText=v : Object.assign(e.style,v));
-    else if (k==='html') e.innerHTML = v;
-    else if (k.startsWith('on')) e.addEventListener(k.slice(2).toLowerCase(), v);
-    else e.setAttribute(k, v);
-  }
-  for (const c of kids.flat()) {
-    if (c==null||c===false) continue;
-    e.appendChild(typeof c==='string'||typeof c==='number' ? document.createTextNode(c) : c);
-  }
-  return e;
-}
-
-const $ = id => document.getElementById(id);
-const div  = (cls, ...k) => el('div',  {class:cls}, ...k);
-const span = (cls, ...k) => el('span', {class:cls}, ...k);
-
-function render() {
-  const app = $('app');
-  app.innerHTML = '';
-  if (!S.apiOk)          { app.append(pageApiKey()); return; }
-  if (S.screen==='home') { app.append(pageHome());   return; }
-  app.append(pageLab());
-}
-
-/* ════════════════════════════════════════
-   PAGE: API KEY
-════════════════════════════════════════ */
-function pageApiKey() {
-  const wrap = el('div',{style:'min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.25rem;background:radial-gradient(ellipse 80% 50% at 70% -10%,rgba(59,130,246,.08),transparent 60%),#080810'});
-  const card = el('div',{class:'glass',style:'width:100%;max-width:430px;padding:2rem;border-radius:1.5rem'});
-
-  const top = el('div',{style:'text-align:center;margin-bottom:1.75rem'});
-  top.append(
-    el('div',{style:'font-size:3rem;margin-bottom:.75rem'},'🧬'),
-    el('h1',{style:'font-size:1.5rem;font-weight:800;text-transform:uppercase;letter-spacing:.18em;margin-bottom:.4rem'},'STUDIO GÉNÉTIQUE'),
-    el('p',{style:'color:#6b7280;font-size:.85rem;line-height:1.5'},'Entrez votre clé API Google AI Studio')
-  );
-
-  const lbl = el('label',{style:'display:block;font-size:.6rem;color:var(--blue);font-weight:800;text-transform:uppercase;letter-spacing:.18em;margin-bottom:.5rem;font-family:var(--mono)'},'Clé API Google AI Studio');
-
-  const inp = el('input',{type:'password', placeholder:'AIza...', value:S.apiKey,
-    style:'width:100%;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.1);border-radius:.85rem;padding:1rem;color:#fff;font-size:.95rem;outline:none;font-family:var(--mono);display:block;margin-bottom:1rem',
-    onInput: e=>{ S.apiKey=e.target.value; },
-    onFocus: e=>{ e.target.style.borderColor='var(--blue)'; },
-    onBlur:  e=>{ e.target.style.borderColor='rgba(255,255,255,.1)'; }
+// --- DURATION ---
+window.selectDuration = function(dur) {
+  window.currentDuration = dur;
+  document.querySelectorAll('.dur-btn').forEach(b => {
+    b.classList.toggle('selected', b.dataset.dur === dur);
+    b.classList.toggle('unselected', b.dataset.dur !== dur);
   });
+  const costs = { '6s': 0.60, '13s': 1.20, '20s': 1.80 };
+  document.getElementById('costDisplay').textContent = costs[dur].toFixed(2) + ' €';
+  document.getElementById('btnText').textContent = `Produire Séquence Master (${costs[dur].toFixed(2)} €)`;
+  document.getElementById('segment2').classList.toggle('hidden', dur === '6s');
+  document.getElementById('segment3').classList.toggle('hidden', dur !== '20s');
+};
 
-  const btn = el('button',{class:'btn-gen',style:'margin-bottom:.75rem'},"ACCÉDER À L'APPLICATION");
-  btn.addEventListener('click', ()=>{
-    const key = S.apiKey.trim();
-    if (!key) { alert('Veuillez entrer une clé API.'); return; }
-    if (!key.startsWith('AIza')) { alert('Format invalide. La clé doit commencer par "AIza".'); return; }
-    S.apiKey = key;
-    localStorage.setItem('sg_key', key);
-    S.apiOk = true;
-    render();
-  });
+// --- WORD COUNT ---
+window.updateWordCount = function(el, id, max) {
+  const words = el.value.trim().split(/\s+/).filter(w => w.length > 0).length;
+  const span = document.getElementById(id);
+  span.textContent = `${words} / ${max} mots`;
+  span.style.color = words > max ? '#f87171' : 'rgba(255,255,255,0.3)';
+};
 
-  const note = el('p',{style:'color:#4b5563;font-size:.67rem;text-align:center;line-height:1.6;font-family:var(--mono)'},'🔒 Stockée localement, jamais partagée. Générations décomptées sur votre compte Google AI Studio.');
+// --- TOGGLES ---
+window.toggleOption = function(id) {
+  const btn = document.getElementById(id);
+  const active = btn.classList.contains('active');
+  btn.classList.toggle('active', !active);
+  btn.classList.toggle('inactive', active);
+  btn.textContent = active ? 'Off' : 'Activé';
+};
 
-  card.append(top,lbl,inp,btn,note);
-  wrap.append(card);
-  return wrap;
-}
-
-/* ════════════════════════════════════════
-   PAGE: HOME
-════════════════════════════════════════ */
-function pageHome() {
-  const wrap = el('div',{style:'min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1.5rem 1.25rem;background:radial-gradient(ellipse 80% 50% at 70% -10%,rgba(59,130,246,.08),transparent 60%),#080810'});
-  const inner = el('div',{style:'width:100%;max-width:860px;text-align:center'});
-
-  inner.append(
-    el('h1',{style:'font-size:clamp(2.2rem,9vw,5rem);font-weight:900;text-transform:uppercase;letter-spacing:.18em;line-height:1.05;margin-bottom:1.25rem'},'STUDIO\nGÉNÉTIQUE'),
-    el('div',{style:'font-size:clamp(3rem,10vw,4.5rem);margin:1rem auto;animation:bounce-s 4s ease-in-out infinite'},'🧬'),
-    el('p',{style:'color:#d1d5db;font-size:clamp(.85rem,2.5vw,1.05rem);font-weight:300;line-height:1.7;max-width:540px;margin:0 auto .85rem'},'Créez chaque membre de la famille en respectant les traits génétiques.'),
-    el('p',{style:'color:#6b7280;font-size:.82rem;max-width:420px;margin:0 auto 1.75rem;line-height:1.6'},"À partir de photos et de paramètres, générez des visages cohérents, évolutifs et crédibles.")
-  );
-
-  const grid = el('div',{style:'display:grid;grid-template-columns:repeat(2,1fr);gap:.7rem;margin-bottom:1.75rem;max-width:500px;margin-left:auto;margin-right:auto'});
-  [{i:'🧒',t:'Enfants & bébés',d:'Âge réel, morphologie crédible'},{i:'👨‍👩‍👧',t:'Fratrie & famille',d:'Ressemblance contrôlée'},{i:'🤰',t:'Grossesse',d:'Transformation mois par mois'},{i:'👵',t:'Générations',d:'Traits familiaux cohérents'}].forEach(f=>{
-    const c = el('div',{class:'glass',style:'padding:1rem;border-radius:1.1rem;text-align:center'});
-    c.append(el('div',{style:'font-size:1.65rem;margin-bottom:.4rem'},f.i), el('h3',{style:'font-size:.65rem;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:.07em;margin-bottom:.2rem'},f.t), el('p',{style:'font-size:.6rem;color:#6b7280'},f.d));
-    grid.append(c);
-  });
-  inner.append(grid);
-
-  const cta = el('button',{
-    style:'padding:1.1rem 2.5rem;background:#f59e0b;color:#000;font-weight:900;text-transform:uppercase;letter-spacing:.18em;border-radius:1rem;border:none;font-size:.92rem;width:100%;max-width:320px;box-shadow:0 0 28px rgba(245,158,11,.2);font-family:var(--font)',
-    onClick:()=>{ S.screen='lab'; S.results=[]; render(); }
-  },'JE CRÉE MA FAMILLE');
-
-  const keyBtn = el('button',{
-    style:'display:block;margin:.85rem auto 0;color:#4b5563;font-size:.68rem;background:none;border:none;text-decoration:underline;font-family:var(--mono)',
-    onClick:()=>{ localStorage.removeItem('sg_key'); S.apiKey=''; S.apiOk=false; render(); }
-  },'🔑 Changer de clé API');
-
-  inner.append(cta, keyBtn);
-  wrap.append(inner);
-  return wrap;
-}
-
-/* ════════════════════════════════════════
-   PAGE: LAB
-════════════════════════════════════════ */
-function pageLab() {
-  const root = el('div',{style:'display:flex;flex-direction:column;height:100vh;overflow:hidden'});
-  root.append(buildHeader());
-
-  // Shell: desktop = sidebar+main grid, mobile = single scroll column
-  const shell = el('div',{id:'shell',style:'flex:1;overflow:hidden;display:flex'});
-
-  // Desktop sidebar (hidden on mobile via class + JS)
-  const dSide = el('div',{id:'dside',style:'display:none;flex-direction:column'});
-  dSide.append(buildSidebarContent());
-  shell.append(dSide);
-
-  // Main area
-  const main = el('div',{id:'main-area',style:'flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:1rem 1rem calc(72px + var(--sb));'});
-  main.append(buildLabMain());
-  shell.append(main);
-
-  root.append(shell);
-
-  // Drawer overlay (mobile)
-  if (S.drawer) root.append(buildDrawer());
-
-  // Bottom nav (mobile only)
-  root.append(buildBottomNav());
-
-  // Apply desktop layout after mount
-  requestAnimationFrame(applyDesktopLayout);
-  window.addEventListener('resize', applyDesktopLayout, {once:true});
-
-  return root;
-}
-
-function applyDesktopLayout() {
-  const shell=$('shell'), dside=$('dside'), main=$('main-area'), labGrid=$('lab-grid');
-  if (!shell) return;
-  if (window.innerWidth >= 768) {
-    shell.className = 'lab-shell';
-    if (dside) { dside.style.display='flex'; dside.className='desktop-sidebar'; }
-    if (main)  { main.style.padding='1.5rem 1.5rem 2rem'; }
-    if (labGrid) { labGrid.className='lab-grid'; labGrid.style.cssText=''; }
+// ✅ MODIF 3 — CAMÉRA
+window.toggleCamera = async function() {
+  if (window.isCameraActive) {
+    const v = document.getElementById('cameraVideo');
+    if (v.srcObject) v.srcObject.getTracks().forEach(t => t.stop());
+    v.srcObject = null;
+    window.isCameraActive = false;
+    document.getElementById('portraitCamera').classList.add('hidden');
+    if (window.portraitBase64) document.getElementById('portraitLoaded').classList.remove('hidden');
+    else document.getElementById('portraitEmpty').classList.remove('hidden');
   } else {
-    shell.className = '';
-    shell.style.cssText = 'flex:1;overflow:hidden;display:flex';
-    if (dside) dside.style.display = 'none';
-    if (main)  main.style.padding = '1rem 1rem calc(72px + var(--sb))';
-    if (labGrid) { labGrid.className=''; labGrid.style.cssText='display:flex;flex-direction:column;gap:1.1rem'; }
-  }
-}
-
-window.addEventListener('resize', applyDesktopLayout);
-
-function buildHeader() {
-  const h = el('header',{class:'app-header'});
-
-  // Left: hamburger + logo
-  const left = el('div',{style:'display:flex;align-items:center;gap:.65rem'});
-  const ham = el('button',{
-    class:'mobile-only',
-    style:'background:none;border:none;padding:.4rem;border-radius:.5rem;display:flex;flex-direction:column;gap:5px',
-    onClick:()=>{ S.drawer=true; render(); }
-  });
-  [0,1,2].forEach(()=> ham.append(el('span',{style:'display:block;width:19px;height:2px;background:#9ca3af;border-radius:2px'})));
-
-  const logo = el('div',{style:'display:flex;align-items:center;gap:.5rem'});
-  logo.append(
-    el('div',{style:'width:1.65rem;height:1.65rem;background:linear-gradient(135deg,#3b82f6,#6366f1);border-radius:.4rem;display:flex;align-items:center;justify-content:center;font-size:.85rem'},'🧬'),
-    el('span',{style:'font-size:.95rem;font-weight:800;letter-spacing:.07em'},'STUDIO GÉNÉTIQUE')
-  );
-  left.append(ham, logo);
-
-  const right = el('div',{style:'display:flex;align-items:center;gap:.4rem'});
-  right.append(
-    el('span',{style:'width:.4rem;height:.4rem;border-radius:50%;background:#22c55e;display:inline-block;animation:pulse 2s infinite'}),
-    el('span',{style:'font-size:.62rem;color:#6b7280;font-family:var(--mono)'},'v4.2.1')
-  );
-
-  h.append(left, right);
-  return h;
-}
-
-function buildBottomNav() {
-  const nav = el('div',{class:'bottom-nav'});
-  [{id:'lab',icon:'🧬',lbl:'Lab'},{id:'home',icon:'🏠',lbl:'Accueil'},{id:'gallery',icon:'🌳',lbl:'Archives'}].forEach(t=>{
-    const on = (t.id==='gallery'&&S.screen==='gallery')||(t.id==='lab'&&S.screen==='lab')||(t.id==='home'&&S.screen==='home');
-    const b = el('button',{class:`bottom-nav-btn${on?' active':''}`,onClick:()=>{ S.screen=t.id; if(t.id!=='lab') S.results=[]; render(); }});
-    b.append(el('span',{class:'nav-icon'},t.icon), document.createTextNode(t.lbl));
-    nav.append(b);
-  });
-  return nav;
-}
-
-function buildDrawer() {
-  const bd = el('div',{class:'drawer-backdrop',onClick:()=>{ S.drawer=false; render(); }});
-  const dr = el('div',{class:'drawer'});
-  dr.append(
-    el('button',{style:'align-self:flex-end;background:none;border:none;color:#9ca3af;font-size:1.2rem;margin-bottom:.5rem',onClick:()=>{ S.drawer=false; render(); }},'✕'),
-    buildSidebarContent()
-  );
-  const w = el('div');
-  w.append(bd, dr);
-  return w;
-}
-
-function buildSidebarContent() {
-  const w = el('div',{style:'display:flex;flex-direction:column;gap:.2rem;flex:1'});
-
-  const back = el('button',{class:'btn-mode',style:'margin-bottom:.4rem;font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af',
-    onClick:()=>{ S.screen='home'; S.drawer=false; render(); }
-  },'← ACCUEIL');
-  const proto = el('p',{style:'font-size:.56rem;color:#6b7280;font-weight:800;text-transform:uppercase;letter-spacing:.18em;padding:.4rem .5rem;font-family:var(--mono)'},'Protocole de Sélection');
-  w.append(back, proto);
-
-  Object.values(M).forEach(mode=>{
-    const b = el('button',{class:`btn-mode${S.mode===mode?' active':''}`,onClick:()=>{ S.mode=mode; S.results=[]; S.pregStep=1; S.drawer=false; render(); }});
-    b.append(el('span',{style:'font-size:1.15rem'},MICONS[mode]), document.createTextNode(MLABELS[mode]));
-    w.append(b);
-  });
-
-  const ft = el('div',{class:'glass',style:'margin-top:auto;padding:.9rem;border-radius:1rem;margin-top:1rem'});
-  ft.append(
-    el('h4',{style:'font-size:.62rem;font-weight:700;color:#d1d5db;margin-bottom:.35rem;text-transform:uppercase;letter-spacing:.05em'},'Règle de Conformité'),
-    el('p',{style:'font-size:.58rem;color:#6b7280;line-height:1.6;font-style:italic'},'"Aucune optimisation esthétique. La génétique prime sur tout."')
-  );
-  w.append(ft);
-  return w;
-}
-
-/* ════════════════════════════════════════
-   LAB MAIN CONTENT
-════════════════════════════════════════ */
-function buildLabMain() {
-  if (S.screen === 'gallery') return buildGallery();
-
-  const wrap = el('div');
-
-  // Top bar
-  const tb = el('div',{style:'margin-bottom:1.1rem'});
-  const trow = el('div',{style:'display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-bottom:.65rem'});
-  const title = el('h2',{style:'font-size:clamp(.95rem,3vw,1.1rem);font-weight:300;letter-spacing:.13em;color:#fff;text-transform:uppercase'});
-  title.append(document.createTextNode(MLABELS[S.mode]+' '), el('span',{style:'color:var(--blue);font-size:.58rem;vertical-align:super;font-family:var(--mono)'},'ADN v2.5'));
-  trow.append(title);
-
-  const tabs = el('div',{style:'display:flex;gap:.35rem'});
-  ['lab','gallery'].forEach(v=>{
-    const on=S.screen===v;
-    tabs.append(el('button',{
-      style:`padding:.4rem .85rem;border-radius:9999px;font-size:.78rem;border:none;font-family:var(--font);font-weight:600;background:${on?'var(--blue)':'rgba(255,255,255,.06)'};color:${on?'#fff':'#9ca3af'}`,
-      onClick:()=>{ S.screen=v; render(); }
-    }, v==='lab'?'Générateur':'Archives'));
-  });
-  tb.append(trow, tabs);
-  wrap.append(tb);
-
-  // Grid
-  const grid = el('div',{id:'lab-grid',style:'display:flex;flex-direction:column;gap:1.1rem'});
-  grid.append(buildControls(), buildResults());
-  wrap.append(grid);
-
-  return wrap;
-}
-
-function buildGallery() {
-  const w = el('div',{class:'glass',style:'padding:2.5rem 1.5rem;border-radius:1.5rem;min-height:280px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:.85rem'});
-  w.append(
-    el('div',{style:'font-size:3rem;opacity:.2'},'🌳'),
-    el('h3',{style:'font-size:1rem;font-weight:300;color:#d1d5db'},'Archives Familiales'),
-    el('p',{style:'color:#6b7280;font-size:.82rem;max-width:18rem;line-height:1.6'},"L'historique de vos générations sera listé ici."),
-    el('button',{style:'margin-top:1.25rem;padding:.65rem 1.4rem;border:1px solid rgba(255,255,255,.1);border-radius:1rem;background:none;color:#9ca3af;font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;font-family:var(--font)'},'Initialiser un Arbre')
-  );
-  return w;
-}
-
-/* ════════════════════════════════════════
-   CONTROLS
-════════════════════════════════════════ */
-function buildControls() {
-  const wrap = el('div',{class:'glass controls-scroll',style:'border-radius:1.25rem;padding:1.1rem;display:flex;flex-direction:column;gap:1.1rem'});
-
-  wrap.append(el('h3',{style:'font-size:.67rem;font-weight:800;color:var(--blue);text-transform:uppercase;letter-spacing:.18em;padding-bottom:.7rem;border-bottom:1px solid var(--border);font-family:var(--mono)'},'Séquençage ADN'));
-
-  // Uploaders
-  const m = S.mode;
-  if ([M.GRANDPARENT,M.UNCLE_AUNT,M.COUSIN].includes(m)) {
-    wrap.append(upZone(img=>S.p1=img, S.p1, S.fSide==='mother'?'Photo Mère':'Photo Père'));
-    wrap.append(el('p',{style:'font-size:.58rem;color:#4b5563;font-style:italic;text-align:center;font-family:var(--mono)'},'Photo du parent servant de lien direct'));
-  } else if ([M.PREGNANCY,M.EVOLUTION].includes(m)) {
-    wrap.append(upZone(img=>S.p1=img, S.p1, m===M.PREGNANCY?'Photo Mère':'Photo Source'));
-  } else {
-    const row = el('div',{style:'display:grid;grid-template-columns:1fr 1fr;gap:.7rem'});
-    row.append(upZone(img=>S.p1=img,S.p1,'Mère'), upZone(img=>S.p2=img,S.p2,'Père'));
-    wrap.append(row);
-  }
-
-  // Params divider
-  const pd = el('div',{style:'border-top:1px solid var(--border);padding-top:1rem;display:flex;flex-direction:column;gap:1rem'});
-  pd.append(el('h3',{style:'font-size:.67rem;font-weight:800;color:var(--blue);text-transform:uppercase;letter-spacing:.18em;font-family:var(--mono)'},'Paramètres Génétiques'));
-
-  if ([M.CHILD,M.PREGNANCY,M.COUSIN].includes(m)) pd.append(wSexSel());
-  if (m===M.EVOLUTION)   pd.append(wEvoParams());
-  if (m===M.GRANDPARENT) pd.append(wFamControls('Grand-Père','Grand-Mère'));
-  if (m===M.UNCLE_AUNT)  pd.append(wFamControls('Oncle','Tante'));
-  if (m===M.COUSIN)      pd.append(wFamControls('Cousin','Cousine'));
-  if (m===M.SIBLING)     pd.append(wSiblingParams());
-  if (m===M.CHILD)       pd.append(wChildParams());
-  if (m===M.PREGNANCY)   pd.append(wPregParams());
-
-  wrap.append(pd);
-
-  // Birth trigger
-  if (m===M.PREGNANCY && S.pregStep===2) {
-    const b = el('button',{
-      style:'width:100%;padding:1rem;background:rgba(34,197,94,.1);color:#86efac;border:1px solid rgba(34,197,94,.2);border-radius:1rem;font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;font-family:var(--font)',
-      onClick:()=>{ S.pregStep=3; render(); }
-    },'DÉCLENCHER LA NAISSANCE');
-    wrap.append(b);
-  }
-
-  // Generate btn
-  const gb = el('button',{class:'btn-gen'});
-  if (S.generating) {
-    gb.disabled=true; gb.style.cssText='background:#1f2937;color:#4b5563;cursor:not-allowed';
-    const sp=el('span',{style:'display:inline-block;width:.9rem;height:.9rem;border:2px solid #4b5563;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;margin-right:.4rem;vertical-align:middle'});
-    gb.append(sp,'Séquençage...');
-  } else {
-    gb.textContent = S.pregStep===3 ? 'Générer la Naissance' : "Générer l'Identité";
-    gb.addEventListener('click', doGenerate);
-  }
-  wrap.append(gb);
-  return wrap;
-}
-
-function upZone(onUp, img, lbl) {
-  const z = el('div',{class:'upload-zone'});
-  const inp = el('input',{type:'file',accept:'image/*',style:'display:none'});
-  inp.addEventListener('change',e=>{ const f=e.target.files?.[0]; if(!f)return; const r=new FileReader(); r.onload=ev=>{ onUp(ev.target.result); render(); }; r.readAsDataURL(f); });
-  z.append(inp);
-  if (img) {
-    z.append(el('img',{src:img,alt:''}));
-    const ov=el('div',{class:'upload-ov'}); ov.append(el('span',{style:'color:#fff;font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em'},'Changer')); z.append(ov);
-  } else {
-    z.append(el('div',{style:'font-size:1.5rem;opacity:.4;margin-bottom:.25rem'},'📸'), el('span',{style:'font-size:.62rem;color:#6b7280;font-weight:700;text-transform:uppercase;font-family:var(--mono)'},lbl), el('span',{style:'font-size:.58rem;color:#374151;font-family:var(--mono);margin-top:.15rem'},'PNG / JPG'));
-  }
-  z.addEventListener('click',()=>inp.click());
-  return z;
-}
-
-/* ─── SLIDERS ─── */
-function mkSlider(lbl, val, min, max, onChange, opts={}) {
-  const {suffix='',labels=null}=opts;
-  const uid = 'sv_'+lbl.replace(/\W/g,'_');
-  const w=el('div',{style:'display:flex;flex-direction:column;gap:.35rem'});
-  const row=el('div',{style:'display:flex;justify-content:space-between;align-items:center'});
-  row.append(
-    el('label',{style:'font-size:.62rem;color:#6b7280;font-weight:800;text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono)'},lbl),
-    el('span',{id:uid,style:'font-size:.75rem;color:var(--blue);font-family:var(--mono)'},`${val}${suffix}`)
-  );
-  const inp=el('input',{type:'range',min,max,value:val});
-  inp.addEventListener('input',e=>{ const v=parseInt(e.target.value); const sv=$(uid); if(sv)sv.textContent=v+suffix; onChange(v); });
-  w.append(row,inp);
-  if (labels) {
-    const lr=el('div',{style:'display:flex;justify-content:space-between'});
-    labels.forEach(l=>lr.append(el('span',{style:'font-size:.56rem;color:#4b5563;text-transform:uppercase;font-weight:800;font-family:var(--mono)'},l)));
-    w.append(lr);
-  }
-  return w;
-}
-
-/* ─── WIDGETS ─── */
-function wSexSel() {
-  const w=el('div',{class:'panel',style:'display:flex;flex-direction:column;gap:.7rem'});
-  w.append(el('span',{class:'section-label'},'Sexe Biologique (XX/XY)'));
-  const row=el('div',{style:'display:flex;gap:.65rem'});
-  const mkSB=(e,l,v)=>{ const b=el('button',{class:`sex-btn${S.sex===v?' active':''}`,onClick:()=>{S.sex=v;render();}}); b.append(el('span',{style:'font-size:1.25rem'},e),el('span',{style:'font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.09em'},l)); return b; };
-  row.append(mkSB('👧','Fille (XX)','female'),mkSB('👦','Garçon (XY)','male'));
-  w.append(row);
-  return w;
-}
-
-function wEyeColors() {
-  const w=el('div',{class:'panel'});
-  w.append(el('span',{class:'section-label'},'Couleur des Yeux'));
-  const row=el('div',{style:'display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.1rem'});
-  EYES.forEach(c=>{ row.append(el('button',{class:`tag-btn${S.eye===c?' active':''}`,onClick:()=>{S.eye=c;render();}},c)); });
-  w.append(row);
-  return w;
-}
-
-function wFamSide() {
-  const w=el('div',{class:'panel'});
-  w.append(el('span',{class:'section-label'},'Origine Génétique'));
-  const row=el('div',{style:'display:flex;gap:.5rem;margin-top:.3rem'});
-  ['mother','father'].forEach(s=>{
-    row.append(el('button',{
-      style:`flex:1;padding:.65rem;font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;border-radius:.75rem;border:none;font-family:var(--mono);background:${S.fSide===s?'var(--blue)':'rgba(255,255,255,.05)'};color:${S.fSide===s?'#fff':'#6b7280'}`,
-      onClick:()=>{S.fSide=s;render();}
-    },s==='mother'?'CÔTÉ MÈRE':'CÔTÉ PÈRE'));
-  });
-  w.append(row);
-  return w;
-}
-
-function wResem() {
-  const w=el('div',{class:'panel'});
-  w.append(mkSlider('Ressemblance Familiale',S.resem,0,100,v=>S.resem=v,{labels:['Faible','Réaliste','Forte']}));
-  w.append(el('p',{style:'font-size:.58rem;color:#4b5563;font-style:italic;margin-top:.45rem;line-height:1.5;font-family:var(--mono)'},"Héritage direct des traits de la branche familiale."));
-  return w;
-}
-
-function wFamControls(roleM,roleF) {
-  const w=el('div',{style:'display:flex;flex-direction:column;gap:.85rem'});
-  w.append(wFamSide());
-
-  const checks=el('div',{class:'panel',style:'display:flex;justify-content:space-around;align-items:center'});
-  const mkCb=(l,ch,k)=>{const lb=el('label',{style:'display:flex;align-items:center;gap:.5rem;cursor:pointer'});const cb=el('input',{type:'checkbox'});cb.checked=ch;cb.addEventListener('change',e=>{S.relC[k]=e.target.checked;render();});lb.append(cb,el('span',{style:'font-size:.82rem;color:#d1d5db'},l));return lb;};
-  checks.append(mkCb(roleM,S.relC.m,'m'),mkCb(roleF,S.relC.f,'f'));
-  w.append(checks);
-
-  const isGP=S.mode===M.GRANDPARENT;
-  const ages=el('div',{style:'display:flex;flex-direction:column;gap:.7rem'});
-  if(S.relC.m) ages.append(mkSlider(`Âge ${roleM}`,isGP?S.gpA.gp:S.relA.m,isGP?55:0,99,v=>isGP?S.gpA.gp=v:S.relA.m=v,{suffix:' ans'}));
-  if(S.relC.f) ages.append(mkSlider(`Âge ${roleF}`,isGP?S.gpA.gm:S.relA.f,isGP?55:0,99,v=>isGP?S.gpA.gm=v:S.relA.f=v,{suffix:' ans'}));
-  w.append(ages,wResem());
-  return w;
-}
-
-function wSiblingParams() {
-  const w=el('div',{class:'panel',style:'display:flex;flex-direction:column;gap:.85rem'});
-  const checks=el('div',{style:'display:flex;justify-content:space-around;margin-bottom:.25rem'});
-  const mkCb=(l,ch,k)=>{const lb=el('label',{style:'display:flex;align-items:center;gap:.5rem;cursor:pointer'});const cb=el('input',{type:'checkbox'});cb.checked=ch;cb.addEventListener('change',e=>{S.sibC[k]=e.target.checked;render();});lb.append(cb,el('span',{style:'font-size:.82rem;color:#d1d5db'},l));return lb;};
-  checks.append(mkCb('Frère',S.sibC.b,'b'),mkCb('Sœur',S.sibC.s,'s'));
-  w.append(checks);
-  if(S.sibC.b) w.append(mkSlider('Âge du Frère',S.sibA.b,1,17,v=>S.sibA.b=v,{suffix:' ans'}));
-  if(S.sibC.s) w.append(mkSlider('Âge de la Sœur',S.sibA.s,1,17,v=>S.sibA.s=v,{suffix:' ans'}));
-  w.append(wResem());
-  return w;
-}
-
-function wChildParams() {
-  const w=el('div',{class:'panel',style:'display:flex;flex-direction:column;gap:.85rem'});
-  w.append(mkSlider("Âge de l'Enfant",S.cAge,0,17,v=>S.cAge=v,{suffix:' ans'}), mkSlider('Héritage Dominant',S.dom,0,100,v=>S.dom=v,{labels:['Mère','Mixte','Père']}), wResem());
-  return w;
-}
-
-function wPregParams() {
-  const w=el('div',{style:'display:flex;flex-direction:column;gap:.9rem'});
-
-  // A
-  const a=el('div',{class:'panel',style:'display:flex;flex-direction:column;gap:.85rem'});
-  a.append(el('span',{style:'font-size:.58rem;color:#6b7280;font-weight:800;text-transform:uppercase;letter-spacing:.16em;font-family:var(--mono)'},'A. Données Initiales'));
-  a.append(mkSlider('Poids avant grossesse',S.iWt,40,120,v=>S.iWt=v,{suffix:' kg'}));
-  const gr=el('div',{style:'display:grid;grid-template-columns:1fr 1fr;gap:.75rem'});
-  gr.append(mkSlider('Tour cuisse',S.iThigh,40,85,v=>S.iThigh=v,{suffix:' cm'}), mkSlider('Tour poitrine',S.iBust,70,120,v=>S.iBust=v,{suffix:' cm'}));
-  a.append(gr);
-  const cw=el('div');
-  cw.append(el('label',{style:'font-size:.58rem;color:#6b7280;font-weight:800;text-transform:uppercase;letter-spacing:.13em;display:block;margin-bottom:.45rem;font-family:var(--mono)'},'Bonnet initial'));
-  const cups=el('div',{style:'display:flex;flex-wrap:wrap;gap:.3rem'});
-  ['A','B','C','D','E','F+'].forEach(c=>cups.append(el('button',{class:`tag-btn${S.cup===c?' active':''}`,onClick:()=>{S.cup=c;render();}},c)));
-  cw.append(cups); a.append(cw); w.append(a);
-
-  // B
-  const b=el('div',{class:'panel-blue',style:'display:flex;flex-direction:column;gap:.85rem'});
-  const bh=el('span',{style:'font-size:.6rem;color:var(--blue);font-weight:800;text-transform:uppercase;letter-spacing:.16em;font-family:var(--mono);display:flex;align-items:center;gap:.4rem'});
-  bh.append('B. ÉVOLUTION CORPORELLE ',el('span',{style:'width:.38rem;height:.38rem;border-radius:50%;background:var(--blue);display:inline-block;animation:pulse 2s infinite'}));
-  b.append(bh);
-  b.append(mkSlider('Stade de la grossesse',S.pregMo,1,9,v=>{S.pregMo=v;S.wGain=WMAP[v]||0;render();},{suffix:' mois'}));
-  b.append(mkSlider('POIDS GLOBAL',S.iWt+S.wGain,S.iWt,S.iWt+35,v=>{S.wGain=v-S.iWt;},{suffix:' kg'}));
-  const gn=el('div',{style:'display:flex;justify-content:space-between;margin-top:-.2rem'});
-  gn.append(el('span',{style:'font-size:.58rem;color:rgba(59,130,246,.6);font-family:var(--mono)'},`Gain : +${S.wGain.toFixed(1)} kg`), el('span',{style:'font-size:.58rem;color:rgba(59,130,246,.6);font-family:var(--mono)'},`Cuisse : +${(S.wGain*.45).toFixed(1)} cm`));
-  b.append(gn);
-
-  const pt=el('div',{class:'panel',style:'display:flex;flex-direction:column;gap:.7rem'});
-  pt.append(el('span',{style:'font-size:.57rem;color:#6b7280;font-weight:800;text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono)'},'ÉVOLUTION POITRINE'));
-  pt.append(mkSlider('Volume mammaire',S.bVol,0,2,v=>S.bVol=v,{labels:['Légère','Naturelle','Marquée']}));
-  const bfr=el('div',{style:'display:flex;justify-content:space-between;align-items:center;padding-top:.2rem'});
-  bfr.append(el('label',{style:'font-size:.6rem;color:#9ca3af;font-weight:800;text-transform:uppercase;font-family:var(--mono)'},'Préparation allaitement'));
-  bfr.append(el('button',{style:`padding:.28rem .7rem;border-radius:9999px;font-size:.58rem;font-weight:800;text-transform:uppercase;border:none;font-family:var(--mono);background:${S.bfPrep?'var(--blue)':'rgba(255,255,255,.07)'};color:${S.bfPrep?'#fff':'#6b7280'}`,onClick:()=>{S.bfPrep=!S.bfPrep;render();}},S.bfPrep?'ACTIVÉ':'OFF'));
-  pt.append(bfr); b.append(pt);
-  b.append(mkSlider('Élargissement du bassin',S.pelvis,0,2,v=>S.pelvis=v,{labels:['Faible','Moyen','Marqué']}));
-  w.append(b);
-
-  w.append(wStretch());
-
-  const note=el('div',{class:'amber-note'});
-  note.append(el('p',{style:'font-size:.58rem;color:rgba(245,158,11,.8);font-weight:800;text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono);margin-bottom:.2rem'},'🧬 COHÉRENCE GLOBALE'), el('p',{style:'font-size:.58rem;color:#6b7280;line-height:1.5;font-style:italic;font-family:var(--mono)'},'"Ventre↑, Cuisses↑, Bassin↑, Poitrine↑, Bras↑, Joues↑"'));
-  w.append(note);
-
-  // MODE JUMEAUX TOGGLE
-  const twBlock=el('div',{style:`padding:1rem;border-radius:1rem;border:2px solid ${S.isTwins?'rgba(168,85,247,.5)':'rgba(255,255,255,.08)'};background:${S.isTwins?'rgba(168,85,247,.08)':'rgba(255,255,255,.02)'};transition:all .3s;display:flex;flex-direction:column;gap:.75rem`});
-
-  // Header row
-  const twRow=el('div',{style:'display:flex;justify-content:space-between;align-items:center'});
-  const twLabel=el('div');
-  twLabel.append(el('p',{style:'font-size:.68rem;font-weight:800;color:#e9d5ff;text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono)'},'👶👶 GROSSESSE GÉMELLAIRE'));
-  twLabel.append(el('p',{style:'font-size:.58rem;color:#9ca3af;margin-top:.15rem;font-family:var(--mono)'},'Jumeaux / Jumelles'));
-  const twBtn=el('button',{
-    style:`padding:.35rem .9rem;border-radius:9999px;font-size:.62rem;font-weight:800;text-transform:uppercase;border:2px solid;font-family:var(--mono);transition:all .2s;border-color:${S.isTwins?'#a855f7':'rgba(255,255,255,.15)'};background:${S.isTwins?'#a855f7':'transparent'};color:${S.isTwins?'#fff':'#6b7280'}`,
-    onClick:()=>{S.isTwins=!S.isTwins;render();}
-  }, S.isTwins?'ACTIVÉ ✓':'OFF');
-  twRow.append(twLabel,twBtn);
-  twBlock.append(twRow);
-
-  if(S.isTwins){
-    // Sexe Bébé A
-    const mkTwSex=(label, current, onSet)=>{
-      const wrap=el('div',{style:'display:flex;flex-direction:column;gap:.4rem'});
-      wrap.append(el('span',{style:'font-size:.58rem;color:#c4b5fd;font-weight:800;text-transform:uppercase;letter-spacing:.12em;font-family:var(--mono)'},label));
-      const row=el('div',{style:'display:flex;gap:.4rem'});
-      const mkB=(ico,lbl,val)=>{
-        const b=el('button',{
-          style:`flex:1;padding:.5rem .25rem;border-radius:.6rem;border:2px solid;font-size:.6rem;font-weight:800;text-transform:uppercase;font-family:var(--font);display:flex;flex-direction:column;align-items:center;gap:.2rem;transition:all .2s;border-color:${current===val?'#a855f7':'rgba(255,255,255,.1)'};background:${current===val?'rgba(168,85,247,.2)':'transparent'};color:${current===val?'#e9d5ff':'#6b7280'}`,
-          onClick: onSet
-        });
-        b.append(el('span',{style:'font-size:1rem'},ico), el('span',{},lbl));
-        return b;
-      };
-      row.append(mkB('👧','Fille (XX)','female',()=>{ onSet('female'); }), mkB('👦','Garçon (XY)','male',()=>{ onSet('male'); }));
-      // fix: rebuild with correct handlers
-      row.innerHTML='';
-      ['female','male'].forEach(val=>{
-        const ico=val==='female'?'👧':'👦';
-        const lbl=val==='female'?'Fille (XX)':'Garçon (XY)';
-        const b=el('button',{
-          style:`flex:1;padding:.5rem .25rem;border-radius:.6rem;border:2px solid;font-size:.6rem;font-weight:800;text-transform:uppercase;font-family:var(--font);display:flex;flex-direction:column;align-items:center;gap:.2rem;transition:all .2s;border-color:${current===val?'#a855f7':'rgba(255,255,255,.1)'};background:${current===val?'rgba(168,85,247,.2)':'transparent'};color:${current===val?'#e9d5ff':'#6b7280'}`,
-          onClick:()=>{ onSet(val); render(); }
-        });
-        b.append(el('span',{style:'font-size:1rem'},ico),el('span',{},lbl));
-        row.append(b);
-      });
-      wrap.append(row);
-      return wrap;
-    };
-
-    twBlock.append(mkTwSex('Sexe Bébé A', S.twinSexA, v=>S.twinSexA=v));
-    twBlock.append(mkTwSex('Sexe Bébé B', S.twinSexB, v=>S.twinSexB=v));
-
-    // Type jumeaux (identiques / fraternels)
-    const twTypeRow=el('div',{style:'display:flex;flex-direction:column;gap:.35rem'});
-    twTypeRow.append(el('span',{style:'font-size:.58rem;color:#c4b5fd;font-weight:800;text-transform:uppercase;letter-spacing:.12em;font-family:var(--mono)'},'Type de jumeaux'));
-    const twTypeBtn=el('div',{style:'display:flex;gap:.4rem'});
-    ['fraternels','identiques'].forEach(type=>{
-      const active=S.twinType===type;
-      const b=el('button',{
-        style:`flex:1;padding:.5rem;border-radius:.6rem;border:2px solid;font-size:.6rem;font-weight:800;text-transform:uppercase;font-family:var(--mono);transition:all .2s;border-color:${active?'#a855f7':'rgba(255,255,255,.1)'};background:${active?'rgba(168,85,247,.2)':'transparent'};color:${active?'#e9d5ff':'#6b7280'}`,
-        onClick:()=>{S.twinType=type;render();}
-      }, type==='fraternels'?'👶🏻👶🏼 Fraternels':'👶👶 Identiques');
-      twTypeBtn.append(b);
-    });
-    twTypeRow.append(twTypeBtn);
-    twBlock.append(twTypeRow);
-
-    const twInfo=el('div',{style:'padding:.6rem .8rem;background:rgba(168,85,247,.1);border-radius:.6rem;border:1px solid rgba(168,85,247,.2)'});
-    twInfo.append(el('p',{style:'font-size:.58rem;color:#d8b4fe;line-height:1.6;font-family:var(--mono)'},'⚡ Abdomen maximalement distendu • Poids +30% • Dos voûté • Deux pôles céphaliques distincts visibles'));
-    twBlock.append(twInfo);
-  }
-  w.append(twBlock);
-
-  return w;
-}
-
-function wStretch() {
-  const w=el('div',{class:'panel',style:'display:flex;flex-direction:column;gap:.85rem'});
-  w.append(mkSlider('Intensité vergetures',S.strInt,0,3,v=>{S.strInt=v;render();},{labels:['Aucune','Légères','Moyennes','Marquées']}));
-  if (S.strInt>0) {
-    const zw=el('div',{style:'display:flex;flex-direction:column;gap:.45rem'});
-    zw.append(el('label',{style:'font-size:.58rem;color:#6b7280;font-weight:800;text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono)'},'Zones actives'));
-    const zr=el('div',{style:'display:flex;flex-wrap:wrap;gap:.35rem'});
-    ['Ventre','Hanches','Cuisses','Fesses','Dos','Poitrine'].forEach(z=>zr.append(el('button',{class:`tag-btn${S.strZones.includes(z)?' active':''}`,onClick:()=>{S.strZones=S.strZones.includes(z)?S.strZones.filter(x=>x!==z):[...S.strZones,z];render();}},z)));
-    zw.append(zr); w.append(zw);
-  }
-  return w;
-}
-
-function wEvoParams() {
-  const w=el('div',{class:'panel-blue',style:'display:flex;flex-direction:column;gap:.9rem'});
-  w.append(el('h3',{style:'font-size:.67rem;font-weight:800;color:var(--blue);text-transform:uppercase;letter-spacing:.16em;font-family:var(--mono)'},'🧬 Évolution temporelle'));
-
-  const sr=el('div',{style:'display:flex;gap:.5rem'});
-  const mkSB=(e,l,v)=>{const b=el('button',{class:`sex-btn${S.sex===v?' active':''}`,onClick:()=>{S.sex=v;render();}});b.append(el('span',{style:'font-size:1.1rem'},e),el('span',{style:'font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em'},l));return b;};
-  sr.append(mkSB('👧','Fille (XX)','female'),mkSB('👦','Garçon (XY)','male'));
-  w.append(el('span',{class:'section-label'},'Sexe biologique'), sr, wEyeColors());
-
-  const ab=el('div',{class:'panel',style:'display:flex;flex-direction:column;gap:.7rem'});
-  const ah=el('label',{style:'font-size:.6rem;color:var(--blue);font-weight:800;text-transform:uppercase;letter-spacing:.16em;font-family:var(--mono);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.35rem'});
-  ah.append("🕰️ Indique l'âge (libre)");
-  if(S.evoAge) ah.append(el('span',{style:'font-size:.54rem;background:rgba(34,197,94,.15);color:#86efac;padding:.1rem .4rem;border-radius:.4rem;border:1px solid rgba(34,197,94,.2);font-family:var(--mono)'},'✅ Pris en compte'));
-
-  const ai=el('input',{type:'text',value:S.evoAge,placeholder:'Ex: 0 mois, 7 mois, 2 ans, 40 ans…',
-    style:'width:100%;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.1);border-radius:.75rem;padding:.75rem 1rem;color:#fff;font-size:.82rem;outline:none;font-family:var(--mono)',
-    onInput:e=>{S.evoAge=e.target.value;render();},
-    onFocus:e=>{e.target.style.borderColor='var(--blue)';},
-    onBlur: e=>{e.target.style.borderColor='rgba(255,255,255,.1)';}
-  });
-
-  const ag=el('div',{style:'display:grid;grid-template-columns:repeat(4,1fr);gap:.35rem'});
-  ['0 mois','7 mois','11 mois','15 mois','18 mois','2 ans','12 ans','18 ans','25 ans','40 ans','60 ans','99 ans'].forEach(age=>{
-    ag.append(el('button',{
-      style:`padding:.4rem;border-radius:.5rem;border:1px solid;font-size:.58rem;font-weight:700;font-family:var(--mono);background:${S.evoAge===age?'var(--blue)':'rgba(255,255,255,.05)'};border-color:${S.evoAge===age?'var(--blue)':'rgba(255,255,255,.05)'};color:${S.evoAge===age?'#fff':'#6b7280'}`,
-      onClick:()=>{S.evoAge=age;render();}
-    },age));
-  });
-  ab.append(ah,ai,ag);
-  w.append(ab);
-  w.append(el('div',{style:'padding:.6rem .9rem;border-left:2px solid var(--blue);background:rgba(59,130,246,.05);border-radius:0 .5rem .5rem 0'},
-    el('p',{style:'font-size:.58rem;color:#9ca3af;font-style:italic;line-height:1.5;font-family:var(--mono)'},'"RÈGLE ABSOLUE : L\'âge indiqué est PRIORITAIRE. Morphologie et texture peau adaptées biologiquement."')
-  ));
-  return w;
-}
-
-/* ════════════════════════════════════════
-   RESULTS
-════════════════════════════════════════ */
-function buildResults() {
-  const wrap=el('div',{class:'glass results-min',style:'border-radius:1.25rem;padding:1.1rem;display:flex;flex-direction:column;align-items:center;justify-content:flex-start'});
-
-  if (S.generating) {
-    wrap.append(buildProgress());
-  } else if (S.results.length>0) {
-    const grid=el('div',{style:`display:grid;grid-template-columns:${S.results.length===1?'1fr':'1fr 1fr'};gap:.9rem;width:100%;animation:fadein .7s ease forwards`});
-    S.results.forEach((src,i)=>{
-      const c=el('div',{class:'result-card'});
-      c.append(el('img',{src,alt:''}));
-      c.append(el('div',{class:'result-label'},getLabel(i)));
-      const dl=el('button',{class:'result-dl',onClick:()=>{const a=document.createElement('a');a.href=src;a.download=`studio_gen_${S.mode}_${i}.png`;a.click();}});
-      dl.append(el('span',{},'⬇️'),el('span',{},'Sauvegarder'));
-      c.append(dl);
-      grid.append(c);
-    });
-    wrap.append(grid);
-  } else {
-    const emp=el('div',{style:'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:.65rem;padding:2rem;opacity:.5'});
-    emp.append(el('div',{style:'font-size:3.5rem;filter:grayscale(1)'},'🧬'), el('h2',{style:'font-size:1rem;font-weight:300;color:#9ca3af;text-transform:uppercase;letter-spacing:.18em'},'STATION ADN'), el('p',{style:'color:#4b5563;font-size:.78rem;max-width:16rem;line-height:1.6;font-style:italic'},'"Aucune optimisation esthétique. La génétique prime."'));
-    wrap.append(emp);
-  }
-  return wrap;
-}
-
-function buildProgress() {
-  const steps=['Numérisation ADN','Traits dominants','Structure osseuse','Pigmentation','Continuité génétique','Rendu 4K'];
-  const w=el('div',{style:'display:flex;flex-direction:column;align-items:center;gap:1.4rem;padding:2rem;width:100%;max-width:24rem'});
-  const ic=el('div',{style:'position:relative;width:6.5rem;height:6.5rem;display:flex;align-items:center;justify-content:center'});
-  ic.append(el('div',{style:'position:absolute;inset:0;border:3px solid rgba(59,130,246,.2);border-radius:50%;animation:ping 1.5s cubic-bezier(0,0,.2,1) infinite'}), el('div',{style:'position:absolute;inset:0;border:2px solid rgba(59,130,246,.4);border-radius:50%;animation:pulse 2s infinite'}), el('div',{style:'font-size:2rem'},'🧬'));
-  w.append(ic);
-  const bw=el('div',{style:'width:100%'});
-  bw.append(el('div',{class:'prog-bar',style:'margin-bottom:.7rem'},el('div',{class:'prog-fill',style:`width:${((S.step+1)/steps.length)*100}%`})));
-  bw.append(el('p',{style:'text-align:center;font-size:.78rem;font-weight:700;color:#e5e7eb;animation:pulse 2s infinite;margin-bottom:.2rem'},steps[S.step]+'...'));
-  bw.append(el('p',{style:'text-align:center;font-size:.58rem;color:#4b5563;font-family:var(--mono)'},`ID: ${Math.random().toString(36).substr(2,9).toUpperCase()}`));
-  w.append(bw);
-  return w;
-}
-
-function getLabel(i) {
-  const m=S.mode;
-  if(m===M.SIBLING){if(i===0)return'FRATRIE';if(i===1)return'LE FRÈRE';return'LA SŒUR';}
-  if(m===M.PREGNANCY&&S.pregStep===3){ if(S.isTwins){if(i===0)return'MÈRE + JUMEAUX';if(i===1)return'BÉBÉ A';return'BÉBÉ B';} return i===0?'MÈRE + BÉBÉ':'BÉBÉ SEUL'; }
-  if([M.GRANDPARENT,M.UNCLE_AUNT,M.COUSIN].includes(m)){
-    const rM=m===M.GRANDPARENT?'GRAND-PÈRE':m===M.UNCLE_AUNT?'ONCLE':'COUSIN';
-    const rF=m===M.GRANDPARENT?'GRAND-MÈRE':m===M.UNCLE_AUNT?'TANTE':'COUSINE';
-    const sel=[];if(S.relC.m)sel.push(rM);if(S.relC.f)sel.push(rF);
-    if(sel.length===2){if(i===0)return sel[0];if(i===1)return sel[1];return'GROUPE';}
-    return sel[0]||'ADN';
-  }
-  return `ADN #${i+1}`;
-}
-
-/* ════════════════════════════════════════
-   PROMPT
-════════════════════════════════════════ */
-function buildPrompt() {
-  const rl=S.resem<33?'FAIBLE':S.resem<66?'RÉALISTE':'FORTE';
-  const rR=`RESSEMBLANCE : ${rl} (${S.resem}%). Lien génétique identifiable, jamais un clone.`;
-  const common='QUALITÉ : ultra-photoréaliste 4K. FORMAT : portrait 9:16. IMAGE UNIQUE.';
-  const sexL=S.sex==='female'?'Fille/Femme (XX)':'Garçon/Homme (XY)';
-
-  switch(S.mode) {
-    case M.EVOLUTION:
-      return `MODE ÉVOLUTION TEMPORELLE\nRÈGLE : Âge PRIORITAIRE, respecté strictement.\nÂge : ${S.evoAge} | Sexe : ${sexL} | Yeux : ${S.eye}\nAdaptations : morphologie, proportions, posture, cheveux, texture peau selon l'âge.\nIDENTITÉ : conserver rigoureusement le sujet source.\nSORTIE : PNG 9:16 4K.`;
-    case M.SIBLING:
-      return `FRATRIE – 3 IMAGES : 1.Groupe Frère(${S.sibA.b}ans,XY)+Sœur(${S.sibA.s}ans,XX). 2.Frère seul(9:16). 3.Sœur seule(9:16).\n${rR} ${common}`;
-    case M.GRANDPARENT:{
-      const p=[];if(S.relC.m)p.push(`Grand-père(${S.gpA.gp}ans,XY)`);if(S.relC.f)p.push(`Grand-mère(${S.gpA.gm}ans,XX)`);
-      const lien=S.fSide==='mother'?'MATERNELLE':'PATERNELLE';
-      const ins=p.length===2?`3 IMAGES : 1.${p[0]}. 2.${p[1]}. 3.Groupe.`:`1 image : ${p[0]}.`;
-      return `VIEILLISSEMENT GÉNÉTIQUE – ${lien} : ${ins} ${rR} ${common}`;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+      const v = document.getElementById('cameraVideo');
+      v.srcObject = stream;
+      window.isCameraActive = true;
+      document.getElementById('portraitEmpty').classList.add('hidden');
+      document.getElementById('portraitLoaded').classList.add('hidden');
+      document.getElementById('portraitCamera').classList.remove('hidden');
+    } catch {
+      showError("Impossible d'accéder à la caméra. Vérifiez les permissions du navigateur.");
     }
-    case M.UNCLE_AUNT:case M.COUSIN:{
-      const rM=S.mode===M.UNCLE_AUNT?'Oncle':'Cousin';
-      const rF=S.mode===M.UNCLE_AUNT?'Tante':'Cousine';
-      const p=[];if(S.relC.m)p.push(`${rM}(${S.relA.m}ans,XY)`);if(S.relC.f)p.push(`${rF}(${S.relA.f}ans,XX)`);
-      const lien=S.fSide==='mother'?'MATERNEL':'PATERNEL';
-      const ins=p.length===2?`3 IMAGES : 1.${p[0]}. 2.${p[1]}. 3.Groupe.`:`1 image : ${p[0]}.`;
-      return `${S.mode} – ${lien} : ${ins} ${rR} ${common}`;
-    }
-    case M.PREGNANCY:{
-      const twSexALabel=S.twinSexA==='female'?'Fille (XX)':'Garçon (XY)';
-      const twSexBLabel=S.twinSexB==='female'?'Fille (XX)':'Garçon (XY)';
-      const twTypeLabel=S.twinType==='identiques'?'MONOZYGOTES (identiques)':'DIZYGOTES (fraternels)';
-      const twinBlock = S.isTwins ? `
-TYPE : GROSSESSE GÉMELLAIRE — JUMEAUX / JUMELLES.
-RÈGLES PHYSIOLOGIQUES GÉMELLAIRES STRICTES :
-- Abdomen EXCEPTIONNELLEMENT volumineux, large ET haut, bien plus imposant qu'une grossesse simple au même stade.
-- Distension cutanée abdominale maximale — peau ultra-tendue, linea nigra marquée.
-- Deux pôles fœtaux visibles en relief sous la peau (deux têtes, deux fesses palpables).
-- Prise de poids majorée de 30% par rapport aux valeurs standard du stade.
-- Dos fortement voûté vers l'arrière pour compenser le poids frontal.
-- Œdème des chevilles et mains plus prononcé.
-- Vergetures abdominales quasi-systématiques dès le 5ème mois.
-- Bassin encore plus élargi, démarche dandinante très marquée.
-- INTERDICTION FORMELLE : ventre de grossesse simple — ce doit être clairement une grossesse de jumeaux.` : '';
+  }
+};
+window.takePhoto = function() {
+  const v = document.getElementById('cameraVideo');
+  const c = document.getElementById('captureCanvas');
+  c.width = v.videoWidth; c.height = v.videoHeight;
+  c.getContext('2d').drawImage(v, 0, 0);
+  const base64 = c.toDataURL('image/jpeg').split(',')[1];
+  if (v.srcObject) v.srcObject.getTracks().forEach(t => t.stop());
+  v.srcObject = null;
+  window.isCameraActive = false;
+  document.getElementById('portraitCamera').classList.add('hidden');
+  handleNewImage(base64, 'image/jpeg');
+};
 
-      if(S.pregStep===3){
-        if(S.isTwins){
-          const sA=S.twinSexA==='female'?'Fille (XX)':'Garçon (XY)';
-          const sB=S.twinSexB==='female'?'Fille (XX)':'Garçon (XY)';
-          const identRule=S.twinType==='identiques'?'JUMEAUX IDENTIQUES (monozygotes) : traits du visage quasi-identiques, même morphologie, seuls détails mineurs diffèrent.':'JUMEAUX FRATERNELS (dizygotes) : traits du visage clairement différents, ressemblance familiale mais personnalités visuelles distinctes.';
-          return `PROTOCOLE NAISSANCE GÉMELLAIRE — GÉNÈRE 3 IMAGES DISTINCTES :
-1. GROUPE : Mère rayonnante et épuisée + DEUX nouveau-nés jumeaux en maternité. Les deux bébés visibles, enveloppés dans des couvertures distinctes (couleurs différentes), côte à côte ou dans les bras de la mère. Bracelets d'identification aux poignets.
-2. BÉBÉ A : Nouveau-né seul en gros plan (9:16). Sexe : ${sA}. Peau rosée de nouveau-né, yeux mi-clos, traits délicats.
-3. BÉBÉ B : Nouveau-né seul en gros plan (9:16). Sexe : ${sB}. ${identRule}
-RÉALISME MÉDICAL : bracelets d'identification, couvertures maternité colorées, lumière tamisée de salle d'accouchement, moniteurs en arrière-plan.
-${common}`;
-        }
-        return `PROTOCOLE NAISSANCE — 2 IMAGES :
-1. GROUPE : Mère épuisée mais rayonnante + nouveau-né en maternité (${sexL}). Peau à peau ou bébé dans les bras. Décor réaliste : lit médicalisé, lumière tamisée, perfusion visible.
-2. INDIVIDUEL : Bébé seul en gros plan (9:16, ${sexL}). Traits du visage nets, peau légèrement rosée de nouveau-né, yeux mi-clos.
-${common}`;
+// --- IMAGE ---
+window.handleImageUpload = function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  window.portraitMime = file.type;
+  const reader = new FileReader();
+  reader.onload = () => handleNewImage(reader.result.split(',')[1], file.type);
+  reader.readAsDataURL(file);
+};
+
+async function handleNewImage(base64, mime) {
+  window.portraitMime = mime;
+  window.originalPortraitBase64 = base64;
+  window.portraitBase64 = base64;
+  document.getElementById('portraitEmpty').classList.add('hidden');
+  document.getElementById('portraitCamera').classList.add('hidden');
+  document.getElementById('portraitLoaded').classList.remove('hidden');
+  document.getElementById('portraitPreview').src = `data:${mime};base64,${base64}`;
+  document.getElementById('faceOverlay').classList.add('hidden');
+  document.getElementById('identityLock').classList.add('hidden');
+  try {
+    const faces = await detectFaces(base64, mime);
+    window.detectedFaces = faces;
+    if (faces.length > 1) {
+      document.getElementById('faceOverlay').classList.remove('hidden');
+    } else if (faces.length === 1) {
+      const cropped = await cropAroundFace(base64, mime, faces[0], 1.8);
+      window.portraitBase64 = cropped;
+      document.getElementById('portraitPreview').src = `data:${mime};base64,${cropped}`;
+      document.getElementById('identityLock').classList.remove('hidden');
+    } else {
+      document.getElementById('identityLock').classList.remove('hidden');
+    }
+  } catch { document.getElementById('identityLock').classList.remove('hidden'); }
+}
+
+window.selectFace = async function(idx, e) {
+  e.stopPropagation();
+  const face = window.detectedFaces[idx];
+  if (!face) return;
+  try {
+    const cropped = await cropAroundFace(window.originalPortraitBase64, window.portraitMime, face, 1.8);
+    window.portraitBase64 = cropped;
+    document.getElementById('portraitPreview').src = `data:${window.portraitMime};base64,${cropped}`;
+  } catch { window.portraitBase64 = window.originalPortraitBase64; }
+  document.getElementById('faceOverlay').classList.add('hidden');
+  document.getElementById('identityLock').classList.remove('hidden');
+};
+
+function detectFaces(imageBase64, mimeType) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const { width, height } = img;
+      const faces = [];
+      if (width > height * 1.3) {
+        const fw = width/3, fh = height*0.6;
+        faces.push({ x:width*0.1,y:height*0.2,width:fw,height:fh,centerX:width*0.25,centerY:height*0.45 });
+        faces.push({ x:width*0.6,y:height*0.2,width:fw,height:fh,centerX:width*0.75,centerY:height*0.45 });
+      } else {
+        faces.push({ x:width*0.15,y:height*0.12,width:width*0.7,height:height*0.75,centerX:width*0.5,centerY:height*0.48 });
       }
-
-      const tg=(S.wGain*(S.isTwins?1.3:1)*.45).toFixed(1);
-      const pw=S.pregMo>4?(S.pelvis+1)*2.5:0;
-      const wGainDisplay=S.isTwins?(S.wGain*1.3).toFixed(1):S.wGain.toFixed(1);
-      const bvL=['légère augmentation','augmentation naturelle','augmentation marquée'];
-      const svL=['aucune','légères','visibles','marquées'];
-      return `BIOLOGIE GROSSESSE — COHÉRENCE GLOBALE STRICTE :
-DONNÉES INITIALES : Poids ${S.iWt}kg, Tour poitrine ${S.iBust}cm, Bonnet ${S.cup}, Tour cuisse ${S.iThigh}cm.
-STADE : Mois ${S.pregMo}. GAIN DE POIDS TOTAL : +${wGainDisplay}kg.
-${twinBlock}
-
-RÈGLE DE COHÉRENCE GLOBALE (ABSOLUE) :
-Le corps ENTIER évolue ensemble — Ventre↑, Cuisses↑, Bassin↑, Poitrine↑, Bras↑, Joues↑.
-INTERDICTION : silhouette mince, ventre seul gonflé, poitrine de mannequin.
-
-DISTRIBUTION PHYSIOLOGIQUE :
-- VENTRE (35%) : Projection frontale massive, peau ultra-tendue, ombilic aplati ou proéminent.
-- BASSIN & HANCHES (20%) : Élargissement osseux +${pw}cm, démarche modifiée.
-- CUISSES & FESSES (15%) : Épaississement +${tg}cm, cellulite naturelle possible.
-- POITRINE (15%) : ${bvL[S.bVol]}. Veines visibles, aréoles élargies et foncées. Allaitement : ${S.bfPrep?'ACTIVÉ — mamelons préparés, légère colostrum possible':'OFF'}.
-- BRAS / DOS (10%) : Bras plus ronds, dos plus large et musclé.
-- VISAGE (5%) : Joues pleines, nez légèrement élargi, teint lumineux ou tacheté.
-
-VERGETURES : ${S.strInt>0?`${svL[S.strInt]} sur ${S.strZones.join(', ')}.`:'AUCUNE.'}
-${common}`;
-    }
-    default:
-      return `ENFANT ${S.cAge} ans. Sexe : ${sexL}. Dominance : ${S.dom}%. 1 image 9:16 PNG.\n${rR} ${common}`;
-  }
+      resolve(faces);
+    };
+    img.onerror = () => reject(new Error('image error'));
+    img.src = `data:${mimeType};base64,${imageBase64}`;
+  });
+}
+function cropAroundFace(imageBase64, mimeType, face, padding) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return reject(new Error('canvas error'));
+      const tw = face.width*padding, th = face.height*padding;
+      const cx = Math.max(0, face.centerX - tw/2), cy = Math.max(0, face.centerY - th/2);
+      const fw = Math.min(tw, img.width-cx), fh = Math.min(th, img.height-cy);
+      canvas.width = fw; canvas.height = fh;
+      ctx.fillStyle = '#000'; ctx.fillRect(0,0,fw,fh);
+      ctx.drawImage(img, cx, cy, fw, fh, 0, 0, fw, fh);
+      resolve(canvas.toDataURL(mimeType).split(',')[1]);
+    };
+    img.src = `data:${mimeType};base64,${imageBase64}`;
+  });
 }
 
-/* ════════════════════════════════════════
-   GENERATE
-════════════════════════════════════════ */
-async function doGenerate() {
-  const m=S.mode;
-  if([M.SIBLING,M.CHILD].includes(m)&&(!S.p1||!S.p2))return alert("📸 Photos des deux parents obligatoires.");
-  if([M.GRANDPARENT,M.UNCLE_AUNT,M.COUSIN].includes(m)&&!S.p1)return alert("📸 Photo du parent obligatoire.");
-  if([M.PREGNANCY,M.EVOLUTION].includes(m)&&!S.p1)return alert("📸 Photo source obligatoire.");
+// --- AUDIO ---
+window.handleAudioUpload = async function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async () => {
+    const b64 = reader.result.split(',')[1];
+    window.audioBase64 = b64;
+    window.audioMime = file.type;
+    document.getElementById('audioPlaceholder').classList.add('hidden');
+    document.getElementById('audioLoaded').classList.remove('hidden');
+    document.getElementById('audioZone').style.borderColor = '#3b82f6';
+    document.getElementById('audioZone').style.background = 'rgba(59,130,246,0.05)';
+    document.getElementById('modeIndicator').innerHTML = `<span class="status-dot blue"></span><span style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;color:#60a5fa;font-style:italic;">Lip-Sync Identity Lock fr-FR</span>`;
+    if (!window.apiKey) return;
+    setStatus("⏳ TRANSCRIPTION...", true);
+    try {
+      const ai = new GoogleGenAI({ apiKey: window.apiKey });
+      const resp = await ai.models.generateContent({
+        model: 'gemini-3-pro-preview',
+        contents: [{ parts: [{ inlineData:{ data:b64, mimeType:file.type } },{ text:'Extract JSON only: { "isValid": boolean, "transcription": "exact text" }' }] }],
+        config: { responseMimeType:"application/json", temperature:0.1 }
+      });
+      const data = JSON.parse(resp.text || '{}');
+      if (data.transcription) {
+        document.getElementById('dialogue1').value = data.transcription;
+        updateWordCount(document.getElementById('dialogue1'), 'wordCount1', 20);
+      }
+      setStatus("✅ Calibration Prête", false);
+    } catch { setStatus("❌ Erreur audio", false); }
+  };
+  reader.readAsDataURL(file);
+};
+window.removeAudio = function(e) {
+  e.stopPropagation();
+  window.audioBase64 = null; window.audioMime = null;
+  document.getElementById('audioLoaded').classList.add('hidden');
+  document.getElementById('audioPlaceholder').classList.remove('hidden');
+  document.getElementById('audioZone').style.borderColor = 'rgba(255,255,255,0.1)';
+  document.getElementById('audioZone').style.background = '';
+  document.getElementById('modeIndicator').innerHTML = `<span class="status-dot"></span><span style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;color:#22c55e;font-style:italic;">Mode Acting Silencieux Pur</span>`;
+};
 
-  S.generating=true; S.results=[]; S.step=0;
-  render();
+// --- STATUS / ERROR ---
+function setStatus(msg, loading) {
+  const btn = document.getElementById('generateBtn');
+  const costs = { '6s':0.60,'13s':1.20,'20s':1.80 };
+  if (loading) {
+    document.getElementById('btnText').textContent = msg || 'En cours...';
+    btn.style.background = 'rgba(255,255,255,0.05)';
+    btn.style.color = 'rgba(255,255,255,0.2)';
+    btn.disabled = true;
+    document.getElementById('waitingSpinner').classList.add('spin');
+    document.getElementById('waitingText').textContent = msg;
+  } else {
+    const cost = costs[window.currentDuration] || 0.60;
+    document.getElementById('btnText').textContent = `Produire Séquence Master (${cost.toFixed(2)} €)`;
+    btn.style.background = '#fff'; btn.style.color = '#000'; btn.disabled = false;
+    document.getElementById('waitingSpinner').classList.remove('spin');
+    if (!msg) document.getElementById('waitingText').textContent = 'Transmission en attente...';
+  }
+}
+function showError(msg) {
+  const box = document.getElementById('errorBox');
+  box.textContent = 'ERROR : ' + msg;
+  box.classList.remove('hidden');
+}
 
-  const iv=setInterval(()=>{ S.step=(S.step+1)%6; const pf=document.querySelector('.prog-fill'); if(pf)pf.style.width=`${((S.step+1)/6)*100}%`; },2500);
+// ✅ MODIF 1 — validateAndExtractVisemes utilise window.apiKey (dynamique)
+async function validateAndExtractVisemes(audioData, mimeType) {
+  const ai = new GoogleGenAI({ apiKey: window.apiKey });
+  const resp = await ai.models.generateContent({
+    model: 'gemini-3-pro-preview',
+    contents: [{ parts: [
+      { inlineData:{ data:audioData, mimeType } },
+      { text:`PHONETIC CALIBRATION - STANDARD METROPOLITAN FRENCH (FRANCE) ONLY.
+Accept ONLY Standard French (fr-FR). Reject Quebec, Belgian, Swiss, African accents.
+EXTRACT JSON: { "isValid": boolean, "visemeScript": "string", "transcription": "exact text", "rejectionReason": "if invalid" }` }
+    ]}],
+    config: { responseMimeType:"application/json", temperature:0.1 }
+  });
+  const data = JSON.parse(resp.text || '{}');
+  return { ...data, confirmationMessage: data.isValid ? "Calibration validée (fr-FR France)." : "Accent non-conforme." };
+}
+
+// ============================================================
+// ✅ MODIF 2 — header x-goog-api-key pour le fetch vidéo
+// ✅ MODIF 4 — messages d'erreur explicites (filtre sécu vs technique)
+// ✅ MODIF 5 — pas de 1:1 dans le select
+// ============================================================
+window.startProduction = async function() {
+  if (!window.apiKey) { openKeyModal(); return; }
+  if (!window.portraitBase64) { showError("Portrait requis pour l'identité de l'acteur."); return; }
+  document.getElementById('errorBox').classList.add('hidden');
+  document.getElementById('videoResult').classList.add('hidden');
+  document.getElementById('videoWaiting').classList.remove('hidden');
+  setStatus("INITIALISATION MASTER V3.1...", true);
+
+  const dur = window.currentDuration;
+  const forceFrench = document.getElementById('toggleFrench').classList.contains('active');
+  const noSubtitles = document.getElementById('toggleSubs').classList.contains('active');
+  const noMusic = document.getElementById('toggleMusic').classList.contains('active');
+  const emotion = document.getElementById('emotionTone').value;
+  const angle = document.getElementById('cameraAngle').value;
+  const movement = document.getElementById('cameraMovement').value;
+  const aspectRatio = document.getElementById('aspectRatio').value;
+  const dialogues = [
+    document.getElementById('dialogue1').value,
+    document.getElementById('dialogue2').value,
+    document.getElementById('dialogue3').value,
+  ];
+  const directionPrompt = document.getElementById('directionPrompt').value;
+  const hasAudio = !!window.audioBase64;
 
   try {
-    const parts=[{text:buildPrompt()}];
-    if(S.p1)parts.push({inlineData:{data:S.p1.split(',')[1],mimeType:'image/jpeg'}});
-    if(S.p2)parts.push({inlineData:{data:S.p2.split(',')[1],mimeType:'image/jpeg'}});
+    const ai = new GoogleGenAI({ apiKey: window.apiKey });
+    const modelId = 'veo-3.1-generate-preview';
+    let voiceAnalysis = null;
 
-    const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent?key=${S.apiKey}`,
-      {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts}],generationConfig:{responseModalities:["TEXT","IMAGE"]}})});
-
-    if(!res.ok){
-      const err=await res.json().catch(()=>({}));
-      const msg=err.error?.message||'Erreur inconnue';
-      if(res.status===401||res.status===403)throw new Error('API_KEY_ERROR');
-      throw new Error('['+res.status+'] '+msg);
+    if (hasAudio) {
+      setStatus("CALIBRATION PHONÉTIQUE fr-FR...", true);
+      voiceAnalysis = await validateAndExtractVisemes(window.audioBase64, window.audioMime);
+      if (!voiceAnalysis || !voiceAnalysis.isValid)
+        throw new Error(`ACCENT NON-CONFORME : ${voiceAnalysis?.rejectionReason || 'Français France requis.'}`);
     }
-    const data=await res.json();
-    const imgs=[];
-    for(const p of (data.candidates?.[0]?.content?.parts||[]))if(p.inlineData)imgs.push('data:image/png;base64,'+p.inlineData.data);
-    if(!imgs.length)throw new Error('Aucune image retournée. Réessaie.');
-    S.results=imgs;
-    if(m===M.PREGNANCY&&S.pregStep===1)S.pregStep=2;
-  } catch(err){
-    if(err.message==='API_KEY_ERROR'){alert('Clé API invalide ou sans permission.');localStorage.removeItem('sg_key');S.apiOk=false;}
-    else alert('Erreur : '+err.message);
-  } finally {
-    clearInterval(iv); S.generating=false; render();
-  }
-}
 
-render();
+    let cycles = dur === '20s' ? 3 : dur === '13s' ? 2 : 1;
+    const targetResolution = cycles > 1 ? '720p' : '1080p';
+    const skinGuard = "Natural skin texture, visible pores, no skin smoothing, no filters, hyper-realistic photographic rendering.";
+    const negativePrompt = [
+      noSubtitles ? 'no subtitles, no text on screen, no captions' : '',
+      noMusic ? 'no background music, no soundtrack' : '',
+      'no watermark, no blur'
+    ].filter(Boolean).join(', ');
+    const accentInstruction = forceFrench ? "Standard Metropolitan French accent from France (Parisian)." : "";
+
+    let lastVideoRef = null;
+    let finalUrl = "";
+
+    for (let i = 0; i < cycles; i++) {
+      const isExtension = !!lastVideoRef;
+      const currentDialogue = dialogues[i] || "";
+      setStatus(isExtension ? `PHASE EXTENSION [${i}/${cycles-1}]...` : `INITIALISATION MASTER V3.1...`, true);
+
+      const prompt = isExtension
+        ? `Continue naturally. ${hasAudio ? `Speaking: "${currentDialogue}"` : "Silent acting."} ${skinGuard} no text on screen.`
+        : [
+            "HIGH-END CINEMA PRODUCTION.",
+            hasAudio ? `The person is speaking in ${accentInstruction}: "${currentDialogue}" with perfect lip-sync.` : "Silent acting with natural facial expressions.",
+            `Emotion: ${emotion}.`, skinGuard,
+            `Camera: ${angle}. ${movement}.`, directionPrompt,
+            `negative prompt: ${negativePrompt}`
+          ].filter(Boolean).join(" ");
+
+      const config = { numberOfVideos:1, resolution:targetResolution, aspectRatio };
+      if (!isExtension) {
+        config.referenceImages = [{
+          image: { imageBytes: window.portraitBase64, mimeType: window.portraitMime },
+          referenceType: VideoGenerationReferenceType.ASSET,
+        }];
+      }
+
+      let operation = isExtension
+        ? await ai.models.generateVideos({ model:modelId, prompt, video:lastVideoRef, config })
+        : await ai.models.generateVideos({ model:modelId, prompt, config });
+
+      let attempts = 0;
+      while (!operation.done && attempts < 300) {
+        await new Promise(r => setTimeout(r, 8000));
+        operation = await ai.operations.getVideosOperation({ operation });
+        setStatus(`RENDU [${i+1}/${cycles}] : ${Math.min(99, Math.floor((attempts/300)*100))}%...`, true);
+        attempts++;
+      }
+
+      // ✅ MODIF 4 — Erreur explicite filtre sécurité vs erreur technique
+      if (operation.error) {
+        const msg = String(operation.error.message || '');
+        const isFilter = /safety|blocked|filter|content/i.test(msg);
+        throw new Error(isFilter
+          ? `Génération bloquée par les filtres de sécurité Google.\nModifiez votre prompt ou l'image source.\n\nDétail : ${msg}`
+          : `Erreur de génération : ${msg || 'Inconnue'}`);
+      }
+
+      const resVideo = operation.response?.generatedVideos?.[0]?.video;
+      if (!resVideo) {
+        throw new Error("Flux vidéo non détecté. La génération a peut-être été bloquée par les filtres de sécurité ou a échoué sans erreur explicite.\nEssayez de modifier l'image ou le prompt.");
+      }
+
+      lastVideoRef = resVideo;
+
+      // ✅ MODIF 2 — x-goog-api-key header (plus de ?key= dans l'URL)
+      const videoResponse = await fetch(resVideo.uri, {
+        method: 'GET',
+        headers: { 'x-goog-api-key': window.apiKey }
+      });
+      const blob = await videoResponse.blob();
+      if (finalUrl) URL.revokeObjectURL(finalUrl);
+      finalUrl = URL.createObjectURL(blob);
+    }
+
+    setStatus("", false);
+    document.getElementById('videoWaiting').classList.add('hidden');
+    document.getElementById('videoResult').classList.remove('hidden');
+    document.getElementById('videoPlayer').src = finalUrl;
+    document.getElementById('downloadBtn').href = finalUrl;
+    document.getElementById('videoContainer').style.aspectRatio = aspectRatio.replace(':', '/');
+
+  } catch (err) {
+    setStatus("", false);
+    showError(err.message || String(err));
+    document.getElementById('videoWaiting').classList.remove('hidden');
+  }
+};
+
+updateKeyStatus(!!window.apiKey);
 </script>
 </body>
 </html>
