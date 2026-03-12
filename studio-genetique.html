@@ -311,6 +311,7 @@ let S = {
   pelvis: 1, bVol: 1, bfPrep: false,
   strInt: 0, strZones: ['Ventre'],
   evoAge: '18 mois',
+  isTwins: false,
 };
 
 /* ════════════════════════════════════════
@@ -810,6 +811,26 @@ function wPregParams() {
   const note=el('div',{class:'amber-note'});
   note.append(el('p',{style:'font-size:.58rem;color:rgba(245,158,11,.8);font-weight:800;text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono);margin-bottom:.2rem'},'🧬 COHÉRENCE GLOBALE'), el('p',{style:'font-size:.58rem;color:#6b7280;line-height:1.5;font-style:italic;font-family:var(--mono)'},'"Ventre↑, Cuisses↑, Bassin↑, Poitrine↑, Bras↑, Joues↑"'));
   w.append(note);
+
+  // MODE JUMEAUX TOGGLE
+  const twBlock=el('div',{style:`padding:1rem;border-radius:1rem;border:2px solid ${S.isTwins?'rgba(168,85,247,.5)':'rgba(255,255,255,.08)'};background:${S.isTwins?'rgba(168,85,247,.08)':'rgba(255,255,255,.02)'};transition:all .3s`});
+  const twRow=el('div',{style:'display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem'});
+  const twLabel=el('div');
+  twLabel.append(el('p',{style:'font-size:.68rem;font-weight:800;color:#e9d5ff;text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono)'},'👶👶 GROSSESSE GÉMELLAIRE'));
+  twLabel.append(el('p',{style:'font-size:.58rem;color:#9ca3af;margin-top:.15rem;font-family:var(--mono)'},'Jumeaux / Jumelles'));
+  const twBtn=el('button',{
+    style:`padding:.35rem .9rem;border-radius:9999px;font-size:.62rem;font-weight:800;text-transform:uppercase;border:2px solid;font-family:var(--mono);transition:all .2s;border-color:${S.isTwins?'#a855f7':'rgba(255,255,255,.15)'};background:${S.isTwins?'#a855f7':'transparent'};color:${S.isTwins?'#fff':'#6b7280'}`,
+    onClick:()=>{S.isTwins=!S.isTwins;render();}
+  }, S.isTwins?'ACTIVÉ ✓':'OFF');
+  twRow.append(twLabel,twBtn);
+  twBlock.append(twRow);
+  if(S.isTwins){
+    const twInfo=el('div',{style:'padding:.6rem .8rem;background:rgba(168,85,247,.1);border-radius:.6rem;border:1px solid rgba(168,85,247,.2)'});
+    twInfo.append(el('p',{style:'font-size:.58rem;color:#d8b4fe;line-height:1.6;font-family:var(--mono)'},'⚡ Abdomen maximalement distendu • Poids +30% • Dos voûté • Prise de poids antérieure massive • Deux pôles céphaliques distincts visibles sous la peau'));
+    twBlock.append(twInfo);
+  }
+  w.append(twBlock);
+
   return w;
 }
 
@@ -907,7 +928,7 @@ function buildProgress() {
 function getLabel(i) {
   const m=S.mode;
   if(m===M.SIBLING){if(i===0)return'FRATRIE';if(i===1)return'LE FRÈRE';return'LA SŒUR';}
-  if(m===M.PREGNANCY&&S.pregStep===3){return i===0?'MÈRE + BÉBÉ':'BÉBÉ SEUL';}
+  if(m===M.PREGNANCY&&S.pregStep===3){ if(S.isTwins){if(i===0)return'MÈRE + JUMEAUX';if(i===1)return'BÉBÉ A';return'BÉBÉ B';} return i===0?'MÈRE + BÉBÉ':'BÉBÉ SEUL'; }
   if([M.GRANDPARENT,M.UNCLE_AUNT,M.COUSIN].includes(m)){
     const rM=m===M.GRANDPARENT?'GRAND-PÈRE':m===M.UNCLE_AUNT?'ONCLE':'COUSIN';
     const rF=m===M.GRANDPARENT?'GRAND-MÈRE':m===M.UNCLE_AUNT?'TANTE':'COUSINE';
@@ -947,11 +968,56 @@ function buildPrompt() {
       return `${S.mode} – ${lien} : ${ins} ${rR} ${common}`;
     }
     case M.PREGNANCY:{
-      if(S.pregStep===3) return `NAISSANCE – 2 IMAGES : 1.Mère+nouveau-né maternité(${sexL}). 2.Bébé seul(9:16,${sexL}). ${common}`;
-      const tg=(S.wGain*.45).toFixed(1); const pw=S.pregMo>4?(S.pelvis+1)*2.5:0;
+      const twinBlock = S.isTwins ? `
+TYPE : GROSSESSE GÉMELLAIRE — JUMEAUX / JUMELLES.
+RÈGLES PHYSIOLOGIQUES GÉMELLAIRES STRICTES :
+- Abdomen EXCEPTIONNELLEMENT volumineux, large ET haut, bien plus imposant qu'une grossesse simple au même stade.
+- Distension cutanée abdominale maximale — peau ultra-tendue, linea nigra marquée.
+- Deux pôles fœtaux visibles en relief sous la peau (deux têtes, deux fesses palpables).
+- Prise de poids majorée de 30% par rapport aux valeurs standard du stade.
+- Dos fortement voûté vers l'arrière pour compenser le poids frontal.
+- Œdème des chevilles et mains plus prononcé.
+- Vergetures abdominales quasi-systématiques dès le 5ème mois.
+- Bassin encore plus élargi, démarche dandinante très marquée.
+- INTERDICTION FORMELLE : ventre de grossesse simple — ce doit être clairement une grossesse de jumeaux.` : '';
+
+      if(S.pregStep===3){
+        if(S.isTwins) return `PROTOCOLE NAISSANCE GÉMELLAIRE — GÉNÈRE 3 IMAGES DISTINCTES :
+1. GROUPE : Mère + DEUX nouveau-nés jumeaux en maternité. Les deux bébés sont visibles, enveloppés, côte à côte ou dans les bras de la mère.
+2. BÉBÉ A : Premier nouveau-né seul (9:16, ${sexL}).
+3. BÉBÉ B : Second nouveau-né seul (9:16, ${sexL}). Traits légèrement différents du premier — jumeaux fraternels, pas identiques sauf si demandé.
+RÉALISME MÉDICAL : bracelets d'identification, couvertures maternité, moniteurs, lumière douce de salle d'accouchement.
+${common}`;
+        return `PROTOCOLE NAISSANCE — 2 IMAGES :
+1. GROUPE : Mère épuisée mais rayonnante + nouveau-né en maternité (${sexL}). Peau à peau ou bébé dans les bras. Décor réaliste : lit médicalisé, lumière tamisée, perfusion visible.
+2. INDIVIDUEL : Bébé seul en gros plan (9:16, ${sexL}). Traits du visage nets, peau légèrement rosée de nouveau-né, yeux mi-clos.
+${common}`;
+      }
+
+      const tg=(S.wGain*(S.isTwins?1.3:1)*.45).toFixed(1);
+      const pw=S.pregMo>4?(S.pelvis+1)*2.5:0;
+      const wGainDisplay=S.isTwins?(S.wGain*1.3).toFixed(1):S.wGain.toFixed(1);
       const bvL=['légère augmentation','augmentation naturelle','augmentation marquée'];
       const svL=['aucune','légères','visibles','marquées'];
-      return `GROSSESSE COHÉRENCE GLOBALE STRICTE :\n${S.iWt}kg, poitrine ${S.iBust}cm, bonnet ${S.cup}, cuisse ${S.iThigh}cm.\nMois ${S.pregMo}, gain +${S.wGain}kg.\nCorps entier évolue ensemble – Ventre↑ Cuisses↑ Bassin↑ Poitrine↑ Bras↑ Joues↑.\nPoitrine : ${bvL[S.bVol]}. Allaitement : ${S.bfPrep?'ACTIVÉ':'OFF'}.\nDist: Ventre 35%, Bassin+Hanches 20%(+${pw}cm), Cuisses 15%(+${tg}cm), Poitrine 15%, Bras+Dos 10%, Visage 5%.\nVERGETURES : ${S.strInt>0?`${svL[S.strInt]} sur ${S.strZones.join(', ')}`:'AUCUNE'}.\n${common}`;
+      return `BIOLOGIE GROSSESSE — COHÉRENCE GLOBALE STRICTE :
+DONNÉES INITIALES : Poids ${S.iWt}kg, Tour poitrine ${S.iBust}cm, Bonnet ${S.cup}, Tour cuisse ${S.iThigh}cm.
+STADE : Mois ${S.pregMo}. GAIN DE POIDS TOTAL : +${wGainDisplay}kg.
+${twinBlock}
+
+RÈGLE DE COHÉRENCE GLOBALE (ABSOLUE) :
+Le corps ENTIER évolue ensemble — Ventre↑, Cuisses↑, Bassin↑, Poitrine↑, Bras↑, Joues↑.
+INTERDICTION : silhouette mince, ventre seul gonflé, poitrine de mannequin.
+
+DISTRIBUTION PHYSIOLOGIQUE :
+- VENTRE (35%) : Projection frontale massive, peau ultra-tendue, ombilic aplati ou proéminent.
+- BASSIN & HANCHES (20%) : Élargissement osseux +${pw}cm, démarche modifiée.
+- CUISSES & FESSES (15%) : Épaississement +${tg}cm, cellulite naturelle possible.
+- POITRINE (15%) : ${bvL[S.bVol]}. Veines visibles, aréoles élargies et foncées. Allaitement : ${S.bfPrep?'ACTIVÉ — mamelons préparés, légère colostrum possible':'OFF'}.
+- BRAS / DOS (10%) : Bras plus ronds, dos plus large et musclé.
+- VISAGE (5%) : Joues pleines, nez légèrement élargi, teint lumineux ou tacheté.
+
+VERGETURES : ${S.strInt>0?`${svL[S.strInt]} sur ${S.strZones.join(', ')}.`:'AUCUNE.'}
+${common}`;
     }
     default:
       return `ENFANT ${S.cAge} ans. Sexe : ${sexL}. Dominance : ${S.dom}%. 1 image 9:16 PNG.\n${rR} ${common}`;
