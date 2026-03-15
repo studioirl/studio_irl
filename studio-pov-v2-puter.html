@@ -819,28 +819,13 @@ ${perceptionInstructions}
     options.input_image_mime_type = inputImageMimeType;
   }
 
+  // puter.ai.txt2img() retourne un élément <img> HTML
   const imgElement = await puter.ai.txt2img(prompt, options);
 
-  // Convertir l'élément image en blob URL
-  return new Promise((resolve, reject) => {
-    const canvas = document.createElement('canvas');
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      canvas.getContext('2d').drawImage(img, 0, 0);
-      canvas.toBlob(blob => {
-        if (blob) resolve(URL.createObjectURL(blob));
-        else reject(new Error("Impossible de convertir l'image"));
-      }, 'image/png');
-    };
-    img.onerror = () => {
-      // Si crossOrigin échoue, utiliser directement le src
-      resolve(imgElement.src);
-    };
-    img.src = imgElement.src;
-  });
+  // Extraire l'URL — l'élément est un HTMLImageElement avec .src
+  const src = imgElement && imgElement.src ? imgElement.src : imgElement;
+  if (!src || src === '[object Object]') throw new Error("Image non reçue de Puter. Réessayez.");
+  return src;
 }
 
 // ─── GENERATE ─────────────────────────────────────────────
