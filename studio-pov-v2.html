@@ -631,11 +631,23 @@ window.addEventListener('DOMContentLoaded', async () => {
   applyAllUI();
   renderAvatars();
 
-  // IndexedDB (identique à App.tsx useEffect)
+  // IndexedDB — recréer les blob URLs depuis le base64 stocké
   try {
     const saved = await dbGetAll();
     if (saved && saved.length > 0) {
-      results = saved.sort((a,b) => b.timestamp - a.timestamp);
+      results = saved.sort((a,b) => b.timestamp - a.timestamp).map(item => {
+        if (item.base64) {
+          // Recréer le blob URL depuis le base64 sauvegardé
+          try {
+            const bs = atob(item.base64.split(',')[1]);
+            const ab = new ArrayBuffer(bs.length);
+            const ia = new Uint8Array(ab);
+            for (let i = 0; i < bs.length; i++) ia[i] = bs.charCodeAt(i);
+            item.url = URL.createObjectURL(new Blob([ab], { type: 'image/png' }));
+          } catch(e) { item.url = item.base64; }
+        }
+        return item;
+      });
       renderResults();
     }
   } catch(e) {}
@@ -953,23 +965,23 @@ async function handleGenerate() {
       humanPerceptionMode
     };
 
-    let base64Url = await generatePOVImage(settings);
+    const base64Url = await generatePOVImage(settings);
 
-    // Blob URL pour tous les appareils — léger en mémoire
+    // Créer un blob URL pour l'affichage en mémoire
     const byteString = atob(base64Url.split(',')[1]);
-    base64Url = null; // libérer le base64 immédiatement
     const ab = new ArrayBuffer(byteString.length);
     const ia = new Uint8Array(ab);
     for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
     const imageUrl = URL.createObjectURL(new Blob([ab], { type: 'image/png' }));
 
-    const newImg = { id: Date.now().toString(), url: imageUrl, prompt: subject, aspectRatio: currentAspectRatio, timestamp: Date.now() };
+    // En DB on stocke le base64 — survit aux rechargements de page
+    const newImg = { id: Date.now().toString(), url: imageUrl, base64: base64Url, prompt: subject, aspectRatio: currentAspectRatio, timestamp: Date.now() };
 
     // Max 5 images, révoquer la plus ancienne
     if (results.length >= 5) {
       const last = results[results.length - 1];
       dbDelete(last.id).catch(console.error);
-      if (last.url.startsWith('blob:')) URL.revokeObjectURL(last.url);
+      if (last.url && last.url.startsWith('blob:')) URL.revokeObjectURL(last.url);
     }
     results = [newImg, ...results].slice(0, 5);
     dbSave(newImg).catch(console.error);
