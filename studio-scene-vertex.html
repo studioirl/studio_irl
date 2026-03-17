@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studio Scène — Récits Temporels</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #050b18;
+  --bg2: #0a192f;
+  --glass: rgba(255,255,255,0.03);
+  --border: rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.1);
+  --border3: rgba(255,255,255,0.2);
+  --text: #ffffff;
+  --text2: rgba(255,255,255,0.7);
+  --text3: rgba(255,255,255,0.4);
+  --text4: rgba(255,255,255,0.1);
+  --red: rgba(239,68,68,0.1);
+  --red2: rgba(239,68,68,0.2);
+  --red-text: #fca5a5;
+}
+html { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); }
+body { min-height: 100vh; background: radial-gradient(circle at top right, #0a192f, #050b18 70%); }
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text); }
+
+.glass-card {
+  background: var(--glass);
+  backdrop-filter: blur(30px);
+  border: 1px solid var(--border);
+}
+.text-glow { text-shadow: 0 0 20px rgba(255,255,255,0.2); }
+
+/* === SPLASH === */
+#splash {
+  min-height: 100vh; position: relative;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 32px; text-align: center; overflow: hidden;
+}
+.splash-bg-img {
+  position: fixed; inset: 0; z-index: 0;
+  pointer-events: none;
+}
+.splash-bg-img img {
+  width: 100%; height: 100%; object-fit: cover;
+  opacity: 0.03; transform: scale(1.1);
+  filter: blur(2px) grayscale(1);
+}
+.splash-bg-img::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(to bottom, var(--bg), transparent, var(--bg));
+}
+.splash-content { position: relative; z-index: 10; max-width: 480px; }
+.splash-logo-wrap { margin-bottom: 32px; display: flex; justify-content: center; }
+.splash-logo {
+  width: 40px; height: 40px;
+  background: white; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 8px 32px rgba(255,255,255,0.1);
+}
+.splash-logo svg { width: 20px; height: 20px; color: var(--bg); display: block; }
+.splash-title {
+  font-size: clamp(40px, 8vw, 64px);
+  font-weight: 900; text-transform: uppercase;
+  font-style: italic; letter-spacing: -0.03em;
+  line-height: 0.9; color: white;
+  text-shadow: 0 0 20px rgba(255,255,255,0.2);
+  margin-bottom: 32px;
+}
+.splash-desc { font-size: 16px; font-weight: 300; color: var(--text2); line-height: 1.7; font-style: italic; margin-bottom: 48px; border-left: 1px solid var(--border2); padding-left: 20px; text-align: left; }
+.api-section { display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px; text-align: left; }
+.api-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3em; color: var(--text3); }
+.api-input {
+  width: 100%; background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border2);
+  border-radius: 12px; padding: 14px 16px;
+  font-size: 13px; font-family: monospace;
+  color: var(--text); outline: none; transition: all 0.2s;
+}
+.api-input::placeholder { color: rgba(255,255,255,0.15); }
+.api-input:focus { border-color: rgba(255,255,255,0.4); background: rgba(255,255,255,0.08); }
+.vertex-note { font-size: 11px; color: #60a5fa; font-weight: 600; }
+.splash-cta {
+  width: 100%; background: white; color: var(--bg);
+  border: none; border-radius: 999px;
+  padding: 18px 48px;
+  font-weight: 900; font-size: 12px;
+  text-transform: uppercase; letter-spacing: 0.2em;
+  cursor: pointer; transition: all 0.2s;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+}
+.splash-cta:hover { background: #eff6ff; transform: translateY(-1px); }
+.splash-cta:active { transform: scale(0.97); }
+.splash-cta svg { width: 16px; height: 16px; }
+#splash-error { color: #fca5a5; font-size: 12px; font-weight: 600; margin-top: 12px; display: none; }
+
+/* === APP === */
+#app { display: none; min-height: 100vh; }
+#app.visible { display: block; }
+
+/* Header */
+.app-header {
+  border-bottom: 1px solid var(--border);
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(20px);
+  position: sticky; top: 0; z-index: 50;
+}
+.header-inner {
+  max-width: 1280px; margin: 0 auto;
+  padding: 24px; display: flex;
+  align-items: center; justify-content: space-between;
+}
+.brand { display: flex; align-items: center; gap: 16px; }
+.brand-logo {
+  width: 40px; height: 40px; background: white;
+  border-radius: 10px; display: flex;
+  align-items: center; justify-content: center;
+  box-shadow: 0 4px 16px rgba(255,255,255,0.1);
+}
+.brand-logo svg { width: 20px; height: 20px; color: var(--bg); display: block; }
+.brand-title { font-size: 20px; font-weight: 900; text-transform: uppercase; font-style: italic; letter-spacing: -0.02em; }
+.active-badge {
+  padding: 10px 24px; border-radius: 999px;
+  font-size: 10px; font-weight: 900;
+  letter-spacing: 0.3em; text-transform: uppercase;
+  cursor: pointer; transition: all 0.2s;
+}
+.active-badge.on { background: rgba(255,255,255,0.05); border: 1px solid var(--border2); color: var(--text); }
+.active-badge.off { background: white; color: var(--bg); border: none; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+.active-badge svg { width: 14px; height: 14px; display: inline; vertical-align: middle; margin-right: 6px; }
+
+/* Main */
+.app-main { max-width: 1280px; margin: 0 auto; padding: 48px 24px; position: relative; z-index: 10; }
+
+/* Error / Success */
+.alert-box {
+  margin-bottom: 32px; padding: 24px;
+  border-radius: 24px; font-size: 14px;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+}
+.alert-box.error { background: var(--red); border: 1px solid var(--red2); color: var(--red-text); }
+.alert-box.success { background: rgba(255,255,255,0.05); border: 1px solid var(--border2); color: var(--text); }
+.alert-box .alert-left { display: flex; align-items: center; gap: 16px; }
+.alert-box svg { width: 24px; height: 24px; flex-shrink: 0; }
+.alert-close { padding: 8px; background: none; border: none; cursor: pointer; color: currentColor; opacity: 0.5; border-radius: 999px; transition: background 0.2s; }
+.alert-close:hover { background: rgba(255,255,255,0.1); opacity: 1; }
+.alert-close svg { width: 20px; height: 20px; }
+
+/* Landing page */
+.landing-wrap { padding: 80px 0; display: flex; flex-direction: column; align-items: center; }
+.landing-card {
+  width: 100%; max-width: 1152px;
+  background: rgba(255,255,255,0.03);
+  backdrop-filter: blur(30px);
+  border: 1px solid var(--border);
+  border-radius: 64px; overflow: hidden;
+  box-shadow: 0 50px 100px rgba(0,0,0,0.5);
+  margin-bottom: 80px;
+}
+.landing-grid { display: grid; grid-template-columns: 1fr; }
+@media(min-width:768px){ .landing-grid { grid-template-columns: 7fr 5fr; } }
+.landing-text { padding: 48px; display: flex; flex-direction: column; justify-content: center; position: relative; z-index: 10; background: linear-gradient(135deg, rgba(255,255,255,0.07), transparent); }
+@media(min-width:768px){ .landing-text { padding: 64px; } }
+.landing-badges { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+.landing-badge-white { padding: 4px 12px; background: white; color: var(--bg); font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.3em; border-radius: 4px; box-shadow: 2px 2px 8px rgba(0,0,0,0.2); }
+.landing-badge-line { height: 1px; width: 32px; background: var(--border2); }
+.landing-badge-year { font-size: 9px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.3em; }
+.landing-h2 { font-size: clamp(56px, 10vw, 96px); font-weight: 900; text-transform: uppercase; font-style: italic; letter-spacing: -0.03em; line-height: 0.8; color: white; text-shadow: 0 0 20px rgba(255,255,255,0.2); margin-bottom: 32px; }
+.landing-quote { font-size: 18px; font-weight: 300; color: var(--text2); line-height: 1.7; font-style: italic; max-width: 480px; border-left: 1px solid var(--border2); padding-left: 24px; margin-bottom: 48px; }
+.landing-upload-btn {
+  display: inline-flex; align-items: center; gap: 12px;
+  background: white; color: var(--bg);
+  padding: 20px 56px; border-radius: 999px;
+  font-weight: 900; font-size: 12px; letter-spacing: 0.2em;
+  text-transform: uppercase; cursor: pointer;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  transition: all 0.2s; position: relative;
+}
+.landing-upload-btn:hover { background: #eff6ff; transform: translateY(-1px); }
+.landing-upload-btn:active { transform: scale(0.95); }
+.landing-upload-btn svg { width: 16px; height: 16px; }
+.landing-upload-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.landing-visual { position: relative; min-height: 400px; background: var(--bg); overflow: hidden; }
+@media(min-width:768px){ .landing-visual { min-height: auto; } }
+.landing-visual-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 3s ease; opacity: 0.8; }
+.landing-card:hover .landing-visual-img { transform: scale(1.1); }
+.landing-visual-overlay { position: absolute; inset: 0; background: linear-gradient(to right, var(--bg), rgba(5,11,24,0.4), transparent); }
+.landing-rec { position: absolute; top: 48px; left: 48px; }
+.rec-badge { padding: 8px 16px; background: rgba(255,255,255,0.1); backdrop-filter: blur(24px); border: 1px solid var(--border2); border-radius: 12px; }
+.rec-badge p { font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.3em; display: flex; align-items: center; gap: 8px; }
+.rec-dot { width: 8px; height: 8px; background: #ef4444; border-radius: 50%; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+.landing-clap { position: absolute; bottom: 40px; right: 40px; width: 160px; height: 160px; animation: float 6s ease-in-out infinite; }
+.landing-clap img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 30px 60px rgba(0,0,0,0.9)); }
+@keyframes float { 0%,100%{transform:translateY(0)rotate(12deg)} 50%{transform:translateY(-20px)rotate(15deg)} }
+.landing-bottom { display: flex; align-items: center; gap: 32px; opacity: 0.2; }
+.lb-line { height: 1px; width: 96px; background: white; }
+.lb-text { font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.8em; }
+
+/* Studio layout */
+.studio-grid { display: grid; grid-template-columns: 1fr; gap: 64px; }
+@media(min-width:1024px){ .studio-grid { grid-template-columns: 4fr 8fr; } }
+
+/* Left panel */
+.left-panel { display: flex; flex-direction: column; gap: 0; }
+.ref-card { background: var(--glass); backdrop-filter: blur(30px); border: 1px solid var(--border); border-radius: 48px; padding: 40px; position: sticky; top: 128px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+.ref-img-wrap { position: relative; border-radius: 40px; overflow: hidden; margin-bottom: 40px; box-shadow: 0 20px 60px rgba(0,0,0,0.4); border: 1px solid var(--border2); }
+.ref-img-wrap img { width: 100%; aspect-ratio: 3/4; object-fit: cover; display: block; }
+.ref-img-overlay { position: absolute; inset: 0; background: rgba(10,25,47,0.4); opacity: 0; transition: all 0.3s; backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; }
+.ref-img-wrap:hover .ref-img-overlay { opacity: 1; }
+.ref-img-del { padding: 20px; background: white; border-radius: 999px; border: none; cursor: pointer; box-shadow: 0 8px 32px rgba(0,0,0,0.4); transition: transform 0.2s; }
+.ref-img-del:hover { transform: scale(1.1); }
+.ref-img-del svg { width: 28px; height: 28px; color: var(--bg); display: block; }
+.ref-badge { position: absolute; top: 24px; left: 24px; padding: 8px 24px; background: white; color: var(--bg); border-radius: 999px; font-size: 10px; font-weight: 900; letter-spacing: 0.2em; text-transform: uppercase; }
+.analyze-btn {
+  width: 100%; background: white; color: var(--bg);
+  border: none; border-radius: 16px;
+  padding: 24px; font-weight: 900; font-size: 12px;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  cursor: pointer; transition: all 0.2s;
+  box-shadow: 0 8px 32px rgba(255,255,255,0.1);
+  display: flex; align-items: center; justify-content: center; gap: 16px;
+}
+.analyze-btn:hover { background: #eff6ff; }
+.analyze-btn:active { transform: scale(0.97); }
+.analyze-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.analyze-btn svg { width: 20px; height: 20px; }
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.analysis-done { display: flex; flex-direction: column; gap: 24px; }
+.analysis-check { padding: 24px; background: rgba(255,255,255,0.07); border: 1px solid var(--border2); border-radius: 24px; display: flex; align-items: center; gap: 20px; }
+.check-circle { width: 40px; height: 40px; background: white; border-radius: 999px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 16px rgba(255,255,255,0.1); }
+.check-circle svg { width: 20px; height: 20px; color: var(--bg); display: block; }
+.check-label { font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.2em; }
+.check-sub { font-size: 10px; color: var(--text3); font-weight: 500; margin-top: 2px; }
+.analysis-info { padding: 32px; background: rgba(255,255,255,0.02); border-radius: 24px; border: 1px solid rgba(255,255,255,0.05); }
+.analysis-info-label { font-size: 10px; font-weight: 900; color: var(--text4); text-transform: uppercase; letter-spacing: 0.2em; margin-bottom: 16px; }
+.analysis-info p { font-size: 14px; color: var(--text2); font-style: italic; line-height: 1.8; font-weight: 300; }
+.analysis-info strong { color: white; font-weight: 700; font-style: normal; margin-right: 6px; }
+
+/* Right panel */
+.right-panel { display: flex; flex-direction: column; gap: 64px; }
+.sequence-card { background: var(--glass); backdrop-filter: blur(30px); border: 1px solid var(--border); border-radius: 64px; padding: 48px; position: relative; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+.seq-watermark { position: absolute; top: 0; right: 0; padding: 32px; opacity: 0.04; pointer-events: none; }
+.seq-watermark svg { width: 256px; height: 256px; transform: rotate(-12deg); }
+.seq-inner { position: relative; z-index: 10; display: flex; flex-direction: column; gap: 40px; }
+.seq-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 32px; }
+.mode-toggle { display: flex; gap: 8px; background: rgba(255,255,255,0.04); padding: 8px; border-radius: 999px; border: 1px solid var(--border2); }
+.mode-btn { padding: 12px 40px; border-radius: 999px; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer; transition: all 0.2s; border: none; }
+.mode-btn.active { background: white; color: var(--bg); box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
+.mode-btn.inactive { background: none; color: var(--text); opacity: 0.4; }
+.mode-btn.inactive:hover { opacity: 1; }
+.seq-title { font-size: 24px; font-weight: 900; font-style: italic; text-transform: uppercase; letter-spacing: -0.02em; text-shadow: 0 0 20px rgba(255,255,255,0.2); }
+
+/* Format buttons */
+.format-section { display: flex; flex-direction: column; gap: 16px; }
+.format-label { font-size: 10px; font-weight: 900; color: var(--text3); text-transform: uppercase; letter-spacing: 0.3em; }
+.format-btns { display: flex; gap: 16px; flex-wrap: wrap; }
+.fmt-btn { display: flex; align-items: center; gap: 12px; padding: 16px 24px; border-radius: 16px; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer; transition: all 0.2s; border: 1px solid; }
+.fmt-btn.active { background: white; color: var(--bg); border-color: white; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+.fmt-btn.inactive { background: rgba(255,255,255,0.04); border-color: var(--border2); color: rgba(255,255,255,0.5); }
+.fmt-btn.inactive:hover { border-color: var(--border3); }
+.fmt-btn svg { width: 16px; height: 16px; }
+
+/* Textarea */
+.scene-textarea {
+  width: 100%; height: 176px;
+  background: rgba(255,255,255,0.04); border: 1px solid var(--border2);
+  border-radius: 40px; padding: 40px;
+  font-size: 20px; font-weight: 300; color: var(--text);
+  outline: none; resize: none;
+  transition: all 0.2s; font-family: 'Inter', sans-serif;
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.2);
+}
+.scene-textarea::placeholder { color: var(--text4); }
+.scene-textarea:focus { border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.07); }
+
+/* Generate button */
+.gen-seq-btn {
+  width: 100%; background: white; color: var(--bg);
+  border: none; border-radius: 24px;
+  padding: 28px; font-weight: 900; font-size: 14px;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  cursor: pointer; transition: all 0.2s;
+  box-shadow: 0 20px 50px rgba(255,255,255,0.07);
+  display: flex; align-items: center; justify-content: center; gap: 16px;
+  position: relative; overflow: hidden;
+}
+.gen-seq-btn:hover { background: #eff6ff; }
+.gen-seq-btn:active { transform: scale(0.97); }
+.gen-seq-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.gen-seq-btn svg { width: 20px; height: 20px; }
+.gen-seq-btn.loading::after { content: ''; position: absolute; inset: 0; background: rgba(255,255,255,0.2); animation: pulse2 1.5s infinite; }
+@keyframes pulse2 { 0%,100%{opacity:0}50%{opacity:1} }
+
+/* Empty right */
+.right-empty {
+  height: 640px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  border: 1px dashed rgba(255,255,255,0.05);
+  background: rgba(255,255,255,0.01);
+  border-radius: 64px; opacity: 0.2; position: relative; overflow: hidden;
+}
+.right-empty-bg { position: absolute; inset: 0; pointer-events: none; }
+.right-empty-bg img { width: 100%; height: 100%; object-fit: cover; opacity: 0.05; filter: grayscale(1); }
+.right-empty svg { width: 80px; height: 80px; margin-bottom: 40px; opacity: 0.1; }
+.right-empty p { font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.8em; text-align: center; padding: 0 80px; line-height: 2; }
+
+/* Storyboard */
+.storyboard-wrap { display: flex; flex-direction: column; gap: 48px; }
+.storyboard-header { display: flex; align-items: center; justify-content: space-between; padding: 0 32px; }
+.storyboard-label { display: flex; align-items: center; gap: 16px; }
+.storyboard-label svg { width: 24px; height: 24px; color: var(--text3); }
+.storyboard-label h3 { font-size: 14px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5em; color: var(--text3); }
+.export-btn {
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px 40px; background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border2); border-radius: 999px;
+  font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em;
+  cursor: pointer; transition: all 0.2s; color: var(--text);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+.export-btn:hover { background: white; color: var(--bg); }
+.export-btn svg { width: 16px; height: 16px; }
+.story-grid { display: grid; grid-template-columns: 1fr; gap: 40px; }
+@media(min-width:640px){ .story-grid { grid-template-columns: repeat(2, 1fr); } }
+
+.story-card {
+  background: var(--glass); backdrop-filter: blur(30px);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 56px; overflow: hidden;
+  transition: all 0.3s; display: flex; flex-direction: column;
+}
+.story-card:hover { border-color: rgba(255,255,255,0.4); box-shadow: 0 40px 80px rgba(0,0,0,0.5); }
+.story-img-wrap { position: relative; overflow: hidden; background: rgba(255,255,255,0.04); }
+.story-img-wrap.ar-11 { aspect-ratio: 1/1; }
+.story-img-wrap.ar-169 { aspect-ratio: 16/9; }
+.story-img-wrap.ar-916 { aspect-ratio: 9/16; }
+.story-img-wrap img { width: 100%; height: 100%; object-fit: cover; transition: transform 6s ease; }
+.story-card:hover .story-img-wrap img { transform: scale(1.1); }
+.story-dl-btn {
+  position: absolute; top: 32px; right: 32px;
+  padding: 20px; background: white;
+  border-radius: 999px; border: none;
+  cursor: pointer; opacity: 0; transition: all 0.3s;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+.story-dl-btn:hover { transform: scale(1.1); }
+.story-dl-btn svg { width: 24px; height: 24px; color: var(--bg); display: block; }
+.story-card:hover .story-dl-btn { opacity: 1; }
+.story-prise { position: absolute; bottom: 32px; left: 32px; padding: 10px 24px; background: rgba(255,255,255,0.1); backdrop-filter: blur(20px); border-radius: 999px; font-size: 10px; font-weight: 900; border: 1px solid var(--border2); text-transform: uppercase; letter-spacing: 0.2em; }
+.story-gen-btn {
+  width: 100%; height: 100%;
+  min-height: 300px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 32px; background: none; border: none; cursor: pointer;
+  transition: background 0.2s; color: var(--text);
+}
+.story-gen-btn:hover { background: rgba(255,255,255,0.03); }
+.story-gen-btn:disabled { cursor: not-allowed; }
+.gen-circle {
+  width: 96px; height: 96px;
+  border: 1px solid var(--border2); border-radius: 999px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.3s;
+}
+.story-card:hover .gen-circle { background: white; border-color: transparent; }
+.gen-circle svg { width: 40px; height: 40px; opacity: 0.2; transition: all 0.3s; }
+.story-card:hover .gen-circle svg { opacity: 1; color: var(--bg); }
+.gen-text { font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5em; color: var(--text3); transition: color 0.2s; }
+.story-card:hover .gen-text { color: var(--text); }
+.gen-loading { display: flex; flex-direction: column; align-items: center; gap: 24px; }
+.gen-spin { width: 56px; height: 56px; color: rgba(255,255,255,0.2); }
+.gen-loading-text { font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.4em; opacity: 0.3; animation: pulse2 2s infinite; }
+.story-footer { padding: 48px; background: rgba(255,255,255,0.01); flex: 1; display: flex; align-items: center; border-top: 1px solid rgba(255,255,255,0.05); }
+.story-quote { font-size: 16px; font-weight: 300; font-style: italic; color: var(--text3); line-height: 1.7; border-left: 1px solid var(--border2); padding-left: 32px; transition: color 0.3s; }
+.story-card:hover .story-quote { color: var(--text2); }
+
+/* Generating prompts state */
+.generating-state { padding: 80px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 32px; }
+.generating-state svg { width: 64px; height: 64px; opacity: 0.2; }
+.generating-state p { font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5em; opacity: 0.3; }
+
+/* Footer */
+.app-footer {
+  margin-top: 160px; padding: 96px 24px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  background: rgba(0,0,0,0.4); backdrop-filter: blur(8px);
+  text-align: center; position: relative; z-index: 10;
+}
+.footer-quote { font-size: 12px; font-weight: 500; font-style: italic; color: var(--text3); max-width: 640px; margin: 0 auto 48px; line-height: 2; }
+.footer-divider { display: flex; align-items: center; justify-content: center; gap: 24px; opacity: 0.1; margin-bottom: 48px; }
+.footer-divider-line { height: 1px; width: 96px; background: white; }
+.footer-divider svg { width: 24px; height: 24px; }
+.footer-copy { font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.8em; color: rgba(255,255,255,0.05); }
+
+/* Fixed BG */
+.fixed-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.fixed-bg img { width: 100%; height: 100%; object-fit: cover; opacity: 0.03; transform: scale(1.1); filter: blur(2px) grayscale(1); }
+.fixed-bg-grad { position: absolute; inset: 0; background: linear-gradient(to bottom, var(--bg), transparent, var(--bg)); }
+</style>
+</head>
+<body>
+
+<div class="fixed-bg">
+  <img src="https://images.unsplash.com/photo-1594909122845-11baa439b7bf?q=80&w=2000&auto=format&fit=crop" alt="">
+  <div class="fixed-bg-grad"></div>
+</div>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-bg-img">
+    <img src="https://images.unsplash.com/photo-1594909122845-11baa439b7bf?q=80&w=2000&auto=format&fit=crop" alt="">
+  </div>
+  <div class="splash-content">
+    <div class="splash-logo-wrap">
+      <div class="splash-logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m9 8 6 4-6 4V8z"/><path d="M2 8h2M20 8h2M2 12h2M20 12h2M2 16h2M20 16h2"/></svg>
+      </div>
+    </div>
+    <h1 class="splash-title">Studio<br>Scène</h1>
+    <p class="splash-desc">"prolonge un instant dans le temps et transforme une image figée en une suite de moments vécus."</p>
+    <div class="api-section">
+      <label class="api-label">Clé API Vertex AI (Google Cloud)</label>
+      <input type="password" id="apiKeyInput" class="api-input" placeholder="AIza..." autocomplete="off">
+      <p class="vertex-note">⚡ Vertex AI Express Mode — Crédits Google Cloud</p>
+    </div>
+    <button class="splash-cta" onclick="enterApp()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      DÉMARRER LE TOURNAGE
+    </button>
+    <p id="splash-error"></p>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand">
+        <div class="brand-logo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m9 8 6 4-6 4V8z"/><path d="M2 8h2M20 8h2M2 12h2M20 12h2M2 16h2M20 16h2"/></svg>
+        </div>
+        <span class="brand-title">Studio Scène</span>
+      </div>
+      <button class="active-badge" id="statusBadge" onclick="resetToLanding()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;display:inline;vertical-align:middle;margin-right:6px;"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+        <span id="statusText">ACTIVER IA</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="app-main" style="position:relative;z-index:10;">
+    <div id="alertBox" style="display:none;"></div>
+
+    <!-- LANDING (no image) -->
+    <div id="landingView">
+      <div class="landing-wrap">
+        <div class="landing-card">
+          <div class="landing-grid">
+            <div class="landing-text">
+              <div class="landing-badges">
+                <span class="landing-badge-white">Production Studio</span>
+                <div class="landing-badge-line"></div>
+                <span class="landing-badge-year">Édition 2025</span>
+              </div>
+              <h2 class="landing-h2">Studio<br>Scène</h2>
+              <p class="landing-quote">"prolonge un instant dans le temps et transforme une image figée en une suite de moments vécus."</p>
+              <label class="landing-upload-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                DÉMARRER LE TOURNAGE
+                <input type="file" accept="image/*" onchange="handleImageUpload(event)" style="display:none;">
+              </label>
+            </div>
+            <div class="landing-visual">
+              <img class="landing-visual-img" src="https://images.unsplash.com/photo-1585647347384-2593bc35786b?q=80&w=1200&auto=format&fit=crop" alt="Cinéma"
+                onerror="this.style.background='#0a192f'">
+              <div class="landing-visual-overlay"></div>
+              <div class="landing-rec">
+                <div class="rec-badge">
+                  <p><span class="rec-dot"></span> REC</p>
+                </div>
+              </div>
+              <div class="landing-clap">
+                <img src="https://images.unsplash.com/photo-1594909122845-11baa439b7bf?q=80&w=500&auto=format&fit=crop" alt="Clap"
+                  onerror="this.style.display='none'">
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="landing-bottom">
+          <div class="lb-line"></div>
+          <p class="lb-text">Action • Narration • Temps</p>
+          <div class="lb-line"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STUDIO (with image) -->
+    <div id="studioView" style="display:none;">
+      <div class="studio-grid">
+        <!-- LEFT -->
+        <div class="left-panel">
+          <div class="ref-card">
+            <div class="ref-img-wrap">
+              <img id="refImg" src="" alt="Référence">
+              <div class="ref-img-overlay">
+                <button class="ref-img-del" onclick="deleteRef()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                </button>
+              </div>
+              <div class="ref-badge">Scène Alpha</div>
+            </div>
+
+            <div id="analyzeSection">
+              <button class="analyze-btn" id="analyzeBtn" onclick="handleAnalyze()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                VERROUILLER L'ADN VISUEL
+              </button>
+            </div>
+
+            <div id="analysisResult" style="display:none;" class="analysis-done">
+              <div class="analysis-check">
+                <div class="check-circle">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <div>
+                  <p class="check-label">Réalité Définie</p>
+                  <p class="check-sub">Continuité physique OK</p>
+                </div>
+              </div>
+              <div class="analysis-info">
+                <p class="analysis-info-label">Inventaire Spatial</p>
+                <p id="analysisInfoText"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT -->
+        <div class="right-panel">
+          <div id="noAnalysisRight" class="right-empty">
+            <div class="right-empty-bg">
+              <img src="https://images.unsplash.com/photo-1594909122845-11baa439b7bf?q=80&w=1000&auto=format&fit=crop" alt="">
+            </div>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m9 8 6 4-6 4V8z"/><path d="M2 8h2M20 8h2M2 12h2M20 12h2M2 16h2M20 16h2"/></svg>
+            <p>Prêt pour le tournage ?<br>Analysez votre image source.</p>
+          </div>
+
+          <div id="sequenceSection" style="display:none;">
+            <div class="sequence-card">
+              <div class="seq-watermark">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m9 8 6 4-6 4V8z"/></svg>
+              </div>
+              <div class="seq-inner">
+                <div class="seq-top">
+                  <div class="mode-toggle">
+                    <button class="mode-btn active" id="modeAutoBtn" onclick="setMode(true)">FLUX NATUREL</button>
+                    <button class="mode-btn inactive" id="modeManualBtn" onclick="setMode(false)">DIRECTION ARTISTIQUE</button>
+                  </div>
+                  <h2 class="seq-title">Ligne de Temps</h2>
+                </div>
+
+                <div class="format-section">
+                  <p class="format-label">Format de l'image</p>
+                  <div class="format-btns">
+                    <button class="fmt-btn active" data-ar="1:1" onclick="setAR('1:1')">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+                      Carré (1:1)
+                    </button>
+                    <button class="fmt-btn inactive" data-ar="16:9" onclick="setAR('16:9')">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/></svg>
+                      Cinéma (16:9)
+                    </button>
+                    <button class="fmt-btn inactive" data-ar="9:16" onclick="setAR('9:16')">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/></svg>
+                      Portrait (9:16)
+                    </button>
+                  </div>
+                </div>
+
+                <div id="manualTextarea" style="display:none;">
+                  <textarea class="scene-textarea" id="actionInput" placeholder="Décrivez l'évolution de la scène..."></textarea>
+                </div>
+
+                <button class="gen-seq-btn" id="genSeqBtn" onclick="handleGenerateSequence()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+                  DÉPLOYER LA SÉQUENCE VÉCUE
+                </button>
+              </div>
+            </div>
+
+            <div id="storyboardArea" style="display:none;" class="storyboard-wrap">
+              <div class="storyboard-header">
+                <div class="storyboard-label">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m9 8 6 4-6 4V8z"/></svg>
+                  <h3>Storyboard Temporel</h3>
+                </div>
+                <button class="export-btn" id="exportBtn" style="display:none;" onclick="exportAll()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  EXPORTER TOUT (.ZIP)
+                </button>
+              </div>
+              <div class="story-grid" id="storyGrid"></div>
+            </div>
+
+            <div id="generatingState" style="display:none;" class="generating-state">
+              <svg class="spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+              <p>Écriture du scénario temporel...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="app-footer">
+    <p class="footer-quote">"prolonge un instant dans le temps et transforme une image figée en une suite de moments vécus."</p>
+    <div class="footer-divider">
+      <div class="footer-divider-line"></div>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m9 8 6 4-6 4V8z"/></svg>
+      <div class="footer-divider-line"></div>
+    </div>
+    <p class="footer-copy">© 2025 Studio Scène • Laboratoire de Narration Temporelle</p>
+  </footer>
+</div>
+
+<script>
+// ==================== MODELS ====================
+const MODEL_ANALYSIS = 'gemini-2.0-flash';      // Pour analyse JSON (pro-preview → flash pour Vertex)
+const MODEL_IMAGE = 'gemini-3.1-flash-image-preview'; // Pour génération images
+
+// ==================== STATE ====================
+let API_KEY = '';
+let referenceImage = null;    // base64 sans prefix
+let referenceMime = 'image/jpeg';
+let referenceUrl = null;      // data URL complet
+let analysisData = null;
+let isAutoMode = true;
+let aspectRatio = '1:1';
+let generatedPrompts = [];    // [{id, scene}]
+let generatedImages = {};     // {id: dataUrl}
+let generatingIds = new Set();
+
+// ==================== NAV ====================
+document.getElementById('apiKeyInput').addEventListener('keydown', e => { if (e.key==='Enter') enterApp(); });
+
+function enterApp() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  const err = document.getElementById('splash-error');
+  if (!key) { err.textContent='Veuillez entrer votre clé API Vertex AI.'; err.style.display='block'; return; }
+  API_KEY = key;
+  err.style.display = 'none';
+  document.getElementById('splash').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+  updateStatusBadge();
+}
+
+function updateStatusBadge() {
+  const badge = document.getElementById('statusBadge');
+  const text = document.getElementById('statusText');
+  badge.className = 'active-badge on';
+  text.textContent = 'SYSTÈME ACTIF';
+}
+
+function resetToLanding() {
+  referenceImage = null; referenceUrl = null; analysisData = null;
+  generatedPrompts = []; generatedImages = {}; generatingIds.clear();
+  document.getElementById('landingView').style.display = 'block';
+  document.getElementById('studioView').style.display = 'none';
+}
+
+// ==================== ALERT ====================
+function showAlert(type, msg) {
+  const box = document.getElementById('alertBox');
+  box.style.display = 'flex';
+  box.innerHTML = `<div class="alert-box ${type}">
+    <div class="alert-left">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      ${msg}
+    </div>
+    <button class="alert-close" onclick="hideAlert()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+    </button>
+  </div>`;
+}
+function hideAlert() { document.getElementById('alertBox').style.display = 'none'; }
+
+function showSuccess(msg) {
+  const box = document.getElementById('alertBox');
+  box.style.display = 'flex';
+  box.innerHTML = `<div class="alert-box success">
+    <div class="alert-left">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+      ${msg}
+    </div>
+  </div>`;
+  setTimeout(() => box.style.display = 'none', 3000);
+}
+
+// ==================== UPLOAD ====================
+function handleImageUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const result = ev.target.result;
+    const mimeMatch = result.match(/^data:(image\/[a-z]+);base64,/);
+    referenceMime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+    referenceUrl = result;
+    referenceImage = result.split(',')[1];
+    analysisData = null;
+    generatedPrompts = [];
+    generatedImages = {};
+
+    // Show studio
+    document.getElementById('landingView').style.display = 'none';
+    document.getElementById('studioView').style.display = 'block';
+    document.getElementById('refImg').src = referenceUrl;
+    document.getElementById('analyzeSection').style.display = 'block';
+    document.getElementById('analysisResult').style.display = 'none';
+    document.getElementById('noAnalysisRight').style.display = 'flex';
+    document.getElementById('sequenceSection').style.display = 'none';
+    document.getElementById('storyboardArea').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function deleteRef() {
+  resetToLanding();
+}
+
+// ==================== CONTROLS ====================
+function setMode(auto) {
+  isAutoMode = auto;
+  document.getElementById('modeAutoBtn').className = 'mode-btn ' + (auto ? 'active' : 'inactive');
+  document.getElementById('modeManualBtn').className = 'mode-btn ' + (!auto ? 'active' : 'inactive');
+  document.getElementById('manualTextarea').style.display = auto ? 'none' : 'block';
+}
+
+function setAR(ar) {
+  aspectRatio = ar;
+  document.querySelectorAll('.fmt-btn').forEach(b => {
+    b.className = 'fmt-btn ' + (b.dataset.ar === ar ? 'active' : 'inactive');
+  });
+}
+
+// ==================== VERTEX CALLS ====================
+async function callVertexText(model, contents, config) {
+  const endpoint = `https://aiplatform.googleapis.com/v1/publishers/google/models/${model}:generateContent?key=${API_KEY}`;
+  const body = { contents, generationConfig: config || {} };
+  const res = await fetch(endpoint, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+  });
+  if (!res.ok) {
+    const txt = await res.text();
+    let d; try { d = JSON.parse(txt); } catch(e) {}
+    throw new Error(`HTTP ${res.status}: ${d?.error?.message || txt}`);
+  }
+  const data = await res.json();
+  return data.candidates?.[0]?.content?.parts?.find(p => p.text)?.text || '';
+}
+
+async function callVertexImage(parts) {
+  const endpoint = `https://aiplatform.googleapis.com/v1/publishers/google/models/${MODEL_IMAGE}:generateContent?key=${API_KEY}`;
+  const body = {
+    contents: [{ role: 'user', parts }],
+    generationConfig: {
+      responseModalities: ['IMAGE', 'TEXT'],
+      imageConfig: { aspectRatio, imageSize: '1K' }
+    }
+  };
+  const res = await fetch(endpoint, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+  });
+  if (!res.ok) {
+    const txt = await res.text();
+    let d; try { d = JSON.parse(txt); } catch(e) {}
+    throw new Error(`HTTP ${res.status}: ${d?.error?.message || txt}`);
+  }
+  const data = await res.json();
+  for (const part of (data.candidates?.[0]?.content?.parts || [])) {
+    if (part.inlineData?.data) return `data:image/png;base64,${part.inlineData.data}`;
+  }
+  throw new Error("La continuité temporelle a été brisée par le moteur de rendu.");
+}
+
+// ==================== ANALYZE ====================
+async function handleAnalyze() {
+  if (!referenceImage) return;
+  const btn = document.getElementById('analyzeBtn');
+  btn.disabled = true;
+  btn.innerHTML = `<svg class="spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> ANALYSE EN COURS...`;
+  hideAlert();
+
+  const prompt = `CAPTURER L'ADN DE L'INSTANT.
+Analysez cette image comme le point Zéro d'un récit cinématographique.
+Identifiez avec une précision absolue :
+1. personnage : identité visuelle, tenue exacte, posture émotionnelle, énergie.
+2. environnement : géométrie du lieu, textures, mobilier, petits objets de décor.
+3. lumiere : ambiance lumineuse, ombres portées, température.
+
+Répondez EXCLUSIVEMENT en JSON valide avec cette structure :
+{
+  "personnage": {
+    "apparence": "...",
+    "expression_faciale": "...",
+    "posture": "...",
+    "vetements": {"haut": "...", "bas": "...", "chaussures": "..."},
+    "objets_tenus": [{"objet": "...", "couleur": "...", "matiere": "...", "position": "...", "contenu": "..."}]
+  },
+  "environnement": {
+    "lieu": "...",
+    "murs": "...",
+    "sol": "...",
+    "meubles": [{"type": "...", "couleur": "...", "position": "..."}],
+    "objets_visibles": [{"type": "...", "couleur": "...", "emplacement": "..."}]
+  },
+  "lumiere": {"type": "...", "direction": "...", "intensite": "..."}
+}`;
+
+  try {
+    const text = await callVertexText(MODEL_ANALYSIS, [{
+      parts: [
+        { inlineData: { mimeType: referenceMime, data: referenceImage } },
+        { text: prompt }
+      ]
+    }], { temperature: 0.1 });
+
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("Réponse JSON invalide de l'analyse.");
+    analysisData = JSON.parse(jsonMatch[0]);
+
+    // Show analysis result
+    document.getElementById('analyzeSection').style.display = 'none';
+    document.getElementById('analysisResult').style.display = 'flex';
+    document.getElementById('analysisInfoText').innerHTML = `
+      <strong>Lieu :</strong> ${analysisData.environnement?.lieu || 'Non détecté'}<br>
+      <strong>Acteurs :</strong> ${(analysisData.personnage?.objets_tenus || []).map(o => o.objet).join(', ') || 'Aucun objet'}
+    `;
+
+    // Show sequence section
+    document.getElementById('noAnalysisRight').style.display = 'none';
+    document.getElementById('sequenceSection').style.display = 'block';
+
+    showSuccess('Analyse temporelle terminée. Séquence prête.');
+  } catch(err) {
+    showAlert('error', "L'émanation de l'image a échoué : " + err.message);
+    btn.disabled = false;
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> VERROUILLER L'ADN VISUEL`;
+  }
+}
+
+// ==================== GENERATE SEQUENCE ====================
+async function handleGenerateSequence() {
+  if (!analysisData) { showAlert('error', "Veuillez d'abord analyser l'image source."); return; }
+  const btn = document.getElementById('genSeqBtn');
+  btn.disabled = true;
+  btn.className = 'gen-seq-btn loading';
+  btn.innerHTML = `<svg class="spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> GÉNÉRATION EN COURS...`;
+  document.getElementById('storyboardArea').style.display = 'none';
+  document.getElementById('generatingState').style.display = 'flex';
+  generatedPrompts = [];
+  generatedImages = {};
+  hideAlert();
+
+  const action = isAutoMode ? null : document.getElementById('actionInput').value;
+
+  const prompt = `ARC NARRATIF CINÉMATOGRAPHIQUE STRICT.
+ACTION PRINCIPALE : ${action || "Une séquence narrative complète commençant par l'image source"}.
+
+CONTEXTE SOURCE (POINT ZÉRO) :
+- Lieu : ${analysisData.environnement?.lieu}
+- Personnage : ${analysisData.personnage?.apparence}
+- Position initiale : ${analysisData.personnage?.posture}
+
+CONSIGNES DE NARRATION IMPÉRATIVES :
+1. Décomposez l'action en 5 étapes clés (beats) distinctes.
+2. LA PREMIÈRE ÉTAPE DOIT ÊTRE DIFFÉRENTE DE L'IMAGE SOURCE : le mouvement doit avoir déjà commencé.
+3. PROGRESSION LINÉAIRE : Chaque étape est la suite logique de la précédente.
+4. INTERDICTION D'AJOUTER DES OBJETS : N'utilisez que ce qui est visible dans l'image source.
+5. Maintenez une continuité visuelle totale (tenue, décor, éclairage).
+
+Répondez EXCLUSIVEMENT en JSON : {"scenes": ["scène 1", "scène 2", "scène 3", "scène 4", "scène 5"]}`;
+
+  try {
+    const text = await callVertexText(MODEL_ANALYSIS, [{ parts: [{ text: prompt }] }], { temperature: 0.7 });
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("L'IA n'a pas pu générer de scènes.");
+    const data = JSON.parse(jsonMatch[0]);
+    const scenes = data.scenes || [];
+    if (!scenes.length) throw new Error("L'IA n'a pas pu générer de scènes pour ce storyboard.");
+
+    generatedPrompts = scenes.map((s, i) => ({ id: `${Date.now()}-${i}`, scene: s }));
+    generatedImages = {};
+
+    document.getElementById('generatingState').style.display = 'none';
+    document.getElementById('storyboardArea').style.display = 'block';
+    renderStoryboard();
+    showSuccess('Storyboard généré avec succès.');
+  } catch(err) {
+    showAlert('error', "Impossible de générer le storyboard : " + err.message);
+    document.getElementById('generatingState').style.display = 'none';
+  } finally {
+    btn.disabled = false;
+    btn.className = 'gen-seq-btn';
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg> DÉPLOYER LA SÉQUENCE VÉCUE`;
+  }
+}
+
+// ==================== RENDER STORYBOARD ====================
+function getARClass() {
+  return aspectRatio === '16:9' ? 'ar-169' : aspectRatio === '9:16' ? 'ar-916' : 'ar-11';
+}
+
+function renderStoryboard() {
+  const grid = document.getElementById('storyGrid');
+  const arClass = getARClass();
+  grid.innerHTML = generatedPrompts.map((p, i) => {
+    const img = generatedImages[p.id];
+    const loading = generatingIds.has(p.id);
+    return `<div class="story-card" id="card-${p.id}">
+      <div class="story-img-wrap ${arClass}" id="imgwrap-${p.id}">
+        ${img ? `
+          <img src="${img}" alt="Instant ${i+1}">
+          <button class="story-dl-btn" onclick="downloadImg('${img}','studio_scene_moment_${i+1}.png')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="story-prise">Prise 0${i+1}</div>
+        ` : loading ? `
+          <button class="story-gen-btn" disabled>
+            <div class="gen-loading">
+              <svg class="gen-spin spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+              <p class="gen-loading-text">Développement...</p>
+            </div>
+          </button>
+        ` : `
+          <button class="story-gen-btn" onclick="renderPlan('${p.id}','${escapeStr(p.scene)}')">
+            <div class="gen-circle">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+            </div>
+            <span class="gen-text">Générer le moment</span>
+          </button>
+        `}
+      </div>
+      <div class="story-footer">
+        <p class="story-quote">"${p.scene}"</p>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Update export btn visibility
+  document.getElementById('exportBtn').style.display = Object.keys(generatedImages).length > 0 ? 'flex' : 'none';
+}
+
+function escapeStr(s) { return s.replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
+
+// ==================== RENDER IMAGE ====================
+async function renderPlan(id, scene) {
+  if (!referenceImage || !analysisData) return;
+  generatingIds.add(id);
+  renderStoryboard();
+  hideAlert();
+
+  const instruction = `PROTOCOLE DE CONTINUITÉ NARRATIVE STRICTE.
+SOURCE FRAME : Utilisez l'image fournie comme référence spatiale et d'identité absolue.
+DÉCOR : ${analysisData.environnement?.lieu}. Conservez chaque détail, texture et position des meubles. AUCUN AJOUT.
+PERSONNAGE : ${analysisData.personnage?.apparence}. Même visage, même morphologie, même tenue (${analysisData.personnage?.vetements?.haut}, ${analysisData.personnage?.vetements?.bas}).
+ÉTAPE NARRATIVE ACTUELLE : ${scene}.
+PROGRESSION OBLIGATOIRE : Cette image doit montrer une action DIFFÉRENTE de l'image source.
+STYLE : Cinématographique, haute fidélité, rendu photoréaliste.
+CONTRAINTE CRITIQUE : Zéro invention d'objets ou de personnes.
+AMBIANCE : Lumière ${analysisData.lumiere?.type} venant de ${analysisData.lumiere?.direction}.`;
+
+  try {
+    const url = await callVertexImage([
+      { inlineData: { data: referenceImage, mimeType: referenceMime } },
+      { text: instruction }
+    ]);
+    generatedImages[id] = url;
+    document.getElementById('exportBtn').style.display = 'flex';
+  } catch(err) {
+    // retry once on 503
+    if (err.message.includes('503') || err.message.toLowerCase().includes('overloaded')) {
+      try {
+        await new Promise(r => setTimeout(r, 3000));
+        const url = await callVertexImage([
+          { inlineData: { data: referenceImage, mimeType: referenceMime } },
+          { text: instruction }
+        ]);
+        generatedImages[id] = url;
+        document.getElementById('exportBtn').style.display = 'flex';
+      } catch(err2) {
+        showAlert('error', `Erreur de rendu : ${err2.message}`);
+      }
+    } else {
+      showAlert('error', `Erreur de rendu pour ce moment : ${err.message}`);
+    }
+  } finally {
+    generatingIds.delete(id);
+    renderStoryboard();
+  }
+}
+
+// ==================== DOWNLOAD ====================
+function downloadImg(url, name) {
+  const a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+function exportAll() {
+  Object.entries(generatedImages).forEach(([id, url], i) => {
+    setTimeout(() => downloadImg(url, `studio_scene_moment_${i+1}.png`), i * 400);
+  });
+}
+</script>
+</body>
+</html>
