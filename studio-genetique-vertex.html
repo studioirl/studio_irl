@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studio Génétique — ADN v2.5</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0a0a0a;
+  --bg2: #0d0d0d;
+  --glass: rgba(255,255,255,0.03);
+  --border: rgba(255,255,255,0.05);
+  --border2: rgba(255,255,255,0.1);
+  --text: #f5f5f5;
+  --text2: #9ca3af;
+  --text3: #6b7280;
+  --text4: #4b5563;
+  --blue: #2563eb;
+  --blue2: rgba(37,99,235,0.2);
+  --blue3: rgba(37,99,235,0.1);
+  --amber: #f59e0b;
+  --green: #10b981;
+  --white: #ffffff;
+}
+html { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); }
+body { min-height: 100vh; }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+
+/* GLASS */
+.glass {
+  background: var(--glass);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border);
+}
+
+/* === HOME === */
+#home {
+  min-height: 100vh;
+  background: radial-gradient(circle at top right, #1e1e2e, #0a0a0a);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 32px; text-align: center;
+}
+.home-title {
+  font-size: clamp(48px, 10vw, 96px);
+  font-weight: 900; color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.2em; line-height: 1.1;
+  margin-bottom: 48px;
+}
+.dna-icon {
+  font-size: clamp(64px, 10vw, 96px);
+  display: block; margin: 0 auto 48px;
+  animation: bounce-slow 4s ease-in-out infinite;
+  filter: drop-shadow(0 0 20px rgba(245,158,11,0.3));
+}
+@keyframes bounce-slow { 0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)} }
+.home-desc {
+  max-width: 640px; margin: 0 auto 24px;
+  font-size: 18px; color: var(--text2);
+  font-weight: 300; line-height: 1.7; letter-spacing: 0.02em;
+}
+.home-sub { font-size: 13px; color: var(--text3); max-width: 480px; margin: 0 auto 48px; line-height: 1.7; }
+.home-features {
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: 16px; max-width: 640px; width: 100%;
+  margin: 0 auto 48px;
+}
+@media(min-width:640px){ .home-features { grid-template-columns: repeat(4, 1fr); } }
+.feature-card {
+  background: var(--glass);
+  border: 1px solid var(--border);
+  border-radius: 24px; padding: 24px 16px;
+  transition: background 0.2s;
+}
+.feature-card:hover { background: rgba(255,255,255,0.05); }
+.feature-icon { font-size: 32px; display: block; margin-bottom: 12px; }
+.feature-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: white; margin-bottom: 6px; }
+.feature-desc { font-size: 10px; color: var(--text3); }
+
+/* API section on home */
+.api-section-home {
+  display: flex; flex-direction: column; gap: 10px;
+  width: 100%; max-width: 400px;
+  margin: 0 auto 24px;
+}
+.api-label-home {
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.3em;
+  color: var(--text3); text-align: left;
+}
+.api-input-home {
+  width: 100%;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border2);
+  border-radius: 12px; padding: 14px 16px;
+  font-size: 13px; font-family: monospace;
+  color: var(--text); outline: none; transition: all 0.2s;
+}
+.api-input-home::placeholder { color: var(--text4); }
+.api-input-home:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.2); }
+.vertex-note-home { font-size: 11px; color: #60a5fa; font-weight: 600; text-align: center; }
+.cta-btn {
+  padding: 20px 48px;
+  background: var(--amber); color: black;
+  border: none; border-radius: 16px;
+  font-weight: 900; font-size: 14px;
+  text-transform: uppercase; letter-spacing: 0.2em;
+  cursor: pointer; transition: all 0.2s;
+  box-shadow: 0 0 30px rgba(245,158,11,0.2);
+}
+.cta-btn:hover { background: #fbbf24; transform: scale(1.05); }
+.cta-btn:active { transform: scale(0.95); }
+#home-error { color: #f87171; font-size: 12px; font-weight: 600; display: none; margin-top: 8px; }
+
+/* === APP === */
+#app { display: none; flex-direction: column; height: 100vh; overflow: hidden; }
+#app.visible { display: flex; }
+
+/* Header */
+.app-header {
+  height: 64px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 32px; background: var(--bg); z-index: 50;
+  flex-shrink: 0;
+}
+.header-brand { display: flex; align-items: center; gap: 12px; }
+.header-logo {
+  width: 32px; height: 32px;
+  background: linear-gradient(135deg, var(--blue), #4f46e5);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+}
+.header-name { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
+.header-status { display: flex; align-items: center; gap: 8px; }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+.status-text { font-size: 13px; color: var(--text2); }
+.version-badge {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border2);
+  border-radius: 6px; padding: 4px 10px;
+  font-family: monospace; font-size: 11px; color: var(--text3);
+}
+
+/* Layout */
+.app-body { display: flex; flex: 1; overflow: hidden; }
+
+/* Sidebar */
+aside {
+  width: 256px; border-right: 1px solid var(--border);
+  background: var(--bg); display: flex; flex-direction: column;
+  padding: 16px; flex-shrink: 0; overflow-y: auto;
+}
+.back-btn {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; margin-bottom: 24px;
+  font-size: 11px; color: var(--text3); font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.2em;
+  background: none; border: none; cursor: pointer;
+  transition: color 0.2s;
+}
+.back-btn:hover { color: var(--text); }
+.sidebar-label {
+  font-size: 10px; color: var(--text3); font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.2em;
+  margin-bottom: 16px; padding: 0 8px;
+}
+.sidebar-nav { display: flex; flex-direction: column; gap: 4px; }
+.mode-btn {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px; border-radius: 12px;
+  border: 1px solid transparent;
+  background: none; cursor: pointer;
+  font-size: 14px; font-weight: 500;
+  transition: all 0.2s; text-align: left;
+  color: var(--text2); width: 100%;
+}
+.mode-btn:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+.mode-btn.active {
+  background: var(--blue3);
+  border-color: rgba(37,99,235,0.2);
+  color: #60a5fa;
+  box-shadow: 0 0 15px rgba(37,99,235,0.1);
+}
+.mode-icon { font-size: 20px; }
+.sidebar-footer {
+  margin-top: auto; padding: 16px;
+  background: var(--glass); border: 1px solid var(--border);
+  border-radius: 16px;
+}
+.sidebar-footer h4 { font-size: 11px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; }
+.sidebar-footer p { font-size: 10px; color: var(--text3); line-height: 1.6; font-style: italic; }
+
+/* Main content */
+.app-main { flex: 1; overflow-y: auto; background: var(--bg2); padding: 24px; }
+.main-inner { max-width: 1152px; margin: 0 auto; }
+.main-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
+.main-title { font-size: 24px; font-weight: 300; text-transform: uppercase; letter-spacing: 0.2em; color: var(--text); }
+.main-title span { color: var(--blue); font-size: 11px; vertical-align: super; margin-left: 4px; }
+.view-tabs { display: flex; gap: 8px; }
+.view-tab {
+  padding: 8px 16px; border-radius: 999px;
+  font-size: 14px; cursor: pointer; border: none;
+  transition: all 0.2s;
+}
+.view-tab.active { background: var(--blue); color: white; }
+.view-tab.inactive { background: rgba(255,255,255,0.05); color: var(--text2); }
+
+/* Lab grid */
+.lab-grid { display: grid; grid-template-columns: 1fr; gap: 32px; }
+@media(min-width:1024px){ .lab-grid { grid-template-columns: 1fr 2fr; } }
+
+/* Left panel */
+.left-panel { display: flex; flex-direction: column; gap: 24px; }
+.panel-card {
+  background: var(--glass);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border);
+  border-radius: 24px; padding: 24px;
+}
+.panel-section-title {
+  font-size: 12px; font-weight: 700; color: #60a5fa;
+  text-transform: uppercase; letter-spacing: 0.2em;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px; margin-bottom: 24px;
+}
+
+/* Image uploaders */
+.uploaders-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+.uploader {
+  aspect-ratio: 1; border-radius: 16px;
+  border: 2px dashed rgba(255,255,255,0.1);
+  cursor: pointer; transition: all 0.2s;
+  overflow: hidden; position: relative;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.02);
+}
+.uploader:hover { border-color: rgba(37,99,235,0.5); background: rgba(255,255,255,0.05); }
+.uploader img { width: 100%; height: 100%; object-fit: cover; }
+.uploader-overlay {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.6);
+  opacity: 0; transition: opacity 0.2s;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: white;
+  text-transform: uppercase; letter-spacing: 0.1em;
+}
+.uploader:hover .uploader-overlay { opacity: 1; }
+.uploader-icon { font-size: 24px; opacity: 0.4; margin-bottom: 4px; }
+.uploader-label { font-size: 10px; color: var(--text3); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; }
+.uploader-sub { font-size: 8px; color: var(--text4); font-family: monospace; margin-top: 2px; }
+.uploader input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+/* Params scroll area */
+.params-scroll { overflow-y: auto; max-height: 60vh; }
+.params-title {
+  font-size: 12px; font-weight: 700; color: #60a5fa;
+  text-transform: uppercase; letter-spacing: 0.2em; margin-bottom: 20px;
+}
+
+/* Control sections */
+.ctrl-section {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border);
+  border-radius: 16px; padding: 16px;
+  margin-bottom: 16px;
+}
+.ctrl-section-title {
+  font-size: 10px; color: var(--text3); font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.2em;
+  margin-bottom: 12px;
+}
+.ctrl-row { display: flex; gap: 8px; }
+.ctrl-btn-2 {
+  flex: 1; padding: 8px;
+  border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);
+  background: none; cursor: pointer; transition: all 0.2s;
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--text3);
+}
+.ctrl-btn-2:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+.ctrl-btn-2.active { background: var(--blue); border-color: var(--blue); color: white; box-shadow: 0 4px 12px rgba(37,99,235,0.3); }
+
+/* Sex buttons */
+.sex-btn {
+  flex: 1; padding: 16px 8px;
+  border-radius: 12px; border: 2px solid rgba(255,255,255,0.05);
+  background: none; cursor: pointer; transition: all 0.2s;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  color: var(--text3);
+}
+.sex-btn .sex-emoji { font-size: 24px; }
+.sex-btn .sex-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; }
+.sex-btn.active { background: var(--blue2); border-color: var(--blue); color: #60a5fa; box-shadow: 0 0 20px rgba(37,99,235,0.2); }
+
+/* Eye colors */
+.eye-colors { display: flex; flex-wrap: wrap; gap: 6px; }
+.eye-btn {
+  padding: 6px 12px; border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: none; cursor: pointer; transition: all 0.2s;
+  font-size: 9px; font-weight: 700; text-transform: uppercase;
+  color: var(--text3);
+}
+.eye-btn:hover { border-color: rgba(255,255,255,0.2); }
+.eye-btn.active { background: var(--blue2); border-color: var(--blue); color: #60a5fa; }
+
+/* Sliders */
+.slider-group { margin-bottom: 16px; }
+.slider-header { display: flex; justify-content: space-between; align-items: center; padding: 0 4px; margin-bottom: 6px; }
+.slider-label { font-size: 10px; color: var(--text3); font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em; }
+.slider-val { font-size: 12px; color: #60a5fa; font-family: monospace; }
+input[type=range] {
+  width: 100%; height: 6px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 999px; appearance: none; cursor: pointer;
+  accent-color: var(--blue);
+}
+input[type=range]::-webkit-slider-thumb {
+  appearance: none; width: 16px; height: 16px;
+  border-radius: 50%; background: var(--blue);
+  box-shadow: 0 2px 8px rgba(37,99,235,0.4);
+}
+.slider-labels { display: flex; justify-content: space-between; padding: 0 4px; margin-top: 4px; }
+.slider-labels span { font-size: 8px; color: var(--text4); font-weight: 700; text-transform: uppercase; }
+
+/* Checkbox */
+.check-row {
+  display: flex; align-items: center; gap: 8px;
+  cursor: pointer; padding: 4px 0;
+}
+.check-row input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--blue); }
+.check-row span { font-size: 12px; color: var(--text2); }
+
+/* Toggle pill */
+.toggle-pill {
+  padding: 8px 16px; border-radius: 999px;
+  border: none; cursor: pointer; transition: all 0.2s;
+  font-size: 9px; font-weight: 900; text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.toggle-pill.on { background: var(--blue); color: white; box-shadow: 0 0 15px rgba(59,130,246,0.5); }
+.toggle-pill.off { background: rgba(255,255,255,0.05); color: var(--text3); }
+
+/* Cup sizes */
+.cup-btns { display: flex; flex-wrap: wrap; gap: 4px; }
+.cup-btn {
+  flex: 1; min-width: 32px;
+  padding: 6px; border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: none; cursor: pointer; transition: all 0.2s;
+  font-size: 10px; font-weight: 700; color: var(--text3);
+}
+.cup-btn.active { background: var(--blue2); border-color: var(--blue); color: #60a5fa; }
+
+/* Zone tags */
+.zone-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.zone-tag {
+  padding: 4px 10px; border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: none; cursor: pointer; transition: all 0.2s;
+  font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--text3);
+}
+.zone-tag.active { background: var(--blue2); border-color: var(--blue); color: #60a5fa; }
+
+/* Age grid */
+.age-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px; }
+.age-tag {
+  padding: 6px 4px; border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.05);
+  background: rgba(255,255,255,0.03);
+  cursor: pointer; transition: all 0.2s;
+  font-size: 9px; font-weight: 700; color: var(--text3); text-align: center;
+}
+.age-tag:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+.age-tag.active { background: var(--blue); border-color: var(--blue); color: white; }
+
+/* Text input */
+.text-input {
+  width: 100%; background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px; padding: 12px 16px;
+  font-size: 13px; color: var(--text); outline: none;
+  transition: border-color 0.2s; font-family: 'Inter', sans-serif;
+}
+.text-input::placeholder { color: var(--text4); }
+.text-input:focus { border-color: var(--blue); }
+
+/* Alert box */
+.alert-box {
+  padding: 12px 16px; border-radius: 12px;
+  border-left: 2px solid rgba(245,158,11,0.5);
+  background: rgba(245,158,11,0.05);
+  font-size: 9px; color: rgba(245,158,11,0.8);
+  font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em;
+  margin-top: 8px;
+}
+.alert-box p { font-size: 9px; color: var(--text3); text-transform: none; letter-spacing: 0; font-style: italic; margin-top: 4px; font-weight: 400; }
+
+.birth-btn {
+  width: 100%; padding: 16px;
+  background: rgba(16,185,129,0.1);
+  color: #34d399; border: 1px solid rgba(16,185,129,0.3);
+  border-radius: 16px; font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.2em;
+  cursor: pointer; transition: all 0.2s;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+}
+.birth-btn:hover { background: rgba(16,185,129,0.2); }
+
+/* Generate button */
+.gen-btn {
+  width: 100%; padding: 16px;
+  border-radius: 16px; border: none;
+  font-weight: 700; font-size: 14px;
+  text-transform: uppercase; letter-spacing: 0.2em;
+  cursor: pointer; transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+}
+.gen-btn.ready { background: white; color: black; box-shadow: 0 8px 32px rgba(255,255,255,0.1); }
+.gen-btn.ready:hover { background: #eff6ff; }
+.gen-btn.loading { background: #1f2937; color: var(--text3); cursor: not-allowed; }
+.gen-spinner {
+  width: 16px; height: 16px;
+  border: 2px solid transparent; border-top-color: var(--text3);
+  border-radius: 50%; animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Right panel - Output */
+.output-panel {
+  background: var(--glass); border: 2px solid var(--border);
+  border-radius: 24px; min-height: 500px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  overflow-y: auto; padding: 24px; position: relative;
+}
+.output-empty { text-align: center; padding: 48px; opacity: 0.5; }
+.output-empty .empty-icon { font-size: 64px; display: block; margin-bottom: 24px; filter: grayscale(1); }
+.output-empty h2 { font-size: 20px; font-weight: 300; color: var(--text2); text-transform: uppercase; letter-spacing: 0.2em; margin-bottom: 12px; }
+.output-empty p { font-size: 13px; color: var(--text3); font-style: italic; max-width: 280px; margin: 0 auto; line-height: 1.6; }
+
+.output-loading { display: flex; flex-direction: column; align-items: center; gap: 32px; padding: 48px; width: 100%; max-width: 400px; }
+.loading-dna { font-size: 64px; animation: bounce-slow 2s ease-in-out infinite; }
+.loading-bar-wrap { width: 100%; height: 4px; background: rgba(255,255,255,0.05); border-radius: 999px; overflow: hidden; }
+.loading-bar { height: 100%; background: var(--blue); border-radius: 999px; transition: width 1s ease; }
+.loading-step { font-size: 13px; font-weight: 700; color: var(--text2); animation: blink 2s infinite; text-align: center; }
+@keyframes blink { 0%,100%{opacity:1}50%{opacity:0.5} }
+.loading-id { font-size: 10px; color: var(--text4); font-family: monospace; }
+
+.output-results { width: 100%; }
+.results-grid { display: grid; grid-template-columns: 1fr; gap: 24px; }
+@media(min-width:640px){ .results-grid.multi { grid-template-columns: repeat(2, 1fr); } }
+.result-card {
+  position: relative; border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  cursor: pointer;
+}
+.result-card img { width: 100%; height: auto; display: block; }
+.result-label {
+  position: absolute; top: 16px; left: 16px;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+  padding: 4px 12px; border-radius: 999px;
+  font-size: 10px; font-weight: 700; color: #60a5fa;
+  text-transform: uppercase; letter-spacing: 0.2em;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.result-dl-overlay {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.4);
+  opacity: 0; transition: opacity 0.2s;
+  display: flex; align-items: center; justify-content: center;
+}
+.result-card:hover .result-dl-overlay { opacity: 1; }
+.dl-circle {
+  background: white; color: black;
+  padding: 16px 24px; border-radius: 999px;
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11px; font-weight: 900;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  transition: transform 0.2s;
+}
+.result-card:hover .dl-circle { transform: scale(1.1); }
+
+/* Gallery view */
+.gallery-empty {
+  background: var(--glass); border: 1px solid var(--border);
+  border-radius: 24px; min-height: 500px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 16px;
+  text-align: center; padding: 48px;
+}
+.gallery-empty .g-icon { font-size: 64px; opacity: 0.2; display: block; margin-bottom: 8px; }
+
+/* Mode badge */
+.mode-badge { display: flex; align-items: center; gap: 6px; margin-left: 8px; }
+.mode-badge span { font-size: 11px; vertical-align: super; color: var(--blue); }
+
+/* Twins row */
+.twins-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px; background: var(--blue3); border-radius: 12px;
+  border: 1px solid rgba(37,99,235,0.2);
+}
+.twins-label { display: flex; flex-direction: column; }
+.twins-label span:first-child { font-size: 10px; color: #60a5fa; font-weight: 900; text-transform: uppercase; letter-spacing: 0.2em; }
+.twins-label span:last-child { font-size: 8px; color: var(--text3); font-family: monospace; margin-top: 2px; }
+
+/* Breast feeding row */
+.bf-row {
+  display: flex; align-items: center; justify-content: space-between; padding-top: 4px;
+}
+.bf-label { font-size: 10px; color: var(--text2); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<div id="home">
+  <span class="dna-icon">🧬</span>
+  <h1 class="home-title">STUDIO<br>GÉNÉTIQUE</h1>
+  <p class="home-desc">Créez chaque membre de la famille en respectant les traits entre parents, enfants et générations.</p>
+  <p class="home-sub">À partir de photos, d'âges et de paramètres simples, Studio Génétique génère des visages et des corps cohérents, évolutifs et crédibles.</p>
+
+  <div class="home-features">
+    <div class="feature-card"><span class="feature-icon">🧒</span><div class="feature-title">Enfants & bébés</div><div class="feature-desc">Âge réel, morphologie crédible</div></div>
+    <div class="feature-card"><span class="feature-icon">👨‍👩‍👧</span><div class="feature-title">Fratrie & famille</div><div class="feature-desc">Ressemblance contrôlée</div></div>
+    <div class="feature-card"><span class="feature-icon">🤰</span><div class="feature-title">Grossesse & évolution</div><div class="feature-desc">Transformation mois par mois</div></div>
+    <div class="feature-card"><span class="feature-icon">👵</span><div class="feature-title">Générations & héritage</div><div class="feature-desc">Traits familiaux cohérents</div></div>
+  </div>
+
+  <div class="api-section-home">
+    <label class="api-label-home">Clé API Vertex AI (Google Cloud)</label>
+    <input type="password" id="apiKeyInput" class="api-input-home" placeholder="AIza..." autocomplete="off">
+    <p class="vertex-note-home">⚡ Vertex AI Express Mode — Crédits Google Cloud</p>
+  </div>
+  <button class="cta-btn" onclick="enterApp()">JE CRÉE MA FAMILLE</button>
+  <p id="home-error"></p>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header class="app-header">
+    <div class="header-brand">
+      <div class="header-logo">🧬</div>
+      <span class="header-name">STUDIO GÉNÉTIQUE</span>
+    </div>
+    <div class="header-status">
+      <div class="status-dot"></div>
+      <span class="status-text">Système Opérationnel</span>
+      <div class="version-badge">CORE_GEN_v4.2.1</div>
+    </div>
+  </header>
+
+  <div class="app-body">
+    <aside>
+      <button class="back-btn" onclick="goHome()">← ACCUEIL</button>
+      <div class="sidebar-label">Protocole de Sélection</div>
+      <nav class="sidebar-nav" id="sidebarNav"></nav>
+      <div class="sidebar-footer">
+        <h4>Règle de Conformité</h4>
+        <p>"Aucune optimisation esthétique. La génétique prime sur tout."</p>
+      </div>
+    </aside>
+
+    <main class="app-main">
+      <div class="main-inner">
+        <div class="main-header">
+          <h2 class="main-title" id="mainTitle">Mode Grossesse <span>ADN v2.5</span></h2>
+          <div class="view-tabs">
+            <button class="view-tab active" onclick="setView('lab')">Générateur</button>
+            <button class="view-tab inactive" onclick="setView('gallery')">Arbre Génétique</button>
+          </div>
+        </div>
+        <div id="labView"></div>
+        <div id="galleryView" style="display:none;">
+          <div class="gallery-empty">
+            <span class="g-icon">🌳</span>
+            <h3 style="font-size:20px;font-weight:300;color:var(--text2)">Archives Familiales</h3>
+            <p style="font-size:13px;color:var(--text3);max-width:320px;line-height:1.6;">L'historique de vos générations sera listé ici. Pour le moment, vous n'avez pas encore validé de nouvelle identité génétique.</p>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+// ==================== STATE ====================
+const MODEL = 'gemini-3-pro-image-preview';
+let API_KEY = '';
+let activeMode = 'PREGNANCY';
+let currentView = 'lab';
+let isGenerating = false;
+let pregnancyStep = 1;
+
+// Params
+let parent1 = null, parent2 = null;
+let selectedSex = 'female';
+let selectedEyeColor = 'Marron';
+let siblingChoice = { brother: true, sister: false };
+let siblingAges = { brother: 5, sister: 5 };
+let familySide = 'mother';
+let gpAges = { grandpa: 70, grandma: 68 };
+let relationChoice = { male: true, female: true };
+let relationAges = { male: 30, female: 30 };
+let dominance = 50;
+let familyResemblance = 50;
+let childAge = 5;
+
+// Pregnancy params
+let pregMonth = 3;
+let isTwins = false;
+let weightGain = 2.5;
+let initialWeight = 60;
+let initialCupSize = 'B';
+let initialBust = 90;
+let initialThigh = 55;
+let pelvisWidening = 1;
+let breastVolume = 1;
+let breastfeedingPrep = false;
+let stretchIntensity = 0;
+let stretchZones = ['Ventre'];
+
+// Evolution params
+let evolutionAgeInput = '18 mois';
+
+const MODES = [
+  { id: 'PREGNANCY', label: 'Mode Grossesse', icon: '🤰' },
+  { id: 'CHILD', label: 'Enfant', icon: '👶' },
+  { id: 'SIBLING', label: 'Frères & Sœurs', icon: '👧👦' },
+  { id: 'GRANDPARENT', label: 'Grands-Parents', icon: '👵👴' },
+  { id: 'UNCLE_AUNT', label: 'Oncles / Tantes', icon: '👨‍👩‍👦' },
+  { id: 'COUSIN', label: 'Cousins / Cousines', icon: '🧑‍🤝‍🧑' },
+  { id: 'EVOLUTION', label: 'Évolution Temporelle', icon: '⏳' },
+];
+
+const LOADING_STEPS = [
+  "Numérisation de l'ADN Visage",
+  "Identification des traits dominants",
+  "Simulation de la structure osseuse",
+  "Application de la pigmentation épidermique",
+  "Vérification de la continuité génétique",
+  "Finalisation du rendu photoréaliste"
+];
+
+// ==================== NAV ====================
+function enterApp() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  const errEl = document.getElementById('home-error');
+  if (!key) { errEl.textContent = 'Veuillez entrer votre clé API Vertex AI.'; errEl.style.display = 'block'; return; }
+  API_KEY = key;
+  errEl.style.display = 'none';
+  document.getElementById('home').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+  buildSidebar();
+  renderLab();
+}
+document.getElementById('apiKeyInput').addEventListener('keydown', e => { if (e.key === 'Enter') enterApp(); });
+
+function goHome() {
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('home').style.display = 'flex';
+}
+
+function setMode(mode) {
+  activeMode = mode;
+  pregnancyStep = 1;
+  parent1 = null; parent2 = null;
+  document.getElementById('mainTitle').innerHTML = MODES.find(m => m.id === mode)?.label + ' <span>ADN v2.5</span>';
+  document.querySelectorAll('.mode-btn').forEach(b => {
+    b.className = 'mode-btn ' + (b.dataset.mode === mode ? 'active' : '');
+  });
+  renderLab();
+}
+
+function setView(v) {
+  currentView = v;
+  document.getElementById('labView').style.display = v === 'lab' ? 'block' : 'none';
+  document.getElementById('galleryView').style.display = v === 'gallery' ? 'block' : 'none';
+  document.querySelectorAll('.view-tab').forEach(t => {
+    t.className = 'view-tab ' + (t.textContent.toLowerCase().includes(v === 'lab' ? 'génér' : 'arbre') ? 'active' : 'inactive');
+  });
+}
+
+function buildSidebar() {
+  const nav = document.getElementById('sidebarNav');
+  nav.innerHTML = '';
+  MODES.forEach(m => {
+    const btn = document.createElement('button');
+    btn.className = 'mode-btn ' + (m.id === activeMode ? 'active' : '');
+    btn.dataset.mode = m.id;
+    btn.innerHTML = `<span class="mode-icon">${m.icon}</span><span>${m.label}</span>`;
+    btn.onclick = () => setMode(m.id);
+    nav.appendChild(btn);
+  });
+}
+
+// ==================== RENDER LAB ====================
+function renderLab() {
+  const el = document.getElementById('labView');
+  el.innerHTML = `
+    <div class="lab-grid">
+      <div class="left-panel">
+        <div class="panel-card">
+          <div class="panel-section-title">Séquençage ADN</div>
+          ${renderUploaders()}
+          <div class="params-scroll">
+            <div class="params-title">Paramètres Génétiques</div>
+            ${renderParams()}
+          </div>
+          <div style="margin-top:16px;">
+            <button class="gen-btn ${isGenerating ? 'loading' : 'ready'}" id="genBtn" onclick="handleGenerate()" ${isGenerating ? 'disabled' : ''}>
+              ${isGenerating ? `<div class="gen-spinner"></div><span>Séquençage...</span>` : `<span>${pregnancyStep === 3 ? "Générer la Naissance" : "Générer l'Identité"}</span>`}
+            </button>
+          </div>
+        </div>
+      </div>
+      <div id="outputPanel" class="output-panel">
+        <div class="output-empty" id="outputEmpty">
+          <span class="empty-icon">🧬</span>
+          <h2>STATION ADN</h2>
+          <p>"Aucune optimisation esthétique. La génétique prime sur tout."</p>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderUploaders() {
+  const isRelation = ['GRANDPARENT','UNCLE_AUNT','COUSIN'].includes(activeMode);
+  const isSingle = isRelation || activeMode === 'PREGNANCY' || activeMode === 'EVOLUTION';
+
+  if (isSingle) {
+    const label = activeMode === 'PREGNANCY' ? 'Photo Mère' : activeMode === 'EVOLUTION' ? 'Photo Source' : (familySide === 'mother' ? 'Photo Mère' : 'Photo Père');
+    return `<div style="margin-bottom:16px;">${renderSingleUploader(1, label)}
+    <p style="font-size:9px;color:var(--text4);font-style:italic;text-align:center;margin-top:8px;">Importez la photo du parent servant de lien direct.</p></div>`;
+  }
+  return `<div class="uploaders-grid" style="margin-bottom:16px;">${renderSingleUploader(1,'Mère')}${renderSingleUploader(2,'Père')}</div>`;
+}
+
+function renderSingleUploader(n, label) {
+  const img = n === 1 ? parent1 : parent2;
+  return `<div class="uploader" onclick="triggerUpload(${n})">
+    ${img ? `<img src="${img}" alt="${label}"><div class="uploader-overlay">Changer</div>` : `
+    <div class="uploader-icon">📸</div>
+    <div class="uploader-label">${label}</div>
+    <div class="uploader-sub">PNG / JPG</div>`}
+    <input type="file" accept="image/*" onchange="handleUpload(event,${n})">
+  </div>`;
+}
+
+function renderParams() {
+  switch(activeMode) {
+    case 'EVOLUTION': return renderEvolution();
+    case 'PREGNANCY': return renderPregnancy();
+    case 'SIBLING': return renderSibling();
+    case 'CHILD': return renderChild();
+    case 'GRANDPARENT': return renderFamily('Grand-Père','Grand-Mère');
+    case 'UNCLE_AUNT': return renderFamily('Oncle','Tante');
+    case 'COUSIN': return renderFamily('Cousin','Cousine');
+    default: return '';
+  }
+}
+
+function renderSexSelector() {
+  return `<div class="ctrl-section">
+    <div class="ctrl-section-title">Sexe Biologique (XX/XY)</div>
+    <div class="ctrl-row">
+      <button class="sex-btn ${selectedSex==='female'?'active':''}" onclick="setSex('female')"><span class="sex-emoji">👧</span><span class="sex-label">Fille (XX)</span></button>
+      <button class="sex-btn ${selectedSex==='male'?'active':''}" onclick="setSex('male')"><span class="sex-emoji">👦</span><span class="sex-label">Garçon (XY)</span></button>
+    </div>
+  </div>`;
+}
+
+function renderEyeColors() {
+  const colors = ['Marron','Noisette','Vert','Bleu','Gris','Ambre'];
+  return `<div class="ctrl-section">
+    <div class="ctrl-section-title">Couleur des Yeux</div>
+    <div class="eye-colors">${colors.map(c => `<button class="eye-btn ${selectedEyeColor===c?'active':''}" onclick="setEyeColor('${c}')">${c}</button>`).join('')}</div>
+  </div>`;
+}
+
+function renderSlider(label, id, value, min, max, suffix='', labels=null) {
+  return `<div class="slider-group">
+    <div class="slider-header">
+      <span class="slider-label">${label}</span>
+      <span class="slider-val">${value}${suffix}</span>
+    </div>
+    <input type="range" min="${min}" max="${max}" value="${value}" id="${id}" oninput="updateSlider('${id}',${JSON.stringify(suffix)},${JSON.stringify(labels)})">
+    ${labels ? `<div class="slider-labels">${labels.map(l=>`<span>${l}</span>`).join('')}</div>` : ''}
+  </div>`;
+}
+
+function renderLienGenetique() {
+  return `<div class="ctrl-section">
+    <div class="ctrl-section-title">Origine Génétique</div>
+    <div class="ctrl-row">
+      <button class="ctrl-btn-2 ${familySide==='mother'?'active':''}" onclick="setFamilySide('mother')">CÔTÉ MÈRE</button>
+      <button class="ctrl-btn-2 ${familySide==='father'?'active':''}" onclick="setFamilySide('father')">CÔTÉ PÈRE</button>
+    </div>
+  </div>`;
+}
+
+function renderRessemblance() {
+  return `<div class="ctrl-section">
+    ${renderSlider('Ressemblance Familiale','familyResemblance',familyResemblance,0,100,'%',['Faible','Réaliste','Forte'])}
+    <p style="font-size:8px;color:var(--text4);font-style:italic;margin-top:8px;line-height:1.5;">Définit l'héritage direct des traits (mâchoire, yeux, nez, expressions) de la branche familiale choisie.</p>
+  </div>`;
+}
+
+function renderEvolution() {
+  const ages = ['0 mois','7 mois','11 mois','15 mois','18 mois','2 ans','12 ans','18 ans','25 ans','40 ans','60 ans','99 ans'];
+  return `
+    <div class="ctrl-section" style="background:rgba(37,99,235,0.05);border-color:rgba(37,99,235,0.2);">
+      <div class="ctrl-section-title" style="color:#60a5fa;">🧬 Évolution temporelle</div>
+      <div class="ctrl-row" style="margin-bottom:16px;">
+        <button class="ctrl-btn-2 ${selectedSex==='female'?'active':''}" onclick="setSex('female')">Fille / Femme (XX)</button>
+        <button class="ctrl-btn-2 ${selectedSex==='male'?'active':''}" onclick="setSex('male')">Garçon / Homme (XY)</button>
+      </div>
+      ${renderEyeColors()}
+      <div style="margin-top:12px;">
+        <div style="font-size:10px;color:#60a5fa;font-weight:700;text-transform:uppercase;letter-spacing:0.2em;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+          🕰️ Indique l'âge (libre)
+          ${evolutionAgeInput ? '<span style="font-size:8px;background:rgba(16,185,129,0.2);color:#34d399;padding:2px 8px;border-radius:6px;border:1px solid rgba(16,185,129,0.2);">✅ Pris en compte</span>' : ''}
+        </div>
+        <input type="text" class="text-input" id="ageInput" value="${evolutionAgeInput}" oninput="evolutionAgeInput=this.value;rerenderAgeGrid()" placeholder="Ex : 0 mois, 18 mois, 25 ans, 99 ans">
+        <div class="age-grid" id="ageGrid">${ages.map(a => `<button class="age-tag ${evolutionAgeInput===a?'active':''}" onclick="setAge('${a}')">${a}</button>`).join('')}</div>
+      </div>
+      <div style="margin-top:16px;padding:12px 16px;border-left:2px solid var(--blue);background:rgba(37,99,235,0.05);border-radius:0 8px 8px 0;">
+        <p style="font-size:9px;color:var(--text2);font-style:italic;line-height:1.6;">"RÈGLE ABSOLUE : L'âge indiqué est PRIORITAIRE. Morphologie, proportions, posture et texture peau sont adaptées biologiquement sans approximation."</p>
+      </div>
+    </div>`;
+}
+
+function renderPregnancy() {
+  const weightMap = {1:0.5,2:1,3:2.5,4:5,5:8,6:11,7:13,8:15,9:18};
+  const cups = ['A','B','C','D','E','F+'];
+  const zones = ['Ventre','Hanches','Cuisses','Fesses','Dos','Poitrine'];
+  const strLabels = ['Aucune','Légères','Moyennes','Marquées'];
+
+  return `
+    <div class="ctrl-section">
+      <div class="ctrl-section-title">A. Données Initiales</div>
+      ${renderSlider('Poids avant grossesse','initialWeight',initialWeight,40,120,' kg')}
+      ${renderSlider('Tour cuisse','initialThigh',initialThigh,40,85,' cm')}
+      ${renderSlider('Tour poitrine','initialBust',initialBust,70,120,' cm')}
+      <div style="margin-top:8px;">
+        <div class="ctrl-section-title">Bonnet initial</div>
+        <div class="cup-btns">${cups.map(c=>`<button class="cup-btn ${initialCupSize===c?'active':''}" onclick="setCup('${c}')">${c}</button>`).join('')}</div>
+      </div>
+    </div>
+
+    <div class="ctrl-section" style="background:rgba(37,99,235,0.05);border-color:rgba(37,99,235,0.2);">
+      <div class="ctrl-section-title" style="color:#60a5fa;display:flex;align-items:center;gap:8px;">
+        B. ÉVOLUTION CORPORELLE <span style="width:6px;height:6px;border-radius:50%;background:var(--blue);animation:pulse 2s infinite;"></span>
+      </div>
+      ${renderSlider('Stade de la grossesse','pregMonth',pregMonth,1,9,' mois')}
+      <div class="twins-row" style="margin-top:12px;">
+        <div class="twins-label"><span>Grossesse Gémellaire</span><span>SIMULATION JUMEAUX</span></div>
+        <button class="toggle-pill ${isTwins?'on':'off'}" onclick="toggleTwins()">${isTwins?'👯 ACTIVÉ':'OFF'}</button>
+      </div>
+      <div style="margin-top:12px;">
+        ${renderSlider('POIDS GLOBAL (VARIABLE MAÎTRE)','totalWeight',initialWeight+weightGain,initialWeight,initialWeight+35,' kg')}
+        <div style="display:flex;justify-content:space-between;padding:0 4px;margin-top:4px;">
+          <span style="font-size:9px;color:rgba(96,165,250,0.6);font-family:monospace;">Gain : +${weightGain.toFixed(1)} kg</span>
+          <span style="font-size:9px;color:rgba(96,165,250,0.6);font-family:monospace;">Cuisse : +${(weightGain*0.45).toFixed(1)} cm</span>
+        </div>
+      </div>
+      <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:12px;padding:12px;margin-top:12px;">
+        <div style="font-size:9px;color:var(--text2);font-weight:700;text-transform:uppercase;letter-spacing:0.2em;margin-bottom:12px;">ÉVOLUTION POITRINE</div>
+        ${renderSlider('Volume mammaire','breastVolume',breastVolume,0,2,'',['Légère','Naturelle','Marquée'])}
+        <div class="bf-row" style="margin-top:8px;">
+          <span class="bf-label">Préparation allaitement</span>
+          <button class="toggle-pill ${breastfeedingPrep?'on':'off'}" onclick="toggleBF()">${breastfeedingPrep?'ACTIVÉ':'OFF'}</button>
+        </div>
+      </div>
+      <div style="margin-top:12px;">
+        ${renderSlider('Élargissement du bassin','pelvisWidening',pelvisWidening,0,2,'',['Faible','Moyen','Marqué'])}
+      </div>
+    </div>
+
+    <div class="ctrl-section">
+      ${renderSlider('Intensité des vergetures','stretchIntensity',stretchIntensity,0,3,'',['Aucune','Légères','Moyennes','Marquées'])}
+      ${stretchIntensity > 0 ? `<div style="margin-top:12px;">
+        <div class="ctrl-section-title">Zones actives</div>
+        <div class="zone-tags">${zones.map(z=>`<button class="zone-tag ${stretchZones.includes(z)?'active':''}" onclick="toggleZone('${z}')">${z}</button>`).join('')}</div>
+      </div>` : ''}
+    </div>
+
+    <div class="alert-box">
+      🧬 COHÉRENCE GLOBALE STRICTE
+      <p>"Ventre ↑, Cuisses ↑, Bassin ↑, Poitrine ↑, Bras ↑, Joues ↑. Aucune partie du corps ne reste inchangée."</p>
+    </div>
+
+    ${pregnancyStep === 2 ? `<div style="margin-top:16px;"><button class="birth-btn" onclick="setPregnancyStep3()">DÉCLENCHER LA NAISSANCE</button></div>` : ''}
+  `;
+}
+
+function renderSibling() {
+  return `<div class="ctrl-section">
+    <div style="display:flex;justify-content:space-around;margin-bottom:16px;">
+      <label class="check-row"><input type="checkbox" ${siblingChoice.brother?'checked':''} onchange="setSiblingChoice('brother',this.checked)"><span>Frère</span></label>
+      <label class="check-row"><input type="checkbox" ${siblingChoice.sister?'checked':''} onchange="setSiblingChoice('sister',this.checked)"><span>Sœur</span></label>
+    </div>
+    ${siblingChoice.brother ? renderSlider("Âge du Frère",'siblingBrother',siblingAges.brother,1,17,' ans') : ''}
+    ${siblingChoice.sister ? renderSlider("Âge de la Sœur",'siblingSister',siblingAges.sister,1,17,' ans') : ''}
+  </div>${renderRessemblance()}`;
+}
+
+function renderChild() {
+  return `${renderSexSelector()}
+  <div class="ctrl-section">
+    ${renderSlider("Âge de l'Enfant",'childAge',childAge,0,17,' ans')}
+    ${renderSlider('Héritage Dominant','dominance',dominance,0,100,'%',['Mère','Mixte','Père'])}
+  </div>${renderRessemblance()}`;
+}
+
+function renderFamily(roleM, roleF) {
+  const isGP = activeMode === 'GRANDPARENT';
+  return `${renderLienGenetique()}
+  <div class="ctrl-section">
+    <div style="display:flex;justify-content:space-around;margin-bottom:16px;">
+      <label class="check-row"><input type="checkbox" ${relationChoice.male?'checked':''} onchange="setRelationChoice('male',this.checked)"><span>${roleM}</span></label>
+      <label class="check-row"><input type="checkbox" ${relationChoice.female?'checked':''} onchange="setRelationChoice('female',this.checked)"><span>${roleF}</span></label>
+    </div>
+    ${relationChoice.male ? renderSlider(`Âge ${roleM}`,'ageM',isGP?gpAges.grandpa:relationAges.male,isGP?55:0,99,' ans') : ''}
+    ${relationChoice.female ? renderSlider(`Âge ${roleF}`,'ageF',isGP?gpAges.grandma:relationAges.female,isGP?55:0,99,' ans') : ''}
+  </div>${renderRessemblance()}`;
+}
+
+// ==================== CONTROLS ====================
+function setSex(v) { selectedSex = v; renderLab(); }
+function setEyeColor(v) { selectedEyeColor = v; renderLab(); }
+function setFamilySide(v) { familySide = v; renderLab(); }
+function setCup(v) { initialCupSize = v; renderLab(); }
+function toggleTwins() { isTwins = !isTwins; renderLab(); }
+function toggleBF() { breastfeedingPrep = !breastfeedingPrep; renderLab(); }
+function setPregnancyStep3() { pregnancyStep = 3; renderLab(); }
+function setAge(a) { evolutionAgeInput = a; renderLab(); }
+function setSiblingChoice(k,v) { siblingChoice[k]=v; renderLab(); }
+function setRelationChoice(k,v) { relationChoice[k]=v; renderLab(); }
+
+function toggleZone(z) {
+  if (stretchZones.includes(z)) stretchZones = stretchZones.filter(x=>x!==z);
+  else stretchZones.push(z);
+  renderLab();
+}
+
+function rerenderAgeGrid() {
+  const grid = document.getElementById('ageGrid');
+  if (!grid) return;
+  const ages = ['0 mois','7 mois','11 mois','15 mois','18 mois','2 ans','12 ans','18 ans','25 ans','40 ans','60 ans','99 ans'];
+  grid.innerHTML = ages.map(a => `<button class="age-tag ${evolutionAgeInput===a?'active':''}" onclick="setAge('${a}')">${a}</button>`).join('');
+}
+
+function updateSlider(id, suffix, labels) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const v = parseFloat(el.value);
+
+  const map = {
+    familyResemblance: () => { familyResemblance = v; },
+    initialWeight: () => { initialWeight = v; },
+    initialThigh: () => { initialThigh = v; },
+    initialBust: () => { initialBust = v; },
+    pregMonth: () => { pregMonth = v; const wm={1:0.5,2:1,3:2.5,4:5,5:8,6:11,7:13,8:15,9:18}; weightGain=wm[v]||0; },
+    totalWeight: () => { weightGain = v - initialWeight; },
+    breastVolume: () => { breastVolume = v; },
+    pelvisWidening: () => { pelvisWidening = v; },
+    stretchIntensity: () => { stretchIntensity = v; renderLab(); return; },
+    dominance: () => { dominance = v; },
+    childAge: () => { childAge = v; },
+    siblingBrother: () => { siblingAges.brother = v; },
+    siblingSister: () => { siblingAges.sister = v; },
+    ageM: () => { if (activeMode==='GRANDPARENT') gpAges.grandpa=v; else relationAges.male=v; },
+    ageF: () => { if (activeMode==='GRANDPARENT') gpAges.grandma=v; else relationAges.female=v; },
+  };
+  if (map[id]) map[id]();
+
+  // Update display value
+  const header = el.closest('.slider-group')?.querySelector('.slider-val');
+  if (header) header.textContent = v + (suffix||'');
+}
+
+// ==================== UPLOAD ====================
+function triggerUpload(n) {
+  const inputs = document.querySelectorAll('.uploader input[type=file]');
+  // Find by order
+  if (n === 1 && inputs[0]) inputs[0].click();
+  if (n === 2 && inputs[1]) inputs[1].click();
+}
+
+function handleUpload(e, n) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    if (n === 1) parent1 = ev.target.result;
+    else parent2 = ev.target.result;
+    renderLab();
+  };
+  reader.readAsDataURL(file);
+}
+
+// ==================== GENERATE ====================
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+function buildPrompt() {
+  const resemblanceLabel = familyResemblance < 33 ? "FAIBLE" : familyResemblance < 66 ? "RÉALISTE" : "FORTE";
+  const resemblanceRule = `RÈGLE DE RESSEMBLANCE : Intensité ${resemblanceLabel} (${familyResemblance}%). Lien génétique identifiable sans clonage. VARIATIONS NATURELLES OBLIGATOIRES.`;
+  const common = `QUALITÉ : 4K ultra-photoréaliste. FORMAT : PNG, Ratio 9:16 individuel. IMAGE UNIQUE par sortie. Pas de collages.`;
+  const sexLabel = selectedSex === 'female' ? "Fille / Femme (XX)" : "Garçon / Homme (XY)";
+
+  switch(activeMode) {
+    case 'EVOLUTION':
+      return `MODE : ÉVOLUTION TEMPORELLE ADN\nRÈGLE ABSOLUE : L'âge indiqué est PRIORITAIRE.\nÂge exact : ${evolutionAgeInput}\nSexe biologique : ${sexLabel}\nCouleur des yeux : ${selectedEyeColor}\nIDENTITÉ : Conserver rigoureusement l'identité de la personne en photo source.\nMorphologie corporelle réaliste correspondant EXACTEMENT à l'âge indiqué.\n${common}`;
+
+    case 'SIBLING': {
+      const persons = [];
+      if (siblingChoice.brother) persons.push(`Frère (${siblingAges.brother} ans, XY)`);
+      if (siblingChoice.sister) persons.push(`Sœur (${siblingAges.sister} ans, XX)`);
+      return `BIOLOGIE FRATRIE : Génère EXACTEMENT 3 IMAGES DISTINCTES.\n1. IMAGE DE GROUPE : ${persons.join(' et ')} ensemble.\n2. INDIVIDUEL : Le frère seul (XY, 9:16).\n3. INDIVIDUEL : La sœur seule (XX, 9:16).\n${resemblanceRule} ${common}`;
+    }
+
+    case 'GRANDPARENT':
+    case 'UNCLE_AUNT':
+    case 'COUSIN': {
+      const isGP = activeMode === 'GRANDPARENT';
+      const isUA = activeMode === 'UNCLE_AUNT';
+      const roleM = isGP ? 'Grand-père' : isUA ? 'Oncle' : 'Cousin';
+      const roleF = isGP ? 'Grand-mère' : isUA ? 'Tante' : 'Cousine';
+      const persons = [];
+      if (relationChoice.male) persons.push(`${roleM} (${isGP?gpAges.grandpa:relationAges.male} ans, XY)`);
+      if (relationChoice.female) persons.push(`${roleF} (${isGP?gpAges.grandma:relationAges.female} ans, XX)`);
+      const count = persons.length;
+      const lien = familySide === 'mother' ? 'MATERNELLE' : 'PATERNELLE';
+      const instruction = count === 2
+        ? `Génère EXACTEMENT 3 IMAGES : 1. Individuel ${persons[0]}. 2. Individuel ${persons[1]}. 3. Groupe des deux.`
+        : `Génère 1 image INDIVIDUELLE : ${persons[0]}.`;
+      return `VIEILLISSEMENT GÉNÉTIQUE - BRANCHE ${lien} :\n${instruction}\n${resemblanceRule} ${common}`;
+    }
+
+    case 'PREGNANCY': {
+      if (pregnancyStep === 3) {
+        const babyLabel = isTwins ? "DEUX nouveau-nés (jumeaux)" : "nouveau-né";
+        return `PROTOCOLE NAISSANCE : Génère DEUX IMAGES.\n1. GROUPE : Mère + ${babyLabel} en maternité (Sexe : ${selectedSex==='female'?'XX':'XY'}).\n2. INDIVIDUEL : ${isTwins?'Les deux bébés':'Le bébé'} seul (9:16 PNG). ${common}`;
+      }
+      const strLabels = ['aucune','légères','visibles','marquées'];
+      const breastVolLabels = ['légère augmentation','augmentation naturelle','augmentation marquée'];
+      const twinRule = isTwins ? '\nTYPE : GROSSESSE GÉMELLAIRE. Volume abdominal exceptionnel.' : '';
+      return `BIOLOGIE GROSSESSE — COHÉRENCE CORPORELLE GLOBALE :
+DONNÉES : Poids ${initialWeight}kg, Poitrine ${initialBust}cm, Bonnet ${initialCupSize}, Cuisse ${initialThigh}cm.
+STADE : Mois ${pregMonth}. GAIN : +${weightGain.toFixed(1)}kg.${twinRule}
+DISTRIBUTION : Ventre ↑, Cuisses +${(weightGain*0.45).toFixed(1)}cm, Bassin +${pregMonth>4?(pelvisWidening+1)*2.5:0}cm, Poitrine ↑, Bras ↑, Joues ↑.
+POITRINE : ${breastVolLabels[breastVolume]}. Allaitement : ${breastfeedingPrep?'ACTIVÉ':'OFF'}.
+VERGETURES : ${stretchIntensity>0?`${strLabels[stretchIntensity]} sur ${stretchZones.join(', ')}.`:'AUCUNE.'}
+INTERDICTION : Poitrine figée, silhouette mince incohérente. ${common}`;
+    }
+
+    default: { // CHILD
+      return `IDENTITÉ GÉNÉTIQUE : Enfant de ${childAge} ans. Sexe : ${selectedSex==='female'?'XX (Fille)':'XY (Garçon)'}.\nDominance parentale : ${dominance}%.\n${resemblanceRule} ${common}`;
+    }
+  }
+}
+
+async function handleGenerate() {
+  if (isGenerating) return;
+
+  // Validations
+  if (['SIBLING','CHILD'].includes(activeMode) && (!parent1 || !parent2)) return alert("Photos des deux parents obligatoires.");
+  if (['GRANDPARENT','UNCLE_AUNT','COUSIN','PREGNANCY','EVOLUTION'].includes(activeMode) && !parent1) return alert("Photo source obligatoire.");
+
+  isGenerating = true;
+  renderLab();
+  showLoading();
+
+  const parts = [];
+  const prompt = buildPrompt();
+  parts.push({ text: prompt });
+  if (parent1) parts.push({ inlineData: { data: parent1.split(',')[1], mimeType: 'image/png' } });
+  if (parent2) parts.push({ inlineData: { data: parent2.split(',')[1], mimeType: 'image/png' } });
+
+  const endpoint = `https://aiplatform.googleapis.com/v1/publishers/google/models/${MODEL}:generateContent?key=${API_KEY}`;
+  const body = {
+    contents: [{ role: 'user', parts }],
+    generationConfig: {
+      responseModalities: ['IMAGE','TEXT'],
+      imageConfig: { aspectRatio: '9:16', imageSize: '4K' }
+    }
+  };
+
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    if (!res.ok) {
+      const txt = await res.text();
+      let d; try { d = JSON.parse(txt); } catch(e) {}
+      throw new Error(`HTTP ${res.status}: ${d?.error?.message || txt}`);
+    }
+
+    const data = await res.json();
+    const images = [];
+
+    for (const part of (data.candidates?.[0]?.content?.parts || [])) {
+      if (part.inlineData?.data) {
+        images.push(`data:image/png;base64,${part.inlineData.data}`);
+      }
+    }
+
+    if (!images.length) throw new Error("Aucune image générée.");
+
+    if (activeMode === 'PREGNANCY' && pregnancyStep === 1) pregnancyStep = 2;
+
+    isGenerating = false;
+    renderLab();
+    showResults(images);
+
+  } catch(err) {
+    isGenerating = false;
+    renderLab();
+    showError(err.message);
+  }
+}
+
+// ==================== OUTPUT ====================
+function showLoading() {
+  const panel = document.getElementById('outputPanel');
+  if (!panel) return;
+  let step = 0;
+  panel.innerHTML = `<div class="output-loading" id="outputLoading">
+    <span class="loading-dna">🧬</span>
+    <div class="loading-bar-wrap"><div class="loading-bar" id="loadingBar" style="width:${(1/LOADING_STEPS.length*100)}%"></div></div>
+    <p class="loading-step" id="loadingStep">${LOADING_STEPS[0]}...</p>
+    <p class="loading-id">ID_SESSION: ${Math.random().toString(36).substr(2,9).toUpperCase()}</p>
+  </div>`;
+
+  const interval = setInterval(() => {
+    if (!isGenerating) { clearInterval(interval); return; }
+    step = (step + 1) % LOADING_STEPS.length;
+    const bar = document.getElementById('loadingBar');
+    const stepEl = document.getElementById('loadingStep');
+    if (bar) bar.style.width = `${((step+1)/LOADING_STEPS.length*100)}%`;
+    if (stepEl) stepEl.textContent = LOADING_STEPS[step] + '...';
+  }, 2500);
+}
+
+function getLabel(idx, total) {
+  if (activeMode === 'PREGNANCY' && pregnancyStep === 3) {
+    return idx === 0 ? "IMAGE 1 : MÈRE + BÉBÉ" : "IMAGE 2 : BÉBÉ SEUL";
+  }
+  if (activeMode === 'SIBLING') {
+    if (idx === 0) return "PORTRAIT DE FRATRIE";
+    if (idx === 1) return "INDIVIDUEL : LE FRÈRE";
+    return "INDIVIDUEL : LA SŒUR";
+  }
+  if (['GRANDPARENT','UNCLE_AUNT','COUSIN'].includes(activeMode)) {
+    const isGP = activeMode === 'GRANDPARENT';
+    const isUA = activeMode === 'UNCLE_AUNT';
+    const roleM = isGP?'GRAND-PÈRE':isUA?'ONCLE':'COUSIN';
+    const roleF = isGP?'GRAND-MÈRE':isUA?'TANTE':'COUSINE';
+    const sel = [];
+    if (relationChoice.male) sel.push(`INDIVIDUEL : ${roleM}`);
+    if (relationChoice.female) sel.push(`INDIVIDUEL : ${roleF}`);
+    if (sel.length === 2) {
+      if (idx === 0) return sel[0];
+      if (idx === 1) return sel[1];
+      return "IMAGE DE GROUPE";
+    }
+    return sel[0] || "INDIVIDUEL";
+  }
+  return `UNITÉ ADN #${idx+1}`;
+}
+
+function showResults(images) {
+  const panel = document.getElementById('outputPanel');
+  if (!panel) return;
+  const multi = images.length > 1;
+  panel.innerHTML = `<div class="output-results" style="width:100%">
+    <div class="results-grid ${multi?'multi':''}" id="resultsGrid">
+      ${images.map((img,i) => `
+        <div class="result-card" onclick="downloadImg('${img}',${i})">
+          <img src="${img}" alt="Résultat ${i+1}">
+          <div class="result-label">${getLabel(i,images.length)}</div>
+          <div class="result-dl-overlay">
+            <div class="dl-circle">⬇️ <span>Download</span></div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  </div>`;
+}
+
+function showError(msg) {
+  const panel = document.getElementById('outputPanel');
+  if (!panel) return;
+  panel.innerHTML = `<div style="text-align:center;padding:48px;max-width:400px;">
+    <div style="font-size:48px;margin-bottom:16px;">⚠️</div>
+    <p style="color:#f87171;font-size:13px;font-weight:700;line-height:1.6;">${msg}</p>
+    <p style="color:var(--text3);font-size:11px;margin-top:12px;">Vérifiez votre clé API et réessayez.</p>
+  </div>`;
+}
+
+function downloadImg(url, idx) {
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `studio_genetique_${activeMode}_${idx}.png`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+</script>
+</body>
+</html>
