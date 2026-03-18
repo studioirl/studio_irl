@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STUDIO POV — Vertex AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f0f4ff;
+    --surface: #ffffff;
+    --blue: #2563eb;
+    --violet: #7c3aed;
+    --indigo: #4338ca;
+    --slate: #1e293b;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --blue-light: #eff6ff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Space Grotesk', sans-serif; background: var(--bg); color: var(--slate); min-height: 100vh; }
+
+  /* SPLASH */
+  #splash {
+    position: fixed; inset: 0; background: var(--bg);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 100; padding: 24px; text-align: center;
+  }
+  #splash .hero-img {
+    width: min(500px, 90vw); aspect-ratio: 16/9;
+    border-radius: 3rem; overflow: hidden;
+    box-shadow: 0 50px 100px -20px rgba(0,0,0,0.25);
+    border: 4px solid white; position: relative; margin-bottom: 40px;
+  }
+  #splash .hero-img img { width:100%; height:100%; object-fit:cover; }
+  #splash .hero-img .rec {
+    position:absolute; top:16px; left:16px; display:flex; align-items:center; gap:8px;
+  }
+  #splash .hero-img .rec-dot {
+    width:10px; height:10px; border-radius:50%; background:#dc2626;
+    box-shadow: 0 0 12px rgba(220,38,38,1); animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+  #splash .rec-label { color:white; font-size:10px; font-weight:800; letter-spacing:.3em; text-transform:uppercase; }
+  #splash h1 {
+    font-size: clamp(3rem, 10vw, 7rem); font-weight: 800;
+    text-transform: uppercase; letter-spacing: -.03em;
+    background: linear-gradient(135deg, #2563eb, #7c3aed, #4338ca);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text; line-height: 1; margin-bottom: 8px;
+  }
+  #splash .tagline {
+    font-size: clamp(1rem, 3vw, 1.5rem); font-weight: 600; color: var(--slate);
+    font-style: italic; margin-bottom: 40px;
+  }
+  #splash .api-box {
+    width: min(480px, 100%); background: white; border-radius: 1.5rem;
+    padding: 28px; box-shadow: 0 20px 60px rgba(0,0,0,.08); border: 2px solid var(--border);
+    margin-bottom: 24px;
+  }
+  #splash .api-label {
+    font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.15em;
+    color:var(--muted); margin-bottom:10px; text-align:left;
+  }
+  #splash input[type="password"] {
+    width:100%; padding:14px 16px; border:2px solid var(--border); border-radius:1rem;
+    font-family: 'Space Mono', monospace; font-size:14px; color:var(--slate);
+    background: var(--bg); outline:none; transition:border-color .2s;
+  }
+  #splash input[type="password"]:focus { border-color: var(--blue); }
+  #splash .enter-btn {
+    margin-top:12px; width:100%; padding:18px; border:none; border-radius:1.5rem;
+    background: linear-gradient(135deg, var(--blue), var(--indigo), var(--violet));
+    color:white; font-family:'Space Grotesk',sans-serif; font-weight:800;
+    font-size:15px; text-transform:uppercase; letter-spacing:.4em;
+    cursor:pointer; transition:transform .15s, box-shadow .15s;
+    box-shadow: 0 20px 40px rgba(37,99,235,.35);
+  }
+  #splash .enter-btn:hover { transform:scale(1.02); }
+  #splash .enter-btn:active { transform:scale(.98); }
+  #splash .billing-link {
+    display:flex; align-items:center; gap:6px; color:var(--muted); font-size:10px;
+    font-weight:800; text-transform:uppercase; letter-spacing:.15em;
+    text-decoration:none; transition:color .2s;
+  }
+  #splash .billing-link:hover { color: var(--blue); }
+
+  /* APP */
+  #app { display:none; min-height:100vh; flex-direction:column; }
+  #app.visible { display:flex; }
+
+  header {
+    border-bottom: 1px solid var(--border); padding:20px 32px;
+    display:flex; justify-content:space-between; align-items:center;
+    position:sticky; top:0; background:rgba(255,255,255,.95);
+    backdrop-filter:blur(20px); z-index:50; gap:16px; flex-wrap:wrap;
+  }
+  .header-left { display:flex; align-items:center; gap:16px; cursor:pointer; }
+  .header-logo {
+    width:44px; height:44px; background:linear-gradient(135deg,var(--blue),var(--violet));
+    border-radius:12px; display:flex; align-items:center; justify-content:center;
+    transition:transform .2s;
+  }
+  .header-logo:hover { transform:rotate(12deg); }
+  .header-logo svg { width:24px; height:24px; color:white; stroke:white; fill:none; stroke-width:1.5; }
+  .header-title h1 { font-size:20px; font-weight:800; text-transform:uppercase; letter-spacing:.25em; }
+  .header-badges { display:flex; gap:8px; margin-top:4px; }
+  .badge { font-size:9px; font-weight:800; padding:3px 8px; border-radius:999px; text-transform:uppercase; letter-spacing:.15em; }
+  .badge-blue { background:var(--blue); color:white; }
+  .badge-violet { color:var(--violet); font-weight:800; }
+  .status-dot { width:12px; height:12px; background:var(--blue); border-radius:50%; box-shadow:0 0 12px rgba(37,99,235,.7); animation:pulse 2s infinite; }
+
+  /* MOBILE WARNING */
+  .mobile-warn {
+    margin:16px 24px 0; padding:16px 20px; background:#fefce8;
+    border:2px solid #fde68a; border-radius:1rem; display:none;
+    gap:12px; align-items:flex-start;
+  }
+  .mobile-warn.show { display:flex; }
+  .mobile-warn svg { flex-shrink:0; width:20px; height:20px; color:#d97706; stroke:#d97706; fill:none; stroke-width:2; }
+  .mobile-warn p { font-size:12px; font-weight:700; color:#92400e; line-height:1.5; }
+
+  /* MAIN GRID */
+  main { flex:1; max-width:1600px; margin:0 auto; width:100%; padding:32px; display:grid; grid-template-columns:1fr; gap:32px; }
+  @media(min-width:1024px) { main { grid-template-columns:5fr 7fr; } }
+
+  /* CARD */
+  .card {
+    background:white; border-radius:2rem; padding:36px;
+    box-shadow:0 4px 30px rgba(0,0,0,.05); border:1px solid var(--border);
+  }
+  .card-title {
+    font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.5em;
+    margin-bottom:24px; display:flex; align-items:center; gap:12px;
+  }
+  .card-title svg { width:18px; height:18px; fill:none; stroke-width:2; }
+  .title-blue { color:var(--blue); }
+  .title-indigo { color:var(--indigo); }
+  .title-violet { color:var(--violet); }
+
+  /* UPLOAD GRID */
+  .upload-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px; }
+  .upload-thumb {
+    aspect-ratio:1; border-radius:1.5rem; overflow:hidden;
+    border:2px solid var(--border); position:relative; background:var(--bg);
+  }
+  .upload-thumb img { width:100%; height:100%; object-fit:cover; }
+  .upload-thumb .remove-btn {
+    position:absolute; top:8px; right:8px; background:rgba(255,255,255,.9);
+    border:none; border-radius:50%; width:28px; height:28px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; color:#dc2626;
+    transition:background .2s;
+  }
+  .upload-thumb .remove-btn:hover { background:white; }
+  .upload-thumb .ref-badge {
+    position:absolute; bottom:8px; left:8px; background:var(--blue);
+    color:white; font-size:8px; font-weight:800; padding:2px 6px;
+    border-radius:4px; text-transform:uppercase; letter-spacing:.1em;
+  }
+  .upload-add {
+    aspect-ratio:1; border-radius:1.5rem; border:2px dashed var(--border);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:8px; cursor:pointer; background:var(--blue-light);
+    transition:border-color .2s, background .2s; position:relative; overflow:hidden;
+  }
+  .upload-add:hover { border-color:var(--blue); background:white; }
+  .upload-add svg { width:24px; height:24px; stroke:var(--blue); fill:none; stroke-width:1.5; }
+  .upload-add span { font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:.2em; color:var(--muted); text-align:center; padding:0 8px; }
+  .upload-add input { position:absolute; inset:0; opacity:0; cursor:pointer; }
+
+  textarea {
+    width:100%; padding:20px; border:2px solid var(--border); border-radius:1.5rem;
+    font-family:'Space Grotesk',sans-serif; font-size:14px; color:var(--slate);
+    background:var(--blue-light); resize:none; outline:none;
+    transition:border-color .2s, background .2s; min-height:120px; line-height:1.6;
+  }
+  textarea:focus { border-color:var(--blue); background:white; }
+  textarea::placeholder { color:#94a3b8; }
+
+  /* FORMAT BTNS */
+  .format-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+  .fmt-btn {
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:8px; padding:18px 8px; border-radius:1rem; border:2px solid var(--border);
+    background:var(--blue-light); cursor:pointer; transition:all .2s; color:var(--muted);
+  }
+  .fmt-btn:hover { border-color:var(--blue); background:white; }
+  .fmt-btn.active { background:var(--slate); border-color:var(--slate); color:white; transform:scale(1.05); }
+  .fmt-btn svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:1.5; }
+  .fmt-btn span { font-size:9px; font-weight:800; }
+
+  /* TOGGLE BTNS */
+  .toggle-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .tog-btn {
+    padding:16px; border:2px solid var(--border); border-radius:1rem;
+    background:var(--blue-light); cursor:pointer; font-family:'Space Grotesk',sans-serif;
+    font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.15em;
+    color:var(--muted); transition:all .2s;
+  }
+  .tog-btn:hover { border-color:var(--blue); }
+  .tog-btn.active-violet { background:var(--violet); border-color:var(--violet); color:white; }
+  .tog-btn.active-indigo { background:var(--indigo); border-color:var(--indigo); color:white; }
+  .tog-btn.active-blue { background:var(--blue); border-color:var(--blue); color:white; }
+  .tog-btn.active-dark { background:var(--slate); border-color:var(--slate); color:white; }
+
+  /* CHIP BTNS */
+  .chips { display:flex; flex-wrap:wrap; gap:8px; }
+  .chip {
+    padding:10px 16px; border:2px solid var(--border); border-radius:.75rem;
+    background:var(--blue-light); cursor:pointer; font-family:'Space Grotesk',sans-serif;
+    font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:.15em;
+    color:var(--muted); transition:all .2s;
+  }
+  .chip:hover { border-color:var(--blue); }
+  .chip.active { background:var(--slate); border-color:var(--slate); color:white; }
+
+  /* SLIDERS */
+  .slider-row { margin-bottom:20px; }
+  .slider-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+  .slider-label { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.15em; color:var(--muted); }
+  .slider-value { font-family:'Space Mono',monospace; font-size:11px; font-weight:700; color:var(--blue); background:var(--blue-light); padding:4px 10px; border-radius:6px; }
+  input[type="range"] {
+    width:100%; height:8px; appearance:none; background:var(--blue-light);
+    border-radius:4px; cursor:pointer; outline:none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    appearance:none; width:18px; height:18px; border-radius:50%;
+    background:var(--blue); cursor:pointer; transition:transform .15s;
+  }
+  input[type="range"]::-webkit-slider-thumb:hover { transform:scale(1.2); }
+
+  /* PERCEPTION TOGGLE */
+  .perception-row {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 20px; background:var(--blue-light); border-radius:1.5rem;
+    border:2px solid var(--border); margin-bottom:20px; transition:all .2s;
+  }
+  .perception-row.on { background:white; border-color:var(--blue); }
+  .perception-icon {
+    width:42px; height:42px; border-radius:12px; display:flex; align-items:center;
+    justify-content:center; transition:all .2s; background:var(--border);
+  }
+  .perception-icon.on { background:var(--blue); box-shadow:0 8px 20px rgba(37,99,235,.35); }
+  .perception-icon svg { width:22px; height:22px; fill:none; stroke-width:1.5; stroke:var(--muted); }
+  .perception-icon.on svg { stroke:white; }
+  .perception-text h4 { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.15em; color:var(--slate); }
+  .perception-text p { font-size:9px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.1em; margin-top:2px; }
+  .switch-wrap { cursor:pointer; }
+  .switch {
+    width:52px; height:30px; background:var(--border); border-radius:999px;
+    position:relative; transition:background .3s;
+  }
+  .switch.on { background:var(--blue); }
+  .switch-thumb {
+    position:absolute; top:3px; left:3px; width:24px; height:24px;
+    background:white; border-radius:50%; box-shadow:0 2px 6px rgba(0,0,0,.2);
+    transition:transform .3s;
+  }
+  .switch.on .switch-thumb { transform:translateX(22px); }
+
+  /* GENERATE BTN */
+  .gen-btn {
+    width:100%; padding:40px; border:none; border-radius:2.5rem;
+    background:linear-gradient(135deg, var(--blue), var(--indigo), var(--violet));
+    color:white; font-family:'Space Grotesk',sans-serif; font-weight:800;
+    font-size:14px; text-transform:uppercase; letter-spacing:.5em;
+    cursor:pointer; transition:transform .2s, box-shadow .2s;
+    box-shadow:0 20px 50px rgba(37,99,235,.35); position:relative; overflow:hidden;
+    display:flex; flex-direction:column; align-items:center; gap:12px;
+  }
+  .gen-btn:hover:not(:disabled) { transform:scale(1.02); }
+  .gen-btn:active:not(:disabled) { transform:scale(.98); }
+  .gen-btn:disabled { background:#e2e8f0; color:#94a3b8; cursor:not-allowed; box-shadow:none; }
+  .gen-btn .btn-row { display:flex; align-items:center; gap:20px; }
+  .gen-btn svg { width:32px; height:32px; }
+  .gen-btn.loading svg { animation:spin 1s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .gen-loading-msg { font-size:9px; font-weight:800; letter-spacing:.2em; color:rgba(255,255,255,.7); }
+
+  /* ERROR */
+  .error-box {
+    padding:20px; border-radius:1.5rem; border:2px solid #fecaca;
+    background:#fef2f2; display:none; gap:16px; align-items:flex-start; margin-top:16px;
+  }
+  .error-box.show { display:flex; }
+  .error-box svg { width:24px; height:24px; stroke:#dc2626; fill:none; stroke-width:2; flex-shrink:0; }
+  .error-box p { font-size:11px; font-weight:800; color:#b91c1c; letter-spacing:.05em; line-height:1.6; text-transform:uppercase; }
+
+  /* RESULTS */
+  .results-header {
+    display:flex; justify-content:space-between; align-items:flex-end;
+    border-bottom:4px solid var(--border); padding-bottom:24px; margin-bottom:40px;
+    flex-wrap:wrap; gap:16px;
+  }
+  .results-title h2 { font-size:16px; font-weight:800; text-transform:uppercase; letter-spacing:.6em; }
+  .results-status { display:flex; align-items:center; gap:8px; margin-top:6px; }
+  .live-dot { width:10px; height:10px; border-radius:50%; background:var(--blue); animation:ping .8s infinite; }
+  @keyframes ping { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.3)} }
+  .results-actions { display:flex; gap:10px; }
+  .btn-reset {
+    display:flex; align-items:center; gap:8px; padding:12px 20px;
+    background:#fef2f2; color:#dc2626; border:2px solid #fecaca; border-radius:.75rem;
+    font-family:'Space Grotesk',sans-serif; font-size:10px; font-weight:800;
+    text-transform:uppercase; letter-spacing:.15em; cursor:pointer; transition:all .2s;
+  }
+  .btn-reset:hover { background:#dc2626; color:white; }
+  .btn-reset svg { width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:2; }
+  .btn-dl-all {
+    display:flex; align-items:center; gap:8px; padding:12px 20px;
+    background:var(--slate); color:white; border:none; border-radius:.75rem;
+    font-family:'Space Grotesk',sans-serif; font-size:10px; font-weight:800;
+    text-transform:uppercase; letter-spacing:.15em; cursor:pointer; transition:background .2s;
+  }
+  .btn-dl-all:hover { background:var(--blue); }
+  .btn-dl-all svg { width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:2; }
+
+  /* EMPTY STATE */
+  .empty-state {
+    height:600px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    border:4px dashed var(--border); border-radius:4rem; gap:32px; background:rgba(255,255,255,.5);
+  }
+  .empty-icon {
+    width:160px; height:160px; border-radius:50%; background:white;
+    box-shadow:0 20px 60px rgba(0,0,0,.06); display:flex; align-items:center; justify-content:center;
+    border:2px solid var(--border);
+  }
+  .empty-icon svg { width:80px; height:80px; stroke:var(--border); fill:none; stroke-width:.5; }
+  .empty-text { text-align:center; }
+  .empty-text p:first-child { font-size:14px; font-weight:800; text-transform:uppercase; letter-spacing:1em; color:#cbd5e1; }
+  .empty-text p:last-child { font-size:12px; color:#94a3b8; font-weight:600; font-style:italic; margin-top:8px; }
+
+  /* IMAGE CARD */
+  .img-card {
+    background:white; border-radius:3rem; overflow:hidden; border:2px solid white;
+    box-shadow:0 20px 60px rgba(0,0,0,.08); margin-bottom:48px; transition:transform .5s;
+  }
+  .img-card:hover { transform:scale(1.01); }
+  .img-thumb { position:relative; cursor:pointer; overflow:hidden; }
+  .img-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+  .img-thumb .ar-9-16 { aspect-ratio:9/16; }
+  .img-thumb .ar-16-9 { aspect-ratio:16/9; }
+  .img-thumb .ar-4-5 { aspect-ratio:4/5; }
+  .img-thumb .ar-1-1 { aspect-ratio:1; }
+  .img-overlay { position:absolute; inset:0; background:rgba(0,0,0,.2); opacity:0; transition:opacity .3s; display:flex; align-items:center; justify-content:center; }
+  .img-card:hover .img-overlay { opacity:1; }
+  .dl-circle { background:var(--blue); padding:28px; border-radius:50%; box-shadow:0 10px 30px rgba(37,99,235,.4); transform:scale(.7); transition:transform .4s; }
+  .img-card:hover .dl-circle { transform:scale(1); }
+  .dl-circle svg { width:40px; height:40px; stroke:white; fill:none; stroke-width:2; }
+  .img-badges { position:absolute; top:24px; left:24px; display:flex; flex-direction:column; gap:8px; }
+  .img-badge { padding:6px 16px; border-radius:1rem; font-size:10px; font-weight:800; letter-spacing:.15em; text-transform:uppercase; }
+  .img-badge-white { background:rgba(255,255,255,.95); color:var(--slate); }
+  .img-badge-grad { background:linear-gradient(135deg,var(--blue),var(--violet)); color:white; }
+  .img-info { padding:40px; }
+  .img-prompt { font-size:16px; font-weight:600; color:var(--slate); font-style:italic; line-height:1.6; border-left:8px solid var(--blue); padding:20px 24px; background:var(--blue-light); border-radius:0 2rem 2rem 0; margin-bottom:24px; }
+  .img-meta { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
+  .img-meta-txt { display:flex; flex-direction:column; gap:4px; }
+  .img-meta-txt span { font-family:'Space Mono',monospace; font-size:10px; font-weight:700; color:var(--slate); text-transform:uppercase; letter-spacing:.1em; }
+  .btn-dl {
+    padding:12px 20px; background:var(--blue); color:white; border:none; border-radius:.75rem;
+    font-family:'Space Grotesk',sans-serif; font-size:9px; font-weight:800;
+    text-transform:uppercase; letter-spacing:.15em; cursor:pointer; transition:transform .15s;
+  }
+  .btn-dl:hover { transform:scale(1.05); }
+  .mobile-hint { font-size:9px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.1em; margin-top:4px; }
+
+  /* SECTION DIVIDER */
+  .divider { height:1px; background:var(--border); margin:24px 0; }
+  .section-label { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.2em; color:var(--muted); margin-bottom:12px; }
+
+  /* FOOTER */
+  footer { padding:48px; text-align:center; border-top:4px solid var(--border); background:rgba(255,255,255,.6); }
+  footer p { font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:1em; color:#94a3b8; }
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="hero-img">
+    <img src="https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&q=80&w=1200" alt="Camera">
+    <div class="overlay" style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.7),rgba(0,0,0,.1))"></div>
+    <div class="rec"><div class="rec-dot"></div><span class="rec-label">REC ● 4K LIVE</span></div>
+  </div>
+  <h1>STUDIO POV</h1>
+  <div style="height:4px;width:200px;background:linear-gradient(90deg,var(--blue),var(--violet));border-radius:2px;margin-bottom:24px;"></div>
+  <p class="tagline">« Place le regard là où le cerveau y croit. »</p>
+
+  <div class="api-box">
+    <p class="api-label">🔑 Clé API Vertex AI Express Mode</p>
+    <input type="password" id="apiKeyInput" placeholder="AIza..." autocomplete="off">
+    <button class="enter-btn" onclick="enterStudio()">ENTRER DANS LE STUDIO ⚡</button>
+  </div>
+  <a href="https://cloud.google.com/vertex-ai/generative-ai/docs/start/express-mode/overview" target="_blank" class="billing-link">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    Obtenir une clé Vertex AI Express Mode
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+  </a>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header>
+    <div class="header-left" onclick="showSplash()">
+      <div class="header-logo">
+        <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      </div>
+      <div class="header-title">
+        <h1>STUDIO POV</h1>
+        <div class="header-badges">
+          <span class="badge badge-blue">RENDU PRO 4K</span>
+          <span class="badge badge-violet">V2025</span>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:16px;">
+      <div style="text-align:right;">
+        <p style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.2em;color:var(--slate);">Focale Humaine</p>
+        <p style="font-size:9px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.1em;">Nano Banana 2</p>
+      </div>
+      <div style="width:44px;height:44px;border-radius:50%;border:4px solid var(--blue-light);display:flex;align-items:center;justify-content:center;">
+        <div class="status-dot"></div>
+      </div>
+    </div>
+  </header>
+
+  <div id="mobileWarn" class="mobile-warn">
+    <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+    <p>📱 MODE MOBILE DÉTECTÉ — La génération peut prendre 15-30 secondes. Le système effectuera automatiquement jusqu'à 5 tentatives si nécessaire.</p>
+  </div>
+
+  <main>
+    <!-- LEFT COLUMN -->
+    <div style="display:flex;flex-direction:column;gap:24px;">
+
+      <!-- REF IMAGES -->
+      <div class="card">
+        <p class="card-title title-blue">
+          <svg viewBox="0 0 24 24" style="stroke:var(--blue)"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M7 2v20"/><path d="M17 2v20"/><path d="M2 12h20"/><path d="M2 7h5"/><path d="M2 17h5"/><path d="M17 17h5"/><path d="M17 7h5"/></svg>
+          01. RÉFÉRENTIELS
+        </p>
+        <div id="uploadGrid" class="upload-grid"></div>
+        <textarea id="subjectInput" placeholder="Décrivez l'émotion et l'atmosphère de la scène..."></textarea>
+      </div>
+
+      <!-- FORMAT -->
+      <div class="card">
+        <p class="card-title title-indigo">
+          <svg viewBox="0 0 24 24" style="stroke:var(--indigo)"><path d="M15 3h6v6"/><path d="M10 14L21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+          02. CADRAGE NARRATIF
+        </p>
+        <div class="format-grid">
+          <button class="fmt-btn" data-ar="9:16" onclick="setAR('9:16',this)">
+            <svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/></svg>
+            <span>9:16</span>
+          </button>
+          <button class="fmt-btn" data-ar="16:9" onclick="setAR('16:9',this)">
+            <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="10" rx="2"/></svg>
+            <span>16:9</span>
+          </button>
+          <button class="fmt-btn" data-ar="4:5" onclick="setAR('4:5',this)">
+            <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/></svg>
+            <span>4:5</span>
+          </button>
+          <button class="fmt-btn active" data-ar="1:1" onclick="setAR('1:1',this)">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+            <span>1:1</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- CALIBRAGE OPTIQUE -->
+      <div class="card">
+        <p class="card-title title-violet">
+          <svg viewBox="0 0 24 24" style="stroke:var(--violet)"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/></svg>
+          03. CALIBRAGE OPTIQUE
+        </p>
+
+        <p class="section-label">Statut</p>
+        <div class="toggle-grid" style="margin-bottom:20px;">
+          <button class="tog-btn active-violet" id="pov-exterior" onclick="setPov('exterior')">Extérieur</button>
+          <button class="tog-btn" id="pov-interior" onclick="setPov('interior')">Présent</button>
+        </div>
+
+        <p class="section-label">Implication</p>
+        <div class="toggle-grid" style="margin-bottom:20px;">
+          <button class="tog-btn active-indigo" id="inv-discreet" onclick="setInv('discreet')">Observateur</button>
+          <button class="tog-btn" id="inv-involved" onclick="setInv('involved')">Participant</button>
+        </div>
+
+        <p class="section-label">Angle</p>
+        <div class="chips" style="margin-bottom:12px;">
+          <button class="chip" id="ang-face" onclick="setAngle('face')">Face</button>
+          <button class="chip" id="ang-side" onclick="setAngle('side')">Côté</button>
+          <button class="chip" id="ang-back" onclick="setAngle('back')">Dos</button>
+          <button class="chip" id="ang-shoulder" onclick="setAngle('shoulder')">Épaule</button>
+          <button class="chip active" id="ang-offset" onclick="setAngle('offset')">Désaxé</button>
+        </div>
+
+        <div class="divider"></div>
+        <p class="section-label">Hauteur</p>
+        <div class="chips" style="margin-bottom:20px;">
+          <button class="chip" id="h-eye-level" onclick="setHeight('eye-level')">Yeux</button>
+          <button class="chip active" id="h-shoulder" onclick="setHeight('shoulder')">Épaule</button>
+          <button class="chip" id="h-low" onclick="setHeight('low')">Bas</button>
+          <button class="chip" id="h-high" onclick="setHeight('high')">Haut</button>
+        </div>
+
+        <p class="section-label">Distance</p>
+        <div class="toggle-grid" style="grid-template-columns:1fr 1fr 1fr;margin-bottom:24px;">
+          <button class="tog-btn" id="d-close" onclick="setDist('close')">Proche</button>
+          <button class="tog-btn active-blue" id="d-medium" onclick="setDist('medium')">Moyenne</button>
+          <button class="tog-btn" id="d-far" onclick="setDist('far')">Loin</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Perception Mode -->
+        <div class="perception-row" id="perceptionRow">
+          <div style="display:flex;align-items:center;gap:16px;">
+            <div class="perception-icon" id="perceptionIcon">
+              <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+            </div>
+            <div class="perception-text">
+              <h4>Mode Perception Humaine</h4>
+              <p id="perceptionStatus">Moteur standard</p>
+            </div>
+          </div>
+          <div class="switch-wrap" onclick="togglePerception()">
+            <div class="switch" id="perceptionSwitch"><div class="switch-thumb"></div></div>
+          </div>
+        </div>
+
+        <!-- Sliders -->
+        <div class="slider-row">
+          <div class="slider-header"><span class="slider-label">Asymétrie</span><span class="slider-value" id="vAsymmetry">70%</span></div>
+          <input type="range" min="0" max="100" value="70" oninput="updateSlider('asymmetry',this.value)">
+        </div>
+        <div class="slider-row">
+          <div class="slider-header"><span class="slider-label">Imperfection</span><span class="slider-value" id="vImperfection">60%</span></div>
+          <input type="range" min="0" max="100" value="60" oninput="updateSlider('imperfection',this.value)">
+        </div>
+        <div class="slider-row">
+          <div class="slider-header"><span class="slider-label">Intimité</span><span class="slider-value" id="vIntimacy">40%</span></div>
+          <input type="range" min="0" max="100" value="40" oninput="updateSlider('intimacy',this.value)">
+        </div>
+        <div class="slider-row">
+          <div class="slider-header"><span class="slider-label">Focus</span><span class="slider-value" id="vFocus">50%</span></div>
+          <input type="range" min="0" max="100" value="50" oninput="updateSlider('focus',this.value)">
+        </div>
+      </div>
+
+      <!-- GENERATE -->
+      <button class="gen-btn" id="genBtn" onclick="generate()">
+        <div class="btn-row">
+          <svg id="genIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          <span id="genLabel">DÉCLENCHER CAPTURE 4K</span>
+        </div>
+        <span class="gen-loading-msg" id="genMsg" style="display:none;"></span>
+      </button>
+
+      <!-- ERROR -->
+      <div class="error-box" id="errorBox">
+        <svg viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <p id="errorText"></p>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div>
+      <div class="results-header">
+        <div class="results-title">
+          <h2>ARCHIVES RÉALISTES</h2>
+          <div class="results-status">
+            <div class="live-dot"></div>
+            <span style="font-size:10px;font-weight:800;color:var(--blue);letter-spacing:.3em;text-transform:uppercase;">LIVE RENDER 4K</span>
+            <span style="font-size:13px;font-family:'Space Mono',monospace;color:var(--muted);font-weight:700;margin-left:16px;" id="captureCount">0 CAPTURES</span>
+          </div>
+        </div>
+        <div class="results-actions" id="resultsActions" style="display:none;">
+          <button class="btn-reset" onclick="resetAll()">
+            <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.21"/></svg>
+            Réinitialiser
+          </button>
+          <button class="btn-dl-all" id="dlAllBtn" onclick="downloadAll()" style="display:none;">
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Télécharger tout
+          </button>
+        </div>
+      </div>
+
+      <div id="emptyState" class="empty-state">
+        <div class="empty-icon">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <div class="empty-text">
+          <p>INITIER LE SIGNAL</p>
+          <p>Le studio est prêt. Configurez l'optique pour capturer la réalité.</p>
+        </div>
+      </div>
+
+      <div id="resultsContainer"></div>
+    </div>
+  </main>
+
+  <footer>
+    <p>STUDIO POV — 2025 · Powered by Vertex AI · Nano Banana 2</p>
+  </footer>
+</div>
+
+<script>
+// =================== STATE ===================
+let apiKey = '';
+let avatarImages = [];
+let results = [];
+let loading = false;
+let aspectRatio = '9:16';
+let pov = 'exterior';
+let involvement = 'discreet';
+let angle = 'offset';
+let height = 'shoulder';
+let distance = 'medium';
+let asymmetry = 70;
+let imperfection = 60;
+let intimacy = 40;
+let focus = 50;
+let humanPerceptionMode = false;
+
+const LOADING_MSGS = [
+  "Initialisation de l'optique humaine...",
+  "Calcul de la texture cutanée...",
+  "Simulation du champ de vision...",
+  "Génération des imperfections photoréalistes...",
+  "Calibrage de l'asymétrie optique...",
+  "Rendu en définition 4K Native...",
+  "Finalisation de la capture POV...",
+  "Optimisation de la latence serveur...",
+  "Files d'attente saturées, nouvel essai imminent..."
+];
+let loadingMsgIdx = 0;
+let loadingInterval = null;
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+// =================== SPLASH / ENTER ===================
+function enterStudio() {
+  const k = document.getElementById('apiKeyInput').value.trim();
+  if (!k) { alert('Colle ta clé API Vertex AI Express Mode !'); return; }
+  apiKey = k;
+  document.getElementById('splash').style.display = 'none';
+  const app = document.getElementById('app');
+  app.classList.add('visible');
+  if (isMobile) document.getElementById('mobileWarn').classList.add('show');
+  renderUploadGrid();
+  loadState();
+}
+
+function showSplash() {
+  document.getElementById('splash').style.display = 'flex';
+  document.getElementById('app').classList.remove('visible');
+}
+
+// =================== STATE PERSISTENCE ===================
+function saveState() {
+  try {
+    localStorage.setItem('studio-pov-v2-state', JSON.stringify({
+      aspectRatio, pov, involvement, angle, height, distance,
+      asymmetry, imperfection, intimacy, focus, humanPerceptionMode,
+      subject: document.getElementById('subjectInput').value
+    }));
+  } catch(e) {}
+}
+
+function loadState() {
+  try {
+    const s = JSON.parse(localStorage.getItem('studio-pov-v2-state') || '{}');
+    if (s.aspectRatio) setAR(s.aspectRatio, document.querySelector(`[data-ar="${s.aspectRatio}"]`));
+    if (s.pov) setPov(s.pov);
+    if (s.involvement) setInv(s.involvement);
+    if (s.angle) setAngle(s.angle);
+    if (s.height) setHeight(s.height);
+    if (s.distance) setDist(s.distance);
+    if (s.asymmetry !== undefined) { asymmetry = s.asymmetry; document.querySelector('[oninput*="asymmetry"]').value = asymmetry; document.getElementById('vAsymmetry').textContent = asymmetry + '%'; }
+    if (s.imperfection !== undefined) { imperfection = s.imperfection; document.querySelector('[oninput*="imperfection"]').value = imperfection; document.getElementById('vImperfection').textContent = imperfection + '%'; }
+    if (s.intimacy !== undefined) { intimacy = s.intimacy; document.querySelector('[oninput*="intimacy"]').value = intimacy; document.getElementById('vIntimacy').textContent = intimacy + '%'; }
+    if (s.focus !== undefined) { focus = s.focus; document.querySelector('[oninput*="focus"]').value = focus; document.getElementById('vFocus').textContent = focus + '%'; }
+    if (s.humanPerceptionMode) { humanPerceptionMode = s.humanPerceptionMode; updatePerceptionUI(); }
+    if (s.subject) document.getElementById('subjectInput').value = s.subject;
+  } catch(e) {}
+}
+
+// =================== UPLOAD ===================
+function renderUploadGrid() {
+  const grid = document.getElementById('uploadGrid');
+  grid.innerHTML = '';
+  avatarImages.forEach((img, i) => {
+    const div = document.createElement('div');
+    div.className = 'upload-thumb';
+    div.innerHTML = `<img src="${img}" alt="ref ${i+1}"><button class="remove-btn" onclick="removeAvatar(${i})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button><span class="ref-badge">REF ${i+1}</span>`;
+    grid.appendChild(div);
+  });
+  if (avatarImages.length < 4) {
+    const add = document.createElement('div');
+    add.className = 'upload-add';
+    add.innerHTML = `<svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span>${avatarImages.length === 0 ? 'Charger Image Source' : `Ajouter Ref (${avatarImages.length}/4)`}</span><input type="file" multiple accept="image/*" onchange="handleUpload(event)">`;
+    grid.appendChild(add);
+  }
+}
+
+function handleUpload(e) {
+  const files = Array.from(e.target.files).slice(0, 4 - avatarImages.length);
+  files.forEach(f => {
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const resized = await resizeImage(reader.result);
+      avatarImages.push(resized);
+      renderUploadGrid();
+    };
+    reader.readAsDataURL(f);
+  });
+}
+
+function removeAvatar(i) {
+  avatarImages.splice(i, 1);
+  renderUploadGrid();
+}
+
+function resizeImage(b64) {
+  return new Promise(res => {
+    const img = new Image();
+    img.src = b64;
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let w = img.width, h = img.height;
+      if (w > 1024) { h *= 1024/w; w = 1024; }
+      if (h > 1024) { w *= 1024/h; h = 1024; }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      res(canvas.toDataURL('image/jpeg', 0.8));
+    };
+  });
+}
+
+// =================== CONTROLS ===================
+function setAR(ar, btn) {
+  aspectRatio = ar;
+  document.querySelectorAll('.fmt-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  saveState();
+}
+
+function setPov(v) {
+  pov = v;
+  document.getElementById('pov-exterior').className = 'tog-btn' + (v==='exterior'?' active-violet':'');
+  document.getElementById('pov-interior').className = 'tog-btn' + (v==='interior'?' active-violet':'');
+  saveState();
+}
+
+function setInv(v) {
+  involvement = v;
+  document.getElementById('inv-discreet').className = 'tog-btn' + (v==='discreet'?' active-indigo':'');
+  document.getElementById('inv-involved').className = 'tog-btn' + (v==='involved'?' active-indigo':'');
+  saveState();
+}
+
+function setAngle(v) {
+  angle = v;
+  ['face','side','back','shoulder','offset'].forEach(a => {
+    const el = document.getElementById('ang-'+a);
+    if (el) el.className = 'chip' + (a===v?' active':'');
+  });
+  saveState();
+}
+
+function setHeight(v) {
+  height = v;
+  ['eye-level','shoulder','low','high'].forEach(h => {
+    const el = document.getElementById('h-'+h);
+    if (el) el.className = 'chip' + (h===v?' active':'');
+  });
+  saveState();
+}
+
+function setDist(v) {
+  distance = v;
+  document.getElementById('d-close').className = 'tog-btn' + (v==='close'?' active-blue':'');
+  document.getElementById('d-medium').className = 'tog-btn' + (v==='medium'?' active-blue':'');
+  document.getElementById('d-far').className = 'tog-btn' + (v==='far'?' active-blue':'');
+  saveState();
+}
+
+function updateSlider(name, val) {
+  const v = parseInt(val);
+  if (name === 'asymmetry') { asymmetry = v; document.getElementById('vAsymmetry').textContent = v + '%'; }
+  if (name === 'imperfection') { imperfection = v; document.getElementById('vImperfection').textContent = v + '%'; }
+  if (name === 'intimacy') { intimacy = v; document.getElementById('vIntimacy').textContent = v + '%'; }
+  if (name === 'focus') { focus = v; document.getElementById('vFocus').textContent = v + '%'; }
+  saveState();
+}
+
+function togglePerception() {
+  humanPerceptionMode = !humanPerceptionMode;
+  updatePerceptionUI();
+  saveState();
+}
+
+function updatePerceptionUI() {
+  const icon = document.getElementById('perceptionIcon');
+  const sw = document.getElementById('perceptionSwitch');
+  const row = document.getElementById('perceptionRow');
+  const status = document.getElementById('perceptionStatus');
+  icon.className = 'perception-icon' + (humanPerceptionMode ? ' on' : '');
+  sw.className = 'switch' + (humanPerceptionMode ? ' on' : '');
+  row.className = 'perception-row' + (humanPerceptionMode ? ' on' : '');
+  status.textContent = humanPerceptionMode ? 'Simulation active' : 'Moteur standard';
+}
+
+// =================== GENERATE ===================
+async function generate() {
+  if (loading) return;
+  const subject = document.getElementById('subjectInput').value.trim();
+  if (!subject) { showError("Définissez le contexte émotionnel de la scène."); return; }
+  hideError();
+  setLoading(true);
+
+  try {
+    const imgB64 = await callVertexAPI(subject);
+    const blob = b64ToBlob(imgB64);
+    const url = URL.createObjectURL(blob);
+    const r = { id: Date.now().toString(), url, prompt: subject, aspectRatio, timestamp: Date.now() };
+    results.unshift(r);
+    if (results.length > 5) {
+      const old = results.pop();
+      if (old.url.startsWith('blob:')) URL.revokeObjectURL(old.url);
+    }
+    renderResults();
+  } catch(err) {
+    showError(err.message || "Erreur de génération. Le serveur est peut-être trop sollicité.");
+  } finally {
+    setLoading(false);
+  }
+}
+
+async function callVertexAPI(subject) {
+  const apiAR = aspectRatio === '4:5' ? '3:4' : aspectRatio;
+  const formatInfluence = {
+    '9:16': "FORMAT STORY (9:16): Vertical smartphone feel, intimate and visceral.",
+    '16:9': "FORMAT CINEMA (16:9): Wide scope, cinematic distance.",
+    '1:1':  "FORMAT CARRÉ (1:1): Balanced and frontal.",
+    '4:5':  "FORMAT FEED (4:5): Realistic vertical composition."
+  }[aspectRatio] || '';
+
+  const povSpecs = `
+    POSITION: ${pov === 'interior' ? 'Intérieur' : 'Extérieur'}
+    STATUT: ${involvement === 'discreet' ? 'Discret' : 'Impliqué'}
+    ANGLE: ${angle}
+    HAUTEUR: ${height}
+    DISTANCE: ${distance}
+    ASYMÉTRIE: ${asymmetry}%
+    IMPERFECTION: ${imperfection}%
+    INTIMITÉ: ${intimacy}%
+    FOCUS: ${focus}%
+    MODE PERCEPTION: ${humanPerceptionMode ? 'ACTIVÉ' : 'DÉSACTIVÉ'}
+    ${formatInfluence}
+  `;
+
+  const perceptionInstr = humanPerceptionMode ? `
+    MODE PERCEPTION HUMAINE ACTIVÉ :
+    - AMPLIFIER LA COHÉRENCE HUMAINE : Respecter les micro-logiques corporelles et gestuelles.
+    - TEXTURE PEAU RÉALISTE : Micro-relief visible, pores subtils, irrégularités naturelles. INTERDICTION DE LISSAGE.
+    - OPTIQUE RÉALISTE : Profondeur de champ plausible, pas de HDR agressif, pas de sur-netteté globale.
+    - HIÉRARCHIE D'ATTENTION : Prioriser subtilement le sujet, arrière-plan crédible.
+    - MICRO-STABILITÉ : Légère respiration du cadre, équilibre organique.
+  ` : '';
+
+  const systemText = `
+    TU ES STUDIO POV. TON RÔLE : Positionner le regard humain.
+    CRÉDIBILITÉ ABSOLUE : Texture de peau réelle, pores, micro-imperfections, lumière naturelle.
+    AUCUN LISSAGE ARTIFICIEL. RENDU 4K NATIVE.
+    ${perceptionInstr}
+    MODULES DE RÉALISME PHOTOGRAPHIQUE :
+    - MICRO-TEXTURES VISAGE : Grain de peau naturel, pores subtils visibles, micro-variations de couleur, relief naturel. AUCUN LISSAGE.
+    - MICRO-EXPRESSIONS HUMAINES : Asymétrie légère des lèvres, tension subtile yeux, expressions naturelles non figées.
+    - DYNAMIQUE CORPORELLE : Poids sur une jambe, épaules asymétriques, posture non rigide.
+    - INTERACTION ENVIRONNEMENT : Mains actives tenant des objets, gestes du quotidien.
+    - IMPERFECTIONS OPTIQUES : Micro flou de mouvement, légères variations de netteté.
+    - LOGIQUE PHYSIQUE : Plis de tissu naturels, tension lors des mouvements, gravité des vêtements.
+    - TEXTURE OBJETS : Texture bois, tissu, métal, surfaces domestiques. AUCUNE SURFACE LISSE.
+    - RELIEF LUMINEUX : Lumière directionnelle douce, ombres subtiles.
+    GARDE-FOUS : Interdiction de redesign décor, beauté automatique, sourire figé, peau lisse, mains irréalistes.
+  `;
+
+  const promptText = `Sujet : ${subject}. POV Specs : ${povSpecs}. Photographie ultra-réaliste 4K, texture de peau humaine vivante.`;
+
+  // Build parts array
+  const parts = [];
+  avatarImages.forEach(img => {
+    parts.push({ inlineData: { data: img.split(',')[1], mimeType: 'image/jpeg' } });
+  });
+  parts.push({ text: promptText });
+
+  const body = {
+    systemInstruction: { parts: [{ text: systemText }] },
+    contents: [{ role: 'user', parts }],
+    generationConfig: {
+      responseModalities: ['TEXT', 'IMAGE'],
+      imageConfig: {
+        aspectRatio: apiAR,
+        imageSize: "4K"
+      }
+    }
+  };
+
+  // Vertex AI Express Mode endpoint
+  const endpoint = `https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-3.1-flash-image-preview:generateContent?key=${apiKey}`;
+
+  const maxAttempts = isMobile ? 5 : 3;
+  let lastErr;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        const msg = data.error?.message || JSON.stringify(data.error);
+        if (res.status === 400) throw new Error(`ERREUR 400 : ${msg} — Activez la Vertex AI API sur console.cloud.google.com/apis/library`);
+        if (res.status === 401) throw new Error(`ERREUR 401 : Clé non reconnue — Créez une clé sur console.cloud.google.com/apis/credentials`);
+        if (res.status === 403) throw new Error(`ERREUR 403 : Accès refusé — Activez la Vertex AI API et vérifiez les restrictions de votre clé`);
+        if (res.status === 404) throw new Error(`ERREUR 404 : Modèle non trouvé — Vérifiez que la Vertex AI API est bien activée`);
+        if (res.status === 429) throw new Error(`ERREUR 429 : Quota dépassé — Attendez 1-2 minutes et réessayez`);
+        throw new Error(`Erreur ${res.status}: ${msg}`);
+      }
+
+      const candidate = data?.candidates?.[0];
+      if (!candidate) throw new Error("Aucun résultat retourné par le modèle.");
+      if (candidate.finishReason === 'SAFETY') throw new Error("Génération bloquée par les filtres de sécurité. Reformulez votre demande.");
+
+      const parts2 = candidate?.content?.parts || [];
+      for (const p of parts2) {
+        if (p.inlineData) return `data:image/png;base64,${p.inlineData.data}`;
+      }
+      throw new Error("L'image n'a pas pu être extraite de la réponse.");
+
+    } catch(err) {
+      lastErr = err;
+      const msg = err.message || '';
+      const retryable = msg.includes('429') || msg.includes('503') || msg.includes('502') || msg.toLowerCase().includes('resource_exhausted') || msg.toLowerCase().includes('overloaded');
+      if (retryable && attempt < maxAttempts) {
+        await sleep(Math.pow(2, attempt) * 2000);
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw lastErr;
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function b64ToBlob(b64) {
+  const arr = b64.split(','), mime = arr[0].match(/:(.*?);/)[1];
+  const bstr = atob(arr[1]);
+  const ab = new ArrayBuffer(bstr.length);
+  const ia = new Uint8Array(ab);
+  for (let i = 0; i < bstr.length; i++) ia[i] = bstr.charCodeAt(i);
+  return new Blob([ab], { type: mime });
+}
+
+// =================== UI STATES ===================
+function setLoading(v) {
+  loading = v;
+  const btn = document.getElementById('genBtn');
+  const icon = document.getElementById('genIcon');
+  const label = document.getElementById('genLabel');
+  const msg = document.getElementById('genMsg');
+  btn.disabled = v;
+  if (v) {
+    icon.innerHTML = '<path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>';
+    icon.parentElement.className = 'btn-row';
+    btn.classList.add('loading');
+    label.textContent = 'CALCUL EN COURS...';
+    msg.style.display = 'block';
+    loadingMsgIdx = 0;
+    msg.textContent = LOADING_MSGS[0];
+    loadingInterval = setInterval(() => {
+      loadingMsgIdx = (loadingMsgIdx + 1) % LOADING_MSGS.length;
+      msg.textContent = LOADING_MSGS[loadingMsgIdx];
+    }, 3000);
+  } else {
+    btn.classList.remove('loading');
+    icon.innerHTML = '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>';
+    label.textContent = 'DÉCLENCHER CAPTURE 4K';
+    msg.style.display = 'none';
+    clearInterval(loadingInterval);
+  }
+}
+
+function showError(msg) {
+  const box = document.getElementById('errorBox');
+  document.getElementById('errorText').textContent = msg;
+  box.classList.add('show');
+}
+
+function hideError() { document.getElementById('errorBox').classList.remove('show'); }
+
+// =================== RESULTS ===================
+function renderResults() {
+  const container = document.getElementById('resultsContainer');
+  const empty = document.getElementById('emptyState');
+  const actions = document.getElementById('resultsActions');
+  const dlAll = document.getElementById('dlAllBtn');
+  const count = document.getElementById('captureCount');
+
+  count.textContent = results.length + ' CAPTURE' + (results.length !== 1 ? 'S' : '');
+
+  if (results.length === 0) {
+    empty.style.display = 'flex';
+    actions.style.display = 'none';
+    container.innerHTML = '';
+    return;
+  }
+
+  empty.style.display = 'none';
+  actions.style.display = 'flex';
+  dlAll.style.display = results.length > 1 ? 'flex' : 'none';
+
+  container.innerHTML = '';
+  results.forEach((r, i) => {
+    const arClass = r.aspectRatio === '9:16' ? 'ar-9-16' : r.aspectRatio === '16:9' ? 'ar-16-9' : r.aspectRatio === '4:5' ? 'ar-4-5' : 'ar-1-1';
+    const card = document.createElement('div');
+    card.className = 'img-card';
+    card.innerHTML = `
+      <div class="img-thumb" onclick="downloadImage('${r.url}', '${r.id}')">
+        <div class="${arClass}"><img src="${r.url}" alt="${r.prompt}" loading="lazy"></div>
+        <div class="img-overlay"><div class="dl-circle"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div></div>
+        <div class="img-badges">
+          <span class="img-badge img-badge-white">FORMAT ${r.aspectRatio}</span>
+          <span class="img-badge img-badge-grad">NANO BANANA PRO 4K</span>
+        </div>
+      </div>
+      <div class="img-info">
+        <p class="img-prompt">"${r.prompt}"</p>
+        <div class="img-meta">
+          <div class="img-meta-txt">
+            <span>CAPTURED_AT: ${new Date(r.timestamp).toLocaleTimeString()}</span>
+            <span>UUID: TR_${r.id.slice(-8)}</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+            <button class="btn-dl" onclick="downloadImage('${r.url}', '${r.id}')">TÉLÉCHARGER L'IMAGE</button>
+            <p class="mobile-hint">APPUI LONG POUR ENREGISTRER SUR MOBILE</p>
+          </div>
+        </div>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function downloadImage(url, id) {
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `studio-pov-capture-${id}.png`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+function downloadAll() {
+  results.forEach((r, i) => setTimeout(() => downloadImage(r.url, `action_${i+1}`), i * 300));
+}
+
+function resetAll() {
+  if (!confirm("Voulez-vous vraiment supprimer toutes les captures et réinitialiser les réglages ?")) return;
+  results.forEach(r => { if (r.url.startsWith('blob:')) URL.revokeObjectURL(r.url); });
+  results = [];
+  try { localStorage.removeItem('studio-pov-v2-state'); } catch(e) {}
+  renderResults();
+}
+
+// Init
+setAR('9:16', document.querySelector('[data-ar="9:16"]'));
+renderResults();
+</script>
+</body>
+</html>
