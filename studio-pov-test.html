@@ -395,7 +395,7 @@
     <div style="display:flex;align-items:center;gap:16px;">
       <div style="text-align:right;">
         <p style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.2em;color:var(--slate);">Focale Humaine</p>
-        <p style="font-size:9px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.1em;">Gemini 3.1 Flash Image</p>
+        <p style="font-size:9px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.1em;">Gemini 3.1 Flash Image Preview</p>
       </div>
       <div style="width:44px;height:44px;border-radius:50%;border:4px solid var(--blue-light);display:flex;align-items:center;justify-content:center;">
         <div class="status-dot"></div>
@@ -410,6 +410,7 @@
 
   <main>
     <div style="display:flex;flex-direction:column;gap:24px;">
+
       <div class="card">
         <p class="card-title title-blue">
           <svg viewBox="0 0 24 24" style="stroke:var(--blue)"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M7 2v20"/><path d="M17 2v20"/><path d="M2 12h20"/><path d="M2 7h5"/><path d="M2 17h5"/><path d="M17 17h5"/><path d="M17 7h5"/></svg>
@@ -628,7 +629,7 @@ function showSplash() {
 
 function saveState() {
   try {
-    localStorage.setItem('studio-pov-v3-state', JSON.stringify({
+    localStorage.setItem('studio-pov-v4-state', JSON.stringify({
       aspectRatio, pov, involvement, angle, height, distance,
       asymmetry, imperfection, intimacy, focus, humanPerceptionMode,
       subject: document.getElementById('subjectInput').value
@@ -638,7 +639,7 @@ function saveState() {
 
 function loadState() {
   try {
-    const s = JSON.parse(localStorage.getItem('studio-pov-v3-state') || '{}');
+    const s = JSON.parse(localStorage.getItem('studio-pov-v4-state') || '{}');
     if (s.aspectRatio) setAR(s.aspectRatio, document.querySelector(`[data-ar="${s.aspectRatio}"]`));
     if (s.pov) setPov(s.pov);
     if (s.involvement) setInv(s.involvement);
@@ -880,7 +881,7 @@ Photo POV réaliste, rendu propre, détails humains crédibles, scène naturelle
     }
   };
 
-  const endpoint = `https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-3.1-flash-image:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const endpoint = `https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-3.1-flash-image-preview:generateContent?key=${encodeURIComponent(apiKey)}`;
 
   const waitTimes = [5000, 10000, 20000, 40000, 60000];
   let lastErr;
@@ -909,6 +910,7 @@ Photo POV réaliste, rendu propre, détails humains crédibles, scène naturelle
 
         if (res.status === 401) throw new Error("Clé API invalide.");
         if (res.status === 403) throw new Error("Accès refusé. Vérifie que ta clé est bien une clé Vertex AI Express Mode active.");
+        if (res.status === 404) throw new Error(`Erreur 404: modèle introuvable ou non accessible. ${msg}`);
         if (res.status === 429) throw new Error(`429 RESOURCE_EXHAUSTED: ${msg}`);
 
         throw new Error(`Erreur ${res.status}: ${msg}`);
@@ -1055,7 +1057,7 @@ function renderResults() {
         <div class="img-overlay"><div class="dl-circle"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div></div>
         <div class="img-badges">
           <span class="img-badge img-badge-white">FORMAT ${r.aspectRatio}</span>
-          <span class="img-badge img-badge-grad">FLASH IMAGE</span>
+          <span class="img-badge img-badge-grad">FLASH IMAGE PREVIEW</span>
         </div>
       </div>
       <div class="img-info">
@@ -1102,7 +1104,7 @@ function resetAll() {
   if (!confirm("Voulez-vous vraiment supprimer toutes les captures et réinitialiser les réglages ?")) return;
   results.forEach(r => { if (r.url.startsWith('blob:')) URL.revokeObjectURL(r.url); });
   results = [];
-  try { localStorage.removeItem('studio-pov-v3-state'); } catch(e) {}
+  try { localStorage.removeItem('studio-pov-v4-state'); } catch(e) {}
   renderResults();
 }
 
