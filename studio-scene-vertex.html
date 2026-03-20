@@ -75,7 +75,11 @@ body { min-height: 100vh; background: radial-gradient(circle at top right, #0a19
   text-shadow: 0 0 20px rgba(255,255,255,0.2);
   margin-bottom: 32px;
 }
-.splash-desc { font-size: 16px; font-weight: 300; color: var(--text2); line-height: 1.7; font-style: italic; margin-bottom: 48px; border-left: 1px solid var(--border2); padding-left: 20px; text-align: left; }
+.splash-desc {
+  font-size: 16px; font-weight: 300; color: var(--text2);
+  line-height: 1.7; font-style: italic; margin-bottom: 48px;
+  border-left: 1px solid var(--border2); padding-left: 20px; text-align: left;
+}
 .api-section { display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px; text-align: left; }
 .api-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3em; color: var(--text3); }
 .api-input {
@@ -201,7 +205,7 @@ body { min-height: 100vh; background: radial-gradient(circle at top right, #0a19
 @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
 .landing-clap { position: absolute; bottom: 40px; right: 40px; width: 160px; height: 160px; animation: float 6s ease-in-out infinite; }
 .landing-clap img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 30px 60px rgba(0,0,0,0.9)); }
-@keyframes float { 0%,100%{transform:translateY(0)rotate(12deg)} 50%{transform:translateY(-20px)rotate(15deg)} }
+@keyframes float { 0%,100%{transform:translateY(0) rotate(12deg)} 50%{transform:translateY(-20px) rotate(15deg)} }
 .landing-bottom { display: flex; align-items: center; gap: 32px; opacity: 0.2; }
 .lb-line { height: 1px; width: 96px; background: white; }
 .lb-text { font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.8em; }
@@ -416,7 +420,6 @@ body { min-height: 100vh; background: radial-gradient(circle at top right, #0a19
   <div class="fixed-bg-grad"></div>
 </div>
 
-<!-- SPLASH -->
 <div id="splash">
   <div class="splash-bg-img">
     <img src="https://images.unsplash.com/photo-1594909122845-11baa439b7bf?q=80&w=2000&auto=format&fit=crop" alt="">
@@ -442,7 +445,6 @@ body { min-height: 100vh; background: radial-gradient(circle at top right, #0a19
   </div>
 </div>
 
-<!-- APP -->
 <div id="app">
   <header class="app-header">
     <div class="header-inner">
@@ -462,7 +464,6 @@ body { min-height: 100vh; background: radial-gradient(circle at top right, #0a19
   <main class="app-main" style="position:relative;z-index:10;">
     <div id="alertBox" style="display:none;"></div>
 
-    <!-- LANDING (no image) -->
     <div id="landingView">
       <div class="landing-wrap">
         <div class="landing-card">
@@ -505,10 +506,8 @@ body { min-height: 100vh; background: radial-gradient(circle at top right, #0a19
       </div>
     </div>
 
-    <!-- STUDIO (with image) -->
     <div id="studioView" style="display:none;">
       <div class="studio-grid">
-        <!-- LEFT -->
         <div class="left-panel">
           <div class="ref-card">
             <div class="ref-img-wrap">
@@ -546,7 +545,6 @@ body { min-height: 100vh; background: radial-gradient(circle at top right, #0a19
           </div>
         </div>
 
-        <!-- RIGHT -->
         <div class="right-panel">
           <div id="noAnalysisRight" class="right-empty">
             <div class="right-empty-bg">
@@ -607,7 +605,7 @@ body { min-height: 100vh; background: radial-gradient(circle at top right, #0a19
                 </div>
                 <button class="export-btn" id="exportBtn" style="display:none;" onclick="exportAll()">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                  EXPORTER TOUT (.ZIP)
+                  EXPORTER TOUT
                 </button>
               </div>
               <div class="story-grid" id="storyGrid"></div>
@@ -636,28 +634,34 @@ body { min-height: 100vh; background: radial-gradient(circle at top right, #0a19
 
 <script>
 // ==================== MODELS ====================
-const MODEL_ANALYSIS = 'gemini-2.0-flash';      // Pour analyse JSON texte
-const MODEL_IMAGE = 'gemini-3.1-flash-image-preview'; // Pour génération images
+const MODEL_ANALYSIS = 'gemini-2.5-flash';
+const MODEL_IMAGE = 'gemini-3.1-flash-image-preview';
 
 // ==================== STATE ====================
 let API_KEY = '';
-let referenceImage = null;    // base64 sans prefix
+let referenceImage = null;
 let referenceMime = 'image/jpeg';
-let referenceUrl = null;      // data URL complet
+let referenceUrl = null;
 let analysisData = null;
 let isAutoMode = true;
 let aspectRatio = '1:1';
-let generatedPrompts = [];    // [{id, scene}]
-let generatedImages = {};     // {id: dataUrl}
+let generatedPrompts = [];
+let generatedImages = {};
 let generatingIds = new Set();
 
 // ==================== NAV ====================
-document.getElementById('apiKeyInput').addEventListener('keydown', e => { if (e.key==='Enter') enterApp(); });
+document.getElementById('apiKeyInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') enterApp();
+});
 
 function enterApp() {
   const key = document.getElementById('apiKeyInput').value.trim();
   const err = document.getElementById('splash-error');
-  if (!key) { err.textContent='Veuillez entrer votre clé API Vertex AI.'; err.style.display='block'; return; }
+  if (!key) {
+    err.textContent = 'Veuillez entrer votre clé API Vertex AI.';
+    err.style.display = 'block';
+    return;
+  }
   API_KEY = key;
   err.style.display = 'none';
   document.getElementById('splash').style.display = 'none';
@@ -673,10 +677,19 @@ function updateStatusBadge() {
 }
 
 function resetToLanding() {
-  referenceImage = null; referenceUrl = null; analysisData = null;
-  generatedPrompts = []; generatedImages = {}; generatingIds.clear();
+  referenceImage = null;
+  referenceMime = 'image/jpeg';
+  referenceUrl = null;
+  analysisData = null;
+  generatedPrompts = [];
+  generatedImages = {};
+  generatingIds.clear();
+  isAutoMode = true;
+  aspectRatio = '1:1';
+  document.getElementById('actionInput').value = '';
   document.getElementById('landingView').style.display = 'block';
   document.getElementById('studioView').style.display = 'none';
+  hideAlert();
 }
 
 // ==================== ALERT ====================
@@ -686,14 +699,17 @@ function showAlert(type, msg) {
   box.innerHTML = `<div class="alert-box ${type}">
     <div class="alert-left">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      ${msg}
+      ${escapeHtml(msg)}
     </div>
     <button class="alert-close" onclick="hideAlert()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
     </button>
   </div>`;
 }
-function hideAlert() { document.getElementById('alertBox').style.display = 'none'; }
+
+function hideAlert() {
+  document.getElementById('alertBox').style.display = 'none';
+}
 
 function showSuccess(msg) {
   const box = document.getElementById('alertBox');
@@ -701,28 +717,51 @@ function showSuccess(msg) {
   box.innerHTML = `<div class="alert-box success">
     <div class="alert-left">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-      ${msg}
+      ${escapeHtml(msg)}
     </div>
   </div>`;
-  setTimeout(() => box.style.display = 'none', 3000);
+  setTimeout(() => { box.style.display = 'none'; }, 3000);
+}
+
+// ==================== HELPERS ====================
+function sleep(ms) {
+  return new Promise(r => setTimeout(r, ms));
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+function encodeScene(scene) {
+  return encodeURIComponent(scene);
+}
+
+function decodeScene(scene) {
+  return decodeURIComponent(scene);
 }
 
 // ==================== UPLOAD ====================
 function handleImageUpload(e) {
   const file = e.target.files[0];
   if (!file) return;
+
   const reader = new FileReader();
   reader.onload = ev => {
     const result = ev.target.result;
-    const mimeMatch = result.match(/^data:(image\/[a-z]+);base64,/);
+    const mimeMatch = result.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,/);
     referenceMime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
     referenceUrl = result;
     referenceImage = result.split(',')[1];
     analysisData = null;
     generatedPrompts = [];
     generatedImages = {};
+    generatingIds.clear();
 
-    // Show studio
     document.getElementById('landingView').style.display = 'none';
     document.getElementById('studioView').style.display = 'block';
     document.getElementById('refImg').src = referenceUrl;
@@ -731,6 +770,8 @@ function handleImageUpload(e) {
     document.getElementById('noAnalysisRight').style.display = 'flex';
     document.getElementById('sequenceSection').style.display = 'none';
     document.getElementById('storyboardArea').style.display = 'none';
+    document.getElementById('generatingState').style.display = 'none';
+    hideAlert();
   };
   reader.readAsDataURL(file);
 }
@@ -752,32 +793,42 @@ function setAR(ar) {
   document.querySelectorAll('.fmt-btn').forEach(b => {
     b.className = 'fmt-btn ' + (b.dataset.ar === ar ? 'active' : 'inactive');
   });
+  if (generatedPrompts.length > 0) renderStoryboard();
 }
 
 // ==================== VERTEX CALLS ====================
-async function callVertexText(model, contents, config) {
-  const endpoint = `https://aiplatform.googleapis.com/v1/publishers/google/models/${model}:generateContent`;
-  const body = { contents, generationConfig: config || {} };
+async function callVertexText(model, contents, config = {}) {
+  const endpoint = `https://aiplatform.googleapis.com/v1/publishers/google/models/${model}:generateContent?key=${encodeURIComponent(API_KEY)}`;
+  const body = {
+    contents,
+    generationConfig: config
+  };
+
   const res = await fetch(endpoint, {
-    method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API_KEY}` }, body: JSON.stringify(body)
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
   });
+
   if (!res.ok) {
     const txt = await res.text();
-    let d; try { d = JSON.parse(txt); } catch(e) {}
+    let d;
+    try { d = JSON.parse(txt); } catch(e) {}
     const msg2 = d?.error?.message || txt;
-    if(res.status===400){throw new Error(`ERREUR 400 : ${msg2} — Activez la Vertex AI API sur console.cloud.google.com/apis/library`);}
-    if(res.status===401){throw new Error(`ERREUR 401 : Clé non reconnue — Créez une clé sur console.cloud.google.com/apis/credentials`);}
-    if(res.status===403){throw new Error(`ERREUR 403 : Accès refusé — Activez la Vertex AI API et vérifiez les restrictions de votre clé`);}
-    if(res.status===404){throw new Error(`ERREUR 404 : Modèle non trouvé — Activez la Vertex AI API sur votre projet`);}
-    if(res.status===429){throw new Error(`ERREUR 429 : Quota dépassé — Attendez 1-2 minutes et réessayez`);}
+    if (res.status === 400) throw new Error(`ERREUR 400 : ${msg2}`);
+    if (res.status === 401) throw new Error(`ERREUR 401 : Clé non reconnue`);
+    if (res.status === 403) throw new Error(`ERREUR 403 : Accès refusé`);
+    if (res.status === 404) throw new Error(`ERREUR 404 : Modèle non trouvé`);
+    if (res.status === 429) throw new Error(`ERREUR 429 : Quota dépassé`);
     throw new Error(`Erreur ${res.status}: ${msg2}`);
   }
+
   const data = await res.json();
   return data.candidates?.[0]?.content?.parts?.find(p => p.text)?.text || '';
 }
 
 async function callVertexImage(parts) {
-  const endpoint = `https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-3.1-flash-image-preview:generateContent`;
+  const endpoint = `https://aiplatform.googleapis.com/v1/publishers/google/models/${MODEL_IMAGE}:generateContent?key=${encodeURIComponent(API_KEY)}`;
   const body = {
     contents: [{ role: 'user', parts }],
     generationConfig: {
@@ -785,30 +836,67 @@ async function callVertexImage(parts) {
       imageConfig: { aspectRatio, imageSize: '4K' }
     }
   };
-  const res = await fetch(endpoint, {
-    method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API_KEY}` }, body: JSON.stringify(body)
-  });
-  if (!res.ok) {
-    const txt = await res.text();
-    let d; try { d = JSON.parse(txt); } catch(e) {}
-    const msg2 = d?.error?.message || txt;
-    if(res.status===400){throw new Error(`ERREUR 400 : ${msg2} — Activez la Vertex AI API sur console.cloud.google.com/apis/library`);}
-    if(res.status===401){throw new Error(`ERREUR 401 : Clé non reconnue — Créez une clé sur console.cloud.google.com/apis/credentials`);}
-    if(res.status===403){throw new Error(`ERREUR 403 : Accès refusé — Activez la Vertex AI API et vérifiez les restrictions de votre clé`);}
-    if(res.status===404){throw new Error(`ERREUR 404 : Modèle non trouvé — Activez la Vertex AI API sur votre projet`);}
-    if(res.status===429){throw new Error(`ERREUR 429 : Quota dépassé — Attendez 1-2 minutes et réessayez`);}
-    throw new Error(`Erreur ${res.status}: ${msg2}`);
+
+  const waitTimes = [4000, 8000, 15000, 25000];
+  let lastErr;
+
+  for (let attempt = 0; attempt <= waitTimes.length; attempt++) {
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+      if (!res.ok) {
+        const txt = await res.text();
+        let d;
+        try { d = JSON.parse(txt); } catch(e) {}
+        const msg2 = d?.error?.message || txt;
+        if (res.status === 400) throw new Error(`ERREUR 400 : ${msg2}`);
+        if (res.status === 401) throw new Error(`ERREUR 401 : Clé non reconnue`);
+        if (res.status === 403) throw new Error(`ERREUR 403 : Accès refusé`);
+        if (res.status === 404) throw new Error(`ERREUR 404 : Modèle non trouvé`);
+        if (res.status === 429) throw new Error(`ERREUR 429 : Quota dépassé`);
+        throw new Error(`Erreur ${res.status}: ${msg2}`);
+      }
+
+      const data = await res.json();
+      const responseParts = data.candidates?.[0]?.content?.parts || [];
+      for (const part of responseParts) {
+        if (part.inlineData?.data) {
+          return `data:image/png;base64,${part.inlineData.data}`;
+        }
+      }
+
+      throw new Error("La continuité temporelle a été brisée par le moteur de rendu.");
+    } catch (err) {
+      lastErr = err;
+      const msg = String(err.message || '').toLowerCase();
+      const retryable =
+        msg.includes('429') ||
+        msg.includes('503') ||
+        msg.includes('502') ||
+        msg.includes('504') ||
+        msg.includes('resource_exhausted') ||
+        msg.includes('overloaded');
+
+      if (retryable && attempt < waitTimes.length) {
+        await sleep(waitTimes[attempt]);
+        continue;
+      }
+
+      throw err;
+    }
   }
-  const data = await res.json();
-  for (const part of (data.candidates?.[0]?.content?.parts || [])) {
-    if (part.inlineData?.data) return `data:image/png;base64,${part.inlineData.data}`;
-  }
-  throw new Error("La continuité temporelle a été brisée par le moteur de rendu.");
+
+  throw lastErr || new Error("Erreur image.");
 }
 
 // ==================== ANALYZE ====================
 async function handleAnalyze() {
   if (!referenceImage) return;
+
   const btn = document.getElementById('analyzeBtn');
   btn.disabled = true;
   btn.innerHTML = `<svg class="spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> ANALYSE EN COURS...`;
@@ -841,7 +929,9 @@ Répondez EXCLUSIVEMENT en JSON valide avec cette structure :
 }`;
 
   try {
-    const text = await callVertexText(MODEL_ANALYSIS, [{ role: 'user', parts: [
+    const text = await callVertexText(MODEL_ANALYSIS, [{
+      role: 'user',
+      parts: [
         { inlineData: { mimeType: referenceMime, data: referenceImage } },
         { text: prompt }
       ]
@@ -849,22 +939,21 @@ Répondez EXCLUSIVEMENT en JSON valide avec cette structure :
 
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error("Réponse JSON invalide de l'analyse.");
+
     analysisData = JSON.parse(jsonMatch[0]);
 
-    // Show analysis result
     document.getElementById('analyzeSection').style.display = 'none';
     document.getElementById('analysisResult').style.display = 'flex';
     document.getElementById('analysisInfoText').innerHTML = `
-      <strong>Lieu :</strong> ${analysisData.environnement?.lieu || 'Non détecté'}<br>
-      <strong>Acteurs :</strong> ${(analysisData.personnage?.objets_tenus || []).map(o => o.objet).join(', ') || 'Aucun objet'}
+      <strong>Lieu :</strong> ${escapeHtml(analysisData.environnement?.lieu || 'Non détecté')}<br>
+      <strong>Acteurs :</strong> ${escapeHtml((analysisData.personnage?.objets_tenus || []).map(o => o.objet).join(', ') || 'Aucun objet')}
     `;
 
-    // Show sequence section
     document.getElementById('noAnalysisRight').style.display = 'none';
     document.getElementById('sequenceSection').style.display = 'block';
 
     showSuccess('Analyse temporelle terminée. Séquence prête.');
-  } catch(err) {
+  } catch (err) {
     showAlert('error', "L'émanation de l'image a échoué : " + err.message);
     btn.disabled = false;
     btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> VERROUILLER L'ADN VISUEL`;
@@ -873,7 +962,11 @@ Répondez EXCLUSIVEMENT en JSON valide avec cette structure :
 
 // ==================== GENERATE SEQUENCE ====================
 async function handleGenerateSequence() {
-  if (!analysisData) { showAlert('error', "Veuillez d'abord analyser l'image source."); return; }
+  if (!analysisData) {
+    showAlert('error', "Veuillez d'abord analyser l'image source.");
+    return;
+  }
+
   const btn = document.getElementById('genSeqBtn');
   btn.disabled = true;
   btn.className = 'gen-seq-btn loading';
@@ -884,7 +977,7 @@ async function handleGenerateSequence() {
   generatedImages = {};
   hideAlert();
 
-  const action = isAutoMode ? null : document.getElementById('actionInput').value;
+  const action = isAutoMode ? null : document.getElementById('actionInput').value.trim();
 
   const prompt = `ARC NARRATIF CINÉMATOGRAPHIQUE STRICT.
 ACTION PRINCIPALE : ${action || "Une séquence narrative complète commençant par l'image source"}.
@@ -895,7 +988,7 @@ CONTEXTE SOURCE (POINT ZÉRO) :
 - Position initiale : ${analysisData.personnage?.posture}
 
 CONSIGNES DE NARRATION IMPÉRATIVES :
-1. Décomposez l'action en 5 étapes clés (beats) distinctes.
+1. Décomposez l'action en 5 étapes clés distinctes.
 2. LA PREMIÈRE ÉTAPE DOIT ÊTRE DIFFÉRENTE DE L'IMAGE SOURCE : le mouvement doit avoir déjà commencé.
 3. PROGRESSION LINÉAIRE : Chaque étape est la suite logique de la précédente.
 4. INTERDICTION D'AJOUTER DES OBJETS : N'utilisez que ce qui est visible dans l'image source.
@@ -904,9 +997,14 @@ CONSIGNES DE NARRATION IMPÉRATIVES :
 Répondez EXCLUSIVEMENT en JSON : {"scenes": ["scène 1", "scène 2", "scène 3", "scène 4", "scène 5"]}`;
 
   try {
-    const text = await callVertexText(MODEL_ANALYSIS, [{ role: 'user', parts: [{ text: prompt }] }], { temperature: 0.7 });
+    const text = await callVertexText(MODEL_ANALYSIS, [{
+      role: 'user',
+      parts: [{ text: prompt }]
+    }], { temperature: 0.7 });
+
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error("L'IA n'a pas pu générer de scènes.");
+
     const data = JSON.parse(jsonMatch[0]);
     const scenes = data.scenes || [];
     if (!scenes.length) throw new Error("L'IA n'a pas pu générer de scènes pour ce storyboard.");
@@ -918,7 +1016,7 @@ Répondez EXCLUSIVEMENT en JSON : {"scenes": ["scène 1", "scène 2", "scène 3"
     document.getElementById('storyboardArea').style.display = 'block';
     renderStoryboard();
     showSuccess('Storyboard généré avec succès.');
-  } catch(err) {
+  } catch (err) {
     showAlert('error', "Impossible de générer le storyboard : " + err.message);
     document.getElementById('generatingState').style.display = 'none';
   } finally {
@@ -936,17 +1034,19 @@ function getARClass() {
 function renderStoryboard() {
   const grid = document.getElementById('storyGrid');
   const arClass = getARClass();
+
   grid.innerHTML = generatedPrompts.map((p, i) => {
     const img = generatedImages[p.id];
     const loading = generatingIds.has(p.id);
+
     return `<div class="story-card" id="card-${p.id}">
       <div class="story-img-wrap ${arClass}" id="imgwrap-${p.id}">
         ${img ? `
-          <img src="${img}" alt="Instant ${i+1}">
-          <button class="story-dl-btn" onclick="downloadImg('${img}','studio_scene_moment_${i+1}.png')">
+          <img src="${img}" alt="Instant ${i + 1}">
+          <button class="story-dl-btn" onclick="downloadImg('${img}','studio_scene_moment_${i + 1}.png')">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
-          <div class="story-prise">Prise 0${i+1}</div>
+          <div class="story-prise">Prise 0${i + 1}</div>
         ` : loading ? `
           <button class="story-gen-btn" disabled>
             <div class="gen-loading">
@@ -955,7 +1055,7 @@ function renderStoryboard() {
             </div>
           </button>
         ` : `
-          <button class="story-gen-btn" onclick="renderPlan('${p.id}','${escapeStr(p.scene)}')">
+          <button class="story-gen-btn" onclick="renderPlan('${p.id}','${encodeScene(p.scene)}')">
             <div class="gen-circle">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
             </div>
@@ -964,20 +1064,19 @@ function renderStoryboard() {
         `}
       </div>
       <div class="story-footer">
-        <p class="story-quote">"${p.scene}"</p>
+        <p class="story-quote">"${escapeHtml(p.scene)}"</p>
       </div>
     </div>`;
   }).join('');
 
-  // Update export btn visibility
   document.getElementById('exportBtn').style.display = Object.keys(generatedImages).length > 0 ? 'flex' : 'none';
 }
 
-function escapeStr(s) { return s.replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
-
 // ==================== RENDER IMAGE ====================
-async function renderPlan(id, scene) {
+async function renderPlan(id, encodedScene) {
   if (!referenceImage || !analysisData) return;
+
+  const scene = decodeScene(encodedScene);
   generatingIds.add(id);
   renderStoryboard();
   hideAlert();
@@ -987,7 +1086,7 @@ SOURCE FRAME : Utilisez l'image fournie comme référence spatiale et d'identit�
 DÉCOR : ${analysisData.environnement?.lieu}. Conservez chaque détail, texture et position des meubles. AUCUN AJOUT.
 PERSONNAGE : ${analysisData.personnage?.apparence}. Même visage, même morphologie, même tenue (${analysisData.personnage?.vetements?.haut}, ${analysisData.personnage?.vetements?.bas}).
 ÉTAPE NARRATIVE ACTUELLE : ${scene}.
-PROGRESSION OBLIGATOIRE : Cette image doit montrer une action DIFFÉRENTE de l'image source.
+PROGRESSION OBLIGATOIRE : Cette image doit montrer une action différente de l'image source.
 STYLE : Cinématographique, haute fidélité, rendu photoréaliste.
 CONTRAINTE CRITIQUE : Zéro invention d'objets ou de personnes.
 AMBIANCE : Lumière ${analysisData.lumiere?.type} venant de ${analysisData.lumiere?.direction}.`;
@@ -999,23 +1098,8 @@ AMBIANCE : Lumière ${analysisData.lumiere?.type} venant de ${analysisData.lumie
     ]);
     generatedImages[id] = url;
     document.getElementById('exportBtn').style.display = 'flex';
-  } catch(err) {
-    // retry once on 503
-    if (err.message.includes('503') || err.message.toLowerCase().includes('overloaded')) {
-      try {
-        await new Promise(r => setTimeout(r, 3000));
-        const url = await callVertexImage([
-          { inlineData: { data: referenceImage, mimeType: referenceMime } },
-          { text: instruction }
-        ]);
-        generatedImages[id] = url;
-        document.getElementById('exportBtn').style.display = 'flex';
-      } catch(err2) {
-        showAlert('error', `Erreur de rendu : ${err2.message}`);
-      }
-    } else {
-      showAlert('error', `Erreur de rendu pour ce moment : ${err.message}`);
-    }
+  } catch (err) {
+    showAlert('error', `Erreur de rendu pour ce moment : ${err.message}`);
   } finally {
     generatingIds.delete(id);
     renderStoryboard();
@@ -1025,13 +1109,16 @@ AMBIANCE : Lumière ${analysisData.lumiere?.type} venant de ${analysisData.lumie
 // ==================== DOWNLOAD ====================
 function downloadImg(url, name) {
   const a = document.createElement('a');
-  a.href = url; a.download = name;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 }
 
 function exportAll() {
-  Object.entries(generatedImages).forEach(([id, url], i) => {
-    setTimeout(() => downloadImg(url, `studio_scene_moment_${i+1}.png`), i * 400);
+  Object.values(generatedImages).forEach((url, i) => {
+    setTimeout(() => downloadImg(url, `studio_scene_moment_${i + 1}.png`), i * 400);
   });
 }
 </script>
