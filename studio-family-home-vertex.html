@@ -268,12 +268,12 @@ textarea.s-textarea:focus{border-color:var(--accent)}
           </select>
         </div>
 
-        <div class="uploader" id="roomImgUploader" style="margin-top:12px;min-height:80px">
+        <label class="uploader" id="roomImgUploader" style="margin-top:12px;min-height:100px;cursor:pointer;display:flex">
           <div class="uploader-icon">🏠</div>
           <div class="uploader-label" id="roomImgLabel">Photo de la pièce *</div>
-          <input type="file" accept="image/*" onchange="handleUpload(event,'roomImg')">
-          <div class="uploader-overlay"><button class="remove-img-btn" onclick="removeImg(event,'roomImg')">✕</button></div>
-        </div>
+          <input type="file" accept="image/*" id="roomImgInput" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%">
+          <div class="uploader-overlay"><button type="button" class="remove-img-btn" id="roomImgRemoveBtn">✕</button></div>
+        </label>
       </div>
 
       <div class="s-card">
@@ -661,97 +661,174 @@ function showSetup() {
 function renderSetup() {
   const grid = document.getElementById('setupGrid');
   const isSolo = state.appMode === 'SOLO';
+  grid.innerHTML = '';
 
-  let html = `
-    <div class="setup-card">
-      <h3>👤 Avatar Principal (DNA) *</h3>
-      ${uploaderHTML('setupMainAvatar', state.mainAvatar, 'Photo de référence visage *')}
-    </div>`;
+  // CARD 1 — Avatar principal
+  const card1 = makeCard('👤 Avatar Principal (DNA) *');
+  card1.appendChild(makeUploader('setupMainAvatar', state.mainAvatar, 'Photo de référence visage *', 'mainAvatar'));
+  grid.appendChild(card1);
+
+  // CARD 2 — Bébé (tous modes)
+  const cardBebe = makeCard('🍼 Bébé');
+  cardBebe.appendChild(makeToggleRow('Bébé présent dans les scènes', state.isBabyPresent, 'toggleBaby()'));
+  if (state.isBabyPresent) {
+    const ageDiv = document.createElement('div');
+    ageDiv.style.marginTop = '10px';
+    const lbl = document.createElement('label');
+    lbl.className = 'toggle-label';
+    lbl.style.display = 'block';
+    lbl.style.marginBottom = '6px';
+    lbl.textContent = 'Âge du bébé (mois)';
+    const inp = document.createElement('input');
+    inp.type = 'number';
+    inp.min = '0';
+    inp.max = '36';
+    inp.value = state.babyAgeInMonths;
+    inp.style.cssText = 'width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:10px;color:white;font-size:13px;outline:none';
+    inp.addEventListener('change', function() { state.babyAgeInMonths = parseInt(this.value) || 0; });
+    const note = document.createElement('p');
+    note.style.cssText = 'font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;margin-top:6px;color:' + (state.babyAgeInMonths >= 6 ? '#4ade80' : '#fb923c');
+    note.textContent = state.babyAgeInMonths >= 6 ? '✅ ≥6 mois : chaise haute activée' : 'ℹ️ <6 mois : dans les bras uniquement';
+    ageDiv.appendChild(lbl);
+    ageDiv.appendChild(inp);
+    ageDiv.appendChild(note);
+    cardBebe.appendChild(ageDiv);
+  }
+  grid.appendChild(cardBebe);
 
   if (!isSolo) {
-    html += `
-      <div class="setup-card">
-        <h3>💑 Conjoint</h3>
-        <div class="toggle-row" style="margin-bottom:12px">
-          <span class="toggle-label">Activer conjoint</span>
-          <div class="toggle-sw ${state.partner !== '' ? 'on' : ''}" onclick="togglePartner()"><div class="toggle-sw-thumb"></div></div>
-        </div>
-        ${state.partner !== '' ? uploaderHTML('setupPartner', state.partner, 'Photo conjoint') : ''}
-      </div>
-      <div class="setup-card">
-        <h3>👶 Enfants (${state.childCount})</h3>
-        <div class="participant-controls">
-          <span class="participant-label">Nombre d'enfants</span>
-          <button class="cnt-btn" onclick="addChild(-1)">-</button>
-          <span style="font-size:14px;font-weight:700;min-width:20px;text-align:center">${state.childCount}</span>
-          <button class="cnt-btn" onclick="addChild(1)">+</button>
-        </div>
-        <div class="upload-slots">
-          ${state.children.map((c,i) => uploaderHTML(`setupChild${i}`, c, `Enfant ${i+1}`)).join('')}
-        </div>
-        <div class="toggle-row" style="margin-top:12px">
-          <span class="toggle-label">🍼 Bébé présent</span>
-          <div class="toggle-sw ${state.isBabyPresent ? 'on' : ''}" onclick="toggleBaby()"><div class="toggle-sw-thumb"></div></div>
-        </div>
-        ${state.isBabyPresent ? `<div style="margin-top:8px"><label class="toggle-label">Âge bébé (mois)</label><input type="number" min="0" max="36" value="${state.babyAgeInMonths}" onchange="state.babyAgeInMonths=parseInt(this.value)||0" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:10px;padding:10px;color:white;font-size:13px;outline:none;margin-top:6px"></div>` : ''}
-      </div>
-      <div class="setup-card">
-        <h3>👥 Invités (${state.guestCount})</h3>
-        <div class="participant-controls">
-          <span class="participant-label">Nombre d'invités</span>
-          <button class="cnt-btn" onclick="addGuest(-1)">-</button>
-          <span style="font-size:14px;font-weight:700;min-width:20px;text-align:center">${state.guestCount}</span>
-          <button class="cnt-btn" onclick="addGuest(1)">+</button>
-        </div>
-        <div class="upload-slots">
-          ${state.guests.map((g,i) => uploaderHTML(`setupGuest${i}`, g, `Invité ${i+1}`)).join('')}
-        </div>
-      </div>`;
+    // CARD 3 — Conjoint
+    const cardConjoint = makeCard('💑 Conjoint');
+    cardConjoint.appendChild(makeToggleRow('Activer le conjoint', state.partner !== '', 'togglePartner()'));
+    if (state.partner !== '') {
+      cardConjoint.appendChild(makeUploader('setupPartner', state.partner === 'pending' ? '' : state.partner, 'Photo conjoint', 'partner'));
+    }
+    grid.appendChild(cardConjoint);
+
+    // CARD 4 — Enfants
+    const cardEnfants = makeCard('👶 Enfants');
+    const ctrlEnfants = makePlusMinusRow('Enfants', state.childCount, 'addChild(-1)', 'addChild(1)');
+    cardEnfants.appendChild(ctrlEnfants);
+    if (state.childCount > 0) {
+      const slots = document.createElement('div');
+      slots.className = 'upload-slots';
+      for (let i = 0; i < state.children.length; i++) {
+        slots.appendChild(makeUploader('setupChild' + i, state.children[i], 'Enfant ' + (i+1), 'child', i));
+      }
+      cardEnfants.appendChild(slots);
+    }
+    grid.appendChild(cardEnfants);
+
+    // CARD 5 — Invités
+    const cardInvites = makeCard('👥 Invités');
+    const ctrlInvites = makePlusMinusRow('Invités', state.guestCount, 'addGuest(-1)', 'addGuest(1)');
+    cardInvites.appendChild(ctrlInvites);
+    if (state.guestCount > 0) {
+      const slots2 = document.createElement('div');
+      slots2.className = 'upload-slots';
+      for (let i = 0; i < state.guests.length; i++) {
+        slots2.appendChild(makeUploader('setupGuest' + i, state.guests[i], 'Invité ' + (i+1), 'guest', i));
+      }
+      cardInvites.appendChild(slots2);
+    }
+    grid.appendChild(cardInvites);
   }
-
-  grid.innerHTML = html;
-
-  // Bind file inputs
-  bindSetupUploader('setupMainAvatar', 'mainAvatar');
-  if (!isSolo && state.partner !== '') bindSetupUploader('setupPartner', 'partner');
-  state.children.forEach((_,i) => bindSetupUploader(`setupChild${i}`, 'child', i));
-  state.guests.forEach((_,i) => bindSetupUploader(`setupGuest${i}`, 'guest', i));
 }
 
-function uploaderHTML(id, value, label) {
+function makeCard(title) {
+  const card = document.createElement('div');
+  card.className = 'setup-card';
+  const h3 = document.createElement('h3');
+  h3.textContent = title;
+  card.appendChild(h3);
+  return card;
+}
+
+function makeToggleRow(label, isOn, onclickStr) {
+  const row = document.createElement('div');
+  row.className = 'toggle-row';
+  const lbl = document.createElement('span');
+  lbl.className = 'toggle-label';
+  lbl.textContent = label;
+  const sw = document.createElement('div');
+  sw.className = 'toggle-sw' + (isOn ? ' on' : '');
+  sw.setAttribute('onclick', onclickStr);
+  const thumb = document.createElement('div');
+  thumb.className = 'toggle-sw-thumb';
+  sw.appendChild(thumb);
+  row.appendChild(lbl);
+  row.appendChild(sw);
+  return row;
+}
+
+function makePlusMinusRow(label, count, onMinus, onPlus) {
+  const row = document.createElement('div');
+  row.className = 'participant-controls';
+  row.innerHTML = '<span class="participant-label">' + label + '</span>'
+    + '<button class="cnt-btn" onclick="' + onMinus + '">−</button>'
+    + '<span style="font-size:14px;font-weight:700;min-width:20px;text-align:center">' + count + '</span>'
+    + '<button class="cnt-btn" onclick="' + onPlus + '">+</button>';
+  return row;
+}
+
+function makeUploader(id, value, label, stateKey, idx) {
+  const div = document.createElement('div');
+  div.id = id;
+  div.className = 'uploader' + (value ? ' has-img' : '');
+  div.style.minHeight = '100px';
+
   if (value) {
-    return `<div class="uploader has-img" id="${id}" style="min-height:100px">
-      <img src="${value}">
-      <div class="uploader-overlay"><button class="remove-img-btn" onclick="removeSetupImg(event,'${id}')">✕</button></div>
-    </div>`;
+    const img = document.createElement('img');
+    img.src = value;
+    img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover';
+    div.appendChild(img);
+    const overlay = document.createElement('div');
+    overlay.className = 'uploader-overlay';
+    const btn = document.createElement('button');
+    btn.className = 'remove-img-btn';
+    btn.textContent = '✕';
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      removeSetupState(stateKey, idx);
+    });
+    overlay.appendChild(btn);
+    div.appendChild(overlay);
+  } else {
+    const icon = document.createElement('div');
+    icon.className = 'uploader-icon';
+    icon.textContent = '📸';
+    const lbl = document.createElement('div');
+    lbl.className = 'uploader-label';
+    lbl.textContent = label;
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onloadend = function() {
+        if (stateKey === 'mainAvatar') state.mainAvatar = reader.result;
+        else if (stateKey === 'partner') state.partner = reader.result;
+        else if (stateKey === 'child') state.children[idx] = reader.result;
+        else if (stateKey === 'guest') state.guests[idx] = reader.result;
+        renderSetup();
+      };
+      reader.readAsDataURL(file);
+    });
+    div.appendChild(icon);
+    div.appendChild(lbl);
+    div.appendChild(input);
   }
-  return `<div class="uploader" id="${id}" style="min-height:100px">
-    <div class="uploader-icon">📸</div>
-    <div class="uploader-label">${label}</div>
-    <input type="file" accept="image/*" onchange="handleSetupUpload(event,'${id}')">
-  </div>`;
+  return div;
 }
 
-function bindSetupUploader(id, key, idx) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  const input = el.querySelector('input[type=file]');
-  if (!input) return;
-  input.addEventListener('change', (e) => handleSetupUpload(e, id, key, idx));
-}
-
-function handleSetupUpload(e, id, key, idx) {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onloadend = () => {
-    if (key === 'mainAvatar') state.mainAvatar = reader.result;
-    else if (key === 'partner') state.partner = reader.result;
-    else if (key === 'child') state.children[idx] = reader.result;
-    else if (key === 'guest') state.guests[idx] = reader.result;
-    renderSetup();
-  };
-  reader.readAsDataURL(file);
+function removeSetupState(key, idx) {
+  if (key === 'mainAvatar') state.mainAvatar = '';
+  else if (key === 'partner') state.partner = '';
+  else if (key === 'child') state.children[idx] = '';
+  else if (key === 'guest') state.guests[idx] = '';
+  renderSetup();
 }
 
 function removeSetupImg(e, id) {
@@ -799,6 +876,52 @@ function showApp() {
   document.getElementById('splash').style.display = 'none';
   document.getElementById('app').classList.add('visible');
   initRoomGrid();
+  // Bind room img input
+  const roomInput = document.getElementById('roomImgInput');
+  if (roomInput) {
+    roomInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onloadend = function() {
+        state.roomImg = reader.result;
+        const uploader = document.getElementById('roomImgUploader');
+        // Remove old preview
+        const oldPrev = uploader.querySelector('img.room-preview');
+        if (oldPrev) oldPrev.remove();
+        // Add new preview
+        const img = document.createElement('img');
+        img.className = 'room-preview';
+        img.src = reader.result;
+        img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:14px;z-index:1';
+        uploader.prepend(img);
+        uploader.classList.add('has-img');
+        // Hide icon/label
+        const icon = uploader.querySelector('.uploader-icon');
+        const lbl = uploader.querySelector('.uploader-label');
+        if (icon) icon.style.display = 'none';
+        if (lbl) lbl.style.display = 'none';
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+  const roomRemoveBtn = document.getElementById('roomImgRemoveBtn');
+  if (roomRemoveBtn) {
+    roomRemoveBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      state.roomImg = '';
+      const uploader = document.getElementById('roomImgUploader');
+      const prev = uploader.querySelector('img.room-preview');
+      if (prev) prev.remove();
+      uploader.classList.remove('has-img');
+      const icon = uploader.querySelector('.uploader-icon');
+      const lbl = uploader.querySelector('.uploader-label');
+      if (icon) icon.style.display = '';
+      if (lbl) lbl.style.display = '';
+      document.getElementById('roomImgInput').value = '';
+    });
+  }
 }
 
 // ==================== ROOM GRID ====================
