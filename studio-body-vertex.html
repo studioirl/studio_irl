@@ -3,1085 +3,1385 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Studio Body — 4K Ultra Realistic</title>
+<title>Studio Family Home — Vertex AI</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-:root {
-  --blue: #2563eb; --blue-light: #eff6ff; --blue-border: #bfdbfe;
-  --slate-50: #f8fafc; --slate-100: #f1f5f9; --slate-200: #e2e8f0;
-  --slate-400: #94a3b8; --slate-500: #64748b; --slate-600: #475569;
-  --slate-700: #334155; --slate-800: #1e293b; --slate-900: #0f172a;
-  --white: #ffffff; --red: #ef4444;
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#050505;
+  --bg2:#0d0d0d;
+  --glass:rgba(255,255,255,0.04);
+  --border:rgba(255,255,255,0.08);
+  --border2:rgba(255,255,255,0.12);
+  --text:#fff;
+  --text2:rgba(255,255,255,0.65);
+  --text3:rgba(255,255,255,0.35);
+  --accent:#C97A63;
+  --accent2:#a0522d;
+  --indigo:#6366f1;
+  --purple:#a855f7;
+  --red:#ef4444;
+  --green:#22c55e;
 }
-html { font-family: 'Inter', sans-serif; background: var(--slate-50); color: var(--slate-900); }
-body { min-height: 100vh; overflow-x: hidden; }
+html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow-x:hidden}
+body{background:radial-gradient(ellipse at top right,#1a0a00 0%,var(--bg) 60%)}
 
-/* SCROLLBAR */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: var(--slate-100); }
-::-webkit-scrollbar-thumb { background: var(--slate-300); border-radius: 3px; }
+/* SPLASH */
+#splash{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center;position:relative}
+.splash-bg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.04}
+.splash-bg img{width:100%;height:100%;object-fit:cover;filter:grayscale(1) blur(2px)}
+.splash-content{position:relative;z-index:10;max-width:520px;width:100%}
+.splash-logo{font-family:'Syne',sans-serif;font-size:clamp(48px,10vw,80px);font-weight:800;text-transform:uppercase;letter-spacing:-0.03em;line-height:0.9;margin-bottom:8px;color:var(--accent)}
+.splash-sub{font-size:12px;font-weight:300;color:var(--text3);letter-spacing:0.4em;text-transform:uppercase;margin-bottom:48px}
+.api-box{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:24px;padding:28px;margin-bottom:24px}
+.api-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.3em;color:var(--text3);margin-bottom:10px;text-align:left;display:block}
+.api-input{width:100%;background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:12px;padding:14px 16px;font-size:13px;font-family:monospace;color:var(--text);outline:none;transition:border-color 0.2s}
+.api-input::placeholder{color:rgba(255,255,255,0.15)}
+.api-input:focus{border-color:var(--accent)}
 
-/* RANGE INPUTS */
-input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; background: var(--slate-100); border-radius: 999px; cursor: pointer; }
-input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; background: var(--blue); border-radius: 50%; cursor: pointer; }
+/* MODE SELECTION */
+.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+.mode-card{position:relative;overflow:hidden;border-radius:24px;border:1px solid var(--border2);cursor:pointer;transition:all 0.3s;aspect-ratio:3/4}
+.mode-card:hover{border-color:var(--accent);transform:scale(1.02)}
+.mode-card img{width:100%;height:100%;object-fit:cover;filter:grayscale(0.5);transition:filter 0.5s}
+.mode-card:hover img{filter:grayscale(0)}
+.mode-card-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.85),rgba(0,0,0,0.2));display:flex;flex-direction:column;justify-content:flex-end;padding:24px}
+.mode-card h2{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;text-transform:uppercase;margin-bottom:12px}
+.mode-card-btn{padding:12px;background:var(--accent);border:none;border-radius:12px;color:white;font-family:'Syne',sans-serif;font-weight:700;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;cursor:pointer;width:100%}
 
-/* === SPLASH === */
-#splash {
-  min-height: 100vh; background: var(--slate-50);
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center; padding: 24px;
-}
-.splash-title { font-size: clamp(32px, 6vw, 48px); font-weight: 300; color: var(--slate-800); letter-spacing: -0.02em; text-align: center; margin-bottom: 16px; }
-.splash-title span { color: var(--blue); font-weight: 500; }
-.splash-desc { color: var(--slate-500); font-size: 18px; max-width: 560px; text-align: center; line-height: 1.7; margin-bottom: 48px; }
-.api-section { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 400px; margin-bottom: 32px; }
-.api-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em; color: var(--slate-400); }
-.api-input { width: 100%; background: white; border: 1px solid var(--slate-200); border-radius: 12px; padding: 14px 16px; font-size: 14px; font-family: monospace; outline: none; transition: all 0.2s; }
-.api-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
-.vertex-note { font-size: 11px; color: var(--blue); font-weight: 600; }
-.splash-cta { padding: 16px 48px; background: var(--blue); color: white; border: none; border-radius: 16px; font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 24px rgba(37,99,235,0.3); }
-.splash-cta:hover { background: #1d4ed8; transform: translateY(-1px); }
-.splash-cta:active { transform: scale(0.97); }
-#splash-error { color: var(--red); font-size: 12px; font-weight: 600; margin-top: 8px; display: none; }
+/* SETUP */
+#setup{display:none;min-height:100vh;padding:24px;background:var(--bg)}
+.setup-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;max-width:900px;margin-left:auto;margin-right:auto}
+.back-btn{background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:12px;padding:10px 20px;color:var(--text);cursor:pointer;font-size:13px;font-family:'DM Sans',sans-serif;transition:background 0.2s}
+.back-btn:hover{background:rgba(255,255,255,0.1)}
+.setup-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:0.3em;color:var(--accent)}
+.setup-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:900px;margin:0 auto}
+@media(max-width:640px){.setup-grid{grid-template-columns:1fr}}
+.setup-card{background:var(--glass);border:1px solid var(--border);border-radius:32px;padding:28px}
+.setup-card h3{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.3em;color:var(--accent);margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.validate-btn{display:block;width:100%;max-width:900px;margin:24px auto 0;padding:20px;background:var(--accent);border:none;border-radius:20px;color:white;font-family:'Syne',sans-serif;font-weight:800;font-size:14px;text-transform:uppercase;letter-spacing:0.3em;cursor:pointer;transition:all 0.2s}
+.validate-btn:hover{background:var(--accent2)}
+.validate-btn:disabled{opacity:0.3;cursor:not-allowed}
+/* Participant controls */
+.participant-controls{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.participant-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.2em;color:var(--text3);flex:1}
+.cnt-btn{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid var(--border);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:background 0.2s}
+.cnt-btn:hover{background:rgba(255,255,255,0.15)}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.toggle-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.2em;color:var(--text3)}
+.toggle-sw{width:40px;height:22px;border-radius:11px;background:rgba(255,255,255,0.1);position:relative;cursor:pointer;transition:background 0.3s;flex-shrink:0}
+.toggle-sw.on{background:var(--accent)}
+.toggle-sw-thumb{position:absolute;top:3px;left:3px;width:16px;height:16px;background:white;border-radius:50%;transition:transform 0.3s;box-shadow:0 1px 4px rgba(0,0,0,0.3)}
+.toggle-sw.on .toggle-sw-thumb{transform:translateX(18px)}
+.upload-slots{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
 
-/* === GENDER SELECTION === */
-#genderSelect { min-height: 100vh; background: var(--slate-50); display: none; flex-direction: column; align-items: center; justify-content: center; padding: 24px; }
-#genderSelect.visible { display: flex; }
-.gender-title { font-size: clamp(28px, 5vw, 40px); font-weight: 300; color: var(--slate-800); text-align: center; margin-bottom: 8px; }
-.gender-title span { color: var(--blue); font-weight: 500; }
-.gender-desc { color: var(--slate-500); font-size: 18px; text-align: center; margin-bottom: 48px; max-width: 500px; line-height: 1.6; }
-.gender-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; max-width: 800px; width: 100%; }
-@media(max-width:640px){ .gender-grid { grid-template-columns: 1fr; } }
-.gender-card { position: relative; overflow: hidden; background: white; border-radius: 24px; box-shadow: 0 8px 40px rgba(0,0,0,0.1); cursor: pointer; transition: all 0.5s; }
-.gender-card:hover { transform: translateY(-8px); box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
-.gender-card-img { aspect-ratio: 3/4; overflow: hidden; }
-.gender-card-img img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(1); transition: all 0.7s; transform: scale(1.05); }
-.gender-card:hover .gender-card-img img { filter: grayscale(0); transform: scale(1.1); }
-.gender-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(15,23,42,0.8), transparent, transparent); opacity: 0.6; transition: opacity 0.3s; }
-.gender-card:hover .gender-overlay { opacity: 0.8; }
-.gender-info { position: absolute; bottom: 0; left: 0; right: 0; padding: 32px; color: white; text-align: left; }
-.gender-info h2 { font-size: 28px; font-weight: 700; margin-bottom: 6px; }
-.gender-info p { color: #bfdbfe; font-weight: 300; font-size: 14px; }
+/* UPLOADER */
+.uploader{border:2px dashed var(--border);border-radius:16px;min-height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;overflow:hidden;transition:border-color 0.2s;background:rgba(255,255,255,0.02)}
+.uploader:hover{border-color:var(--accent)}
+.uploader.has-img{border-style:solid;border-color:var(--border2)}
+.uploader img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+.uploader-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.2em;color:var(--text3);text-align:center;padding:8px;position:relative;z-index:1}
+.uploader-icon{font-size:20px;margin-bottom:4px;position:relative;z-index:1}
+.uploader input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+.uploader-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.2s;z-index:2}
+.uploader:hover .uploader-overlay{opacity:1}
+.remove-img-btn{background:var(--red);border:none;border-radius:50%;width:28px;height:28px;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px}
 
-/* === MAIN APP === */
-#mainApp { display: none; height: 100vh; overflow: hidden; }
-#mainApp.visible { display: flex; flex-direction: column; }
-.app-header { height: 64px; background: white; border-bottom: 1px solid var(--slate-200); display: flex; align-items: center; justify-between; padding: 0 24px; flex-shrink: 0; box-shadow: 0 1px 4px rgba(0,0,0,0.05); z-index: 40; }
-.app-brand { display: flex; align-items: center; gap: 12px; cursor: pointer; }
-.app-brand-title { font-size: 18px; font-weight: 300; color: var(--slate-800); }
-.app-brand-title span { color: var(--blue); font-weight: 600; }
-.app-brand-badge { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em; color: var(--slate-400); background: var(--slate-100); padding: 3px 10px; border-radius: 999px; }
-.header-right { display: flex; align-items: center; gap: 8px; }
-.gender-pill { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em; color: var(--blue); background: var(--blue-light); padding: 6px 14px; border-radius: 999px; border: 1px solid var(--blue-border); }
+/* APP */
+#app{display:none;min-height:100vh;flex-direction:column}
+#app.visible{display:flex}
+.app-nav{border-bottom:1px solid var(--border);background:rgba(0,0,0,0.6);backdrop-filter:blur(20px);position:sticky;top:0;z-index:50;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+.brand{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;text-transform:uppercase;letter-spacing:-0.02em;color:var(--accent);cursor:pointer}
+.nav-badges{display:flex;gap:8px;align-items:center}
+.energy-btn{padding:8px 16px;border-radius:999px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;cursor:pointer;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--text3);transition:all 0.2s}
+.energy-btn.active-calm{background:rgba(34,197,94,0.15);border-color:var(--green);color:var(--green)}
+.energy-btn.active-chaos{background:rgba(239,68,68,0.15);border-color:var(--red);color:var(--red)}
 
-.app-body { display: flex; flex: 1; overflow: hidden; }
+/* STUDIO LAYOUT */
+.studio-main{flex:1;max-width:1600px;margin:0 auto;width:100%;padding:16px;display:grid;grid-template-columns:320px 1fr 360px;gap:20px}
+@media(max-width:1300px){.studio-main{grid-template-columns:300px 1fr}}
+@media(max-width:900px){.studio-main{grid-template-columns:1fr}}
+.output-col{display:block}
+@media(max-width:1300px){.output-col{grid-column:1/-1}}
 
-/* === SIDEBAR === */
-aside { width: 400px; background: white; border-right: 1px solid var(--slate-200); height: 100%; overflow-y: auto; display: flex; flex-direction: column; flex-shrink: 0; }
-.sidebar-content { padding: 24px; flex: 1; }
-.sidebar-footer { padding: 20px 24px; background: var(--slate-50); border-top: 1px solid var(--slate-200); position: sticky; bottom: 0; z-index: 20; }
+/* CARDS */
+.s-card{background:var(--glass);border:1px solid var(--border);border-radius:28px;padding:24px;margin-bottom:16px}
+.s-card-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.35em;color:var(--accent);margin-bottom:16px;display:flex;align-items:center;gap:8px}
 
-.section-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em; color: var(--slate-400); margin-top: 28px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
-.section-title:first-child { margin-top: 0; }
-.info-btn { font-size: 10px; font-weight: 700; color: var(--blue); background: none; border: none; cursor: pointer; text-decoration: underline; }
+/* ROOM GRID */
+.room-cats{display:flex;overflow-x:auto;gap:8px;padding-bottom:8px;margin-bottom:12px;scrollbar-width:none}
+.room-cats::-webkit-scrollbar{display:none}
+.cat-btn{flex-shrink:0;padding:8px 14px;border-radius:999px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;cursor:pointer;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--text3);transition:all 0.2s;white-space:nowrap}
+.cat-btn.active{background:var(--accent);border-color:var(--accent);color:white}
+.room-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.room-btn{padding:10px 4px;border-radius:16px;text-align:center;cursor:pointer;border:1px solid var(--border);background:rgba(255,255,255,0.03);transition:all 0.2s;opacity:0.6}
+.room-btn:hover{opacity:1;border-color:var(--border2)}
+.room-btn.active{background:var(--indigo);border-color:var(--indigo);opacity:1;transform:scale(1.05)}
+.room-btn .icon{font-size:20px;margin-bottom:4px;display:block}
+.room-btn .rlabel{font-size:7px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text2)}
 
-/* Upload zone */
-.upload-zone { aspect-ratio: 1; border-radius: 24px; border: 2px dashed var(--slate-200); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; }
-.upload-zone:hover { background: var(--slate-50); border-color: var(--blue); }
-.upload-zone.has-img { border-color: var(--blue); background: var(--blue-light); border-style: solid; }
-.upload-zone img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 22px; }
-.upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-.upload-placeholder { text-align: center; padding: 24px; }
-.upload-placeholder svg { width: 40px; height: 40px; color: var(--slate-300); margin: 0 auto 12px; display: block; }
-.upload-placeholder p { font-size: 12px; font-weight: 500; color: var(--slate-400); }
+/* SELECT */
+select.s-select{width:100%;background:#111;border:1px solid var(--border);border-radius:12px;padding:12px 14px;font-size:11px;font-family:'DM Sans',sans-serif;color:var(--text);outline:none;cursor:pointer;margin-bottom:12px;appearance:none;background-image:url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");background-repeat:no-repeat;background-position:right 12px center;background-size:14px}
+select.s-select option{background:#111}
 
-/* Grid buttons */
-.btn-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.btn-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-.btn-grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
-.sel-btn { padding: 10px 8px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border-radius: 12px; border: 1px solid var(--slate-200); background: white; color: var(--slate-500); cursor: pointer; transition: all 0.2s; }
-.sel-btn:hover { border-color: var(--blue); color: var(--blue); }
-.sel-btn.active { background: var(--blue); border-color: var(--blue); color: white; box-shadow: 0 2px 8px rgba(37,99,235,0.3); }
-.sel-btn.active-dark { background: var(--slate-900); border-color: var(--slate-900); color: white; }
+/* MODES */
+.mode-toggle-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)}
+.mode-toggle-row:last-child{border-bottom:none}
+.mode-toggle-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;color:var(--text3)}
 
-/* Number inputs */
-.num-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-.num-field label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--slate-400); display: block; margin-bottom: 4px; }
-.num-input { width: 100%; padding: 8px; background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: 8px; font-size: 14px; font-weight: 700; outline: none; text-align: center; }
-.num-input:disabled { opacity: 0.5; cursor: not-allowed; }
-.num-input:focus { border-color: var(--blue); }
-.num-input.blue { color: var(--blue); }
+/* GEN BTN */
+.gen-btn{width:100%;padding:24px;border:none;border-radius:20px;background:var(--accent);color:white;font-family:'Syne',sans-serif;font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:0.3em;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:12px;box-shadow:0 20px 50px rgba(201,122,99,0.3)}
+.gen-btn:hover:not(:disabled){transform:scale(1.02);box-shadow:0 24px 60px rgba(201,122,99,0.4)}
+.gen-btn:disabled{opacity:0.4;cursor:not-allowed;box-shadow:none}
+.gen-btn.loading svg{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 
-/* Sliders */
-.slider-row { margin-bottom: 20px; }
-.slider-header { display: flex; justify-content: space-between; font-size: 10px; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; }
-.slider-header .lbl { color: var(--slate-400); }
-.slider-header .val { color: var(--slate-800); }
-.slider-header .val-blue { color: var(--blue); }
+/* OUTPUT */
+.output-panel{background:var(--glass);border:1px solid var(--border);border-radius:28px;min-height:600px;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+.output-empty{text-align:center;opacity:0.15}
+.output-empty p{font-family:'Syne',sans-serif;font-size:64px;font-weight:800;text-transform:uppercase;letter-spacing:-0.03em;line-height:1}
+.output-img{width:100%;height:100%;object-fit:contain;border-radius:28px}
+.dl-btn{position:absolute;bottom:20px;right:20px;background:rgba(0,0,0,0.7);border:1px solid var(--border2);border-radius:12px;padding:10px 20px;color:white;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;cursor:pointer;transition:background 0.2s}
+.dl-btn:hover{background:rgba(0,0,0,0.9)}
 
-/* Origins button */
-.origins-btn { width: 100%; padding: 12px; background: var(--slate-900); color: white; border-radius: 12px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em; border: none; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
-.origins-btn:hover { background: var(--slate-700); }
-.origins-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+/* ERROR */
+.error-box{padding:16px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:14px;font-size:11px;font-weight:700;color:#fca5a5;margin-top:12px;display:none}
+.error-box.show{display:block}
 
-/* Chest section */
-.chest-box { background: #eff6ff; padding: 16px; border-radius: 16px; border: 1px solid var(--blue-border); }
-.chest-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
-.chest-label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #3b82f6; display: block; margin-bottom: 4px; }
-.chest-select { width: 100%; padding: 8px; background: white; border: 1px solid var(--blue-border); border-radius: 8px; font-size: 12px; font-weight: 700; outline: none; }
+/* LOADING */
+.loading-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.8);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;border-radius:28px;z-index:10}
+.loading-spinner{width:60px;height:60px;border:3px solid rgba(201,122,99,0.2);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite}
+.loading-step{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.3em;color:var(--text3);text-align:center;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
 
-/* Stretch marks */
-.stretch-zone { background: white; padding: 12px; border-radius: 12px; border: 1px solid var(--slate-200); box-shadow: 0 1px 4px rgba(0,0,0,0.05); margin-bottom: 8px; }
-.stretch-zone-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-.zone-toggle { font-size: 9px; font-weight: 700; text-transform: uppercase; padding: 6px 12px; border-radius: 8px; border: none; cursor: pointer; transition: all 0.2s; }
-.zone-toggle.on { background: var(--blue); color: white; }
-.zone-toggle.off { background: var(--slate-100); color: var(--slate-400); }
-.intensity-btns { display: flex; gap: 4px; }
-.int-btn { flex: 1; padding: 4px; font-size: 7px; font-weight: 700; text-transform: uppercase; border-radius: 6px; border: 1px solid var(--slate-100); background: white; color: var(--slate-400); cursor: pointer; transition: all 0.2s; }
-.int-btn.active { background: var(--slate-900); color: white; border-color: var(--slate-900); }
+/* TEXTAREA */
+textarea.s-textarea{width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:16px;padding:16px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--text);outline:none;resize:vertical;min-height:80px;transition:border-color 0.2s}
+textarea.s-textarea::placeholder{color:var(--text3)}
+textarea.s-textarea:focus{border-color:var(--accent)}
 
-/* Action buttons */
-.action-btn { width: 100%; padding: 18px; border-radius: 20px; font-weight: 700; font-size: 14px; letter-spacing: 0.05em; border: none; cursor: pointer; transition: all 0.2s; }
-.action-btn.primary { background: var(--blue); color: white; box-shadow: 0 4px 20px rgba(37,99,235,0.3); }
-.action-btn.primary:hover { background: #1d4ed8; }
-.action-btn.primary:disabled { background: var(--slate-300); box-shadow: none; cursor: not-allowed; }
-.action-btn.dark { background: var(--slate-900); color: white; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
-.action-btn.dark:hover { background: black; }
-.action-btn.dark:disabled { background: var(--slate-300); cursor: not-allowed; }
-.action-btn.outline { background: white; color: var(--slate-600); border: 1px solid var(--slate-200); }
-.action-btn.outline:hover { background: var(--slate-50); }
-.action-btn.body-look { background: var(--blue-light); color: var(--blue); border: 2px solid var(--blue-border); }
-.action-btn.lock-on { background: #ef4444; color: white; }
-.action-btn.lock-off { background: var(--blue-light); color: var(--blue); border: 1px solid var(--blue-border); }
-.action-btn-sm { padding: 12px 16px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.2em; }
-.mt-3 { margin-top: 12px; }
-.mt-2 { margin-top: 8px; }
-.flex-row { display: flex; align-items: center; justify-content: center; gap: 8px; }
+/* ASPECT RATIO */
+.ar-btns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+.ar-btn{padding:10px 4px;border-radius:12px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;cursor:pointer;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--text3);transition:all 0.2s;text-align:center}
+.ar-btn.active{background:var(--indigo);border-color:var(--indigo);color:white}
 
-/* === MAIN CONTENT === */
-.main-content { flex: 1; overflow-y: auto; padding: 32px; background: var(--slate-50); }
-.images-wrap { max-width: 896px; margin: 0 auto; }
-
-/* Empty state */
-.empty-state { aspect-ratio: 4/3; background: var(--slate-50); border-radius: 40px; border: 2px dashed var(--slate-200); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px; text-align: center; }
-.empty-icon { width: 96px; height: 96px; background: white; border-radius: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid var(--slate-100); display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; transition: transform 0.5s; }
-.empty-state:hover .empty-icon { transform: scale(1.1); }
-.empty-icon svg { width: 40px; height: 40px; color: var(--blue); display: block; }
-.empty-title { font-size: 20px; font-weight: 600; color: var(--slate-800); margin-bottom: 8px; }
-.empty-desc { color: var(--slate-500); max-width: 320px; line-height: 1.6; }
-
-/* Main image */
-.main-view-wrap { position: relative; max-width: 512px; margin: 0 auto 48px; }
-.main-view { aspect-ratio: 3/4; border-radius: 40px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.15); background: var(--slate-200); }
-.main-view img { width: 100%; height: 100%; object-fit: cover; }
-.main-view-loading { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: white; }
-.spin { width: 64px; height: 64px; border: 4px solid var(--blue-border); border-top-color: var(--blue); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 24px; }
-@keyframes spin { to { transform: rotate(360deg); } }
-.main-view-badge { position: absolute; top: 32px; left: 50%; transform: translateX(-50%); background: rgba(37,99,235,0.9); color: white; padding: 8px 24px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; white-space: nowrap; backdrop-filter: blur(8px); }
-.dl-overlay-btn { position: absolute; bottom: 24px; right: 24px; padding: 16px; background: rgba(255,255,255,0.9); color: var(--blue); border-radius: 999px; border: none; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.1); opacity: 0; transition: all 0.3s; }
-.main-view-wrap:hover .dl-overlay-btn { opacity: 1; }
-.dl-overlay-btn svg { width: 24px; height: 24px; display: block; }
-
-/* Thumbnails */
-.thumbs-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; max-width: 768px; margin: 0 auto; }
-.thumb-wrap { display: flex; flex-direction: column; gap: 12px; }
-.thumb { aspect-ratio: 3/4; border-radius: 16px; overflow: hidden; background: white; box-shadow: 0 2px 12px rgba(0,0,0,0.08); border: 2px solid transparent; cursor: pointer; transition: all 0.3s; position: relative; }
-.thumb.active { border-color: var(--blue); box-shadow: 0 0 0 4px rgba(37,99,235,0.1); transform: scale(1.05); z-index: 10; }
-.thumb:hover:not(.active) { border-color: var(--blue-border); }
-.thumb img { width: 100%; height: 100%; object-fit: cover; }
-.thumb-loading { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; }
-.thumb-spin { width: 32px; height: 32px; border: 2px solid rgba(37,99,235,0.2); border-top-color: var(--blue); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 8px; }
-.thumb-label { font-size: 10px; color: var(--slate-400); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; }
-.thumb-dl-btn { position: absolute; top: 8px; right: 8px; padding: 6px; background: rgba(255,255,255,0.9); color: var(--blue); border-radius: 8px; border: none; cursor: pointer; opacity: 0; transition: opacity 0.2s; }
-.thumb:hover .thumb-dl-btn { opacity: 1; }
-.thumb-dl-btn svg { width: 16px; height: 16px; display: block; }
-.view-label { text-align: center; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; transition: color 0.2s; }
-.view-label.active { color: var(--blue); }
-.view-label.inactive { color: var(--slate-400); }
-
-/* === MODALS === */
-.modal-overlay { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 24px; background: rgba(15,23,42,0.8); backdrop-filter: blur(8px); }
-.modal-box { background: white; width: 100%; max-width: 640px; border-radius: 32px; box-shadow: 0 40px 80px rgba(0,0,0,0.3); overflow: hidden; display: flex; flex-direction: column; max-height: 90vh; }
-.modal-header { padding: 24px 32px; border-bottom: 1px solid var(--slate-100); display: flex; justify-content: space-between; align-items: center; }
-.modal-header.blue { background: var(--blue); color: white; }
-.modal-title { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
-.modal-close { padding: 8px; border-radius: 999px; border: none; cursor: pointer; transition: background 0.2s; }
-.modal-header.blue .modal-close { background: rgba(255,255,255,0.2); color: white; }
-.modal-header.blue .modal-close:hover { background: rgba(255,255,255,0.3); }
-.modal-header:not(.blue) .modal-close { background: none; color: var(--slate-400); }
-.modal-header:not(.blue) .modal-close:hover { background: var(--slate-100); }
-.modal-close svg { width: 24px; height: 24px; display: block; }
-.modal-body { padding: 32px 40px; overflow-y: auto; flex: 1; }
-.modal-footer { padding: 24px 32px; background: var(--slate-50); border-top: 1px solid var(--slate-100); }
-
-/* Body Look Modal */
-.bl-desc { font-size: 18px; font-weight: 500; color: var(--slate-800); line-height: 1.6; margin-bottom: 16px; }
-.bl-desc span { color: var(--blue); }
-.bl-list { list-style: none; display: flex; flex-direction: column; gap: 12px; margin-bottom: 32px; }
-.bl-list li { display: flex; align-items: flex-start; gap: 12px; color: var(--slate-600); font-size: 14px; }
-.bl-info-box { background: var(--slate-50); padding: 24px; border-radius: 16px; border: 1px solid var(--slate-100); margin-bottom: 32px; }
-.bl-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-.bl-col-label { font-size: 12px; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; }
-.bl-col-label.grey { color: var(--slate-400); }
-.bl-col-label.blue { color: var(--blue); }
-.bl-col ul { list-style: none; display: flex; flex-direction: column; gap: 4px; }
-.bl-col li { font-size: 13px; color: var(--slate-600); }
-.bl-center { text-align: center; padding: 24px; border: 2px dashed var(--blue-border); border-radius: 16px; margin-bottom: 32px; }
-.bl-center p:first-child { color: var(--slate-500); font-style: italic; margin-bottom: 8px; }
-.bl-center p:last-child { font-size: 20px; font-weight: 700; color: var(--slate-800); }
-.bl-steps { font-size: 14px; color: var(--slate-600); line-height: 1.8; }
-.bl-steps .label { font-weight: 700; color: var(--slate-800); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; font-size: 12px; }
-
-/* Origins Modal */
-.origins-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
-@media(max-width:640px){ .origins-grid { grid-template-columns: 1fr; } }
-.origins-list-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--slate-400); margin-bottom: 24px; }
-.region-label { font-size: 12px; font-weight: 700; color: var(--blue); margin-bottom: 8px; }
-.region-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
-.origin-tag { padding: 6px 12px; background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: 8px; font-size: 12px; cursor: pointer; transition: all 0.2s; }
-.origin-tag:hover { border-color: var(--blue-border); background: white; }
-.mix-box { background: var(--slate-50); padding: 24px; border-radius: 16px; border: 1px solid var(--slate-100); }
-.mix-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--slate-400); margin-bottom: 16px; }
-.mix-item { background: white; padding: 16px; border-radius: 12px; border: 1px solid var(--slate-200); box-shadow: 0 1px 4px rgba(0,0,0,0.05); margin-bottom: 12px; }
-.mix-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-.mix-item-name { font-size: 14px; font-weight: 600; color: var(--slate-700); }
-.mix-remove { color: #f87171; background: none; border: none; cursor: pointer; padding: 2px; }
-.mix-remove svg { width: 16px; height: 16px; display: block; }
-.mix-slider-row { display: flex; align-items: center; gap: 16px; }
-.mix-val { font-size: 14px; font-family: monospace; font-weight: 700; color: var(--blue); min-width: 40px; text-align: right; }
-.mix-empty { color: var(--slate-400); font-size: 14px; font-style: italic; }
-.modal-btns { display: flex; gap: 16px; }
-.modal-btn { flex: 1; padding: 12px 24px; border-radius: 12px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s; }
-.modal-btn.cancel { background: white; border: 1px solid var(--slate-200); color: var(--slate-600); }
-.modal-btn.cancel:hover { background: var(--slate-50); }
-.modal-btn.apply { background: var(--blue); color: white; border: none; box-shadow: 0 4px 16px rgba(37,99,235,0.3); }
-.modal-btn.apply:hover { background: #1d4ed8; }
-.modal-btn.confirm { background: var(--slate-900); color: white; border: none; }
-.modal-btn.confirm:hover { background: black; }
-
-/* Utility */
-.hidden { display: none !important; }
-.mt-4 { margin-top: 16px; }
+/* SUBTYPE SELECT */
+.subtype-row{display:none;margin-bottom:12px}
+.subtype-row.show{display:block}
 </style>
 </head>
 <body>
 
 <!-- SPLASH -->
 <div id="splash">
-  <h1 class="splash-title">STUDIO <span>BODY</span></h1>
-  <p class="splash-desc">Modélise le corps de ton avatar IA à partir de morphologies humaines réalistes en 4K.</p>
-  <div class="api-section">
-    <label class="api-label">Clé API Vertex AI (Express Mode)</label>
-    <input type="password" id="apiKeyInput" class="api-input" placeholder="AIza..." autocomplete="off">
-    <p class="vertex-note">⚡ Obtenez votre clé sur console.cloud.google.com/vertex-ai/studio/express</p>
-  </div>
-  <button class="splash-cta" onclick="enterApp()">Accéder au Studio</button>
-  <p id="splash-error"></p>
-</div>
-
-<!-- GENDER SELECTION -->
-<div id="genderSelect">
-  <h1 class="gender-title">STUDIO <span>BODY</span></h1>
-  <p class="gender-desc">Modélise le corps de ton avatar IA à partir de morphologies humaines réalistes.</p>
-  <div class="gender-grid">
-    <button class="gender-card" onclick="selectGender('femme')">
-      <div class="gender-card-img">
-        <img src="https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&q=80&w=800" alt="Femme Pilates"
-          onerror="this.style.background='#e2e8f0'">
+  <div class="splash-bg"><img src="https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&q=80&w=1600" alt=""></div>
+  <div class="splash-content">
+    <div class="splash-logo">Studio<br>Family Home</div>
+    <div class="splash-sub">Scènes de vie ultra-réalistes 4K</div>
+    <div class="api-box">
+      <span class="api-label">🔑 Clé API Vertex AI Express Mode</span>
+      <input type="password" id="apiKeyInput" class="api-input" placeholder="AIza..." autocomplete="off">
+    </div>
+    <div class="mode-grid" id="modeGrid" style="display:none">
+      <div class="mode-card" onclick="selectMode('SOLO')">
+        <img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=600" alt="Solo">
+        <div class="mode-card-overlay">
+          <h2>Solo</h2>
+          <button class="mode-card-btn">Entrer</button>
+        </div>
       </div>
-      <div class="gender-overlay"></div>
-      <div class="gender-info">
-        <h2>Femme</h2>
-        <p>Morphologie féminine. Focus sur la souplesse et le Pilates.</p>
+      <div class="mode-card" onclick="selectMode('FAMILY')">
+        <img src="https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&q=80&w=600" alt="Famille">
+        <div class="mode-card-overlay">
+          <h2>Famille</h2>
+          <button class="mode-card-btn">Entrer</button>
+        </div>
       </div>
-    </button>
-    <button class="gender-card" onclick="selectGender('homme')">
-      <div class="gender-card-img">
-        <img src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=800" alt="Homme Musculation"
-          onerror="this.style.background='#e2e8f0'">
-      </div>
-      <div class="gender-overlay"></div>
-      <div class="gender-info">
-        <h2>Homme</h2>
-        <p>Structure athlétique. Focus sur la musculation en salle.</p>
-      </div>
-    </button>
+    </div>
+    <div id="splashError" style="color:#fca5a5;font-size:11px;font-weight:700;margin-top:12px;display:none"></div>
   </div>
 </div>
 
-<!-- MAIN APP -->
-<div id="mainApp">
-  <header class="app-header">
-    <div class="app-brand" onclick="goGenderSelect()">
-      <span class="app-brand-title">STUDIO <span>BODY</span></span>
-      <span class="app-brand-badge">4K Anatomical</span>
-    </div>
-    <div class="header-right">
-      <span class="gender-pill" id="genderPill">Femme</span>
-    </div>
-  </header>
+<!-- SETUP -->
+<div id="setup">
+  <div class="setup-header">
+    <button class="back-btn" onclick="goSplash()">← Retour</button>
+    <div class="setup-title" id="setupTitle">Configuration Solo</div>
+    <div style="width:80px"></div>
+  </div>
+  <div class="setup-grid" id="setupGrid">
+    <!-- Dynamique -->
+  </div>
+  <button class="validate-btn" id="validateBtn" onclick="validateSetup()">Accéder au Studio →</button>
+  <div id="setupError" style="max-width:900px;margin:12px auto 0;text-align:center;color:#fca5a5;font-size:11px;font-weight:700;display:none"></div>
+</div>
 
-  <div class="app-body">
-    <!-- SIDEBAR -->
-    <aside id="sidebar">
-      <div class="sidebar-content">
+<!-- APP -->
+<div id="app">
+  <nav class="app-nav">
+    <div class="brand" onclick="goSplash()">Studio Family Home</div>
+    <div class="nav-badges">
+      <button class="energy-btn active-calm" id="energyCalmBtn" onclick="setEnergy('calm')">Calme</button>
+      <button class="energy-btn" id="energyChaosBtn" onclick="setEnergy('chaos')">Chaos</button>
+      <button class="back-btn" onclick="goSetup()" style="margin-left:8px">⚙ Famille</button>
+    </div>
+  </nav>
 
-        <div class="section-title">Référence Identité</div>
-        <label class="upload-zone" id="uploadZone">
-          <div class="upload-placeholder" id="uploadPlaceholder">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            <p>Visage source</p>
-          </div>
-          <img id="basePhotoPreview" style="display:none;" alt="Source">
-          <input type="file" accept="image/*" id="basePhotoInput" onchange="handleBasePhoto(event)">
+  <div class="studio-main">
+    <!-- COL GAUCHE: Environnement -->
+    <div>
+      <div class="s-card">
+        <div class="s-card-title">🧬 Avatar DNA</div>
+        <div class="uploader" id="mainAvatarUploader">
+          <div class="uploader-icon">📸</div>
+          <div class="uploader-label">Avatar principal *</div>
+          <input type="file" accept="image/*" onchange="handleUpload(event,'mainAvatar')">
+          <div class="uploader-overlay"><button class="remove-img-btn" onclick="removeImg(event,'mainAvatar')">✕</button></div>
+        </div>
+        <button onclick="goSetup()" style="width:100%;margin-top:10px;padding:8px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;color:var(--text3);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;cursor:pointer">Modifier la famille</button>
+      </div>
+
+      <div class="s-card">
+        <div class="s-card-title">🏠 Pièce</div>
+        <div class="room-cats" id="roomCats"></div>
+        <div class="room-grid" id="roomGrid"></div>
+        
+        <!-- Subtype cuisine -->
+        <div class="subtype-row" id="cuisineSubtype">
+          <select class="s-select" onchange="setSubtype(this.value)">
+            <option value="">Zone cuisine complète</option>
+            <option value="cuisine_plan_travail">Plan de travail</option>
+            <option value="cuisine_plaques_cuisson">Plaques de cuisson</option>
+            <option value="cuisine_a_table">À table (Cuisine)</option>
+          </select>
+        </div>
+        <!-- Subtype chambre -->
+        <div class="subtype-row" id="chambreSubtype">
+          <select class="s-select" onchange="setSubtype(this.value)" id="chambreSubtypeSelect"></select>
+        </div>
+        <!-- Subtype bureau -->
+        <div class="subtype-row" id="bureauSubtype">
+          <select class="s-select" onchange="setSubtype(this.value)">
+            <option value="">Type d'ordinateur</option>
+            <option value="ordinateur_portable">Ordinateur portable</option>
+            <option value="ordinateur_bureau">Ordinateur de bureau</option>
+          </select>
+        </div>
+
+        <label class="uploader" id="roomImgUploader" style="margin-top:12px;min-height:100px;cursor:pointer;display:flex">
+          <div class="uploader-icon">🏠</div>
+          <div class="uploader-label" id="roomImgLabel">Photo de la pièce *</div>
+          <input type="file" accept="image/*" id="roomImgInput" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%">
+          <div class="uploader-overlay"><button type="button" class="remove-img-btn" id="roomImgRemoveBtn">✕</button></div>
         </label>
-
-        <div class="section-title">Biométrie de base</div>
-        <div class="btn-grid-2" style="margin-bottom:16px;">
-          <button class="sel-btn" data-group="bodyType" data-val="mince" onclick="setParam('bodyType','mince')">MINCE</button>
-          <button class="sel-btn active" data-group="bodyType" data-val="moyenne" onclick="setParam('bodyType','moyenne')">MOYENNE</button>
-          <button class="sel-btn" data-group="bodyType" data-val="surpoids" onclick="setParam('bodyType','surpoids')">SURPOIDS</button>
-          <button class="sel-btn" data-group="bodyType" data-val="obèse" onclick="setParam('bodyType','obèse')">OBÈSE</button>
-        </div>
-        <div class="num-grid" style="margin-bottom:16px;">
-          <div class="num-field"><label>Âge</label><input type="number" id="p_age" class="num-input" value="28" oninput="params.age=+this.value"></div>
-          <div class="num-field"><label>Taille cm</label><input type="number" id="p_height" class="num-input" value="165" oninput="params.height=+this.value"></div>
-          <div class="num-field"><label>Poids kg</label><input type="number" id="p_weight" class="num-input blue" value="60" oninput="params.weight=+this.value"></div>
-        </div>
-        <button class="origins-btn" id="originsBtn" onclick="openOriginsModal()">Mixité des Origines (<span id="originsCount">1</span>)</button>
-
-        <div class="section-title">Morphologie & Sculpture</div>
-        <div class="btn-grid-5" style="margin-bottom:16px;">
-          <button class="sel-btn" data-group="morph" data-val="triangle" onclick="setParam('morphology','triangle')" title="Triangle">▲</button>
-          <button class="sel-btn" data-group="morph" data-val="triangle inversé" onclick="setParam('morphology','triangle inversé')" title="Triangle inversé">▼</button>
-          <button class="sel-btn active" data-group="morph" data-val="X" onclick="setParam('morphology','X')">X</button>
-          <button class="sel-btn" data-group="morph" data-val="H" onclick="setParam('morphology','H')">H</button>
-          <button class="sel-btn" data-group="morph" data-val="O" onclick="setParam('morphology','O')">O</button>
-        </div>
-        <div class="slider-row"><div class="slider-header"><span class="lbl">Distribution Masse</span><span class="val" id="v_dist">50%</span></div><input type="range" min="0" max="100" value="50" oninput="params.distribution=+this.value;document.getElementById('v_dist').textContent=this.value+'%'"></div>
-        <div class="slider-row"><div class="slider-header"><span class="lbl">Taille (Ventre)</span><span class="val" id="v_waist">80 cm</span></div><input type="range" min="60" max="150" value="80" oninput="params.waistCirc=+this.value;document.getElementById('v_waist').textContent=this.value+' cm'"></div>
-        <div class="slider-row"><div class="slider-header"><span class="lbl">Hanches</span><span class="val" id="v_hip">95 cm</span></div><input type="range" min="70" max="160" value="95" oninput="params.hipCirc=+this.value;document.getElementById('v_hip').textContent=this.value+' cm'"></div>
-        <div class="slider-row"><div class="slider-header"><span class="lbl">Cuisses</span><span class="val" id="v_thigh">58 cm</span></div><input type="range" min="40" max="95" value="58" oninput="params.thighCirc=+this.value;document.getElementById('v_thigh').textContent=this.value+' cm'"></div>
-        <div class="slider-row"><div class="slider-header"><span class="lbl">Volume Fessier</span><span class="val val-blue" id="v_glut">50/100</span></div><input type="range" min="0" max="100" value="50" oninput="params.glutealVolume=+this.value;document.getElementById('v_glut').textContent=this.value+'/100'"></div>
-
-        <div class="section-title">Musculature</div>
-        <div class="btn-grid-2" style="margin-bottom:16px;">
-          <button class="sel-btn" data-group="tone" data-val="souple" onclick="setParam('tone','souple')">Souple / Naturel</button>
-          <button class="sel-btn active" data-group="tone" data-val="tonique" onclick="setParam('tone','tonique')">Ferme / Tonique</button>
-          <button class="sel-btn" data-group="tone" data-val="athlétique" onclick="setParam('tone','athlétique')">Athlétique</button>
-          <button class="sel-btn" data-group="tone" data-val="musclé" onclick="setParam('tone','musclé')">Musclé / Défini</button>
-        </div>
-        <div style="margin-bottom:8px;"><span class="section-title" style="margin:0 0 8px;">Abdominaux</span></div>
-        <div class="btn-grid-4" style="margin-bottom:8px;">
-          <button class="sel-btn active" data-group="abs" data-val="absents" onclick="setParam('absDefinition','absents')">Abs.</button>
-          <button class="sel-btn" data-group="abs" data-val="légèrement visibles" onclick="setParam('absDefinition','légèrement visibles')">Légr.</button>
-          <button class="sel-btn" data-group="abs" data-val="visibles" onclick="setParam('absDefinition','visibles')">Vis.</button>
-          <button class="sel-btn" data-group="abs" data-val="très marqués" onclick="setParam('absDefinition','très marqués')">Mq.</button>
-        </div>
-
-        <!-- CHEST (femme only) -->
-        <div id="chestSection">
-          <div class="section-title">Poitrine</div>
-          <div class="chest-box">
-            <div class="chest-grid">
-              <div><label class="chest-label">Dos (Band)</label>
-                <select class="chest-select" id="p_chestBand" onchange="params.chestBand=+this.value">
-                  <option value="75">75</option><option value="80">80</option><option value="85">85</option>
-                  <option value="90" selected>90</option><option value="95">95</option><option value="100">100</option>
-                  <option value="105">105</option><option value="110">110</option><option value="115">115</option>
-                </select>
-              </div>
-              <div><label class="chest-label">Bonnet (Cup)</label>
-                <select class="chest-select" id="p_chestCup" onchange="params.chestCup=this.value">
-                  <option>A</option><option selected>B</option><option>C</option><option>D</option>
-                  <option>E</option><option>F</option><option>G</option><option>H</option><option>I</option><option>J</option>
-                </select>
-              </div>
-            </div>
-            <div class="slider-row"><div class="slider-header"><span class="lbl" style="color:#3b82f6">Volume Projection</span><span class="val val-blue" id="v_chest">50%</span></div><input type="range" min="0" max="100" value="50" oninput="params.chestVolume=+this.value;document.getElementById('v_chest').textContent=this.value+'%'"></div>
-          </div>
-        </div>
-
-        <div class="section-title" id="realismTitle">
-          Réalisme & Marqueurs
-          <button class="info-btn" onclick="openBodyLookModal()">INFOS</button>
-        </div>
-        <div style="background:var(--slate-50);padding:24px;border-radius:24px;border:1px solid var(--slate-100);">
-          <div class="slider-row"><div class="slider-header"><span class="lbl">Gravité Ventre</span><span class="val val-blue" id="v_grav">0%</span></div><input type="range" min="0" max="100" id="gravSlider" value="0" oninput="params.bellyGravity=+this.value;document.getElementById('v_grav').textContent=this.value+'%'"></div>
-
-          <div style="margin-top:8px;"><label class="section-title" style="margin:0 0 12px;">Vergetures</label></div>
-          <div id="stretchZones">
-            <!-- Rendered dynamically -->
-          </div>
-        </div>
-
       </div>
 
-      <!-- FOOTER ACTIONS -->
-      <div class="sidebar-footer">
-        <div id="exportBtnWrap" class="hidden">
-          <button class="action-btn outline action-btn-sm flex-row mt-2" onclick="exportZip()" style="width:100%;margin-bottom:12px;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Exporter Pack 4K (ZIP)
-          </button>
+      <div class="s-card">
+        <div class="s-card-title">⚙ Modes spéciaux</div>
+        <div class="mode-toggle-row">
+          <span class="mode-toggle-label" style="color:#60a5fa">📱 Mode WhatsApp</span>
+          <div class="toggle-sw" id="toggleWhatsapp" onclick="toggleMode('whatsapp')"><div class="toggle-sw-thumb"></div></div>
         </div>
-        <div id="bodyLookBtnWrap" class="hidden">
-          <button class="action-btn body-look action-btn-sm flex-row" onclick="openBodyLookModal()" style="width:100%;margin-bottom:12px;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            BODY LOOK — DÉFINITION OFFICIELLE
-          </button>
+        <div class="mode-toggle-row">
+          <span class="mode-toggle-label" style="color:#4ade80">🧹 Mode Ménage</span>
+          <div class="toggle-sw" id="toggleMenage" onclick="toggleMode('menage')"><div class="toggle-sw-thumb"></div></div>
         </div>
-        <div id="mainGenBtn">
-          <button class="action-btn primary" id="genFrontBtn" onclick="generateFront()">LANCER LE RENDU (FACE)</button>
+        <div class="mode-toggle-row">
+          <span class="mode-toggle-label" style="color:#fb923c">👶 Mode Portage</span>
+          <div class="toggle-sw" id="togglePortage" onclick="toggleMode('portage')"><div class="toggle-sw-thumb"></div></div>
         </div>
-        <div id="syncBtn" class="hidden mt-3">
-          <button class="action-btn dark" onclick="generateRest()">SYNCHRONISER LES VUES (360°)</button>
+        <div class="mode-toggle-row">
+          <span class="mode-toggle-label" style="color:#22d3ee">🔔 Mode Interphone</span>
+          <div class="toggle-sw" id="toggleInterphone" onclick="toggleMode('interphone')"><div class="toggle-sw-thumb"></div></div>
         </div>
-        <div id="lockBtnWrap" class="hidden mt-3">
-          <button class="action-btn" id="lockBtn" onclick="toggleLock()">J'active Body Look (Verrouillage)</button>
+        <div class="mode-toggle-row">
+          <span class="mode-toggle-label" style="color:#f472b6">👗 Mode Dressing</span>
+          <div class="toggle-sw" id="toggleDressing" onclick="toggleMode('dressing')"><div class="toggle-sw-thumb"></div></div>
+        </div>
+        <div class="mode-toggle-row" id="bbqModeRow" style="display:none">
+          <span class="mode-toggle-label" style="color:#f87171">🔥 Mode Barbecue</span>
+          <div class="toggle-sw" id="toggleBBQ" onclick="toggleMode('bbq')"><div class="toggle-sw-thumb"></div></div>
+        </div>
+        <div class="mode-toggle-row">
+          <span class="mode-toggle-label" style="color:#93c5fd">🛒 Mode Poussette</span>
+          <div class="toggle-sw" id="togglePoussette" onclick="toggleMode('poussette')"><div class="toggle-sw-thumb"></div></div>
+        </div>
+        <div class="mode-toggle-row">
+          <span class="mode-toggle-label" style="color:#a5b4fc">🪞 Mode Miroir</span>
+          <div class="toggle-sw" id="toggleMiroir" onclick="toggleMode('miroir')"><div class="toggle-sw-thumb"></div></div>
         </div>
       </div>
-    </aside>
 
-    <!-- MAIN CONTENT -->
-    <main class="main-content">
-      <div class="images-wrap">
-        <!-- Empty state -->
-        <div class="empty-state" id="emptyState">
-          <div class="empty-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-          </div>
-          <h3 class="empty-title">Prêt pour la Génération</h3>
-          <p class="empty-desc">Configurez les paramètres biométriques et téléchargez votre photo source pour lancer le Studio Body.</p>
+      <!-- Mode WhatsApp Config -->
+      <div class="s-card" id="whatsappConfig" style="display:none">
+        <div class="s-card-title" style="color:#60a5fa">📱 Config WhatsApp</div>
+        <select class="s-select" onchange="state.whatsappCallType=this.value">
+          <option value="video">Appel vidéo</option>
+          <option value="audio">Appel audio</option>
+        </select>
+        <div class="uploader" id="whatsappContactUploader" style="min-height:80px">
+          <div class="uploader-icon">👤</div>
+          <div class="uploader-label">Interlocuteur (affiché à l'écran) *</div>
+          <input type="file" accept="image/*" onchange="handleUpload(event,'whatsappContact')">
+          <div class="uploader-overlay"><button class="remove-img-btn" onclick="removeImg(event,'whatsappContact')">✕</button></div>
         </div>
+      </div>
 
-        <!-- Images area (hidden until generated) -->
-        <div id="imagesArea" class="hidden">
-          <!-- Main view -->
-          <div class="main-view-wrap">
-            <div class="main-view" id="mainView">
-              <div class="main-view-loading" id="mainViewLoading">
-                <div class="spin"></div>
-                <p style="font-weight:500;color:var(--slate-400);">Génération du rendu 4K...</p>
-              </div>
-              <img id="mainViewImg" style="display:none;" alt="Main view">
-            </div>
-            <div class="main-view-badge" id="mainViewBadge">Vue de Face</div>
-            <button class="dl-overlay-btn" onclick="downloadCurrent()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            </button>
+      <!-- Mode Portage Config -->
+      <div class="s-card" id="portageConfig" style="display:none">
+        <div class="s-card-title" style="color:#fb923c">👶 Config Portage</div>
+        <div class="upload-slots">
+          <div class="uploader" id="babyRefUploader" style="min-height:80px">
+            <div class="uploader-icon">🍼</div>
+            <div class="uploader-label">DNA Bébé *</div>
+            <input type="file" accept="image/*" onchange="handleUpload(event,'babyRef')">
+            <div class="uploader-overlay"><button class="remove-img-btn" onclick="removeImg(event,'babyRef')">✕</button></div>
           </div>
-
-          <!-- Thumbnails -->
-          <div class="thumbs-grid">
-            <div class="thumb-wrap">
-              <div class="thumb active" id="thumb-front" onclick="selectView('front')">
-                <div class="thumb-loading" id="tl-front"><div class="thumb-spin"></div></div>
-                <img id="ti-front" style="display:none;" alt="Face">
-                <button class="thumb-dl-btn" onclick="event.stopPropagation();downloadView('front')" id="tdl-front" style="display:none;">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                </button>
-              </div>
-              <p class="view-label active" id="vl-front">Face</p>
-            </div>
-            <div class="thumb-wrap">
-              <div class="thumb" id="thumb-profileLeft" onclick="selectView('profileLeft')">
-                <div class="thumb-loading" id="tl-profileLeft" style="display:none;"><div class="thumb-spin"></div></div>
-                <img id="ti-profileLeft" style="display:none;" alt="Profil G">
-                <button class="thumb-dl-btn" onclick="event.stopPropagation();downloadView('profileLeft')" id="tdl-profileLeft" style="display:none;">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                </button>
-              </div>
-              <p class="view-label inactive" id="vl-profileLeft">Profil G</p>
-            </div>
-            <div class="thumb-wrap">
-              <div class="thumb" id="thumb-profileRight" onclick="selectView('profileRight')">
-                <div class="thumb-loading" id="tl-profileRight" style="display:none;"><div class="thumb-spin"></div></div>
-                <img id="ti-profileRight" style="display:none;" alt="Profil D">
-                <button class="thumb-dl-btn" onclick="event.stopPropagation();downloadView('profileRight')" id="tdl-profileRight" style="display:none;">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                </button>
-              </div>
-              <p class="view-label inactive" id="vl-profileRight">Profil D</p>
-            </div>
-            <div class="thumb-wrap">
-              <div class="thumb" id="thumb-back" onclick="selectView('back')">
-                <div class="thumb-loading" id="tl-back" style="display:none;"><div class="thumb-spin"></div></div>
-                <img id="ti-back" style="display:none;" alt="Dos">
-                <button class="thumb-dl-btn" onclick="event.stopPropagation();downloadView('back')" id="tdl-back" style="display:none;">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                </button>
-              </div>
-              <p class="view-label inactive" id="vl-back">Dos</p>
-            </div>
+          <div class="uploader" id="carrierImgUploader" style="min-height:80px">
+            <div class="uploader-icon">🎽</div>
+            <div class="uploader-label">Porte-bébé *</div>
+            <input type="file" accept="image/*" onchange="handleUpload(event,'carrierImg')">
+            <div class="uploader-overlay"><button class="remove-img-btn" onclick="removeImg(event,'carrierImg')">✕</button></div>
           </div>
         </div>
       </div>
-    </main>
-  </div>
-</div>
 
-<!-- BODY LOOK MODAL -->
-<div class="modal-overlay hidden" id="bodyLookModal">
-  <div class="modal-box">
-    <div class="modal-header blue">
-      <h2 class="modal-title">BODY LOOK — DÉFINITION OFFICIELLE</h2>
-      <button class="modal-close" onclick="closeBodyLookModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
-    </div>
-    <div class="modal-body">
-      <p class="bl-desc">Body Look est un mode de <span>verrouillage visuel</span>.</p>
-      <ul class="bl-list">
-        <li><span style="color:var(--blue);font-weight:700;">👉</span><span>Il fige le corps et le visage de référence</span></li>
-        <li><span style="color:var(--blue);font-weight:700;">👉</span><span>Il empêche toute altération de l'identité</span></li>
-        <li><span style="color:var(--blue);font-weight:700;">👉</span><span>Il autorise uniquement la rotation du point de vue</span></li>
-      </ul>
-      <div class="bl-info-box">
-        <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--slate-400);margin-bottom:16px;">🎯 À QUOI SERT BODY LOOK</p>
-        <div class="bl-info-grid">
-          <div class="bl-col"><p class="bl-col-label grey">Ce qui ne change JAMAIS</p><ul><li>• Le visage</li><li>• La coiffure</li><li>• Les traits</li><li>• Les proportions validées</li></ul></div>
-          <div class="bl-col"><p class="bl-col-label blue">Ce qui change</p><ul><li>• L'angle</li><li>• La vue (face → profil → dos)</li><li>• La caméra / perspective</li></ul></div>
+      <!-- Mode BBQ Config -->
+      <div class="s-card" id="bbqConfig" style="display:none">
+        <div class="s-card-title" style="color:#f87171">🔥 Config BBQ</div>
+        <div class="uploader" id="bbqRefUploader" style="min-height:80px">
+          <div class="uploader-icon">🍖</div>
+          <div class="uploader-label">Photo du barbecue *</div>
+          <input type="file" accept="image/*" onchange="handleUpload(event,'bbqRef')">
+          <div class="uploader-overlay"><button class="remove-img-btn" onclick="removeImg(event,'bbqRef')">✕</button></div>
         </div>
       </div>
-      <div class="bl-center"><p>On ne recrée pas un nouveau corps</p><p>👉 On observe le même corps sous plusieurs angles</p></div>
-      <div class="bl-steps">
-        <p class="label">🔄 LOGIQUE DANS TON APPLICATION</p>
-        <p><strong>Étape 1</strong> — Génération de l'image principale et validation utilisateur.</p>
-        <p><strong>Étape 2</strong> — Activation de Body Look : le système prend cette image comme référence absolue.</p>
-        <p><strong>Étape 3</strong> — Rotation 360° : Même personne. Même corps. Même visage.</p>
-      </div>
-    </div>
-    <div class="modal-footer"><button class="modal-btn confirm" style="width:100%;" onclick="closeBodyLookModal()">J'ai compris</button></div>
-  </div>
-</div>
 
-<!-- ORIGINS MODAL -->
-<div class="modal-overlay hidden" id="originsModal">
-  <div class="modal-box" style="max-width:720px;">
-    <div class="modal-header">
-      <div><h2 class="modal-title" style="color:var(--slate-800);">Mode Métissage</h2><p style="font-size:14px;color:var(--slate-500);">Fusionnez jusqu'à 3 origines pour une carnation unique</p></div>
-      <button class="modal-close" onclick="closeOriginsModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
-    </div>
-    <div class="modal-body">
-      <div class="origins-grid">
-        <div>
-          <p class="origins-list-title">Origines Disponibles</p>
-          <div id="originsListEl"></div>
+      <!-- Mode Poussette Config -->
+      <div class="s-card" id="poussetteConfig" style="display:none">
+        <div class="s-card-title" style="color:#93c5fd">🛒 Config Poussette</div>
+        <div class="upload-slots">
+          <div class="uploader" id="strollerRefUploader" style="min-height:80px">
+            <div class="uploader-icon">🛒</div>
+            <div class="uploader-label">Poussette *</div>
+            <input type="file" accept="image/*" onchange="handleUpload(event,'strollerRef')">
+            <div class="uploader-overlay"><button class="remove-img-btn" onclick="removeImg(event,'strollerRef')">✕</button></div>
+          </div>
+          <div class="uploader" id="strollerBabyUploader" style="min-height:80px">
+            <div class="uploader-icon">👶</div>
+            <div class="uploader-label">Bébé *</div>
+            <input type="file" accept="image/*" onchange="handleUpload(event,'strollerBaby')">
+            <div class="uploader-overlay"><button class="remove-img-btn" onclick="removeImg(event,'strollerBaby')">✕</button></div>
+          </div>
         </div>
-        <div class="mix-box">
-          <p class="mix-title">Pondération du Mix</p>
-          <div id="mixItems"><p class="mix-empty">Sélectionnez au moins une origine...</p></div>
+      </div>
+
+      <!-- Mode Interphone Config -->
+      <div class="s-card" id="interphoneConfig" style="display:none">
+        <div class="s-card-title" style="color:#22d3ee">🔔 Config Interphone</div>
+        <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.2em;margin-bottom:8px" id="interphoneStepLabel">Étape 1/3</div>
+        <div class="upload-slots">
+          <div class="uploader" id="interphonePortalUploader" style="min-height:80px">
+            <div class="uploader-icon">🚪</div>
+            <div class="uploader-label">Portail fermé</div>
+            <input type="file" accept="image/*" onchange="handleUpload(event,'interphonePortal')">
+            <div class="uploader-overlay"><button class="remove-img-btn" onclick="removeImg(event,'interphonePortal')">✕</button></div>
+          </div>
+          <div class="uploader" id="interphoneVisitorUploader" style="min-height:80px">
+            <div class="uploader-icon">👤</div>
+            <div class="uploader-label">Visiteur</div>
+            <input type="file" accept="image/*" onchange="handleUpload(event,'interphoneVisitor')">
+            <div class="uploader-overlay"><button class="remove-img-btn" onclick="removeImg(event,'interphoneVisitor')">✕</button></div>
+          </div>
         </div>
       </div>
     </div>
-    <div class="modal-footer">
-      <div class="modal-btns">
-        <button class="modal-btn cancel" onclick="closeOriginsModal()">Annuler</button>
-        <button class="modal-btn apply" onclick="applyOrigins()">Appliquer le Métissage</button>
+
+    <!-- COL MILIEU: Actions -->
+    <div>
+      <div class="s-card">
+        <div class="s-card-title">🎬 Action & Scénario</div>
+        
+        <label style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.2em;color:var(--text3);display:block;margin-bottom:6px">Angle de caméra</label>
+        <select class="s-select" onchange="state.cameraAngle=this.value">
+          <option value="face">Face</option>
+          <option value="profil">Profil</option>
+          <option value="trois_quarts">Trois quarts</option>
+          <option value="plongee_legere">Plongée légère</option>
+          <option value="contre_plongee_legere">Contre-plongée légère</option>
+          <option value="immersive_organique">Moment capturé</option>
+          <option value="pov_mains">POV mains</option>
+          <option value="par_dessus_epaule">Par-dessus l'épaule</option>
+        </select>
+
+        <label style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.2em;color:var(--text3);display:block;margin-bottom:6px">Action</label>
+        <select class="s-select" id="actionSelect" onchange="state.action=this.value">
+          <option value="">Sélectionner une action...</option>
+        </select>
+
+        <label style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.2em;color:var(--text3);display:block;margin-bottom:6px">Saison</label>
+        <select class="s-select" onchange="state.season=this.value">
+          <option value="spring">Printemps</option>
+          <option value="summer">Été</option>
+          <option value="autumn">Automne</option>
+          <option value="winter">Hiver</option>
+        </select>
+
+        <label style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.2em;color:var(--text3);display:block;margin-bottom:6px">Météo</label>
+        <select class="s-select" onchange="state.weather=this.value">
+          <option value="sunny">Soleil</option>
+          <option value="cloudy">Nuageux</option>
+          <option value="rain">Pluie</option>
+          <option value="storm">Orage</option>
+          <option value="snow">Neige</option>
+        </select>
+
+        <label style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.2em;color:var(--text3);display:block;margin-bottom:6px">Moment de la journée</label>
+        <select class="s-select" onchange="state.dayMoment=this.value">
+          <option value="matin">Matin</option>
+          <option value="midi">Midi</option>
+          <option value="apres_midi">Après-midi</option>
+          <option value="soiree">Soirée</option>
+          <option value="nuit">Nuit</option>
+        </select>
+
+        <label style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.2em;color:var(--text3);display:block;margin-bottom:6px">Format image</label>
+        <div class="ar-btns">
+          <div class="ar-btn active" id="ar916" onclick="setAR('9:16')">9:16<br>Portrait</div>
+          <div class="ar-btn" id="ar169" onclick="setAR('16:9')">16:9<br>Paysage</div>
+          <div class="ar-btn" id="ar11" onclick="setAR('1:1')">1:1<br>Carré</div>
+        </div>
+
+        <label style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.2em;color:var(--text3);display:block;margin-bottom:6px">Description additionnelle</label>
+        <textarea class="s-textarea" id="freeText" placeholder="Ambiance, détails supplémentaires..." rows="3" oninput="state.freeText=this.value"></textarea>
+
+        <button class="gen-btn" id="genBtn" onclick="generate()" style="margin-top:16px">
+          <svg id="genIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="24" height="24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          <span id="genLabel">Lancer le Rendu 4K</span>
+        </button>
+        <div class="error-box" id="errorBox"></div>
+      </div>
+    </div>
+
+    <!-- COL DROITE: Output -->
+    <div>
+      <div class="output-panel" id="outputPanel">
+        <div class="output-empty" id="outputEmpty">
+          <p>STUDIO</p>
+          <p style="font-size:20px;letter-spacing:0.5em;color:var(--accent)">FAMILY</p>
+        </div>
+        <div class="loading-overlay" id="loadingOverlay" style="display:none">
+          <div class="loading-spinner"></div>
+          <div class="loading-step" id="loadingStep">Initialisation...</div>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-// ==================== CONSTANTS ====================
-const MODEL_IMAGE = 'gemini-3-pro-image-preview';
-
-const ORIGINS_LIST = {
-  'Afrique': ['Afrique Subsaharienne', "Afrique de l'Ouest", "Afrique de l'Est"],
-  'Europe': ['Nordique', 'Est-Européen', 'Ouest-Européen', 'Méditerranéen'],
-  'Moyen-Orient': ['Oriental', 'Nordique-Moyen-Orient', 'Nord-Africain', 'Arabe'],
-  'Asie': ['Est-asiatique', 'Sud-asiatique', 'Sud-Est asiatique'],
-  'Amériques': ['Afro-descendant', 'Latino-américain', 'Native américain']
-};
-
 // ==================== STATE ====================
-let API_KEY = '';
-let gender = 'femme';
-let isLocked = false;
-let basePhoto = null;
-let currentView = 'front';
-let isLoading = false;
-let tempOrigins = [];
-
-const images = { front: null, profileLeft: null, profileRight: null, back: null };
-const viewLabels = { front: 'Vue de Face', profileLeft: 'Profil Gauche', profileRight: 'Profil Droit', back: 'Vue de Dos' };
-
-let params = {
-  age: 28, height: 165, weight: 60,
-  bodyType: 'moyenne', morphology: 'X',
-  distribution: 50, glutealVolume: 50,
-  origins: [{ origin: 'Méditerranéen', weight: 100 }],
-  tone: 'tonique', waistCirc: 80, hipCirc: 95, thighCirc: 58,
-  chestBand: 90, chestCup: 'B', chestVolume: 50,
-  absDefinition: 'absents', bellyGravity: 0, stretchMarks: []
+const state = {
+  apiKey: '',
+  appMode: 'IDLE',
+  energy: 'calm',
+  // Participants
+  mainAvatar: '',
+  partner: '',
+  children: [],
+  childCount: 0,
+  isBabyPresent: false,
+  babyAgeInMonths: 6,
+  guests: [],
+  guestCount: 0,
+  // Room
+  room: null,
+  roomSubtype: '',
+  roomImg: '',
+  // Action
+  action: '',
+  cameraAngle: 'face',
+  season: 'spring',
+  weather: 'sunny',
+  dayMoment: 'matin',
+  aspectRatio: '9:16',
+  freeText: '',
+  // Modes
+  whatsapp: false,
+  menage: false,
+  portage: false,
+  interphone: false,
+  dressing: false,
+  bbq: false,
+  poussette: false,
+  miroir: false,
+  // Mode images
+  whatsappContact: '',
+  whatsappCallType: 'video',
+  babyRef: '',
+  carrierImg: '',
+  bbqRef: '',
+  strollerRef: '',
+  strollerBaby: '',
+  interphonePortal: '',
+  interphoneVisitor: '',
+  interphoneStep: 1,
 };
 
-const STRETCH_ZONES = ['ventre', 'hanches', 'cuisses', 'fesses', 'bras'];
+// ==================== ROOMS DATA ====================
+const ROOMS = [
+  {cat:'pieces_principales', label:'Principales', rooms:[
+    {key:'salon',label:'Salon',icon:'🛋'},
+    {key:'cuisine',label:'Cuisine',icon:'🍳'},
+    {key:'salle_a_manger',label:'Salle à manger',icon:'🍽️'},
+    {key:'chambre',label:'Chambre',icon:'🛏️'},
+    {key:'entree',label:'Entrée',icon:'🚪'},
+    {key:'escaliers',label:'Escaliers',icon:'🪜'},
+    {key:'salle_de_jeu',label:'Salle de jeu',icon:'🧸'},
+    {key:'bureau',label:'Bureau',icon:'💻'},
+    {key:'dressing',label:'Dressing',icon:'👗'},
+  ]},
+  {cat:'salles_de_bain', label:'Bain/Toilettes', rooms:[
+    {key:'salle_de_bain',label:'Salle de bain',icon:'🛁'},
+    {key:'toilettes',label:'Toilettes',icon:'🚽'},
+  ]},
+  {cat:'pieces_fonctionnelles', label:'Fonctionnel', rooms:[
+    {key:'buanderie',label:'Buanderie',icon:'🧺'},
+    {key:'cellier_nourriture',label:'Cellier',icon:'🥫'},
+    {key:'cave_vin',label:'Cave à vin',icon:'🍷'},
+    {key:'salle_de_sport',label:'Sport',icon:'🏋️'},
+    {key:'atelier_bricolage',label:'Atelier',icon:'🛠️'},
+    {key:'garage_voiture',label:'Garage',icon:'🚗'},
+    {key:'ascenseur',label:'Ascenseur',icon:'🛗'},
+    {key:'jacuzzi',label:'Jacuzzi',icon:'🫧'},
+  ]},
+  {cat:'espaces_exterieurs', label:'Extérieur', rooms:[
+    {key:'jardin',label:'Jardin',icon:'🌿'},
+    {key:'terrace',label:'Terrasse',icon:'⛱️'},
+    {key:'balcon',label:'Balcon',icon:'🏙️'},
+    {key:'piscine',label:'Piscine',icon:'🏊'},
+    {key:'exterior_villa',label:'Extérieur Villa',icon:'🏠'},
+    {key:'mare',label:'Mare',icon:'🦆'},
+  ]},
+];
 
-// ==================== NAVIGATION ====================
-document.getElementById('apiKeyInput').addEventListener('keydown', e => { if (e.key==='Enter') enterApp(); });
+// ==================== ACTIONS DATA ====================
+const ACTIONS = {
+  salon: ['Se détendre sur le canapé','Regarder un film en famille','Enfants jouent au sol','Discuter calmement','Faire un puzzle','Dîner plateau-télé','Passer un appel vidéo WhatsApp','Passer un appel audio WhatsApp'],
+  cuisine: ['Cuisiner un plat maison','Laver les légumes','Préparer un gâteau','Faire la vaisselle','Ranger les courses','Prendre le petit déjeuner','Passer un appel vidéo WhatsApp'],
+  salle_a_manger: ['Mettre la table','Manger tous ensemble','Discuter à table','Aider un enfant à couper','Débarrasser la table','Prendre le petit déjeuner ensemble','Passer un appel vidéo WhatsApp'],
+  chambre: ['Se coucher','Se réveiller','S\'habiller','Ranger le lit','Scroller sur téléphone','Lire au lit','Regard complice','Prendre le petit déjeuner au lit'],
+  entree: ['Rentrer à la maison','Enlever ses chaussures','Raccrocher manteau','Porter le cartable','Poser ses clés','Se préparer à sortir','Passer un appel vidéo WhatsApp'],
+  escaliers: ['Monter les escaliers','Descendre les escaliers','Porter l\'enfant','Enfant avec son doudou','Enfants qui courent dans les escaliers'],
+  salle_de_jeu: ['Construire une tour LEGO','Dessiner au tableau','Jouer à la marchande','Ranger les jouets','Lire un album illustré'],
+  bureau: ['Taper sur l\'ordinateur','Écrire un email','Travailler sur un document','Faire une pause café','Scroller téléphone','Passer un appel vidéo WhatsApp'],
+  dressing: ['Choisir sa tenue','Essayer des vêtements','Se regarder dans le miroir','Hésiter entre deux tenues','Ranger les vêtements','Plier les vêtements'],
+  salle_de_bain: ['Se brosser les dents','Se coiffer','Appliquer une crème visage','Prendre une douche','Aider un enfant dans le bain','Passer un appel vidéo WhatsApp'],
+  toilettes: ['Nettoyer les toilettes','Changer le rouleau papier'],
+  buanderie: ['Trier le linge','Lancer une machine','Plier les vêtements propres','Repasser les chemises','Étendre le linge'],
+  cellier_nourriture: ['Chercher des gâteaux','Organiser les étagères','Ranger les bocaux','Faire l\'inventaire'],
+  cave_vin: ['Choisir une bouteille','Ranger des bouteilles','Observer la couleur du vin'],
+  salle_de_sport: ['Faire du yoga','Courir sur tapis','Exercices musculation','S\'étirer après l\'effort','Faire des pompes','Selfie miroir sport'],
+  atelier_bricolage: ['Bricoler sur l\'établi','Réparer un objet cassé','Organiser l\'atelier','Ranger les outils'],
+  garage_voiture: ['Installer un enfant dans le siège auto','Parent au volant','Fermer les portières','Démarrer la voiture'],
+  ascenseur: ['Entrer dans l\'ascenseur','Appuyer sur un bouton','Se regarder dans le miroir','Selfie miroir ascenseur'],
+  jacuzzi: ['Entrer dans le jacuzzi','Être assis dans l\'eau','Bulles en fonctionnement','Fermer les yeux pour se détendre','Moment en famille'],
+  jardin: ['Entretenir le jardin','Jouer avec les enfants','Tondre la pelouse','Se promener','Enfants courent','Faire un barbecue','Passer un appel vidéo WhatsApp'],
+  terrace: ['Se détendre sur la terrasse','Prendre l\'apéritif','Lire au soleil','Regarder le coucher de soleil','Faire un barbecue','Passer un appel vidéo WhatsApp'],
+  balcon: ['S\'appuyer à la rambarde','Observer le paysage','Boire un café','Profiter du soleil','Regarder le coucher de soleil'],
+  piscine: ['Sauter dans l\'eau','Flotter sur le dos','Nager la brasse','Assis au bord pieds dans l\'eau','Flotter sur une bouée','Passer un appel vidéo WhatsApp'],
+  exterior_villa: ['Marcher vers la maison','Tenir la main d\'un enfant','Porter l\'enfant fatigué','Chercher ses clés','Voiture devant le portail','Passer un appel vidéo WhatsApp'],
+  mare: ['Observer les grenouilles','Observer les nénuphars','Observer la surface de l\'eau'],
+  default: ['Scène de vie quotidienne naturelle','Moment spontané','Passer un appel vidéo WhatsApp','Passer un appel audio WhatsApp']
+};
 
-function enterApp() {
-  const key = document.getElementById('apiKeyInput').value.trim();
-  const err = document.getElementById('splash-error');
-  if (!key) { err.textContent='Veuillez entrer votre clé API Vertex AI.'; err.style.display='block'; return; }
-  API_KEY = key;
-  err.style.display = 'none';
+const CHAMBRE_SUBTYPES_FAMILY = ['chambre_parentale','chambre_enfant','chambre_bebe','chambre_adolescente','chambre_amie'];
+const CHAMBRE_SUBTYPES_SOLO = ['chambre_adulte','chambre_amie'];
+const CHAMBRE_SUBTYPE_LABELS = {
+  chambre_parentale:'Chambre parentale',
+  chambre_enfant:'Chambre enfant',
+  chambre_bebe:'Chambre bébé',
+  chambre_adolescente:'Chambre adolescente',
+  chambre_amie:'Chambre d\'amie',
+  chambre_adulte:'Chambre adulte',
+};
+
+let currentRoomCat = 'pieces_principales';
+let loadingInterval = null;
+const LOADING_STEPS = [
+  "Vérification de l'intégrité DNA...",
+  "Scanning de la structure architecturale...",
+  "Injection des protocoles de réalisme...",
+  "Rendu 4K Master en cours...",
+  "Optimisation du piqué UGC...",
+  "Validation finale des émotions...",
+];
+
+// ==================== SPLASH / NAV ====================
+document.getElementById('apiKeyInput').addEventListener('input', function() {
+  state.apiKey = this.value.trim();
+  document.getElementById('modeGrid').style.display = state.apiKey ? 'grid' : 'none';
+});
+document.getElementById('apiKeyInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && state.apiKey) document.getElementById('modeGrid').style.display = 'grid';
+});
+
+function selectMode(m) {
+  if (!state.apiKey) { showSplashError('Entrez votre clé API Vertex AI'); return; }
+  state.appMode = m;
+  showSetup();
+}
+
+function showSplashError(msg) {
+  const el = document.getElementById('splashError');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function goSplash() {
+  document.getElementById('splash').style.display = 'flex';
+  document.getElementById('setup').style.display = 'none';
+  document.getElementById('app').classList.remove('visible');
+}
+
+function goSetup() {
+  document.getElementById('app').classList.remove('visible');
+  showSetup();
+}
+
+function showSetup() {
   document.getElementById('splash').style.display = 'none';
-  document.getElementById('genderSelect').classList.add('visible');
+  document.getElementById('setup').style.display = 'block';
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('setupTitle').textContent = state.appMode === 'SOLO' ? 'Configuration Solo' : 'Configuration Famille';
+  renderSetup();
 }
 
-function selectGender(g) {
-  gender = g;
-  document.getElementById('genderSelect').classList.remove('visible');
-  document.getElementById('mainApp').classList.add('visible');
-  document.getElementById('genderPill').textContent = g === 'femme' ? 'Femme' : 'Homme';
-  document.getElementById('chestSection').style.display = g === 'femme' ? 'block' : 'none';
-  renderStretchZones();
+// ==================== SETUP ====================
+function renderSetup() {
+  const grid = document.getElementById('setupGrid');
+  const isSolo = state.appMode === 'SOLO';
+  grid.innerHTML = '';
+
+  // CARD 1 — Avatar principal
+  const card1 = makeCard('👤 Avatar Principal (DNA) *');
+  card1.appendChild(makeUploader('setupMainAvatar', state.mainAvatar, 'Photo de référence visage *', 'mainAvatar'));
+  grid.appendChild(card1);
+
+  // CARD 2 — Bébé (tous modes)
+  const cardBebe = makeCard('🍼 Bébé');
+  cardBebe.appendChild(makeToggleRow('Bébé présent dans les scènes', state.isBabyPresent, 'toggleBaby()'));
+  if (state.isBabyPresent) {
+    const ageDiv = document.createElement('div');
+    ageDiv.style.marginTop = '10px';
+    const lbl = document.createElement('label');
+    lbl.className = 'toggle-label';
+    lbl.style.display = 'block';
+    lbl.style.marginBottom = '6px';
+    lbl.textContent = 'Âge du bébé (mois)';
+    const inp = document.createElement('input');
+    inp.type = 'number';
+    inp.min = '0';
+    inp.max = '36';
+    inp.value = state.babyAgeInMonths;
+    inp.style.cssText = 'width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:10px;color:white;font-size:13px;outline:none';
+    inp.addEventListener('change', function() { state.babyAgeInMonths = parseInt(this.value) || 0; });
+    const note = document.createElement('p');
+    note.style.cssText = 'font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;margin-top:6px;color:' + (state.babyAgeInMonths >= 6 ? '#4ade80' : '#fb923c');
+    note.textContent = state.babyAgeInMonths >= 6 ? '✅ ≥6 mois : chaise haute activée' : 'ℹ️ <6 mois : dans les bras uniquement';
+    ageDiv.appendChild(lbl);
+    ageDiv.appendChild(inp);
+    ageDiv.appendChild(note);
+    cardBebe.appendChild(ageDiv);
+  }
+  grid.appendChild(cardBebe);
+
+    // CARD 3 — Conjoint
+    const cardConjoint = makeCard('💑 Conjoint');
+    cardConjoint.appendChild(makeToggleRow('Activer le conjoint', state.partner !== '', 'togglePartner()'));
+    if (state.partner !== '') {
+      cardConjoint.appendChild(makeUploader('setupPartner', state.partner === 'pending' ? '' : state.partner, 'Photo conjoint', 'partner'));
+    }
+    grid.appendChild(cardConjoint);
+
+    // CARD 4 — Enfants (mode Famille uniquement)
+    if (state.appMode === 'FAMILY') {
+      const cardEnfants = makeCard('👶 Enfants');
+      const ctrlEnfants = makePlusMinusRow('Enfants', state.childCount, 'addChild(-1)', 'addChild(1)');
+      cardEnfants.appendChild(ctrlEnfants);
+      if (state.childCount > 0) {
+        const slots = document.createElement('div');
+        slots.className = 'upload-slots';
+        for (let i = 0; i < state.children.length; i++) {
+          slots.appendChild(makeUploader('setupChild' + i, state.children[i], 'Enfant ' + (i+1), 'child', i));
+        }
+        cardEnfants.appendChild(slots);
+      }
+      grid.appendChild(cardEnfants);
+    }
+
+    // CARD 5 — Invités
+    const cardInvites = makeCard('👥 Invités');
+    const ctrlInvites = makePlusMinusRow('Invités', state.guestCount, 'addGuest(-1)', 'addGuest(1)');
+    cardInvites.appendChild(ctrlInvites);
+    if (state.guestCount > 0) {
+      const slots2 = document.createElement('div');
+      slots2.className = 'upload-slots';
+      for (let i = 0; i < state.guests.length; i++) {
+        slots2.appendChild(makeUploader('setupGuest' + i, state.guests[i], 'Invité ' + (i+1), 'guest', i));
+      }
+      cardInvites.appendChild(slots2);
+    }
+    grid.appendChild(cardInvites);
 }
 
-function goGenderSelect() {
-  document.getElementById('mainApp').classList.remove('visible');
-  document.getElementById('genderSelect').classList.add('visible');
-  resetImages();
+function makeCard(title) {
+  const card = document.createElement('div');
+  card.className = 'setup-card';
+  const h3 = document.createElement('h3');
+  h3.textContent = title;
+  card.appendChild(h3);
+  return card;
 }
 
-// ==================== PARAMS ====================
-function setParam(key, val) {
-  if (isLocked) return;
-  params[key] = val;
-  // Update buttons
-  document.querySelectorAll(`[data-group="${{bodyType:'bodyType',morphology:'morph',tone:'tone',absDefinition:'abs'}[key] || key}"]`).forEach(b => {
-    b.classList.toggle('active', b.dataset.val === val);
+function makeToggleRow(label, isOn, onclickStr) {
+  const row = document.createElement('div');
+  row.className = 'toggle-row';
+  const lbl = document.createElement('span');
+  lbl.className = 'toggle-label';
+  lbl.textContent = label;
+  const sw = document.createElement('div');
+  sw.className = 'toggle-sw' + (isOn ? ' on' : '');
+  sw.setAttribute('onclick', onclickStr);
+  const thumb = document.createElement('div');
+  thumb.className = 'toggle-sw-thumb';
+  sw.appendChild(thumb);
+  row.appendChild(lbl);
+  row.appendChild(sw);
+  return row;
+}
+
+function makePlusMinusRow(label, count, onMinus, onPlus) {
+  const row = document.createElement('div');
+  row.className = 'participant-controls';
+  row.innerHTML = '<span class="participant-label">' + label + '</span>'
+    + '<button class="cnt-btn" onclick="' + onMinus + '">−</button>'
+    + '<span style="font-size:14px;font-weight:700;min-width:20px;text-align:center">' + count + '</span>'
+    + '<button class="cnt-btn" onclick="' + onPlus + '">+</button>';
+  return row;
+}
+
+function makeUploader(id, value, label, stateKey, idx) {
+  const div = document.createElement('div');
+  div.id = id;
+  div.className = 'uploader' + (value ? ' has-img' : '');
+  div.style.minHeight = '100px';
+
+  if (value) {
+    const img = document.createElement('img');
+    img.src = value;
+    img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover';
+    div.appendChild(img);
+    const overlay = document.createElement('div');
+    overlay.className = 'uploader-overlay';
+    const btn = document.createElement('button');
+    btn.className = 'remove-img-btn';
+    btn.textContent = '✕';
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      removeSetupState(stateKey, idx);
+    });
+    overlay.appendChild(btn);
+    div.appendChild(overlay);
+  } else {
+    const icon = document.createElement('div');
+    icon.className = 'uploader-icon';
+    icon.textContent = '📸';
+    const lbl = document.createElement('div');
+    lbl.className = 'uploader-label';
+    lbl.textContent = label;
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onloadend = function() {
+        if (stateKey === 'mainAvatar') state.mainAvatar = reader.result;
+        else if (stateKey === 'partner') state.partner = reader.result;
+        else if (stateKey === 'child') state.children[idx] = reader.result;
+        else if (stateKey === 'guest') state.guests[idx] = reader.result;
+        renderSetup();
+      };
+      reader.readAsDataURL(file);
+    });
+    div.appendChild(icon);
+    div.appendChild(lbl);
+    div.appendChild(input);
+  }
+  return div;
+}
+
+function removeSetupState(key, idx) {
+  if (key === 'mainAvatar') state.mainAvatar = '';
+  else if (key === 'partner') state.partner = '';
+  else if (key === 'child') state.children[idx] = '';
+  else if (key === 'guest') state.guests[idx] = '';
+  renderSetup();
+}
+
+function removeSetupImg(e, id) {
+  e.stopPropagation();
+  if (id === 'setupMainAvatar') state.mainAvatar = '';
+  else if (id === 'setupPartner') state.partner = '';
+  else if (id.startsWith('setupChild')) { const i = parseInt(id.replace('setupChild','')); state.children[i] = ''; }
+  else if (id.startsWith('setupGuest')) { const i = parseInt(id.replace('setupGuest','')); state.guests[i] = ''; }
+  renderSetup();
+}
+
+function togglePartner() {
+  state.partner = state.partner !== '' ? '' : 'pending';
+  renderSetup();
+}
+
+function toggleBaby() {
+  state.isBabyPresent = !state.isBabyPresent;
+  renderSetup();
+}
+
+function addChild(delta) {
+  state.childCount = Math.max(0, state.childCount + delta);
+  if (delta > 0) state.children.push('');
+  else state.children.pop();
+  renderSetup();
+}
+
+function addGuest(delta) {
+  state.guestCount = Math.max(0, state.guestCount + delta);
+  if (delta > 0) state.guests.push('');
+  else state.guests.pop();
+  renderSetup();
+}
+
+function validateSetup() {
+  const err = document.getElementById('setupError');
+  if (!state.mainAvatar) { err.textContent = 'Avatar principal obligatoire !'; err.style.display = 'block'; return; }
+  err.style.display = 'none';
+  showApp();
+}
+
+function showApp() {
+  document.getElementById('setup').style.display = 'none';
+  document.getElementById('splash').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+  initRoomGrid();
+  // Bind room img input
+  const roomInput = document.getElementById('roomImgInput');
+  if (roomInput) {
+    roomInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onloadend = function() {
+        state.roomImg = reader.result;
+        const uploader = document.getElementById('roomImgUploader');
+        // Remove old preview
+        const oldPrev = uploader.querySelector('img.room-preview');
+        if (oldPrev) oldPrev.remove();
+        // Add new preview
+        const img = document.createElement('img');
+        img.className = 'room-preview';
+        img.src = reader.result;
+        img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:14px;z-index:1';
+        uploader.prepend(img);
+        uploader.classList.add('has-img');
+        // Hide icon/label
+        const icon = uploader.querySelector('.uploader-icon');
+        const lbl = uploader.querySelector('.uploader-label');
+        if (icon) icon.style.display = 'none';
+        if (lbl) lbl.style.display = 'none';
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+  const roomRemoveBtn = document.getElementById('roomImgRemoveBtn');
+  if (roomRemoveBtn) {
+    roomRemoveBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      state.roomImg = '';
+      const uploader = document.getElementById('roomImgUploader');
+      const prev = uploader.querySelector('img.room-preview');
+      if (prev) prev.remove();
+      uploader.classList.remove('has-img');
+      const icon = uploader.querySelector('.uploader-icon');
+      const lbl = uploader.querySelector('.uploader-label');
+      if (icon) icon.style.display = '';
+      if (lbl) lbl.style.display = '';
+      document.getElementById('roomImgInput').value = '';
+    });
+  }
+}
+
+// ==================== ROOM GRID ====================
+function initRoomGrid() {
+  const catsEl = document.getElementById('roomCats');
+  catsEl.innerHTML = ROOMS.map(c => 
+    `<button class="cat-btn ${c.cat === currentRoomCat ? 'active' : ''}" onclick="selectRoomCat('${c.cat}')">${c.label}</button>`
+  ).join('');
+  renderRoomGrid();
+}
+
+function selectRoomCat(cat) {
+  currentRoomCat = cat;
+  document.querySelectorAll('.cat-btn').forEach(b => {
+    b.className = 'cat-btn' + (b.textContent === ROOMS.find(c=>c.cat===cat).label ? ' active' : '');
   });
-  if (key === 'bodyType') updateGravityMax();
+  renderRoomGrid();
 }
 
-function updateGravityMax() {
-  const max = params.bodyType === 'obèse' ? 100 : params.bodyType === 'surpoids' ? 65 : 15;
-  const sl = document.getElementById('gravSlider');
-  if (sl) { sl.max = max; if (+sl.value > max) { sl.value = max; params.bellyGravity = max; document.getElementById('v_grav').textContent = max + '%'; } }
+function renderRoomGrid() {
+  const cat = ROOMS.find(c => c.cat === currentRoomCat);
+  if (!cat) return;
+  document.getElementById('roomGrid').innerHTML = cat.rooms.map(r =>
+    `<div class="room-btn ${state.room?.key === r.key ? 'active' : ''}" onclick="selectRoom('${r.key}','${r.label}')">
+      <span class="icon">${r.icon}</span>
+      <span class="rlabel">${r.label}</span>
+    </div>`
+  ).join('');
 }
 
-function handleBasePhoto(e) {
-  if (isLocked) return;
+function selectRoom(key, label) {
+  state.room = {key, label};
+  state.roomSubtype = '';
+  renderRoomGrid();
+  document.getElementById('roomImgLabel').textContent = `Photo : ${label} *`;
+  
+  // Show/hide subtypes
+  document.getElementById('cuisineSubtype').className = 'subtype-row' + (key === 'cuisine' ? ' show' : '');
+  document.getElementById('bureauSubtype').className = 'subtype-row' + (key === 'bureau' ? ' show' : '');
+  
+  if (key === 'chambre') {
+    const subEl = document.getElementById('chambreSubtype');
+    subEl.className = 'subtype-row show';
+    const opts = state.appMode === 'SOLO' ? CHAMBRE_SUBTYPES_SOLO : CHAMBRE_SUBTYPES_FAMILY;
+    document.getElementById('chambreSubtypeSelect').innerHTML = 
+      '<option value="">Type de chambre...</option>' +
+      opts.map(s => `<option value="${s}">${CHAMBRE_SUBTYPE_LABELS[s]}</option>`).join('');
+  } else {
+    document.getElementById('chambreSubtype').className = 'subtype-row';
+  }
+
+  // Show/hide mode BBQ (jardin/balcon/terrace only)
+  const bbqRow = document.getElementById('bbqModeRow');
+  if (bbqRow) bbqRow.style.display = ['jardin','terrace','balcon'].includes(key) ? 'flex' : 'none';
+  
+  updateActions();
+}
+
+function setSubtype(v) {
+  state.roomSubtype = v;
+  updateActions();
+}
+
+function updateActions() {
+  const sel = document.getElementById('actionSelect');
+  const key = state.room?.key || '';
+  const actions = ACTIONS[key] || ACTIONS.default;
+  sel.innerHTML = '<option value="">Sélectionner une action...</option>' +
+    actions.map(a => `<option value="${a}">${a}</option>`).join('');
+  state.action = '';
+}
+
+// ==================== ENERGY ====================
+function setEnergy(e) {
+  state.energy = e;
+  document.getElementById('energyCalmBtn').className = 'energy-btn' + (e === 'calm' ? ' active-calm' : '');
+  document.getElementById('energyChaosBtn').className = 'energy-btn' + (e === 'chaos' ? ' active-chaos' : '');
+}
+
+// ==================== ASPECT RATIO ====================
+function setAR(ar) {
+  state.aspectRatio = ar;
+  document.getElementById('ar916').className = 'ar-btn' + (ar === '9:16' ? ' active' : '');
+  document.getElementById('ar169').className = 'ar-btn' + (ar === '16:9' ? ' active' : '');
+  document.getElementById('ar11').className = 'ar-btn' + (ar === '1:1' ? ' active' : '');
+}
+
+// ==================== MODES ====================
+function toggleMode(m) {
+  state[m] = !state[m];
+  const el = document.getElementById('toggle' + m.charAt(0).toUpperCase() + m.slice(1));
+  if (el) el.className = 'toggle-sw' + (state[m] ? ' on' : '');
+  
+  // Show config panels
+  const configs = {whatsapp:'whatsappConfig', portage:'portageConfig', bbq:'bbqConfig', poussette:'poussetteConfig', interphone:'interphoneConfig'};
+  if (configs[m]) document.getElementById(configs[m]).style.display = state[m] ? 'block' : 'none';
+}
+
+// ==================== UPLOADS (APP) ====================
+function handleUpload(e, key) {
   const file = e.target.files[0];
   if (!file) return;
   const reader = new FileReader();
   reader.onloadend = () => {
-    basePhoto = reader.result;
-    const zone = document.getElementById('uploadZone');
-    const ph = document.getElementById('uploadPlaceholder');
-    const img = document.getElementById('basePhotoPreview');
-    zone.classList.add('has-img');
-    ph.style.display = 'none';
-    img.src = basePhoto;
-    img.style.display = 'block';
+    state[key] = reader.result;
+    const uploader = document.getElementById(key + 'Uploader');
+    if (uploader) {
+      // Supprimer l'ancien img preview s'il existe
+      const old = uploader.querySelector('img.preview-img');
+      if (old) old.remove();
+      // Créer le nouveau
+      const img = document.createElement('img');
+      img.className = 'preview-img';
+      img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1';
+      img.src = reader.result;
+      uploader.prepend(img);
+      uploader.classList.add('has-img');
+      // Cacher l'icon et le label
+      const icon = uploader.querySelector('.uploader-icon');
+      const label = uploader.querySelector('.uploader-label');
+      if (icon) icon.style.display = 'none';
+      if (label) label.style.display = 'none';
+    }
   };
   reader.readAsDataURL(file);
 }
 
-// ==================== STRETCH ZONES ====================
-function renderStretchZones() {
-  const el = document.getElementById('stretchZones');
-  el.innerHTML = STRETCH_ZONES.map(zone => {
-    const mark = params.stretchMarks.find(m => m.zone === zone);
-    return `<div class="stretch-zone">
-      <div class="stretch-zone-header">
-        <button class="zone-toggle ${mark?'on':'off'}" onclick="toggleStretchZone('${zone}')">${zone}</button>
-      </div>
-      ${mark ? `<div class="intensity-btns">
-        ${['légère','modérée','marquée'].map(i => `<button class="int-btn ${mark.intensity===i?'active':''}" onclick="setStretchIntensity('${zone}','${i}')">${i}</button>`).join('')}
-      </div>` : ''}
-    </div>`;
-  }).join('');
-}
-
-function toggleStretchZone(zone) {
-  if (isLocked) return;
-  const idx = params.stretchMarks.findIndex(m => m.zone === zone);
-  if (idx >= 0) params.stretchMarks.splice(idx, 1);
-  else params.stretchMarks.push({ zone, intensity: 'modérée' });
-  renderStretchZones();
-}
-
-function setStretchIntensity(zone, intensity) {
-  if (isLocked) return;
-  const m = params.stretchMarks.find(m => m.zone === zone);
-  if (m) { m.intensity = intensity; renderStretchZones(); }
-}
-
-// ==================== LOCK ====================
-function toggleLock() {
-  isLocked = !isLocked;
-  const btn = document.getElementById('lockBtn');
-  btn.className = 'action-btn ' + (isLocked ? 'lock-on' : 'lock-off');
-  btn.innerHTML = isLocked
-    ? '<span style="font-size:8px;text-transform:uppercase;letter-spacing:0.2em;">Déverrouiller les paramètres</span>'
-    : '<span style="font-size:10px;text-transform:uppercase;letter-spacing:0.2em;">J\'active Body Look (Verrouillage)</span>';
-
-  // Disable all inputs in sidebar
-  document.querySelectorAll('aside input, aside select, aside button:not(#lockBtn):not([onclick*="openBodyLookModal"]):not([onclick*="openOriginsModal"])').forEach(el => {
-    if (isLocked) el.setAttribute('disabled','disabled');
-    else el.removeAttribute('disabled');
-  });
-
-  if (isLocked) {
-    document.getElementById('genFrontBtn').setAttribute('disabled','disabled');
-    document.getElementById('syncBtn').classList.remove('hidden');
-  } else {
-    document.getElementById('genFrontBtn').removeAttribute('disabled');
-    document.getElementById('syncBtn').classList.add('hidden');
+function removeImg(e, key) {
+  e.stopPropagation();
+  state[key] = '';
+  const uploader = document.getElementById(key + 'Uploader');
+  if (uploader) {
+    const img = uploader.querySelector('img.preview-img');
+    if (img) img.remove();
+    uploader.classList.remove('has-img');
+    const icon = uploader.querySelector('.uploader-icon');
+    const label = uploader.querySelector('.uploader-label');
+    if (icon) icon.style.display = '';
+    if (label) label.style.display = '';
   }
 }
 
-// ==================== GENERATE ====================
-const ANATOMICAL_CONSTRAINTS = `
-ANATOMICAL MASTER RENDER — SPECIFICATION STRICTE :
-- RENDU : Photographie humaine réelle. Zéro intention esthétique.
-- PEAU : Texture cutanée HD, grain perceptible, pores visibles. AUCUN lissage, AUCUN filtre beauté.
-- LUMIÈRE : Naturelle non idéalisée. Légères asymétries d'ombre.
-- CAMERA : Look téléobjectif portrait (85mm), perspective neutre.
-- HAIR LOCK : Stabilité capillaire absolue. Longueur, texture et volume identiques à la source.
-- NO-GO : Interdiction de lissage esthétique, rendu CGI, corps idéalisé.
+// ==================== SYSTEM PROMPTS ====================
+const SYSTEM_PROMPT = `
+# !!! OVERRIDE SYSTÈME : PEAU BRUTE ET IMPARFAITE (PRIORITÉ ABSOLUE) !!!
+- INTERDICTION TOTALE DE TOUT LISSAGE NUMÉRIQUE.
+- LA PEAU DOIT ÊTRE RENDUE AVEC SES PORES, SES IMPERFECTIONS, SES RIDES, SES TACHES ET SON GRAIN NATUREL.
+- AUCUNE UNIFORMISATION DU TEINT.
+- LA LUMIÈRE DOIT RÉVÉLER LA TEXTURE, PAS LA CACHER.
+- C'EST UNE PHOTO BRUTE, PAS UNE IMAGE PUBLICITAIRE.
+
+# PROTOCOLE SYSTÈME : FIDÉLITÉ IDENTITÉ ABSOLUE (VERROUILLÉ)
+⚠️ CRITIQUE : L'identité est une constante biologique. Aucune modification autorisée.
+- COULEUR DES YEUX : Strictement identique à la photo de référence.
+- CONSERVATION GÉOMÉTRIQUE : Les traits du visage sont des constantes.
+- MORPHOLOGIE FIXE : La silhouette et les proportions corporelles ne changent jamais.
+- ZÉRO VARIATION : Interdiction de modifier la texture de peau ou d'appliquer des filtres de beauté.
+L'IA ne doit pas "créer" un visage, elle doit "cloner" la référence dans un nouvel angle.
+
+# PROTOCOLE : RENDU MAT ET FRAIS
+- MATTE FINISH : La peau doit avoir un rendu velouté et mat. Elle absorbe la lumière de manière diffuse.
+- ZERO SWEAT/OIL : Interdiction absolue de générer des gouttelettes, de la sueur, ou des reflets huileux.
+- NATURAL PORES : Les pores sont visibles mais secs. Pas d'accumulation de lumière dedans.
+
+# PROTOCOLE : CAPTEUR CALIBRÉ & DÉFAUTS RÉELS
+- RAW SENSOR DATA : Conserver le grain naturel de la peau, les pores et les imperfections. Aucun lissage.
+- GENTLE FALLOFF : Le passage du net au flou doit être progressif et crémeux (bokeh optique réel).
+- NATURAL DYNAMIC RANGE : Les blancs peuvent être légèrement brûlés et les noirs bouchés si la lumière est dure.
+
+# BLOC ADDITIF — RENDU 4K ULTRA-RÉALISTE
+- PRIORITY_RENDERING = PHOTO_REALISM_MAX
+- OUTPUT_RESOLUTION = 4K_NATIVE
+- REALISM_OVERRIDE = TRUE
+- Pores visibles, micro-imperfections, grain de peau irrégulier.
+- Texture de peau brute, non filtrée, non lissée.
+- Vêtements avec plis naturels, froissements légers, usure subtile.
+- Mobilier avec micro-rayures, traces d'usage. Rien de "catalogue".
+- Camera = DSLR simulé, profondeur de champ naturelle, grain discret mais présent.
+- Si l'image est trop belle pour être vraie, elle doit être volontairement dégradée jusqu'à paraître humaine.
+
+# FIDÉLITÉ ABSOLUE AU DÉCOR DE RÉFÉRENCE
+- La photo de décor fournie est la SOURCE DE VÉRITÉ ABSOLUE.
+- MÊME disposition exacte des meubles, MÊME couleur, MÊME forme.
+- INTERDICTIONS : Modifier, déplacer, ajouter ou supprimer des meubles.
+
+# MODE PERSPECTIVE — HOME FAMILY
+- Le personnage principal ne doit JAMAIS apparaître immobile ou figé.
+- L'image doit TOUJOURS être capturée pendant l'exécution d'une action liée à la scène décrite.
+- Le personnage ne doit JAMAIS donner l'impression de poser pour la caméra.
+- La scène existait déjà avant la photo. L'image capture un moment réel de vie (snapshot).
 `;
 
-function getBodyTypeSignature() {
-  switch(params.bodyType) {
-    case 'mince': return "SILHOUETTE MINCE : Structure osseuse apparente, muscles fins, absence de graisse sous-cutanée.";
-    case 'moyenne': return "SILHOUETTE MOYENNE : Équilibre standard entre muscle et masse adipeuse.";
-    case 'surpoids': return "SILHOUETTE SURPOIDS (PLUS-SIZE) : Volumes généreux, courbes prononcées, build substantiel, section médiane large.";
-    case 'obèse': return "SILHOUETTE OBÈSE (HEAVY BUILD) : Volumes massifs, abdomen proéminent avec effet de pesanteur, plis cutanés naturels, largeur corporelle maximale.";
-  }
-}
+// ==================== GENERATE ====================
+async function generate() {
+  const err = document.getElementById('errorBox');
+  err.className = 'error-box';
+  
+  if (!state.mainAvatar) { showError('Avatar DNA obligatoire !'); return; }
+  if (!state.roomImg && !state.poussette && !state.interphone) { showError('Photo de la pièce obligatoire !'); return; }
+  if (state.whatsapp && !state.whatsappContact) { showError('Photo de l\'interlocuteur WhatsApp obligatoire !'); return; }
+  if (state.portage && (!state.babyRef || !state.carrierImg)) { showError('Photos DNA Bébé + Porte-bébé obligatoires !'); return; }
+  if (state.bbq && !state.bbqRef) { showError('Photo du barbecue obligatoire !'); return; }
+  if (state.poussette && (!state.strollerRef || !state.strollerBaby)) { showError('Photos Poussette + Bébé obligatoires !'); return; }
 
-function buildStretchPrompt() {
-  if (params.stretchMarks.length === 0) return "PEAU : Lisse, sans marque apparente.";
-  const d = params.stretchMarks.map(m => `- ${m.zone} : intensité ${m.intensity}`).join('\n');
-  return `VERGETURES :\n${d}\nFines et irrégulières, JAMAIS symétriques. Couleur cicatricielle réaliste.`;
-}
-
-function getGlutealDesc() {
-  const v = params.glutealVolume;
-  let desc = v >= 80
-    ? "RÉGION FESSIÈRE : Développement glutéal prononcé et sculpté. Gluteus maximus pleinement développé, projection 12-15cm. Forme arrondie, galbée et soulevée."
-    : v >= 60 ? "RÉGION FESSIÈRE : Développement glutéal modéré à fort. Projection 8-12cm. Forme arrondie et ferme."
-    : v >= 40 ? "RÉGION FESSIÈRE : Développement glutéal modéré. Projection 5-8cm. Forme naturelle."
-    : "RÉGION FESSIÈRE : Développement glutéal minimal. Projection 3-5cm. Forme athlétique compacte.";
-
-  if (['tonique','athlétique','musclé'].includes(params.tone)) desc += " Muscles fessiers fermes, soutenus. Aucun affaissement.";
-  else if (params.tone === 'souple') desc += " Volume maintenu avec douceur tissulaire.";
-  else desc += " Légère gravité autorisée.";
-  return desc;
-}
-
-function buildBodyPrompt() {
-  const originString = params.origins.map(o => `${o.origin} (${o.weight}%)`).join(', ');
-  const chestInfo = gender === 'femme' ? `Poitrine : Taille ${params.chestBand}${params.chestCup}. Volume projection: ${params.chestVolume}%.` : '';
-  const absInfo = params.absDefinition ? `Abdominaux : ${params.absDefinition}.` : '';
-  const gravityEffect = params.bellyGravity > 0 ? `GRAVITÉ ABDOMINALE : ${params.bellyGravity}%. Ptose naturelle des tissus mous.` : "ABDOMEN : Ferme.";
-
-  return `
-### SCULPTURE ANATOMIQUE ###
-${getBodyTypeSignature()}
-Morphologie : ${params.morphology}. Distribution : ${params.distribution}%.
-Origines : ${originString}.
-
-### BIOMÉTRIE ###
-Taille ${params.height}cm, Poids ${params.weight}kg, Âge ${params.age} ans. Tonicité : ${params.tone}.
-Taille (Ventre) ${params.waistCirc}cm, Hanches ${params.hipCirc}cm, Cuisses ${params.thighCirc}cm.
-${getGlutealDesc()}
-${chestInfo}
-${absInfo}
-
-### MARQUEURS ###
-${gravityEffect}
-${buildStretchPrompt()}
-
-TENUE : ${gender === 'femme' ? "brassière et legging nude ultra-ajustés" : "boxer nude simple"}.
-  `;
-}
-
-async function callVertex(parts) {
-  const endpoint = `https://aiplatform.googleapis.com/v1/publishers/google/models/${MODEL_IMAGE}:generateContent?key=${encodeURIComponent(API_KEY)}`;
-  const body = {
-    contents: [{ role: 'user', parts }],
-    generationConfig: {
-      responseModalities: ['IMAGE'],
-      imageConfig: { aspectRatio: '9:16', imageSize: '4K' }
-    }
-  };
-  const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-  if (!res.ok) {
-    const txt = await res.text();
-    let d; try { d = JSON.parse(txt); } catch(e) {}
-    const msg2 = d?.error?.message || txt;
-    if(res.status===400){throw new Error(`ERREUR 400 : ${msg2} — Activez la Vertex AI API sur console.cloud.google.com/apis/library`);}
-    if(res.status===401){throw new Error(`ERREUR 401 : Clé non reconnue — Créez une clé sur console.cloud.google.com/apis/credentials`);}
-    if(res.status===403){throw new Error(`ERREUR 403 : Accès refusé — Activez la Vertex AI API et vérifiez les restrictions de votre clé`);}
-    if(res.status===404){throw new Error(`ERREUR 404 : Modèle non trouvé — Activez la Vertex AI API sur votre projet`);}
-    if(res.status===429){throw new Error(`ERREUR 429 : Quota dépassé — Attendez 1-2 minutes et réessayez`);}
-    throw new Error(`Erreur ${res.status}: ${msg2}`);
-  }
-  const data = await res.json();
-  for (const part of (data.candidates?.[0]?.content?.parts || [])) {
-    if (part.inlineData?.data) return `data:image/png;base64,${part.inlineData.data}`;
-  }
-  throw new Error("Aucune image générée.");
-}
-
-async function generateFront() {
-  if (!basePhoto) { alert("Veuillez d'abord télécharger une photo source."); return; }
-  if (isLoading) return;
-
-  isLoading = true;
-  resetImages();
-  showImagesArea();
-  setGenLoading(true);
-
-  const prompt = `
-${ANATOMICAL_CONSTRAINTS}
-Génère une photographie 4K ultra-réaliste d'un avatar ${gender} DE FACE.
-PLAN COMPLET : DE LA TÊTE AUX PIEDS (FEET INCLUDED). Tout le corps visible, pieds inclus.
-IDENTITÉ CANONIQUE (IMAGE SOURCE) : Utilise EXCLUSIVEMENT le visage et les cheveux de l'image source.
-${buildBodyPrompt()}
-STYLE : 4K UHD, focus net sur tout le corps. Photographie humaine réelle.
-  `;
-
-  const parts = [
-    { text: prompt },
-    { inlineData: { mimeType: 'image/jpeg', data: basePhoto.split(',')[1] } }
-  ];
+  setLoading(true);
 
   try {
-    const url = await callVertex(parts);
-    images.front = url;
-    setViewImage('front', url);
-    selectView('front');
-    document.getElementById('lockBtnWrap').classList.remove('hidden');
-    document.getElementById('bodyLookBtnWrap').classList.remove('hidden');
-    document.getElementById('exportBtnWrap').classList.remove('hidden');
-  } catch(err) {
-    alert('Erreur de rendu : ' + err.message);
+    const result = await callVertex();
+    showResult(result);
+  } catch(e) {
+    showError(e.message || 'Erreur de génération.');
   } finally {
-    isLoading = false;
-    setGenLoading(false);
+    setLoading(false);
   }
 }
 
-async function generateRest() {
-  if (!images.front || isLoading) return;
-  isLoading = true;
-  setGenLoading(true);
+async function callVertex() {
+  const prompt = buildPrompt();
+  const parts = [];
 
-  const views = [
-    { key: 'profileLeft', label: 'PROFIL GAUCHE' },
-    { key: 'profileRight', label: 'PROFIL DROIT' },
-    { key: 'back', label: 'DOS' }
-  ];
+  // Texte
+  parts.push({text: prompt});
 
-  for (const v of views) {
-    showThumbLoading(v.key);
-    const prompt = `
-${ANATOMICAL_CONSTRAINTS}
-### MODE ROTATION 360° - VUE ${v.label} ###
-L'IMAGE jointe est la vue de face validée. Génère la vue "${v.label}" du MÊME individu en rotation stricte.
-COHÉRENCE IDENTITAIRE ABSOLUE : Même visage, mêmes cheveux (HAIR LOCK), même carnation, même âge ${params.age} ans.
-COHÉRENCE CORPORELLE : ${getBodyTypeSignature()} Morphologie ${params.morphology}. Taille ${params.height}cm, Poids ${params.weight}kg.
-Mensurations EXACTES : Ventre ${params.waistCirc}cm, Hanches ${params.hipCirc}cm, Cuisses ${params.thighCirc}cm.
-${buildBodyPrompt()}
-PLAN COMPLET : TÊTE AUX PIEDS. Pieds entièrement visibles.
-STYLE : 4K UHD, focus net, photographie studio neutre.
-    `;
+  // Images
+  if (state.mainAvatar) parts.push(makeImagePart(state.mainAvatar));
+  if (state.roomImg) parts.push(makeImagePart(state.roomImg));
+  if (state.partner && state.partner !== 'pending') parts.push(makeImagePart(state.partner));
+  state.children.forEach(c => { if (c) parts.push(makeImagePart(c)); });
+  state.guests.forEach(g => { if (g) parts.push(makeImagePart(g)); });
+  if (state.whatsapp && state.whatsappContact) parts.push(makeImagePart(state.whatsappContact));
+  if (state.portage && state.babyRef) parts.push(makeImagePart(state.babyRef));
+  if (state.portage && state.carrierImg) parts.push(makeImagePart(state.carrierImg));
+  if (state.bbq && state.bbqRef) parts.push(makeImagePart(state.bbqRef));
+  if (state.poussette && state.strollerRef) parts.push(makeImagePart(state.strollerRef));
+  if (state.poussette && state.strollerBaby) parts.push(makeImagePart(state.strollerBaby));
+
+  // Injecter le system prompt dans le contenu (gemini-3.1-flash-image-preview ne supporte pas systemInstruction)
+  const allParts = [{text: SYSTEM_PROMPT}, ...parts];
+
+  const body = {
+    contents: [{ role: 'user', parts: allParts }],
+    generationConfig: {
+      responseModalities: ['IMAGE'],
+      imageConfig: {
+        aspectRatio: state.aspectRatio,
+        imageSize: '4K'
+      }
+    }
+  };
+
+  const endpoint = `https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-3.1-flash-image-preview:generateContent?key=${encodeURIComponent(state.apiKey)}`;
+
+  const waitTimes = [5000, 10000, 20000, 40000, 60000];
+  let lastErr;
+
+  for (let attempt = 0; attempt <= waitTimes.length; attempt++) {
     try {
-      const url = await callVertex([
-        { text: prompt },
-        { inlineData: { mimeType: 'image/png', data: images.front.split(',')[1] } }
-      ]);
-      images[v.key] = url;
-      setViewImage(v.key, url);
+      updateLoadingStep(attempt === 0 ? LOADING_STEPS[0] : `Nouvelle tentative ${attempt}/${waitTimes.length}...`);
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body)
+      });
+
+      if (!res.ok) {
+        const txt = await res.text();
+        let d; try {d = JSON.parse(txt);} catch(e){}
+        const msg = d?.error?.message || txt;
+        if (res.status === 401) throw new Error('Clé API invalide.');
+        if (res.status === 403) throw new Error('Accès refusé. Vérifiez votre clé Vertex AI.');
+        if (res.status === 404) throw new Error('Modèle introuvable.');
+        if (res.status === 429) throw new Error(`ERREUR 429: ${msg}`);
+        throw new Error(`Erreur ${res.status}: ${msg}`);
+      }
+
+      const data = await res.json();
+      const parts2 = data.candidates?.[0]?.content?.parts || [];
+      for (const p of parts2) {
+        if (p.inlineData?.data) return `data:image/png;base64,${p.inlineData.data}`;
+      }
+
+      if (data.candidates?.[0]?.finishReason === 'SAFETY') throw new Error('Génération bloquée par les filtres de sécurité. Reformulez.');
+      throw new Error('Aucune image dans la réponse.');
+
     } catch(err) {
-      console.error(`Erreur vue ${v.key}:`, err);
+      lastErr = err;
+      const msg = String(err.message || '').toLowerCase();
+      const retryable = msg.includes('429') || msg.includes('503') || msg.includes('502') || msg.includes('504') || msg.includes('overloaded') || msg.includes('resource_exhausted');
+      if (retryable && attempt < waitTimes.length) {
+        const w = waitTimes[attempt];
+        updateLoadingStep(`Vertex saturé. Attente ${Math.round(w/1000)}s...`);
+        await sleep(w);
+        continue;
+      }
+      throw err;
     }
   }
+  throw lastErr || new Error('Génération échouée.');
+}
 
-  isLoading = false;
-  setGenLoading(false);
+function buildPrompt() {
+  const p = [];
+  
+  p.push('FRESH HUMAN CAPTURE V11.');
+  p.push('Technical: RAW 4K, Matte skin, Clean sensor, NO BEAUTY FILTERS.');
+  p.push('');
+  
+  // Mode
+  p.push(`MODE : ${state.appMode === 'SOLO' ? 'SOLO' : 'FAMILLE'}`);
+  
+  // Action
+  p.push(`ACTION : ${state.action || 'Scène de vie quotidienne, naturelle et spontanée.'}`);
+  
+  // Ambiance
+  p.push(`SAISON : ${state.season} | MÉTÉO : ${state.weather} | MOMENT : ${state.dayMoment}`);
+  p.push(`ÉNERGIE : ${state.energy === 'chaos' ? 'CHAOS — Maison vivante, légèrement désordonnée, moments imparfaits.' : 'CALME — Atmosphère sereine, postures naturelles.'}`);
+  
+  // Pièce
+  if (state.room) p.push(`PIÈCE : ${state.room.label}${state.roomSubtype ? ' / ' + state.roomSubtype : ''}`);
+  
+  // Participants
+  const participants = [];
+  participants.push('Avatar principal (photo de référence jointe)');
+  if (state.partner && state.partner !== 'pending') participants.push('Conjoint (photo de référence jointe)');
+  state.children.forEach((c,i) => { if (c) participants.push(`Enfant ${i+1} (photo jointe)`); });
+  if (state.isBabyPresent) participants.push(`Bébé (${state.babyAgeInMonths} mois)`);
+  state.guests.forEach((g,i) => { if (g) participants.push(`Invité ${i+1} (photo jointe)`); });
+  if (participants.length > 0) p.push(`PARTICIPANTS : ${participants.join(', ')}`);
+  
+  // Angle caméra
+  const angles = {
+    face:'Vue de face, caméra droite devant le sujet.',
+    profil:'Vue de profil, caméra sur le côté.',
+    trois_quarts:'Vue trois quarts, légèrement décalée.',
+    plongee_legere:'Légère plongée, caméra au-dessus.',
+    contre_plongee_legere:'Légère contre-plongée, caméra en dessous.',
+    immersive_organique:'Angle organique, moment capturé sur le vif, cadrage naturellement imparfait.',
+    pov_mains:'POV mains, perspective immersive montrant les mains en action.',
+    par_dessus_epaule:'Par-dessus l\'épaule, caméra derrière le sujet.',
+  };
+  p.push(`ANGLE : ${angles[state.cameraAngle] || state.cameraAngle}`);
+  
+  // Modes spéciaux
+  if (state.whatsapp) {
+    p.push(`MODE WHATSAPP ACTIF : Appel ${state.whatsappCallType === 'video' ? 'vidéo' : 'audio'} WhatsApp en cours. Interlocuteur affiché en grand à l'écran (photo jointe). L'avatar principal tient le téléphone. Interface WhatsApp visible avec boutons d'appel.`);
+  }
+  if (state.menage) {
+    p.push('MODE MÉNAGE ACTIF : Scène de nettoyage domestique réaliste. Outils ménagers visibles, gestes naturels de nettoyage.');
+  }
+  if (state.portage) {
+    p.push('MODE PORTAGE BÉBÉ ACTIF : Bébé porté dans le porte-bébé (photos joints). Conserver l\'identité exacte du bébé ET du porte-bébé.');
+  }
+  if (state.bbq) {
+    p.push('MODE BARBECUE ACTIF : Barbecue identique à la photo de référence (jointe). Même modèle, même forme, même couleur. Action de cuisson en cours.');
+  }
+  if (state.poussette) {
+    p.push('MODE POUSSETTE ACTIF : Poussette identique à la photo de référence (jointe). Bébé dedans (identité verrouillée). Scène de sortie réaliste.');
+  }
+  if (state.miroir) {
+    p.push('MODE MIROIR ACTIF : Selfie ou scène avec reflet dans le miroir. Le miroir reflète fidèlement le personnage.');
+  }
+  if (state.dressing) {
+    p.push('MODE DRESSING ACTIF : Scène dans le dressing, essayage de vêtements, consultation du miroir.');
+  }
+  if (state.interphone) {
+    p.push('MODE INTERPHONE ACTIF : Scène d\'interphone réaliste. Portail/entrée visible. Photos de référence utilisées.');
+  }
+  
+  // Chaos
+  if (state.energy === 'chaos') {
+    p.push('');
+    p.push('PREUVES VISUELLES DE CHAOS (intégrer dans la scène):');
+    p.push('- Désordre léger mais visible (objets déplacés, coussins froissés)');
+    p.push('- Posture légèrement affaissée par la fatigue');
+    p.push('- Micro-imperfections environnementales (tiroir entrouvert, objet renversé)');
+    p.push('- Geste pressé capturé en plein mouvement');
+  }
+  
+  // Notes libres
+  if (state.freeText) p.push(`\nNOTES DE VÉRITÉ : ${state.freeText}`);
+  
+  p.push('');
+  p.push('OBJECTIF : Réalisme biologique BRUT. Teint mat, pores visibles, imperfections réelles.');
+  p.push('DÉGRADATION VOLONTAIRE : Si l\'image semble trop parfaite ou lisse (effet IA), elle DOIT être dégradée pour paraître humaine et imparfaite.');
+  
+  return p.join('\n');
+}
+
+function makeImagePart(b64) {
+  const data = b64.includes(',') ? b64.split(',')[1] : b64;
+  return {inlineData:{data, mimeType:'image/jpeg'}};
 }
 
 // ==================== UI HELPERS ====================
-function showImagesArea() {
-  document.getElementById('emptyState').classList.add('hidden');
-  document.getElementById('imagesArea').classList.remove('hidden');
-}
-
-function resetImages() {
-  images.front = images.profileLeft = images.profileRight = images.back = null;
-  ['front','profileLeft','profileRight','back'].forEach(v => {
-    document.getElementById('ti-'+v).style.display = 'none';
-    document.getElementById('ti-'+v).src = '';
-    if (document.getElementById('tdl-'+v)) document.getElementById('tdl-'+v).style.display = 'none';
-    const tl = document.getElementById('tl-'+v);
-    if (tl) tl.style.display = v === 'front' ? 'flex' : 'none';
-  });
-  document.getElementById('mainViewImg').style.display = 'none';
-  document.getElementById('mainViewLoading').style.display = 'flex';
-  document.getElementById('lockBtnWrap').classList.add('hidden');
-  document.getElementById('bodyLookBtnWrap').classList.add('hidden');
-  document.getElementById('exportBtnWrap').classList.add('hidden');
-  document.getElementById('syncBtn').classList.add('hidden');
-}
-
-function setGenLoading(v) {
-  const btn = document.getElementById('genFrontBtn');
-  btn.textContent = v ? 'CALCUL...' : 'LANCER LE RENDU (FACE)';
-  if (v) btn.setAttribute('disabled','disabled'); else btn.removeAttribute('disabled');
-}
-
-function setViewImage(view, url) {
-  const img = document.getElementById('ti-'+view);
-  const tl = document.getElementById('tl-'+view);
-  const dlBtn = document.getElementById('tdl-'+view);
-  img.src = url;
-  img.style.display = 'block';
-  if (tl) tl.style.display = 'none';
-  if (dlBtn) dlBtn.style.display = 'block';
-  if (view === currentView) {
-    document.getElementById('mainViewImg').src = url;
-    document.getElementById('mainViewImg').style.display = 'block';
-    document.getElementById('mainViewLoading').style.display = 'none';
+function setLoading(v) {
+  const btn = document.getElementById('genBtn');
+  const icon = document.getElementById('genIcon');
+  const label = document.getElementById('genLabel');
+  const overlay = document.getElementById('loadingOverlay');
+  
+  btn.disabled = v;
+  overlay.style.display = v ? 'flex' : 'none';
+  
+  if (v) {
+    icon.innerHTML = '<path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>';
+    btn.classList.add('loading');
+    label.textContent = 'Rendu en cours...';
+    let idx = 0;
+    clearInterval(loadingInterval);
+    loadingInterval = setInterval(() => {
+      updateLoadingStep(LOADING_STEPS[idx % LOADING_STEPS.length]);
+      idx++;
+    }, 2500);
+  } else {
+    icon.innerHTML = '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>';
+    btn.classList.remove('loading');
+    label.textContent = 'Lancer le Rendu 4K';
+    clearInterval(loadingInterval);
   }
 }
 
-function showThumbLoading(view) {
-  const tl = document.getElementById('tl-'+view);
-  if (tl) tl.style.display = 'flex';
+function updateLoadingStep(msg) {
+  document.getElementById('loadingStep').textContent = msg;
 }
 
-function selectView(view) {
-  currentView = view;
-  ['front','profileLeft','profileRight','back'].forEach(v => {
-    document.getElementById('thumb-'+v).classList.toggle('active', v === view);
-    document.getElementById('vl-'+v).className = 'view-label ' + (v === view ? 'active' : 'inactive');
-  });
-  document.getElementById('mainViewBadge').textContent = viewLabels[view];
-  const img = images[view];
-  const mainImg = document.getElementById('mainViewImg');
-  const mainLoading = document.getElementById('mainViewLoading');
-  if (img) { mainImg.src = img; mainImg.style.display = 'block'; mainLoading.style.display = 'none'; }
-  else { mainImg.style.display = 'none'; mainLoading.style.display = 'flex'; }
+function showError(msg) {
+  const err = document.getElementById('errorBox');
+  err.textContent = msg;
+  err.className = 'error-box show';
 }
 
-function downloadCurrent() {
-  if (images[currentView]) downloadImg(images[currentView], `studio-body-${currentView}.png`);
+function showResult(dataUrl) {
+  const panel = document.getElementById('outputPanel');
+  document.getElementById('outputEmpty').style.display = 'none';
+  
+  // Remove old image if any
+  const old = panel.querySelector('.output-img');
+  if (old) old.remove();
+  const oldDl = panel.querySelector('.dl-btn');
+  if (oldDl) oldDl.remove();
+  
+  const img = document.createElement('img');
+  img.className = 'output-img';
+  img.src = dataUrl;
+  panel.appendChild(img);
+  
+  const dl = document.createElement('button');
+  dl.className = 'dl-btn';
+  dl.textContent = '⬇ Télécharger';
+  dl.onclick = () => {
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = `studio-family-home-${Date.now()}.png`;
+    a.click();
+  };
+  panel.appendChild(dl);
 }
 
-function downloadView(view) {
-  if (images[view]) downloadImg(images[view], `studio-body-${view}.png`);
-}
-
-function downloadImg(url, name) {
-  const a = document.createElement('a');
-  a.href = url; a.download = name;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-}
-
-async function exportZip() {
-  const available = Object.entries(images).filter(([,v]) => v);
-  if (!available.length) return;
-
-  // Simple multi-download fallback (no JSZip dependency needed)
-  available.forEach(([key, url], i) => {
-    setTimeout(() => downloadImg(url, `studio-body-${key}.png`), i * 300);
-  });
-}
-
-// ==================== MODALS ====================
-function openBodyLookModal() { document.getElementById('bodyLookModal').classList.remove('hidden'); }
-function closeBodyLookModal() { document.getElementById('bodyLookModal').classList.add('hidden'); }
-
-// Origins
-function openOriginsModal() {
-  if (isLocked) return;
-  tempOrigins = JSON.parse(JSON.stringify(params.origins));
-  renderOriginsModal();
-  document.getElementById('originsModal').classList.remove('hidden');
-}
-
-function closeOriginsModal() { document.getElementById('originsModal').classList.add('hidden'); }
-
-function applyOrigins() {
-  params.origins = JSON.parse(JSON.stringify(tempOrigins));
-  document.getElementById('originsCount').textContent = params.origins.length;
-  closeOriginsModal();
-}
-
-function renderOriginsModal() {
-  // List
-  const listEl = document.getElementById('originsListEl');
-  listEl.innerHTML = Object.entries(ORIGINS_LIST).map(([region, countries]) => `
-    <div>
-      <p class="region-label">${region}</p>
-      <div class="region-tags">${countries.map(c => `<button class="origin-tag" onclick="addOrigin('${c.replace(/'/g,"\\'")}')">+ ${c}</button>`).join('')}</div>
-    </div>
-  `).join('');
-  renderMixItems();
-}
-
-function addOrigin(origin) {
-  if (tempOrigins.some(o => o.origin === origin)) return;
-  if (tempOrigins.length >= 3) return;
-  tempOrigins.push({ origin, weight: 0 });
-  const avg = Math.round(100 / tempOrigins.length);
-  tempOrigins.forEach(o => o.weight = avg);
-  renderMixItems();
-}
-
-function removeOrigin(origin) {
-  if (tempOrigins.length <= 1) return;
-  tempOrigins = tempOrigins.filter(o => o.origin !== origin);
-  const avg = Math.round(100 / tempOrigins.length);
-  tempOrigins.forEach(o => o.weight = avg);
-  renderMixItems();
-}
-
-function updateMixWeight(idx, val) {
-  const v = parseInt(val);
-  const totalOthers = tempOrigins.reduce((acc, o, i) => i !== idx ? acc + o.weight : acc, 0);
-  const remaining = 100 - v;
-  tempOrigins[idx].weight = v;
-  if (totalOthers > 0) {
-    tempOrigins.forEach((o, i) => { if (i !== idx) o.weight = Math.round((o.weight / totalOthers) * remaining); });
-  } else if (tempOrigins.length > 1) {
-    const share = Math.round(remaining / (tempOrigins.length - 1));
-    tempOrigins.forEach((o, i) => { if (i !== idx) o.weight = share; });
-  }
-  renderMixItems();
-}
-
-function renderMixItems() {
-  const el = document.getElementById('mixItems');
-  if (tempOrigins.length === 0) { el.innerHTML = '<p class="mix-empty">Sélectionnez au moins une origine...</p>'; return; }
-  el.innerHTML = tempOrigins.map((item, idx) => `
-    <div class="mix-item">
-      <div class="mix-item-header">
-        <span class="mix-item-name">${item.origin}</span>
-        <button class="mix-remove" onclick="removeOrigin('${item.origin.replace(/'/g,"\\'")}')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-        </button>
-      </div>
-      <div class="mix-slider-row">
-        <input type="range" min="0" max="100" value="${item.weight}" oninput="updateMixWeight(${idx},this.value)" style="flex:1;">
-        <span class="mix-val" id="mixval-${idx}">${item.weight}%</span>
-      </div>
-    </div>
-  `).join('');
-}
-
-// Init
-renderStretchZones();
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 </script>
 </body>
 </html>
