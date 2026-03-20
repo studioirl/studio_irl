@@ -704,19 +704,21 @@ function renderSetup() {
     }
     grid.appendChild(cardConjoint);
 
-    // CARD 4 — Enfants
-    const cardEnfants = makeCard('👶 Enfants');
-    const ctrlEnfants = makePlusMinusRow('Enfants', state.childCount, 'addChild(-1)', 'addChild(1)');
-    cardEnfants.appendChild(ctrlEnfants);
-    if (state.childCount > 0) {
-      const slots = document.createElement('div');
-      slots.className = 'upload-slots';
-      for (let i = 0; i < state.children.length; i++) {
-        slots.appendChild(makeUploader('setupChild' + i, state.children[i], 'Enfant ' + (i+1), 'child', i));
+    // CARD 4 — Enfants (mode Famille uniquement)
+    if (state.appMode === 'FAMILY') {
+      const cardEnfants = makeCard('👶 Enfants');
+      const ctrlEnfants = makePlusMinusRow('Enfants', state.childCount, 'addChild(-1)', 'addChild(1)');
+      cardEnfants.appendChild(ctrlEnfants);
+      if (state.childCount > 0) {
+        const slots = document.createElement('div');
+        slots.className = 'upload-slots';
+        for (let i = 0; i < state.children.length; i++) {
+          slots.appendChild(makeUploader('setupChild' + i, state.children[i], 'Enfant ' + (i+1), 'child', i));
+        }
+        cardEnfants.appendChild(slots);
       }
-      cardEnfants.appendChild(slots);
+      grid.appendChild(cardEnfants);
     }
-    grid.appendChild(cardEnfants);
 
     // CARD 5 — Invités
     const cardInvites = makeCard('👥 Invités');
@@ -1156,9 +1158,11 @@ async function callVertex() {
   if (state.poussette && state.strollerRef) parts.push(makeImagePart(state.strollerRef));
   if (state.poussette && state.strollerBaby) parts.push(makeImagePart(state.strollerBaby));
 
+  // Injecter le system prompt dans le contenu (gemini-3.1-flash-image-preview ne supporte pas systemInstruction)
+  const allParts = [{text: SYSTEM_PROMPT}, ...parts];
+
   const body = {
-    systemInstruction: { parts: [{text: SYSTEM_PROMPT}] },
-    contents: [{ role: 'user', parts }],
+    contents: [{ role: 'user', parts: allParts }],
     generationConfig: {
       responseModalities: ['IMAGE'],
       imageConfig: {
