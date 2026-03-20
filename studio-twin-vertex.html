@@ -363,7 +363,7 @@ body { min-height: 100vh; }
 
 <script>
 // ==================== CONSTANTS ====================
-const MODEL = 'gemini-3.1-flash-image';
+const MODEL = 'gemini-3-pro-image-preview';
 
 const PHOTO_CONFIG = [
   { id: 'face', label: 'Photo de face', description: 'Visage visible, expression neutre, bonne lumière.' },
@@ -547,7 +547,7 @@ async function startGeneration() {
   });
 
   const apiAR = selectedRatio === '4:5' ? '3:4' : selectedRatio;
-  const endpoint = `https://aiplatform.googleapis.com/v1/publishers/google/models/${MODEL}:generateContent`;
+  const endpoint = `https://aiplatform.googleapis.com/v1/publishers/google/models/${MODEL}:generateContent?key=${encodeURIComponent(API_KEY)}`;
 
   const generationPromises = VIEWS.map(async view => {
     const body = {
@@ -559,13 +559,13 @@ async function startGeneration() {
         ]
       }],
       generationConfig: {
-        responseModalities: ['IMAGE', 'TEXT'],
+        responseModalities: ['IMAGE'],
         imageConfig: { aspectRatio: apiAR, imageSize: '4K' }
       }
     };
 
     const res = await fetch(endpoint, {
-      method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` }, body: JSON.stringify(body)
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
     });
 
     if (!res.ok) {
