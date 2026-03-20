@@ -1,0 +1,1248 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studio Family Home — Vertex AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#050505;
+  --bg2:#0d0d0d;
+  --glass:rgba(255,255,255,0.04);
+  --border:rgba(255,255,255,0.08);
+  --border2:rgba(255,255,255,0.12);
+  --text:#fff;
+  --text2:rgba(255,255,255,0.65);
+  --text3:rgba(255,255,255,0.35);
+  --accent:#C97A63;
+  --accent2:#a0522d;
+  --indigo:#6366f1;
+  --purple:#a855f7;
+  --red:#ef4444;
+  --green:#22c55e;
+}
+html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow-x:hidden}
+body{background:radial-gradient(ellipse at top right,#1a0a00 0%,var(--bg) 60%)}
+
+/* SPLASH */
+#splash{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center;position:relative}
+.splash-bg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.04}
+.splash-bg img{width:100%;height:100%;object-fit:cover;filter:grayscale(1) blur(2px)}
+.splash-content{position:relative;z-index:10;max-width:520px;width:100%}
+.splash-logo{font-family:'Syne',sans-serif;font-size:clamp(48px,10vw,80px);font-weight:800;text-transform:uppercase;letter-spacing:-0.03em;line-height:0.9;margin-bottom:8px;color:var(--accent)}
+.splash-sub{font-size:12px;font-weight:300;color:var(--text3);letter-spacing:0.4em;text-transform:uppercase;margin-bottom:48px}
+.api-box{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:24px;padding:28px;margin-bottom:24px}
+.api-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.3em;color:var(--text3);margin-bottom:10px;text-align:left;display:block}
+.api-input{width:100%;background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:12px;padding:14px 16px;font-size:13px;font-family:monospace;color:var(--text);outline:none;transition:border-color 0.2s}
+.api-input::placeholder{color:rgba(255,255,255,0.15)}
+.api-input:focus{border-color:var(--accent)}
+
+/* MODE SELECTION */
+.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+.mode-card{position:relative;overflow:hidden;border-radius:24px;border:1px solid var(--border2);cursor:pointer;transition:all 0.3s;aspect-ratio:3/4}
+.mode-card:hover{border-color:var(--accent);transform:scale(1.02)}
+.mode-card img{width:100%;height:100%;object-fit:cover;filter:grayscale(0.5);transition:filter 0.5s}
+.mode-card:hover img{filter:grayscale(0)}
+.mode-card-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.85),rgba(0,0,0,0.2));display:flex;flex-direction:column;justify-content:flex-end;padding:24px}
+.mode-card h2{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;text-transform:uppercase;margin-bottom:12px}
+.mode-card-btn{padding:12px;background:var(--accent);border:none;border-radius:12px;color:white;font-family:'Syne',sans-serif;font-weight:700;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;cursor:pointer;width:100%}
+
+/* SETUP */
+#setup{display:none;min-height:100vh;padding:24px;background:var(--bg)}
+.setup-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;max-width:900px;margin-left:auto;margin-right:auto}
+.back-btn{background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:12px;padding:10px 20px;color:var(--text);cursor:pointer;font-size:13px;font-family:'DM Sans',sans-serif;transition:background 0.2s}
+.back-btn:hover{background:rgba(255,255,255,0.1)}
+.setup-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:0.3em;color:var(--accent)}
+.setup-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:900px;margin:0 auto}
+@media(max-width:640px){.setup-grid{grid-template-columns:1fr}}
+.setup-card{background:var(--glass);border:1px solid var(--border);border-radius:32px;padding:28px}
+.setup-card h3{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.3em;color:var(--accent);margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.validate-btn{display:block;width:100%;max-width:900px;margin:24px auto 0;padding:20px;background:var(--accent);border:none;border-radius:20px;color:white;font-family:'Syne',sans-serif;font-weight:800;font-size:14px;text-transform:uppercase;letter-spacing:0.3em;cursor:pointer;transition:all 0.2s}
+.validate-btn:hover{background:var(--accent2)}
+.validate-btn:disabled{opacity:0.3;cursor:not-allowed}
+/* Participant controls */
+.participant-controls{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.participant-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.2em;color:var(--text3);flex:1}
+.cnt-btn{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid var(--border);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:background 0.2s}
+.cnt-btn:hover{background:rgba(255,255,255,0.15)}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.toggle-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.2em;color:var(--text3)}
+.toggle-sw{width:40px;height:22px;border-radius:11px;background:rgba(255,255,255,0.1);position:relative;cursor:pointer;transition:background 0.3s;flex-shrink:0}
+.toggle-sw.on{background:var(--accent)}
+.toggle-sw-thumb{position:absolute;top:3px;left:3px;width:16px;height:16px;background:white;border-radius:50%;transition:transform 0.3s;box-shadow:0 1px 4px rgba(0,0,0,0.3)}
+.toggle-sw.on .toggle-sw-thumb{transform:translateX(18px)}
+.upload-slots{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+
+/* UPLOADER */
+.uploader{border:2px dashed var(--border);border-radius:16px;min-height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;overflow:hidden;transition:border-color 0.2s;background:rgba(255,255,255,0.02)}
+.uploader:hover{border-color:var(--accent)}
+.uploader.has-img{border-style:solid;border-color:var(--border2)}
+.uploader img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+.uploader-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.2em;color:var(--text3);text-align:center;padding:8px;position:relative;z-index:1}
+.uploader-icon{font-size:20px;margin-bottom:4px;position:relative;z-index:1}
+.uploader input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+.uploader-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.2s;z-index:2}
+.uploader:hover .uploader-overlay{opacity:1}
+.remove-img-btn{background:var(--red);border:none;border-radius:50%;width:28px;height:28px;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px}
+
+/* APP */
+#app{display:none;min-height:100vh;flex-direction:column}
+#app.visible{display:flex}
+.app-nav{border-bottom:1px solid var(--border);background:rgba(0,0,0,0.6);backdrop-filter:blur(20px);position:sticky;top:0;z-index:50;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+.brand{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;text-transform:uppercase;letter-spacing:-0.02em;color:var(--accent);cursor:pointer}
+.nav-badges{display:flex;gap:8px;align-items:center}
+.energy-btn{padding:8px 16px;border-radius:999px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;cursor:pointer;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--text3);transition:all 0.2s}
+.energy-btn.active-calm{background:rgba(34,197,94,0.15);border-color:var(--green);color:var(--green)}
+.energy-btn.active-chaos{background:rgba(239,68,68,0.15);border-color:var(--red);color:var(--red)}
+
+/* STUDIO LAYOUT */
+.studio-main{flex:1;max-width:1600px;margin:0 auto;width:100%;padding:24px;display:grid;grid-template-columns:340px 1fr 380px;gap:24px}
+@media(max-width:1200px){.studio-main{grid-template-columns:1fr}}
+
+/* CARDS */
+.s-card{background:var(--glass);border:1px solid var(--border);border-radius:28px;padding:24px;margin-bottom:16px}
+.s-card-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.35em;color:var(--accent);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+
+/* ROOM GRID */
+.room-cats{display:flex;overflow-x:auto;gap:8px;padding-bottom:8px;margin-bottom:12px;scrollbar-width:none}
+.room-cats::-webkit-scrollbar{display:none}
+.cat-btn{flex-shrink:0;padding:8px 14px;border-radius:999px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;cursor:pointer;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--text3);transition:all 0.2s;white-space:nowrap}
+.cat-btn.active{background:var(--accent);border-color:var(--accent);color:white}
+.room-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.room-btn{padding:10px 4px;border-radius:16px;text-align:center;cursor:pointer;border:1px solid var(--border);background:rgba(255,255,255,0.03);transition:all 0.2s;opacity:0.6}
+.room-btn:hover{opacity:1;border-color:var(--border2)}
+.room-btn.active{background:var(--indigo);border-color:var(--indigo);opacity:1;transform:scale(1.05)}
+.room-btn .icon{font-size:20px;margin-bottom:4px;display:block}
+.room-btn .rlabel{font-size:7px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text2)}
+
+/* SELECT */
+select.s-select{width:100%;background:#111;border:1px solid var(--border);border-radius:12px;padding:12px 14px;font-size:11px;font-family:'DM Sans',sans-serif;color:var(--text);outline:none;cursor:pointer;margin-bottom:12px;appearance:none;background-image:url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");background-repeat:no-repeat;background-position:right 12px center;background-size:14px}
+select.s-select option{background:#111}
+
+/* MODES */
+.mode-toggle-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)}
+.mode-toggle-row:last-child{border-bottom:none}
+.mode-toggle-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;color:var(--text3)}
+
+/* GEN BTN */
+.gen-btn{width:100%;padding:24px;border:none;border-radius:20px;background:var(--accent);color:white;font-family:'Syne',sans-serif;font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:0.3em;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:12px;box-shadow:0 20px 50px rgba(201,122,99,0.3)}
+.gen-btn:hover:not(:disabled){transform:scale(1.02);box-shadow:0 24px 60px rgba(201,122,99,0.4)}
+.gen-btn:disabled{opacity:0.4;cursor:not-allowed;box-shadow:none}
+.gen-btn.loading svg{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* OUTPUT */
+.output-panel{background:var(--glass);border:1px solid var(--border);border-radius:28px;min-height:600px;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+.output-empty{text-align:center;opacity:0.15}
+.output-empty p{font-family:'Syne',sans-serif;font-size:64px;font-weight:800;text-transform:uppercase;letter-spacing:-0.03em;line-height:1}
+.output-img{width:100%;height:100%;object-fit:contain;border-radius:28px}
+.dl-btn{position:absolute;bottom:20px;right:20px;background:rgba(0,0,0,0.7);border:1px solid var(--border2);border-radius:12px;padding:10px 20px;color:white;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;cursor:pointer;transition:background 0.2s}
+.dl-btn:hover{background:rgba(0,0,0,0.9)}
+
+/* ERROR */
+.error-box{padding:16px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:14px;font-size:11px;font-weight:700;color:#fca5a5;margin-top:12px;display:none}
+.error-box.show{display:block}
+
+/* LOADING */
+.loading-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.8);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;border-radius:28px;z-index:10}
+.loading-spinner{width:60px;height:60px;border:3px solid rgba(201,122,99,0.2);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite}
+.loading-step{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.3em;color:var(--text3);text-align:center;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+/* TEXTAREA */
+textarea.s-textarea{width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:16px;padding:16px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--text);outline:none;resize:vertical;min-height:80px;transition:border-color 0.2s}
+textarea.s-textarea::placeholder{color:var(--text3)}
+textarea.s-textarea:focus{border-color:var(--accent)}
+
+/* ASPECT RATIO */
+.ar-btns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+.ar-btn{padding:10px 4px;border-radius:12px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;cursor:pointer;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--text3);transition:all 0.2s;text-align:center}
+.ar-btn.active{background:var(--indigo);border-color:var(--indigo);color:white}
+
+/* SUBTYPE SELECT */
+.subtype-row{display:none;margin-bottom:12px}
+.subtype-row.show{display:block}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-bg"><img src="https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&q=80&w=1600" alt=""></div>
+  <div class="splash-content">
+    <div class="splash-logo">Studio<br>Family Home</div>
+    <div class="splash-sub">Scènes de vie ultra-réalistes 4K</div>
+    <div class="api-box">
+      <span class="api-label">🔑 Clé API Vertex AI Express Mode</span>
+      <input type="password" id="apiKeyInput" class="api-input" placeholder="AIza..." autocomplete="off">
+    </div>
+    <div class="mode-grid" id="modeGrid" style="display:none">
+      <div class="mode-card" onclick="selectMode('SOLO')">
+        <img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=600" alt="Solo">
+        <div class="mode-card-overlay">
+          <h2>Solo</h2>
+          <button class="mode-card-btn">Entrer</button>
+        </div>
+      </div>
+      <div class="mode-card" onclick="selectMode('FAMILY')">
+        <img src="https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&q=80&w=600" alt="Famille">
+        <div class="mode-card-overlay">
+          <h2>Famille</h2>
+          <button class="mode-card-btn">Entrer</button>
+        </div>
+      </div>
+    </div>
+    <div id="splashError" style="color:#fca5a5;font-size:11px;font-weight:700;margin-top:12px;display:none"></div>
+  </div>
+</div>
+
+<!-- SETUP -->
+<div id="setup">
+  <div class="setup-header">
+    <button class="back-btn" onclick="goSplash()">← Retour</button>
+    <div class="setup-title" id="setupTitle">Configuration Solo</div>
+    <div style="width:80px"></div>
+  </div>
+  <div class="setup-grid" id="setupGrid">
+    <!-- Dynamique -->
+  </div>
+  <button class="validate-btn" id="validateBtn" onclick="validateSetup()">Accéder au Studio →</button>
+  <div id="setupError" style="max-width:900px;margin:12px auto 0;text-align:center;color:#fca5a5;font-size:11px;font-weight:700;display:none"></div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <nav class="app-nav">
+    <div class="brand" onclick="goSplash()">Studio Family Home</div>
+    <div class="nav-badges">
+      <button class="energy-btn active-calm" id="energyCalmBtn" onclick="setEnergy('calm')">Calme</button>
+      <button class="energy-btn" id="energyChaosBtn" onclick="setEnergy('chaos')">Chaos</button>
+      <button class="back-btn" onclick="goSetup()" style="margin-left:8px">⚙ Famille</button>
+    </div>
+  </nav>
+
+  <div class="studio-main">
+    <!-- COL GAUCHE: Environnement -->
+    <div>
+      <div class="s-card">
+        <div class="s-card-title">🧬 Avatar DNA</div>
+        <div class="uploader" id="mainAvatarUploader">
+          <div class="uploader-icon">📸</div>
+          <div class="uploader-label">Avatar principal *</div>
+          <input type="file" accept="image/*" onchange="handleUpload(event,'mainAvatar')">
+          <div class="uploader-overlay"><button class="remove-img-btn" onclick="removeImg(event,'mainAvatar')">✕</button></div>
+        </div>
+        <button onclick="goSetup()" style="width:100%;margin-top:10px;padding:8px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;color:var(--text3);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;cursor:pointer">Modifier la famille</button>
+      </div>
+
+      <div class="s-card">
+        <div class="s-card-title">🏠 Pièce</div>
+        <div class="room-cats" id="roomCats"></div>
+        <div class="room-grid" id="roomGrid"></div>
+        
+        <!-- Subtype cuisine -->
+        <div class="subtype-row" id="cuisineSubtype">
+          <select class="s-select" onchange="setSubtype(this.value)">
+            <option value="">Zone cuisine complète</option>
+            <option value="cuisine_plan_travail">Plan de travail</option>
+            <option value="cuisine_plaques_cuisson">Plaques de cuisson</option>
+            <option value="cuisine_a_table">À table (Cuisine)</option>
+          </select>
+        </div>
+        <!-- Subtype chambre -->
+        <div class="subtype-row" id="chambreSubtype">
+          <select class="s-select" onchange="setSubtype(this.value)" id="chambreSubtypeSelect"></select>
+        </div>
+        <!-- Subtype bureau -->
+        <div class="subtype-row" id="bureauSubtype">
+          <select class="s-select" onchange="setSubtype(this.value)">
+            <option value="">Type d'ordinateur</option>
+            <option value="ordinateur_portable">Ordinateur portable</option>
+            <option value="ordinateur_bureau">Ordinateur de bureau</option>
+          </select>
+        </div>
+
+        <div class="uploader" id="roomImgUploader" style="margin-top:12px;min-height:80px">
+          <div class="uploader-icon">🏠</div>
+          <div class="uploader-label" id="roomImgLabel">Photo de la pièce *</div>
+          <input type="file" accept="image/*" onchange="handleUpload(event,'roomImg')">
+          <div class="uploader-overlay"><button class="remove-img-btn" onclick="removeImg(event,'roomImg')">✕</button></div>
+        </div>
+      </div>
+
+      <div class="s-card">
+        <div class="s-card-title">⚙ Modes spéciaux</div>
+        <div class="mode-toggle-row">
+          <span class="mode-toggle-label" style="color:#60a5fa">📱 Mode WhatsApp</span>
+          <div class="toggle-sw" id="toggleWhatsapp" onclick="toggleMode('whatsapp')"><div class="toggle-sw-thumb"></div></div>
+        </div>
+        <div class="mode-toggle-row">
+          <span class="mode-toggle-label" style="color:#4ade80">🧹 Mode Ménage</span>
+          <div class="toggle-sw" id="toggleMenage" onclick="toggleMode('menage')"><div class="toggle-sw-thumb"></div></div>
+        </div>
+        <div class="mode-toggle-row">
+          <span class="mode-toggle-label" style="color:#fb923c">👶 Mode Portage</span>
+          <div class="toggle-sw" id="togglePortage" onclick="toggleMode('portage')"><div class="toggle-sw-thumb"></div></div>
+        </div>
+        <div class="mode-toggle-row">
+          <span class="mode-toggle-label" style="color:#22d3ee">🔔 Mode Interphone</span>
+          <div class="toggle-sw" id="toggleInterphone" onclick="toggleMode('interphone')"><div class="toggle-sw-thumb"></div></div>
+        </div>
+        <div class="mode-toggle-row">
+          <span class="mode-toggle-label" style="color:#f472b6">👗 Mode Dressing</span>
+          <div class="toggle-sw" id="toggleDressing" onclick="toggleMode('dressing')"><div class="toggle-sw-thumb"></div></div>
+        </div>
+        <div class="mode-toggle-row">
+          <span class="mode-toggle-label" style="color:#f87171">🔥 Mode Barbecue</span>
+          <div class="toggle-sw" id="toggleBBQ" onclick="toggleMode('bbq')"><div class="toggle-sw-thumb"></div></div>
+        </div>
+        <div class="mode-toggle-row">
+          <span class="mode-toggle-label" style="color:#93c5fd">🛒 Mode Poussette</span>
+          <div class="toggle-sw" id="togglePoussette" onclick="toggleMode('poussette')"><div class="toggle-sw-thumb"></div></div>
+        </div>
+        <div class="mode-toggle-row">
+          <span class="mode-toggle-label" style="color:#a5b4fc">🪞 Mode Miroir</span>
+          <div class="toggle-sw" id="toggleMiroir" onclick="toggleMode('miroir')"><div class="toggle-sw-thumb"></div></div>
+        </div>
+      </div>
+
+      <!-- Mode WhatsApp Config -->
+      <div class="s-card" id="whatsappConfig" style="display:none">
+        <div class="s-card-title" style="color:#60a5fa">📱 Config WhatsApp</div>
+        <select class="s-select" onchange="state.whatsappCallType=this.value">
+          <option value="video">Appel vidéo</option>
+          <option value="audio">Appel audio</option>
+        </select>
+        <div class="uploader" id="whatsappContactUploader" style="min-height:80px">
+          <div class="uploader-icon">👤</div>
+          <div class="uploader-label">Interlocuteur (affiché à l'écran) *</div>
+          <input type="file" accept="image/*" onchange="handleUpload(event,'whatsappContact')">
+          <div class="uploader-overlay"><button class="remove-img-btn" onclick="removeImg(event,'whatsappContact')">✕</button></div>
+        </div>
+      </div>
+
+      <!-- Mode Portage Config -->
+      <div class="s-card" id="portageConfig" style="display:none">
+        <div class="s-card-title" style="color:#fb923c">👶 Config Portage</div>
+        <div class="upload-slots">
+          <div class="uploader" id="babyRefUploader" style="min-height:80px">
+            <div class="uploader-icon">🍼</div>
+            <div class="uploader-label">DNA Bébé *</div>
+            <input type="file" accept="image/*" onchange="handleUpload(event,'babyRef')">
+            <div class="uploader-overlay"><button class="remove-img-btn" onclick="removeImg(event,'babyRef')">✕</button></div>
+          </div>
+          <div class="uploader" id="carrierImgUploader" style="min-height:80px">
+            <div class="uploader-icon">🎽</div>
+            <div class="uploader-label">Porte-bébé *</div>
+            <input type="file" accept="image/*" onchange="handleUpload(event,'carrierImg')">
+            <div class="uploader-overlay"><button class="remove-img-btn" onclick="removeImg(event,'carrierImg')">✕</button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mode BBQ Config -->
+      <div class="s-card" id="bbqConfig" style="display:none">
+        <div class="s-card-title" style="color:#f87171">🔥 Config BBQ</div>
+        <div class="uploader" id="bbqRefUploader" style="min-height:80px">
+          <div class="uploader-icon">🍖</div>
+          <div class="uploader-label">Photo du barbecue *</div>
+          <input type="file" accept="image/*" onchange="handleUpload(event,'bbqRef')">
+          <div class="uploader-overlay"><button class="remove-img-btn" onclick="removeImg(event,'bbqRef')">✕</button></div>
+        </div>
+      </div>
+
+      <!-- Mode Poussette Config -->
+      <div class="s-card" id="poussetteConfig" style="display:none">
+        <div class="s-card-title" style="color:#93c5fd">🛒 Config Poussette</div>
+        <div class="upload-slots">
+          <div class="uploader" id="strollerRefUploader" style="min-height:80px">
+            <div class="uploader-icon">🛒</div>
+            <div class="uploader-label">Poussette *</div>
+            <input type="file" accept="image/*" onchange="handleUpload(event,'strollerRef')">
+            <div class="uploader-overlay"><button class="remove-img-btn" onclick="removeImg(event,'strollerRef')">✕</button></div>
+          </div>
+          <div class="uploader" id="strollerBabyUploader" style="min-height:80px">
+            <div class="uploader-icon">👶</div>
+            <div class="uploader-label">Bébé *</div>
+            <input type="file" accept="image/*" onchange="handleUpload(event,'strollerBaby')">
+            <div class="uploader-overlay"><button class="remove-img-btn" onclick="removeImg(event,'strollerBaby')">✕</button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mode Interphone Config -->
+      <div class="s-card" id="interphoneConfig" style="display:none">
+        <div class="s-card-title" style="color:#22d3ee">🔔 Config Interphone</div>
+        <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.2em;margin-bottom:8px" id="interphoneStepLabel">Étape 1/3</div>
+        <div class="upload-slots">
+          <div class="uploader" id="interphonePortalUploader" style="min-height:80px">
+            <div class="uploader-icon">🚪</div>
+            <div class="uploader-label">Portail fermé</div>
+            <input type="file" accept="image/*" onchange="handleUpload(event,'interphonePortal')">
+            <div class="uploader-overlay"><button class="remove-img-btn" onclick="removeImg(event,'interphonePortal')">✕</button></div>
+          </div>
+          <div class="uploader" id="interphoneVisitorUploader" style="min-height:80px">
+            <div class="uploader-icon">👤</div>
+            <div class="uploader-label">Visiteur</div>
+            <input type="file" accept="image/*" onchange="handleUpload(event,'interphoneVisitor')">
+            <div class="uploader-overlay"><button class="remove-img-btn" onclick="removeImg(event,'interphoneVisitor')">✕</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COL MILIEU: Actions -->
+    <div>
+      <div class="s-card">
+        <div class="s-card-title">🎬 Action & Scénario</div>
+        
+        <label style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.2em;color:var(--text3);display:block;margin-bottom:6px">Angle de caméra</label>
+        <select class="s-select" onchange="state.cameraAngle=this.value">
+          <option value="face">Face</option>
+          <option value="profil">Profil</option>
+          <option value="trois_quarts">Trois quarts</option>
+          <option value="plongee_legere">Plongée légère</option>
+          <option value="contre_plongee_legere">Contre-plongée légère</option>
+          <option value="immersive_organique">Moment capturé</option>
+          <option value="pov_mains">POV mains</option>
+          <option value="par_dessus_epaule">Par-dessus l'épaule</option>
+        </select>
+
+        <label style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.2em;color:var(--text3);display:block;margin-bottom:6px">Action</label>
+        <select class="s-select" id="actionSelect" onchange="state.action=this.value">
+          <option value="">Sélectionner une action...</option>
+        </select>
+
+        <label style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.2em;color:var(--text3);display:block;margin-bottom:6px">Saison</label>
+        <select class="s-select" onchange="state.season=this.value">
+          <option value="spring">Printemps</option>
+          <option value="summer">Été</option>
+          <option value="autumn">Automne</option>
+          <option value="winter">Hiver</option>
+        </select>
+
+        <label style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.2em;color:var(--text3);display:block;margin-bottom:6px">Météo</label>
+        <select class="s-select" onchange="state.weather=this.value">
+          <option value="sunny">Soleil</option>
+          <option value="cloudy">Nuageux</option>
+          <option value="rain">Pluie</option>
+          <option value="storm">Orage</option>
+          <option value="snow">Neige</option>
+        </select>
+
+        <label style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.2em;color:var(--text3);display:block;margin-bottom:6px">Moment de la journée</label>
+        <select class="s-select" onchange="state.dayMoment=this.value">
+          <option value="matin">Matin</option>
+          <option value="midi">Midi</option>
+          <option value="apres_midi">Après-midi</option>
+          <option value="soiree">Soirée</option>
+          <option value="nuit">Nuit</option>
+        </select>
+
+        <label style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.2em;color:var(--text3);display:block;margin-bottom:6px">Format image</label>
+        <div class="ar-btns">
+          <div class="ar-btn active" id="ar916" onclick="setAR('9:16')">9:16<br>Portrait</div>
+          <div class="ar-btn" id="ar169" onclick="setAR('16:9')">16:9<br>Paysage</div>
+          <div class="ar-btn" id="ar11" onclick="setAR('1:1')">1:1<br>Carré</div>
+        </div>
+
+        <label style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.2em;color:var(--text3);display:block;margin-bottom:6px">Description additionnelle</label>
+        <textarea class="s-textarea" id="freeText" placeholder="Ambiance, détails supplémentaires..." rows="3" oninput="state.freeText=this.value"></textarea>
+
+        <button class="gen-btn" id="genBtn" onclick="generate()" style="margin-top:16px">
+          <svg id="genIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="24" height="24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          <span id="genLabel">Lancer le Rendu 4K</span>
+        </button>
+        <div class="error-box" id="errorBox"></div>
+      </div>
+    </div>
+
+    <!-- COL DROITE: Output -->
+    <div>
+      <div class="output-panel" id="outputPanel">
+        <div class="output-empty" id="outputEmpty">
+          <p>STUDIO</p>
+          <p style="font-size:20px;letter-spacing:0.5em;color:var(--accent)">FAMILY</p>
+        </div>
+        <div class="loading-overlay" id="loadingOverlay" style="display:none">
+          <div class="loading-spinner"></div>
+          <div class="loading-step" id="loadingStep">Initialisation...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==================== STATE ====================
+const state = {
+  apiKey: '',
+  appMode: 'IDLE',
+  energy: 'calm',
+  // Participants
+  mainAvatar: '',
+  partner: '',
+  children: [],
+  childCount: 0,
+  isBabyPresent: false,
+  babyAgeInMonths: 6,
+  guests: [],
+  guestCount: 0,
+  // Room
+  room: null,
+  roomSubtype: '',
+  roomImg: '',
+  // Action
+  action: '',
+  cameraAngle: 'face',
+  season: 'spring',
+  weather: 'sunny',
+  dayMoment: 'matin',
+  aspectRatio: '9:16',
+  freeText: '',
+  // Modes
+  whatsapp: false,
+  menage: false,
+  portage: false,
+  interphone: false,
+  dressing: false,
+  bbq: false,
+  poussette: false,
+  miroir: false,
+  // Mode images
+  whatsappContact: '',
+  whatsappCallType: 'video',
+  babyRef: '',
+  carrierImg: '',
+  bbqRef: '',
+  strollerRef: '',
+  strollerBaby: '',
+  interphonePortal: '',
+  interphoneVisitor: '',
+  interphoneStep: 1,
+};
+
+// ==================== ROOMS DATA ====================
+const ROOMS = [
+  {cat:'pieces_principales', label:'Principales', rooms:[
+    {key:'salon',label:'Salon',icon:'🛋'},
+    {key:'cuisine',label:'Cuisine',icon:'🍳'},
+    {key:'salle_a_manger',label:'Salle à manger',icon:'🍽️'},
+    {key:'chambre',label:'Chambre',icon:'🛏️'},
+    {key:'entree',label:'Entrée',icon:'🚪'},
+    {key:'escaliers',label:'Escaliers',icon:'🪜'},
+    {key:'salle_de_jeu',label:'Salle de jeu',icon:'🧸'},
+    {key:'bureau',label:'Bureau',icon:'💻'},
+    {key:'dressing',label:'Dressing',icon:'👗'},
+  ]},
+  {cat:'salles_de_bain', label:'Bain/Toilettes', rooms:[
+    {key:'salle_de_bain',label:'Salle de bain',icon:'🛁'},
+    {key:'toilettes',label:'Toilettes',icon:'🚽'},
+  ]},
+  {cat:'pieces_fonctionnelles', label:'Fonctionnel', rooms:[
+    {key:'buanderie',label:'Buanderie',icon:'🧺'},
+    {key:'cellier_nourriture',label:'Cellier',icon:'🥫'},
+    {key:'cave_vin',label:'Cave à vin',icon:'🍷'},
+    {key:'salle_de_sport',label:'Sport',icon:'🏋️'},
+    {key:'atelier_bricolage',label:'Atelier',icon:'🛠️'},
+    {key:'garage_voiture',label:'Garage',icon:'🚗'},
+    {key:'ascenseur',label:'Ascenseur',icon:'🛗'},
+    {key:'jacuzzi',label:'Jacuzzi',icon:'🫧'},
+  ]},
+  {cat:'espaces_exterieurs', label:'Extérieur', rooms:[
+    {key:'jardin',label:'Jardin',icon:'🌿'},
+    {key:'terrace',label:'Terrasse',icon:'⛱️'},
+    {key:'balcon',label:'Balcon',icon:'🏙️'},
+    {key:'piscine',label:'Piscine',icon:'🏊'},
+    {key:'exterior_villa',label:'Extérieur Villa',icon:'🏠'},
+    {key:'mare',label:'Mare',icon:'🦆'},
+  ]},
+];
+
+// ==================== ACTIONS DATA ====================
+const ACTIONS = {
+  salon: ['Se détendre sur le canapé','Regarder un film en famille','Enfants jouent au sol','Discuter calmement','Faire un puzzle','Dîner plateau-télé','Passer un appel vidéo WhatsApp','Passer un appel audio WhatsApp'],
+  cuisine: ['Cuisiner un plat maison','Laver les légumes','Préparer un gâteau','Faire la vaisselle','Ranger les courses','Prendre le petit déjeuner','Passer un appel vidéo WhatsApp'],
+  salle_a_manger: ['Mettre la table','Manger tous ensemble','Discuter à table','Aider un enfant à couper','Débarrasser la table','Prendre le petit déjeuner ensemble','Passer un appel vidéo WhatsApp'],
+  chambre: ['Se coucher','Se réveiller','S\'habiller','Ranger le lit','Scroller sur téléphone','Lire au lit','Regard complice','Prendre le petit déjeuner au lit'],
+  entree: ['Rentrer à la maison','Enlever ses chaussures','Raccrocher manteau','Porter le cartable','Poser ses clés','Se préparer à sortir','Passer un appel vidéo WhatsApp'],
+  escaliers: ['Monter les escaliers','Descendre les escaliers','Porter l\'enfant','Enfant avec son doudou','Enfants qui courent dans les escaliers'],
+  salle_de_jeu: ['Construire une tour LEGO','Dessiner au tableau','Jouer à la marchande','Ranger les jouets','Lire un album illustré'],
+  bureau: ['Taper sur l\'ordinateur','Écrire un email','Travailler sur un document','Faire une pause café','Scroller téléphone','Passer un appel vidéo WhatsApp'],
+  dressing: ['Choisir sa tenue','Essayer des vêtements','Se regarder dans le miroir','Hésiter entre deux tenues','Ranger les vêtements','Plier les vêtements'],
+  salle_de_bain: ['Se brosser les dents','Se coiffer','Appliquer une crème visage','Prendre une douche','Aider un enfant dans le bain','Passer un appel vidéo WhatsApp'],
+  toilettes: ['Nettoyer les toilettes','Changer le rouleau papier'],
+  buanderie: ['Trier le linge','Lancer une machine','Plier les vêtements propres','Repasser les chemises','Étendre le linge'],
+  cellier_nourriture: ['Chercher des gâteaux','Organiser les étagères','Ranger les bocaux','Faire l\'inventaire'],
+  cave_vin: ['Choisir une bouteille','Ranger des bouteilles','Observer la couleur du vin'],
+  salle_de_sport: ['Faire du yoga','Courir sur tapis','Exercices musculation','S\'étirer après l\'effort','Faire des pompes','Selfie miroir sport'],
+  atelier_bricolage: ['Bricoler sur l\'établi','Réparer un objet cassé','Organiser l\'atelier','Ranger les outils'],
+  garage_voiture: ['Installer un enfant dans le siège auto','Parent au volant','Fermer les portières','Démarrer la voiture'],
+  ascenseur: ['Entrer dans l\'ascenseur','Appuyer sur un bouton','Se regarder dans le miroir','Selfie miroir ascenseur'],
+  jacuzzi: ['Entrer dans le jacuzzi','Être assis dans l\'eau','Bulles en fonctionnement','Fermer les yeux pour se détendre','Moment en famille'],
+  jardin: ['Entretenir le jardin','Jouer avec les enfants','Tondre la pelouse','Se promener','Enfants courent','Faire un barbecue','Passer un appel vidéo WhatsApp'],
+  terrace: ['Se détendre sur la terrasse','Prendre l\'apéritif','Lire au soleil','Regarder le coucher de soleil','Faire un barbecue','Passer un appel vidéo WhatsApp'],
+  balcon: ['S\'appuyer à la rambarde','Observer le paysage','Boire un café','Profiter du soleil','Regarder le coucher de soleil'],
+  piscine: ['Sauter dans l\'eau','Flotter sur le dos','Nager la brasse','Assis au bord pieds dans l\'eau','Flotter sur une bouée','Passer un appel vidéo WhatsApp'],
+  exterior_villa: ['Marcher vers la maison','Tenir la main d\'un enfant','Porter l\'enfant fatigué','Chercher ses clés','Voiture devant le portail','Passer un appel vidéo WhatsApp'],
+  mare: ['Observer les grenouilles','Observer les nénuphars','Observer la surface de l\'eau'],
+  default: ['Scène de vie quotidienne naturelle','Moment spontané','Passer un appel vidéo WhatsApp','Passer un appel audio WhatsApp']
+};
+
+const CHAMBRE_SUBTYPES_FAMILY = ['chambre_parentale','chambre_enfant','chambre_bebe','chambre_adolescente','chambre_amie'];
+const CHAMBRE_SUBTYPES_SOLO = ['chambre_adulte','chambre_amie'];
+const CHAMBRE_SUBTYPE_LABELS = {
+  chambre_parentale:'Chambre parentale',
+  chambre_enfant:'Chambre enfant',
+  chambre_bebe:'Chambre bébé',
+  chambre_adolescente:'Chambre adolescente',
+  chambre_amie:'Chambre d\'amie',
+  chambre_adulte:'Chambre adulte',
+};
+
+let currentRoomCat = 'pieces_principales';
+let loadingInterval = null;
+const LOADING_STEPS = [
+  "Vérification de l'intégrité DNA...",
+  "Scanning de la structure architecturale...",
+  "Injection des protocoles de réalisme...",
+  "Rendu 4K Master en cours...",
+  "Optimisation du piqué UGC...",
+  "Validation finale des émotions...",
+];
+
+// ==================== SPLASH / NAV ====================
+document.getElementById('apiKeyInput').addEventListener('input', function() {
+  state.apiKey = this.value.trim();
+  document.getElementById('modeGrid').style.display = state.apiKey ? 'grid' : 'none';
+});
+document.getElementById('apiKeyInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && state.apiKey) document.getElementById('modeGrid').style.display = 'grid';
+});
+
+function selectMode(m) {
+  if (!state.apiKey) { showSplashError('Entrez votre clé API Vertex AI'); return; }
+  state.appMode = m;
+  showSetup();
+}
+
+function showSplashError(msg) {
+  const el = document.getElementById('splashError');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function goSplash() {
+  document.getElementById('splash').style.display = 'flex';
+  document.getElementById('setup').style.display = 'none';
+  document.getElementById('app').classList.remove('visible');
+}
+
+function goSetup() {
+  document.getElementById('app').classList.remove('visible');
+  showSetup();
+}
+
+function showSetup() {
+  document.getElementById('splash').style.display = 'none';
+  document.getElementById('setup').style.display = 'block';
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('setupTitle').textContent = state.appMode === 'SOLO' ? 'Configuration Solo' : 'Configuration Famille';
+  renderSetup();
+}
+
+// ==================== SETUP ====================
+function renderSetup() {
+  const grid = document.getElementById('setupGrid');
+  const isSolo = state.appMode === 'SOLO';
+
+  let html = `
+    <div class="setup-card">
+      <h3>👤 Avatar Principal (DNA) *</h3>
+      ${uploaderHTML('setupMainAvatar', state.mainAvatar, 'Photo de référence visage *')}
+    </div>`;
+
+  if (!isSolo) {
+    html += `
+      <div class="setup-card">
+        <h3>💑 Conjoint</h3>
+        <div class="toggle-row" style="margin-bottom:12px">
+          <span class="toggle-label">Activer conjoint</span>
+          <div class="toggle-sw ${state.partner !== '' ? 'on' : ''}" onclick="togglePartner()"><div class="toggle-sw-thumb"></div></div>
+        </div>
+        ${state.partner !== '' ? uploaderHTML('setupPartner', state.partner, 'Photo conjoint') : ''}
+      </div>
+      <div class="setup-card">
+        <h3>👶 Enfants (${state.childCount})</h3>
+        <div class="participant-controls">
+          <span class="participant-label">Nombre d'enfants</span>
+          <button class="cnt-btn" onclick="addChild(-1)">-</button>
+          <span style="font-size:14px;font-weight:700;min-width:20px;text-align:center">${state.childCount}</span>
+          <button class="cnt-btn" onclick="addChild(1)">+</button>
+        </div>
+        <div class="upload-slots">
+          ${state.children.map((c,i) => uploaderHTML(`setupChild${i}`, c, `Enfant ${i+1}`)).join('')}
+        </div>
+        <div class="toggle-row" style="margin-top:12px">
+          <span class="toggle-label">🍼 Bébé présent</span>
+          <div class="toggle-sw ${state.isBabyPresent ? 'on' : ''}" onclick="toggleBaby()"><div class="toggle-sw-thumb"></div></div>
+        </div>
+        ${state.isBabyPresent ? `<div style="margin-top:8px"><label class="toggle-label">Âge bébé (mois)</label><input type="number" min="0" max="36" value="${state.babyAgeInMonths}" onchange="state.babyAgeInMonths=parseInt(this.value)||0" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:10px;padding:10px;color:white;font-size:13px;outline:none;margin-top:6px"></div>` : ''}
+      </div>
+      <div class="setup-card">
+        <h3>👥 Invités (${state.guestCount})</h3>
+        <div class="participant-controls">
+          <span class="participant-label">Nombre d'invités</span>
+          <button class="cnt-btn" onclick="addGuest(-1)">-</button>
+          <span style="font-size:14px;font-weight:700;min-width:20px;text-align:center">${state.guestCount}</span>
+          <button class="cnt-btn" onclick="addGuest(1)">+</button>
+        </div>
+        <div class="upload-slots">
+          ${state.guests.map((g,i) => uploaderHTML(`setupGuest${i}`, g, `Invité ${i+1}`)).join('')}
+        </div>
+      </div>`;
+  }
+
+  grid.innerHTML = html;
+
+  // Bind file inputs
+  bindSetupUploader('setupMainAvatar', 'mainAvatar');
+  if (!isSolo && state.partner !== '') bindSetupUploader('setupPartner', 'partner');
+  state.children.forEach((_,i) => bindSetupUploader(`setupChild${i}`, 'child', i));
+  state.guests.forEach((_,i) => bindSetupUploader(`setupGuest${i}`, 'guest', i));
+}
+
+function uploaderHTML(id, value, label) {
+  if (value) {
+    return `<div class="uploader has-img" id="${id}" style="min-height:100px">
+      <img src="${value}">
+      <div class="uploader-overlay"><button class="remove-img-btn" onclick="removeSetupImg(event,'${id}')">✕</button></div>
+    </div>`;
+  }
+  return `<div class="uploader" id="${id}" style="min-height:100px">
+    <div class="uploader-icon">📸</div>
+    <div class="uploader-label">${label}</div>
+    <input type="file" accept="image/*" onchange="handleSetupUpload(event,'${id}')">
+  </div>`;
+}
+
+function bindSetupUploader(id, key, idx) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const input = el.querySelector('input[type=file]');
+  if (!input) return;
+  input.addEventListener('change', (e) => handleSetupUpload(e, id, key, idx));
+}
+
+function handleSetupUpload(e, id, key, idx) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onloadend = () => {
+    if (key === 'mainAvatar') state.mainAvatar = reader.result;
+    else if (key === 'partner') state.partner = reader.result;
+    else if (key === 'child') state.children[idx] = reader.result;
+    else if (key === 'guest') state.guests[idx] = reader.result;
+    renderSetup();
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeSetupImg(e, id) {
+  e.stopPropagation();
+  if (id === 'setupMainAvatar') state.mainAvatar = '';
+  else if (id === 'setupPartner') state.partner = '';
+  else if (id.startsWith('setupChild')) { const i = parseInt(id.replace('setupChild','')); state.children[i] = ''; }
+  else if (id.startsWith('setupGuest')) { const i = parseInt(id.replace('setupGuest','')); state.guests[i] = ''; }
+  renderSetup();
+}
+
+function togglePartner() {
+  state.partner = state.partner !== '' ? '' : 'pending';
+  renderSetup();
+}
+
+function toggleBaby() {
+  state.isBabyPresent = !state.isBabyPresent;
+  renderSetup();
+}
+
+function addChild(delta) {
+  state.childCount = Math.max(0, state.childCount + delta);
+  if (delta > 0) state.children.push('');
+  else state.children.pop();
+  renderSetup();
+}
+
+function addGuest(delta) {
+  state.guestCount = Math.max(0, state.guestCount + delta);
+  if (delta > 0) state.guests.push('');
+  else state.guests.pop();
+  renderSetup();
+}
+
+function validateSetup() {
+  const err = document.getElementById('setupError');
+  if (!state.mainAvatar) { err.textContent = 'Avatar principal obligatoire !'; err.style.display = 'block'; return; }
+  err.style.display = 'none';
+  showApp();
+}
+
+function showApp() {
+  document.getElementById('setup').style.display = 'none';
+  document.getElementById('splash').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+  initRoomGrid();
+}
+
+// ==================== ROOM GRID ====================
+function initRoomGrid() {
+  const catsEl = document.getElementById('roomCats');
+  catsEl.innerHTML = ROOMS.map(c => 
+    `<button class="cat-btn ${c.cat === currentRoomCat ? 'active' : ''}" onclick="selectRoomCat('${c.cat}')">${c.label}</button>`
+  ).join('');
+  renderRoomGrid();
+}
+
+function selectRoomCat(cat) {
+  currentRoomCat = cat;
+  document.querySelectorAll('.cat-btn').forEach(b => {
+    b.className = 'cat-btn' + (b.textContent === ROOMS.find(c=>c.cat===cat).label ? ' active' : '');
+  });
+  renderRoomGrid();
+}
+
+function renderRoomGrid() {
+  const cat = ROOMS.find(c => c.cat === currentRoomCat);
+  if (!cat) return;
+  document.getElementById('roomGrid').innerHTML = cat.rooms.map(r =>
+    `<div class="room-btn ${state.room?.key === r.key ? 'active' : ''}" onclick="selectRoom('${r.key}','${r.label}')">
+      <span class="icon">${r.icon}</span>
+      <span class="rlabel">${r.label}</span>
+    </div>`
+  ).join('');
+}
+
+function selectRoom(key, label) {
+  state.room = {key, label};
+  state.roomSubtype = '';
+  renderRoomGrid();
+  document.getElementById('roomImgLabel').textContent = `Photo : ${label} *`;
+  
+  // Show/hide subtypes
+  document.getElementById('cuisineSubtype').className = 'subtype-row' + (key === 'cuisine' ? ' show' : '');
+  document.getElementById('bureauSubtype').className = 'subtype-row' + (key === 'bureau' ? ' show' : '');
+  
+  if (key === 'chambre') {
+    const subEl = document.getElementById('chambreSubtype');
+    subEl.className = 'subtype-row show';
+    const opts = state.appMode === 'SOLO' ? CHAMBRE_SUBTYPES_SOLO : CHAMBRE_SUBTYPES_FAMILY;
+    document.getElementById('chambreSubtypeSelect').innerHTML = 
+      '<option value="">Type de chambre...</option>' +
+      opts.map(s => `<option value="${s}">${CHAMBRE_SUBTYPE_LABELS[s]}</option>`).join('');
+  } else {
+    document.getElementById('chambreSubtype').className = 'subtype-row';
+  }
+
+  // Show/hide mode BBQ (jardin/balcon only)
+  document.getElementById('toggleBBQ').closest('.mode-toggle-row').style.display = 
+    ['jardin','terrace','balcon'].includes(key) ? 'flex' : 'none';
+  
+  updateActions();
+}
+
+function setSubtype(v) {
+  state.roomSubtype = v;
+  updateActions();
+}
+
+function updateActions() {
+  const sel = document.getElementById('actionSelect');
+  const key = state.room?.key || '';
+  const actions = ACTIONS[key] || ACTIONS.default;
+  sel.innerHTML = '<option value="">Sélectionner une action...</option>' +
+    actions.map(a => `<option value="${a}">${a}</option>`).join('');
+  state.action = '';
+}
+
+// ==================== ENERGY ====================
+function setEnergy(e) {
+  state.energy = e;
+  document.getElementById('energyCalmBtn').className = 'energy-btn' + (e === 'calm' ? ' active-calm' : '');
+  document.getElementById('energyChaosBtn').className = 'energy-btn' + (e === 'chaos' ? ' active-chaos' : '');
+}
+
+// ==================== ASPECT RATIO ====================
+function setAR(ar) {
+  state.aspectRatio = ar;
+  document.getElementById('ar916').className = 'ar-btn' + (ar === '9:16' ? ' active' : '');
+  document.getElementById('ar169').className = 'ar-btn' + (ar === '16:9' ? ' active' : '');
+  document.getElementById('ar11').className = 'ar-btn' + (ar === '1:1' ? ' active' : '');
+}
+
+// ==================== MODES ====================
+function toggleMode(m) {
+  state[m] = !state[m];
+  const el = document.getElementById('toggle' + m.charAt(0).toUpperCase() + m.slice(1));
+  if (el) el.className = 'toggle-sw' + (state[m] ? ' on' : '');
+  
+  // Show config panels
+  const configs = {whatsapp:'whatsappConfig', portage:'portageConfig', bbq:'bbqConfig', poussette:'poussetteConfig', interphone:'interphoneConfig'};
+  if (configs[m]) document.getElementById(configs[m]).style.display = state[m] ? 'block' : 'none';
+}
+
+// ==================== UPLOADS (APP) ====================
+function handleUpload(e, key) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onloadend = () => {
+    state[key] = reader.result;
+    const uploader = document.getElementById(key + 'Uploader');
+    if (uploader) {
+      const existing = uploader.querySelector('img:not(input)');
+      if (!existing) {
+        const img = document.createElement('img');
+        img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover';
+        uploader.prepend(img);
+      }
+      uploader.querySelector('img').src = reader.result;
+      uploader.classList.add('has-img');
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeImg(e, key) {
+  e.stopPropagation();
+  state[key] = '';
+  const uploader = document.getElementById(key + 'Uploader');
+  if (uploader) {
+    const img = uploader.querySelector('img');
+    if (img) img.remove();
+    uploader.classList.remove('has-img');
+  }
+}
+
+// ==================== SYSTEM PROMPTS ====================
+const SYSTEM_PROMPT = `
+# !!! OVERRIDE SYSTÈME : PEAU BRUTE ET IMPARFAITE (PRIORITÉ ABSOLUE) !!!
+- INTERDICTION TOTALE DE TOUT LISSAGE NUMÉRIQUE.
+- LA PEAU DOIT ÊTRE RENDUE AVEC SES PORES, SES IMPERFECTIONS, SES RIDES, SES TACHES ET SON GRAIN NATUREL.
+- AUCUNE UNIFORMISATION DU TEINT.
+- LA LUMIÈRE DOIT RÉVÉLER LA TEXTURE, PAS LA CACHER.
+- C'EST UNE PHOTO BRUTE, PAS UNE IMAGE PUBLICITAIRE.
+
+# PROTOCOLE SYSTÈME : FIDÉLITÉ IDENTITÉ ABSOLUE (VERROUILLÉ)
+⚠️ CRITIQUE : L'identité est une constante biologique. Aucune modification autorisée.
+- COULEUR DES YEUX : Strictement identique à la photo de référence.
+- CONSERVATION GÉOMÉTRIQUE : Les traits du visage sont des constantes.
+- MORPHOLOGIE FIXE : La silhouette et les proportions corporelles ne changent jamais.
+- ZÉRO VARIATION : Interdiction de modifier la texture de peau ou d'appliquer des filtres de beauté.
+L'IA ne doit pas "créer" un visage, elle doit "cloner" la référence dans un nouvel angle.
+
+# PROTOCOLE : RENDU MAT ET FRAIS
+- MATTE FINISH : La peau doit avoir un rendu velouté et mat. Elle absorbe la lumière de manière diffuse.
+- ZERO SWEAT/OIL : Interdiction absolue de générer des gouttelettes, de la sueur, ou des reflets huileux.
+- NATURAL PORES : Les pores sont visibles mais secs. Pas d'accumulation de lumière dedans.
+
+# PROTOCOLE : CAPTEUR CALIBRÉ & DÉFAUTS RÉELS
+- RAW SENSOR DATA : Conserver le grain naturel de la peau, les pores et les imperfections. Aucun lissage.
+- GENTLE FALLOFF : Le passage du net au flou doit être progressif et crémeux (bokeh optique réel).
+- NATURAL DYNAMIC RANGE : Les blancs peuvent être légèrement brûlés et les noirs bouchés si la lumière est dure.
+
+# BLOC ADDITIF — RENDU 4K ULTRA-RÉALISTE
+- PRIORITY_RENDERING = PHOTO_REALISM_MAX
+- OUTPUT_RESOLUTION = 4K_NATIVE
+- REALISM_OVERRIDE = TRUE
+- Pores visibles, micro-imperfections, grain de peau irrégulier.
+- Texture de peau brute, non filtrée, non lissée.
+- Vêtements avec plis naturels, froissements légers, usure subtile.
+- Mobilier avec micro-rayures, traces d'usage. Rien de "catalogue".
+- Camera = DSLR simulé, profondeur de champ naturelle, grain discret mais présent.
+- Si l'image est trop belle pour être vraie, elle doit être volontairement dégradée jusqu'à paraître humaine.
+
+# FIDÉLITÉ ABSOLUE AU DÉCOR DE RÉFÉRENCE
+- La photo de décor fournie est la SOURCE DE VÉRITÉ ABSOLUE.
+- MÊME disposition exacte des meubles, MÊME couleur, MÊME forme.
+- INTERDICTIONS : Modifier, déplacer, ajouter ou supprimer des meubles.
+
+# MODE PERSPECTIVE — HOME FAMILY
+- Le personnage principal ne doit JAMAIS apparaître immobile ou figé.
+- L'image doit TOUJOURS être capturée pendant l'exécution d'une action liée à la scène décrite.
+- Le personnage ne doit JAMAIS donner l'impression de poser pour la caméra.
+- La scène existait déjà avant la photo. L'image capture un moment réel de vie (snapshot).
+`;
+
+// ==================== GENERATE ====================
+async function generate() {
+  const err = document.getElementById('errorBox');
+  err.className = 'error-box';
+  
+  if (!state.mainAvatar) { showError('Avatar DNA obligatoire !'); return; }
+  if (!state.roomImg && !state.poussette && !state.interphone) { showError('Photo de la pièce obligatoire !'); return; }
+  if (state.whatsapp && !state.whatsappContact) { showError('Photo de l\'interlocuteur WhatsApp obligatoire !'); return; }
+  if (state.portage && (!state.babyRef || !state.carrierImg)) { showError('Photos DNA Bébé + Porte-bébé obligatoires !'); return; }
+  if (state.bbq && !state.bbqRef) { showError('Photo du barbecue obligatoire !'); return; }
+  if (state.poussette && (!state.strollerRef || !state.strollerBaby)) { showError('Photos Poussette + Bébé obligatoires !'); return; }
+
+  setLoading(true);
+
+  try {
+    const result = await callVertex();
+    showResult(result);
+  } catch(e) {
+    showError(e.message || 'Erreur de génération.');
+  } finally {
+    setLoading(false);
+  }
+}
+
+async function callVertex() {
+  const prompt = buildPrompt();
+  const parts = [];
+
+  // Texte
+  parts.push({text: prompt});
+
+  // Images
+  if (state.mainAvatar) parts.push(makeImagePart(state.mainAvatar));
+  if (state.roomImg) parts.push(makeImagePart(state.roomImg));
+  if (state.partner && state.partner !== 'pending') parts.push(makeImagePart(state.partner));
+  state.children.forEach(c => { if (c) parts.push(makeImagePart(c)); });
+  state.guests.forEach(g => { if (g) parts.push(makeImagePart(g)); });
+  if (state.whatsapp && state.whatsappContact) parts.push(makeImagePart(state.whatsappContact));
+  if (state.portage && state.babyRef) parts.push(makeImagePart(state.babyRef));
+  if (state.portage && state.carrierImg) parts.push(makeImagePart(state.carrierImg));
+  if (state.bbq && state.bbqRef) parts.push(makeImagePart(state.bbqRef));
+  if (state.poussette && state.strollerRef) parts.push(makeImagePart(state.strollerRef));
+  if (state.poussette && state.strollerBaby) parts.push(makeImagePart(state.strollerBaby));
+
+  const body = {
+    systemInstruction: { parts: [{text: SYSTEM_PROMPT}] },
+    contents: [{ role: 'user', parts }],
+    generationConfig: {
+      responseModalities: ['IMAGE'],
+      imageConfig: {
+        aspectRatio: state.aspectRatio,
+        imageSize: '4K'
+      }
+    }
+  };
+
+  const endpoint = `https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-3.1-flash-image-preview:generateContent?key=${encodeURIComponent(state.apiKey)}`;
+
+  const waitTimes = [5000, 10000, 20000, 40000, 60000];
+  let lastErr;
+
+  for (let attempt = 0; attempt <= waitTimes.length; attempt++) {
+    try {
+      updateLoadingStep(attempt === 0 ? LOADING_STEPS[0] : `Nouvelle tentative ${attempt}/${waitTimes.length}...`);
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body)
+      });
+
+      if (!res.ok) {
+        const txt = await res.text();
+        let d; try {d = JSON.parse(txt);} catch(e){}
+        const msg = d?.error?.message || txt;
+        if (res.status === 401) throw new Error('Clé API invalide.');
+        if (res.status === 403) throw new Error('Accès refusé. Vérifiez votre clé Vertex AI.');
+        if (res.status === 404) throw new Error('Modèle introuvable.');
+        if (res.status === 429) throw new Error(`ERREUR 429: ${msg}`);
+        throw new Error(`Erreur ${res.status}: ${msg}`);
+      }
+
+      const data = await res.json();
+      const parts2 = data.candidates?.[0]?.content?.parts || [];
+      for (const p of parts2) {
+        if (p.inlineData?.data) return `data:image/png;base64,${p.inlineData.data}`;
+      }
+
+      if (data.candidates?.[0]?.finishReason === 'SAFETY') throw new Error('Génération bloquée par les filtres de sécurité. Reformulez.');
+      throw new Error('Aucune image dans la réponse.');
+
+    } catch(err) {
+      lastErr = err;
+      const msg = String(err.message || '').toLowerCase();
+      const retryable = msg.includes('429') || msg.includes('503') || msg.includes('502') || msg.includes('504') || msg.includes('overloaded') || msg.includes('resource_exhausted');
+      if (retryable && attempt < waitTimes.length) {
+        const w = waitTimes[attempt];
+        updateLoadingStep(`Vertex saturé. Attente ${Math.round(w/1000)}s...`);
+        await sleep(w);
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw lastErr || new Error('Génération échouée.');
+}
+
+function buildPrompt() {
+  const p = [];
+  
+  p.push('FRESH HUMAN CAPTURE V11.');
+  p.push('Technical: RAW 4K, Matte skin, Clean sensor, NO BEAUTY FILTERS.');
+  p.push('');
+  
+  // Mode
+  p.push(`MODE : ${state.appMode === 'SOLO' ? 'SOLO' : 'FAMILLE'}`);
+  
+  // Action
+  p.push(`ACTION : ${state.action || 'Scène de vie quotidienne, naturelle et spontanée.'}`);
+  
+  // Ambiance
+  p.push(`SAISON : ${state.season} | MÉTÉO : ${state.weather} | MOMENT : ${state.dayMoment}`);
+  p.push(`ÉNERGIE : ${state.energy === 'chaos' ? 'CHAOS — Maison vivante, légèrement désordonnée, moments imparfaits.' : 'CALME — Atmosphère sereine, postures naturelles.'}`);
+  
+  // Pièce
+  if (state.room) p.push(`PIÈCE : ${state.room.label}${state.roomSubtype ? ' / ' + state.roomSubtype : ''}`);
+  
+  // Participants
+  const participants = [];
+  participants.push('Avatar principal (photo de référence jointe)');
+  if (state.partner && state.partner !== 'pending') participants.push('Conjoint (photo de référence jointe)');
+  state.children.forEach((c,i) => { if (c) participants.push(`Enfant ${i+1} (photo jointe)`); });
+  if (state.isBabyPresent) participants.push(`Bébé (${state.babyAgeInMonths} mois)`);
+  state.guests.forEach((g,i) => { if (g) participants.push(`Invité ${i+1} (photo jointe)`); });
+  if (participants.length > 0) p.push(`PARTICIPANTS : ${participants.join(', ')}`);
+  
+  // Angle caméra
+  const angles = {
+    face:'Vue de face, caméra droite devant le sujet.',
+    profil:'Vue de profil, caméra sur le côté.',
+    trois_quarts:'Vue trois quarts, légèrement décalée.',
+    plongee_legere:'Légère plongée, caméra au-dessus.',
+    contre_plongee_legere:'Légère contre-plongée, caméra en dessous.',
+    immersive_organique:'Angle organique, moment capturé sur le vif, cadrage naturellement imparfait.',
+    pov_mains:'POV mains, perspective immersive montrant les mains en action.',
+    par_dessus_epaule:'Par-dessus l\'épaule, caméra derrière le sujet.',
+  };
+  p.push(`ANGLE : ${angles[state.cameraAngle] || state.cameraAngle}`);
+  
+  // Modes spéciaux
+  if (state.whatsapp) {
+    p.push(`MODE WHATSAPP ACTIF : Appel ${state.whatsappCallType === 'video' ? 'vidéo' : 'audio'} WhatsApp en cours. Interlocuteur affiché en grand à l'écran (photo jointe). L'avatar principal tient le téléphone. Interface WhatsApp visible avec boutons d'appel.`);
+  }
+  if (state.menage) {
+    p.push('MODE MÉNAGE ACTIF : Scène de nettoyage domestique réaliste. Outils ménagers visibles, gestes naturels de nettoyage.');
+  }
+  if (state.portage) {
+    p.push('MODE PORTAGE BÉBÉ ACTIF : Bébé porté dans le porte-bébé (photos joints). Conserver l\'identité exacte du bébé ET du porte-bébé.');
+  }
+  if (state.bbq) {
+    p.push('MODE BARBECUE ACTIF : Barbecue identique à la photo de référence (jointe). Même modèle, même forme, même couleur. Action de cuisson en cours.');
+  }
+  if (state.poussette) {
+    p.push('MODE POUSSETTE ACTIF : Poussette identique à la photo de référence (jointe). Bébé dedans (identité verrouillée). Scène de sortie réaliste.');
+  }
+  if (state.miroir) {
+    p.push('MODE MIROIR ACTIF : Selfie ou scène avec reflet dans le miroir. Le miroir reflète fidèlement le personnage.');
+  }
+  if (state.dressing) {
+    p.push('MODE DRESSING ACTIF : Scène dans le dressing, essayage de vêtements, consultation du miroir.');
+  }
+  if (state.interphone) {
+    p.push('MODE INTERPHONE ACTIF : Scène d\'interphone réaliste. Portail/entrée visible. Photos de référence utilisées.');
+  }
+  
+  // Chaos
+  if (state.energy === 'chaos') {
+    p.push('');
+    p.push('PREUVES VISUELLES DE CHAOS (intégrer dans la scène):');
+    p.push('- Désordre léger mais visible (objets déplacés, coussins froissés)');
+    p.push('- Posture légèrement affaissée par la fatigue');
+    p.push('- Micro-imperfections environnementales (tiroir entrouvert, objet renversé)');
+    p.push('- Geste pressé capturé en plein mouvement');
+  }
+  
+  // Notes libres
+  if (state.freeText) p.push(`\nNOTES DE VÉRITÉ : ${state.freeText}`);
+  
+  p.push('');
+  p.push('OBJECTIF : Réalisme biologique BRUT. Teint mat, pores visibles, imperfections réelles.');
+  p.push('DÉGRADATION VOLONTAIRE : Si l\'image semble trop parfaite ou lisse (effet IA), elle DOIT être dégradée pour paraître humaine et imparfaite.');
+  
+  return p.join('\n');
+}
+
+function makeImagePart(b64) {
+  const data = b64.includes(',') ? b64.split(',')[1] : b64;
+  return {inlineData:{data, mimeType:'image/jpeg'}};
+}
+
+// ==================== UI HELPERS ====================
+function setLoading(v) {
+  const btn = document.getElementById('genBtn');
+  const icon = document.getElementById('genIcon');
+  const label = document.getElementById('genLabel');
+  const overlay = document.getElementById('loadingOverlay');
+  
+  btn.disabled = v;
+  overlay.style.display = v ? 'flex' : 'none';
+  
+  if (v) {
+    icon.innerHTML = '<path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>';
+    btn.classList.add('loading');
+    label.textContent = 'Rendu en cours...';
+    let idx = 0;
+    clearInterval(loadingInterval);
+    loadingInterval = setInterval(() => {
+      updateLoadingStep(LOADING_STEPS[idx % LOADING_STEPS.length]);
+      idx++;
+    }, 2500);
+  } else {
+    icon.innerHTML = '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>';
+    btn.classList.remove('loading');
+    label.textContent = 'Lancer le Rendu 4K';
+    clearInterval(loadingInterval);
+  }
+}
+
+function updateLoadingStep(msg) {
+  document.getElementById('loadingStep').textContent = msg;
+}
+
+function showError(msg) {
+  const err = document.getElementById('errorBox');
+  err.textContent = msg;
+  err.className = 'error-box show';
+}
+
+function showResult(dataUrl) {
+  const panel = document.getElementById('outputPanel');
+  document.getElementById('outputEmpty').style.display = 'none';
+  
+  // Remove old image if any
+  const old = panel.querySelector('.output-img');
+  if (old) old.remove();
+  const oldDl = panel.querySelector('.dl-btn');
+  if (oldDl) oldDl.remove();
+  
+  const img = document.createElement('img');
+  img.className = 'output-img';
+  img.src = dataUrl;
+  panel.appendChild(img);
+  
+  const dl = document.createElement('button');
+  dl.className = 'dl-btn';
+  dl.textContent = '⬇ Télécharger';
+  dl.onclick = () => {
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = `studio-family-home-${Date.now()}.png`;
+    a.click();
+  };
+  panel.appendChild(dl);
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+</script>
+</body>
+</html>
