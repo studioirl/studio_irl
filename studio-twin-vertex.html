@@ -1,529 +1,6 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Studio TWIN — Votre Jumelle Digitale</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-<style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { font-family: 'Inter', sans-serif; background: #fafafa; color: #111; }
-body { min-height: 100vh; }
-
-/* SCAN ANIMATION */
-@keyframes scan { 0%{top:0%}50%{top:100%}100%{top:0%} }
-.animate-scan { animation: scan 3s cubic-bezier(0.4,0,0.2,1) infinite; }
-@keyframes spin { to{transform:rotate(360deg)} }
-@keyframes ping { 0%{transform:scale(1);opacity:1}75%,100%{transform:scale(2);opacity:0} }
-@keyframes pulse { 0%,100%{opacity:1}50%{opacity:.5} }
-@keyframes fadeUp { from{opacity:0;transform:translateY(32px)}to{opacity:1;transform:translateY(0)} }
-
-/* === CONSENT === */
-#consent {
-  position: fixed; inset: 0; z-index: 50;
-  display: flex; align-items: center; justify-content: center;
-  background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); padding: 16px;
-}
-.consent-box {
-  background: white; border-radius: 24px;
-  box-shadow: 0 40px 80px rgba(0,0,0,0.3);
-  max-width: 480px; width: 100%; padding: 40px;
-}
-.consent-title { font-size: 28px; font-weight: 700; color: #111; margin-bottom: 8px; text-align: center; }
-.consent-sub { color: #9ca3af; text-align: center; margin-bottom: 24px; }
-.consent-checks { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
-.consent-check { display: flex; align-items: flex-start; gap: 12px; padding: 16px; border-radius: 12px; border: 1px solid #f3f4f6; cursor: pointer; transition: background 0.2s; }
-.consent-check:hover { background: #f9fafb; }
-.consent-check input { width: 20px; height: 20px; accent-color: #f87171; flex-shrink: 0; margin-top: 2px; }
-.consent-check span { font-size: 14px; color: #374151; line-height: 1.5; }
-.consent-btn { width: 100%; padding: 18px; border-radius: 16px; font-weight: 700; font-size: 18px; border: none; cursor: pointer; transition: all 0.2s; }
-.consent-btn.active { background: #f87171; color: white; box-shadow: 0 8px 24px rgba(248,113,113,0.4); }
-.consent-btn.active:hover { background: #ef4444; }
-.consent-btn.disabled { background: #f3f4f6; color: #9ca3af; cursor: not-allowed; }
-
-/* === SPLASH === */
-#splash {
-  min-height: 100vh; background: white;
-  display: none; flex-direction: column;
-  align-items: center; justify-content: center;
-  padding: 40px 24px; text-align: center;
-}
-#splash.visible { display: flex; }
-.splash-logo { width: 56px; height: 56px; background: black; border-radius: 16px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); margin: 0 auto 24px; }
-.splash-brand { font-size: 32px; font-weight: 900; letter-spacing: -0.03em; color: #111; margin-bottom: 8px; }
-.splash-brand span { color: #9ca3af; }
-.splash-tagline { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3em; color: #9ca3af; margin-bottom: 40px; }
-.api-section { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 400px; margin-bottom: 24px; }
-.api-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em; color: #9ca3af; text-align: left; }
-.api-input { width: 100%; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 14px 16px; font-size: 13px; font-family: monospace; outline: none; transition: all 0.2s; }
-.api-input:focus { border-color: #111; box-shadow: 0 0 0 3px rgba(0,0,0,0.05); }
-.vertex-note { font-size: 11px; color: #6b7280; font-weight: 600; text-align: center; }
-.splash-cta { padding: 18px 48px; background: black; color: white; border: none; border-radius: 16px; font-weight: 900; font-size: 16px; cursor: pointer; transition: all 0.2s; box-shadow: 0 8px 32px rgba(0,0,0,0.15); }
-.splash-cta:hover { background: #1f2937; transform: translateY(-2px); }
-.splash-cta:active { transform: scale(0.97); }
-#splash-error { color: #ef4444; font-size: 12px; font-weight: 600; margin-top: 8px; display: none; }
-
-/* === MAIN APP === */
-#app { display: none; min-height: 100vh; background: white; }
-#app.visible { display: block; }
-
-/* Header */
-.header { border-bottom: 1px solid #f3f4f6; position: sticky; top: 0; z-index: 40; background: rgba(255,255,255,0.9); backdrop-filter: blur(12px); }
-.header-inner { max-width: 1280px; margin: 0 auto; padding: 0 24px; height: 80px; display: flex; align-items: center; justify-content: space-between; }
-.brand { display: flex; align-items: center; gap: 16px; }
-.brand-logo { width: 40px; height: 40px; background: black; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
-.brand-name { font-size: 20px; font-weight: 900; letter-spacing: -0.02em; color: #111; }
-.brand-name span { color: #9ca3af; }
-.brand-sub { font-size: 9px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.3em; font-style: italic; margin-top: 2px; }
-.header-status { font-size: 10px; font-weight: 900; color: #16a34a; background: #f0fdf4; padding: 8px 16px; border-radius: 999px; border: 1px solid #bbf7d0; display: flex; align-items: center; gap: 8px; }
-.status-dot { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; animation: pulse 2s infinite; }
-
-/* Main content */
-.main { max-width: 1280px; margin: 0 auto; padding: 80px 24px; }
-
-/* Hero */
-.hero { display: grid; grid-template-columns: 1fr; gap: 64px; align-items: center; margin-bottom: 160px; }
-@media(min-width:1024px){ .hero { grid-template-columns: 1fr 1fr; gap: 128px; } }
-
-.hero-badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 20px; background: #f9fafb; border-radius: 999px; border: 1px solid #f3f4f6; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.2em; color: #9ca3af; margin-bottom: 48px; }
-.ping-dot { width: 8px; height: 8px; background: black; border-radius: 50%; position: relative; }
-.ping-dot::after { content:''; position:absolute; inset:0; background:black; border-radius:50%; animation: ping 1.5s infinite; }
-
-.hero-title { font-size: clamp(48px, 8vw, 96px); font-weight: 900; color: #111; line-height: 0.85; letter-spacing: -0.04em; margin-bottom: 48px; }
-.hero-desc { font-size: 22px; color: #6b7280; max-width: 440px; line-height: 1.6; font-weight: 500; font-style: italic; margin-bottom: 48px; }
-.hero-stats { display: flex; align-items: center; gap: 40px; border-top: 1px solid #f3f4f6; padding-top: 48px; }
-.stat { display: flex; flex-direction: column; }
-.stat-label { font-size: 11px; font-weight: 900; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.3em; margin-bottom: 4px; }
-.stat-value { font-size: 24px; font-weight: 900; color: #111; }
-.stat-divider { width: 1px; height: 48px; background: #f3f4f6; }
-
-/* Twin visual */
-.twin-visual { position: relative; }
-.twin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; background: rgba(249,250,251,0.5); padding: 24px; border-radius: 72px; border: 1px solid #f3f4f6; box-shadow: 0 4px 16px rgba(0,0,0,0.04); }
-.twin-card { position: relative; aspect-ratio: 9/16; border-radius: 56px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.15); border: 6px solid white; transition: transform 0.7s; }
-.twin-card:hover { transform: scale(1.03); }
-.twin-card img { width: 100%; height: 100%; object-fit: cover; }
-.twin-card.right { transform: translateY(48px); }
-.twin-card.right:hover { transform: translateY(48px) scale(1.03); }
-.twin-badge { position: absolute; top: 32px; left: 32px; padding: 8px 20px; border-radius: 999px; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.2em; border: 1px solid; }
-.twin-badge.grey { background: rgba(255,255,255,0.2); backdrop-filter: blur(16px); color: white; border-color: rgba(255,255,255,0.3); }
-.twin-badge.dark { background: rgba(0,0,0,0.7); backdrop-filter: blur(16px); color: white; border-color: rgba(255,255,255,0.1); }
-.scan-line { position: absolute; top: 0; left: 0; width: 100%; height: 6px; background: linear-gradient(to right, transparent, white, transparent); box-shadow: 0 0 25px rgba(255,255,255,1); z-index: 10; }
-.twin-float-badge { position: absolute; bottom: -64px; left: 50%; transform: translateX(-50%); background: black; color: white; padding: 32px 56px; border-radius: 48px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 32px; z-index: 20; white-space: nowrap; border: 6px solid white; }
-.twin-float-id { width: 64px; height: 64px; background: white; border-radius: 24px; display: flex; align-items: center; justify-content: center; color: black; font-weight: 900; font-size: 20px; }
-.twin-float-text { display: flex; flex-direction: column; }
-.twin-float-label { font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.4em; color: #6b7280; }
-.twin-float-value { font-size: 18px; font-weight: 700; }
-
-/* Upload section */
-.section-header { border-bottom: 1px solid #f3f4f6; padding-bottom: 48px; margin-bottom: 64px; display: flex; align-items: flex-end; justify-content: space-between; }
-.section-title { font-size: clamp(36px, 5vw, 56px); font-weight: 900; color: #111; letter-spacing: -0.03em; text-transform: uppercase; line-height: 1; }
-.section-desc { color: #9ca3af; font-size: 20px; font-weight: 500; font-style: italic; margin-top: 16px; }
-
-.photos-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 40px; margin-bottom: 160px; }
-@media(min-width:768px){ .photos-grid { grid-template-columns: repeat(3, 1fr); } }
-@media(min-width:1024px){ .photos-grid { grid-template-columns: repeat(5, 1fr); } }
-
-.photo-slot { position: relative; }
-.photo-card { aspect-ratio: 3/4; border-radius: 64px; border: 2px solid; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px; background: white; overflow: hidden; transition: all 0.3s; }
-.photo-card.empty { border-style: dashed; border-color: #f3f4f6; }
-.photo-card.empty:hover { border-color: rgba(0,0,0,0.3); }
-.photo-card.filled { border-style: solid; border-color: black; box-shadow: 0 20px 60px rgba(0,0,0,0.15); transform: scale(1.04); }
-.photo-card img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 62px; }
-.photo-upload-icon { width: 96px; height: 96px; background: #f9fafb; border-radius: 40px; display: flex; align-items: center; justify-content: center; margin-bottom: 32px; transition: all 0.2s; }
-.photo-card.empty:hover .photo-upload-icon { background: black; color: white; }
-.photo-upload-icon svg { width: 32px; height: 32px; color: #9ca3af; display: block; transition: color 0.2s; }
-.photo-card.empty:hover .photo-upload-icon svg { color: white; }
-.photo-label { font-size: 13px; font-weight: 900; color: #111; text-transform: uppercase; letter-spacing: -0.02em; text-align: center; margin-bottom: 16px; }
-.photo-desc { font-size: 11px; color: #d1d5db; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; text-align: center; line-height: 1.5; }
-.photo-card label { position: absolute; inset: 0; cursor: pointer; }
-.photo-card label input { display: none; }
-.photo-remove-btn { position: absolute; top: 20px; right: 20px; background: white; border: none; border-radius: 999px; padding: 16px; cursor: pointer; box-shadow: 0 4px 20px rgba(0,0,0,0.15); z-index: 10; transition: transform 0.2s; }
-.photo-remove-btn:hover { transform: scale(1.1); }
-.photo-remove-btn svg { width: 24px; height: 24px; display: block; color: black; }
-
-/* Action section */
-.action-section { background: #111; border-radius: 96px; padding: 64px; position: relative; overflow: hidden; box-shadow: 0 40px 80px rgba(0,0,0,0.2); }
-@media(min-width:1024px){ .action-section { padding: 128px; } }
-.action-section::before { content:''; position:absolute; top:0; right:0; width:1000px; height:1000px; background:rgba(255,255,255,0.04); filter:blur(250px); border-radius:50%; transform:translate(50%,-50%); }
-.action-inner { position: relative; z-index: 10; display: flex; flex-direction: column; gap: 96px; align-items: center; }
-@media(min-width:1024px){ .action-inner { flex-direction: row; } }
-.action-left { flex: 1; text-align: center; }
-@media(min-width:1024px){ .action-left { text-align: left; } }
-.action-title { font-size: clamp(40px, 6vw, 72px); font-weight: 900; letter-spacing: -0.03em; line-height: 1; font-style: italic; color: white; margin-bottom: 56px; }
-.ratio-btns { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; }
-@media(min-width:1024px){ .ratio-btns { justify-content: flex-start; } }
-.ratio-btn { padding: 28px 64px; border-radius: 32px; font-size: 14px; font-weight: 900; border: 2px solid; cursor: pointer; transition: all 0.2s; }
-.ratio-btn.active { background: white; border-color: white; color: black; box-shadow: 0 20px 60px rgba(0,0,0,0.3); transform: scale(1.1); }
-.ratio-btn.inactive { background: transparent; border-color: rgba(255,255,255,0.2); color: rgba(255,255,255,0.3); }
-.ratio-btn.inactive:hover { border-color: white; color: white; }
-.action-right { width: 100%; }
-@media(min-width:1024px){ .action-right { width: auto; } }
-.gen-btn { width: 100%; height: 144px; border-radius: 64px; font-weight: 900; font-size: clamp(24px, 4vw, 36px); border: none; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
-@media(min-width:1024px){ .gen-btn { width: 480px; } }
-.gen-btn.ready { background: white; color: black; }
-.gen-btn.ready:hover { background: #f3f4f6; }
-.gen-btn.ready:active { transform: scale(0.97); }
-.gen-btn.disabled { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.1); cursor: not-allowed; border: 1px solid rgba(255,255,255,0.05); }
-.gen-btn.loading { background: white; color: black; }
-.gen-btn-inner { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; }
-.gen-loading-icon { animation: spin 1s linear infinite; width: 20px; height: 20px; display: block; }
-.gen-loading-text { display: flex; align-items: center; gap: 20px; font-size: inherit; font-weight: inherit; }
-.gen-loading-sub { font-size: 12px; font-weight: 700; opacity: 0.3; text-transform: uppercase; letter-spacing: 0.6em; }
-.error-box { color: #fca5a5; font-size: 12px; font-weight: 900; margin-top: 48px; text-align: center; text-transform: uppercase; letter-spacing: 0.2em; background: rgba(239,68,68,0.1); padding: 24px 48px; border-radius: 40px; border: 1px solid rgba(239,68,68,0.2); }
-
-/* Results */
-.results { margin-top: 48px; animation: fadeUp 1s ease both; }
-.results-header { border-bottom: 1px solid #f3f4f6; padding-bottom: 80px; margin-bottom: 128px; display: flex; flex-direction: column; gap: 64px; text-align: center; }
-@media(min-width:768px){ .results-header { flex-direction: row; align-items: flex-end; justify-content: space-between; text-align: left; } }
-.results-tag { display: inline-block; padding: 12px 32px; background: black; color: white; font-size: 12px; font-weight: 900; border-radius: 999px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); text-transform: uppercase; letter-spacing: 0.3em; margin-bottom: 24px; }
-.results-title { font-size: clamp(64px, 10vw, 128px); font-weight: 900; color: #111; letter-spacing: -0.05em; line-height: 0.85; }
-.results-sub { color: #9ca3af; font-weight: 500; font-size: clamp(24px, 4vw, 40px); font-style: italic; margin-top: 24px; }
-.renew-btn { font-size: 16px; font-weight: 900; border: 2px solid #111; padding: 32px 80px; border-radius: 48px; background: white; cursor: pointer; transition: all 0.2s; box-shadow: 0 8px 32px rgba(0,0,0,0.1); flex-shrink: 0; }
-.renew-btn:hover { background: #111; color: white; }
-.renew-btn:active { transform: scale(0.97); }
-
-.results-grid { display: grid; grid-template-columns: 1fr; gap: 64px; margin-bottom: 128px; }
-@media(min-width:640px){ .results-grid { grid-template-columns: repeat(2, 1fr); } }
-@media(min-width:1024px){ .results-grid { grid-template-columns: repeat(4, 1fr); } }
-
-.result-card { background: white; border-radius: 80px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.08); border: 1px solid #f9fafb; transition: transform 0.3s; position: relative; }
-.result-card:hover { transform: translateY(-25px); }
-.result-img-wrap { position: relative; overflow: hidden; }
-.result-img-wrap.ar-916 { aspect-ratio: 9/16; }
-.result-img-wrap.ar-11 { aspect-ratio: 1/1; }
-.result-img-wrap.ar-34 { aspect-ratio: 3/4; }
-.result-img-wrap.ar-43 { aspect-ratio: 4/3; }
-.result-img-wrap.ar-169 { aspect-ratio: 16/9; }
-.result-img-wrap img { width: 100%; height: 100%; object-fit: cover; transition: transform 1s; }
-.result-card:hover .result-img-wrap img { transform: scale(1.1); }
-.result-overlay { position: absolute; inset: 0; background: linear-gradient(to top, black, transparent, transparent); opacity: 0; transition: opacity 0.3s; display: flex; flex-direction: column; justify-content: flex-end; padding: 64px; }
-.result-card:hover .result-overlay { opacity: 1; }
-.result-dl-btn { background: white; color: black; padding: 32px; border-radius: 40px; font-weight: 900; font-size: 16px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 20px; transform: translateY(48px); transition: transform 0.3s; box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
-.result-card:hover .result-dl-btn { transform: translateY(0); }
-.result-dl-btn svg { width: 20px; height: 20px; display: block; }
-.result-footer { padding: 64px; display: flex; align-items: center; justify-content: space-between; background: white; border-top: 1px solid #f9fafb; }
-.result-view-label { font-size: 13px; font-weight: 900; color: #d1d5db; text-transform: uppercase; letter-spacing: 0.5em; }
-.result-view-name { font-size: 36px; font-weight: 900; color: #111; }
-.result-status { width: 64px; height: 64px; border-radius: 999px; background: #f0fdf4; border: 1px solid #bbf7d0; display: flex; align-items: center; justify-content: center; }
-.result-status-dot { width: 20px; height: 20px; background: #22c55e; border-radius: 50%; box-shadow: 0 4px 12px rgba(34,197,94,0.4); animation: pulse 2s infinite; }
-
-/* Export section */
-.export-section { background: black; border-radius: 112px; padding: 128px 64px; text-align: center; margin-top: 128px; box-shadow: 0 40px 80px rgba(0,0,0,0.2); position: relative; overflow: hidden; }
-.export-section::before { content:''; position:absolute; top:0; right:0; width:1000px; height:1000px; background:rgba(255,255,255,0.04); filter:blur(250px); border-radius:50%; transform:translate(50%,-50%); }
-.export-title { font-size: clamp(48px, 8vw, 100px); font-weight: 900; letter-spacing: -0.04em; line-height: 0.85; max-width: 1000px; margin: 0 auto 80px; font-style: italic; color: white; position: relative; z-index: 1; }
-.export-btn { background: white; color: black; padding: 56px 128px; border-radius: 64px; font-weight: 900; font-size: clamp(32px, 5vw, 48px); border: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 40px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); transition: all 0.2s; position: relative; z-index: 1; }
-.export-btn:hover { background: #f3f4f6; }
-.export-btn:active { transform: scale(0.97); }
-.export-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.export-btn svg { width: 40px; height: 40px; display: block; }
-.export-sub { font-size: 14px; font-weight: 900; color: #4b5563; text-transform: uppercase; letter-spacing: 1.5em; margin-top: 80px; position: relative; z-index: 1; }
-</style>
-</head>
-<body>
-
-<!-- CONSENT -->
-<div id="consent">
-  <div class="consent-box">
-    <h2 class="consent-title">Sécurité & Consentement</h2>
-    <p class="consent-sub">Validation obligatoire avant toute génération</p>
-    <div class="consent-checks">
-      <label class="consent-check"><input type="checkbox" id="c1" onchange="checkConsent()"><span>J'accepte que mon image soit reproduite à l'identique. Je confirme être la personne présente sur les photos ou disposer de son autorisation explicite.</span></label>
-      <label class="consent-check"><input type="checkbox" id="c2" onchange="checkConsent()"><span>Je confirme que la personne est majeure.</span></label>
-      <label class="consent-check"><input type="checkbox" id="c3" onchange="checkConsent()"><span>J'assume l'entière responsabilité de l'utilisation des images générées.</span></label>
-    </div>
-    <button class="consent-btn disabled" id="consentBtn" onclick="acceptConsent()">Valider et Commencer</button>
-  </div>
-</div>
-
-<!-- SPLASH (API key) -->
-<div id="splash">
-  <div class="splash-logo">ST</div>
-  <div class="splash-brand">STUDIO <span>TWIN</span></div>
-  <div class="splash-tagline">High-Fidelity Clone Hub</div>
-  <div class="api-section">
-    <label class="api-label">Clé API Vertex AI (Google Cloud)</label>
-    <input type="password" id="apiKeyInput" class="api-input" placeholder="AIza..." autocomplete="off">
-    <p class="vertex-note">⚡ Vertex AI Express Mode — Crédits Google Cloud</p>
-  </div>
-  <button class="splash-cta" onclick="enterApp()">Accéder au Studio</button>
-  <p id="splash-error"></p>
-</div>
-
-<!-- MAIN APP -->
-<div id="app">
-  <header class="header">
-    <div class="header-inner">
-      <div class="brand">
-        <div class="brand-logo">ST</div>
-        <div>
-          <div class="brand-name">STUDIO <span>TWIN</span></div>
-          <div class="brand-sub">High-Fidelity Clone Hub</div>
-        </div>
-      </div>
-      <div class="header-status">
-        <div class="status-dot"></div>
-        STUDIO OPÉRATIONNEL
-      </div>
-    </div>
-  </header>
-
-  <div class="main">
-    <!-- HERO -->
-    <section class="hero">
-      <div>
-        <div class="hero-badge">
-          <div class="ping-dot"></div>
-          Génération Identitaire 4K
-        </div>
-        <h1 class="hero-title">Crée ta jumelle digitale.</h1>
-        <p class="hero-desc">Obtenez une ressemblance absolue avec votre double numérique. Identité préservée, qualité studio garantie.</p>
-        <div class="hero-stats">
-          <div class="stat"><span class="stat-label">Rendu</span><span class="stat-value">STUDIO RAW</span></div>
-          <div class="stat-divider"></div>
-          <div class="stat"><span class="stat-label">Précision</span><span class="stat-value">100% ADN</span></div>
-        </div>
-      </div>
-      <div class="twin-visual">
-        <div class="twin-grid">
-          <div class="twin-card left">
-            <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&q=80&w=1000" alt="Source" style="filter:grayscale(1) brightness(0.9);"
-              onerror="this.style.background='#e2e8f0';this.style.display='block'">
-            <div class="twin-badge grey">VOTRE PHOTO</div>
-          </div>
-          <div class="twin-card right">
-            <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&q=80&w=1000" alt="Twin"
-              onerror="this.style.background='#e2e8f0';this.style.display='block'">
-            <div class="twin-badge dark">JUMELLE TWIN</div>
-            <div class="scan-line animate-scan"></div>
-          </div>
-        </div>
-        <div class="twin-float-badge">
-          <div class="twin-float-id">ID</div>
-          <div class="twin-float-text">
-            <span class="twin-float-label">Clonage Certifié</span>
-            <span class="twin-float-value">Ressemblance Réelle</span>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- UPLOAD -->
-    <section style="padding-top: 128px;">
-      <div class="section-header">
-        <div>
-          <h2 class="section-title">1. Importation ADN</h2>
-          <p class="section-desc">Fournissez vos clichés pour extraire votre structure faciale.</p>
-        </div>
-      </div>
-      <div class="photos-grid" id="photosGrid"></div>
-    </section>
-
-    <!-- ACTION -->
-    <div class="action-section">
-      <div class="action-inner">
-        <div class="action-left">
-          <h3 class="action-title">Format de sortie</h3>
-          <div class="ratio-btns" id="ratioBtns"></div>
-        </div>
-        <div class="action-right">
-          <button class="gen-btn disabled" id="genBtn" onclick="startGeneration()">GÉNÉRER MON DOUBLE</button>
-          <div id="errorBox" style="display:none;" class="error-box"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- RESULTS -->
-    <div id="resultsSection" style="display:none;" class="results">
-      <div class="results-header">
-        <div>
-          <div class="results-tag">Pack Studio Twin • Archive 4K</div>
-          <div class="results-title">Résultat.</div>
-          <p class="results-sub">Votre identité numérique a été verrouillée avec succès.</p>
-        </div>
-        <button class="renew-btn" onclick="reset()">RENOUVELER</button>
-      </div>
-      <div class="results-grid" id="resultsGrid"></div>
-      <div id="exportSection" style="display:none;" class="export-section">
-        <h3 class="export-title">Exportation complète du pack Identité.</h3>
-        <button class="export-btn" onclick="exportZip()" id="exportBtn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          PACK ZIP (4K)
-        </button>
-        <p class="export-sub">Identity Vault • 2025</p>
-      </div>
-    </div>
-  </div>
-
-  <footer style="max-width:1280px;margin:0 auto;padding:160px 24px;border-top:1px solid #f3f4f6;text-align:center;">
-    <p style="font-size:14px;font-weight:900;color:#9ca3af;text-transform:uppercase;letter-spacing:1.2em;">Studio Twin © 2025 • High Fidelity Identity Labs</p>
-  </footer>
-</div>
-
 <script>
-// ==================== CONSTANTS ====================
 const MODEL = 'gemini-3.1-flash-image-preview';
 
-const PHOTO_CONFIG = [
-  { id: 'face', label: 'Photo de face', description: 'Visage visible, expression neutre, bonne lumière.' },
-  { id: 'full_front', label: 'Plein pied de face', description: 'Tête aux pieds, posture naturelle.' },
-  { id: 'full_back', label: 'Plein pied de dos', description: 'Tête aux pieds, vue arrière.' },
-  { id: 'profile_left', label: 'Profil gauche', description: 'Vue latérale gauche complète.' },
-  { id: 'profile_right', label: 'Profil droit', description: 'Vue latérale droite complète.' },
-];
-
-const ASPECT_RATIOS = ['1:1', '3:4', '4:3', '9:16', '16:9'];
-
-const VIEWS = [
-  { id: 'Face', prompt: 'Portrait 4K frontal, regard direct. Éclairage neutre. Rendu de peau haute définition basé strictement sur la référence.' },
-  { id: 'Dos', prompt: 'Plein pied de dos, posture naturelle. Arrière-plan neutre.' },
-  { id: 'Profil gauche', prompt: 'Profil gauche complet, silhouette exacte. Fidélité morphologique totale.' },
-  { id: 'Profil droit', prompt: 'Profil droit complet, silhouette exacte. Fidélité morphologique totale.' },
-];
-
-const LOADING_MESSAGES = [
-  "Analyse de la structure faciale...",
-  "Extraction des points d'ancrage...",
-  "Calcul de la symétrie...",
-  "Synchronisation des textures...",
-  "Rendu haute définition en cours...",
-  "Finalisation de votre jumelle..."
-];
-
-const SYSTEM_INSTRUCTION = `You are STUDIO TWIN. Your task is to create a perfect digital clone.
-
-🔒 RÈGLE FONDAMENTALE : Si le visage ne ressemble pas immédiatement à la personne de référence, la génération est invalide.
-
-🔐 IDENTITÉ FACIALE — MODE TWIN (ADN IDENTITÉ)
-- Extraire les invariants faciaux (distance inter-pupillaire, structure osseuse, asymétries, forme des lèvres).
-- Verrouiller ces invariants comme constantes structurelles.
-- INTERDICTION ABSOLUE : Ne pas réinterpréter, optimiser ou embellir les traits.
-
-🔒 RÈGLE ABSOLUE : PRÉSERVATION DE L'ÂGE
-- Preserve the subject's real age appearance exactly as seen on references.
-- DO NOT remove natural age-related skin features.
-- No artificial rejuvenation, no smoothing/filters.
-
-🧬 ADN VISUEL (TEXTURE RÉELLE)
-La peau doit être reproduite telle qu'elle est observée sur l'image de référence, sans extrapolation.
-✅ Autorisé : Améliorer la netteté, rendre les pores lisibles.
-❌ Interdit : Lisser la peau, supprimer les lignes d'expression.
-
-RENDERING: Professional 4K RAW photograph. Strict Morphology Sync.`;
-
-// ==================== STATE ====================
-let API_KEY = '';
-let hasConsent = false;
-let selectedRatio = '9:16';
-let isGenerating = false;
-let loadingMsgIdx = 0;
-let loadingInterval = null;
-let results = [];
-
-const photos = { face: null, full_front: null, full_back: null, profile_left: null, profile_right: null };
-
-// ==================== CONSENT ====================
-function checkConsent() {
-  const all = ['c1','c2','c3'].every(id => document.getElementById(id).checked);
-  const btn = document.getElementById('consentBtn');
-  btn.className = 'consent-btn ' + (all ? 'active' : 'disabled');
-}
-
-function acceptConsent() {
-  const all = ['c1','c2','c3'].every(id => document.getElementById(id).checked);
-  if (!all) return;
-  hasConsent = true;
-  document.getElementById('consent').style.display = 'none';
-  document.getElementById('splash').classList.add('visible');
-}
-
-// ==================== SPLASH ====================
-document.getElementById('apiKeyInput').addEventListener('keydown', e => { if (e.key === 'Enter') enterApp(); });
-
-function enterApp() {
-  const key = document.getElementById('apiKeyInput').value.trim();
-  const err = document.getElementById('splash-error');
-  if (!key) { err.textContent = 'Veuillez entrer votre clé API Vertex AI.'; err.style.display = 'block'; return; }
-  API_KEY = key;
-  err.style.display = 'none';
-  document.getElementById('splash').classList.remove('visible');
-  document.getElementById('app').classList.add('visible');
-  renderPhotosGrid();
-  renderRatioBtns();
-}
-
-// ==================== RENDER ====================
-function renderPhotosGrid() {
-  const grid = document.getElementById('photosGrid');
-  grid.innerHTML = PHOTO_CONFIG.map(config => {
-    const hasPhoto = !!photos[config.id];
-    return `<div class="photo-slot">
-      <div class="photo-card ${hasPhoto ? 'filled' : 'empty'}" id="card-${config.id}">
-        ${hasPhoto ? `
-          <img src="${photos[config.id]}" alt="${config.label}">
-          <button class="photo-remove-btn" onclick="removePhoto('${config.id}')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="6"><path d="M18 6 6 18M6 6l12 12"/></svg>
-          </button>
-        ` : `
-          <div class="photo-upload-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
-          <div class="photo-label">${config.label}</div>
-          <div class="photo-desc">${config.description}</div>
-          <label><input type="file" accept="image/*" onchange="handlePhotoUpload('${config.id}', event)"></label>
-        `}
-      </div>
-    </div>`;
-  }).join('');
-  updateGenBtn();
-}
-
-function renderRatioBtns() {
-  document.getElementById('ratioBtns').innerHTML = ASPECT_RATIOS.map(r =>
-    `<button class="ratio-btn ${selectedRatio === r ? 'active' : 'inactive'}" onclick="setRatio('${r}')">${r}</button>`
-  ).join('');
-}
-
-function setRatio(r) {
-  selectedRatio = r;
-  renderRatioBtns();
-}
-
-function updateGenBtn() {
-  const allUploaded = Object.values(photos).every(p => p !== null);
-  const btn = document.getElementById('genBtn');
-  if (isGenerating) {
-    btn.className = 'gen-btn loading';
-    btn.innerHTML = `<div class="gen-btn-inner">
-      <div class="gen-loading-text">
-        <svg class="gen-loading-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" opacity="0.25"/><path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor"/></svg>
-        SYNCHRONISATION...
-      </div>
-      <div class="gen-loading-sub" id="loadingSubMsg">${LOADING_MESSAGES[loadingMsgIdx]}</div>
-    </div>`;
-  } else if (allUploaded) {
-    btn.className = 'gen-btn ready';
-    btn.innerHTML = 'GÉNÉRER MON DOUBLE';
-  } else {
-    btn.className = 'gen-btn disabled';
-    btn.innerHTML = 'GÉNÉRER MON DOUBLE';
-  }
-}
-
-// ==================== PHOTO UPLOAD ====================
-function handlePhotoUpload(id, e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onloadend = () => { photos[id] = reader.result; renderPhotosGrid(); };
-  reader.readAsDataURL(file);
-}
-
-function removePhoto(id) {
-  photos[id] = null;
-  renderPhotosGrid();
-}
-
-// ==================== GENERATE ====================
 async function startGeneration() {
   const allUploaded = Object.values(photos).every(p => p !== null);
   if (!allUploaded || isGenerating) return;
@@ -547,40 +24,57 @@ async function startGeneration() {
   });
 
   const apiAR = selectedRatio === '4:5' ? '3:4' : selectedRatio;
-  const endpoint = `https://aiplatform.googleapis.com/v1/publishers/google/models/${MODEL}:generateContent?key=${API_KEY}`;
+
+  const endpoint = `https://generativelanguage.googleapis.com/v1/models/${MODEL}:generateContent`;
 
   const generationPromises = VIEWS.map(async view => {
     const body = {
       contents: [{
-        role: 'user',
+        role: "user",
         parts: [
           ...referenceParts,
-          { text: `${SYSTEM_INSTRUCTION}\n\nTASK: Generate the "${view.id}" view. ${view.prompt}` }
+          { text: `${SYSTEM_INSTRUCTION}\n\nTASK: ${view.prompt}` }
         ]
       }],
       generationConfig: {
-        responseModalities: ['IMAGE', 'TEXT'],
-        imageConfig: { aspectRatio: apiAR, imageSize: '4K' }
+        responseModalities: ["IMAGE"],
+        imageConfig: {
+          aspectRatio: apiAR,
+          imageSize: "4K"
+        }
       }
     };
 
-    const res = await fetch(endpoint, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+    const res = await fetch(`${endpoint}?key=${API_KEY}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(body)
     });
 
     if (!res.ok) {
       const txt = await res.text();
       let d; try { d = JSON.parse(txt); } catch(e) {}
-      throw new Error(`HTTP ${res.status}: ${d?.error?.message || txt}`);
+      const msg = d?.error?.message || txt;
+
+      if(res.status===429) throw new Error("Trop de requêtes → attends 30s");
+      if(res.status===403) throw new Error("Clé invalide ou API non activée");
+      throw new Error(msg);
     }
 
     const data = await res.json();
+
     for (const part of (data.candidates?.[0]?.content?.parts || [])) {
       if (part.inlineData?.data) {
-        return { view: view.id, url: `data:image/png;base64,${part.inlineData.data}` };
+        return {
+          view: view.id,
+          url: `data:image/png;base64,${part.inlineData.data}`
+        };
       }
     }
-    throw new Error(`Échec de génération pour la vue ${view.id}`);
+
+    throw new Error("Image non générée");
   });
 
   try {
@@ -589,7 +83,7 @@ async function startGeneration() {
     showResults();
   } catch(err) {
     const errBox = document.getElementById('errorBox');
-    errBox.textContent = err.message || "Une erreur est survenue lors de la génération.";
+    errBox.textContent = err.message;
     errBox.style.display = 'block';
   } finally {
     isGenerating = false;
@@ -597,64 +91,4 @@ async function startGeneration() {
     updateGenBtn();
   }
 }
-
-function getARClass() {
-  const map = { '9:16':'ar-916', '1:1':'ar-11', '3:4':'ar-34', '4:3':'ar-43', '16:9':'ar-169' };
-  return map[selectedRatio] || 'ar-916';
-}
-
-function showResults() {
-  const section = document.getElementById('resultsSection');
-  const grid = document.getElementById('resultsGrid');
-  const arClass = getARClass();
-
-  grid.innerHTML = results.map(res => `
-    <div class="result-card">
-      <div class="result-img-wrap ${arClass}">
-        <img src="${res.url}" alt="${res.view}">
-        <div class="result-overlay">
-          <button class="result-dl-btn" onclick="downloadImg('${res.url}','studio_twin_${res.view}.png')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            EXPORTER RAW
-          </button>
-        </div>
-      </div>
-      <div class="result-footer">
-        <div>
-          <div class="result-view-label">Vue Twin</div>
-          <div class="result-view-name">${res.view}</div>
-        </div>
-        <div class="result-status"><div class="result-status-dot"></div></div>
-      </div>
-    </div>
-  `).join('');
-
-  section.style.display = 'block';
-  if (results.length === 4) document.getElementById('exportSection').style.display = 'block';
-  section.scrollIntoView({ behavior: 'smooth' });
-}
-
-function downloadImg(url, name) {
-  const a = document.createElement('a');
-  a.href = url; a.download = name;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-}
-
-function exportZip() {
-  results.forEach((res, i) => {
-    setTimeout(() => downloadImg(res.url, `studio_twin_${res.view}.png`), i * 300);
-  });
-}
-
-function reset() {
-  results = [];
-  Object.keys(photos).forEach(k => photos[k] = null);
-  document.getElementById('resultsSection').style.display = 'none';
-  document.getElementById('exportSection').style.display = 'none';
-  document.getElementById('errorBox').style.display = 'none';
-  renderPhotosGrid();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
 </script>
-</body>
-</html>
