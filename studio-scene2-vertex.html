@@ -1,0 +1,580 @@
+<script>
+// ==================== MODELS ====================
+const MODEL_ANALYSIS = 'gemini-3.1-flash-image-preview';
+const MODEL_IMAGE = 'gemini-3.1-flash-image-preview';
+
+// ==================== STORAGE ====================
+const STORAGE_KEYS = {
+  referenceImage: 'studio-scene-v2-referenceImage',
+  referenceMime: 'studio-scene-v2-referenceMime',
+  referenceUrl: 'studio-scene-v2-referenceUrl',
+  analysisData: 'studio-scene-v2-analysisData',
+  isAutoMode: 'studio-scene-v2-isAutoMode',
+  aspectRatio: 'studio-scene-v2-aspectRatio',
+  generatedPrompts: 'studio-scene-v2-generatedPrompts',
+  generatedImages: 'studio-scene-v2-generatedImages',
+  actionInput: 'studio-scene-v2-actionInput'
+};
+
+// ==================== STATE ====================
+let API_KEY = '';
+let referenceImage = null;
+let referenceMime = 'image/jpeg';
+let referenceUrl = null;
+let analysisData = null;
+let isAutoMode = true;
+let aspectRatio = '1:1';
+let generatedPrompts = [];
+let generatedImages = {};
+let generatingIds = new Set();
+
+// ==================== NAV ====================
+document.getElementById('apiKeyInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') enterApp();
+});
+
+function enterApp() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  const err = document.getElementById('splash-error');
+  if (!key) {
+    err.textContent = 'Veuillez entrer votre clé API Vertex AI.';
+    err.style.display = 'block';
+    return;
+  }
+
+  API_KEY = key;
+  err.style.display = 'none';
+  document.getElementById('splash').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+  updateStatusBadge();
+  loadState();
+  renderAllFromState();
+}
+
+function updateStatusBadge() {
+  const badge = document.getElementById('statusBadge');
+  const text = document.getElementById('statusText');
+  badge.className = 'active-badge on';
+  text.textContent = 'SYSTÈME ACTIF';
+}
+
+function resetToLanding() {
+  clearState();
+  referenceImage = null;
+  referenceMime = 'image/jpeg';
+  referenceUrl = null;
+  analysisData = null;
+  generatedPrompts = [];
+  generatedImages = {};
+  generatingIds.clear();
+  isAutoMode = true;
+  aspectRatio = '1:1';
+  document.getElementById('actionInput').value = '';
+  document.getElementById('landingView').style.display = 'block';
+  document.getElementById('studioView').style.display = 'none';
+  hideAlert();
+}
+
+// ==================== STORAGE HELPERS ====================
+function saveState() {
+  try {
+    if (referenceImage) localStorage.setItem(STORAGE_KEYS.referenceImage, referenceImage);
+    else localStorage.removeItem(STORAGE_KEYS.referenceImage);
+
+    if (referenceMime) localStorage.setItem(STORAGE_KEYS.referenceMime, referenceMime);
+    else localStorage.removeItem(STORAGE_KEYS.referenceMime);
+
+    if (referenceUrl) localStorage.setItem(STORAGE_KEYS.referenceUrl, referenceUrl);
+    else localStorage.removeItem(STORAGE_KEYS.referenceUrl);
+
+    if (analysisData) localStorage.setItem(STORAGE_KEYS.analysisData, JSON.stringify(analysisData));
+    else localStorage.removeItem(STORAGE_KEYS.analysisData);
+
+    localStorage.setItem(STORAGE_KEYS.isAutoMode, JSON.stringify(isAutoMode));
+    localStorage.setItem(STORAGE_KEYS.aspectRatio, aspectRatio);
+    localStorage.setItem(STORAGE_KEYS.generatedPrompts, JSON.stringify(generatedPrompts));
+    localStorage.setItem(STORAGE_KEYS.generatedImages, JSON.stringify(generatedImages));
+    localStorage.setItem(STORAGE_KEYS.actionInput, document.getElementById('actionInput').value || '');
+  } catch (e) {
+    console.warn('Erreur sauvegarde locale:', e);
+  }
+}
+
+function loadState() {
+  try {
+    referenceImage = localStorage.getItem(STORAGE_KEYS.referenceImage);
+    referenceMime = localStorage.getItem(STORAGE_KEYS.referenceMime) || 'image/jpeg';
+    referenceUrl = localStorage.getItem(STORAGE_KEYS.referenceUrl);
+
+    const analysisRaw = localStorage.getItem(STORAGE_KEYS.analysisData);
+    analysisData = analysisRaw ? JSON.parse(analysisRaw) : null;
+
+    const autoRaw = localStorage.getItem(STORAGE_KEYS.isAutoMode);
+    isAutoMode = autoRaw !== null ? JSON.parse(autoRaw) : true;
+
+    aspectRatio = localStorage.getItem(STORAGE_KEYS.aspectRatio) || '1:1';
+
+    const promptsRaw = localStorage.getItem(STORAGE_KEYS.generatedPrompts);
+    generatedPrompts = promptsRaw ? JSON.parse(promptsRaw) : [];
+
+    const imagesRaw = localStorage.getItem(STORAGE_KEYS.generatedImages);
+    generatedImages = imagesRaw ? JSON.parse(imagesRaw) : {};
+
+    document.getElementById('actionInput').value = localStorage.getItem(STORAGE_KEYS.actionInput) || '';
+  } catch (e) {
+    console.warn('Erreur chargement local:', e);
+  }
+}
+
+function clearState() {
+  Object.values(STORAGE_KEYS).forEach(k => localStorage.removeItem(k));
+}
+
+// ==================== RENDER FROM STATE ====================
+function renderAllFromState() {
+  setMode(isAutoMode);
+  setAR(aspectRatio);
+
+  if (!referenceUrl || !referenceImage) {
+    document.getElementById('landingView').style.display = 'block';
+    document.getElementById('studioView').style.display = 'none';
+    return;
+  }
+
+  document.getElementById('landingView').style.display = 'none';
+  document.getElementById('studioView').style.display = 'block';
+  document.getElementById('refImg').src = referenceUrl;
+
+  if (!analysisData) {
+    document.getElementById('analyzeSection').style.display = 'block';
+    document.getElementById('analysisResult').style.display = 'none';
+    document.getElementById('noAnalysisRight').style.display = 'flex';
+    document.getElementById('sequenceSection').style.display = 'none';
+    document.getElementById('storyboardArea').style.display = 'none';
+    document.getElementById('generatingState').style.display = 'none';
+    return;
+  }
+
+  document.getElementById('analyzeSection').style.display = 'none';
+  document.getElementById('analysisResult').style.display = 'flex';
+  document.getElementById('analysisInfoText').innerHTML = `
+    <strong>Lieu :</strong> ${analysisData.environnement?.lieu || 'Non détecté'}<br>
+    <strong>Acteurs :</strong> ${(analysisData.personnage?.objets_tenus || []).map(o => o.objet).join(', ') || 'Aucun objet'}
+  `;
+
+  document.getElementById('noAnalysisRight').style.display = 'none';
+  document.getElementById('sequenceSection').style.display = 'block';
+  document.getElementById('generatingState').style.display = 'none';
+
+  if (generatedPrompts.length > 0) {
+    document.getElementById('storyboardArea').style.display = 'block';
+    renderStoryboard();
+  } else {
+    document.getElementById('storyboardArea').style.display = 'none';
+  }
+}
+
+// ==================== ALERT ====================
+function showAlert(type, msg) {
+  const box = document.getElementById('alertBox');
+  box.style.display = 'flex';
+  box.innerHTML = `<div class="alert-box ${type}">
+    <div class="alert-left">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      ${msg}
+    </div>
+    <button class="alert-close" onclick="hideAlert()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+    </button>
+  </div>`;
+}
+
+function hideAlert() {
+  document.getElementById('alertBox').style.display = 'none';
+}
+
+function showSuccess(msg) {
+  const box = document.getElementById('alertBox');
+  box.style.display = 'flex';
+  box.innerHTML = `<div class="alert-box success">
+    <div class="alert-left">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+      ${msg}
+    </div>
+  </div>`;
+  setTimeout(() => box.style.display = 'none', 3000);
+}
+
+// ==================== UPLOAD ====================
+function handleImageUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const result = ev.target.result;
+    const mimeMatch = result.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,/);
+
+    referenceMime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+    referenceUrl = result;
+    referenceImage = result.split(',')[1];
+    analysisData = null;
+    generatedPrompts = [];
+    generatedImages = {};
+    generatingIds.clear();
+
+    document.getElementById('landingView').style.display = 'none';
+    document.getElementById('studioView').style.display = 'block';
+    document.getElementById('refImg').src = referenceUrl;
+    document.getElementById('analyzeSection').style.display = 'block';
+    document.getElementById('analysisResult').style.display = 'none';
+    document.getElementById('noAnalysisRight').style.display = 'flex';
+    document.getElementById('sequenceSection').style.display = 'none';
+    document.getElementById('storyboardArea').style.display = 'none';
+    document.getElementById('generatingState').style.display = 'none';
+
+    saveState();
+  };
+  reader.readAsDataURL(file);
+}
+
+function deleteRef() {
+  resetToLanding();
+}
+
+// ==================== CONTROLS ====================
+function setMode(auto) {
+  isAutoMode = auto;
+  document.getElementById('modeAutoBtn').className = 'mode-btn ' + (auto ? 'active' : 'inactive');
+  document.getElementById('modeManualBtn').className = 'mode-btn ' + (!auto ? 'active' : 'inactive');
+  document.getElementById('manualTextarea').style.display = auto ? 'none' : 'block';
+  saveState();
+}
+
+function setAR(ar) {
+  aspectRatio = ar;
+  document.querySelectorAll('.fmt-btn').forEach(b => {
+    b.className = 'fmt-btn ' + (b.dataset.ar === ar ? 'active' : 'inactive');
+  });
+  if (generatedPrompts.length > 0) renderStoryboard();
+  saveState();
+}
+
+document.getElementById('actionInput').addEventListener('input', saveState);
+
+// ==================== VERTEX CALLS ====================
+async function callVertexText(model, contents, config) {
+  const endpoint = `https://aiplatform.googleapis.com/v1/publishers/google/models/${model}:generateContent?key=${encodeURIComponent(API_KEY)}`;
+  const body = { contents, generationConfig: config || {} };
+
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+
+  if (!res.ok) {
+    const txt = await res.text();
+    let d;
+    try { d = JSON.parse(txt); } catch(e) {}
+    throw new Error(`HTTP ${res.status}: ${d?.error?.message || txt}`);
+  }
+
+  const data = await res.json();
+  return data.candidates?.[0]?.content?.parts?.find(p => p.text)?.text || '';
+}
+
+async function callVertexImage(parts) {
+  const endpoint = `https://aiplatform.googleapis.com/v1/publishers/google/models/${MODEL_IMAGE}:generateContent?key=${encodeURIComponent(API_KEY)}`;
+  const body = {
+    contents: [{ role: 'user', parts }],
+    generationConfig: {
+      responseModalities: ['IMAGE'],
+      imageConfig: { aspectRatio, imageSize: '4K' }
+    }
+  };
+
+  const waitTimes = [4000, 8000, 15000, 25000];
+  let lastErr;
+
+  for (let attempt = 0; attempt <= waitTimes.length; attempt++) {
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+      if (!res.ok) {
+        const txt = await res.text();
+        let d;
+        try { d = JSON.parse(txt); } catch(e) {}
+        throw new Error(`HTTP ${res.status}: ${d?.error?.message || txt}`);
+      }
+
+      const data = await res.json();
+      const responseParts = data.candidates?.[0]?.content?.parts || [];
+      for (const part of responseParts) {
+        if (part.inlineData?.data) {
+          return `data:image/png;base64,${part.inlineData.data}`;
+        }
+      }
+
+      throw new Error("La continuité temporelle a été brisée par le moteur de rendu.");
+    } catch (err) {
+      lastErr = err;
+      const msg = String(err.message || '').toLowerCase();
+      const retryable =
+        msg.includes('429') ||
+        msg.includes('503') ||
+        msg.includes('502') ||
+        msg.includes('504') ||
+        msg.includes('resource_exhausted') ||
+        msg.includes('overloaded');
+
+      if (retryable && attempt < waitTimes.length) {
+        await new Promise(r => setTimeout(r, waitTimes[attempt]));
+        continue;
+      }
+      throw err;
+    }
+  }
+
+  throw lastErr || new Error("Erreur image.");
+}
+
+// ==================== ANALYZE ====================
+async function handleAnalyze() {
+  if (!referenceImage) return;
+
+  const btn = document.getElementById('analyzeBtn');
+  btn.disabled = true;
+  btn.innerHTML = `<svg class="spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> ANALYSE EN COURS...`;
+  hideAlert();
+
+  const prompt = `CAPTURER L'ADN DE L'INSTANT.
+Analysez cette image comme le point Zéro d'un récit cinématographique.
+Identifiez avec une précision absolue :
+1. personnage : identité visuelle, tenue exacte, posture émotionnelle, énergie.
+2. environnement : géométrie du lieu, textures, mobilier, petits objets de décor.
+3. lumiere : ambiance lumineuse, ombres portées, température.
+
+Répondez EXCLUSIVEMENT en JSON valide avec cette structure :
+{
+  "personnage": {
+    "apparence": "...",
+    "expression_faciale": "...",
+    "posture": "...",
+    "vetements": {"haut": "...", "bas": "...", "chaussures": "..."},
+    "objets_tenus": [{"objet": "...", "couleur": "...", "matiere": "...", "position": "...", "contenu": "..."}]
+  },
+  "environnement": {
+    "lieu": "...",
+    "murs": "...",
+    "sol": "...",
+    "meubles": [{"type": "...", "couleur": "...", "position": "..."}],
+    "objets_visibles": [{"type": "...", "couleur": "...", "emplacement": "..."}]
+  },
+  "lumiere": {"type": "...", "direction": "...", "intensite": "..."}
+}`;
+
+  try {
+    const text = await callVertexText(MODEL_ANALYSIS, [{
+      parts: [
+        { inlineData: { mimeType: referenceMime, data: referenceImage } },
+        { text: prompt }
+      ]
+    }], { temperature: 0.1 });
+
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("Réponse JSON invalide de l'analyse.");
+
+    analysisData = JSON.parse(jsonMatch[0]);
+
+    document.getElementById('analyzeSection').style.display = 'none';
+    document.getElementById('analysisResult').style.display = 'flex';
+    document.getElementById('analysisInfoText').innerHTML = `
+      <strong>Lieu :</strong> ${analysisData.environnement?.lieu || 'Non détecté'}<br>
+      <strong>Acteurs :</strong> ${(analysisData.personnage?.objets_tenus || []).map(o => o.objet).join(', ') || 'Aucun objet'}
+    `;
+
+    document.getElementById('noAnalysisRight').style.display = 'none';
+    document.getElementById('sequenceSection').style.display = 'block';
+
+    saveState();
+    showSuccess('Analyse temporelle terminée. Séquence prête.');
+  } catch(err) {
+    showAlert('error', "L'émanation de l'image a échoué : " + err.message);
+    btn.disabled = false;
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> VERROUILLER L'ADN VISUEL`;
+  }
+}
+
+// ==================== GENERATE SEQUENCE ====================
+async function handleGenerateSequence() {
+  if (!analysisData) {
+    showAlert('error', "Veuillez d'abord analyser l'image source.");
+    return;
+  }
+
+  const btn = document.getElementById('genSeqBtn');
+  btn.disabled = true;
+  btn.className = 'gen-seq-btn loading';
+  btn.innerHTML = `<svg class="spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> GÉNÉRATION EN COURS...`;
+  document.getElementById('storyboardArea').style.display = 'none';
+  document.getElementById('generatingState').style.display = 'flex';
+  generatedPrompts = [];
+  generatedImages = {};
+  hideAlert();
+  saveState();
+
+  const action = isAutoMode ? null : document.getElementById('actionInput').value;
+
+  const prompt = `ARC NARRATIF CINÉMATOGRAPHIQUE STRICT.
+ACTION PRINCIPALE : ${action || "Une séquence narrative complète commençant par l'image source"}.
+
+CONTEXTE SOURCE (POINT ZÉRO) :
+- Lieu : ${analysisData.environnement?.lieu}
+- Personnage : ${analysisData.personnage?.apparence}
+- Position initiale : ${analysisData.personnage?.posture}
+
+CONSIGNES DE NARRATION IMPÉRATIVES :
+1. Décomposez l'action en 5 étapes clés distinctes.
+2. LA PREMIÈRE ÉTAPE DOIT ÊTRE DIFFÉRENTE DE L'IMAGE SOURCE.
+3. PROGRESSION LINÉAIRE.
+4. INTERDICTION D'AJOUTER DES OBJETS.
+5. Maintenez une continuité visuelle totale.
+
+Répondez EXCLUSIVEMENT en JSON : {"scenes": ["scène 1", "scène 2", "scène 3", "scène 4", "scène 5"]}`;
+
+  try {
+    const text = await callVertexText(MODEL_ANALYSIS, [{ parts: [{ text: prompt }] }], { temperature: 0.7 });
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("L'IA n'a pas pu générer de scènes.");
+
+    const data = JSON.parse(jsonMatch[0]);
+    const scenes = data.scenes || [];
+    if (!scenes.length) throw new Error("L'IA n'a pas pu générer de scènes pour ce storyboard.");
+
+    generatedPrompts = scenes.map((s, i) => ({ id: `${Date.now()}-${i}`, scene: s }));
+    generatedImages = {};
+
+    document.getElementById('generatingState').style.display = 'none';
+    document.getElementById('storyboardArea').style.display = 'block';
+    renderStoryboard();
+    saveState();
+    showSuccess('Storyboard généré avec succès.');
+  } catch(err) {
+    showAlert('error', "Impossible de générer le storyboard : " + err.message);
+    document.getElementById('generatingState').style.display = 'none';
+  } finally {
+    btn.disabled = false;
+    btn.className = 'gen-seq-btn';
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg> DÉPLOYER LA SÉQUENCE VÉCUE`;
+  }
+}
+
+// ==================== RENDER STORYBOARD ====================
+function getARClass() {
+  return aspectRatio === '16:9' ? 'ar-169' : aspectRatio === '9:16' ? 'ar-916' : 'ar-11';
+}
+
+function renderStoryboard() {
+  const grid = document.getElementById('storyGrid');
+  const arClass = getARClass();
+
+  grid.innerHTML = generatedPrompts.map((p, i) => {
+    const img = generatedImages[p.id];
+    const loading = generatingIds.has(p.id);
+
+    return `<div class="story-card" id="card-${p.id}">
+      <div class="story-img-wrap ${arClass}" id="imgwrap-${p.id}">
+        ${img ? `
+          <img src="${img}" alt="Instant ${i+1}">
+          <button class="story-dl-btn" onclick="downloadImg('${img}','studio_scene_moment_${i+1}.png')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="story-prise">Prise 0${i+1}</div>
+        ` : loading ? `
+          <button class="story-gen-btn" disabled>
+            <div class="gen-loading">
+              <svg class="gen-spin spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+              <p class="gen-loading-text">Développement...</p>
+            </div>
+          </button>
+        ` : `
+          <button class="story-gen-btn" onclick="renderPlan('${p.id}', ${JSON.stringify(p.scene)})">
+            <div class="gen-circle">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+            </div>
+            <span class="gen-text">Générer le moment</span>
+          </button>
+        `}
+      </div>
+      <div class="story-footer">
+        <p class="story-quote">"${escapeHtml(p.scene)}"</p>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('exportBtn').style.display = Object.keys(generatedImages).length > 0 ? 'flex' : 'none';
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+// ==================== RENDER IMAGE ====================
+async function renderPlan(id, scene) {
+  if (!referenceImage || !analysisData) return;
+
+  generatingIds.add(id);
+  renderStoryboard();
+  hideAlert();
+
+  const instruction = `PROTOCOLE DE CONTINUITÉ NARRATIVE STRICTE.
+SOURCE FRAME : Utilisez l'image fournie comme référence spatiale et d'identité absolue.
+DÉCOR : ${analysisData.environnement?.lieu}. Conservez chaque détail, texture et position des meubles. AUCUN AJOUT.
+PERSONNAGE : ${analysisData.personnage?.apparence}. Même visage, même morphologie, même tenue (${analysisData.personnage?.vetements?.haut}, ${analysisData.personnage?.vetements?.bas}).
+ÉTAPE NARRATIVE ACTUELLE : ${scene}.
+PROGRESSION OBLIGATOIRE : Cette image doit montrer une action différente de l'image source.
+STYLE : Cinématographique, haute fidélité, rendu photoréaliste.
+CONTRAINTE CRITIQUE : Zéro invention d'objets ou de personnes.
+AMBIANCE : Lumière ${analysisData.lumiere?.type} venant de ${analysisData.lumiere?.direction}.`;
+
+  try {
+    const url = await callVertexImage([
+      { inlineData: { data: referenceImage, mimeType: referenceMime } },
+      { text: instruction }
+    ]);
+    generatedImages[id] = url;
+    saveState();
+  } catch(err) {
+    showAlert('error', `Erreur de rendu pour ce moment : ${err.message}`);
+  } finally {
+    generatingIds.delete(id);
+    renderStoryboard();
+  }
+}
+
+// ==================== DOWNLOAD ====================
+function downloadImg(url, name) {
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+function exportAll() {
+  Object.values(generatedImages).forEach((url, i) => {
+    setTimeout(() => downloadImg(url, `studio_scene_moment_${i + 1}.png`), i * 400);
+  });
+}
+</script>
