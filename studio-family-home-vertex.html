@@ -99,8 +99,11 @@ body{background:radial-gradient(ellipse at top right,#1a0a00 0%,var(--bg) 60%)}
 .energy-btn.active-chaos{background:rgba(239,68,68,0.15);border-color:var(--red);color:var(--red)}
 
 /* STUDIO LAYOUT */
-.studio-main{flex:1;max-width:1600px;margin:0 auto;width:100%;padding:24px;display:grid;grid-template-columns:340px 1fr 380px;gap:24px}
-@media(max-width:1200px){.studio-main{grid-template-columns:1fr}}
+.studio-main{flex:1;max-width:1600px;margin:0 auto;width:100%;padding:16px;display:grid;grid-template-columns:320px 1fr 360px;gap:20px}
+@media(max-width:1300px){.studio-main{grid-template-columns:300px 1fr}}
+@media(max-width:900px){.studio-main{grid-template-columns:1fr}}
+.output-col{display:block}
+@media(max-width:1300px){.output-col{grid-column:1/-1}}
 
 /* CARDS */
 .s-card{background:var(--glass);border:1px solid var(--border);border-radius:28px;padding:24px;margin-bottom:16px}
@@ -295,7 +298,7 @@ textarea.s-textarea:focus{border-color:var(--accent)}
           <span class="mode-toggle-label" style="color:#f472b6">👗 Mode Dressing</span>
           <div class="toggle-sw" id="toggleDressing" onclick="toggleMode('dressing')"><div class="toggle-sw-thumb"></div></div>
         </div>
-        <div class="mode-toggle-row">
+        <div class="mode-toggle-row" id="bbqModeRow" style="display:none">
           <span class="mode-toggle-label" style="color:#f87171">🔥 Mode Barbecue</span>
           <div class="toggle-sw" id="toggleBBQ" onclick="toggleMode('bbq')"><div class="toggle-sw-thumb"></div></div>
         </div>
@@ -847,9 +850,9 @@ function selectRoom(key, label) {
     document.getElementById('chambreSubtype').className = 'subtype-row';
   }
 
-  // Show/hide mode BBQ (jardin/balcon only)
-  document.getElementById('toggleBBQ').closest('.mode-toggle-row').style.display = 
-    ['jardin','terrace','balcon'].includes(key) ? 'flex' : 'none';
+  // Show/hide mode BBQ (jardin/balcon/terrace only)
+  const bbqRow = document.getElementById('bbqModeRow');
+  if (bbqRow) bbqRow.style.display = ['jardin','terrace','balcon'].includes(key) ? 'flex' : 'none';
   
   updateActions();
 }
@@ -903,14 +906,21 @@ function handleUpload(e, key) {
     state[key] = reader.result;
     const uploader = document.getElementById(key + 'Uploader');
     if (uploader) {
-      const existing = uploader.querySelector('img:not(input)');
-      if (!existing) {
-        const img = document.createElement('img');
-        img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover';
-        uploader.prepend(img);
-      }
-      uploader.querySelector('img').src = reader.result;
+      // Supprimer l'ancien img preview s'il existe
+      const old = uploader.querySelector('img.preview-img');
+      if (old) old.remove();
+      // Créer le nouveau
+      const img = document.createElement('img');
+      img.className = 'preview-img';
+      img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1';
+      img.src = reader.result;
+      uploader.prepend(img);
       uploader.classList.add('has-img');
+      // Cacher l'icon et le label
+      const icon = uploader.querySelector('.uploader-icon');
+      const label = uploader.querySelector('.uploader-label');
+      if (icon) icon.style.display = 'none';
+      if (label) label.style.display = 'none';
     }
   };
   reader.readAsDataURL(file);
@@ -921,9 +931,13 @@ function removeImg(e, key) {
   state[key] = '';
   const uploader = document.getElementById(key + 'Uploader');
   if (uploader) {
-    const img = uploader.querySelector('img');
+    const img = uploader.querySelector('img.preview-img');
     if (img) img.remove();
     uploader.classList.remove('has-img');
+    const icon = uploader.querySelector('.uploader-icon');
+    const label = uploader.querySelector('.uploader-label');
+    if (icon) icon.style.display = '';
+    if (label) label.style.display = '';
   }
 }
 
