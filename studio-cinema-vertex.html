@@ -603,14 +603,18 @@ $('btnRemoveAudio').addEventListener('click', e => {
 // ── VERTEX AI REST HELPERS ──
 async function vertexGenerateVideo(prompt, imageB64, imageMime, aspectRatio, durationSeconds) {
   const endpoint = `${VERTEX_BASE}/${MODEL_VIDEO}:predictLongRunning?key=${encodeURIComponent(apiKey)}`;
+  // Instance
+  const instance = { prompt: prompt };
+  if (imageB64) {
+    instance.image = { bytesBase64Encoded: imageB64, mimeType: imageMime };
+  }
+  // Veo 3.1 supporte 5s ou 8s uniquement
+  const durSec = durationSeconds <= 6 ? 5 : 8;
   const body = {
-    instances: [{
-      prompt: prompt,
-      ...(imageB64 ? { image: { bytesBase64Encoded: imageB64, mimeType: imageMime } } : {})
-    }],
+    instances: [instance],
     parameters: {
       aspectRatio: aspectRatio,
-      durationSeconds: durationSeconds,
+      durationSeconds: durSec,
       sampleCount: 1,
       personGeneration: 'allow_adult'
     }
