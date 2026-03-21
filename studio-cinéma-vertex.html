@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studio Cinéma Pro — Vertex AI</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=DM+Sans:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: 'DM Sans', sans-serif; background: #080808; color: #fff; margin: 0; min-height: 100vh; }
+  .serif { font-family: 'Playfair Display', serif; }
+  .glass { background: rgba(255,255,255,0.04); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
+  .gradient-text { background: linear-gradient(135deg,#fff 0%,#666 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: #111; }
+  ::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 3px; }
+  #apiModal { position:fixed; inset:0; background:rgba(0,0,0,0.97); z-index:9999; display:flex; align-items:center; justify-content:center; }
+  #apiModal.hidden { display:none; }
+  .modal-box { max-width:560px; width:90%; padding:3rem; background:#0f0f0f; border:1px solid rgba(255,255,255,0.1); border-radius:2rem; }
+  textarea, select { background:transparent; color:#fff; outline:none; resize:none; font-family:'DM Sans',sans-serif; }
+  select option { background:#111; color:#fff; }
+  select { -webkit-appearance:none; appearance:none; cursor:pointer; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .spin { animation: spin 1s linear infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+  .pulse { animation: pulse 2s ease-in-out infinite; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+  .fade-in { animation: fadeIn 0.6s ease forwards; }
+  .status-live { display:inline-flex; align-items:center; gap:6px; }
+  .status-dot { width:8px; height:8px; border-radius:50%; background:#22c55e; box-shadow:0 0 10px rgba(34,197,94,0.6); }
+  .status-dot.blue { background:#3b82f6; box-shadow:0 0 10px rgba(59,130,246,0.6); }
+  .toggle-btn.active { background:#3b82f6; border-color:#3b82f6; color:#fff; }
+  .toggle-btn.inactive { border-color:rgba(255,255,255,0.1); color:rgba(255,255,255,0.3); }
+  .dur-btn { transition:all 0.2s; }
+  .dur-btn.selected { background:#fff; color:#000; border-color:#fff; transform:scale(1.02); }
+  .dur-btn.unselected { border-color:rgba(255,255,255,0.1); color:rgba(255,255,255,0.3); }
+  video { background:#000; }
+  .face-overlay { position:absolute; inset:0; background:rgba(0,0,0,0.85); display:flex; align-items:center; justify-content:center; gap:1rem; padding:1.5rem; backdrop-filter:blur(8px); border-radius:2rem; z-index:10; }
+  .camera-controls { position:absolute; bottom:1rem; left:0; right:0; display:flex; justify-content:center; gap:0.75rem; }
+  .portrait-hover-overlay { position:absolute; inset:0; background:rgba(0,0,0,0.5); opacity:0; transition:opacity 0.2s; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0.5rem; border-radius:1.8rem; }
+  #portraitLoaded:hover .portrait-hover-overlay { opacity:1; }
+  .hidden { display:none !important; }
+  #apiKeyInput { width:100%; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.15); border-radius:1rem; padding:1rem 3rem 1rem 1.25rem; color:#fff; font-family:'DM Sans',sans-serif; font-size:0.95rem; outline:none; transition: border-color 0.2s; }
+  #apiKeyInput:focus { border-color: rgba(255,255,255,0.4); }
+  #apiKeyInput::placeholder { color: rgba(255,255,255,0.25); }
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    .modal-box { padding: 2rem 1.5rem; }
+    .studio-grid { grid-template-columns: 1fr !important; }
+    .portrait-audio-grid { grid-template-columns: 1fr !important; }
+    .controls-grid { grid-template-columns: 1fr 1fr !important; }
+    .dur-flex { flex-direction: column; gap: 0.5rem; }
+    .dur-btn { width: 100%; }
+    header nav { gap: 1rem !important; }
+    #homeCard { height: 320px !important; }
+    h1.serif { font-size: clamp(3rem,12vw,9rem) !important; }
+  }
+  @media (max-width: 480px) {
+    .controls-grid { grid-template-columns: 1fr !important; }
+    .glass-pad { padding: 1.5rem !important; border-radius: 1.5rem !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- API KEY MODAL -->
+
+<div id="apiModal">
+  <div class="modal-box">
+    <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1.5rem;">
+      <div style="width:40px;height:40px;background:#fff;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="22" height="22" fill="none" stroke="#000" viewBox="0 0 24 24" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="8" y="8" width="8" height="8"/></svg>
+      </div>
+      <span class="serif" style="font-size:1.3rem;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;">Studio Cinéma Pro</span>
+    </div>
+    <h2 class="serif" style="font-size:2rem;font-weight:700;margin:0 0 0.5rem;">Activer Production</h2>
+    <p style="color:rgba(255,255,255,0.4);font-size:0.85rem;line-height:1.6;margin-bottom:2rem;">Entre ta clé API Vertex AI Express Mode. Elle est utilisée directement depuis ton navigateur — <strong style="color:rgba(255,255,255,0.7);">jamais envoyée à un serveur tiers.</strong></p>
+    <label style="font-size:0.65rem;font-weight:900;text-transform:uppercase;letter-spacing:0.2em;color:rgba(255,255,255,0.4);display:block;margin-bottom:0.75rem;">Clé API Vertex AI</label>
+    <div style="position:relative;margin-bottom:0.75rem;">
+      <input id="apiKeyInput" type="password" placeholder="AIza..." autocomplete="off" spellcheck="false">
+      <button id="eyeBtn" style="position:absolute;right:1rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:rgba(255,255,255,0.4);padding:0;">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
+    </div>
+    <div id="keyError" class="hidden" style="color:#f87171;font-size:0.75rem;margin-bottom:0.75rem;font-weight:600;">⚠ Format invalide. La clé doit commencer par "AIza".</div>
+    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:1rem;padding:1rem;margin-bottom:1.5rem;">
+      <p style="font-size:0.72rem;color:rgba(255,255,255,0.35);line-height:1.6;margin:0;">
+        💡 <a href="https://aistudio.google.com/apikey" target="_blank" style="color:rgba(255,255,255,0.6);text-decoration:underline;">Obtenir ma clé sur Google AI Studio</a> — Les crédits décomptent directement sur <strong style="color:rgba(255,255,255,0.6);">ton quota Vertex AI.</strong>
+      </p>
+    </div>
+    <button id="activateBtn" disabled style="width:100%;padding:1.1rem;border-radius:1rem;font-weight:900;font-size:0.85rem;text-transform:uppercase;letter-spacing:0.15em;background:#fff;color:#000;border:none;opacity:0.3;transition:opacity 0.2s;">Activer la Production Master</button>
+    <p style="text-align:center;margin-top:1rem;font-size:0.65rem;color:rgba(255,255,255,0.2);text-transform:uppercase;letter-spacing:0.1em;">Clé stockée localement dans ce navigateur uniquement</p>
+  </div>
+</div>
+
+<!-- HEADER -->
+
+<header class="glass" style="position:sticky;top:0;z-index:50;border-bottom:1px solid rgba(255,255,255,0.08);padding:1rem 1.5rem;">
+  <div style="max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+    <div id="logoBtn" style="display:flex;align-items:center;gap:0.75rem;cursor:pointer;flex-shrink:0;">
+      <div style="width:38px;height:38px;background:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+        <svg width="20" height="20" fill="none" stroke="#000" viewBox="0 0 24 24" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="8" y="8" width="8" height="8"/></svg>
+      </div>
+      <span class="serif" style="font-size:1.1rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;">Studio Cinéma Pro</span>
+    </div>
+    <nav style="display:flex;align-items:center;gap:2rem;">
+      <button id="navHome" style="font-size:0.7rem;font-weight:900;text-transform:uppercase;letter-spacing:0.15em;background:none;border:none;color:#fff;cursor:pointer;">Accueil</button>
+      <button id="navStudio" style="font-size:0.7rem;font-weight:900;text-transform:uppercase;letter-spacing:0.15em;background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;">Production Vidéo</button>
+    </nav>
+    <button id="keyStatusBtn" style="font-size:0.65rem;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;padding:0.5rem 1rem;border-radius:999px;cursor:pointer;border:1px solid rgba(234,179,8,0.5);color:#facc15;background:rgba(234,179,8,0.1);flex-shrink:0;">Activer Production</button>
+  </div>
+</header>
+
+<!-- HOME -->
+
+<div id="homeView" style="padding:2rem 1.5rem;">
+  <div style="max-width:1000px;margin:0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:85vh;text-align:center;gap:4rem;">
+    <div style="max-width:800px;">
+      <div class="glass" style="display:inline-block;padding:0.5rem 1.5rem;border-radius:999px;font-size:0.65rem;font-weight:900;letter-spacing:0.3em;text-transform:uppercase;color:rgba(255,255,255,0.3);margin-bottom:2rem;">Vertex AI — Génération Vidéo Haute Fidélité</div>
+      <h1 class="serif gradient-text" style="font-size:clamp(4rem,12vw,9rem);font-weight:700;line-height:0.85;letter-spacing:-0.02em;margin-bottom:2rem;">Studio Cinéma</h1>
+      <p class="serif" style="font-size:clamp(1rem,2.5vw,1.5rem);color:rgba(255,255,255,0.4);font-style:italic;font-weight:300;line-height:1.6;">L'excellence du rendu cinématographique<br>avec synchronisation labiale émotionnelle.</p>
+    </div>
+    <div id="homeCard" style="width:100%;max-width:900px;height:480px;border-radius:3.5rem;overflow:hidden;position:relative;cursor:pointer;transition:transform 0.3s;">
+      <img src="https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=2059" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.3;filter:grayscale(1);" alt="">
+      <div style="position:absolute;inset:0;background:linear-gradient(to top,#080808,rgba(8,8,8,0.6) 50%,transparent);padding:3rem;display:flex;flex-direction:column;justify-content:flex-end;text-align:left;gap:1rem;">
+        <span style="font-size:0.65rem;font-weight:900;text-transform:uppercase;letter-spacing:0.2em;color:rgba(255,255,255,0.4);">Cinéma & Acting Cloning — Vertex AI</span>
+        <h2 class="serif" style="font-size:clamp(2.5rem,6vw,4.5rem);font-weight:700;margin:0;line-height:1;">Accéder au Studio</h2>
+        <p class="serif" style="color:rgba(255,255,255,0.5);font-size:1rem;font-style:italic;font-weight:300;max-width:500px;line-height:1.6;">Studio Cinéma transforme une image statique en séquence cinématographique immersive, avec mouvements de caméra fluides et synchronisation vocale réaliste.</p>
+        <div style="display:inline-block;background:#fff;color:#000;padding:0.9rem 2rem;border-radius:999px;font-weight:900;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.15em;width:fit-content;">Commencer la Production</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STUDIO -->
+
+<div id="studioView" class="hidden" style="padding:2rem 1.5rem 8rem;">
+  <div style="max-width:1400px;margin:0 auto;display:flex;flex-direction:column;gap:2rem;" class="studio-grid">
+
+```
+<div class="glass fade-in glass-pad" style="padding:3rem;border-radius:3rem;">
+
+  <!-- HEADER ROW -->
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;border-bottom:1px solid rgba(255,255,255,0.05);padding-bottom:2rem;margin-bottom:2.5rem;">
+    <div>
+      <div style="font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:0.35em;color:rgba(255,255,255,0.3);">Studio Cinéma Master — Vertex AI</div>
+      <div id="modeIndicator" class="status-live" style="margin-top:0.75rem;">
+        <span class="status-dot"></span>
+        <span style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;color:#22c55e;font-style:italic;">Mode Acting Silencieux Pur</span>
+      </div>
+    </div>
+    <div class="glass" style="padding:0.75rem 1.5rem;border-radius:1.5rem;text-align:right;">
+      <div style="font-size:0.55rem;font-weight:900;text-transform:uppercase;color:rgba(255,255,255,0.2);">Production Master</div>
+      <div id="costDisplay" style="font-size:1.8rem;font-weight:900;color:#eab308;">0.60 €</div>
+    </div>
+  </div>
+
+  <!-- PORTRAIT + AUDIO -->
+  <div class="portrait-audio-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-bottom:2.5rem;">
+
+    <div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;flex-wrap:wrap;gap:0.5rem;">
+        <label style="font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:0.2em;color:rgba(255,255,255,0.4);">Portrait Acteur</label>
+        <span id="identityLock" class="hidden pulse" style="font-size:0.6rem;font-weight:900;text-transform:uppercase;color:#22c55e;">✓ Identity Locked</span>
+      </div>
+
+      <div id="portraitEmpty" style="aspect-ratio:1;border-radius:2rem;border:2px dashed rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;">
+        <div style="display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;">
+          <div id="btnFile" style="padding:1.5rem;background:rgba(255,255,255,0.05);border-radius:1.5rem;border:1px solid rgba(255,255,255,0.1);cursor:pointer;text-align:center;transition:background 0.2s;">
+            <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" style="display:block;margin:0 auto 0.5rem;"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            <span style="font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;opacity:0.6;">Fichier</span>
+          </div>
+          <div id="btnCamEmpty" style="padding:1.5rem;background:rgba(255,255,255,0.05);border-radius:1.5rem;border:1px solid rgba(255,255,255,0.1);cursor:pointer;text-align:center;transition:background 0.2s;">
+            <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" style="display:block;margin:0 auto 0.5rem;"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+            <span style="font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;opacity:0.6;">Caméra</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="portraitCamera" class="hidden" style="aspect-ratio:1;border-radius:2rem;border:2px solid #3b82f6;overflow:hidden;position:relative;background:#000;">
+        <video id="cameraVideo" autoplay playsinline style="width:100%;height:100%;object-fit:cover;display:block;"></video>
+        <div class="camera-controls">
+          <button id="btnCapture" style="background:#fff;color:#000;padding:0.6rem 1.5rem;border-radius:999px;font-weight:900;font-size:0.65rem;text-transform:uppercase;border:none;cursor:pointer;">📸 Capturer</button>
+          <button id="btnCamCancel" style="background:#ef4444;color:#fff;padding:0.6rem 1.5rem;border-radius:999px;font-weight:900;font-size:0.65rem;text-transform:uppercase;border:none;cursor:pointer;">Annuler</button>
+        </div>
+      </div>
+
+      <div id="portraitLoaded" class="hidden" style="aspect-ratio:1;border-radius:2rem;border:2px solid rgba(255,255,255,0.3);overflow:hidden;position:relative;">
+        <img id="portraitPreview" style="width:100%;height:100%;object-fit:cover;display:block;" alt="">
+        <div class="portrait-hover-overlay">
+          <button id="btnChangeFile" style="background:rgba(255,255,255,0.2);backdrop-filter:blur(10px);color:#fff;padding:0.5rem 1.2rem;border-radius:0.75rem;font-size:0.6rem;font-weight:900;text-transform:uppercase;border:1px solid rgba(255,255,255,0.3);cursor:pointer;">Changer Fichier</button>
+          <button id="btnCamLoaded" style="background:rgba(255,255,255,0.2);backdrop-filter:blur(10px);color:#fff;padding:0.5rem 1.2rem;border-radius:0.75rem;font-size:0.6rem;font-weight:900;text-transform:uppercase;border:1px solid rgba(255,255,255,0.3);cursor:pointer;">Utiliser Caméra</button>
+        </div>
+        <div id="faceOverlay" class="hidden face-overlay">
+          <button id="btnFace0" style="padding:0.75rem 1.5rem;background:#fff;color:#000;border:none;border-radius:1rem;font-size:0.65rem;font-weight:900;text-transform:uppercase;cursor:pointer;">Cibler Acteur 1</button>
+          <button id="btnFace1" style="padding:0.75rem 1.5rem;background:#fff;color:#000;border:none;border-radius:1rem;font-size:0.65rem;font-weight:900;text-transform:uppercase;cursor:pointer;">Cibler Acteur 2</button>
+        </div>
+      </div>
+
+      <input type="file" id="fileInput" accept="image/*" class="hidden">
+      <canvas id="captureCanvas" class="hidden"></canvas>
+    </div>
+
+    <!-- AUDIO -->
+    <div>
+      <label style="font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:0.2em;color:rgba(255,255,255,0.4);display:block;margin-bottom:0.75rem;">Audio (Lip-Sync fr-FR)</label>
+      <div id="audioZone" style="aspect-ratio:1;border-radius:2rem;border:2px dashed rgba(255,255,255,0.1);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s;">
+        <div id="audioPlaceholder" style="text-align:center;opacity:0.2;">
+          <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin:0 auto 0.5rem;display:block;" stroke-width="1.5"><path d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4"/></svg>
+          <span style="font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:0.15em;display:block;">Upload Audio</span>
+        </div>
+        <div id="audioLoaded" class="hidden" style="text-align:center;padding:1.5rem;">
+          <div style="width:56px;height:56px;background:rgba(59,130,246,0.2);border-radius:50%;margin:0 auto 1rem;display:flex;align-items:center;justify-content:center;" class="pulse">
+            <svg width="28" height="28" fill="none" stroke="#60a5fa" viewBox="0 0 24 24" stroke-width="2"><path d="M12 3v18m5-14v10m-10-7v4"/></svg>
+          </div>
+          <p style="font-size:0.65rem;font-weight:900;color:#60a5fa;text-transform:uppercase;letter-spacing:0.15em;">Calibration OK</p>
+          <button id="btnRemoveAudio" style="margin-top:0.75rem;font-size:0.6rem;font-weight:700;color:#f87171;text-transform:uppercase;background:none;border:1px solid rgba(248,113,113,0.3);padding:0.4rem 1rem;border-radius:999px;cursor:pointer;">Désactiver</button>
+        </div>
+        <input type="file" id="audioInput" accept="audio/*" class="hidden">
+      </div>
+    </div>
+  </div>
+
+  <!-- DIALOGUES -->
+  <div style="display:flex;flex-direction:column;gap:1rem;margin-bottom:2rem;">
+    <div style="padding:2rem;background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.05);border-radius:2rem;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem;">
+        <label style="font-size:0.6rem;font-weight:900;text-transform:uppercase;color:#60a5fa;font-style:italic;">Segment 1 [0 – 7s]</label>
+        <span id="wordCount1" style="font-size:0.6rem;font-weight:900;text-transform:uppercase;color:rgba(255,255,255,0.3);">0 / 20 mots</span>
+      </div>
+      <textarea id="dialogue1" rows="3" placeholder="Premier dialogue..." style="width:100%;font-size:1.1rem;font-style:italic;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:0.75rem;min-height:70px;" class="serif"></textarea>
+    </div>
+    <div id="segment2" class="hidden" style="padding:2rem;background:linear-gradient(135deg,rgba(168,85,247,0.05),rgba(59,130,246,0.05));border:1px solid rgba(168,85,247,0.2);border-radius:2rem;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem;">
+        <label style="font-size:0.6rem;font-weight:900;text-transform:uppercase;color:#c084fc;font-style:italic;">Segment 2 [8 – 13s]</label>
+        <span id="wordCount2" style="font-size:0.6rem;font-weight:900;text-transform:uppercase;color:rgba(255,255,255,0.3);">0 / 15 mots</span>
+      </div>
+      <textarea id="dialogue2" rows="3" placeholder="La suite..." style="width:100%;font-size:1.1rem;font-style:italic;border-bottom:1px solid rgba(168,85,247,0.2);padding-bottom:0.75rem;min-height:70px;" class="serif"></textarea>
+    </div>
+    <div id="segment3" class="hidden" style="padding:2rem;background:linear-gradient(135deg,rgba(59,130,246,0.05),rgba(34,211,238,0.05));border:1px solid rgba(34,211,238,0.2);border-radius:2rem;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem;">
+        <label style="font-size:0.6rem;font-weight:900;text-transform:uppercase;color:#22d3ee;font-style:italic;">Segment 3 [14 – 20s]</label>
+        <span id="wordCount3" style="font-size:0.6rem;font-weight:900;text-transform:uppercase;color:rgba(255,255,255,0.3);">0 / 15 mots</span>
+      </div>
+      <textarea id="dialogue3" rows="3" placeholder="Conclusion..." style="width:100%;font-size:1.1rem;font-style:italic;border-bottom:1px solid rgba(34,211,238,0.2);padding-bottom:0.75rem;min-height:70px;" class="serif"></textarea>
+    </div>
+  </div>
+
+  <!-- DIRECTION -->
+  <div style="margin-bottom:2rem;">
+    <label style="font-size:0.6rem;font-weight:900;text-transform:uppercase;color:rgba(255,255,255,0.3);font-style:italic;display:block;margin-bottom:0.75rem;">Mise en scène (Atmosphère)</label>
+    <textarea id="directionPrompt" rows="3" placeholder="Lumières, décor, intentions non-verbales..." style="width:100%;font-size:1rem;font-style:italic;border-bottom:1px solid rgba(255,255,255,0.05);padding-bottom:0.75rem;min-height:80px;" class="serif"></textarea>
+  </div>
+
+  <!-- CONTROLS -->
+  <div class="controls-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1rem;border-top:1px solid rgba(255,255,255,0.05);padding-top:1.5rem;margin-bottom:1.5rem;">
+    <div>
+      <label style="font-size:0.55rem;font-weight:900;text-transform:uppercase;color:rgba(255,255,255,0.3);display:block;margin-bottom:0.5rem;">Angle</label>
+      <select id="cameraAngle" class="glass" style="width:100%;padding:0.75rem 1rem;border-radius:1rem;font-size:0.65rem;font-weight:700;border:1px solid rgba(255,255,255,0.1);">
+        <option value="Face (Frontal)">Face (Frontal)</option>
+        <option value="Incliné (Dutch Angle)">Incliné (Dutch Angle)</option>
+        <option value="Zénithale (Top-down)">Zénithale</option>
+        <option value="Plongée totale">Plongée totale</option>
+        <option value="Plan taille (Waist-level)">Plan taille</option>
+        <option value="Macro-focus (Lèvres/Yeux)">Macro-focus</option>
+        <option value="3/4 Profil latéral">3/4 Profil</option>
+        <option value="Plan miroir (Reflet)">Plan miroir</option>
+        <option value="Contre-plongée">Contre-plongée</option>
+        <option value="Point de vue (POV)">POV</option>
+        <option value="Caméra à l'épaule (Immersif)">Caméra épaule</option>
+        <option value="De dos (Mystérieux)">De dos</option>
+      </select>
+    </div>
+    <div>
+      <label style="font-size:0.55rem;font-weight:900;text-transform:uppercase;color:rgba(255,255,255,0.3);display:block;margin-bottom:0.5rem;">Mouvement</label>
+      <select id="cameraMovement" class="glass" style="width:100%;padding:0.75rem 1rem;border-radius:1rem;font-size:0.65rem;font-weight:700;border:1px solid rgba(255,255,255,0.1);">
+        <option value="Fixe (Émotionnel)">Fixe</option>
+        <option value="Travelling avant (Push-in)">Travelling avant</option>
+        <option value="Travelling arrière (Pull-out)">Travelling arrière</option>
+        <option value="Travelling latéral">Travelling latéral</option>
+        <option value="Orbit 360° (Héroïque)">Orbit 360°</option>
+        <option value="Zoom fluide (Focus)">Zoom fluide</option>
+        <option value="Panoramique horizontal">Panoramique</option>
+        <option value="Tilt (Haut-Bas)">Tilt</option>
+        <option value="Caméra à l'épaule (Vibrations réelles)">Épaule vibrant</option>
+        <option value="Grue/Drone (Envolée)">Grue/Drone</option>
+        <option value="Travelling circulaire (180° Arc)">Arc 180°</option>
+      </select>
+    </div>
+    <div>
+      <label style="font-size:0.55rem;font-weight:900;text-transform:uppercase;color:rgba(255,255,255,0.3);display:block;margin-bottom:0.5rem;">Ton Emotionnel</label>
+      <select id="emotionTone" class="glass" style="width:100%;padding:0.75rem 1rem;border-radius:1rem;font-size:0.65rem;font-weight:700;border:1px solid rgba(255,255,255,0.1);">
+        <option value="Sincère & Authentique">Sincère & Authentique</option>
+        <option value="Touchant & Ému">Touchant & Ému</option>
+        <option value="Calme & Serein">Calme & Serein</option>
+        <option value="Déterminé & Fort">Déterminé & Fort</option>
+        <option value="Joie & Éclats">Joie & Éclats</option>
+        <option value="Vulnérable & Fragile">Vulnérable & Fragile</option>
+      </select>
+    </div>
+    <div>
+      <label style="font-size:0.55rem;font-weight:900;text-transform:uppercase;color:rgba(255,255,255,0.3);display:block;margin-bottom:0.5rem;">Aspect Ratio</label>
+      <select id="aspectRatio" class="glass" style="width:100%;padding:0.75rem 1rem;border-radius:1rem;font-size:0.65rem;font-weight:700;border:1px solid rgba(255,255,255,0.1);">
+        <option value="9:16">Portrait (9:16)</option>
+        <option value="16:9">Cinéma (16:9)</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- DURATION -->
+  <div style="margin-bottom:1.5rem;">
+    <label style="font-size:0.55rem;font-weight:900;text-transform:uppercase;color:rgba(255,255,255,0.3);font-style:italic;display:block;margin-bottom:0.75rem;">Durée Master</label>
+    <div class="dur-flex" style="display:flex;gap:0.75rem;">
+      <button class="dur-btn selected" data-dur="6s" style="flex:1;padding:1rem;border-radius:1.25rem;border:1px solid;font-size:0.7rem;font-weight:900;">6s</button>
+      <button class="dur-btn unselected" data-dur="13s" style="flex:1;padding:1rem;border-radius:1.25rem;border:1px solid;font-size:0.7rem;font-weight:900;">13s</button>
+      <button class="dur-btn unselected" data-dur="20s" style="flex:1;padding:1rem;border-radius:1.25rem;border:1px solid;font-size:0.7rem;font-weight:900;">20s</button>
+    </div>
+  </div>
+
+  <!-- TOGGLES -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0.75rem;margin-bottom:2rem;">
+    <div class="glass" style="display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem;border-radius:1rem;">
+      <div><div style="font-size:0.6rem;font-weight:900;text-transform:uppercase;color:rgba(255,255,255,0.6);">🇫🇷 Accent fr-FR</div><div style="font-size:0.5rem;color:rgba(255,255,255,0.25);text-transform:uppercase;">Forcer Paris (Standard)</div></div>
+      <button id="toggleFrench" class="toggle-btn active" style="font-size:0.55rem;font-weight:900;text-transform:uppercase;padding:0.4rem 0.8rem;border-radius:0.5rem;border:1px solid;cursor:pointer;">Activé</button>
+    </div>
+    <div class="glass" style="display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem;border-radius:1rem;">
+      <div><div style="font-size:0.6rem;font-weight:900;text-transform:uppercase;color:rgba(255,255,255,0.6);">📝 Sans Sous-titres</div><div style="font-size:0.5rem;color:rgba(255,255,255,0.25);text-transform:uppercase;">Empêcher texte on-screen</div></div>
+      <button id="toggleSubs" class="toggle-btn active" style="font-size:0.55rem;font-weight:900;text-transform:uppercase;padding:0.4rem 0.8rem;border-radius:0.5rem;border:1px solid;cursor:pointer;">Activé</button>
+    </div>
+    <div class="glass" style="display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem;border-radius:1rem;">
+      <div><div style="font-size:0.6rem;font-weight:900;text-transform:uppercase;color:rgba(255,255,255,0.6);">🎵 Sans Musique</div><div style="font-size:0.5rem;color:rgba(255,255,255,0.25);text-transform:uppercase;">Garder l'audio pur</div></div>
+      <button id="toggleMusic" class="toggle-btn active" style="font-size:0.55rem;font-weight:900;text-transform:uppercase;padding:0.4rem 0.8rem;border-radius:0.5rem;border:1px solid;cursor:pointer;">Activé</button>
+    </div>
+  </div>
+
+  <!-- ERROR -->
+  <div id="errorBox" class="hidden" style="padding:1.5rem;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:1.5rem;color:#f87171;font-size:0.8rem;font-weight:700;font-style:italic;margin-bottom:1.5rem;line-height:1.7;white-space:pre-wrap;"></div>
+
+  <!-- GENERATE -->
+  <button id="generateBtn" style="width:100%;padding:2.5rem 2rem;border-radius:2.5rem;font-weight:900;font-size:1.5rem;text-transform:uppercase;letter-spacing:-0.02em;border:none;cursor:pointer;background:#fff;color:#000;transition:all 0.2s;">
+    <span id="btnText">Produire Séquence Master (0.60 €)</span>
+  </button>
+</div>
+
+<!-- VIDEO MONITOR -->
+<div class="glass fade-in" style="padding:2rem;border-radius:3rem;">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:1.5rem;">
+    <span style="font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:0.2em;color:rgba(255,255,255,0.3);">Flux Monitoring — Vertex AI Veo</span>
+    <div class="status-live"><span class="status-dot"></span><span style="font-size:0.6rem;font-weight:700;text-transform:uppercase;color:rgba(255,255,255,0.3);">Signal Stable</span></div>
+  </div>
+  <div id="videoWaiting" style="border:3px dashed rgba(255,255,255,0.05);border-radius:2.5rem;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:5rem 2rem;min-height:300px;">
+    <div id="waitingSpinner" style="width:64px;height:64px;border:3px solid rgba(255,255,255,0.05);border-top-color:rgba(255,255,255,0.3);border-radius:50%;opacity:0.2;"></div>
+    <p id="waitingText" style="font-size:0.65rem;font-weight:900;text-transform:uppercase;letter-spacing:0.3em;color:rgba(255,255,255,0.2);margin-top:2rem;text-align:center;font-style:italic;max-width:250px;line-height:1.6;">Transmission en attente...</p>
+  </div>
+  <div id="videoResult" class="hidden fade-in">
+    <div id="videoContainer" style="border-radius:2.5rem;overflow:hidden;background:#000;margin-bottom:1.5rem;">
+      <video id="videoPlayer" controls autoplay loop style="width:100%;display:block;"></video>
+    </div>
+    <div class="glass" style="padding:2rem;border-radius:2rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+      <div>
+        <p style="font-size:0.6rem;font-weight:900;text-transform:uppercase;color:#3b82f6;">Production Certifiée Identity Lock — Vertex AI</p>
+        <p class="serif" style="font-size:2rem;font-weight:700;text-transform:uppercase;line-height:1.1;margin-top:0.3rem;">Rendu OK</p>
+      </div>
+      <a id="downloadBtn" download="studio-cinema-vertex.mp4" style="padding:0.9rem 2rem;background:#fff;color:#000;border-radius:999px;font-size:0.65rem;font-weight:900;text-transform:uppercase;text-decoration:none;">Exporter</a>
+    </div>
+  </div>
+</div>
+
+<!-- PROTOCOL -->
+<div class="glass fade-in" style="padding:2rem;border-radius:2rem;">
+  <h4 style="font-size:0.6rem;font-weight:900;text-transform:uppercase;color:rgba(255,255,255,0.3);border-bottom:1px solid rgba(255,255,255,0.05);padding-bottom:1rem;margin-bottom:1rem;">Protocol Vertex AI — Veo 3</h4>
+  <div style="display:flex;flex-direction:column;gap:0.75rem;">
+    <div style="display:flex;justify-content:space-between;font-size:0.65rem;flex-wrap:wrap;gap:0.5rem;"><span style="color:rgba(255,255,255,0.2);text-transform:uppercase;font-weight:900;">Identity Lock</span><span style="color:#22c55e;font-weight:700;font-style:italic;">Activé</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:0.65rem;flex-wrap:wrap;gap:0.5rem;"><span style="color:rgba(255,255,255,0.2);text-transform:uppercase;font-weight:900;">Phonetic Guard</span><span style="color:#3b82f6;font-weight:700;font-style:italic;">fr-FR France</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:0.65rem;flex-wrap:wrap;gap:0.5rem;"><span style="color:rgba(255,255,255,0.2);text-transform:uppercase;font-weight:900;">API</span><span style="color:rgba(255,255,255,0.4);font-weight:700;font-style:italic;">Vertex AI REST Direct</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:0.65rem;flex-wrap:wrap;gap:0.5rem;"><span style="color:rgba(255,255,255,0.2);text-transform:uppercase;font-weight:900;">Modèle</span><span style="color:rgba(255,255,255,0.4);font-weight:700;font-style:italic;">veo-3.1-generate-preview</span></div>
+  </div>
+</div>
+```
+
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let apiKey = localStorage.getItem('studio_cinema_vertex_key') || null;
+let portraitBase64 = null, originalPortraitBase64 = null, portraitMime = 'image/jpeg';
+let audioBase64 = null, audioMime = null, currentDuration = '6s';
+let detectedFaces = [], isCameraActive = false;
+
+// ── MODEL ──
+const MODEL_VIDEO = 'veo-3.1-generate-preview';
+const VERTEX_BASE = 'https://aiplatform.googleapis.com/v1/publishers/google/models';
+
+// ── MODAL ──
+function updateKeyStatus(active) {
+  const btn = $('keyStatusBtn');
+  btn.style.border = active ? '1px solid rgba(34,197,94,0.5)' : '1px solid rgba(234,179,8,0.5)';
+  btn.style.color = active ? '#4ade80' : '#facc15';
+  btn.style.background = active ? 'rgba(34,197,94,0.1)' : 'rgba(234,179,8,0.1)';
+  btn.textContent = active ? 'Master Key Active' : 'Activer Production';
+}
+function openModal() { $('apiModal').classList.remove('hidden'); $('apiKeyInput').value = apiKey || ''; validateInput(); setTimeout(() => $('apiKeyInput').focus(), 50); }
+function closeModal() { $('apiModal').classList.add('hidden'); }
+function validateInput() {
+  const val = $('apiKeyInput').value.trim();
+  const valid = val.startsWith('AIza') && val.length > 20;
+  $('activateBtn').disabled = !valid;
+  $('activateBtn').style.opacity = valid ? '1' : '0.3';
+  $('keyError').classList.toggle('hidden', val.length < 5 || valid);
+}
+function activateKey() {
+  const key = $('apiKeyInput').value.trim();
+  if (!key.startsWith('AIza') || key.length <= 20) return;
+  apiKey = key;
+  localStorage.setItem('studio_cinema_vertex_key', key);
+  closeModal();
+  updateKeyStatus(true);
+}
+$('apiKeyInput').addEventListener('input', validateInput);
+$('apiKeyInput').addEventListener('keydown', e => { if (e.key === 'Enter') activateKey(); });
+$('activateBtn').addEventListener('click', activateKey);
+$('eyeBtn').addEventListener('click', () => { const inp = $('apiKeyInput'); inp.type = inp.type === 'password' ? 'text' : 'password'; });
+if (apiKey) { closeModal(); updateKeyStatus(true); } else updateKeyStatus(false);
+
+// ── NAVIGATION ──
+function showHome() {
+  $('homeView').classList.remove('hidden'); $('studioView').classList.add('hidden');
+  $('navHome').style.color = '#fff'; $('navStudio').style.color = 'rgba(255,255,255,0.4)';
+}
+function showStudio() {
+  if (!apiKey) { openModal(); return; }
+  $('homeView').classList.add('hidden'); $('studioView').classList.remove('hidden');
+  $('navHome').style.color = 'rgba(255,255,255,0.4)'; $('navStudio').style.color = '#fff';
+}
+$('logoBtn').addEventListener('click', showHome);
+$('navHome').addEventListener('click', showHome);
+$('navStudio').addEventListener('click', showStudio);
+$('keyStatusBtn').addEventListener('click', openModal);
+$('homeCard').addEventListener('click', showStudio);
+
+// ── DURATION ──
+document.querySelectorAll('.dur-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const dur = btn.dataset.dur;
+    currentDuration = dur;
+    document.querySelectorAll('.dur-btn').forEach(b => {
+      b.classList.toggle('selected', b.dataset.dur === dur);
+      b.classList.toggle('unselected', b.dataset.dur !== dur);
+    });
+    const costs = { '6s':0.60,'13s':1.20,'20s':1.80 };
+    $('costDisplay').textContent = costs[dur].toFixed(2) + ' €';
+    $('btnText').textContent = `Produire Séquence Master (${costs[dur].toFixed(2)} €)`;
+    $('segment2').classList.toggle('hidden', dur === '6s');
+    $('segment3').classList.toggle('hidden', dur !== '20s');
+  });
+});
+
+// ── TOGGLES ──
+['toggleFrench','toggleSubs','toggleMusic'].forEach(id => {
+  $(id).addEventListener('click', () => {
+    const btn = $(id);
+    const active = btn.classList.contains('active');
+    btn.classList.toggle('active', !active);
+    btn.classList.toggle('inactive', active);
+    btn.textContent = active ? 'Off' : 'Activé';
+  });
+});
+
+// ── WORD COUNT ──
+[['dialogue1','wordCount1',20],['dialogue2','wordCount2',15],['dialogue3','wordCount3',15]].forEach(([tid,cid,max]) => {
+  $(tid).addEventListener('input', () => {
+    const words = $(tid).value.trim().split(/\s+/).filter(w=>w.length>0).length;
+    $(cid).textContent = `${words} / ${max} mots`;
+    $(cid).style.color = words > max ? '#f87171' : 'rgba(255,255,255,0.3)';
+  });
+});
+
+// ── PORTRAIT ──
+function showPortraitState(state) {
+  $('portraitEmpty').classList.toggle('hidden', state !== 'empty');
+  $('portraitCamera').classList.toggle('hidden', state !== 'camera');
+  $('portraitLoaded').classList.toggle('hidden', state !== 'loaded');
+}
+async function startCamera() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+    $('cameraVideo').srcObject = stream; isCameraActive = true; showPortraitState('camera');
+  } catch { showError("Impossible d'accéder à la caméra."); }
+}
+function stopCamera() {
+  const v = $('cameraVideo');
+  if (v.srcObject) v.srcObject.getTracks().forEach(t => t.stop());
+  v.srcObject = null; isCameraActive = false;
+}
+$('btnFile').addEventListener('click', () => $('fileInput').click());
+$('btnCamEmpty').addEventListener('click', startCamera);
+$('btnCamLoaded').addEventListener('click', startCamera);
+$('btnChangeFile').addEventListener('click', e => { e.stopPropagation(); $('fileInput').click(); });
+$('btnCamCancel').addEventListener('click', () => { stopCamera(); showPortraitState(portraitBase64 ? 'loaded' : 'empty'); });
+$('btnCapture').addEventListener('click', () => {
+  const v = $('cameraVideo'), c = $('captureCanvas');
+  c.width = v.videoWidth; c.height = v.videoHeight;
+  c.getContext('2d').drawImage(v, 0, 0);
+  const b64 = c.toDataURL('image/jpeg').split(',')[1];
+  stopCamera(); handleNewImage(b64, 'image/jpeg');
+});
+$('btnFace0').addEventListener('click', e => { e.stopPropagation(); selectFace(0); });
+$('btnFace1').addEventListener('click', e => { e.stopPropagation(); selectFace(1); });
+$('fileInput').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  portraitMime = file.type;
+  const reader = new FileReader();
+  reader.onload = () => handleNewImage(reader.result.split(',')[1], file.type);
+  reader.readAsDataURL(file);
+});
+
+async function handleNewImage(b64, mime) {
+  portraitMime = mime; originalPortraitBase64 = b64; portraitBase64 = b64;
+  $('portraitPreview').src = `data:${mime};base64,${b64}`;
+  showPortraitState('loaded');
+  $('faceOverlay').classList.add('hidden');
+  $('identityLock').classList.add('hidden');
+  try {
+    const faces = await detectFaces(b64, mime);
+    detectedFaces = faces;
+    if (faces.length > 1) { $('faceOverlay').classList.remove('hidden'); }
+    else { const cropped = await cropAroundFace(b64, mime, faces[0], 1.8); portraitBase64 = cropped; $('portraitPreview').src = `data:${mime};base64,${cropped}`; $('identityLock').classList.remove('hidden'); }
+  } catch { $('identityLock').classList.remove('hidden'); }
+}
+
+async function selectFace(idx) {
+  const face = detectedFaces[idx];
+  if (!face) return;
+  try { const cropped = await cropAroundFace(originalPortraitBase64, portraitMime, face, 1.8); portraitBase64 = cropped; $('portraitPreview').src = `data:${portraitMime};base64,${cropped}`; }
+  catch { portraitBase64 = originalPortraitBase64; }
+  $('faceOverlay').classList.add('hidden'); $('identityLock').classList.remove('hidden');
+}
+
+function detectFaces(b64, mime) {
+  return new Promise((res) => {
+    const img = new Image();
+    img.onload = () => {
+      const { width:w, height:h } = img;
+      const faces = w > h * 1.3
+        ? [{ x:w*0.1,y:h*0.2,width:w/3,height:h*0.6,centerX:w*0.25,centerY:h*0.45 },{ x:w*0.6,y:h*0.2,width:w/3,height:h*0.6,centerX:w*0.75,centerY:h*0.45 }]
+        : [{ x:w*0.15,y:h*0.12,width:w*0.7,height:h*0.75,centerX:w*0.5,centerY:h*0.48 }];
+      res(faces);
+    };
+    img.src = `data:${mime};base64,${b64}`;
+  });
+}
+
+function cropAroundFace(b64, mime, face, pad) {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.onload = () => {
+      const cv = document.createElement('canvas');
+      const ctx = cv.getContext('2d');
+      if (!ctx) return rej(new Error('canvas'));
+      const tw = face.width*pad, th = face.height*pad;
+      const cx = Math.max(0, face.centerX-tw/2), cy = Math.max(0, face.centerY-th/2);
+      const fw = Math.min(tw, img.width-cx), fh = Math.min(th, img.height-cy);
+      cv.width = fw; cv.height = fh;
+      ctx.fillStyle = '#000'; ctx.fillRect(0,0,fw,fh);
+      ctx.drawImage(img, cx, cy, fw, fh, 0, 0, fw, fh);
+      res(cv.toDataURL(mime).split(',')[1]);
+    };
+    img.src = `data:${mime};base64,${b64}`;
+  });
+}
+
+// ── AUDIO ──
+$('audioZone').addEventListener('click', () => $('audioInput').click());
+$('audioInput').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    audioBase64 = reader.result.split(',')[1];
+    audioMime = file.type;
+    $('audioPlaceholder').classList.add('hidden');
+    $('audioLoaded').classList.remove('hidden');
+    $('audioZone').style.borderColor = '#3b82f6';
+    $('audioZone').style.background = 'rgba(59,130,246,0.05)';
+    $('modeIndicator').innerHTML = `<span class="status-dot blue"></span><span style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;color:#60a5fa;font-style:italic;">Lip-Sync Identity Lock fr-FR</span>`;
+  };
+  reader.readAsDataURL(file);
+});
+$('btnRemoveAudio').addEventListener('click', e => {
+  e.stopPropagation();
+  audioBase64 = null; audioMime = null;
+  $('audioLoaded').classList.add('hidden');
+  $('audioPlaceholder').classList.remove('hidden');
+  $('audioZone').style.borderColor = 'rgba(255,255,255,0.1)';
+  $('audioZone').style.background = '';
+  $('modeIndicator').innerHTML = `<span class="status-dot"></span><span style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;color:#22c55e;font-style:italic;">Mode Acting Silencieux Pur</span>`;
+});
+
+// ── VERTEX AI REST HELPERS ──
+async function vertexGenerateVideo(prompt, imageB64, imageMime, aspectRatio, durationSeconds) {
+  const endpoint = `${VERTEX_BASE}/${MODEL_VIDEO}:predictLongRunning?key=${encodeURIComponent(apiKey)}`;
+  const body = {
+    instances: [{
+      prompt: prompt,
+      ...(imageB64 ? { image: { bytesBase64Encoded: imageB64, mimeType: imageMime } } : {})
+    }],
+    parameters: {
+      aspectRatio: aspectRatio,
+      durationSeconds: durationSeconds,
+      sampleCount: 1,
+      personGeneration: 'allow_adult'
+    }
+  };
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) {
+    const txt = await res.text();
+    let d; try { d = JSON.parse(txt); } catch(_) {}
+    const msg = d?.error?.message || txt;
+    if (res.status === 401) throw new Error('Clé API invalide.');
+    if (res.status === 403) throw new Error('Accès refusé. Vérifiez votre clé Vertex AI.');
+    if (res.status === 404) throw new Error('Modèle introuvable. Vérifiez que veo-3.1-generate-preview est disponible.');
+    throw new Error(`Erreur ${res.status}: ${msg}`);
+  }
+  return await res.json(); // retourne l'opération LRO
+}
+
+async function vertexPollOperation(operationName) {
+  // Pour Vertex AI predictLongRunning, on poll via fetchPredictOperation
+  const resourceName = operationName.split('/operations/')[0];
+  const endpoint = `${VERTEX_BASE.replace('/publishers/google/models','')}/projects/${getProjectFromOperation(operationName)}/locations/${getLocationFromOperation(operationName)}/publishers/google/models/${MODEL_VIDEO}:fetchPredictOperation?key=${encodeURIComponent(apiKey)}`;
+
+  // Fallback: poll directement sur l'operation name
+  const pollEndpoint = `https://aiplatform.googleapis.com/v1/${operationName}?key=${encodeURIComponent(apiKey)}`;
+  const res = await fetch(pollEndpoint, { method: 'GET', headers: { 'Content-Type': 'application/json' } });
+  if (!res.ok) {
+    // Essayer fetchPredictOperation
+    const fetchEndpoint = `https://aiplatform.googleapis.com/v1/${resourceName}:fetchPredictOperation?key=${encodeURIComponent(apiKey)}`;
+    const res2 = await fetch(fetchEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ operationName: operationName })
+    });
+    if (!res2.ok) throw new Error(`Erreur polling: ${res2.status}`);
+    return await res2.json();
+  }
+  return await res.json();
+}
+
+function getProjectFromOperation(name) {
+  const m = name.match(/projects\/([^/]+)/);
+  return m ? m[1] : '';
+}
+function getLocationFromOperation(name) {
+  const m = name.match(/locations\/([^/]+)/);
+  return m ? m[1] : 'us-central1';
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ── UI HELPERS ──
+function setStatus(msg, loading) {
+  const btn = $('generateBtn');
+  const costs = { '6s':0.60,'13s':1.20,'20s':1.80 };
+  if (loading) {
+    $('btnText').textContent = msg || 'En cours...';
+    btn.style.background = 'rgba(255,255,255,0.05)';
+    btn.style.color = 'rgba(255,255,255,0.2)';
+    btn.disabled = true;
+    $('waitingSpinner').classList.add('spin');
+    $('waitingText').textContent = msg;
+  } else {
+    const cost = costs[currentDuration] || 0.60;
+    $('btnText').textContent = `Produire Séquence Master (${cost.toFixed(2)} €)`;
+    btn.style.background = '#fff';
+    btn.style.color = '#000';
+    btn.disabled = false;
+    $('waitingSpinner').classList.remove('spin');
+    if (!msg) $('waitingText').textContent = 'Transmission en attente...';
+  }
+}
+function showError(msg) {
+  $('errorBox').textContent = 'ERROR : ' + msg;
+  $('errorBox').classList.remove('hidden');
+}
+
+// ── GENERATE ──
+$('generateBtn').addEventListener('click', async () => {
+  if (!apiKey) { openModal(); return; }
+  if (!portraitBase64) { showError("Portrait requis pour l'identité de l'acteur."); return; }
+
+  $('errorBox').classList.add('hidden');
+  $('videoResult').classList.add('hidden');
+  $('videoWaiting').classList.remove('hidden');
+  setStatus("INITIALISATION VERTEX AI MASTER...", true);
+
+  const dur = currentDuration;
+  const durationSec = dur === '6s' ? 6 : dur === '13s' ? 13 : 20;
+  const forceFrench = $('toggleFrench').classList.contains('active');
+  const noSubtitles = $('toggleSubs').classList.contains('active');
+  const noMusic = $('toggleMusic').classList.contains('active');
+  const emotion = $('emotionTone').value;
+  const angle = $('cameraAngle').value;
+  const movement = $('cameraMovement').value;
+  const aspectRatio = $('aspectRatio').value;
+  const dialogues = [$('dialogue1').value, $('dialogue2').value, $('dialogue3').value].filter(Boolean);
+  const directionPrompt = $('directionPrompt').value;
+  const hasAudio = !!audioBase64;
+
+  try {
+    const skinGuard = "Natural skin texture, visible pores, no skin smoothing, no filters, hyper-realistic photographic rendering.";
+    const negativePrompt = [
+      noSubtitles ? 'no subtitles, no text on screen, no captions' : '',
+      noMusic ? 'no background music, no soundtrack' : '',
+      'no watermark, no blur'
+    ].filter(Boolean).join(', ');
+    const accentInstruction = forceFrench ? "Standard Metropolitan French accent from France (Parisian fr-FR)." : "";
+    const dialogueText = dialogues.join(' ');
+
+    const prompt = [
+      "HIGH-END CINEMA PRODUCTION.",
+      hasAudio || dialogueText
+        ? `The person is speaking in ${accentInstruction}: "${dialogueText}" with perfect lip-sync.`
+        : "Silent acting with natural facial expressions and subtle emotions.",
+      `Emotion: ${emotion}.`,
+      skinGuard,
+      `Camera angle: ${angle}. Camera movement: ${movement}.`,
+      directionPrompt || '',
+      `Negative: ${negativePrompt}`
+    ].filter(Boolean).join(' ');
+
+    setStatus("DÉMARRAGE GÉNÉRATION VEO 3...", true);
+
+    // Lancer la génération
+    const operation = await vertexGenerateVideo(
+      prompt,
+      portraitBase64,
+      portraitMime,
+      aspectRatio,
+      durationSec
+    );
+
+    if (!operation.name) throw new Error("Opération non retournée par Vertex AI.");
+
+    setStatus("RENDU VEO 3 EN COURS... (2-5 min)", true);
+
+    // Polling
+    let attempts = 0;
+    let result = operation;
+    while (!result.done && attempts < 300) {
+      await sleep(8000);
+      result = await vertexPollOperation(operation.name);
+      const pct = Math.min(99, Math.floor((attempts / 150) * 100));
+      setStatus(`RENDU VEO 3 : ${pct}% — Attente résultat...`, true);
+      attempts++;
+    }
+
+    if (result.error) {
+      const msg = String(result.error.message || '');
+      const isFilter = /safety|blocked|filter|content/i.test(msg);
+      throw new Error(isFilter
+        ? `Génération bloquée par les filtres de sécurité Google.\nModifiez votre prompt ou l'image source.\n\nDétail : ${msg}`
+        : `Erreur de génération : ${msg || 'Inconnue'}`);
+    }
+
+    // Récupérer la vidéo
+    const videos = result.response?.generatedVideos || result.response?.videos || [];
+    if (!videos.length) throw new Error("Aucune vidéo générée dans la réponse. Génération peut-être bloquée.");
+
+    const vid = videos[0];
+    const videoUri = vid.video?.uri || vid.video?.gcsUri || vid.gcsUri;
+    const videoBytes = vid.video?.videoBytes || vid.video?.bytesBase64Encoded || vid.bytesBase64Encoded;
+
+    let finalUrl;
+    if (videoBytes) {
+      // Vidéo en base64 directement
+      const binary = atob(videoBytes);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const blob = new Blob([bytes], { type: 'video/mp4' });
+      finalUrl = URL.createObjectURL(blob);
+    } else if (videoUri) {
+      // Vidéo via URI GCS — télécharger avec la clé
+      const videoResponse = await fetch(videoUri, { headers: { 'x-goog-api-key': apiKey } });
+      if (!videoResponse.ok) throw new Error(`Impossible de télécharger la vidéo: ${videoResponse.status}`);
+      const blob = await videoResponse.blob();
+      finalUrl = URL.createObjectURL(blob);
+    } else {
+      throw new Error("Format de réponse vidéo non reconnu.");
+    }
+
+    setStatus("", false);
+    $('videoWaiting').classList.add('hidden');
+    $('videoResult').classList.remove('hidden');
+    $('videoPlayer').src = finalUrl;
+    $('downloadBtn').href = finalUrl;
+    $('videoContainer').style.aspectRatio = aspectRatio.replace(':', '/');
+
+  } catch (err) {
+    setStatus("", false);
+    showError(err.message || String(err));
+    $('videoWaiting').classList.remove('hidden');
+  }
+});
+</script>
+
+</body>
+</html>
