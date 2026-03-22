@@ -207,7 +207,7 @@ textarea.s-textarea:focus{border-color:var(–accent)}
     <div class="splash-sub">Scènes de vie ultra-réalistes 4K</div>
     <div class="api-box">
       <span class="api-label">🔑 Clé API Vertex AI Express Mode</span>
-      <input type="password" id="apiKeyInput" class="api-input" placeholder="AIza..." autocomplete="off">
+      <input type="text" id="apiKeyInput" class="api-input" placeholder="AIza..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="-webkit-text-security:disc">
     </div>
     <div class="mode-grid" id="modeGrid" style="display:none">
       <div class="mode-card" onclick="selectMode('SOLO')">
@@ -826,11 +826,22 @@ const LOADING_STEPS = [
 ];
 
 // ==================== SPLASH / NAV ====================
-document.getElementById('apiKeyInput').addEventListener('input', function() {
-  state.apiKey = this.value.trim();
-  document.getElementById('modeGrid').style.display = state.apiKey ? 'grid' : 'none';
-});
-document.getElementById('apiKeyInput').addEventListener('keydown', function(e) {
+function checkApiKey() {
+  state.apiKey = document.getElementById('apiKeyInput').value.trim();
+  const grid = document.getElementById('modeGrid');
+  if (state.apiKey.length > 5) {
+    grid.style.display = 'grid';
+  } else {
+    grid.style.display = 'none';
+  }
+}
+
+const _apiInput = document.getElementById('apiKeyInput');
+_apiInput.addEventListener('input', checkApiKey);
+_apiInput.addEventListener('change', checkApiKey);
+_apiInput.addEventListener('keyup', checkApiKey);
+_apiInput.addEventListener('paste', function() { setTimeout(checkApiKey, 50); });
+_apiInput.addEventListener('keydown', function(e) {
   if (e.key === 'Enter' && state.apiKey) document.getElementById('modeGrid').style.display = 'grid';
 });
 
