@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studio UGC AI — Vertex AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#050505;
+  --bg2:#0c0c0c;
+  --glass:rgba(255,255,255,0.04);
+  --border:rgba(255,255,255,0.08);
+  --border2:rgba(255,255,255,0.14);
+  --text:#fff;
+  --text2:rgba(255,255,255,0.6);
+  --text3:rgba(255,255,255,0.3);
+  --purple:#a855f7;
+  --pink:#ec4899;
+  --indigo:#6366f1;
+  --emerald:#10b981;
+  --amber:#f59e0b;
+  --red:#ef4444;
+  --rose:#f43f5e;
+}
+html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow-x:hidden}
+body{background:radial-gradient(ellipse 80% 60% at 50% -10%,rgba(168,85,247,0.12) 0%,var(--bg) 60%)}
+img{display:block;max-width:100%}
+button,input,select,textarea{font:inherit}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:#111}
+::-webkit-scrollbar-thumb{background:#2a2a2a;border-radius:3px}
+
+/* SPLASH */
+#splash{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;text-align:center;position:relative}
+.splash-glow{position:fixed;inset:0;pointer-events:none;z-index:0}
+.splash-glow::before{content:'';position:absolute;top:-20%;right:-20%;width:60%;height:60%;background:rgba(168,85,247,0.15);border-radius:50%;filter:blur(120px)}
+.splash-glow::after{content:'';position:absolute;bottom:-20%;left:-20%;width:50%;height:50%;background:rgba(236,72,153,0.1);border-radius:50%;filter:blur(100px)}
+.splash-content{position:relative;z-index:10;max-width:600px;width:100%}
+.splash-badge{display:inline-block;padding:0.4rem 1.2rem;border-radius:999px;font-size:0.6rem;font-weight:900;letter-spacing:0.35em;text-transform:uppercase;color:var(--text3);border:1px solid var(--border);background:var(--glass);margin-bottom:2rem;backdrop-filter:blur(10px)}
+.splash-title{font-family:'Syne',sans-serif;font-size:clamp(4rem,14vw,8rem);font-weight:800;line-height:0.85;letter-spacing:-0.03em;margin-bottom:1.5rem}
+.splash-title .line1{display:block;background:linear-gradient(135deg,#fff 0%,rgba(255,255,255,0.5) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.splash-title .line2{display:block;background:linear-gradient(135deg,var(--purple),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.splash-sub{font-size:1rem;color:var(--text2);font-weight:300;line-height:1.6;margin-bottom:3rem}
+.api-box{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:1.5rem;padding:1.75rem;margin-bottom:1.5rem;text-align:left}
+.api-label{font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:0.3em;color:var(--text3);margin-bottom:0.75rem;display:block}
+.api-input{width:100%;background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:0.75rem;padding:0.9rem 1rem;font-size:0.85rem;font-family:monospace;color:var(--text);outline:none;transition:border-color 0.2s}
+.api-input::placeholder{color:rgba(255,255,255,0.15)}
+.api-input:focus{border-color:var(--purple)}
+.start-btn{width:100%;padding:1.2rem;border-radius:1.25rem;font-family:'Syne',sans-serif;font-weight:800;font-size:0.85rem;text-transform:uppercase;letter-spacing:0.2em;border:none;cursor:pointer;background:linear-gradient(135deg,var(--purple),var(--pink));color:#fff;transition:all 0.2s;opacity:0.3}
+.start-btn:not(:disabled){opacity:1}
+.start-btn:not(:disabled):hover{transform:scale(1.02);box-shadow:0 20px 40px rgba(168,85,247,0.3)}
+.start-btn:disabled{cursor:not-allowed}
+
+/* APP */
+#app{display:none;min-height:100vh;flex-direction:column}
+#app.visible{display:flex}
+
+/* HEADER */
+.app-header{position:sticky;top:0;z-index:50;background:rgba(0,0,0,0.6);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0.9rem 1.5rem}
+.app-header-inner{max-width:1600px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.app-logo{display:flex;align-items:center;gap:0.75rem;cursor:pointer;text-decoration:none}
+.app-logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--purple),var(--pink));border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.app-logo-text{font-family:'Syne',sans-serif;font-size:1rem;font-weight:800;text-transform:uppercase;letter-spacing:0.05em;color:#fff}
+.header-badges{display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap}
+.badge{display:flex;align-items:center;gap:0.4rem;padding:0.35rem 0.75rem;border-radius:999px;font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:0.15em}
+.badge-rose{background:rgba(244,63,94,0.15);border:1px solid rgba(244,63,94,0.4);color:var(--rose)}
+.badge-amber{background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.4);color:var(--amber)}
+.badge-emerald{background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.4);color:var(--emerald)}
+.badge-purple{background:rgba(168,85,247,0.15);border:1px solid rgba(168,85,247,0.4);color:var(--purple)}
+.header-key-btn{font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;padding:0.4rem 0.9rem;border-radius:999px;cursor:pointer;border:1px solid rgba(245,158,11,0.4);color:var(--amber);background:rgba(245,158,11,0.1);transition:all 0.2s}
+.header-key-btn.active{border-color:rgba(16,185,129,0.4);color:var(--emerald);background:rgba(16,185,129,0.1)}
+
+/* LAYOUT */
+.studio-layout{flex:1;max-width:1600px;margin:0 auto;width:100%;padding:1.5rem;display:grid;grid-template-columns:380px 1fr;gap:1.5rem}
+@media(max-width:1100px){.studio-layout{grid-template-columns:1fr}}
+@media(max-width:640px){.studio-layout{padding:0.75rem;gap:0.75rem}}
+
+/* SIDEBAR */
+.sidebar{display:flex;flex-direction:column;gap:1rem;max-height:calc(100vh - 80px);overflow-y:auto;padding-right:4px;padding-bottom:6rem}
+.sidebar::-webkit-scrollbar{width:3px}
+
+/* CARDS */
+.card{background:var(--glass);border:1px solid var(--border);border-radius:1.5rem;padding:1.25rem;transition:border-color 0.2s}
+.card.active-purple{border-color:rgba(168,85,247,0.5);box-shadow:0 0 20px rgba(168,85,247,0.08)}
+.card.active-rose{border-color:rgba(244,63,94,0.5);box-shadow:0 0 20px rgba(244,63,94,0.08)}
+.card.active-amber{border-color:rgba(245,158,11,0.5);box-shadow:0 0 20px rgba(245,158,11,0.08)}
+.card.active-emerald{border-color:rgba(16,185,129,0.5);box-shadow:0 0 20px rgba(16,185,129,0.08)}
+.card.active-indigo{border-color:rgba(99,102,241,0.5);box-shadow:0 0 20px rgba(99,102,241,0.08)}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;gap:0.5rem;flex-wrap:wrap}
+.card-title-group{display:flex;align-items:center;gap:0.6rem}
+.card-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.85rem}
+.card-icon-purple{background:rgba(168,85,247,0.2);color:var(--purple)}
+.card-icon-rose{background:rgba(244,63,94,0.2);color:var(--rose)}
+.card-icon-amber{background:rgba(245,158,11,0.2);color:var(--amber)}
+.card-icon-emerald{background:rgba(16,185,129,0.2);color:var(--emerald)}
+.card-icon-indigo{background:rgba(99,102,241,0.2);color:var(--indigo)}
+.card-icon-slate{background:rgba(255,255,255,0.08);color:var(--text3)}
+.card-title{font-family:'Syne',sans-serif;font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:0.2em;color:#fff;line-height:1}
+.card-sub{font-size:0.55rem;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;color:var(--text3);margin-top:2px}
+
+/* TOGGLE */
+.toggle-wrap{position:relative;width:40px;height:22px;flex-shrink:0}
+.toggle-wrap input{opacity:0;width:0;height:0;position:absolute}
+.toggle-track{display:block;width:40px;height:22px;border-radius:11px;background:rgba(255,255,255,0.1);cursor:pointer;transition:background 0.3s;position:relative}
+.toggle-wrap input:checked + .toggle-track{background:var(--active-color,var(--purple))}
+.toggle-track::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:transform 0.3s;box-shadow:0 1px 4px rgba(0,0,0,0.3)}
+.toggle-wrap input:checked + .toggle-track::after{transform:translateX(18px)}
+
+/* UPLOADER */
+.uploader{border:2px dashed var(--border);border-radius:1rem;min-height:80px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;overflow:hidden;transition:all 0.2s;background:rgba(255,255,255,0.02);flex-direction:column;gap:0.4rem}
+.uploader:hover{border-color:var(--purple);background:rgba(168,85,247,0.04)}
+.uploader.has-img{border-style:solid;border-color:var(--border2)}
+.uploader input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;z-index:2}
+.uploader-preview{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1}
+.uploader-icon{font-size:1.2rem;position:relative;z-index:1}
+.uploader-label{font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;color:var(--text3);position:relative;z-index:1;text-align:center;padding:0 0.5rem}
+.uploader-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.2s;z-index:3}
+.uploader:hover .uploader-overlay{opacity:1}
+.rm-btn{background:var(--red);border:none;border-radius:50%;width:26px;height:26px;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.75rem}
+.upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.6rem}
+
+/* TOGGLE ROW */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0;border-bottom:1px solid var(--border)}
+.toggle-row:last-child{border-bottom:none}
+.toggle-row-label{font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:0.15em;color:var(--text2)}
+
+/* PILLS / BUTTONS */
+.pill-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.5rem}
+.pill-btn{padding:0.6rem 0.5rem;border-radius:0.75rem;border:1px solid var(--border);background:rgba(255,255,255,0.03);font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);cursor:pointer;transition:all 0.2s;text-align:center}
+.pill-btn:hover{opacity:0.8}
+.pill-btn.sel-purple{background:rgba(168,85,247,0.2);border-color:var(--purple);color:#fff}
+.pill-btn.sel-indigo{background:rgba(99,102,241,0.2);border-color:var(--indigo);color:#fff}
+.pill-btn.sel-orange{background:rgba(249,115,22,0.2);border-color:#f97316;color:#fff}
+.pill-btn.sel-emerald{background:rgba(16,185,129,0.2);border-color:var(--emerald);color:#fff}
+
+/* SCENES */
+.scene-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.5rem}
+.scene-btn{padding:0.75rem 0.5rem;border-radius:0.9rem;border:1px solid var(--border);background:rgba(255,255,255,0.03);font-size:0.6rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);cursor:pointer;transition:all 0.2s;text-align:center;display:flex;flex-direction:column;align-items:center;gap:0.3rem}
+.scene-btn .scene-emoji{font-size:1.1rem}
+.scene-btn:hover{opacity:0.8}
+.scene-btn.sel{background:rgba(168,85,247,0.15);border-color:var(--purple);color:#fff;box-shadow:0 0 15px rgba(168,85,247,0.1)}
+
+/* SHOTS */
+.shot-cat-title{font-size:0.55rem;font-weight:900;text-transform:uppercase;letter-spacing:0.2em;color:var(--text3);margin:0.75rem 0 0.4rem}
+.shot-btn{width:100%;padding:0.65rem 0.75rem;border-radius:0.75rem;border:1px solid var(--border);background:rgba(255,255,255,0.02);font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);cursor:pointer;transition:all 0.2s;text-align:left;margin-bottom:0.35rem;display:block}
+.shot-btn:hover{opacity:0.8}
+.shot-btn.sel{background:rgba(99,102,241,0.15);border-color:var(--indigo);color:#fff}
+
+/* SELECT */
+select.s-select{width:100%;background:#111;border:1px solid var(--border);border-radius:0.75rem;padding:0.65rem 1rem;font-size:0.65rem;font-family:'DM Sans',sans-serif;color:var(--text);outline:none;cursor:pointer;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;background-size:12px}
+select.s-select option{background:#111}
+
+/* TEXTAREA */
+textarea.s-textarea{width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:0.75rem;padding:0.75rem;font-size:0.8rem;font-family:'DM Sans',sans-serif;color:var(--text);outline:none;resize:vertical;min-height:70px;transition:border-color 0.2s}
+textarea.s-textarea:focus{border-color:var(--purple)}
+textarea.s-textarea::placeholder{color:var(--text3)}
+
+/* ASPECT RATIO */
+.ar-btns{display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-bottom:0.75rem}
+.ar-btn{padding:0.75rem 0.5rem;border-radius:0.75rem;font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;cursor:pointer;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--text3);transition:all 0.2s;text-align:center}
+.ar-btn.active{background:var(--indigo);border-color:var(--indigo);color:#fff}
+
+/* GEN BTN */
+.gen-btn{width:100%;padding:1.4rem;border-radius:1.5rem;font-family:'Syne',sans-serif;font-weight:800;font-size:0.95rem;text-transform:uppercase;letter-spacing:0.15em;border:none;cursor:pointer;background:linear-gradient(135deg,var(--purple),var(--pink));color:#fff;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:0.75rem;box-shadow:0 20px 40px rgba(168,85,247,0.2)}
+.gen-btn:hover:not(:disabled){transform:scale(1.02);box-shadow:0 24px 48px rgba(168,85,247,0.3)}
+.gen-btn:disabled{opacity:0.4;cursor:not-allowed;box-shadow:none;transform:none}
+.spin{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* GALLERY */
+.gallery-col{background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:2rem;padding:1.5rem;min-height:600px;display:flex;flex-direction:column;overflow:hidden}
+.gallery-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:0.5rem}
+.gallery-title{font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;text-transform:uppercase;letter-spacing:-0.02em}
+.gallery-body{flex:1;overflow-y:auto;padding-right:4px}
+.gallery-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+@media(max-width:900px){.gallery-grid{grid-template-columns:1fr}}
+.img-card{border-radius:1.2rem;overflow:hidden;background:#111;border:1px solid var(--border);position:relative;animation:fadeIn 0.5s ease}
+@keyframes fadeIn{from{opacity:0;transform:scale(0.97)}to{opacity:1;transform:scale(1)}}
+.img-card img{width:100%;display:block}
+.img-card-footer{padding:0.75rem 1rem;display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,0.6);border-top:1px solid var(--border)}
+.img-card-num{font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:0.2em;color:var(--text3)}
+.dl-btn{background:rgba(255,255,255,0.08);border:1px solid var(--border2);border-radius:0.5rem;padding:0.4rem 0.75rem;font-size:0.6rem;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;color:#fff;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:0.3rem}
+.dl-btn:hover{background:var(--purple)}
+.gallery-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:var(--text3);border:2px dashed var(--border);border-radius:1.5rem;padding:3rem}
+.gallery-empty-icon{font-size:3rem;margin-bottom:1rem;opacity:0.3}
+.gallery-empty-title{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;text-transform:uppercase;margin-bottom:0.5rem}
+.gallery-empty-sub{font-size:0.75rem;font-style:italic;color:var(--text3)}
+.loading-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.5rem;border:2px dashed rgba(168,85,247,0.3);border-radius:1.5rem}
+.loading-spinner{width:56px;height:56px;border:3px solid rgba(168,85,247,0.2);border-top-color:var(--purple);border-radius:50%;animation:spin 1s linear infinite}
+.loading-text{font-size:0.65rem;font-weight:900;text-transform:uppercase;letter-spacing:0.3em;color:var(--purple);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.progress-bar-wrap{width:200px;height:4px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden}
+.progress-bar{height:100%;background:linear-gradient(90deg,var(--purple),var(--pink));border-radius:2px;transition:width 0.5s}
+
+/* ERROR */
+.error-box{padding:0.9rem 1rem;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:0.75rem;font-size:0.75rem;font-weight:700;color:#fca5a5;margin-top:0.75rem}
+
+/* RESPONSIVE */
+@media(max-width:640px){
+  .card{padding:1rem;border-radius:1.25rem}
+  .gallery-col{padding:1rem;border-radius:1.5rem;min-height:400px}
+  .gen-btn{padding:1.1rem;font-size:0.8rem}
+  .gallery-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-glow"></div>
+  <div class="splash-content">
+    <div class="splash-badge">Vertex AI — Génération Image 4K UGC</div>
+    <div class="splash-title">
+      <span class="line1">Studio</span>
+      <span class="line2">UGC AI</span>
+    </div>
+    <p class="splash-sub">Crée ton shooting UGC photoréaliste<br>comme si tu y étais — propulsé par Vertex AI.</p>
+    <div class="api-box">
+      <span class="api-label">🔑 Clé API Vertex AI</span>
+      <input type="password" id="apiKeyInput" class="api-input" placeholder="AIza..." autocomplete="off">
+    </div>
+    <button id="startBtn" class="start-btn" disabled onclick="startApp()">Lancer le Studio →</button>
+    <p style="font-size:0.6rem;color:var(--text3);margin-top:1rem;text-transform:uppercase;letter-spacing:0.15em">Clé stockée localement dans ce navigateur</p>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header class="app-header">
+    <div class="app-header-inner">
+      <div class="app-logo" onclick="goSplash()">
+        <div class="app-logo-icon">
+          <svg width="20" height="20" fill="none" stroke="#fff" viewBox="0 0 24 24" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </div>
+        <span class="app-logo-text">Studio UGC AI</span>
+      </div>
+      <div class="header-badges" id="activeBadges"></div>
+      <button class="header-key-btn" id="keyBtn" onclick="goSplash()">Clé Active</button>
+    </div>
+  </header>
+
+  <div class="studio-layout">
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+
+      <!-- MODES -->
+      <div class="card" id="cardModes">
+        <div class="card-header">
+          <div class="card-title-group">
+            <div class="card-icon card-icon-slate">⚡</div>
+            <div>
+              <div class="card-title">Modes</div>
+              <div class="card-sub">Options de rendu</div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="toggle-row">
+            <span class="toggle-row-label">🔐 Identity Lock</span>
+            <label class="toggle-wrap" style="--active-color:var(--rose)">
+              <input type="checkbox" id="toggleIdentity" checked onchange="updateBadges()">
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-row-label">🏠 Style Scandinave (Bois & Blanc)</span>
+            <label class="toggle-wrap" style="--active-color:var(--emerald)">
+              <input type="checkbox" id="toggleStyle" checked onchange="updateBadges()">
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-row-label">👯 Mode Duo (2 Avatars)</span>
+            <label class="toggle-wrap" style="--active-color:var(--indigo)">
+              <input type="checkbox" id="toggleDuo" onchange="toggleDuoMode()">
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-row-label">👗 Dress Code (Verrouiller tenue)</span>
+            <label class="toggle-wrap" style="--active-color:var(--amber)">
+              <input type="checkbox" id="toggleDress" onchange="toggleDressCode()">
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-row-label">🎥 Mode Backstage</span>
+            <label class="toggle-wrap" style="--active-color:#f97316">
+              <input type="checkbox" id="toggleBackstage" onchange="toggleBackstage()">
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- BACKSTAGE OPTIONS -->
+      <div class="card" id="backstageCard" style="display:none">
+        <div class="card-header">
+          <div class="card-title-group">
+            <div class="card-icon" style="background:rgba(249,115,22,0.2);color:#f97316">🎥</div>
+            <div><div class="card-title">Config Backstage</div><div class="card-sub">Coulisses du shooting</div></div>
+          </div>
+        </div>
+        <div class="pill-grid">
+          <button class="pill-btn" id="bts_hand" onclick="toggleBTS('bts_hand')">📸 Main Caméra</button>
+          <button class="pill-btn" id="bts_tripod" onclick="toggleBTS('bts_tripod')">🎬 Trépied Vidéo</button>
+          <button class="pill-btn" id="bts_pov" onclick="toggleBTS('bts_pov')">👁 POV Créateur</button>
+        </div>
+        <div style="margin-top:0.75rem">
+          <label class="card-sub" style="display:block;margin-bottom:0.4rem">Couleur Coque iPhone</label>
+          <input type="text" id="iphoneCase" value="Transparent" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:0.6rem;padding:0.5rem 0.75rem;font-size:0.7rem;color:#fff;outline:none">
+        </div>
+      </div>
+
+      <!-- SOURCES -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title-group">
+            <div class="card-icon card-icon-purple">📸</div>
+            <div><div class="card-title">1. Sources Réelles</div><div class="card-sub">Avatar(s) + Produit</div></div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:0.6rem">
+          <div class="uploader" id="av1Uploader" style="min-height:80px">
+            <div class="uploader-icon">👤</div>
+            <div class="uploader-label">Avatar 1 (Identité)</div>
+            <input type="file" accept="image/*" onchange="handleUpload(event,'av1')">
+            <div class="uploader-overlay"><button class="rm-btn" onclick="removeImg(event,'av1')">✕</button></div>
+          </div>
+          <div class="uploader" id="av2Uploader" style="min-height:80px;display:none;border-color:rgba(99,102,241,0.4)" data-duo>
+            <div class="uploader-icon">👥</div>
+            <div class="uploader-label">Avatar 2 (Mode Duo)</div>
+            <input type="file" accept="image/*" onchange="handleUpload(event,'av2')">
+            <div class="uploader-overlay"><button class="rm-btn" onclick="removeImg(event,'av2')">✕</button></div>
+          </div>
+          <div class="uploader" id="prodUploader" style="min-height:80px">
+            <div class="uploader-icon">📦</div>
+            <div class="uploader-label">Produit / Texture</div>
+            <input type="file" accept="image/*" onchange="handleUpload(event,'prod')">
+            <div class="uploader-overlay"><button class="rm-btn" onclick="removeImg(event,'prod')">✕</button></div>
+          </div>
+          <div class="uploader" id="locUploader" style="min-height:70px;border-color:rgba(99,102,241,0.3)">
+            <div class="uploader-icon">🏠</div>
+            <div class="uploader-label">Lieu / Décor (Optionnel)</div>
+            <input type="file" accept="image/*" onchange="handleUpload(event,'loc')">
+            <div class="uploader-overlay"><button class="rm-btn" onclick="removeImg(event,'loc')">✕</button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DRESS CODE -->
+      <div class="card active-amber" id="dressCard" style="display:none">
+        <div class="card-header">
+          <div class="card-title-group">
+            <div class="card-icon card-icon-amber">👗</div>
+            <div><div class="card-title">Dress Code Référence</div><div class="card-sub">Verrouille la tenue</div></div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:0.5rem">
+          <div class="uploader" id="dress1Uploader" style="min-height:70px;border-color:rgba(245,158,11,0.4)">
+            <div class="uploader-icon">👗</div>
+            <div class="uploader-label">Tenue Référence 1 *</div>
+            <input type="file" accept="image/*" onchange="handleUpload(event,'dress1')">
+            <div class="uploader-overlay"><button class="rm-btn" onclick="removeImg(event,'dress1')">✕</button></div>
+          </div>
+          <div class="uploader" id="dress2Uploader" style="min-height:70px;border-color:rgba(245,158,11,0.3);display:none" data-duo>
+            <div class="uploader-icon">👗</div>
+            <div class="uploader-label">Tenue Avatar 2 (Optionnel)</div>
+            <input type="file" accept="image/*" onchange="handleUpload(event,'dress2')">
+            <div class="uploader-overlay"><button class="rm-btn" onclick="removeImg(event,'dress2')">✕</button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCENES -->
+      <div class="card" id="sceneCard">
+        <div class="card-header">
+          <div class="card-title-group">
+            <div class="card-icon card-icon-purple">🏠</div>
+            <div><div class="card-title">2. Scènes</div><div class="card-sub">Optionnel — max 4</div></div>
+          </div>
+        </div>
+        <div class="scene-grid" id="sceneGrid"></div>
+        <div id="carModelWrap" style="display:none;margin-top:0.75rem">
+          <label class="card-sub" style="display:block;margin-bottom:0.4rem">Modèle de Voiture</label>
+          <input type="text" id="carModel" value="Tesla Model 3" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:0.6rem;padding:0.5rem 0.75rem;font-size:0.7rem;color:#fff;outline:none">
+        </div>
+      </div>
+
+      <!-- SHOTS -->
+      <div class="card" id="shotCard">
+        <div class="card-header">
+          <div class="card-title-group">
+            <div class="card-icon card-icon-indigo">🎯</div>
+            <div><div class="card-title">3. Plans (Shots)</div><div class="card-sub">Types de cadrage</div></div>
+          </div>
+        </div>
+        <div id="shotList"></div>
+      </div>
+
+      <!-- MULTI-SCENE -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title-group">
+            <div class="card-icon card-icon-emerald">🎞</div>
+            <div><div class="card-title">Multi-Scène</div><div class="card-sub">Storytelling temporel</div></div>
+          </div>
+          <select class="s-select" id="multiMode" style="width:auto;padding:0.4rem 1.5rem 0.4rem 0.6rem" onchange="updateMultiMode()">
+            <option value="off">OFF</option>
+            <option value="auto">AUTO</option>
+            <option value="manual">PERSO</option>
+          </select>
+        </div>
+        <div id="multiManualWrap" style="display:none">
+          <div style="display:flex;flex-direction:column;gap:0.4rem" id="multiSteps"></div>
+        </div>
+      </div>
+
+      <!-- ACTION -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title-group">
+            <div class="card-icon card-icon-rose">▶</div>
+            <div><div class="card-title">Instant Figé</div><div class="card-sub">Direction artistique</div></div>
+          </div>
+        </div>
+        <textarea class="s-textarea" id="actionText" placeholder="Elle observe ses cheveux, elle masse son visage..." rows="3"></textarea>
+      </div>
+
+      <!-- ASPECT + FORMAT -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title-group">
+            <div class="card-icon card-icon-slate">📐</div>
+            <div><div class="card-title">Format</div></div>
+          </div>
+        </div>
+        <div class="ar-btns">
+          <div class="ar-btn active" id="ar916" onclick="setAR('9:16')">9:16 Portrait</div>
+          <div class="ar-btn" id="ar169" onclick="setAR('16:9')">16:9 Paysage</div>
+        </div>
+      </div>
+
+      <!-- GENERATE -->
+      <div style="padding-bottom:2rem">
+        <button class="gen-btn" id="genBtn" onclick="generate()">
+          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          <span id="genLabel">Générer les Photos UGC</span>
+        </button>
+        <div class="error-box" id="errorBox" style="display:none"></div>
+      </div>
+
+    </div><!-- /sidebar -->
+
+    <!-- GALLERY -->
+    <div class="gallery-col">
+      <div class="gallery-header">
+        <div class="gallery-title">🖼 Galerie Studio UGC</div>
+        <div class="header-badges" id="galleryBadges"></div>
+      </div>
+      <div class="gallery-body" id="galleryBody">
+        <div class="gallery-empty" id="galleryEmpty">
+          <div class="gallery-empty-icon">⚡</div>
+          <div class="gallery-empty-title">Prêt pour la Création</div>
+          <div class="gallery-empty-sub">Importez vos références et lancez le shooting.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── STATE ──
+const state = {
+  apiKey: '',
+  av1: '', av2: '', prod: '', loc: '', dress1: '', dress2: '',
+  av1Mime: 'image/jpeg', av2Mime: 'image/jpeg', prodMime: 'image/jpeg',
+  locMime: 'image/jpeg', dress1Mime: 'image/jpeg', dress2Mime: 'image/jpeg',
+  scenes: [], shots: [], action: '',
+  aspectRatio: '9:16',
+  identityLocked: true,
+  styleScandinavian: true,
+  isDuo: false,
+  dressEnabled: false,
+  backstageEnabled: false,
+  btsTypes: [],
+  multiMode: 'off',
+  manualSteps: ['', '', '', ''],
+  autoMode: true,
+  isRitual: false, isFitting: false, isManicure: false,
+};
+
+// ── DATA ──
+const SCENES = [
+  { id: 'reception_colis', name: 'Réception Colis', emoji: '📦' },
+  { id: 'vanity_moderne', name: 'Vanity Moderne', emoji: '💄' },
+  { id: 'salle_de_bain', name: 'Douche Italienne', emoji: '🚿' },
+  { id: 'chambre_cosy', name: 'Chambre Cosy', emoji: '🛏️' },
+  { id: 'cuisine_moderne', name: 'Cuisine Moderne', emoji: '🍳' },
+  { id: 'salon_chaleureux', name: 'Salon Chaleureux', emoji: '🛋️' },
+  { id: 'dressing', name: 'Dressing / Miroir', emoji: '👗' },
+  { id: 'voiture', name: 'Intérieur Voiture', emoji: '🚗' },
+];
+
+const SHOT_CATS = [
+  { name: '🔥 Les Indispensables UGC', shots: [
+    { id: 'hook', label: '1. Face Cam + Produit (Hook)' },
+    { id: 'demo', label: '2. Application (Instant Figé)' },
+    { id: 'glow', label: '3. Résultat / After (Glow)' },
+  ]},
+  { name: '📸 Flat-Lays Urbains', shots: [
+    { id: 'flatlay', label: '4. Flat Lay (Main qui tient)' },
+    { id: 'flatlay_urban', label: 'Flat-lay Urban Cotton' },
+    { id: 'flatlay_studio', label: 'Flat-lay Studio Wood' },
+    { id: 'flatlay_shadow', label: 'Flat-lay Urban Shadow' },
+  ]},
+  { name: '📦 Vues Produit 4K', shots: [
+    { id: 'macro', label: '5. Close-Up / Macro' },
+    { id: 'held', label: '6. Produit en Main' },
+    { id: 'mirror', label: '7. Miroir / Reflet' },
+    { id: 'hero_hand', label: '12. Plan Hero Produit (Main 1er plan)' },
+  ]},
+  { name: '✨ Storytelling & Réalisme', shots: [
+    { id: 'context', label: '8. Produit en Contexte' },
+    { id: 'opened', label: '9. Packaging Ouvert' },
+    { id: 'gesture', label: '10. Ouverture du Produit (Geste clé)' },
+    { id: 'split', label: '11. Plan Split Avant / Après' },
+    { id: 'unboxing', label: '14. Unboxing (Ouverture Colis)' },
+    { id: 'zenithal', label: '13. Plan Zénithal Immersif' },
+  ]},
+];
+
+const RITUAL_KW = ['shampoo', 'shampoing', 'coloration', 'masque', 'mask', 'huile', 'oil', 'soin', 'gommage', 'scrub'];
+const FITTING_KW = ['robe', 'veste', 't-shirt', 'pantalon', 'jean', 'jupe', 'top', 'haut', 'vêtement', 'dress', 'jacket', 'shirt'];
+const MANICURE_KW = ['ongles', 'nails', 'manucure', 'vernis', 'french', 'manicure', 'ongle', 'pose', 'gel', 'capsules'];
+
+// ── MODEL ──
+const MODEL_ANALYZE = 'gemini-3-pro-preview';
+const MODEL_IMAGE = 'gemini-3-pro-image-preview';
+const VERTEX_BASE = 'https://aiplatform.googleapis.com/v1/publishers/google/models';
+
+// ── SPLASH ──
+document.getElementById('apiKeyInput').addEventListener('input', function() {
+  const val = this.value.trim();
+  const valid = val.length > 10;
+  const btn = document.getElementById('startBtn');
+  btn.disabled = !valid;
+});
+document.getElementById('apiKeyInput').addEventListener('keydown', e => { if (e.key === 'Enter') startApp(); });
+
+function startApp() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key) return;
+  state.apiKey = key;
+  localStorage.setItem('ugc_vertex_key', key);
+  document.getElementById('splash').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+  initUI();
+}
+
+function goSplash() {
+  document.getElementById('splash').style.display = 'flex';
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('apiKeyInput').value = state.apiKey;
+}
+
+// ── INIT ──
+function initUI() {
+  buildScenes();
+  buildShots();
+  buildMultiSteps();
+  updateBadges();
+}
+
+function buildScenes() {
+  const grid = document.getElementById('sceneGrid');
+  grid.innerHTML = SCENES.map(s => `
+    <button class="scene-btn" id="scene_${s.id}" onclick="toggleScene('${s.id}','${s.name}')">
+      <span class="scene-emoji">${s.emoji}</span>
+      <span>${s.name}</span>
+    </button>
+  `).join('');
+}
+
+function buildShots() {
+  const list = document.getElementById('shotList');
+  list.innerHTML = SHOT_CATS.map(cat => `
+    <div class="shot-cat-title">${cat.name}</div>
+    ${cat.shots.map(s => `<button class="shot-btn" id="shot_${s.id}" onclick="toggleShot('${s.id}','${s.label}')">${s.label}</button>`).join('')}
+  `).join('');
+}
+
+function buildMultiSteps() {
+  const wrap = document.getElementById('multiSteps');
+  wrap.innerHTML = [0,1,2,3].map(i => `
+    <input type="text" placeholder="Étape ${i+1} (ex: Elle applique la crème)"
+      value="${state.manualSteps[i]}"
+      oninput="state.manualSteps[${i}]=this.value"
+      style="width:100%;background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:0.6rem;padding:0.5rem 0.75rem;font-size:0.65rem;color:#fff;outline:none;margin-bottom:0.35rem">
+  `).join('');
+}
+
+// ── TOGGLES ──
+function toggleDuoMode() {
+  state.isDuo = document.getElementById('toggleDuo').checked;
+  document.querySelectorAll('[data-duo]').forEach(el => {
+    el.style.display = state.isDuo ? 'flex' : 'none';
+  });
+  updateBadges();
+}
+
+function toggleDressCode() {
+  state.dressEnabled = document.getElementById('toggleDress').checked;
+  document.getElementById('dressCard').style.display = state.dressEnabled ? 'block' : 'none';
+  const prodUp = document.getElementById('prodUploader');
+  prodUp.style.opacity = state.dressEnabled ? '0.3' : '1';
+  prodUp.style.pointerEvents = state.dressEnabled ? 'none' : 'auto';
+  updateBadges();
+}
+
+function toggleBackstage() {
+  state.backstageEnabled = document.getElementById('toggleBackstage').checked;
+  document.getElementById('backstageCard').style.display = state.backstageEnabled ? 'block' : 'none';
+  updateBadges();
+}
+
+function toggleBTS(id) {
+  const btn = document.getElementById(id);
+  const key = id.replace('bts_', '');
+  if (state.btsTypes.includes(key)) {
+    state.btsTypes = state.btsTypes.filter(x => x !== key);
+    btn.className = 'pill-btn';
+  } else {
+    state.btsTypes.push(key);
+    btn.className = 'pill-btn sel-orange';
+  }
+}
+
+function toggleScene(id, name) {
+  const btn = document.getElementById('scene_' + id);
+  if (state.scenes.includes(name)) {
+    state.scenes = state.scenes.filter(x => x !== name);
+    btn.className = 'scene-btn';
+  } else if (state.scenes.length < 4) {
+    state.scenes.push(name);
+    btn.className = 'scene-btn sel';
+  }
+  document.getElementById('carModelWrap').style.display = state.scenes.includes('Intérieur Voiture') ? 'block' : 'none';
+}
+
+function toggleShot(id, label) {
+  const btn = document.getElementById('shot_' + id);
+  if (state.shots.includes(label)) {
+    state.shots = state.shots.filter(x => x !== label);
+    btn.className = 'shot-btn';
+  } else {
+    state.shots.push(label);
+    btn.className = 'shot-btn sel';
+  }
+}
+
+function updateMultiMode() {
+  state.multiMode = document.getElementById('multiMode').value;
+  document.getElementById('multiManualWrap').style.display = state.multiMode === 'manual' ? 'block' : 'none';
+}
+
+function setAR(ar) {
+  state.aspectRatio = ar;
+  document.getElementById('ar916').className = 'ar-btn' + (ar === '9:16' ? ' active' : '');
+  document.getElementById('ar169').className = 'ar-btn' + (ar === '16:9' ? ' active' : '');
+}
+
+function updateBadges() {
+  state.identityLocked = document.getElementById('toggleIdentity').checked;
+  state.styleScandinavian = document.getElementById('toggleStyle').checked;
+  const badges = [];
+  if (state.identityLocked) badges.push('<div class="badge badge-rose">🔐 Identity Lock</div>');
+  if (state.isDuo) badges.push('<div class="badge badge-purple">👯 Mode Duo</div>');
+  if (state.dressEnabled) badges.push('<div class="badge badge-amber">👗 Dress Code</div>');
+  if (state.styleScandinavian) badges.push('<div class="badge badge-emerald">🏠 Bois & Blanc</div>');
+  document.getElementById('activeBadges').innerHTML = badges.join('');
+  document.getElementById('galleryBadges').innerHTML = badges.join('');
+}
+
+// ── UPLOAD ──
+function handleUpload(e, key) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onloadend = () => {
+    const b64 = reader.result.split(',')[1];
+    state[key] = b64;
+    state[key + 'Mime'] = file.type;
+    const uploader = document.getElementById(key + 'Uploader');
+    if (uploader) {
+      let img = uploader.querySelector('img.preview');
+      if (!img) {
+        img = document.createElement('img');
+        img.className = 'uploader-preview preview';
+        uploader.prepend(img);
+      }
+      img.src = reader.result;
+      uploader.classList.add('has-img');
+      uploader.querySelector('.uploader-icon').style.display = 'none';
+      uploader.querySelector('.uploader-label').style.display = 'none';
+      // Auto-detect product type
+      if (key === 'prod') detectProductType(file.name.toLowerCase());
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeImg(e, key) {
+  e.stopPropagation();
+  state[key] = '';
+  const uploader = document.getElementById(key + 'Uploader');
+  if (uploader) {
+    const img = uploader.querySelector('img.preview');
+    if (img) img.remove();
+    uploader.classList.remove('has-img');
+    uploader.querySelector('.uploader-icon').style.display = '';
+    uploader.querySelector('.uploader-label').style.display = '';
+  }
+}
+
+function detectProductType(name) {
+  state.isRitual = RITUAL_KW.some(k => name.includes(k));
+  state.isFitting = FITTING_KW.some(k => name.includes(k));
+  state.isManicure = MANICURE_KW.some(k => name.includes(k));
+}
+
+// ── CALCULATE TOTAL ──
+function calcTotal() {
+  if (!state.dressEnabled && state.autoMode) {
+    if (state.isRitual) return 5;
+    if (state.isFitting) return 4;
+    if (state.isManicure) return 5;
+  }
+  const scenes = state.scenes.length || 1;
+  const shots = state.shots.length || 1;
+  let base = scenes * shots;
+  if (state.backstageEnabled) base += state.btsTypes.length;
+  if (state.multiMode !== 'off') {
+    base += state.multiMode === 'auto' ? 4 : state.manualSteps.filter(s => s.trim()).length;
+  }
+  return base;
+}
+
+// ── VERTEX API HELPERS ──
+async function callVertex(model, body) {
+  const endpoint = `${VERTEX_BASE}/${model}:generateContent?key=${encodeURIComponent(state.apiKey)}`;
+  const waitTimes = [5000, 10000, 20000, 40000];
+  let lastErr;
+  for (let attempt = 0; attempt <= waitTimes.length; attempt++) {
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) {
+        const txt = await res.text();
+        let d; try { d = JSON.parse(txt); } catch(_) {}
+        const msg = d?.error?.message || txt;
+        if (res.status === 429 || msg.includes('503') || msg.includes('overloaded')) throw new Error('RETRY:' + msg);
+        throw new Error(`Erreur ${res.status}: ${msg}`);
+      }
+      return await res.json();
+    } catch(err) {
+      lastErr = err;
+      if (String(err.message).startsWith('RETRY:') && attempt < waitTimes.length) {
+        await sleep(waitTimes[attempt]);
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw lastErr;
+}
+
+function makePart(b64, mime) {
+  return { inlineData: { data: b64, mimeType: mime } };
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ── SYSTEM PROMPT ──
+const SYSTEM_PROMPT = `
+Tu es l'IA de "Studio UGC AI". Tu génères des instructions de prompt pour des photos UGC ultra-réalistes 4K.
+
+🚨 RÈGLE LIEU (PRIORITÉ ABSOLUE) :
+Si une photo de lieu est fournie, la scène doit se dérouler EXACTEMENT dans ce décor. Reproduce l'architecture, les matériaux, les couleurs.
+
+🚨 MODE IDENTITY LOCK :
+Fidélité absolue au visage, morphologie, teint et coiffure de la photo d'origine.
+
+🚨 DRESS CODE RÉFÉRENCE :
+Quand une tenue référence est fournie, reproduire EXACTEMENT cette tenue sur l'avatar. Aucune variation entre les scènes.
+
+🚨 STYLE VISUEL :
+- Style Scandinave (Bois & Blanc) : Appartement IKEA vivant, bois clair, blanc, plantes.
+- Style Neutre : Appartement urbain moderne, accessible, habité.
+
+🚨 RÈGLES PRODUIT :
+Texte produit net, 4K, parfaitement lisible. Focus packaging visible.
+
+🚨 RÉALISME 4K :
+- Peau brute, pores visibles, lumière naturelle
+- Aucun filtre beauté
+- Instant capturé, jamais posé
+`;
+
+// ── BUILD PROMPT ──
+async function buildPrompt(scene, shot, specialMode, seqInfo, btsType) {
+  const parts = [];
+  if (state.av1) parts.push(makePart(state.av1, state.av1Mime));
+  if (state.isDuo && state.av2) parts.push(makePart(state.av2, state.av2Mime));
+  if (!state.dressEnabled && state.prod) parts.push(makePart(state.prod, state.prodMime));
+  if (state.loc) parts.push(makePart(state.loc, state.locMime));
+  if (state.dressEnabled && state.dress1) parts.push(makePart(state.dress1, state.dress1Mime));
+  if (state.dressEnabled && state.isDuo && state.dress2) parts.push(makePart(state.dress2, state.dress2Mime));
+
+  const identLock = state.identityLocked ? '🚨 IDENTITY LOCK ACTIVÉ — fidélité absolue au visage.' : '';
+  const styleStr = state.styleScandinavian ? '🚨 STYLE SCANDINAVE (Bois clair & Blanc IKEA).' : '🚨 STYLE URBAIN MODERNE.';
+  const locStr = state.loc ? '🚨 UTILISE EXACTEMENT le décor de la photo de lieu fournie.' : '';
+  const dressStr = state.dressEnabled ? '🚨 DRESS CODE ACTIF — reproduire EXACTEMENT la tenue de référence.' : '';
+  const duoStr = state.isDuo ? 'MODE DUO : 2 avatars, complicité naturelle, interactions réalistes.' : '';
+  const action = document.getElementById('actionText').value;
+  const carStr = state.scenes.includes('Intérieur Voiture') ? `Voiture: ${document.getElementById('carModel').value}.` : '';
+
+  let modeStr = '';
+  if (specialMode) modeStr = `Mode Auto: ${specialMode.type} — Étape: ${specialMode.stage}.`;
+  else if (btsType) modeStr = `MODE BACKSTAGE ${btsType} — Coulisses shooting, iPhone coque ${document.getElementById('iphoneCase').value}.`;
+  else if (seqInfo) modeStr = `Séquence narrative étape ${seqInfo.current}/${seqInfo.total}: "${seqInfo.step}".`;
+  else modeStr = `Scène: ${scene || 'Contexte neutre cohérent'}, Plan: ${shot || 'Vue standard UGC'}.`;
+
+  const prompt = `Génère instruction UGC 4K : ${modeStr} Action="${action}". ${identLock} ${styleStr} ${locStr} ${dressStr} ${duoStr} ${carStr} DuoMode=${state.isDuo}.`;
+  parts.push({ text: prompt });
+
+  const analyzeRes = await callVertex(MODEL_ANALYZE, {
+    contents: [{ role: 'user', parts }],
+    systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] }
+  });
+
+  return analyzeRes.candidates?.[0]?.content?.parts?.find(p => p.text)?.text || prompt;
+}
+
+// ── GENERATE IMAGE ──
+async function generateImage(prompt) {
+  const parts = [];
+  if (state.av1) parts.push(makePart(state.av1, state.av1Mime));
+  if (state.isDuo && state.av2) parts.push(makePart(state.av2, state.av2Mime));
+  if (state.loc) parts.push(makePart(state.loc, state.locMime));
+  if (!state.dressEnabled && state.prod) parts.push(makePart(state.prod, state.prodMime));
+  if (state.dressEnabled && state.dress1) parts.push(makePart(state.dress1, state.dress1Mime));
+  if (state.dressEnabled && state.isDuo && state.dress2) parts.push(makePart(state.dress2, state.dress2Mime));
+  parts.push({ text: prompt });
+
+  const res = await callVertex(MODEL_IMAGE, {
+    contents: [{ role: 'user', parts }],
+    generationConfig: {
+      responseModalities: ['IMAGE'],
+      imageConfig: { aspectRatio: state.aspectRatio, imageSize: '4K' }
+    }
+  });
+
+  const imgData = res.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+  if (!imgData) throw new Error('Aucune image dans la réponse.');
+  const b64 = imgData.inlineData.data;
+  const mime = imgData.inlineData.mimeType || 'image/png';
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  const blob = new Blob([bytes], { type: mime });
+  return URL.createObjectURL(blob);
+}
+
+// ── MAIN GENERATE ──
+let generatedImages = [];
+let isGenerating = false;
+
+async function generate() {
+  if (isGenerating) return;
+  state.identityLocked = document.getElementById('toggleIdentity').checked;
+  state.styleScandinavian = document.getElementById('toggleStyle').checked;
+  const action = document.getElementById('actionText').value;
+
+  if (!state.prod && !state.dressEnabled) { showError('Produit requis (ou activer Dress Code).'); return; }
+  if (state.isDuo && (!state.av1 || !state.av2)) { showError('Deux avatars requis pour le Mode Duo.'); return; }
+  if (state.dressEnabled && !state.dress1) { showError('Importez au moins une référence de tenue.'); return; }
+
+  hideError();
+  isGenerating = true;
+  generatedImages = [];
+  showLoading();
+
+  const btn = document.getElementById('genBtn');
+  btn.disabled = true;
+  btn.querySelector('span').textContent = 'Génération en cours...';
+
+  const total = calcTotal();
+  let count = 0;
+
+  const runOne = async (scene, shot, specialMode, seqInfo, btsType) => {
+    count++;
+    updateProgress(count, total, `Photo ${count}/${total}...`);
+    try {
+      const prompt = await buildPrompt(scene, shot, specialMode, seqInfo, btsType);
+      const imgUrl = await generateImage(prompt);
+      generatedImages.push(imgUrl);
+      addImageToGallery(imgUrl, count);
+    } catch(err) {
+      console.error(err);
+      // Continue les autres même si une échoue
+    }
+  };
+
+  try {
+    // AUTO MODES
+    if (!state.dressEnabled && state.autoMode) {
+      if (state.isRitual) {
+        const stages = ['APPLICATION', 'POSE_TEXTURE', 'RINÇAGE_DOUCHE_DOS', 'RESULTAT_MIROIR', 'STYLING_FINAL'];
+        for (const stage of stages) await runOne('', '', { type: 'RITUAL', stage }, null, null);
+        goto_done(); return;
+      }
+      if (state.isFitting) {
+        const stages = ['CHOIX_SUR_LIT', 'ENFILAGE_ACTION', 'DETAIL_AJUSTEMENT', 'LOOK_FINAL'];
+        for (const stage of stages) await runOne('', '', { type: 'FITTING', stage }, null, null);
+        goto_done(); return;
+      }
+      if (state.isManicure) {
+        const stages = ['ZOOM_TABLE', 'ACCESSOIRE_MAIN', 'POSE_VISAGE', 'CHEVEUX_NATURELS', 'LIFESTYLE_FOCUS'];
+        for (const stage of stages) await runOne('', '', { type: 'MANICURE', stage }, null, null);
+        goto_done(); return;
+      }
+    }
+
+    // NORMAL
+    const finalScenes = state.scenes.length > 0 ? state.scenes : [''];
+    const finalShots = state.shots.length > 0 ? state.shots : ['Vue standard UGC'];
+    for (const scene of finalScenes)
+      for (const shot of finalShots)
+        await runOne(scene, shot, null, null, null);
+
+    // BACKSTAGE
+    if (state.backstageEnabled && state.btsTypes.length > 0)
+      for (const bts of state.btsTypes)
+        await runOne(finalScenes[0] || '', 'Backstage Action', null, null, bts);
+
+    // MULTI-SCÈNE
+    if (state.multiMode !== 'off') {
+      const steps = state.multiMode === 'auto'
+        ? ['Ouverture', 'Préparation', 'Application', 'Résultat']
+        : state.manualSteps.filter(s => s.trim());
+      for (let i = 0; i < steps.length; i++)
+        await runOne(finalScenes[0] || '', steps[i], null, { current: i+1, total: steps.length, step: steps[i] }, null);
+    }
+
+  } catch(err) {
+    showError(err.message || 'Erreur de génération.');
+  }
+
+  goto_done();
+}
+
+function goto_done() {
+  isGenerating = false;
+  const btn = document.getElementById('genBtn');
+  btn.disabled = false;
+  const total = calcTotal();
+  btn.querySelector('span').textContent = `Générer les Photos UGC (${total})`;
+  if (generatedImages.length === 0) showError('Aucune image générée.');
+}
+
+// ── GALLERY UI ──
+function showLoading() {
+  const body = document.getElementById('galleryBody');
+  body.innerHTML = `
+    <div class="loading-area">
+      <div class="loading-spinner"></div>
+      <div class="loading-text" id="loadingText">Initialisation...</div>
+      <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar" style="width:0%"></div></div>
+    </div>
+  `;
+}
+
+function updateProgress(current, total, msg) {
+  const txt = document.getElementById('loadingText');
+  const bar = document.getElementById('progressBar');
+  if (txt) txt.textContent = msg;
+  if (bar) bar.style.width = `${Math.round((current / total) * 100)}%`;
+}
+
+function addImageToGallery(url, num) {
+  const body = document.getElementById('galleryBody');
+  // Remplacer loading par grille si premier
+  if (body.querySelector('.loading-area')) {
+    body.innerHTML = '<div class="gallery-grid" id="galleryGrid"></div>';
+  }
+  const grid = document.getElementById('galleryGrid');
+  const card = document.createElement('div');
+  card.className = 'img-card';
+  card.innerHTML = `
+    <img src="${url}" alt="Photo UGC ${num}" loading="lazy">
+    <div class="img-card-footer">
+      <div>
+        <div class="img-card-num">Photo ${num} — 4K</div>
+        <div style="font-size:0.55rem;color:var(--emerald);font-weight:700;text-transform:uppercase;letter-spacing:0.1em">PNG • Ultra HD</div>
+      </div>
+      <button class="dl-btn" onclick="downloadImg('${url}',${num})">
+        ↓ PNG
+      </button>
+    </div>
+  `;
+  grid.appendChild(card);
+}
+
+function downloadImg(url, num) {
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `ugc-studio-photo-${num}.png`;
+  a.click();
+}
+
+function showError(msg) {
+  const box = document.getElementById('errorBox');
+  box.textContent = msg;
+  box.style.display = 'block';
+}
+
+function hideError() {
+  document.getElementById('errorBox').style.display = 'none';
+}
+
+// ── AUTO-RESTORE KEY ──
+window.addEventListener('load', () => {
+  const saved = localStorage.getItem('ugc_vertex_key');
+  if (saved) {
+    document.getElementById('apiKeyInput').value = saved;
+    document.getElementById('startBtn').disabled = false;
+    state.apiKey = saved;
+  }
+});
+</script>
+</body>
+</html>
