@@ -113,13 +113,13 @@ button,input,select,textarea{font:inherit}
 .uploader{border:2px dashed var(--border);border-radius:1rem;min-height:80px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;overflow:hidden;transition:all 0.2s;background:rgba(255,255,255,0.02);flex-direction:column;gap:0.4rem}
 .uploader:hover{border-color:var(--purple);background:rgba(168,85,247,0.04)}
 .uploader.has-img{border-style:solid;border-color:var(--border2)}
-.uploader input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;z-index:2}
+.uploader input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;z-index:4;width:100%;height:100%}
 .uploader-preview{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1}
-.uploader-icon{font-size:1.2rem;position:relative;z-index:1}
-.uploader-label{font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;color:var(--text3);position:relative;z-index:1;text-align:center;padding:0 0.5rem}
-.uploader-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.2s;z-index:3}
-.uploader:hover .uploader-overlay{opacity:1}
-.rm-btn{background:var(--red);border:none;border-radius:50%;width:26px;height:26px;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.75rem}
+.uploader-icon{font-size:1.2rem;position:relative;z-index:2}
+.uploader-label{font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;color:var(--text3);position:relative;z-index:2;text-align:center;padding:0 0.5rem}
+.uploader-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.2s;z-index:3;pointer-events:none}
+.uploader.has-img:hover .uploader-overlay{opacity:1;pointer-events:auto}
+.rm-btn{background:var(--red);border:none;border-radius:50%;width:26px;height:26px;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.75rem;z-index:5;position:relative}
 .upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.6rem}
 
 /* TOGGLE ROW */
@@ -698,16 +698,20 @@ function handleUpload(e, key) {
     state[key + 'Mime'] = file.type;
     const uploader = document.getElementById(key + 'Uploader');
     if (uploader) {
-      let img = uploader.querySelector('img.preview');
-      if (!img) {
-        img = document.createElement('img');
-        img.className = 'uploader-preview preview';
-        uploader.prepend(img);
-      }
+      // Supprimer ancien preview
+      const old = uploader.querySelector('img.preview');
+      if (old) old.remove();
+      // Créer nouveau preview
+      const img = document.createElement('img');
+      img.className = 'uploader-preview preview';
       img.src = reader.result;
+      uploader.prepend(img);
       uploader.classList.add('has-img');
-      uploader.querySelector('.uploader-icon').style.display = 'none';
-      uploader.querySelector('.uploader-label').style.display = 'none';
+      // Cacher icon et label
+      const icon = uploader.querySelector('.uploader-icon');
+      const lbl = uploader.querySelector('.uploader-label');
+      if (icon) icon.style.display = 'none';
+      if (lbl) lbl.style.display = 'none';
       // Auto-detect product type
       if (key === 'prod') detectProductType(file.name.toLowerCase());
     }
@@ -717,14 +721,20 @@ function handleUpload(e, key) {
 
 function removeImg(e, key) {
   e.stopPropagation();
+  e.preventDefault();
   state[key] = '';
   const uploader = document.getElementById(key + 'Uploader');
   if (uploader) {
     const img = uploader.querySelector('img.preview');
     if (img) img.remove();
     uploader.classList.remove('has-img');
-    uploader.querySelector('.uploader-icon').style.display = '';
-    uploader.querySelector('.uploader-label').style.display = '';
+    const icon = uploader.querySelector('.uploader-icon');
+    const lbl = uploader.querySelector('.uploader-label');
+    if (icon) icon.style.display = '';
+    if (lbl) lbl.style.display = '';
+    // Reset input
+    const input = uploader.querySelector('input[type=file]');
+    if (input) input.value = '';
   }
 }
 
