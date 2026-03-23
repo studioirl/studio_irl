@@ -8,1352 +8,932 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
 <style>
-  html, body, #root {
-    height: auto !important;
-    min-height: 100% !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    display: block !important;
-    background-color: #050505;
-  }
-  body { font-family: 'Inter', sans-serif; color: #ffffff; margin: 0; padding: 0; }
-
-  .glass { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
-  .accent-gradient { background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); }
-
-  .custom-dropdown {
-    background-color: #121212 !important;
-    color: white !important;
-    border: 1px solid #2a2a2a !important;
-    appearance: none;
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-    background-repeat: no-repeat;
-    background-position: right 1rem center;
-    background-size: 1em;
-    cursor: pointer;
-    transition: border-color 0.2s;
-  }
-  .custom-dropdown:hover { border-color: #4a4a4a !important; }
-  .custom-dropdown option { background-color: #121212 !important; color: white !important; }
-
-  .no-scrollbar::-webkit-scrollbar { display: none; }
-  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-  /* Uploader */
-  .uploader-zone {
-    position: relative; border: 2px dashed rgba(255,255,255,0.15);
-    border-radius: 12px; transition: all 0.2s; cursor: pointer; overflow: hidden;
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem;
-  }
-  .uploader-zone:hover { border-color: rgba(99,102,241,0.6); background: rgba(99,102,241,0.05); }
-  .uploader-zone.has-image { border-color: rgba(99,102,241,0.4); }
-  .uploader-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; z-index: 10; width: 100%; height: 100%; }
-  .uploader-zone img.preview { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 10px; }
-  .uploader-zone .upl-overlay {
-    position: absolute; inset: 0; background: rgba(0,0,0,0.5);
-    display: flex; align-items: center; justify-content: center;
-    opacity: 0; transition: opacity 0.2s; border-radius: 10px; z-index: 5;
-  }
-  .uploader-zone:hover .upl-overlay { opacity: 1; }
-
-  /* Toggle */
-  .toggle-wrap { position: relative; width: 40px; height: 20px; flex-shrink: 0; }
-  .toggle-wrap input { opacity: 0; width: 0; height: 0; position: absolute; }
-  .toggle-track {
-    position: absolute; inset: 0; background: rgba(255,255,255,0.1);
-    border-radius: 20px; cursor: pointer; transition: background 0.2s;
-  }
-  .toggle-track::before {
-    content: ''; position: absolute;
-    width: 16px; height: 16px; left: 2px; top: 2px;
-    background: white; border-radius: 50%; transition: transform 0.2s;
-  }
-  .toggle-wrap input:checked + .toggle-track { background: #6366f1; }
-  .toggle-wrap input:checked + .toggle-track::before { transform: translateX(20px); }
-
-  /* Specific toggle colors */
-  .toggle-cyan input:checked + .toggle-track { background: #06b6d4; box-shadow: 0 0 15px rgba(6,182,212,0.5); }
-  .toggle-green input:checked + .toggle-track { background: #16a34a; box-shadow: 0 0 15px rgba(22,163,74,0.5); }
-  .toggle-orange input:checked + .toggle-track { background: #ea580c; box-shadow: 0 0 15px rgba(234,88,12,0.5); }
-  .toggle-lime input:checked + .toggle-track { background: #65a30d; box-shadow: 0 0 15px rgba(101,163,13,0.5); }
-  .toggle-blue input:checked + .toggle-track { background: #2563eb; box-shadow: 0 0 15px rgba(37,99,235,0.5); }
-  .toggle-sky input:checked + .toggle-track { background: #0284c7; box-shadow: 0 0 15px rgba(2,132,199,0.5); }
-  .toggle-pink input:checked + .toggle-track { background: #db2777; box-shadow: 0 0 15px rgba(219,39,119,0.5); }
-  .toggle-indigo input:checked + .toggle-track { background: #6366f1; box-shadow: 0 0 15px rgba(99,102,241,0.5); }
-  .toggle-red input:checked + .toggle-track { background: #dc2626; box-shadow: 0 0 20px rgba(220,38,38,0.5); }
-
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .spin { animation: spin 1s linear infinite; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
-  .pulse { animation: pulse 2s ease-in-out infinite; }
-  @keyframes bounce { 0%,100%{transform:translateY(-5%)} 50%{transform:translateY(0)} }
-  .bounce { animation: bounce 1s ease-in-out infinite; }
-
-  textarea, input[type="text"], input[type="number"] {
-    background: rgba(0,0,0,0.4);
-    border: 1px solid rgba(255,255,255,0.1);
-    color: white;
-    font-family: 'Inter', sans-serif;
-    outline: none;
-  }
-  textarea:focus, input:focus { border-color: rgba(99,102,241,0.5); }
-  input::placeholder, textarea::placeholder { color: rgba(255,255,255,0.2); }
+html,body{height:auto!important;min-height:100%!important;overflow-y:auto!important;overflow-x:hidden!important;display:block!important;background-color:#050505}
+body{font-family:'Inter',sans-serif;color:#fff;margin:0;padding:0}
+.glass{background:rgba(255,255,255,0.05);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.1)}
+.ag{background:linear-gradient(135deg,#6366f1 0%,#a855f7 100%)}
+.dd{background-color:#121212!important;color:#fff!important;border:1px solid #2a2a2a!important;appearance:none;background-image:url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");background-repeat:no-repeat;background-position:right 1rem center;background-size:1em;cursor:pointer;width:100%;padding:.5rem 2.5rem .5rem .75rem;border-radius:.5rem;font-size:.875rem}
+.dd option{background-color:#121212!important;color:#fff!important}
+.noscroll::-webkit-scrollbar{display:none}.noscroll{-ms-overflow-style:none;scrollbar-width:none}
+.uz{position:relative;border:2px dashed rgba(255,255,255,0.15);border-radius:12px;transition:all .2s;cursor:pointer;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5rem}
+.uz:hover{border-color:rgba(99,102,241,0.6);background:rgba(99,102,241,0.05)}
+.uz.hi{border-color:rgba(99,102,241,0.4)}
+.uz input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;z-index:10;width:100%;height:100%}
+.uz img.pv{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:10px}
+.uz .ov{position:absolute;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;border-radius:10px;z-index:5}
+.uz:hover .ov{opacity:1}
+.tw{position:relative;width:40px;height:20px;flex-shrink:0}
+.tw input{opacity:0;width:0;height:0;position:absolute}
+.tt{position:absolute;inset:0;background:rgba(255,255,255,0.1);border-radius:20px;cursor:pointer;transition:background .2s}
+.tt::before{content:'';position:absolute;width:16px;height:16px;left:2px;top:2px;background:white;border-radius:50%;transition:transform .2s}
+.tw input:checked+.tt{background:#6366f1}
+.tw input:checked+.tt::before{transform:translateX(20px)}
+.tc input:checked+.tt{background:#06b6d4;box-shadow:0 0 15px rgba(6,182,212,0.5)}
+.tg input:checked+.tt{background:#16a34a;box-shadow:0 0 15px rgba(22,163,74,0.5)}
+.to input:checked+.tt{background:#ea580c;box-shadow:0 0 15px rgba(234,88,12,0.5)}
+.tl input:checked+.tt{background:#65a30d;box-shadow:0 0 15px rgba(101,163,13,0.5)}
+.tb input:checked+.tt{background:#2563eb;box-shadow:0 0 15px rgba(37,99,235,0.5)}
+.ts input:checked+.tt{background:#0284c7;box-shadow:0 0 15px rgba(2,132,199,0.5)}
+.tp input:checked+.tt{background:#db2777;box-shadow:0 0 15px rgba(219,39,119,0.5)}
+.ti input:checked+.tt{background:#6366f1;box-shadow:0 0 15px rgba(99,102,241,0.5)}
+.tr input:checked+.tt{background:#dc2626;box-shadow:0 0 20px rgba(220,38,38,0.5)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{animation:spin 1s linear infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.pulse{animation:pulse 2s ease-in-out infinite}
+@keyframes bounce{0%,100%{transform:translateY(-5%)}50%{transform:translateY(0)}}
+.bounce{animation:bounce 1s ease-in-out infinite}
+textarea,input[type=text],input[type=number],input[type=password]{background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.1);color:white;font-family:'Inter',sans-serif;outline:none}
+textarea:focus,input:focus{border-color:rgba(99,102,241,0.5)!important}
+input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.2)}
 </style>
 </head>
 <body>
 <div id="app"></div>
-
 <script>
-// ═══════════════════════════════════════════════════════
-// STATE
-// ═══════════════════════════════════════════════════════
-const S = {
-  screen: 'login', // login | idle | config | main
-  mode: null, // SOLO | FAMILY
-  apiKey: '',
-  loginError: null,
-
-  // DNA
-  mainAvatar: null,
-  partner: null,
-  partnerEnabled: false,
-  childCount: 0,
-  children: [],
-  isBabyPresent: false,
-  babyAgeMonths: 6,
-  babyRef: null,
-  guestCount: 0,
-  guests: [],
-
-  // Room
-  roomType: null,
-  roomSubtype: null,
-  roomLabel: '',
-  roomImage: null,
-  selectedCategory: 'pieces_principales',
-
-  // Params
-  action: '',
-  cameraAngle: 'face',
-  aspectRatio: '9:16',
-  season: 'spring',
-  weather: 'sunny',
-  dayMoment: 'matin',
-  energy: 'calm',
-  freeText: '',
-
-  // Modes
-  phoneModeEnabled: false,
-  waCallType: 'video',
-  waContact: 'conjoint',
-  waAngle: 'over_shoulder',
-  waPhoto: null,
-
-  cleaningModeEnabled: false,
-  cleaningToolImage: null,
-
-  babyCarrierEnabled: false,
-  babyCarrierImage: null,
-  babyCarrierBabyRef: null,
-
-  tondeuseModeEnabled: false,
-  tondeuseImage: null,
-
-  strollerModeEnabled: false,
-  strollerImage: null,
-  strollerBabyRef: null,
-  strollerAddress: '',
-  strollerStore: '',
-
-  mirrorPresent: false,
-  dressingModeEnabled: false,
-  dressingOutfits: [],
-  fireplaceEnabled: false,
-  interphoneModeEnabled: false,
-  interphoneStep: 1,
-  interphonePortalImage: null,
-  interphonePortalOpenImage: null,
-  interphoneVisitorImage: null,
-  interphoneInteriorImage: null,
-
-  bbqModeEnabled: false,
-  bbqFuel: 'electrique',
-  bbqCookItem: 'saucisses',
-  bbqPhoto: null,
-  cleaningToolImage: null,
-
-  chaosEmotionAdult: '',
-  chaosEmotionChild: '',
-  chaosEmotionBaby: '',
-
-  // Result
-  loading: false,
-  loadingStep: '',
-  resultImage: null,
-  error: null,
+// ═══ STATE ═══
+var S = {
+  screen:'login', mode:null, apiKey:'', loginError:null,
+  mainAvatar:null, partner:null, partnerEnabled:false,
+  childCount:0, children:[], isBabyPresent:false, babyAgeMonths:6, babyRef:null,
+  guestCount:0, guests:[],
+  roomType:null, roomSubtype:null, roomLabel:'', roomImage:null,
+  selectedCategory:'pieces_principales',
+  action:'', cameraAngle:'face', aspectRatio:'9:16',
+  season:'spring', weather:'sunny', dayMoment:'matin', energy:'calm', freeText:'',
+  phoneModeEnabled:false, waCallType:'video', waContact:'conjoint', waAngle:'over_shoulder', waPhoto:null,
+  cleaningModeEnabled:false, cleaningToolImage:null,
+  babyCarrierEnabled:false, babyCarrierImage:null, babyCarrierBabyRef:null,
+  tondeuseModeEnabled:false, tondeuseImage:null,
+  strollerModeEnabled:false, strollerImage:null, strollerBabyRef:null, strollerAddress:'', strollerStore:'',
+  mirrorPresent:false, dressingModeEnabled:false, dressingOutfits:[],
+  fireplaceEnabled:false,
+  interphoneModeEnabled:false, interphoneStep:1,
+  interphonePortalImage:null, interphonePortalOpenImage:null,
+  interphoneVisitorImage:null, interphoneInteriorImage:null,
+  bbqModeEnabled:false, bbqFuel:'electrique', bbqCookItem:'saucisses', bbqPhoto:null,
+  chaosEmotionAdult:'', chaosEmotionChild:'', chaosEmotionBaby:'',
+  resultImage:null, loading:false, loadingStep:'', error:null
 };
 
-// ═══════════════════════════════════════════════════════
-// DATA
-// ═══════════════════════════════════════════════════════
-const LIFE_AREAS = {
-  pieces_principales: [
-    {key:'salon',label:'Salon',icon:'🛋️'},
-    {key:'cuisine',label:'Cuisine',icon:'🍳'},
-    {key:'salle_a_manger',label:'Salle à manger',icon:'🍽️'},
-    {key:'entree',label:'Entrée',icon:'🚪'},
-    {key:'escaliers',label:'Escaliers',icon:'🪜'},
-    {key:'bureau',label:'Bureau',icon:'💻'},
+// ═══ DATA ═══
+var LIFE_AREAS = {
+  pieces_principales:[
+    {key:'salon',label:'Salon',icon:'🛋️'},{key:'cuisine',label:'Cuisine',icon:'🍳'},
+    {key:'salle_a_manger',label:'Salle à manger',icon:'🍽️'},{key:'entree',label:'Entrée',icon:'🚪'},
+    {key:'escaliers',label:'Escaliers',icon:'🪜'},{key:'bureau',label:'Bureau',icon:'💻'}
   ],
-  chambres: [
-    {key:'chambre',label:'Chambre',icon:'🛏️'},
+  chambres:[{key:'chambre',label:'Chambre',icon:'🛏️'}],
+  salles_de_bain:[{key:'salle_de_bain',label:'Salle de bain',icon:'🛁'},{key:'toilettes',label:'Toilettes',icon:'🚽'}],
+  pieces_fonctionnelles:[
+    {key:'salle_de_jeu',label:'Salle de jeu',icon:'🧸'},{key:'salle_de_sport',label:'Salle de sport',icon:'🏋️'},
+    {key:'dressing',label:'Dressing',icon:'👗'},{key:'buanderie',label:'Buanderie',icon:'🧺'},
+    {key:'cellier_nourriture',label:'Cellier',icon:'🥫'},{key:'cave_vin',label:'Cave à vin',icon:'🍷'},
+    {key:'atelier_bricolage',label:'Atelier',icon:'🛠️'},{key:'garage_voiture',label:'Garage',icon:'🚗'},
+    {key:'ascenseur',label:'Ascenseur',icon:'🛗'}
   ],
-  salles_de_bain: [
-    {key:'salle_de_bain',label:'Salle de bain',icon:'🛁'},
-    {key:'toilettes',label:'Toilettes',icon:'🚽'},
+  espaces_exterieurs:[
+    {key:'jardin',label:'Jardin',icon:'🌿'},{key:'terrace',label:'Terrasse',icon:'⛱️'},
+    {key:'balcon',label:'Balcon',icon:'🏙️'},{key:'piscine',label:'Piscine',icon:'🏊'},
+    {key:'jacuzzi',label:'Jacuzzi',icon:'🫧'},{key:'exterior_villa',label:'Extérieur Villa',icon:'🏠'}
   ],
-  pieces_fonctionnelles: [
-    {key:'salle_de_jeu',label:'Salle de jeu',icon:'🧸'},
-    {key:'salle_de_sport',label:'Salle de sport',icon:'🏋️'},
-    {key:'dressing',label:'Dressing',icon:'👗'},
-    {key:'buanderie',label:'Buanderie',icon:'🧺'},
-    {key:'cellier_nourriture',label:'Cellier',icon:'🥫'},
-    {key:'cave_vin',label:'Cave à vin',icon:'🍷'},
-    {key:'atelier_bricolage',label:'Atelier',icon:'🛠️'},
-    {key:'garage_voiture',label:'Garage',icon:'🚗'},
-    {key:'ascenseur',label:'Ascenseur',icon:'🛗'},
-  ],
-  espaces_exterieurs: [
-    {key:'jardin',label:'Jardin',icon:'🌿'},
-    {key:'terrace',label:'Terrasse',icon:'⛱️'},
-    {key:'balcon',label:'Balcon',icon:'🏙️'},
-    {key:'piscine',label:'Piscine',icon:'🏊'},
-    {key:'jacuzzi',label:'Jacuzzi',icon:'🫧'},
-    {key:'exterior_villa',label:'Extérieur Villa',icon:'🏠'},
-  ],
-  environnements_mobiles: [
-    {key:'environnements_mobiles',label:'Poussette',icon:'🛒'},
+  environnements_mobiles:[{key:'environnements_mobiles',label:'Poussette',icon:'🛒'}]
+};
+
+var CAT_LABELS = {
+  pieces_principales:'Pièces Principales', chambres:'Chambres',
+  salles_de_bain:'Salles de Bain', pieces_fonctionnelles:'Fonctionnelles',
+  espaces_exterieurs:'Extérieurs', environnements_mobiles:'Mobiles'
+};
+
+var CAMERA_ANGLES = [
+  {key:'face',label:'Face'},{key:'profil',label:'Profil'},
+  {key:'trois_quarts',label:'Trois quarts'},{key:'plongee_legere',label:'Plongée légère'},
+  {key:'contre_plongee_legere',label:'Contre-plongée'},{key:'immersive_organique',label:'Moment capturé'},
+  {key:'pov_mains',label:'POV mains'},{key:'par_dessus_epaule',label:'Par-dessus l\'épaule'}
+];
+
+var SEASON_LIST = [{key:'spring',label:'Printemps'},{key:'summer',label:'Été'},{key:'autumn',label:'Automne'},{key:'winter',label:'Hiver'}];
+var WEATHER_LIST = [{key:'sunny',label:'Ensoleillé'},{key:'cloudy',label:'Nuageux'},{key:'rain',label:'Pluie'},{key:'storm',label:'Orage'},{key:'snow',label:'Neige'},{key:'fog',label:'Brouillard'}];
+var DAY_MOMENTS = ['aube','matin','midi','debut_apres_midi','apres_midi','fin_journee','soiree','nuit'];
+var WA_CONTACTS = ['conjoint','mere','pere','soeur','frere','grands_parents','ami','amie','travail'];
+var WA_ANGLES = [{key:'over_shoulder',label:'Over Shoulder'},{key:'hand_soft_low_angle',label:'Contre-plongée main'},{key:'tight_side',label:'Plan latéral serré'}];
+var BBQ_ROOMS = ['jardin','balcon'];
+var MIRROR_ROOMS = ['salle_de_bain','chambre','dressing','salon','salle_de_sport','ascenseur'];
+var BBQ_ITEMS = ['saucisses','chipolatas','viande rouge','brochettes','poisson','légumes','pommes de terre','ailes de poulet'];
+var CHAOS_ADULT = ['fatigue','épuisement','frustration','agacement','surcharge mentale','stress','lassitude','résignation'];
+var CHAOS_CHILD = ['excitation','amusement','agitation','frustration','colère','pleurs','énervement','euphorie'];
+var CHAOS_BABY = ['pleurs','agitation','inconfort','fatigue','besoin de réconfort','surstimulation'];
+
+var MODE_MENAGE = {
+  allowed:["salon","cuisine","bureau","chambre","salle_de_bain","toilettes","cellier_nourriture","buanderie"],
+  forbidden:["jardin","terrace","garage_voiture","atelier_bricolage"],
+  actions:[
+    {label:"passer_l_aspirateur",tool:true,toolType:"aspirateur manuel"},
+    {label:"lancer_aspirateur_robot",tool:true,toolType:"aspirateur robot"},
+    {label:"nettoyer_les_vitres",tool:true,toolType:"spray vitres + chiffon microfibre"},
+    {label:"laver_le_sol",tool:true,toolType:"seau + serpillère + produit sol"},
+    {label:"nettoyer_le_canape",tool:true,toolType:"aspirateur à main"},
+    {label:"faire_la_poussiere",tool:false},
+    {label:"ouvrir_les_fenetres_pour_aerer",tool:false},
+    {label:"nettoyer_poignees_de_porte",tool:false},
+    {label:"nettoyer_les_interrupteurs",tool:false},
+    {label:"ranger_rapidement_les_surfaces",tool:false},
+    {label:"ramasser_les_objets_au_sol",tool:false},
+    {label:"desinfecter_surface",tool:false},
+    {label:"sortir_les_poubelles",tool:false}
   ]
 };
 
-const CATEGORY_LABELS = {
-  pieces_principales: 'Pièces Principales',
-  chambres: 'Chambres',
-  salles_de_bain: 'Salles de Bain',
-  pieces_fonctionnelles: 'Fonctionnelles',
-  espaces_exterieurs: 'Extérieurs',
-  environnements_mobiles: 'Mobiles'
-};
-
-const CAMERA_ANGLES = [
-  {key:'face',label:'Face'},
-  {key:'profil',label:'Profil'},
-  {key:'trois_quarts',label:'Trois quarts'},
-  {key:'plongee_legere',label:'Plongée légère'},
-  {key:'contre_plongee_legere',label:'Contre-plongée légère'},
-  {key:'immersive_organique',label:'Moment capturé'},
-  {key:'pov_mains',label:'POV mains'},
-  {key:'par_dessus_epaule',label:'Par-dessus l\'épaule'},
-];
-
-const WHATSAPP_CONTACTS = ['conjoint','mere','pere','soeur','frere','grands_parents','cousin','cousine','ami','amie','travail','urgences'];
-const WHATSAPP_ANGLES = [{key:'over_shoulder',label:'Over Shoulder'},{key:'hand_soft_low_angle',label:'Contre-plongée main'},{key:'tight_side',label:'Plan latéral serré'}];
-
-const CHAOS_ADULT = ['fatigue','épuisement','frustration','agacement','surcharge mentale','stress','lassitude','résignation','débordement émotionnel'];
-const CHAOS_CHILD = ['excitation','amusement','agitation','frustration','colère','pleurs','énervement','euphorie'];
-const CHAOS_BABY = ['pleurs','agitation','inconfort','fatigue','besoin de réconfort','surstimulation'];
-
-const SEASON_LIST = [{key:'spring',label:'Printemps'},{key:'summer',label:'Été'},{key:'autumn',label:'Automne'},{key:'winter',label:'Hiver'}];
-const WEATHER_LIST = [{key:'sunny',label:'Ensoleillé'},{key:'cloudy',label:'Nuageux'},{key:'rain',label:'Pluie'},{key:'shower',label:'Averses'},{key:'storm',label:'Orage'},{key:'fog',label:'Brouillard'},{key:'snow',label:'Neige'}];
-const DAY_MOMENTS = ['aube','matin','midi','debut_apres_midi','apres_midi','fin_journee','soiree','nuit'];
-
-const BBQ_ROOMS = ['jardin','balcon'];
-const MIRROR_ROOMS = ['salle_de_bain','chambre','dressing','salon','salle_de_sport','ascenseur'];
-
-const ACTIONS = {
-  salon: ["Se détendre sur le canapé","Regarder un film en famille","Enfants jouent au sol (LEGO/voitures)","Discuter calmement (couple)","Faire un puzzle sur la table basse","Dîner plateau-télé","Salon en désordre (jouets partout)","SOIGNER LE BOBO (Phase Soin - Salon)","pleurer","bouder","Passer un appel vidéo WhatsApp","Passer un appel audio WhatsApp"],
-  cuisine: ["Cuisiner un bon petit plat maison","Laver les légumes frais","Ranger les courses dans les placards","Préparer un gâteau au chocolat","Faire la vaisselle en discutant","Préparer le café","Boire un café","Préparer le thé","Prendre le petit déjeuner ensemble","Cuisiner avec les enfants","Passer un appel vidéo WhatsApp","Passer un appel audio WhatsApp"],
-  salle_a_manger: ["Mettre la table","Manger tous ensemble (Repas vivant)","Discuter joyeusement à table","Aider un enfant à couper sa viande","Débarrasser la table","Nettoyer la table à l'éponge","Prendre le petit déjeuner ensemble","Passer un appel vidéo WhatsApp","Passer un appel audio WhatsApp"],
-  entree: ["Rentrer à la maison (Ouverture porte)","Refermer la porte derrière soi","Enlever ses chaussures dans l'entrée","Enlever son manteau","Poser ses clés sur le vide-poche","Ranger les chaussures","Enfant qui enlève ses chaussures seul","CHAUSSURES JETÉES AU SOL (CHAOS)","MANTEAUX PAR TERRE (CHAOS)","Rentrer de l'école avec son cartable","Quitter la maison (Départ)","Passer un appel vidéo WhatsApp"],
-  escaliers: ["Monter les escaliers","Descendre les escaliers","Porter l'enfant pour monter","Porter l'enfant endormi","Enfants qui courent dans les escaliers","Monter avec le panier de linge","CHUTE DANS L'ESCALIER (CHAOS)","Passer un appel vidéo WhatsApp"],
-  bureau: ["Taper sur l'ordinateur","Écrire un email","Recherche Google","Travailler sur un document","Travailler sur un tableur","Designer sur Canva","Faire sa To-Do list","Journaliser","Faire une pause café","Scroller téléphone","Lire un livre","Passer un appel vidéo WhatsApp","Passer un appel audio WhatsApp"],
-  chambre: ["Se coucher","Se réveiller","S'enlacer","Se faire un bisou","Sortir du lit","Ouvrir les rideaux","Scroller sur téléphone","S'habiller","Ranger le lit","Prendre le petit déjeuner au lit","Jouer dans la chambre","Jouer LEGO","Pleurer","Câliner doudou","Ranger jouets","Bouder","Faire devoirs","Passer un appel vidéo WhatsApp"],
-  salle_de_bain: ["Se brosser les dents devant le miroir","Se coiffer (vérification miroir)","Appliquer une crème visage","Prendre une douche relaxante","Bain moussant (enfant)","Aider un enfant dans le bain","Selfie miroir","Passer un appel vidéo WhatsApp"],
-  toilettes: ["Nettoyer cuvette toilettes","Nettoyer lavabo toilettes","Changer rouleau papier toilette","Enfants déroulent papier toilette","Papier toilette partout au sol (CHAOS)"],
-  salle_de_jeu: ["Construire une tour géante en LEGO","Dessiner sur le tableau","Jouer à la marchande","Ranger les peluches","Lire un album illustré au sol","Jouer voitures","Jouer poupées","Jouer dinette","Vider bac jouets","Passer un appel vidéo WhatsApp"],
-  salle_de_sport: ["Faire des pompes","Faire des squats","Exercices abdos","Gainage au sol","Sauter à la corde","Mountain climbers","Exercices pilates face miroir","Selfie miroir sport","Boire gourde","S'étirer après l'effort","Passer un appel vidéo WhatsApp"],
-  dressing: ["Ranger les vêtements","Choisir sa tenue","Essayer des vêtements devant le miroir","Hésiter entre deux tenues","Faire le tri des vêtements","Plier les vêtements","Tenir deux vêtements et hésiter","Passer un appel vidéo WhatsApp"],
-  buanderie: ["Trier le linge par couleur","Lancer une machine de blanc","Plier les vêtements propres","Repasser les chemises","Étendre le linge","Remplir machine à laver","Vider machine à laver","Transférer linge vers sèche-linge"],
-  cellier_nourriture: ["Ranger les courses","Remplir bocaux produits secs","Aligner bocaux sur étagère","Vérifier niveau bocaux","Prendre ingrédients pour cuisiner","Nettoyer étagère cellier"],
-  cave_vin: ["Choisir une bonne bouteille de vin rouge","Choisir une bouteille de champagne","Organiser les casiers à bouteilles","Déboucher bouteille de vin","Observer couleur du vin","Ranger bouteilles"],
-  atelier_bricolage: ["Bricoler sur l'établi","Réparer un objet cassé","Utiliser tournevis","Utiliser marteau","Poncer pièce en bois","Nettoyer établi","Ranger outils au mur"],
-  garage_voiture: ["Installer nourrisson dans siège coque","Installer enfant en siège auto","Attacher ceinture sécurité enfant","Parent au volant regardant ses enfants","Voiture en mouvement","Fermer les portières avant le départ","Passer un appel vidéo WhatsApp"],
-  ascenseur: ["Attendre l'ascenseur","Entrer dans l'ascenseur","Appuyer sur un bouton d'étage","Selfie miroir dans l'ascenseur","Regarder son téléphone","Ascenseur avec poussette et enfants","Passer un appel vidéo WhatsApp"],
-  jardin: ["Entretenir le jardin","Jouer avec les enfants dans l'herbe","Tondre la pelouse","Arroser les plantes","Enfants courent dans le jardin","Enfants balançoire","Faire barbecue jardin","Se rouler dans l'herbe","Marcher pieds nus dans l'herbe","Passer un appel vidéo WhatsApp"],
-  terrace: ["Se détendre sur la terrasse","Prendre l'apéritif en extérieur","Lire au soleil sur un transat","Enfants jouent sur terrasse","Faire barbecue terrasse","Observer coucher de soleil","Passer un appel vidéo WhatsApp"],
-  balcon: ["S'appuyer à la rambarde","Regarder le paysage","Prendre l'air","Boire un café","Boire un thé","Profiter du soleil","Regarder le coucher de soleil","Scroller sur téléphone","Passer un appel vidéo WhatsApp"],
-  piscine: ["Sauter dans l'eau","Flotter sur le dos en étoile","Nager la brasse","Debout dans la piscine","Éclabousser dans l'eau","Assis au bord, pieds dans l'eau","Flotter sur une bouée","Passer un appel vidéo WhatsApp"],
-  jacuzzi: ["Entrer dans le jacuzzi","Être assis dans l'eau chaude","Bulles en fonctionnement","Sortir du jacuzzi","S'enrouler dans la serviette","Moment de couple dans le jacuzzi","Moment en famille dans le jacuzzi","Passer un appel vidéo WhatsApp"],
-  exterior_villa: ["Marcher vers la maison","Retour de balade","Tenir la main d'un enfant","Chercher ses clés devant la porte","Vérifier la boîte aux lettres","Voiture arrêtée devant le portail","Passer un appel vidéo WhatsApp"],
-  environnements_mobiles: ["ACTION_POUSSETTE_SORTIR_MAISON","ACTION_POUSSETTE_DEVANT_PORTAIL","ACTION_POUSSETTE_BALADER_RUE","ACTION_POUSSETTE_FAIRE_SHOPPING","ACTION_POUSSETTE_FAIRE_COURSES","ACTION_POUSSETTE_ALLER_PARC_ENFANTS","ACTION_POUSSETTE_ALLER_CRECHE"],
-};
-
-const BBQ_ITEMS = ['saucisses','chipolatas','viande rouge','brochettes','poisson','légumes','pommes de terre','maïs','ailes de poulet'];
-const STORES = ['Carrefour','Super U','Leclerc','Lidl','Intermarché','Aldi'];
-
-// ═══════════════════════════════════════════════════════
-// RENDER ENGINE
-// ═══════════════════════════════════════════════════════
-function render() {
-  const app = document.getElementById('app');
-  try {
-    if (S.screen === 'login') app.innerHTML = renderLogin();
-    else if (S.screen === 'idle') app.innerHTML = renderIdle();
-    else if (S.screen === 'config') app.innerHTML = renderConfig();
-    else app.innerHTML = renderMain();
-  } catch(e) {
-    app.innerHTML = `<div style="color:red;padding:2rem;font-family:monospace;background:#111;min-height:100vh">
-      <h2>ERREUR RENDER</h2>
-      <p>Screen: ${S.screen}</p>
-      <pre style="white-space:pre-wrap;font-size:12px">${e.message}\n${e.stack}</pre>
-    </div>`;
-    console.error('Render error:', e);
+function getMenageTool(action) {
+  for(var i=0;i<MODE_MENAGE.actions.length;i++){
+    if(MODE_MENAGE.actions[i].label===action && MODE_MENAGE.actions[i].tool){
+      return MODE_MENAGE.actions[i].toolType;
+    }
   }
-  attachEvents();
+  return null;
 }
 
-// ═══ LOGIN SCREEN ═══
+var ACTIONS = {
+  salon:["Se détendre sur le canapé","Regarder un film en famille","Enfants jouent au sol (LEGO/voitures)","Discuter calmement (couple)","Faire un puzzle sur la table basse","Dîner plateau-télé","Salon en désordre (jouets partout)","SOIGNER LE BOBO (Phase Soin)","pleurer","bouder","Passer un appel vidéo WhatsApp","Passer un appel audio WhatsApp"],
+  cuisine:["Cuisiner un bon petit plat maison","Laver les légumes frais","Ranger les courses dans les placards","Préparer un gâteau au chocolat","Faire la vaisselle en discutant","Préparer le café","Boire un café","Préparer le thé","Prendre le petit déjeuner ensemble","Cuisiner avec les enfants","Passer un appel vidéo WhatsApp"],
+  salle_a_manger:["Mettre la table","Manger tous ensemble (Repas vivant)","Discuter joyeusement à table","Aider un enfant à couper sa viande","Débarrasser la table","Nettoyer la table à l'éponge","Passer un appel vidéo WhatsApp"],
+  entree:["Rentrer à la maison","Enlever ses chaussures","Enlever son manteau","Poser ses clés","Ranger les chaussures","CHAUSSURES JETÉES AU SOL (CHAOS)","Rentrer de l'école","Quitter la maison (Départ)","Passer un appel vidéo WhatsApp"],
+  escaliers:["Monter les escaliers","Descendre les escaliers","Porter l'enfant pour monter","Porter l'enfant endormi","Enfants qui courent dans les escaliers","CHUTE DANS L'ESCALIER (CHAOS)","Passer un appel vidéo WhatsApp"],
+  bureau:["Taper sur l'ordinateur","Écrire un email","Recherche Google","Travailler sur un document","Travailler sur un tableur","Designer sur Canva","Monter une vidéo","Planifier du contenu","Consulter les analytics","Gérer les factures","Suivre une formation","Répondre aux messages (DMs)","Faire des achats en ligne","Trier les photos de famille","Écrire dans un carnet","Brainstormer avec des Post-its","Faire sa To-Do list","Journaliser","Signer des documents","Ouvrir le courrier","Organiser des dossiers","Ranger le bureau","Faire une pause café","Scroller téléphone","Lire un livre","Passer un appel vidéo WhatsApp","Passer un appel audio WhatsApp"],
+  chambre:["Se coucher","Se réveiller","S'enlacer","Se faire un bisou","Sortir du lit","Ouvrir les rideaux","Scroller sur téléphone","S'habiller","Ranger le lit","Prendre le petit déjeuner au lit","Jouer dans la chambre","Jouer LEGO","Pleurer","Câliner doudou","Ranger jouets","Bouder","Faire devoirs","Passer un appel vidéo WhatsApp"],
+  salle_de_bain:["Se brosser les dents devant le miroir","Se coiffer (vérification miroir)","Appliquer une crème visage","Prendre une douche relaxante","Bain moussant (enfant)","Aider un enfant dans le bain","Selfie miroir","Passer un appel vidéo WhatsApp"],
+  toilettes:["Nettoyer cuvette toilettes","Nettoyer lavabo toilettes","Changer rouleau papier toilette","Enfants déroulent papier toilette","Papier toilette partout au sol (CHAOS)"],
+  salle_de_jeu:["Construire une tour géante en LEGO","Dessiner sur le tableau","Jouer à la marchande","Ranger les peluches","Lire un album illustré au sol","Jouer voitures","Jouer poupées","Jouer dinette","Vider bac jouets","Passer un appel vidéo WhatsApp"],
+  salle_de_sport:["Faire des pompes","Faire des squats","Exercices abdos","Gainage au sol","Sauter à la corde","Mountain climbers","Exercices pilates face miroir","Selfie miroir sport","Boire gourde","S'étirer après l'effort","Passer un appel vidéo WhatsApp"],
+  dressing:["Ranger les vêtements","Choisir sa tenue","Essayer des vêtements devant le miroir","Essayer un haut devant le miroir","Essayer un pantalon devant le miroir","Hésiter entre deux tenues","Faire le tri des vêtements","Plier les vêtements","Tenir deux vêtements et hésiter","Passer un appel vidéo WhatsApp"],
+  buanderie:["Trier le linge par couleur","Lancer une machine de blanc","Plier les vêtements propres","Repasser les chemises","Étendre le linge","Remplir machine à laver","Vider machine à laver","Transférer linge vers sèche-linge"],
+  cellier_nourriture:["Ranger les courses","Remplir bocaux produits secs","Aligner bocaux sur étagère","Vérifier niveau bocaux","Prendre ingrédients pour cuisiner","Nettoyer étagère cellier"],
+  cave_vin:["Choisir une bonne bouteille de vin rouge","Choisir une bouteille de champagne","Organiser les casiers","Déboucher bouteille de vin","Observer couleur du vin"],
+  atelier_bricolage:["Bricoler sur l'établi","Réparer un objet cassé","Utiliser tournevis","Utiliser marteau","Poncer pièce en bois","Nettoyer établi","Ranger outils au mur"],
+  garage_voiture:["Installer enfant en siège auto","Attacher ceinture sécurité enfant","Parent au volant","Voiture en mouvement","Fermer les portières","Passer un appel vidéo WhatsApp"],
+  ascenseur:["Attendre l'ascenseur","Entrer dans l'ascenseur","Appuyer sur un bouton","Selfie miroir dans l'ascenseur","Regarder son téléphone","Passer un appel vidéo WhatsApp"],
+  jardin:["Entretenir le jardin","Jouer avec les enfants dans l'herbe","Tondre la pelouse","Arroser les plantes","Enfants courent dans le jardin","Enfants balançoire","Faire barbecue jardin","Se rouler dans l'herbe","Marcher pieds nus dans l'herbe","Passer un appel vidéo WhatsApp"],
+  terrace:["Se détendre sur la terrasse","Prendre l'apéritif en extérieur","Lire au soleil sur un transat","Enfants jouent sur terrasse","Faire barbecue terrasse","Observer coucher de soleil","Passer un appel vidéo WhatsApp"],
+  balcon:["S'appuyer à la rambarde","Regarder le paysage","Prendre l'air","Boire un café","Boire un thé","Profiter du soleil","Observer coucher de soleil","Scroller sur téléphone","Passer un appel vidéo WhatsApp"],
+  piscine:["Sauter dans l'eau","Flotter sur le dos en étoile","Nager la brasse","Debout dans la piscine","Éclabousser dans l'eau","Assis au bord pieds dans l'eau","Flotter sur une bouée","Passer un appel vidéo WhatsApp"],
+  jacuzzi:["Entrer dans le jacuzzi","Être assis dans l'eau chaude","Bulles en fonctionnement","Sortir du jacuzzi","S'enrouler dans la serviette","Moment de couple dans le jacuzzi","Moment en famille dans le jacuzzi","Passer un appel vidéo WhatsApp"],
+  exterior_villa:["Marcher vers la maison","Retour de balade","Tenir la main d'un enfant","Chercher ses clés","Vérifier la boîte aux lettres","Voiture arrêtée devant le portail","Passer un appel vidéo WhatsApp"],
+  environnements_mobiles:["ACTION_POUSSETTE_SORTIR_MAISON","ACTION_POUSSETTE_DEVANT_PORTAIL","ACTION_POUSSETTE_BALADER_RUE","ACTION_POUSSETTE_FAIRE_SHOPPING","ACTION_POUSSETTE_FAIRE_COURSES","ACTION_POUSSETTE_ALLER_PARC_ENFANTS","ACTION_POUSSETTE_ALLER_CRECHE"]
+};
+
+var CUISINE_PLAN = ["Découper des légumes sur le plan de travail","Éplucher des légumes","Rincer légumes dans l'évier","Couper des oignons","Couper des carottes","Goûter le plat en cours","Rectifier l'assaisonnement","Cuisiner avec les enfants","Aider l'enfant à couper les légumes","Cuisiner avec le conjoint","Nettoyer le plan de travail","Assaisonner la viande","Aiguiser un couteau","Éplucher des pommes de terre","Râper des carottes","Préparer une vinaigrette","Essorer la salade"];
+var CUISINE_PLAQUES = ["Allumer les plaques de cuisson","Poser casserole sur plaque","Faire bouillir l'eau","Ajouter sel dans l'eau","Cuire le riz","Cuire les pâtes","Remuer casserole en cuisson","Préparer un plat en sauce","Laisser mijoter le plat","Goûter la sauce en cuisson","Préparer la soupe","Mixer la soupe","Faire fondre le beurre","Cuire des steaks","Mijoter une sauce"];
+var CUISINE_TABLE = ["Prendre le petit-déjeuner","Manger ensemble à table","Discuter à table","Aider un enfant à couper sa viande","Débarrasser la table"];
+var MIRROR_ACTIONS = ["SELFIE_MIROIR_TROIS_QUARTS","SELFIE_MIROIR_DUCK_FACE","SELFIE_MIROIR_GRIMACE_FUN","SELFIE_MIROIR_PIEDS_A_TETE","SELFIE_MIROIR_CLASSIQUE"];
+var STROLLER_ACTIONS = ["ACTION_POUSSETTE_SORTIR_MAISON","ACTION_POUSSETTE_DEVANT_PORTAIL","ACTION_POUSSETTE_BALADER_RUE","ACTION_POUSSETTE_FAIRE_SHOPPING","ACTION_POUSSETTE_FAIRE_COURSES","ACTION_POUSSETTE_ALLER_PARC_ENFANTS","ACTION_POUSSETTE_ALLER_CRECHE"];
+var PORTAGE_ACTIONS = ["Porter bébé en peau à peau","Porter bébé face à soi","Porter bébé sur le dos","Porter bébé sur la hanche","Se déplacer avec bébé en portage","Donner le biberon en portage","Cuisiner avec bébé en portage","Faire les courses avec bébé en portage"];
+var INTERPHONE_ACTIONS = ["visiteur_sonne_portail_exterieur","interphone_voir_visiteur_interieur","visiteur_entre_portail_ouvert"];
+var BBQ_ACTIONS = ["Allumer le barbecue","Attendre les braises","Faire griller des saucisses","Faire griller des chipolatas","Faire griller de la viande rouge","Faire griller un steak haché","Faire griller des ailes de poulet","Faire des brochettes viande","Faire griller du poisson","Faire griller des légumes","Faire griller des pommes de terre","Retourner les aliments avec la pince","Surveiller la cuisson"];
+var DRESSING_ACTIONS_LIST = ["Ranger les vêtements","Choisir sa tenue","Essayer des vêtements devant le miroir","Essayer un haut devant le miroir","Essayer un pantalon devant le miroir","Se regarder dans le miroir en ajustant sa tenue","Hésiter entre deux tenues","Sortir plusieurs vêtements pour comparer","Ranger des vêtements dans les étagères","Ranger des vêtements sur cintres","Plier des vêtements sur une étagère","Tenir deux vêtements et hésiter","Faire le tri des vêtements","Refermer le dressing après avoir choisi sa tenue","Passer un appel vidéo WhatsApp"];
+
+// ═══ HELPERS ═══
+function h(str){
+  var s=String(str);
+  s=s.split('&').join('&amp;');
+  s=s.split('<').join('&lt;');
+  s=s.split('>').join('&gt;');
+  s=s.split('"').join('&quot;');
+  return s;
+}
+
+function upl(field, label, required, height) {
+  var src = null;
+  var fm = {mainAvatar:'mainAvatar',partner:'partner',babyRef:'babyRef',waPhoto:'waPhoto',babyCarrierImage:'babyCarrierImage',babyCarrierBabyRef:'babyCarrierBabyRef',tondeuseImage:'tondeuseImage',bbqPhoto:'bbqPhoto',strollerImage:'strollerImage',strollerBabyRef:'strollerBabyRef',interphonePortalImage:'interphonePortalImage',interphonePortalOpenImage:'interphonePortalOpenImage',interphoneVisitorImage:'interphoneVisitorImage',interphoneInteriorImage:'interphoneInteriorImage',roomImage:'roomImage',cleaningToolImage:'cleaningToolImage'};
+  if(fm[field]) src = S[fm[field]];
+  else if(field.indexOf('child-')===0){ var ci=parseInt(field.split('-')[1]); src=S.children[ci]; }
+  else if(field.indexOf('guest-')===0){ var gi=parseInt(field.split('-')[1]); src=S.guests[gi]; }
+  else if(field.indexOf('dressing-')===0){ var di=parseInt(field.split('-')[1]); src=S.dressingOutfits[di]&&S.dressingOutfits[di].image; }
+  var uid='uz-'+field.replace(/[^a-zA-Z0-9]/g,'-');
+  var out='<div class="space-y-2">';
+  out+='<label class="text-sm font-medium text-gray-300">'+h(label)+(required?' <span style="color:#ef4444">*</span>':'')+'</label>';
+  out+='<div id="'+uid+'" class="uz '+(height||'h-32')+' '+(src?'hi':'')+'" style="min-height:8rem">';
+  if(src) out+='<img class="pv" src="'+src+'" alt="Preview"/>';
+  out+='<div class="relative z-0 flex flex-col items-center justify-center '+(src?'hidden':'')+'">';
+  out+='<span class="text-2xl mb-2 block">📸</span>';
+  out+='<span class="text-xs text-gray-500">Cliquer pour uploader</span>';
+  out+='</div>';
+  out+='<div class="ov"><span class="text-xs text-white">Changer la photo</span></div>';
+  out+='<input type="file" accept="image/*" onchange="handleUpload(\''+field+'\',this)">';
+  out+='</div></div>';
+  return out;
+}
+
+function tog(field, label, cls, id) {
+  var labelColors = {tc:'text-cyan-400',tg:'text-green-400',to:'text-orange-400',tl:'text-lime-400',tb:'text-blue-400',ts:'text-sky-400',tp:'text-pink-400',ti:'text-indigo-400',tr:'text-red-400'};
+  var lc = labelColors[cls] || 'text-white';
+  return '<div class="flex items-center justify-between">' +
+    '<span class="text-[8px] font-black uppercase '+lc+'">'+h(label)+'</span>' +
+    '<label class="tw '+cls+'">' +
+    '<input type="checkbox" id="'+id+'" '+(S[field]?'checked':'')+' onchange="toggleF(\''+field+'\',this.checked)">' +
+    '<div class="tt"></div></label></div>';
+}
+
+function toggleF(field, val) { S[field]=val; if(field==='dressingModeEnabled'&&val) buildDressingOutfits(); render(); }
+
+function getActions() {
+  if(S.mirrorPresent && S.roomType && MIRROR_ROOMS.indexOf(S.roomType)>=0) return MIRROR_ACTIONS;
+  if(S.strollerModeEnabled) return STROLLER_ACTIONS;
+  if(S.babyCarrierEnabled) return PORTAGE_ACTIONS;
+  if(S.interphoneModeEnabled) return [INTERPHONE_ACTIONS[S.interphoneStep-1]];
+  if(S.bbqModeEnabled && S.roomType && BBQ_ROOMS.indexOf(S.roomType)>=0) return BBQ_ACTIONS;
+  if(S.dressingModeEnabled) return DRESSING_ACTIONS_LIST;
+  if(S.cleaningModeEnabled && S.roomType && MODE_MENAGE.forbidden.indexOf(S.roomType)<0) {
+    return MODE_MENAGE.actions.map(function(a){return a.label;});
+  }
+  var acts = [];
+  if(S.roomType==='cuisine'){
+    if(S.roomSubtype==='cuisine_plan_travail') acts=CUISINE_PLAN.slice();
+    else if(S.roomSubtype==='cuisine_plaques_cuisson') acts=CUISINE_PLAQUES.slice();
+    else if(S.roomSubtype==='cuisine_a_table') acts=CUISINE_TABLE.slice();
+    else acts=(ACTIONS['cuisine']||[]).slice();
+  } else if(S.roomType==='dressing') {
+    acts=DRESSING_ACTIONS_LIST.slice();
+  } else {
+    acts=((S.roomType&&ACTIONS[S.roomType])||[]).slice();
+  }
+  if(S.phoneModeEnabled){ acts.push("Passer un appel vidéo WhatsApp"); acts.push("Passer un appel audio WhatsApp"); }
+  return acts;
+}
+
+// ═══ RENDER ═══
+function render() {
+  var app=document.getElementById('app');
+  try {
+    var html='';
+    if(S.screen==='login') html=renderLogin();
+    else if(S.screen==='idle') html=renderIdle();
+    else if(S.screen==='config') html=renderConfig();
+    else html=renderMain();
+    app.innerHTML=html;
+  } catch(e) {
+    app.innerHTML='<div style="color:red;padding:2rem;background:#111;min-height:100vh"><h2>ERREUR: '+e.message+'</h2><pre style="font-size:11px;white-space:pre-wrap">'+e.stack+'</pre></div>';
+    console.error(e);
+  }
+}
+
 function renderLogin() {
-  return `
-  <div class="min-h-screen flex items-center justify-center p-6" style="background:#050505">
-    <div class="glass p-10 w-full max-w-md text-center space-y-6" style="border-radius:40px;border:1px solid rgba(255,255,255,0.05);box-shadow:0 0 80px rgba(99,102,241,0.15)">
-      <h1 class="text-3xl font-black uppercase tracking-tighter text-white">Accès Studio</h1>
-      <p class="text-sm text-gray-400">Connecte ta clé API Vertex AI pour accéder à l'application.</p>
-      <div class="space-y-3">
-        <input id="loginApiKey" type="password" placeholder="Clé API Vertex AI (AIza...)"
-          class="w-full rounded-2xl px-5 py-4 text-sm text-white outline-none"
-          style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1)"
-          onkeydown="if(event.key==='Enter') validateApiKey()">
-        <button onclick="validateApiKey()" class="w-full py-5 rounded-2xl font-black uppercase tracking-[0.3em] text-xs accent-gradient shadow-2xl transition-all hover:scale-[1.02]">
-          Configurer ma Clé
-        </button>
-        ${S.loginError ? `<p class="text-red-500 text-[10px] font-black uppercase">${S.loginError}</p>` : ''}
-      </div>
-      <p class="text-[9px] text-gray-600 font-medium">Ta clé est utilisée uniquement dans ton navigateur.<br/>Elle n'est jamais envoyée à nos serveurs.</p>
-    </div>
-  </div>`;
+  var out='<div class="min-h-screen flex items-center justify-center p-6" style="background:#050505">';
+  out+='<div class="glass p-10 w-full max-w-md text-center space-y-6" style="border-radius:40px;border:1px solid rgba(255,255,255,0.05);box-shadow:0 0 80px rgba(99,102,241,0.15)">';
+  out+='<h1 class="text-3xl font-black uppercase tracking-tighter text-white">Accès Studio</h1>';
+  out+='<p class="text-sm text-gray-400">Connecte ta clé API Google AI Studio pour accéder à l\'application.</p>';
+  out+='<div class="space-y-3">';
+  out+='<input id="loginKey" type="password" placeholder="AIza..." class="w-full rounded-2xl px-5 py-4 text-sm text-white outline-none" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1)" onkeydown="if(event.key===\'Enter\')validateKey()">';
+  out+='<button onclick="validateKey()" class="w-full py-5 rounded-2xl font-black uppercase tracking-[0.3em] text-xs ag text-white shadow-2xl">Configurer ma Clé</button>';
+  if(S.loginError) out+='<p style="color:#ef4444;font-size:10px;font-weight:900;text-transform:uppercase">'+h(S.loginError)+'</p>';
+  out+='</div>';
+  out+='<p class="text-[9px] text-gray-600">Ta clé est utilisée uniquement dans ton navigateur.</p>';
+  out+='</div></div>';
+  return out;
 }
 
-// ═══ IDLE SCREEN ═══
 function renderIdle() {
-  return `
-  <div class="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden" style="background-color:#C97A63">
-    <header class="text-center z-10 mb-16 max-w-2xl px-6">
-      <h1 class="text-7xl font-black tracking-tighter mb-8 text-white drop-shadow-lg">Studio Family Home</h1>
-      <p class="text-xl text-white font-medium leading-relaxed" style="opacity:0.95">
-        Bienvenue dans le Studio Family Home.<br/>
-        Ici, tu crées des scènes de vie réelles, naturelles et imparfaites,<br/>
-        pour raconter le quotidien tel qu'il est vraiment.
-      </p>
-    </header>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-5xl z-10">
-      <div onclick="chooseMode('SOLO')" class="group relative cursor-pointer overflow-hidden border border-white/20 hover:border-white/50 hover:scale-[1.02] transition-all shadow-2xl" style="border-radius:40px">
-        <img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=800" crossorigin="anonymous" referrerpolicy="no-referrer" class="w-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700" style="height:500px" alt="Solo"/>
-        <div class="absolute inset-0 flex flex-col justify-end p-8" style="background:linear-gradient(to top,rgba(0,0,0,0.8),transparent)">
-          <h2 class="text-4xl font-black uppercase tracking-tighter text-white">Solo</h2>
-          <button class="mt-4 py-4 rounded-full font-black uppercase text-xs tracking-widest" style="background:white;color:#C97A63">Entrer</button>
-        </div>
-      </div>
-      <div onclick="chooseMode('FAMILY')" class="group relative cursor-pointer overflow-hidden border border-white/20 hover:border-white/50 hover:scale-[1.02] transition-all shadow-2xl" style="border-radius:40px">
-        <img src="https://images.unsplash.com/photo-1511895426328-dc8714191300?q=80&w=800" crossorigin="anonymous" referrerpolicy="no-referrer" class="w-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700" style="height:500px" alt="Famille"/>
-        <div class="absolute inset-0 flex flex-col justify-end p-8" style="background:linear-gradient(to top,rgba(0,0,0,0.8),transparent)">
-          <h2 class="text-4xl font-black uppercase tracking-tighter text-white">Famille</h2>
-          <button class="mt-4 py-4 rounded-full font-black uppercase text-xs tracking-widest" style="background:white;color:#C97A63">Entrer</button>
-        </div>
-      </div>
-    </div>
-  </div>`;
+  var out='<div class="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden" style="background-color:#C97A63">';
+  out+='<header class="text-center z-10 mb-16 max-w-2xl px-6">';
+  out+='<h1 class="text-7xl font-black tracking-tighter mb-8 text-white drop-shadow-lg">Studio Family Home</h1>';
+  out+='<p class="text-xl text-white font-medium leading-relaxed" style="opacity:0.95">Bienvenue dans le Studio Family Home.<br/>Ici, tu crées des scènes de vie réelles, naturelles et imparfaites,<br/>pour raconter le quotidien tel qu\'il est vraiment.</p>';
+  out+='</header>';
+  out+='<div class="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-5xl z-10">';
+  // SOLO
+  out+='<div onclick="chooseMode(\'SOLO\')" class="group relative cursor-pointer overflow-hidden border border-white/20 hover:border-white/50 hover:scale-[1.02] transition-all shadow-2xl" style="border-radius:40px">';
+  out+='<img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=800" referrerpolicy="no-referrer" class="w-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700" style="height:500px" alt="Solo"/>';
+  out+='<div class="absolute inset-0 flex flex-col justify-end p-8" style="background:linear-gradient(to top,rgba(0,0,0,0.8),transparent)">';
+  out+='<h2 class="text-4xl font-black uppercase tracking-tighter text-white">Solo</h2>';
+  out+='<button class="mt-4 py-4 rounded-full font-black uppercase text-xs tracking-widest" style="background:white;color:#C97A63">Entrer</button>';
+  out+='</div></div>';
+  // FAMILLE
+  out+='<div onclick="chooseMode(\'FAMILY\')" class="group relative cursor-pointer overflow-hidden border border-white/20 hover:border-white/50 hover:scale-[1.02] transition-all shadow-2xl" style="border-radius:40px">';
+  out+='<img src="https://images.unsplash.com/photo-1511895426328-dc8714191300?q=80&w=800" referrerpolicy="no-referrer" class="w-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700" style="height:500px" alt="Famille"/>';
+  out+='<div class="absolute inset-0 flex flex-col justify-end p-8" style="background:linear-gradient(to top,rgba(0,0,0,0.8),transparent)">';
+  out+='<h2 class="text-4xl font-black uppercase tracking-tighter text-white">Famille</h2>';
+  out+='<button class="mt-4 py-4 rounded-full font-black uppercase text-xs tracking-widest" style="background:white;color:#C97A63">Entrer</button>';
+  out+='</div></div>';
+  out+='</div></div>';
+  return out;
 }
 
-// ═══ CONFIG SCREEN ═══
 function renderConfig() {
-  const isFamilyMode = S.mode === 'FAMILY';
-  const totalParts = (S.mainAvatar ? 1 : 0) + (S.partnerEnabled && S.partner ? 1 : 0) + S.children.filter(Boolean).length + (S.isBabyPresent ? 1 : 0) + S.guests.filter(Boolean).length;
-  const minParts = isFamilyMode ? 2 : 1;
-  const pct = Math.min(100, (totalParts / 20) * 100);
-  const modeColor = isFamilyMode ? 'text-purple-500' : 'text-indigo-500';
-
-  return `
-  <div class="min-h-screen bg-black text-white p-8 overflow-y-auto">
-    <nav class="mb-12 flex items-center justify-between max-w-5xl mx-auto">
-      <button onclick="goIdle()" class="text-xl">← Annuler</button>
-      <h1 class="text-xs font-black uppercase tracking-[0.4em]">Configuration <span class="${modeColor}">${S.mode}</span></h1>
-      <div class="w-20"></div>
-    </nav>
-
-    <div class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10">
-      <!-- Colonne gauche -->
-      <div class="space-y-8">
-        <!-- Avatar Principal -->
-        <section class="glass p-8 rounded-[40px] space-y-6" style="border-color:rgba(99,102,241,0.2);box-shadow:0 0 50px rgba(99,102,241,0.1)">
-          <h3 class="text-xs font-black uppercase tracking-widest text-indigo-400">👤 Avatar Principal (DNA) *</h3>
-          ${renderUploader('mainAvatar', 'Référence Visage (Caller)', true, 'h-32')}
-        </section>
-
-        <!-- Conjoint -->
-        <section class="glass p-8 rounded-[40px] space-y-6 transition-all ${S.partnerEnabled ? '' : 'opacity-60 grayscale'}" style="border-color:rgba(236,72,153,0.2);box-shadow:${S.partnerEnabled ? '0 0 50px rgba(236,72,153,0.1)' : 'none'}">
-          <div class="flex justify-between items-center">
-            <h3 class="text-xs font-black uppercase tracking-widest text-pink-400">💑 Conjoint</h3>
-            <button onclick="togglePartner()" class="px-4 py-2 rounded-full text-[10px] font-black uppercase border transition-all ${S.partnerEnabled ? 'bg-pink-600 border-pink-400' : 'bg-white/5 border-white/10'}">${S.partnerEnabled ? 'Activé' : 'Désactivé'}</button>
-          </div>
-          ${S.partnerEnabled ? renderUploader('partner', 'Référence Conjoint', true, 'h-32') : ''}
-        </section>
-
-        <!-- Bébé -->
-        <section class="glass p-8 rounded-[40px] space-y-6" style="border-color:rgba(245,158,11,0.2);box-shadow:0 0 50px rgba(245,158,11,0.1)">
-          <div class="flex justify-between items-center">
-            <h3 class="text-xs font-black uppercase tracking-widest text-amber-400">🍼 Bébé</h3>
-            <button onclick="toggleBaby()" class="px-4 py-2 rounded-full text-[10px] font-black uppercase border transition-all ${S.isBabyPresent ? 'bg-amber-600 border-amber-400' : 'bg-white/5 border-white/10'}">${S.isBabyPresent ? 'Présent' : 'Absent'}</button>
-          </div>
-          ${S.isBabyPresent ? `
-          <div class="space-y-2">
-            <label class="text-[10px] font-black uppercase text-gray-500 tracking-widest">Âge du bébé (en mois) *</label>
-            <input type="number" min="0" max="36" value="${S.babyAgeMonths}" onchange="setBabyAge(this.value)" class="w-full rounded-xl p-3 text-white text-sm" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1)">
-            <p class="text-[8px] font-bold uppercase" style="color:rgba(245,158,11,0.6)">${S.babyAgeMonths >= 6 ? '✅ Âge ≥ 6 mois : Chaise haute et nourriture solide activées.' : 'ℹ️ Âge < 6 mois : Bébé nourri dans les bras uniquement.'}</p>
-          </div>` : ''}
-        </section>
-      </div>
-
-      <!-- Colonne droite -->
-      <div class="space-y-8">
-        <!-- Enfants -->
-        ${isFamilyMode ? `
-        <section class="glass p-8 rounded-[40px] space-y-6" style="border-color:rgba(59,130,246,0.2);box-shadow:0 0 50px rgba(59,130,246,0.1)">
-          <div class="flex justify-between items-center">
-            <h3 class="text-xs font-black uppercase tracking-widest text-blue-400">👶 Enfants (${S.childCount})</h3>
-            <div class="flex space-x-2">
-              <button onclick="changeChildCount(-1)" class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1)">-</button>
-              <button onclick="changeChildCount(1)" class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1)">+</button>
-            </div>
-          </div>
-          <div class="grid grid-cols-2 gap-4">
-            ${S.children.map(function(c,i){ return renderUploader('child-'+i, 'Enfant '+(i+1), false, 'h-28'); }).join('')}
-          </div>
-        </section>` : ''}
-
-        <!-- Invités (Family only) -->
-        ${isFamilyMode ? `
-        <section class="glass p-8 rounded-[40px] space-y-6" style="border-color:rgba(34,197,94,0.2);box-shadow:0 0 50px rgba(34,197,94,0.1)">
-          <div class="flex justify-between items-center">
-            <h3 class="text-xs font-black uppercase tracking-widest text-green-400">👥 Invités (${S.guestCount})</h3>
-            <div class="flex space-x-2">
-              <button onclick="changeGuestCount(-1)" class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1)">-</button>
-              <button onclick="changeGuestCount(1)" class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1)">+</button>
-            </div>
-          </div>
-          <div class="grid grid-cols-2 gap-4">
-            ${S.guests.map(function(g,i){ return renderUploader('guest-'+i, 'Invité '+(i+1), false, 'h-28'); }).join('')}
-          </div>
-        </section>` : ''}
-      </div>
-    </div>
-
-    <!-- Barre de capacité + bouton -->
-    <div class="max-w-5xl mx-auto mt-12 mb-20 space-y-6">
-      <div class="glass p-8 rounded-[40px] space-y-4">
-        <div class="flex justify-between items-end mb-2">
-          <div>
-            <p class="text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1">Capacité Participants (${S.mode})</p>
-            <p class="text-2xl font-black ${totalParts < minParts ? 'text-red-500' : 'text-white'}">${totalParts} <span class="text-sm text-gray-600">/ 20 (Min: ${minParts})</span></p>
-          </div>
-          <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Emplacements DNA disponibles</p>
-        </div>
-        <div class="w-full h-3 rounded-full overflow-hidden" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1)">
-          <div class="h-full transition-all duration-500 accent-gradient" style="width:${pct}%"></div>
-        </div>
-        <button onclick="validateConfig()" ${totalParts > 20 || !S.mainAvatar ? 'disabled' : ''} class="w-full py-6 rounded-[24px] font-black uppercase tracking-[0.4em] text-xs shadow-2xl transition-all mt-4 ${(!S.mainAvatar) ? 'opacity-20 cursor-not-allowed' : ''} accent-gradient">
-          Accéder à la Maison
-        </button>
-        ${S.error ? `<p class="text-red-500 text-[10px] font-black uppercase text-center pulse">${S.error}</p>` : ''}
-      </div>
-    </div>
-  </div>`;
+  var isFamily=S.mode==='FAMILY';
+  var total=(S.mainAvatar?1:0)+(S.partnerEnabled&&S.partner?1:0)+S.children.filter(Boolean).length+(S.isBabyPresent?1:0)+S.guests.filter(Boolean).length;
+  var minP=isFamily?2:1;
+  var pct=Math.min(100,(total/20)*100);
+  var out='<div class="min-h-screen bg-black text-white p-8 overflow-y-auto">';
+  out+='<nav class="mb-12 flex items-center justify-between max-w-5xl mx-auto">';
+  out+='<button onclick="goIdle()" class="text-xl">← Annuler</button>';
+  out+='<h1 class="text-xs font-black uppercase tracking-[0.4em]">Configuration <span class="'+(isFamily?'text-purple-500':'text-indigo-500')+'">'+S.mode+'</span></h1>';
+  out+='<div class="w-20"></div></nav>';
+  out+='<div class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10">';
+  // Col gauche
+  out+='<div class="space-y-8">';
+  // Avatar
+  out+='<section class="glass p-8 rounded-[40px] space-y-6" style="border-color:rgba(99,102,241,0.2);box-shadow:0 0 50px rgba(99,102,241,0.1)">';
+  out+='<h3 class="text-xs font-black uppercase tracking-widest text-indigo-400">👤 Avatar Principal (DNA) *</h3>';
+  out+=upl('mainAvatar','Référence Visage (Caller)',true,'h-32');
+  out+='</section>';
+  // Conjoint
+  out+='<section class="glass p-8 rounded-[40px] space-y-6 transition-all '+(S.partnerEnabled?'':'opacity-60 grayscale')+'" style="border-color:rgba(236,72,153,0.2)">';
+  out+='<div class="flex justify-between items-center">';
+  out+='<h3 class="text-xs font-black uppercase tracking-widest text-pink-400">💑 Conjoint</h3>';
+  out+='<button onclick="togglePartner()" class="px-4 py-2 rounded-full text-[10px] font-black uppercase border transition-all '+(S.partnerEnabled?'bg-pink-600 border-pink-400':'bg-white/5 border-white/10')+'">'+(S.partnerEnabled?'Activé':'Désactivé')+'</button>';
+  out+='</div>';
+  if(S.partnerEnabled) out+=upl('partner','Référence Conjoint',true,'h-32');
+  out+='</section>';
+  // Bébé
+  out+='<section class="glass p-8 rounded-[40px] space-y-6" style="border-color:rgba(245,158,11,0.2);box-shadow:0 0 50px rgba(245,158,11,0.1)">';
+  out+='<div class="flex justify-between items-center">';
+  out+='<h3 class="text-xs font-black uppercase tracking-widest text-amber-400">🍼 Bébé</h3>';
+  out+='<button onclick="toggleBaby()" class="px-4 py-2 rounded-full text-[10px] font-black uppercase border transition-all '+(S.isBabyPresent?'bg-amber-600 border-amber-400':'bg-white/5 border-white/10')+'">'+(S.isBabyPresent?'Présent':'Absent')+'</button>';
+  out+='</div>';
+  if(S.isBabyPresent){
+    out+='<div class="space-y-2">';
+    out+='<label class="text-[10px] font-black uppercase text-gray-500 tracking-widest">Âge du bébé (en mois) *</label>';
+    out+='<input type="number" min="0" max="36" value="'+S.babyAgeMonths+'" onchange="S.babyAgeMonths=parseInt(this.value)||0;render()" class="w-full rounded-xl p-3 text-white text-sm" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1)">';
+    out+='<p class="text-[8px] font-bold uppercase" style="color:rgba(245,158,11,0.6)">'+(S.babyAgeMonths>=6?'✅ Âge ≥ 6 mois : Chaise haute et nourriture solide activées.':'ℹ️ Âge < 6 mois : Bébé nourri dans les bras uniquement.')+'</p>';
+    out+='</div>';
+  }
+  out+='</section>';
+  out+='</div>';
+  // Col droite
+  out+='<div class="space-y-8">';
+  if(isFamily){
+    // Enfants
+    out+='<section class="glass p-8 rounded-[40px] space-y-6" style="border-color:rgba(59,130,246,0.2);box-shadow:0 0 50px rgba(59,130,246,0.1)">';
+    out+='<div class="flex justify-between items-center">';
+    out+='<h3 class="text-xs font-black uppercase tracking-widest text-blue-400">👶 Enfants ('+S.childCount+')</h3>';
+    out+='<div class="flex space-x-2">';
+    out+='<button onclick="changeChildCount(-1)" class="w-8 h-8 rounded-full flex items-center justify-center" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1)">-</button>';
+    out+='<button onclick="changeChildCount(1)" class="w-8 h-8 rounded-full flex items-center justify-center" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1)">+</button>';
+    out+='</div></div>';
+    out+='<div class="grid grid-cols-2 gap-4">';
+    for(var ci=0;ci<S.children.length;ci++) out+=upl('child-'+ci,'Enfant '+(ci+1),false,'h-28');
+    out+='</div></section>';
+    // Invités
+    out+='<section class="glass p-8 rounded-[40px] space-y-6" style="border-color:rgba(34,197,94,0.2);box-shadow:0 0 50px rgba(34,197,94,0.1)">';
+    out+='<div class="flex justify-between items-center">';
+    out+='<h3 class="text-xs font-black uppercase tracking-widest text-green-400">👥 Invités ('+S.guestCount+')</h3>';
+    out+='<div class="flex space-x-2">';
+    out+='<button onclick="changeGuestCount(-1)" class="w-8 h-8 rounded-full flex items-center justify-center" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1)">-</button>';
+    out+='<button onclick="changeGuestCount(1)" class="w-8 h-8 rounded-full flex items-center justify-center" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1)">+</button>';
+    out+='</div></div>';
+    out+='<div class="grid grid-cols-2 gap-4">';
+    for(var gi=0;gi<S.guests.length;gi++) out+=upl('guest-'+gi,'Invité '+(gi+1),false,'h-28');
+    out+='</div></section>';
+  }
+  out+='</div></div>';
+  // Barre capacité
+  out+='<div class="max-w-5xl mx-auto mt-12 mb-20">';
+  out+='<div class="glass p-8 rounded-[40px] space-y-4">';
+  out+='<div class="flex justify-between items-end mb-2">';
+  out+='<div><p class="text-[10px] font-black uppercase text-gray-500 tracking-widest mb-1">Capacité Participants ('+S.mode+')</p>';
+  out+='<p class="text-2xl font-black '+(total<minP?'text-red-500':'text-white')+'">'+total+' <span class="text-sm text-gray-600">/ 20 (Min: '+minP+')</span></p></div>';
+  out+='<p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Emplacements DNA disponibles</p>';
+  out+='</div>';
+  out+='<div class="w-full h-3 rounded-full overflow-hidden" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1)">';
+  out+='<div class="h-full transition-all duration-500 ag" style="width:'+pct+'%"></div></div>';
+  out+='<button onclick="validateConfig()" '+(total>20||!S.mainAvatar?'disabled':'')+' class="w-full py-6 rounded-[24px] font-black uppercase tracking-[0.4em] text-xs shadow-2xl transition-all mt-4 ag text-white '+(S.mainAvatar?'':'opacity-20 cursor-not-allowed')+'">Accéder à la Maison</button>';
+  if(S.error) out+='<p style="color:#ef4444;font-size:10px;font-weight:900;text-transform:uppercase;text-align:center" class="pulse">'+h(S.error)+'</p>';
+  out+='</div></div></div>';
+  return out;
 }
 
-// ═══ MAIN SCREEN ═══
 function renderMain() {
-  const bbqVisible = S.roomType && BBQ_ROOMS.includes(S.roomType);
-  const mirrorVisible = S.roomType && MIRROR_ROOMS.includes(S.roomType);
-  const isSalon = S.roomType === 'salon';
-  const isJardin = S.roomType === 'jardin';
-  const currentActions = getActions();
-  const totalParts = (S.mainAvatar ? 1 : 0) + (S.partnerEnabled && S.partner ? 1 : 0) + S.children.filter(Boolean).length + (S.isBabyPresent ? 1 : 0);
+  var bbqVis=S.roomType&&BBQ_ROOMS.indexOf(S.roomType)>=0;
+  var mirVis=S.roomType&&MIRROR_ROOMS.indexOf(S.roomType)>=0;
+  var isSalon=S.roomType==='salon';
+  var isJardin=S.roomType==='jardin';
+  var acts=getActions();
+  var total=(S.mainAvatar?1:0)+(S.partnerEnabled&&S.partner?1:0)+S.children.filter(Boolean).length+(S.isBabyPresent?1:0);
+  var menageTool=S.cleaningModeEnabled&&S.action?getMenageTool(S.action):null;
 
-  return `
-  <div class="min-h-screen text-white pb-32 overflow-y-auto" style="background:#050505">
+  var out='<div class="min-h-screen text-white pb-32 overflow-y-auto" style="background:#050505">';
+  // NAV
+  out+='<nav class="p-5 border-b flex justify-between items-center sticky top-0 z-50" style="border-color:rgba(255,255,255,0.05);background:rgba(0,0,0,0.8);backdrop-filter:blur(24px)">';
+  out+='<button onclick="goIdle()" class="text-2xl">←</button>';
+  out+='<h1 class="text-sm font-black uppercase tracking-[0.4em]">Studio Family <span class="text-indigo-500">Home</span></h1>';
+  out+='<div class="flex space-x-2">';
+  out+='<button onclick="setEnergy(\'calm\')" class="px-4 py-2 rounded-full text-[10px] font-black uppercase transition-all '+(S.energy==='calm'?'bg-green-600':'bg-white/5')+'" '+(S.energy==='calm'?'style="box-shadow:0 0 20px rgba(34,197,94,0.3)"':'')+'>Calme</button>';
+  out+='<button onclick="setEnergy(\'chaos\')" class="px-4 py-2 rounded-full text-[10px] font-black uppercase transition-all '+(S.energy==='chaos'?'bg-red-600':'bg-white/5')+'" '+(S.energy==='chaos'?'style="box-shadow:0 0 20px rgba(220,38,38,0.3)"':'')+'>Chaos</button>';
+  out+='</div></nav>';
 
-    <!-- NAV -->
-    <nav class="p-5 border-b flex justify-between items-center sticky top-0 z-50" style="border-color:rgba(255,255,255,0.05);background:rgba(0,0,0,0.8);backdrop-filter:blur(24px)">
-      <button onclick="goIdle()" class="text-2xl">←</button>
-      <h1 class="text-sm font-black uppercase tracking-[0.4em]">Studio Family <span class="text-indigo-500">Home</span></h1>
-      <div class="flex space-x-2">
-        <button onclick="setEnergy('calm')" class="px-4 py-2 rounded-full text-[10px] font-black uppercase transition-all ${S.energy==='calm' ? 'bg-green-600' : 'bg-white/5'}" ${S.energy==='calm' ? 'style="box-shadow:0 0 20px rgba(34,197,94,0.3)"' : ''}>Calme</button>
-        <button onclick="setEnergy('chaos')" class="px-4 py-2 rounded-full text-[10px] font-black uppercase transition-all ${S.energy==='chaos' ? 'bg-red-600' : 'bg-white/5'}" ${S.energy==='chaos' ? 'style="box-shadow:0 0 20px rgba(220,38,38,0.3)"' : ''}>Chaos</button>
-      </div>
-    </nav>
+  out+='<div class="max-w-[1700px] mx-auto px-6 pt-8 grid grid-cols-1 lg:grid-cols-12 gap-10">';
+  // SIDEBAR
+  out+='<aside class="lg:col-span-4 space-y-6">';
 
-    <div class="max-w-[1700px] mx-auto px-6 pt-8 grid grid-cols-1 lg:grid-cols-12 gap-10">
+  // Avatar DNA
+  out+='<section class="glass p-7 space-y-5 '+(S.phoneModeEnabled||S.interphoneModeEnabled?'opacity-40 grayscale pointer-events-none':'')+'" style="border-radius:32px;border-color:rgba(99,102,241,0.1)">';
+  out+='<div class="flex justify-between items-center">';
+  out+='<h3 class="text-xs font-black uppercase tracking-widest text-indigo-400">🧬 Avatar DNA</h3>';
+  out+='<span class="text-[10px] text-gray-500 font-black uppercase">Emplacement DNA</span></div>';
+  out+=upl('mainAvatar','Référence Visage',true,'h-32');
+  out+='<button onclick="goConfig()" class="w-full py-3 rounded-xl text-[9px] font-black uppercase tracking-widest" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1)">Modifier la Famille ('+total+')</button>';
+  out+='</section>';
 
-      <!-- SIDEBAR gauche col-span-4 -->
-      <aside class="lg:col-span-4 space-y-6">
+  // Environnement
+  out+='<section class="glass p-7 space-y-6" style="border-radius:32px;border-color:rgba(168,85,247,0.1)">';
+  out+='<div class="flex justify-between items-start">';
+  out+='<h3 class="text-xs font-black uppercase tracking-widest text-purple-400">🏠 Environnement</h3>';
+  out+='<div class="flex flex-col space-y-2">';
+  out+=tog('interphoneModeEnabled','Mode Interphone','tc','ti-interphone');
+  out+=tog('cleaningModeEnabled','Mode Ménage','tg','ti-menage');
+  out+=tog('babyCarrierEnabled','Mode Portage','to','ti-portage');
+  if(isJardin) out+=tog('tondeuseModeEnabled','Mode Tondeuse','tl','ti-tondeuse');
+  out+=tog('strollerModeEnabled','Mode Poussette','tb','ti-poussette');
+  if(mirVis) out+=tog('mirrorPresent','Mode Miroir','ts','ti-miroir');
+  out+=tog('dressingModeEnabled','Mode Dressing','tp','ti-dressing');
+  out+=tog('phoneModeEnabled','Mode WhatsApp','ti','ti-whatsapp');
+  if(bbqVis) out+=tog('bbqModeEnabled','Mode Barbecue','tr','ti-bbq');
+  if(isSalon) out+=tog('fireplaceEnabled','Mode Cheminée','to','ti-cheminee');
+  out+='</div></div>';
 
-        <!-- Avatar DNA -->
-        <section class="glass p-7 space-y-5 ${S.phoneModeEnabled || S.interphoneModeEnabled ? 'opacity-40 grayscale pointer-events-none' : ''}" style="border-radius:32px;border-color:rgba(99,102,241,0.1)">
-          <div class="flex justify-between items-center">
-            <h3 class="text-xs font-black uppercase tracking-widest text-indigo-400">🧬 Avatar DNA</h3>
-            <span class="text-[10px] text-gray-500 font-black uppercase">Emplacement DNA</span>
-          </div>
-          ${renderUploader('mainAvatar', 'Référence Visage', true, 'h-32')}
-          <button onclick="goConfig()" class="w-full py-3 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-white/10 transition-colors" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1)">Modifier la Famille (${totalParts})</button>
-        </section>
+  // Blocs modes conditionnels
+  if(S.strollerModeEnabled) out+=renderStrollerBlock();
+  if(S.interphoneModeEnabled) out+=renderInterphoneBlock();
+  if(S.babyCarrierEnabled) out+=renderCarrierBlock();
+  if(S.phoneModeEnabled) out+=renderPhoneBlock();
+  if(S.bbqModeEnabled&&bbqVis) out+=renderBbqBlock();
+  if(S.dressingModeEnabled) out+=renderDressingBlock();
+  if(S.tondeuseModeEnabled&&isJardin) out+=renderTondeuseBlock();
 
-        <!-- Environnement -->
-        <section class="glass p-7 space-y-6" style="border-radius:32px;border-color:rgba(168,85,247,0.1)">
-          <div class="flex justify-between items-start">
-            <h3 class="text-xs font-black uppercase tracking-widest text-purple-400">🏠 Environnement</h3>
-            <div class="flex flex-col space-y-2">
-              ${renderToggleRow('interphoneModeEnabled','Mode Interphone','toggle-cyan','toggle-interphone')}
-              ${renderToggleRow('cleaningModeEnabled','Mode Ménage','toggle-green','toggle-menage')}
-              ${renderToggleRow('babyCarrierEnabled','Mode Portage','toggle-orange','toggle-portage')}
-              ${isJardin ? renderToggleRow('tondeuseModeEnabled','Mode Tondeuse','toggle-lime','toggle-tondeuse') : ''}
-              ${renderToggleRow('strollerModeEnabled','Mode Poussette','toggle-blue','toggle-poussette')}
-              ${mirrorVisible ? renderToggleRow('mirrorPresent','Mode Miroir','toggle-sky','toggle-miroir') : ''}
-              ${renderToggleRow('dressingModeEnabled','Mode Dressing','toggle-pink','toggle-dressing')}
-              ${renderToggleRow('phoneModeEnabled','Mode WhatsApp','toggle-indigo','toggle-whatsapp')}
-              ${bbqVisible ? renderToggleRow('bbqModeEnabled','Mode Barbecue','toggle-red','toggle-bbq') : ''}
-              ${isSalon ? renderToggleRow('fireplaceEnabled','Mode Cheminée','toggle-orange','toggle-cheminee') : ''}
-            </div>
-          </div>
+  // Ambiance
+  out+='<div class="space-y-4">';
+  out+='<h4 class="text-[10px] font-black uppercase text-indigo-400 tracking-widest">✨ Mode Ambiance (Actif)</h4>';
+  out+='<div class="grid grid-cols-2 gap-3">';
+  out+='<div class="space-y-1"><label class="text-[8px] font-black uppercase text-gray-500">Saison</label>';
+  out+='<select onchange="S.season=this.value" class="dd rounded-xl p-2 text-[9px] font-black uppercase outline-none">';
+  for(var si=0;si<SEASON_LIST.length;si++) out+='<option value="'+SEASON_LIST[si].key+'" '+(S.season===SEASON_LIST[si].key?'selected':'')+'>'+SEASON_LIST[si].label+'</option>';
+  out+='</select></div>';
+  out+='<div class="space-y-1"><label class="text-[8px] font-black uppercase text-gray-500">Météo</label>';
+  out+='<select onchange="S.weather=this.value" class="dd rounded-xl p-2 text-[9px] font-black uppercase outline-none">';
+  for(var wi=0;wi<WEATHER_LIST.length;wi++) out+='<option value="'+WEATHER_LIST[wi].key+'" '+(S.weather===WEATHER_LIST[wi].key?'selected':'')+'>'+WEATHER_LIST[wi].label+'</option>';
+  out+='</select></div></div>';
+  out+='<div class="space-y-1"><label class="text-[8px] font-black uppercase text-indigo-300">Moment de la journée</label>';
+  out+='<select onchange="S.dayMoment=this.value" class="dd rounded-xl p-2 text-[9px] font-black uppercase outline-none" style="border-color:rgba(99,102,241,0.3)">';
+  for(var di=0;di<DAY_MOMENTS.length;di++) out+='<option value="'+DAY_MOMENTS[di]+'" '+(S.dayMoment===DAY_MOMENTS[di]?'selected':'')+'>'+DAY_MOMENTS[di].replace(/_/g,' ')+'</option>';
+  out+='</select></div></div>';
 
-          <!-- Blocs conditionnels des modes -->
-          ${S.strollerModeEnabled ? renderStrollerBlock() : ''}
-          ${S.interphoneModeEnabled ? renderInterphoneBlock() : ''}
-          ${S.babyCarrierEnabled ? renderCarrierBlock() : ''}
-          ${S.phoneModeEnabled ? renderPhoneBlock() : ''}
-          ${S.bbqModeEnabled && bbqVisible ? renderBbqBlock() : ''}
-          ${S.dressingModeEnabled ? renderDressingBlock() : ''}
-          ${S.tondeuseModeEnabled && isJardin ? renderTondeuseBlock() : ''}
+  // Sélecteur pièces
+  if(!S.interphoneModeEnabled&&!S.strollerModeEnabled) out+=renderRoomSelector();
 
-          <!-- Ambiance -->
-          <div class="space-y-4">
-            <h4 class="text-[10px] font-black uppercase text-indigo-400 tracking-widest">✨ Mode Ambiance (Actif)</h4>
-            <div class="grid grid-cols-2 gap-3">
-              <div class="space-y-1">
-                <label class="text-[8px] font-black uppercase text-gray-500">Saison</label>
-                <select onchange="S.season=this.value" class="custom-dropdown w-full rounded-xl p-2 text-[9px] font-black uppercase outline-none">
-                  ${SEASON_LIST.map(s=>`<option value="${s.key}" ${S.season===s.key?'selected':''}>${s.label}</option>`).join('')}
-                </select>
-              </div>
-              <div class="space-y-1">
-                <label class="text-[8px] font-black uppercase text-gray-500">Météo</label>
-                <select onchange="S.weather=this.value" class="custom-dropdown w-full rounded-xl p-2 text-[9px] font-black uppercase outline-none">
-                  ${WEATHER_LIST.map(w=>`<option value="${w.key}" ${S.weather===w.key?'selected':''}>${w.label}</option>`).join('')}
-                </select>
-              </div>
-            </div>
-            <div class="space-y-1">
-              <label class="text-[8px] font-black uppercase text-indigo-300">Moment de la journée</label>
-              <select onchange="S.dayMoment=this.value" class="custom-dropdown w-full rounded-xl p-2 text-[9px] font-black uppercase outline-none" style="border-color:rgba(99,102,241,0.3)">
-                ${DAY_MOMENTS.map(m=>`<option value="${m}" ${S.dayMoment===m?'selected':''}>${m.replace(/_/g,' ')}</option>`).join('')}
-              </select>
-            </div>
-          </div>
+  // Sous-types
+  if(S.roomType==='cuisine'){
+    out+='<div class="space-y-2 p-4 rounded-3xl" style="background:rgba(245,158,11,0.05);border:1px solid rgba(245,158,11,0.1)">';
+    out+='<label class="text-[9px] font-black uppercase text-gray-500">Zone de cuisine</label>';
+    out+='<select onchange="S.roomSubtype=this.value;S.action=\'\';render()" class="dd rounded-xl p-2 text-[9px] font-black uppercase outline-none">';
+    out+='<option value="" '+(S.roomSubtype?'':'selected')+'>Cuisine complète...</option>';
+    out+='<option value="cuisine_plan_travail" '+(S.roomSubtype==='cuisine_plan_travail'?'selected':'')+'>Plan de travail</option>';
+    out+='<option value="cuisine_plaques_cuisson" '+(S.roomSubtype==='cuisine_plaques_cuisson'?'selected':'')+'>Plaques de cuisson</option>';
+    out+='<option value="cuisine_a_table" '+(S.roomSubtype==='cuisine_a_table'?'selected':'')+'>À table (Cuisine)</option>';
+    out+='</select></div>';
+  }
+  if(S.roomType==='bureau'){
+    out+='<div class="space-y-2 p-4 rounded-3xl" style="background:rgba(99,102,241,0.05);border:1px solid rgba(99,102,241,0.1)">';
+    out+='<label class="text-[9px] font-black uppercase text-gray-500">Type d\'ordinateur</label>';
+    out+='<select onchange="S.roomSubtype=this.value;render()" class="dd rounded-xl p-2 text-[9px] font-black uppercase outline-none">';
+    out+='<option value="" '+(S.roomSubtype?'':'selected')+'>Sélectionner...</option>';
+    out+='<option value="ordinateur_portable" '+(S.roomSubtype==='ordinateur_portable'?'selected':'')+'>Ordinateur portable</option>';
+    out+='<option value="ordinateur_bureau" '+(S.roomSubtype==='ordinateur_bureau'?'selected':'')+'>Ordinateur de bureau</option>';
+    out+='</select></div>';
+  }
+  if(S.roomType==='chambre'){
+    out+='<div class="space-y-2 p-4 rounded-3xl" style="background:rgba(59,130,246,0.05);border:1px solid rgba(59,130,246,0.1)">';
+    out+='<label class="text-[9px] font-black uppercase text-gray-500">Type de Chambre</label>';
+    out+='<select onchange="S.roomSubtype=this.value;S.action=\'\';render()" class="dd rounded-xl p-2 text-[9px] font-black uppercase outline-none">';
+    out+='<option value="" '+(S.roomSubtype?'':'selected')+'>Sélectionner...</option>';
+    if(S.mode==='SOLO'){
+      out+='<option value="chambre_adulte" '+(S.roomSubtype==='chambre_adulte'?'selected':'')+'>Chambre adulte</option>';
+      out+='<option value="chambre_amie" '+(S.roomSubtype==='chambre_amie'?'selected':'')+'>Chambre d\'amie</option>';
+    } else {
+      out+='<option value="chambre_parentale" '+(S.roomSubtype==='chambre_parentale'?'selected':'')+'>Chambre parentale</option>';
+      out+='<option value="chambre_enfant" '+(S.roomSubtype==='chambre_enfant'?'selected':'')+'>Chambre enfant</option>';
+      out+='<option value="chambre_bebe" '+(S.roomSubtype==='chambre_bebe'?'selected':'')+'>Chambre bébé</option>';
+      out+='<option value="chambre_adolescente" '+(S.roomSubtype==='chambre_adolescente'?'selected':'')+'>Chambre adolescente</option>';
+      out+='<option value="chambre_amie" '+(S.roomSubtype==='chambre_amie'?'selected':'')+'>Chambre d\'amie</option>';
+    }
+    out+='</select></div>';
+  }
+  out+='</section>';
 
-          <!-- Sélecteur de pièces -->
-          ${!S.interphoneModeEnabled && !S.strollerModeEnabled ? renderRoomSelector() : ''}
+  // Action & Scénario
+  out+='<section class="glass p-7 space-y-6" style="border-radius:32px;border-color:rgba(249,115,22,0.1)">';
+  out+='<h3 class="text-xs font-black uppercase tracking-widest text-orange-400">🎬 Action & Scénario</h3>';
+  out+='<div class="space-y-2"><label class="text-[9px] font-black uppercase text-gray-500">Angle de Caméra</label>';
+  out+='<select onchange="S.cameraAngle=this.value" class="dd w-full rounded-xl p-4 text-[10px] font-black uppercase outline-none">';
+  for(var cai=0;cai<CAMERA_ANGLES.length;cai++) out+='<option value="'+CAMERA_ANGLES[cai].key+'" '+(S.cameraAngle===CAMERA_ANGLES[cai].key?'selected':'')+'>'+CAMERA_ANGLES[cai].label+'</option>';
+  out+='</select></div>';
+  out+='<div class="space-y-2"><label class="text-[9px] font-black uppercase text-gray-500">Action Scénarisée</label>';
+  out+='<select onchange="S.action=this.value;render()" class="dd w-full rounded-xl p-4 text-[10px] font-black uppercase outline-none" '+(S.interphoneModeEnabled?'disabled':'')+' >';
+  out+='<option value="">Sélectionner une action...</option>';
+  for(var ai=0;ai<acts.length;ai++) out+='<option value="'+h(acts[ai])+'" '+(S.action===acts[ai]?'selected':'')+'>'+h(acts[ai].replace(/_/g,' '))+'</option>';
+  out+='</select></div>';
 
-          <!-- Sous-type CUISINE -->
-          ${S.roomType === 'cuisine' ? `
-          <div class="space-y-2 p-4 rounded-3xl" style="background:rgba(245,158,11,0.05);border:1px solid rgba(245,158,11,0.1)">
-            <label class="text-[9px] font-black uppercase text-gray-500">Zone de cuisine</label>
-            <select onchange="S.roomSubtype=this.value;S.action='';render()" class="custom-dropdown w-full rounded-xl p-2 text-[9px] font-black uppercase outline-none">
-              <option value="" ${!S.roomSubtype?'selected':''}>Cuisine complète...</option>
-              <option value="cuisine_plan_travail" ${S.roomSubtype==='cuisine_plan_travail'?'selected':''}>Plan de travail</option>
-              <option value="cuisine_plaques_cuisson" ${S.roomSubtype==='cuisine_plaques_cuisson'?'selected':''}>Plaques de cuisson</option>
-              <option value="cuisine_a_table" ${S.roomSubtype==='cuisine_a_table'?'selected':''}>À table (Cuisine)</option>
-            </select>
-          </div>` : ''}
+  // Upload outil ménage
+  if(menageTool){
+    out+='<div class="space-y-4 p-5 rounded-3xl" style="background:rgba(22,163,74,0.05);border:1px solid rgba(22,163,74,0.1)">';
+    out+='<h4 class="text-[10px] font-black uppercase text-green-400 tracking-widest">🧰 Outil Requis</h4>';
+    out+='<p class="text-[8px] text-gray-400 uppercase font-bold">Outil : '+h(menageTool)+'</p>';
+    out+=upl('cleaningToolImage','Photo de l\'outil (obligatoire)',true,'h-24');
+    out+='</div>';
+  }
 
-          <!-- Sous-type BUREAU -->
-          ${S.roomType === 'bureau' ? `
-          <div class="space-y-2 p-4 rounded-3xl" style="background:rgba(99,102,241,0.05);border:1px solid rgba(99,102,241,0.1)">
-            <label class="text-[9px] font-black uppercase text-gray-500">Type d'ordinateur</label>
-            <select onchange="S.roomSubtype=this.value;render()" class="custom-dropdown w-full rounded-xl p-2 text-[9px] font-black uppercase outline-none">
-              <option value="" ${!S.roomSubtype?'selected':''}>Sélectionner...</option>
-              <option value="ordinateur_portable" ${S.roomSubtype==='ordinateur_portable'?'selected':''}>Ordinateur portable</option>
-              <option value="ordinateur_bureau" ${S.roomSubtype==='ordinateur_bureau'?'selected':''}>Ordinateur de bureau</option>
-            </select>
-          </div>` : ''}
+  // Émotions chaos
+  if(S.energy==='chaos'){
+    out+='<div class="space-y-4 p-5 rounded-3xl" style="background:rgba(220,38,38,0.05);border:1px solid rgba(220,38,38,0.1)">';
+    out+='<h4 class="text-[10px] font-black uppercase text-red-400 tracking-widest">⚠️ ÉMOTIONS — MODE CHAOS</h4>';
+    out+='<div class="space-y-2"><label class="text-[9px] font-black uppercase text-gray-500">Émotion Adulte *</label>';
+    out+='<select onchange="S.chaosEmotionAdult=this.value" class="dd w-full rounded-xl p-2 text-[9px] font-black uppercase outline-none">';
+    out+='<option value="">Sélectionner...</option>';
+    for(var cai2=0;cai2<CHAOS_ADULT.length;cai2++) out+='<option value="'+h(CHAOS_ADULT[cai2])+'" '+(S.chaosEmotionAdult===CHAOS_ADULT[cai2]?'selected':'')+'>'+h(CHAOS_ADULT[cai2])+'</option>';
+    out+='</select></div>';
+    if(S.childCount>0){
+      out+='<div class="space-y-2"><label class="text-[9px] font-black uppercase text-gray-500">Émotion Enfant *</label>';
+      out+='<select onchange="S.chaosEmotionChild=this.value" class="dd w-full rounded-xl p-2 text-[9px] font-black uppercase outline-none">';
+      out+='<option value="">Sélectionner...</option>';
+      for(var cci=0;cci<CHAOS_CHILD.length;cci++) out+='<option value="'+h(CHAOS_CHILD[cci])+'" '+(S.chaosEmotionChild===CHAOS_CHILD[cci]?'selected':'')+'>'+h(CHAOS_CHILD[cci])+'</option>';
+      out+='</select></div>';
+    }
+    if(S.isBabyPresent){
+      out+='<div class="space-y-2"><label class="text-[9px] font-black uppercase text-gray-500">Émotion Bébé *</label>';
+      out+='<select onchange="S.chaosEmotionBaby=this.value" class="dd w-full rounded-xl p-2 text-[9px] font-black uppercase outline-none">';
+      out+='<option value="">Sélectionner...</option>';
+      for(var cbi=0;cbi<CHAOS_BABY.length;cbi++) out+='<option value="'+h(CHAOS_BABY[cbi])+'" '+(S.chaosEmotionBaby===CHAOS_BABY[cbi]?'selected':'')+'>'+h(CHAOS_BABY[cbi])+'</option>';
+      out+='</select></div>';
+    }
+    out+='</div>';
+  }
 
-          <!-- Sous-type CHAMBRE -->
-          ${S.roomType === 'chambre' ? `
-          <div class="space-y-2 p-4 rounded-3xl" style="background:rgba(59,130,246,0.05);border:1px solid rgba(59,130,246,0.1)">
-            <label class="text-[9px] font-black uppercase text-gray-500">Type de Chambre</label>
-            <select onchange="S.roomSubtype=this.value;S.action='';render()" class="custom-dropdown w-full rounded-xl p-2 text-[9px] font-black uppercase outline-none">
-              <option value="" ${!S.roomSubtype?'selected':''}>Sélectionner...</option>
-              ${S.mode==='SOLO' ? `
-                <option value="chambre_adulte" ${S.roomSubtype==='chambre_adulte'?'selected':''}>Chambre adulte</option>
-                <option value="chambre_amie" ${S.roomSubtype==='chambre_amie'?'selected':''}>Chambre d'amie</option>
-              ` : `
-                <option value="chambre_parentale" ${S.roomSubtype==='chambre_parentale'?'selected':''}>Chambre parentale</option>
-                <option value="chambre_enfant" ${S.roomSubtype==='chambre_enfant'?'selected':''}>Chambre enfant</option>
-                <option value="chambre_bebe" ${S.roomSubtype==='chambre_bebe'?'selected':''}>Chambre bébé</option>
-                <option value="chambre_adolescente" ${S.roomSubtype==='chambre_adolescente'?'selected':''}>Chambre adolescente</option>
-                <option value="chambre_amie" ${S.roomSubtype==='chambre_amie'?'selected':''}>Chambre d'amie</option>
-              `}
-            </select>
-          </div>` : ''}
+  out+='<textarea onchange="S.freeText=this.value" placeholder="Description additionnelle / Climat de la scène..." class="w-full rounded-xl p-4 text-[10px] text-white min-h-[100px] transition-all" style="background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.1)">'+h(S.freeText)+'</textarea>';
 
-          <!-- Upload outil ménage si requis -->
-        </section>
+  // Format ratio
+  out+='<div class="space-y-2"><label class="text-[9px] font-black uppercase text-gray-500">Format d\'image (Ratio)</label>';
+  out+='<div class="grid grid-cols-3 gap-2">';
+  var ratios=[{v:'9:16',l:'Portrait'},{v:'1:1',l:'Carré'},{v:'16:9',l:'Paysage'}];
+  for(var ri=0;ri<ratios.length;ri++){
+    out+='<button onclick="S.aspectRatio=\''+ratios[ri].v+'\';render()" class="py-2 px-1 rounded-xl text-[8px] font-black uppercase border transition-all '+(S.aspectRatio===ratios[ri].v?'bg-indigo-600 border-indigo-400 text-white shadow-lg':'bg-white/5 border-white/10 text-gray-400')+'">'+ratios[ri].v+' '+ratios[ri].l+'</button>';
+  }
+  out+='</div></div>';
 
-        <!-- Action & Scénario -->
-        <section class="glass p-7 space-y-6" style="border-radius:32px;border-color:rgba(249,115,22,0.1)">
-          <h3 class="text-xs font-black uppercase tracking-widest text-orange-400">🎬 Action & Scénario</h3>
+  out+='<button onclick="generate()" '+(S.loading?'disabled':'')+' class="w-full py-6 rounded-[24px] font-black ag text-white shadow-2xl uppercase tracking-[0.4em] text-xs transition-all '+(S.loading?'opacity-20':'')+'">'+(S.loading?'Génération en cours...':'Lancer le Rendu 4K')+'</button>';
+  if(S.error) out+='<p style="color:#ef4444;font-size:10px;font-weight:900;text-transform:uppercase;text-align:center">'+h(S.error)+'</p>';
+  out+='</section></aside>';
 
-          <div class="space-y-2">
-            <label class="text-[9px] font-black uppercase text-gray-500">Angle de Caméra</label>
-            <select onchange="S.cameraAngle=this.value" class="custom-dropdown w-full rounded-xl p-4 text-[10px] font-black uppercase outline-none">
-              ${CAMERA_ANGLES.map(a=>`<option value="${a.key}" ${S.cameraAngle===a.key?'selected':''}>${a.label}</option>`).join('')}
-            </select>
-          </div>
-
-          <div class="space-y-2">
-            <label class="text-[9px] font-black uppercase text-gray-500">Action Scénarisée</label>
-            <select id="actionSelect" onchange="S.action=this.value;render()" class="custom-dropdown w-full rounded-xl p-4 text-[10px] font-black uppercase outline-none" ${S.interphoneModeEnabled?'disabled':''}>
-              <option value="">Sélectionner une action...</option>
-              ${currentActions.map(a=>`<option value="${a}" ${S.action===a?'selected':''}>${a.replace(/_/g,' ')}</option>`).join('')}
-            </select>
-          </div>
-
-          <!-- Upload outil ménage — apparaît dès qu'une action avec outil est sélectionnée -->
-          ${S.cleaningModeEnabled && S.action && MENAGE_TOOLS_MAP[S.action] ? `
-          <div class="space-y-4 p-5 rounded-3xl" style="background:rgba(22,163,74,0.05);border:1px solid rgba(22,163,74,0.1)">
-            <h4 class="text-[10px] font-black uppercase text-green-400 tracking-widest">🧰 Outil Requis</h4>
-            <p class="text-[8px] text-gray-400 uppercase font-bold">Outil : ${MENAGE_TOOLS_MAP[S.action]}</p>
-            ${renderUploader('cleaningToolImage','Photo de l\'outil (obligatoire)',true,'h-28')}
-          </div>` : ''}
-
-          <!-- Chaos emotions -->
-          ${S.energy === 'chaos' ? renderChaosEmotions() : ''}
-
-          <textarea onchange="S.freeText=this.value" placeholder="Description additionnelle / Climat de la scène..." class="w-full rounded-xl p-4 text-[10px] text-white min-h-[100px] transition-all" style="background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.1)">${S.freeText}</textarea>
-
-          <!-- Format -->
-          <div class="space-y-2">
-            <label class="text-[9px] font-black uppercase text-gray-500">Format d'image (Ratio)</label>
-            <div class="grid grid-cols-3 gap-2">
-              ${['9:16','1:1','16:9'].map(r=>`<button onclick="S.aspectRatio='${r}';render()" class="py-2 px-1 rounded-xl text-[8px] font-black uppercase border transition-all ${S.aspectRatio===r?'bg-indigo-600 border-indigo-400 text-white shadow-lg':'bg-white/5 border-white/10 text-gray-400'}">${r}${r==='9:16'?' Portrait':r==='1:1'?' Carré':' Paysage'}</button>`).join('')}
-            </div>
-          </div>
-
-          <button onclick="generate()" ${S.loading?'disabled':''} class="w-full py-6 rounded-[24px] font-black accent-gradient shadow-2xl uppercase tracking-[0.4em] text-xs transition-all ${S.loading?'opacity-20':''}">${S.loading ? 'Génération en cours...' : 'Lancer le Rendu 4K'}</button>
-          ${S.error ? `<p class="text-red-500 text-[10px] font-black uppercase text-center">${S.error}</p>` : ''}
-        </section>
-      </aside>
-
-      <!-- MAIN col-span-8 -->
-      <main class="lg:col-span-8 space-y-8 pb-32">
-        <div class="relative glass overflow-hidden shadow-2xl flex items-center justify-center" style="border-radius:48px;border-color:rgba(255,255,255,0.05);min-height:700px;background:black">
-          ${S.loading ? `
-          <div class="text-center space-y-6 p-10">
-            <div class="relative w-32 h-32 mx-auto">
-              <div class="absolute inset-0 rounded-full" style="border:4px solid rgba(99,102,241,0.1)"></div>
-              <div class="absolute inset-0 rounded-full spin" style="border:4px solid transparent;border-top-color:#6366f1"></div>
-            </div>
-            <p class="text-2xl font-black text-white uppercase pulse tracking-widest">${S.loadingStep}</p>
-            <p class="text-[10px] text-gray-500 font-black uppercase tracking-widest">Moteur Nano Banana Pro 4K</p>
-          </div>` : S.resultImage ? `
-          <div class="w-full h-full flex flex-col items-center justify-center p-4">
-            <div class="relative group overflow-hidden rounded-3xl">
-              <img src="${S.resultImage}" class="max-w-full object-contain cursor-pointer" style="max-height:600px" alt="Rendu final 4K"/>
-              <button onclick="showDlMenu()" class="absolute bottom-4 right-4 w-12 h-12 rounded-full flex items-center justify-center border border-white/20 hover:bg-white/20 transition-all z-10 text-xl" style="background:rgba(0,0,0,0.6);backdrop-filter:blur(8px)">⬇️</button>
-              <div id="dl-menu" class="hidden absolute bottom-20 right-4 rounded-2xl flex flex-col space-y-1 shadow-2xl z-20 p-2" style="background:rgba(0,0,0,0.8);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.1)">
-                <button onclick="downloadImage('jpeg')" class="px-4 py-3 hover:bg-white/10 text-white rounded-xl text-[10px] font-black uppercase tracking-widest text-left">Télécharger en JPEG</button>
-                <button onclick="downloadImage('png')" class="px-4 py-3 hover:bg-white/10 text-white rounded-xl text-[10px] font-black uppercase tracking-widest text-left">Télécharger en PNG</button>
-              </div>
-            </div>
-            <div class="mt-8 flex space-x-4">
-              <button onclick="showDlMenu()" class="px-8 py-4 rounded-full text-[10px] font-black uppercase tracking-[0.3em] flex items-center space-x-3 transition-all" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1)"><span>Télécharger l'image</span><span>▿</span></button>
-            </div>
-            ${S.interphoneModeEnabled && S.interphoneStep < 3 ? `<button onclick="nextInterphoneStep()" class="mt-8 px-10 py-5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-full font-black uppercase tracking-[0.2em] shadow-xl transition-all bounce">Générer la scène suivante</button>` : ''}
-          </div>` : `
-          <div class="text-center" style="opacity:0.1">
-            <p class="font-black uppercase tracking-tighter mb-4" style="font-size:120px">STUDIO</p>
-            <p class="text-4xl font-black uppercase text-indigo-500" style="letter-spacing:0.8em">FAMILY HOME</p>
-          </div>`}
-        </div>
-      </main>
-    </div>
-  </div>`;
-}
-
-// ═══ HELPERS RENDER ═══
-function renderUploader(field, label, required, heightClass) {
-  let src = null;
-  if (field === 'mainAvatar') src = S.mainAvatar;
-  else if (field === 'partner') src = S.partner;
-  else if (field === 'babyRef') src = S.babyRef;
-  else if (field === 'waPhoto') src = S.waPhoto;
-  else if (field === 'babyCarrierImage') src = S.babyCarrierImage;
-  else if (field === 'babyCarrierBabyRef') src = S.babyCarrierBabyRef;
-  else if (field === 'tondeuseImage') src = S.tondeuseImage;
-  else if (field === 'bbqPhoto') src = S.bbqPhoto;
-  else if (field === 'strollerImage') src = S.strollerImage;
-  else if (field === 'strollerBabyRef') src = S.strollerBabyRef;
-  else if (field === 'interphonePortalImage') src = S.interphonePortalImage;
-  else if (field === 'interphonePortalOpenImage') src = S.interphonePortalOpenImage;
-  else if (field === 'interphoneVisitorImage') src = S.interphoneVisitorImage;
-  else if (field === 'interphoneInteriorImage') src = S.interphoneInteriorImage;
-  else if (field === 'roomImage') src = S.roomImage;
-  else if (field.startsWith('child-')) { const i = parseInt(field.split('-')[1]); src = S.children[i]; }
-  else if (field.startsWith('guest-')) { const i = parseInt(field.split('-')[1]); src = S.guests[i]; }
-  else if (field.startsWith('dressing-')) { const i = parseInt(field.split('-')[1]); src = S.dressingOutfits[i]?.image; }
-
-  const uid = `upl-${field.replace(/[^a-zA-Z0-9]/g,'-')}`;
-  return `
-  <div class="space-y-2">
-    <label class="text-sm font-medium text-gray-300">${label}${required?' <span class="text-red-500">*</span>':''}</label>
-    <div id="${uid}" class="uploader-zone ${heightClass} ${src?'has-image':''}" style="min-height:8rem">
-      ${src ? `<img class="preview" src="${src}" alt="Preview"/>` : ''}
-      <div class="relative z-0 flex flex-col items-center justify-center ${src?'hidden':''}">
-        <span class="text-2xl mb-2 block">📸</span>
-        <span class="text-xs text-gray-500">Cliquer pour uploader</span>
-      </div>
-      <div class="upl-overlay"><span class="text-xs text-white">Changer la photo</span></div>
-      <input type="file" accept="image/*" onchange="handleUpload('${field}',this)">
-    </div>
-  </div>`;
-}
-
-function renderToggleRow(field, label, colorClass, id) {
-  return `
-  <div class="flex items-center justify-between">
-    <span class="text-[8px] font-black uppercase ${getToggleLabelColor(colorClass)}">${label}</span>
-    <label class="toggle-wrap ${colorClass}">
-      <input type="checkbox" id="${id}" ${S[field]?'checked':''}>
-      <div class="toggle-track"></div>
-    </label>
-  </div>`;
-}
-
-function getToggleLabelColor(cls) {
-  const map = {'toggle-cyan':'text-cyan-400','toggle-green':'text-green-400','toggle-orange':'text-orange-400','toggle-lime':'text-lime-400','toggle-blue':'text-blue-400','toggle-sky':'text-sky-400','toggle-pink':'text-pink-400','toggle-indigo':'text-indigo-400','toggle-red':'text-red-400'};
-  return map[cls] || 'text-white';
+  // MAIN col-span-8
+  out+='<main class="lg:col-span-8 space-y-8 pb-32">';
+  out+='<div class="relative glass overflow-hidden shadow-2xl flex items-center justify-center" style="border-radius:48px;border-color:rgba(255,255,255,0.05);min-height:700px;background:black">';
+  if(S.loading){
+    out+='<div class="text-center space-y-6 p-10">';
+    out+='<div class="relative w-32 h-32 mx-auto">';
+    out+='<div class="absolute inset-0 rounded-full" style="border:4px solid rgba(99,102,241,0.1)"></div>';
+    out+='<div class="absolute inset-0 rounded-full spin" style="border:4px solid transparent;border-top-color:#6366f1"></div>';
+    out+='</div>';
+    out+='<p class="text-2xl font-black text-white uppercase pulse tracking-widest">'+h(S.loadingStep)+'</p>';
+    out+='<p class="text-[10px] text-gray-500 font-black uppercase tracking-widest">Moteur Nano Banana Pro 4K</p>';
+    out+='</div>';
+  } else if(S.resultImage){
+    out+='<div class="w-full h-full flex flex-col items-center justify-center p-4">';
+    out+='<div class="relative group overflow-hidden rounded-3xl">';
+    out+='<img src="'+S.resultImage+'" class="max-w-full object-contain" style="max-height:600px" alt="Rendu final 4K"/>';
+    out+='<button onclick="showDlMenu()" class="absolute bottom-4 right-4 w-12 h-12 rounded-full flex items-center justify-center border border-white/20 text-xl z-10" style="background:rgba(0,0,0,0.6)">⬇️</button>';
+    out+='<div id="dl-menu" class="hidden absolute bottom-20 right-4 rounded-2xl flex flex-col space-y-1 shadow-2xl z-20 p-2" style="background:rgba(0,0,0,0.8);border:1px solid rgba(255,255,255,0.1)">';
+    out+='<button onclick="dlImg(\'jpeg\')" class="px-4 py-3 hover:bg-white/10 text-white rounded-xl text-[10px] font-black uppercase text-left">Télécharger en JPEG</button>';
+    out+='<button onclick="dlImg(\'png\')" class="px-4 py-3 hover:bg-white/10 text-white rounded-xl text-[10px] font-black uppercase text-left">Télécharger en PNG</button>';
+    out+='</div></div>';
+    out+='<div class="mt-8 flex space-x-4">';
+    out+='<button onclick="showDlMenu()" class="px-8 py-4 rounded-full text-[10px] font-black uppercase tracking-[0.3em]" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1)">Télécharger l\'image ▿</button>';
+    out+='</div>';
+    if(S.interphoneModeEnabled&&S.interphoneStep<3){
+      out+='<button onclick="nextInterphoneStep()" class="mt-8 px-10 py-5 bg-cyan-600 text-white rounded-full font-black uppercase tracking-[0.2em] shadow-xl bounce">Générer la scène suivante</button>';
+    }
+    out+='</div>';
+  } else {
+    out+='<div class="text-center" style="opacity:0.1">';
+    out+='<p class="font-black uppercase tracking-tighter mb-4" style="font-size:120px">STUDIO</p>';
+    out+='<p class="text-4xl font-black uppercase text-indigo-500" style="letter-spacing:0.8em">FAMILY HOME</p>';
+    out+='</div>';
+  }
+  out+='</div></main></div></div>';
+  return out;
 }
 
 function renderRoomSelector() {
-  const cats = Object.keys(LIFE_AREAS);
-  const rooms = LIFE_AREAS[S.selectedCategory] || [];
-  return `
-  <div class="flex overflow-x-auto space-x-2 pb-2 no-scrollbar">
-    ${cats.map(c=>`<button onclick="S.selectedCategory='${c}';render()" class="px-4 py-2 rounded-full text-[9px] font-black uppercase border whitespace-nowrap ${S.selectedCategory===c?'bg-indigo-600 border-indigo-400':'bg-white/5 border-white/10 text-gray-500'}">${CATEGORY_LABELS[c]||c}</button>`).join('')}
-  </div>
-  <div class="grid grid-cols-4 gap-2">
-    ${rooms.map(a=>`<button onclick="selectRoom('${a.key}','${a.label}')" class="p-3 rounded-2xl text-center transition-all ${S.roomType===a.key?'bg-indigo-600 scale-105 shadow-xl':'bg-white/[0.03] opacity-60 hover:opacity-100'}">
-      <span class="block text-2xl mb-1">${a.icon}</span>
-      <span class="text-[8px] font-black uppercase truncate block">${a.label}</span>
-    </button>`).join('')}
-  </div>
-  ${S.roomType ? renderUploader('roomImage', 'Photo de la pièce : '+S.roomLabel, true, 'h-32') : ''}`;
-
+  var cats=Object.keys(LIFE_AREAS);
+  var out='<div class="flex overflow-x-auto space-x-2 pb-2 noscroll">';
+  for(var ci=0;ci<cats.length;ci++){
+    out+='<button onclick="S.selectedCategory=\''+cats[ci]+'\';render()" class="px-4 py-2 rounded-full text-[9px] font-black uppercase border whitespace-nowrap '+(S.selectedCategory===cats[ci]?'bg-indigo-600 border-indigo-400':'bg-white/5 border-white/10 text-gray-500')+'">'+(CAT_LABELS[cats[ci]]||cats[ci])+'</button>';
+  }
+  out+='</div>';
+  var rooms=LIFE_AREAS[S.selectedCategory]||[];
+  out+='<div class="grid grid-cols-4 gap-2">';
+  for(var ri=0;ri<rooms.length;ri++){
+    out+='<button onclick="selectRoom(\''+rooms[ri].key+'\',\''+rooms[ri].label+'\')" class="p-3 rounded-2xl text-center transition-all '+(S.roomType===rooms[ri].key?'bg-indigo-600 scale-105 shadow-xl':'bg-white/[0.03] opacity-60 hover:opacity-100')+'">';
+    out+='<span class="block text-2xl mb-1">'+rooms[ri].icon+'</span>';
+    out+='<span class="text-[8px] font-black uppercase truncate block">'+rooms[ri].label+'</span>';
+    out+='</button>';
+  }
+  out+='</div>';
+  if(S.roomType) out+=upl('roomImage','Photo de la pièce : '+S.roomLabel,true,'h-32');
+  return out;
 }
 
 function renderPhoneBlock() {
-  return `
-  <div class="space-y-4 p-5 rounded-3xl" style="background:rgba(99,102,241,0.05);border:1px solid rgba(99,102,241,0.1)">
-    <h4 class="text-[10px] font-black uppercase text-indigo-400 tracking-widest">📱 CONFIGURATION WHATSAPP</h4>
-    <div class="grid grid-cols-2 gap-3">
-      <div class="space-y-2">
-        <label class="text-[9px] font-black uppercase text-gray-500">Type d'appel</label>
-        <select onchange="S.waCallType=this.value" class="custom-dropdown w-full rounded-xl p-2 text-[9px] font-black uppercase outline-none">
-          <option value="video" ${S.waCallType==='video'?'selected':''}>Vidéo</option>
-          <option value="audio" ${S.waCallType==='audio'?'selected':''}>Audio</option>
-        </select>
-      </div>
-      <div class="space-y-2">
-        <label class="text-[9px] font-black uppercase text-gray-500">Contact</label>
-        <select onchange="S.waContact=this.value" class="custom-dropdown w-full rounded-xl p-2 text-[9px] font-black uppercase outline-none">
-          ${WHATSAPP_CONTACTS.map(c=>`<option value="${c}" ${S.waContact===c?'selected':''}>${c.charAt(0).toUpperCase()+c.slice(1)}</option>`).join('')}
-        </select>
-      </div>
-    </div>
-    <div class="grid grid-cols-2 gap-4">
-      ${renderUploader('mainAvatar','Personne tenant le téléphone',true,'h-24')}
-      ${renderUploader('waPhoto','Personne affichée en grand sur l\'écran',true,'h-24')}
-    </div>
-    <div class="space-y-2">
-      <label class="text-[9px] font-black uppercase text-gray-500">Angle de vue (Whatsapp)</label>
-      <select onchange="S.waAngle=this.value" class="custom-dropdown w-full rounded-xl p-2 text-[9px] font-black uppercase outline-none">
-        ${WHATSAPP_ANGLES.map(a=>`<option value="${a.key}" ${S.waAngle===a.key?'selected':''}>${a.label}</option>`).join('')}
-      </select>
-    </div>
-  </div>`;
+  var out='<div class="space-y-4 p-5 rounded-3xl" style="background:rgba(99,102,241,0.05);border:1px solid rgba(99,102,241,0.1)">';
+  out+='<h4 class="text-[10px] font-black uppercase text-indigo-400 tracking-widest">📱 CONFIGURATION WHATSAPP</h4>';
+  out+='<div class="grid grid-cols-2 gap-3">';
+  out+='<div class="space-y-2"><label class="text-[9px] font-black uppercase text-gray-500">Type d\'appel</label>';
+  out+='<select onchange="S.waCallType=this.value" class="dd w-full rounded-xl p-2 text-[9px] font-black uppercase outline-none">';
+  out+='<option value="video" '+(S.waCallType==='video'?'selected':'')+'>Vidéo</option>';
+  out+='<option value="audio" '+(S.waCallType==='audio'?'selected':'')+'>Audio</option>';
+  out+='</select></div>';
+  out+='<div class="space-y-2"><label class="text-[9px] font-black uppercase text-gray-500">Contact</label>';
+  out+='<select onchange="S.waContact=this.value" class="dd w-full rounded-xl p-2 text-[9px] font-black uppercase outline-none">';
+  for(var i=0;i<WA_CONTACTS.length;i++) out+='<option value="'+WA_CONTACTS[i]+'" '+(S.waContact===WA_CONTACTS[i]?'selected':'')+'>'+WA_CONTACTS[i].charAt(0).toUpperCase()+WA_CONTACTS[i].slice(1)+'</option>';
+  out+='</select></div></div>';
+  out+=upl('mainAvatar','Personne tenant le téléphone',true,'h-24');
+  out+=upl('waPhoto','Personne affichée en grand sur l\'écran',true,'h-24');
+  out+='<div class="space-y-2"><label class="text-[9px] font-black uppercase text-gray-500">Angle de vue</label>';
+  out+='<select onchange="S.waAngle=this.value" class="dd w-full rounded-xl p-2 text-[9px] font-black uppercase outline-none">';
+  for(var ai=0;ai<WA_ANGLES.length;ai++) out+='<option value="'+WA_ANGLES[ai].key+'" '+(S.waAngle===WA_ANGLES[ai].key?'selected':'')+'>'+WA_ANGLES[ai].label+'</option>';
+  out+='</select></div>';
+  out+='</div>';
+  return out;
 }
 
 function renderBbqBlock() {
-  const fuelOptions = S.roomType === 'balcon' ? ['electrique'] : ['charbon','electrique'];
-  return `
-  <div class="space-y-4 p-5 rounded-3xl" style="background:rgba(220,38,38,0.05);border:1px solid rgba(220,38,38,0.1)">
-    <h4 class="text-[10px] font-black uppercase text-red-400 tracking-widest">🔥 Configuration BBQ</h4>
-    <div class="grid grid-cols-2 gap-3">
-      <div class="space-y-2">
-        <label class="text-[9px] font-black uppercase text-gray-500">Type de feu</label>
-        <select onchange="S.bbqFuel=this.value" class="custom-dropdown w-full rounded-xl p-2 text-[9px] font-black uppercase outline-none">
-          ${fuelOptions.map(f=>`<option value="${f}" ${S.bbqFuel===f?'selected':''}>${f.charAt(0).toUpperCase()+f.slice(1)}</option>`).join('')}
-        </select>
-      </div>
-      <div class="space-y-2">
-        <label class="text-[9px] font-black uppercase text-gray-500">Grillade</label>
-        <select onchange="S.bbqCookItem=this.value" class="custom-dropdown w-full rounded-xl p-2 text-[9px] font-black uppercase outline-none">
-          ${BBQ_ITEMS.map(i=>`<option value="${i}" ${S.bbqCookItem===i?'selected':''}>${i}</option>`).join('')}
-        </select>
-      </div>
-    </div>
-    ${renderUploader('bbqPhoto','Photo du barbecue (Obligatoire)',true,'h-24')}
-  </div>`;
+  var fuelOpts=S.roomType==='balcon'?['electrique']:['charbon','electrique'];
+  var out='<div class="space-y-4 p-5 rounded-3xl" style="background:rgba(220,38,38,0.05);border:1px solid rgba(220,38,38,0.1)">';
+  out+='<h4 class="text-[10px] font-black uppercase text-red-400 tracking-widest">🔥 Configuration BBQ</h4>';
+  out+='<div class="grid grid-cols-2 gap-3">';
+  out+='<div class="space-y-2"><label class="text-[9px] font-black uppercase text-gray-500">Type de feu</label>';
+  out+='<select onchange="S.bbqFuel=this.value" class="dd w-full rounded-xl p-2 text-[9px] font-black uppercase outline-none">';
+  for(var fi=0;fi<fuelOpts.length;fi++) out+='<option value="'+fuelOpts[fi]+'" '+(S.bbqFuel===fuelOpts[fi]?'selected':'')+'>'+fuelOpts[fi].charAt(0).toUpperCase()+fuelOpts[fi].slice(1)+'</option>';
+  out+='</select></div>';
+  out+='<div class="space-y-2"><label class="text-[9px] font-black uppercase text-gray-500">Grillade</label>';
+  out+='<select onchange="S.bbqCookItem=this.value" class="dd w-full rounded-xl p-2 text-[9px] font-black uppercase outline-none">';
+  for(var bi=0;bi<BBQ_ITEMS.length;bi++) out+='<option value="'+BBQ_ITEMS[bi]+'" '+(S.bbqCookItem===BBQ_ITEMS[bi]?'selected':'')+'>'+BBQ_ITEMS[bi]+'</option>';
+  out+='</select></div></div>';
+  out+=upl('bbqPhoto','Photo du barbecue (Obligatoire)',true,'h-24');
+  out+='</div>';
+  return out;
 }
 
 function renderDressingBlock() {
-  if (!S.dressingOutfits.length) return `<div class="p-4 rounded-3xl text-[9px] text-pink-400 font-black uppercase" style="background:rgba(236,72,153,0.05);border:1px solid rgba(236,72,153,0.1)">👗 Configurez les participants pour accéder aux tenues.</div>`;
-  return `
-  <div class="space-y-4 p-5 rounded-3xl" style="background:rgba(236,72,153,0.05);border:1px solid rgba(236,72,153,0.1)">
-    <h4 class="text-[10px] font-black uppercase text-pink-400 tracking-widest">👗 Tenues par Participant</h4>
-    <div class="space-y-6">
-      ${S.dressingOutfits.map((o,i)=>`
-      <div class="space-y-3 p-3 rounded-2xl" style="background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.05)">
-        <p class="text-[9px] font-black uppercase text-indigo-300">${o.label}</p>
-        <div class="flex space-x-2">
-          <button onclick="setDressingSource(${i},'image')" class="flex-1 py-1.5 rounded-lg text-[8px] font-black uppercase border transition-all ${o.source==='image'?'bg-pink-600 border-pink-400':'bg-white/5 border-white/10'}">Photo</button>
-          <button onclick="setDressingSource(${i},'text')" class="flex-1 py-1.5 rounded-lg text-[8px] font-black uppercase border transition-all ${o.source==='text'?'bg-pink-600 border-pink-400':'bg-white/5 border-white/10'}">Texte</button>
-        </div>
-        ${o.source==='image' ? renderUploader('dressing-'+i,'',false,'h-24') : '<textarea onchange="S.dressingOutfits['+i+'].text=this.value" placeholder="Matière, coupe, couleur..." class="w-full rounded-xl p-3 text-[9px] text-white min-h-[60px] transition-all" style="background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.1)">'+(o.text||'')+'</textarea>'}
-      </div>`).join('')}
-    </div>
-  </div>`;
+  if(!S.dressingOutfits.length) return '<div class="p-4 rounded-3xl text-[9px] text-pink-400 font-black uppercase" style="background:rgba(236,72,153,0.05);border:1px solid rgba(236,72,153,0.1)">👗 Configurez les participants pour accéder aux tenues.</div>';
+  var out='<div class="space-y-4 p-5 rounded-3xl" style="background:rgba(236,72,153,0.05);border:1px solid rgba(236,72,153,0.1)">';
+  out+='<h4 class="text-[10px] font-black uppercase text-pink-400 tracking-widest">👗 Tenues par Participant</h4>';
+  out+='<div class="space-y-6">';
+  for(var di=0;di<S.dressingOutfits.length;di++){
+    var o=S.dressingOutfits[di];
+    out+='<div class="space-y-3 p-3 rounded-2xl" style="background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.05)">';
+    out+='<p class="text-[9px] font-black uppercase text-indigo-300">'+h(o.label)+'</p>';
+    out+='<div class="flex space-x-2">';
+    out+='<button onclick="setDressingSource('+di+',\'image\')" class="flex-1 py-1.5 rounded-lg text-[8px] font-black uppercase border transition-all '+(o.source==='image'?'bg-pink-600 border-pink-400':'bg-white/5 border-white/10')+'">Photo</button>';
+    out+='<button onclick="setDressingSource('+di+',\'text\')" class="flex-1 py-1.5 rounded-lg text-[8px] font-black uppercase border transition-all '+(o.source==='text'?'bg-pink-600 border-pink-400':'bg-white/5 border-white/10')+'">Texte</button>';
+    out+='</div>';
+    if(o.source==='image') out+=upl('dressing-'+di,'',false,'h-24');
+    else out+='<textarea onchange="S.dressingOutfits['+di+'].text=this.value" placeholder="Matière, coupe, couleur..." class="w-full rounded-xl p-3 text-[9px] text-white min-h-[60px] transition-all" style="background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.1)">'+h(o.text||'')+'</textarea>';
+    out+='</div>';
+  }
+  out+='</div></div>';
+  return out;
 }
 
 function renderCarrierBlock() {
-  return `
-  <div class="space-y-4 p-5 rounded-3xl" style="background:rgba(234,88,12,0.05);border:1px solid rgba(234,88,12,0.1)">
-    <h4 class="text-[10px] font-black uppercase text-orange-400 tracking-widest">🍼 CONFIGURATION PORTAGE</h4>
-    <p class="text-[8px] text-gray-400 uppercase font-bold">2 Photos DNA Obligatoires</p>
-    ${renderUploader('babyCarrierBabyRef','DNA Bébé (Visage obligatoire)',true,'h-24')}
-    ${renderUploader('babyCarrierImage','Photo du Porte-bébé (Exacte)',true,'h-24')}
-  </div>`;
+  var out='<div class="space-y-4 p-5 rounded-3xl" style="background:rgba(234,88,12,0.05);border:1px solid rgba(234,88,12,0.1)">';
+  out+='<h4 class="text-[10px] font-black uppercase text-orange-400 tracking-widest">🍼 CONFIGURATION PORTAGE</h4>';
+  out+='<p class="text-[8px] text-gray-400 uppercase font-bold">2 Photos DNA Obligatoires</p>';
+  out+=upl('babyCarrierBabyRef','DNA Bébé (Visage obligatoire)',true,'h-24');
+  out+=upl('babyCarrierImage','Photo du Porte-bébé (Exacte)',true,'h-24');
+  out+='</div>';
+  return out;
 }
 
 function renderTondeuseBlock() {
-  return `
-  <div class="space-y-4 p-5 rounded-3xl" style="background:rgba(101,163,13,0.05);border:1px solid rgba(101,163,13,0.1)">
-    <h4 class="text-[10px] font-black uppercase text-lime-400 tracking-widest">🚜 Photo de la Tondeuse</h4>
-    ${renderUploader('tondeuseImage','Photo de la tondeuse (Exacte)',true,'h-24')}
-  </div>`;
+  var out='<div class="space-y-4 p-5 rounded-3xl" style="background:rgba(101,163,13,0.05);border:1px solid rgba(101,163,13,0.1)">';
+  out+='<h4 class="text-[10px] font-black uppercase text-lime-400 tracking-widest">🚜 Photo de la Tondeuse</h4>';
+  out+=upl('tondeuseImage','Photo de la tondeuse (Exacte)',true,'h-24');
+  out+='</div>';
+  return out;
 }
 
 function renderInterphoneBlock() {
-  return `
-  <div class="space-y-4 p-5 rounded-3xl" style="background:rgba(6,182,212,0.05);border:1px solid rgba(6,182,212,0.1)">
-    <div class="flex justify-between items-center">
-      <h4 class="text-[10px] font-black uppercase text-cyan-400 tracking-widest">🔔 Flux Interphone</h4>
-      <span class="px-2 py-0.5 rounded text-[8px] font-black text-cyan-300" style="background:rgba(6,182,212,0.15)">ÉTAPE ${S.interphoneStep}/3</span>
-    </div>
-    ${S.interphoneStep===1 ? `
-      <p class="text-[8px] text-gray-400 uppercase font-bold">Référence Extérieure Requise</p>
-      ${renderUploader('interphonePortalImage','Photo Portail FERMÉ',true,'h-24')}
-      ${renderUploader('interphoneVisitorImage','Photo du VISITEUR',true,'h-24')}
-    ` : S.interphoneStep===2 ? `
-      <p class="text-[8px] text-gray-400 uppercase font-bold">Référence Intérieure Requise</p>
-      ${renderUploader('interphoneInteriorImage','Entrée Intérieure (Mur Interphone)',true,'h-24')}
-      <div class="p-3 rounded-xl" style="border:1px solid rgba(99,102,241,0.2);background:rgba(99,102,241,0.05)"><p class="text-[8px] font-black uppercase text-indigo-400">Avatar Principal utilisé pour l'intérieur</p></div>
-    ` : `
-      <p class="text-[8px] text-gray-400 uppercase font-bold">Référence Portail Ouvert</p>
-      ${renderUploader('interphonePortalOpenImage','Photo Portail OUVERT',true,'h-24')}
-      <div class="p-3 rounded-xl" style="border:1px solid rgba(6,182,212,0.2);background:rgba(6,182,212,0.05)"><p class="text-[8px] font-black uppercase text-cyan-400">Visiteur réutilisé pour l'entrée</p></div>
-    `}
-  </div>`;
+  var out='<div class="space-y-4 p-5 rounded-3xl" style="background:rgba(6,182,212,0.05);border:1px solid rgba(6,182,212,0.1)">';
+  out+='<div class="flex justify-between items-center">';
+  out+='<h4 class="text-[10px] font-black uppercase text-cyan-400 tracking-widest">🔔 Flux Interphone</h4>';
+  out+='<span class="px-2 py-0.5 rounded text-[8px] font-black text-cyan-300" style="background:rgba(6,182,212,0.15)">ÉTAPE '+S.interphoneStep+'/3</span>';
+  out+='</div>';
+  if(S.interphoneStep===1){
+    out+='<p class="text-[8px] text-gray-400 uppercase font-bold">Référence Extérieure Requise</p>';
+    out+=upl('interphonePortalImage','Photo Portail FERMÉ',true,'h-24');
+    out+=upl('interphoneVisitorImage','Photo du VISITEUR',true,'h-24');
+  } else if(S.interphoneStep===2){
+    out+='<p class="text-[8px] text-gray-400 uppercase font-bold">Référence Intérieure Requise</p>';
+    out+=upl('interphoneInteriorImage','Entrée Intérieure (Mur Interphone)',true,'h-24');
+    out+='<div class="p-3 rounded-xl" style="border:1px solid rgba(99,102,241,0.2);background:rgba(99,102,241,0.05)"><p class="text-[8px] font-black uppercase text-indigo-400">Avatar Principal utilisé pour l\'intérieur</p></div>';
+  } else {
+    out+='<p class="text-[8px] text-gray-400 uppercase font-bold">Référence Portail Ouvert</p>';
+    out+=upl('interphonePortalOpenImage','Photo Portail OUVERT',true,'h-24');
+    out+='<div class="p-3 rounded-xl" style="border:1px solid rgba(6,182,212,0.2);background:rgba(6,182,212,0.05)"><p class="text-[8px] font-black uppercase text-cyan-400">Visiteur réutilisé pour l\'entrée</p></div>';
+  }
+  out+='</div>';
+  return out;
 }
 
 function renderStrollerBlock() {
-  return `
-  <div class="space-y-4 p-5 rounded-3xl" style="background:rgba(37,99,235,0.05);border:1px solid rgba(37,99,235,0.1)">
-    <h4 class="text-[10px] font-black uppercase text-blue-400 tracking-widest">🛒 CONFIGURATION POUSSETTE</h4>
-    ${renderUploader('strollerImage','Poussette Réelle (Photo de référence)',true,'h-24')}
-    ${renderUploader('strollerBabyRef','Bébé Réel (DNA)',true,'h-24')}
-    ${(S.action==='ACTION_POUSSETTE_BALADER_RUE'||S.action==='ACTION_POUSSETTE_FAIRE_SHOPPING') ? `
-    <div class="space-y-2">
-      <label class="text-[9px] font-black uppercase text-gray-500">Adresse / Rue Réelle *</label>
-      <input type="text" value="${S.strollerAddress}" onchange="S.strollerAddress=this.value" placeholder="Ex: 10 rue de la Paix, Paris" class="w-full rounded-xl p-3 text-[10px] text-white outline-none" style="background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.1)">
-    </div>` : ''}
-    ${S.action==='ACTION_POUSSETTE_FAIRE_COURSES' ? `
-    <div class="space-y-2">
-      <label class="text-[9px] font-black uppercase text-gray-500">Nom du Magasin *</label>
-      <select onchange="S.strollerStore=this.value" class="custom-dropdown w-full rounded-xl p-2 text-[9px] font-black uppercase outline-none">
-        <option value="">Sélectionner...</option>
-        ${STORES.map(s=>`<option value="${s}" ${S.strollerStore===s?'selected':''}>${s}</option>`).join('')}
-      </select>
-    </div>` : ''}
-  </div>`;
+  var out='<div class="space-y-4 p-5 rounded-3xl" style="background:rgba(37,99,235,0.05);border:1px solid rgba(37,99,235,0.1)">';
+  out+='<h4 class="text-[10px] font-black uppercase text-blue-400 tracking-widest">🛒 CONFIGURATION POUSSETTE</h4>';
+  out+=upl('strollerImage','Poussette Réelle (Photo de référence)',true,'h-24');
+  out+=upl('strollerBabyRef','Bébé Réel (DNA)',true,'h-24');
+  if(S.action==='ACTION_POUSSETTE_BALADER_RUE'||S.action==='ACTION_POUSSETTE_FAIRE_SHOPPING'){
+    out+='<div class="space-y-2"><label class="text-[9px] font-black uppercase text-gray-500">Adresse / Rue Réelle *</label>';
+    out+='<input type="text" value="'+h(S.strollerAddress)+'" onchange="S.strollerAddress=this.value" placeholder="Ex: 10 rue de la Paix, Paris" class="w-full rounded-xl p-3 text-[10px] text-white outline-none" style="background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.1)">';
+    out+='</div>';
+  }
+  if(S.action==='ACTION_POUSSETTE_FAIRE_COURSES'){
+    out+='<div class="space-y-2"><label class="text-[9px] font-black uppercase text-gray-500">Nom du Magasin *</label>';
+    out+='<select onchange="S.strollerStore=this.value" class="dd w-full rounded-xl p-2 text-[9px] font-black uppercase outline-none">';
+    out+='<option value="">Sélectionner...</option>';
+    var stores=['Carrefour','Super U','Leclerc','Lidl','Intermarché','Aldi'];
+    for(var si=0;si<stores.length;si++) out+='<option value="'+stores[si]+'" '+(S.strollerStore===stores[si]?'selected':'')+'>'+stores[si]+'</option>';
+    out+='</select></div>';
+  }
+  out+='</div>';
+  return out;
 }
 
-function renderChaosEmotions() {
-  const hasChildren = S.childCount > 0;
-  return `
-  <div class="space-y-4 p-5 rounded-3xl" style="background:rgba(220,38,38,0.05);border:1px solid rgba(220,38,38,0.1)">
-    <h4 class="text-[10px] font-black uppercase text-red-400 tracking-widest">⚠️ ÉMOTIONS — MODE CHAOS</h4>
-    <div class="space-y-2">
-      <label class="text-[9px] font-black uppercase text-gray-500">Émotion Adulte *</label>
-      <select onchange="S.chaosEmotionAdult=this.value" class="custom-dropdown w-full rounded-xl p-2 text-[9px] font-black uppercase outline-none">
-        <option value="">Sélectionner...</option>
-        ${CHAOS_ADULT.map(e=>`<option value="${e}" ${S.chaosEmotionAdult===e?'selected':''}>${e}</option>`).join('')}
-      </select>
-    </div>
-    ${hasChildren ? `
-    <div class="space-y-2">
-      <label class="text-[9px] font-black uppercase text-gray-500">Émotion Enfant *</label>
-      <select onchange="S.chaosEmotionChild=this.value" class="custom-dropdown w-full rounded-xl p-2 text-[9px] font-black uppercase outline-none">
-        <option value="">Sélectionner...</option>
-        ${CHAOS_CHILD.map(e=>`<option value="${e}" ${S.chaosEmotionChild===e?'selected':''}>${e}</option>`).join('')}
-      </select>
-    </div>` : ''}
-    ${S.isBabyPresent ? `
-    <div class="space-y-2">
-      <label class="text-[9px] font-black uppercase text-gray-500">Émotion Bébé *</label>
-      <select onchange="S.chaosEmotionBaby=this.value" class="custom-dropdown w-full rounded-xl p-2 text-[9px] font-black uppercase outline-none">
-        <option value="">Sélectionner...</option>
-        ${CHAOS_BABY.map(e=>`<option value="${e}" ${S.chaosEmotionBaby===e?'selected':''}>${e}</option>`).join('')}
-      </select>
-    </div>` : ''}
-  </div>`;
-}
+// ═══ ACTIONS ═══
+function chooseMode(m){ S.mode=m; S.screen='config'; render(); }
+function goIdle(){ S.screen='idle'; S.resultImage=null; S.error=null; render(); }
+function goConfig(){ S.screen='config'; render(); }
+function setEnergy(e){ S.energy=e; render(); }
+function selectRoom(key,label){ S.roomType=key; S.roomLabel=label; S.roomSubtype=null; S.action=''; render(); }
+function togglePartner(){ S.partnerEnabled=!S.partnerEnabled; if(!S.partnerEnabled) S.partner=null; render(); }
+function toggleBaby(){ S.isBabyPresent=!S.isBabyPresent; render(); }
+function changeChildCount(d){ S.childCount=Math.max(0,S.childCount+d); while(S.children.length<S.childCount) S.children.push(null); S.children=S.children.slice(0,S.childCount); render(); }
+function changeGuestCount(d){ S.guestCount=Math.max(0,S.guestCount+d); while(S.guests.length<S.guestCount) S.guests.push(null); S.guests=S.guests.slice(0,S.guestCount); render(); }
+function setDressingSource(i,src){ S.dressingOutfits[i].source=src; render(); }
+function nextInterphoneStep(){ if(S.interphoneStep<3){ S.interphoneStep++; S.resultImage=null; S.error=null; render(); } }
+function showDlMenu(){ var m=document.getElementById('dl-menu'); if(m) m.classList.toggle('hidden'); }
 
-// ═══════════════════════════════════════════════════════
-// ACTIONS — logique complète identique à App.tsx
-// ═══════════════════════════════════════════════════════
-
-const MODE_MENAGE = {
-  availability: {
-    allowed_rooms: ["salon","cuisine","bureau","chambre","salle_de_bain","toilettes","cellier_nourriture","buanderie"],
-    forbidden_rooms: ["jardin","terrace","garage_voiture","atelier_bricolage"]
-  },
-  actions: {
-    aspirateur_manuel: { label: "passer_l_aspirateur", requires_tool: true, tool_type: "aspirateur manuel" },
-    aspirateur_robot:  { label: "lancer_aspirateur_robot", requires_tool: true, tool_type: "aspirateur robot" },
-    nettoyer_vitres:   { label: "nettoyer_les_vitres", requires_tool: true, tool_type: "spray vitres + chiffon microfibre" },
-    laver_sol:         { label: "laver_le_sol", requires_tool: true, tool_type: "seau + serpillère + produit sol" },
-    nettoyer_canape:   { label: "nettoyer_le_canape", requires_tool: true, tool_type: "aspirateur à main" },
-    faire_poussiere:   { label: "faire_la_poussiere", requires_tool: false },
-    ouvrir_fenetres:   { label: "ouvrir_les_fenetres_pour_aerer", requires_tool: false },
-    nettoyer_poignees: { label: "nettoyer_poignees_de_porte", requires_tool: false },
-    nettoyer_interrupteurs: { label: "nettoyer_les_interrupteurs", requires_tool: false },
-    ranger_surface:    { label: "ranger_rapidement_les_surfaces", requires_tool: false },
-    ramasser_objets:   { label: "ramasser_les_objets_au_sol", requires_tool: false },
-    desinfecter_surface: { label: "desinfecter_surface", requires_tool: false },
-    sortir_poubelles:  { label: "sortir_les_poubelles", requires_tool: false }
-  }
-};
-
-const MENAGE_ACTIONS_LIST = Object.values(MODE_MENAGE.actions).map(a => a.label);
-const MENAGE_TOOLS_MAP = Object.fromEntries(
-  Object.values(MODE_MENAGE.actions)
-    .filter(a => a.requires_tool)
-    .map(a => [a.label, a.tool_type])
-);
-
-const MIRROR_ACTIONS_LIST = [
-  "SELFIE_MIROIR_TROIS_QUARTS","SELFIE_MIROIR_DUCK_FACE","SELFIE_MIROIR_GRIMACE_FUN",
-  "SELFIE_MIROIR_PIEDS_A_TETE","SELFIE_MIROIR_CLASSIQUE"
-];
-
-const STROLLER_ACTIONS_LIST = [
-  "ACTION_POUSSETTE_SORTIR_MAISON","ACTION_POUSSETTE_DEVANT_PORTAIL","ACTION_POUSSETTE_BALADER_RUE",
-  "ACTION_POUSSETTE_FAIRE_SHOPPING","ACTION_POUSSETTE_FAIRE_COURSES",
-  "ACTION_POUSSETTE_ALLER_PARC_ENFANTS","ACTION_POUSSETTE_ALLER_CRECHE"
-];
-
-const PORTAGE_ACTIONS_LIST = [
-  "Porter bébé en peau à peau (nouveau-né)","Porter bébé face à soi (position ventrale)",
-  "Porter bébé sur le dos (position dorsale)","Porter bébé sur la hanche",
-  "Se déplacer avec bébé en portage","Donner le biberon en portage",
-  "Cuisiner avec bébé en portage","Faire les courses avec bébé en portage"
-];
-
-const INTERPHONE_ACTIONS_LIST = [
-  "visiteur_sonne_portail_exterieur",
-  "interphone_voir_visiteur_interieur",
-  "visiteur_entre_portail_ouvert"
-];
-
-const CUISINE_PLAN_TRAVAIL = [
-  "Découper des légumes sur le plan de travail","Éplucher des légumes","Rincer légumes dans l'évier",
-  "Couper des oignons","Couper des carottes","Goûter le plat en cours","Rectifier l'assaisonnement",
-  "Cuisiner avec les enfants","Aider l'enfant à couper les légumes","Cuisiner avec le conjoint",
-  "Cuisiner en famille","Nettoyer le plan de travail","Essuyer les éclaboussures",
-  "Assaisonner la viande","Aiguiser un couteau","Éplucher des pommes de terre",
-  "Râper des carottes","Préparer une vinaigrette","Essorer la salade"
-];
-
-const CUISINE_PLAQUES = [
-  "Allumer les plaques de cuisson","Poser casserole sur plaque","Faire bouillir l'eau",
-  "Ajouter sel dans l'eau","Cuire le riz","Cuire les pâtes","Remuer casserole en cuisson",
-  "Préparer un plat en sauce","Laisser mijoter le plat","Goûter la sauce en cuisson",
-  "Préparer la soupe","Mixer la soupe","Vérifier consistance de la soupe",
-  "Faire bouillir eau (bain marie)","Faire fondre le beurre","Cuire des steaks","Mijoter une sauce"
-];
-
-const CUISINE_TABLE = [
-  "Prendre le petit-déjeuner","Manger ensemble à table","Discuter à table",
-  "Aider un enfant à couper sa viande","Débarrasser la table"
-];
-
-const OFFICE_ACTIONS_LIST = [
-  "Taper sur l'ordinateur","Écrire un email","Recherche Google","Naviguer sur le web",
-  "Travailler sur un document","Travailler sur un tableur","Designer sur Canva",
-  "Monter une vidéo","Planifier du contenu","Consulter les analytics",
-  "Gérer les factures et la compta","Suivre une formation en ligne",
-  "Écouter de la musique pour se concentrer","Répondre aux messages (DMs)",
-  "Faire des achats en ligne","Trier les photos de famille","Écrire dans un carnet",
-  "Brainstormer avec des Post-its","Faire sa To-Do list","Journaliser",
-  "Signer des documents","Ouvrir le courrier","Organiser des dossiers","Ranger le bureau",
-  "Faire une pause café","Scroller téléphone","Lire un livre",
-  "Passer un appel vidéo WhatsApp","Passer un appel audio WhatsApp"
-];
-
-const DRESSING_ACTIONS_LIST = [
-  "Ranger les vêtements","Choisir sa tenue","Essayer des vêtements devant le miroir",
-  "Essayer un haut devant le miroir (vêtement à moitié porté)","Essayer un pantalon devant le miroir",
-  "Se regarder dans le miroir en ajustant sa tenue","Hésiter entre deux tenues (vêtements étalés)",
-  "Sortir plusieurs vêtements et les poser pour comparer","Ranger des vêtements dans les étagères",
-  "Ranger des vêtements sur cintres","Plier des vêtements sur une étagère",
-  "Sortir des vêtements d'un panier","Tenir deux vêtements et hésiter devant le miroir",
-  "Observer une tenue posée sur un fauteuil","Ramasser des vêtements au sol (mode chaos)",
-  "Faire le tri des vêtements (garder / poser / reposer)","Refermer le dressing après avoir choisi sa tenue",
-  "Passer un appel vidéo WhatsApp","Passer un appel audio WhatsApp"
-];
-
-const BBQ_ACTIONS_LIST = [
-  "Allumer le barbecue","Attendre les braises","Faire griller des saucisses",
-  "Faire griller des chipolatas","Faire griller de la viande rouge","Faire griller un steak haché",
-  "Faire griller des ailes de poulet","Faire des brochettes viande","Faire des brochettes poulet",
-  "Faire griller du poisson","Faire griller des légumes","Faire griller des pommes de terre",
-  "Faire griller du maïs","Retourner les aliments avec la pince","Surveiller la cuisson"
-];
-
-const FORBIDDEN_MENAGE_ROOMS = ['jardin','terrace','garage_voiture','atelier_bricolage'];
-
-function getActions() {
-  // Mode Miroir
-  if (S.mirrorPresent && S.roomType && MIRROR_ROOMS.includes(S.roomType)) {
-    return MIRROR_ACTIONS_LIST;
-  }
-  // Mode Poussette
-  if (S.strollerModeEnabled) return STROLLER_ACTIONS_LIST;
-  // Mode Portage
-  if (S.babyCarrierEnabled) return PORTAGE_ACTIONS_LIST;
-  // Mode Interphone
-  if (S.interphoneModeEnabled) return [INTERPHONE_ACTIONS_LIST[S.interphoneStep - 1]];
-  // Mode BBQ
-  if (S.bbqModeEnabled && S.roomType && BBQ_ROOMS.includes(S.roomType)) return BBQ_ACTIONS_LIST;
-  // Mode Dressing
-  if (S.dressingModeEnabled) return DRESSING_ACTIONS_LIST;
-
-  let actions = [];
-
-  // Actions par pièce et sous-type
-  if (S.roomType === 'cuisine') {
-    if (S.roomSubtype === 'cuisine_plan_travail') actions = [...CUISINE_PLAN_TRAVAIL];
-    else if (S.roomSubtype === 'cuisine_plaques_cuisson') actions = [...CUISINE_PLAQUES];
-    else if (S.roomSubtype === 'cuisine_a_table') actions = [...CUISINE_TABLE];
-    else actions = [...(ACTIONS['cuisine'] || [])];
-  }
-  else if (S.roomType === 'bureau') actions = [...OFFICE_ACTIONS_LIST];
-  else if (S.roomType === 'dressing') actions = [...DRESSING_ACTIONS_LIST];
-  else actions = [...(ACTIONS[S.roomType] || [])];
-
-  // Mode Ménage — remplace les actions si pièce autorisée
-  if (S.cleaningModeEnabled && S.roomType && !MODE_MENAGE.availability.forbidden_rooms.includes(S.roomType)) {
-    return [...MENAGE_ACTIONS_LIST];
-  }
-
-  // Mode WhatsApp — ajoute les actions phone
-  if (S.phoneModeEnabled) {
-    actions = [...actions, "Passer un appel vidéo WhatsApp", "Passer un appel audio WhatsApp"];
-  }
-
-  return actions;
-}
-
-function chooseMode(m) { S.mode = m; S.screen = 'config'; render(); }
-function goIdle() { S.screen = 'idle'; S.resultImage = null; S.error = null; render(); }
-function goLogin() { S.screen = 'login'; render(); }
-
-async function validateApiKey() {
-  const key = document.getElementById('loginApiKey')?.value?.trim();
-  if (!key || key.length < 20) { S.loginError = 'Clé API invalide.'; render(); return; }
-  S.apiKey = key;
-  S.loginError = null;
-  S.screen = 'idle';
-  render();
-}
-function setEnergy(e) { S.energy = e; render(); }
-function selectRoom(key, label) { S.roomType = key; S.roomLabel = label; S.roomSubtype = null; S.action = ''; render(); }
-function togglePartner() { S.partnerEnabled = !S.partnerEnabled; if (!S.partnerEnabled) S.partner = null; render(); }
-function toggleBaby() { S.isBabyPresent = !S.isBabyPresent; render(); }
-function setBabyAge(v) { S.babyAgeMonths = parseInt(v)||0; }
-function changeChildCount(d) { S.childCount = Math.max(0, S.childCount + d); while (S.children.length < S.childCount) S.children.push(null); S.children = S.children.slice(0, S.childCount); render(); }
-function changeGuestCount(d) { S.guestCount = Math.max(0, S.guestCount + d); while (S.guests.length < S.guestCount) S.guests.push(null); S.guests = S.guests.slice(0, S.guestCount); render(); }
-function toggleMode(field) { S[field] = !S[field]; if (field === 'dressingModeEnabled' && S[field]) buildDressingOutfits(); render(); }
-function setDressingSource(i, src) { S.dressingOutfits[i].source = src; render(); }
-function nextInterphoneStep() { if (S.interphoneStep < 3) { S.interphoneStep++; S.resultImage = null; S.error = null; render(); } }
-function showDlMenu() { const m = document.getElementById('dl-menu'); if (m) m.classList.toggle('hidden'); }
-
-function buildDressingOutfits() {
-  S.dressingOutfits = [];
+function buildDressingOutfits(){
+  S.dressingOutfits=[];
   S.dressingOutfits.push({id:'avatar',label:'Tenue avatar principal',source:'text',text:'',image:null});
-  if (S.partnerEnabled) S.dressingOutfits.push({id:'conjoint',label:'Tenue conjoint',source:'text',text:'',image:null});
-  S.children.forEach(function(_,i){ S.dressingOutfits.push({id:'enfant_'+(i+1),label:'Tenue enfant '+(i+1),source:'text',text:'',image:null}); });
-  if (S.isBabyPresent) S.dressingOutfits.push({id:'bebe',label:'Tenue bébé',source:'text',text:'',image:null});
+  if(S.partnerEnabled) S.dressingOutfits.push({id:'conjoint',label:'Tenue conjoint',source:'text',text:'',image:null});
+  for(var i=0;i<S.children.length;i++) S.dressingOutfits.push({id:'enfant_'+(i+1),label:'Tenue enfant '+(i+1),source:'text',text:'',image:null});
+  if(S.isBabyPresent) S.dressingOutfits.push({id:'bebe',label:'Tenue bébé',source:'text',text:'',image:null});
 }
 
-function validateConfig() {
-  if (!S.mainAvatar) { S.error = 'Avatar DNA obligatoire !'; render(); return; }
-  S.error = null; S.screen = 'main'; render();
+function validateConfig(){
+  if(!S.mainAvatar){ S.error='Avatar DNA obligatoire!'; render(); return; }
+  S.error=null; S.screen='main'; render();
 }
 
-function handleUpload(field, input) {
-  const file = input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onloadend = () => {
-    const src = reader.result;
-    if (field === 'mainAvatar') S.mainAvatar = src;
-    else if (field === 'partner') S.partner = src;
-    else if (field === 'babyRef') S.babyRef = src;
-    else if (field === 'waPhoto') S.waPhoto = src;
-    else if (field === 'babyCarrierImage') S.babyCarrierImage = src;
-    else if (field === 'babyCarrierBabyRef') S.babyCarrierBabyRef = src;
-    else if (field === 'tondeuseImage') S.tondeuseImage = src;
-    else if (field === 'bbqPhoto') S.bbqPhoto = src;
-    else if (field === 'cleaningToolImage') S.cleaningToolImage = src;
-    else if (field === 'strollerImage') S.strollerImage = src;
-    else if (field === 'strollerBabyRef') S.strollerBabyRef = src;
-    else if (field === 'interphonePortalImage') S.interphonePortalImage = src;
-    else if (field === 'interphonePortalOpenImage') S.interphonePortalOpenImage = src;
-    else if (field === 'interphoneVisitorImage') S.interphoneVisitorImage = src;
-    else if (field === 'interphoneInteriorImage') S.interphoneInteriorImage = src;
-    else if (field === 'roomImage') S.roomImage = src;
-    else if (field.startsWith('child-')) { const i=parseInt(field.split('-')[1]); S.children[i]=src; }
-    else if (field.startsWith('guest-')) { const i=parseInt(field.split('-')[1]); S.guests[i]=src; }
-    else if (field.startsWith('dressing-')) { const i=parseInt(field.split('-')[1]); if(S.dressingOutfits[i]) S.dressingOutfits[i].image=src; }
+function validateKey(){
+  var k=document.getElementById('loginKey')?document.getElementById('loginKey').value.trim():'';
+  if(!k||k.length<20){ S.loginError='Clé API invalide.'; render(); return; }
+  S.apiKey=k; S.loginError=null; S.screen='idle'; render();
+}
+
+function handleUpload(field,input){
+  var file=input.files[0];
+  if(!file) return;
+  var reader=new FileReader();
+  reader.onloadend=function(){
+    var src=reader.result;
+    var fm={mainAvatar:1,partner:1,babyRef:1,waPhoto:1,babyCarrierImage:1,babyCarrierBabyRef:1,tondeuseImage:1,bbqPhoto:1,strollerImage:1,strollerBabyRef:1,interphonePortalImage:1,interphonePortalOpenImage:1,interphoneVisitorImage:1,interphoneInteriorImage:1,roomImage:1,cleaningToolImage:1};
+    if(fm[field]) S[field]=src;
+    else if(field.indexOf('child-')===0){ var ci=parseInt(field.split('-')[1]); S.children[ci]=src; }
+    else if(field.indexOf('guest-')===0){ var gi=parseInt(field.split('-')[1]); S.guests[gi]=src; }
+    else if(field.indexOf('dressing-')===0){ var di=parseInt(field.split('-')[1]); if(S.dressingOutfits[di]) S.dressingOutfits[di].image=src; }
     render();
   };
   reader.readAsDataURL(file);
 }
 
-function attachEvents() {
-  // Rebrancher tous les toggles après render
-  const toggleMap = {
-    'toggle-interphone': 'interphoneModeEnabled',
-    'toggle-menage': 'cleaningModeEnabled',
-    'toggle-portage': 'babyCarrierEnabled',
-    'toggle-tondeuse': 'tondeuseModeEnabled',
-    'toggle-poussette': 'strollerModeEnabled',
-    'toggle-miroir': 'mirrorPresent',
-    'toggle-dressing': 'dressingModeEnabled',
-    'toggle-whatsapp': 'phoneModeEnabled',
-    'toggle-bbq': 'bbqModeEnabled',
-    'toggle-cheminee': 'fireplaceEnabled',
-  };
-  Object.entries(toggleMap).forEach(([id, field]) => {
-    const el = document.getElementById(id);
-    if (el) {
-      el.checked = !!S[field];
-      el.onchange = () => { S[field] = el.checked; if (field==='dressingModeEnabled' && S[field]) buildDressingOutfits(); render(); };
-    }
-  });
+function dlImg(format){
+  if(!S.resultImage) return;
+  var a=document.createElement('a');
+  var mime=format==='png'?'image/png':'image/jpeg';
+  a.href=S.resultImage.replace(/data:image\/[^;]+/,'data:'+mime);
+  a.download='studio-family-home-'+Date.now()+'.'+format;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
 
-// ═══════════════════════════════════════════════════════
-// GÉNÉRATION
-// ═══════════════════════════════════════════════════════
-const LOADING_STEPS = ["Vérification de l'intégrité DNA...","Scanning de la structure architecturale...","Injection des protocoles de réalisme...","Rendu 4K Master en cours...","Optimisation du piqué UGC...","Validation finale des émotions..."];
+// ═══ GÉNÉRATION ═══
+var LOADING_STEPS=["Vérification de l'intégrité DNA...","Scanning de la structure architecturale...","Injection des protocoles de réalisme...","Rendu 4K Master en cours...","Optimisation du piqué UGC...","Validation finale des émotions..."];
 
-async function generate() {
-  const apiKey = S.apiKey;
-  if (!apiKey) { S.error = 'Clé API manquante !'; render(); return; }
-  if (!S.mainAvatar) { S.error = 'Avatar DNA obligatoire !'; render(); return; }
-  if (!S.roomImage && !S.interphoneModeEnabled && !S.strollerModeEnabled) { S.error = 'Photo de la pièce obligatoire !'; render(); return; }
-
-  S.loading = true; S.error = null; S.resultImage = null;
-  let imgData = null;
-  let stepIdx = 0;
-  S.loadingStep = LOADING_STEPS[0];
-  render();
-
-  const interval = setInterval(() => {
-    stepIdx++;
-    S.loadingStep = LOADING_STEPS[stepIdx % LOADING_STEPS.length];
-    const lp = document.querySelector('.pulse');
-    if (lp) lp.textContent = S.loadingStep;
-  }, 2500);
-
-  try {
-    const toInline = b64 => ({ inlineData: { data: b64.includes(',') ? b64.split(',')[1] : b64, mimeType: 'image/png' } });
-    const parts = [{ text: buildPrompt() }];
-    if (S.mainAvatar) parts.push(toInline(S.mainAvatar));
-    if (S.roomImage && !S.interphoneModeEnabled && !S.strollerModeEnabled) parts.push(toInline(S.roomImage));
-    if (S.partnerEnabled && S.partner) parts.push(toInline(S.partner));
-    S.children.forEach(c => { if (c) parts.push(toInline(c)); });
-    if (S.isBabyPresent && S.babyRef) parts.push(toInline(S.babyRef));
-    if (S.phoneModeEnabled && S.waPhoto) parts.push(toInline(S.waPhoto));
-    if (S.babyCarrierEnabled && S.babyCarrierBabyRef) parts.push(toInline(S.babyCarrierBabyRef));
-    if (S.babyCarrierEnabled && S.babyCarrierImage) parts.push(toInline(S.babyCarrierImage));
-    if (S.bbqModeEnabled && S.bbqPhoto) parts.push(toInline(S.bbqPhoto));
-    if (S.tondeuseModeEnabled && S.tondeuseImage) parts.push(toInline(S.tondeuseImage));
-    if (S.strollerModeEnabled && S.strollerImage) parts.push(toInline(S.strollerImage));
-    if (S.strollerModeEnabled && S.strollerBabyRef) parts.push(toInline(S.strollerBabyRef));
-    if (S.interphoneModeEnabled) {
-      const imgMap = {1: S.interphonePortalImage, 2: S.interphoneInteriorImage, 3: S.interphonePortalOpenImage};
-      const img = imgMap[S.interphoneStep];
-      if (img) parts.push(toInline(img));
-      if (S.interphoneVisitorImage) parts.push(toInline(S.interphoneVisitorImage));
-    }
-    S.dressingOutfits.forEach((o,i) => { if (o.source==='image' && o.image) { parts.push({text:`IMAGE TENUE POUR ${o.label.toUpperCase()} :`}); parts.push(toInline(o.image)); }});
-
-    const payload = {
-      contents: [{ parts }],
-      generationConfig: { responseModalities: ['TEXT','IMAGE'], temperature: 0.4, topP: 0.4, topK: 32 },
-      systemInstruction: { parts: [{ text: buildSystem() }] }
-    };
-
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent?key=${S.apiKey}`,
-      { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }
-    );
-
-    if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || `Erreur API ${res.status}`); }
-    const data = await res.json();
-    for (const p of (data.candidates?.[0]?.content?.parts || [])) {
-      if (p.inlineData) { imgData = `data:${p.inlineData.mimeType};base64,${p.inlineData.data}`; break; }
-    }
-    if (!imgData) throw new Error('Aucune image générée.');
-    S.resultImage = imgData;
-  } catch(e) {
-    S.error = 'Erreur : ' + e.message;
-  } finally {
-    clearInterval(interval);
-    S.loading = false;
-    render();
-  }
+function buildSystem(){
+  return "# OVERRIDE SYSTEME : PEAU BRUTE ET IMPARFAITE\nINTERDICTION TOTALE DE TOUT LISSAGE NUMERIQUE. LA PEAU DOIT ETRE RENDUE AVEC SES PORES, SES IMPERFECTIONS, SON GRAIN NATUREL.\n\n# FIDELITE IDENTITE ABSOLUE\nCOULEUR DES YEUX : Strictement identique a la photo de reference.\nCONSERVATION GEOMETRIQUE : Les traits du visage sont des constantes. MORPHOLOGIE FIXE.\n\n# CREDIBILITE ABSOLUE\nMICRO-TEXTURES : Grain de peau naturel, pores subtils visibles. AUCUN LISSAGE ARTIFICIEL.\nDYNAMIQUE CORPORELLE : Poids sur une jambe, epaules asymetriques, posture non rigide.\n\n# REALISME MAT ET FRAIS\nMATTE FINISH : Rendu veloute et mat. ZERO SWEAT/OIL. FRESH LOOK.\n\n# FIDELITE AU DECOR\nLa photo de decor fournie est la SOURCE DE VERITE ABSOLUE. INTERDICTIONS : Modifier couleur meuble, changer forme, remplacer, deplacer.\n\n# PHOTOGRAPHIC CAPTURE\nThis image MUST look like a real photograph taken by a human. Visible skin pores. NO smoothing. NO beauty filter. NO plastic skin.\n\n# MODE PERSPECTIVE HOME FAMILY\nLe personnage ne doit JAMAIS etre immobile ou fige. Sensation d'un instant de vie saisi sur le vif.\n\n# RENDU 4K ULTRA-REALISTE\nOUTPUT_RESOLUTION = 4K_NATIVE. REALISM_OVERRIDE = TRUE.\nSi l'image est trop belle pour etre vraie -> la degrader jusqu'a paraitre humaine.";
 }
 
-function buildSystem() {
-  return `# OVERRIDE SYSTÈME : PEAU BRUTE ET IMPARFAITE (PRIORITÉ ABSOLUE)
-INTERDICTION TOTALE DE TOUT LISSAGE NUMÉRIQUE. LA PEAU DOIT ÊTRE RENDUE AVEC SES PORES, SES IMPERFECTIONS, SON GRAIN NATUREL.
-SI L'IA DÉTECTE UNE TENDANCE À LISSER, ELLE DOIT AUTOMATIQUEMENT AJOUTER DU BRUIT ET DE LA TEXTURE.
-C'EST UNE PHOTO BRUTE, PAS UNE IMAGE PUBLICITAIRE.
-
-# FIDÉLITÉ IDENTITÉ ABSOLUE (VERROUILLÉ)
-COULEUR DES YEUX : Strictement identique à la photo de référence.
-CONSERVATION GÉOMÉTRIQUE : Les traits du visage sont des constantes. MORPHOLOGIE FIXE.
-L'IA doit "cloner" la référence dans un nouvel angle, pas "créer" un visage.
-
-# CRÉDIBILITÉ ABSOLUE
-MICRO-TEXTURES : Grain de peau naturel, pores subtils visibles. AUCUN LISSAGE ARTIFICIEL.
-DYNAMIQUE CORPORELLE : Poids sur une jambe, épaules asymétriques, posture non rigide.
-LOGIQUE PHYSIQUE : Plis de tissu naturels, gravité des vêtements.
-
-# RÉALISME MAT ET FRAIS
-MATTE FINISH : Rendu velouté et mat. ZERO SWEAT/OIL. FRESH LOOK.
-
-# VERROUILLAGE NETTETÉ FACIALE
-CHAQUE VISAGE traité individuellement. Pores, micro-imperfections, relief naturel OBLIGATOIRES.
-Simuler capteur photo professionnel (Sony A7R IV, 85mm look).
-
-# FIDÉLITÉ ABSOLUE AU DÉCOR
-La photo de décor fournie est la SOURCE DE VÉRITÉ ABSOLUE.
-INTERDICTIONS : Modifier couleur meuble, changer forme, remplacer, déplacer.
-
-# FIDÉLITÉ ABSOLUE AUX VÊTEMENTS
-Les vêtements de la photo DNA sont verrouillés par défaut.
-
-# PHOTOGRAPHIC CAPTURE
-This image MUST look like a real photograph taken by a human.
-Visible skin pores. NO smoothing. NO beauty filter. NO plastic skin.
-If image is too perfect → REJECT and degrade.
-
-# MODE PERSPECTIVE — HOME FAMILY
-Le personnage ne doit JAMAIS être immobile ou figé.
-Sensation d'un instant de vie saisi sur le vif.
-
-# RENDU 4K ULTRA-RÉALISTE
-OUTPUT_RESOLUTION = 4K_NATIVE. REALISM_OVERRIDE = TRUE.
-Si l'image est trop belle pour être vraie → elle doit être dégradée jusqu'à paraître humaine.`;
-}
-
-function buildPrompt() {
-  const lines = [`FRESH HUMAN CAPTURE V11.\nTechnical: RAW 4K, Matte skin, Clean sensor, NO BEAUTY FILTERS.\n`];
-  lines.push(`ACTION : ${S.action || 'Scène de vie quotidienne, naturelle et spontanée'}`);
-  lines.push(`LIEU : ${S.roomLabel} | AMBIANCE : ${S.season} · ${S.weather} · ${S.dayMoment}`);
-  lines.push(`ÉNERGIE : ${S.energy}`);
-
-  const cameraMap = {
+function buildPrompt(){
+  var lines=[];
+  lines.push("FRESH HUMAN CAPTURE V11.");
+  lines.push("Technical: RAW 4K, Matte skin, Clean sensor, NO BEAUTY FILTERS.");
+  lines.push("ACTION : "+(S.action||'Scene de vie quotidienne, naturelle et spontanee'));
+  lines.push("LIEU : "+S.roomLabel+" | AMBIANCE : "+S.season+" / "+S.weather+" / "+S.dayMoment);
+  lines.push("ENERGIE : "+S.energy);
+  var cameraMap={
     face:"Camera straight in front of the subject. Natural frontal view.",
     profil:"Camera on the side. Spontaneous side view.",
     trois_quarts:"Three-quarter angle, slightly offset. Realistic UGC angle.",
     plongee_legere:"Camera slightly above. Natural smartphone effect.",
     contre_plongee_legere:"Camera slightly below. Captured on the fly.",
-    par_dessus_epaule:"Over-the-shoulder view. Part of shoulder or back visible.",
+    par_dessus_epaule:"Over-the-shoulder view. Part of shoulder visible.",
     pov_mains:"Immersive POV. Subject's hands interacting with objects.",
-    immersive_organique:"Angle irregular, slightly off-center. Handheld perspective. Not perfectly centered. Authentic, lived-in, unposed. Like a real-life moment captured casually."
+    immersive_organique:"Angle irregular, slightly off-center. Handheld perspective. Authentic, lived-in, unposed."
   };
-  lines.push(`\n# ANGLE DE CAMÉRA\n${cameraMap[S.cameraAngle]||cameraMap.immersive_organique}`);
-
-  if (S.phoneModeEnabled) lines.push(`\n# MODE WHATSAPP — APPEL ${S.waCallType.toUpperCase()}\nInterface WhatsApp active. La personne interlocutrice occupe TOUT L'ÉCRAN. Personne tenant le téléphone en petit aperçu coin bas-droit. Timer d'appel visible. Bouton rouge raccrocher visible.`);
-  if (S.babyCarrierEnabled) lines.push(`\n# MODE PORTAGE BÉBÉ PHYSIOLOGIQUE\nBébé porté dans un porte-bébé physiologique. Position grenouille. Mains du parent libres.`);
-  if (S.bbqModeEnabled) lines.push(`\n# MODE BARBECUE — Combustible : ${S.bbqFuel}\nBarbecue reproduit EXACTEMENT d'après la photo de référence. Même forme, même couleur.`);
-  if (S.dressingModeEnabled && S.dressingOutfits.length) {
-    lines.push('\n# MODE DRESSING : RÉFÉRENCES DE TENUES (OBLIGATOIRE)');
-    S.dressingOutfits.forEach(o => {
-      if (o.source==='text' && o.text) lines.push(`- [${o.label.toUpperCase()}] : Porter EXACTEMENT : ${o.text}.`);
-      else if (o.source==='image' && o.image) lines.push(`- [${o.label.toUpperCase()}] : Porter EXACTEMENT la tenue de la photo jointe.`);
-    });
-    lines.push('FORCE_OUTFIT_REPLACEMENT = TRUE.');
+  lines.push("ANGLE CAMERA : "+(cameraMap[S.cameraAngle]||cameraMap.immersive_organique));
+  if(S.phoneModeEnabled) lines.push("MODE WHATSAPP - APPEL "+S.waCallType.toUpperCase()+" EN COURS. Interface WhatsApp active. Interlocuteur plein ecran. Timer visible. Bouton rouge raccrocher visible.");
+  if(S.babyCarrierEnabled) lines.push("MODE PORTAGE BEBE PHYSIOLOGIQUE. Position grenouille. Mains du parent libres.");
+  if(S.bbqModeEnabled) lines.push("MODE BARBECUE - Combustible : "+S.bbqFuel+". Reproduire EXACTEMENT le barbecue de la photo. Meme forme, meme couleur.");
+  if(S.dressingModeEnabled&&S.dressingOutfits.length){
+    lines.push("MODE DRESSING - TENUES A APPLIQUER :");
+    for(var di=0;di<S.dressingOutfits.length;di++){
+      var o=S.dressingOutfits[di];
+      if(o.source==='text'&&o.text) lines.push("- ["+o.label.toUpperCase()+"] : Porter EXACTEMENT : "+o.text);
+      else if(o.source==='image'&&o.image) lines.push("- ["+o.label.toUpperCase()+"] : Porter EXACTEMENT la tenue de la photo jointe.");
+    }
+    lines.push("FORCE_OUTFIT_REPLACEMENT = TRUE.");
   }
-  if (S.fireplaceEnabled) lines.push(`\n# CHEMINÉE ALLUMÉE\nFeu visible, flammes réalistes, lumière dorée.`);
-  if (S.mirrorPresent) lines.push(`\n# MIROIR PRÉSENT\nMiroir dans la scène reflétant de manière cohérente.`);
-  if (S.energy === 'chaos') {
-    lines.push(`\n# MODE CHAOS\nMAISON VIVANTE ET HABITÉE. Désordre visible.`);
-    if (S.chaosEmotionAdult) lines.push(`ÉMOTION ADULTE : ${S.chaosEmotionAdult}`);
-    if (S.chaosEmotionChild) lines.push(`ÉMOTION ENFANT : ${S.chaosEmotionChild}`);
-    if (S.chaosEmotionBaby) lines.push(`ÉMOTION BÉBÉ : ${S.chaosEmotionBaby}`);
+  if(S.fireplaceEnabled) lines.push("CHEMINEE ALLUMEE. Feu visible, flammes realistes, lumiere doree.");
+  if(S.mirrorPresent) lines.push("MIROIR PRESENT dans la scene.");
+  if(S.cleaningModeEnabled) lines.push("MODE MENAGE ACTIF. Action : "+S.action+". Outils visibles et utilises de maniere realiste.");
+  if(S.energy==='chaos'){
+    lines.push("MODE CHAOS - MAISON VIVANTE ET HABITEE. Desordre visible.");
+    if(S.chaosEmotionAdult) lines.push("EMOTION ADULTE : "+S.chaosEmotionAdult);
+    if(S.chaosEmotionChild) lines.push("EMOTION ENFANT : "+S.chaosEmotionChild);
+    if(S.chaosEmotionBaby) lines.push("EMOTION BEBE : "+S.chaosEmotionBaby);
   }
-  lines.push(`\nOBJECTIF : Réalisme biologique BRUT. Teint mat, pores visibles, imperfections réelles.`);
-  lines.push(`DÉGRADATION VOLONTAIRE : Si l'image semble trop parfaite → la dégrader pour paraître humaine.`);
-  if (S.freeText) lines.push(`\nNOTES DE VÉRITÉ : ${S.freeText}`);
-  return lines.join('\n');
+  lines.push("OBJECTIF : Realisme biologique BRUT. Teint mat, pores visibles, imperfections reelles.");
+  lines.push("DEGRADATION VOLONTAIRE : Si l'image semble trop parfaite -> la degrader pour paraitre humaine.");
+  if(S.freeText) lines.push("NOTES DE VERITE : "+S.freeText);
+  return lines.join("\n");
 }
 
-function downloadImage(format) {
-  if (!S.resultImage) return;
-  const a = document.createElement('a');
-  const mime = format==='png'?'image/png':'image/jpeg';
-  a.href = S.resultImage.replace(/data:image\/[^;]+/, `data:${mime}`);
-  a.download = `studio-family-home-${Date.now()}.${format}`;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+async function generate(){
+  if(!S.apiKey){ S.error='Cle API manquante!'; render(); return; }
+  if(!S.mainAvatar){ S.error='Avatar DNA obligatoire!'; render(); return; }
+  if(!S.roomImage&&!S.interphoneModeEnabled&&!S.strollerModeEnabled){ S.error='Photo de la piece obligatoire!'; render(); return; }
+  S.loading=true; S.error=null; S.resultImage=null;
+  var stepIdx=0; S.loadingStep=LOADING_STEPS[0]; render();
+  var interval=setInterval(function(){
+    stepIdx++;
+    S.loadingStep=LOADING_STEPS[stepIdx%LOADING_STEPS.length];
+    var lp=document.querySelector('.pulse');
+    if(lp) lp.textContent=S.loadingStep;
+  },2500);
+  try {
+    function toInline(b64){ return {inlineData:{data:b64.indexOf(',')>=0?b64.split(',')[1]:b64,mimeType:'image/png'}}; }
+    var parts=[{text:buildPrompt()}];
+    if(S.mainAvatar) parts.push(toInline(S.mainAvatar));
+    if(S.roomImage&&!S.interphoneModeEnabled&&!S.strollerModeEnabled) parts.push(toInline(S.roomImage));
+    if(S.partnerEnabled&&S.partner) parts.push(toInline(S.partner));
+    for(var ci=0;ci<S.children.length;ci++){ if(S.children[ci]) parts.push(toInline(S.children[ci])); }
+    if(S.isBabyPresent&&S.babyRef) parts.push(toInline(S.babyRef));
+    if(S.phoneModeEnabled&&S.waPhoto) parts.push(toInline(S.waPhoto));
+    if(S.babyCarrierEnabled&&S.babyCarrierBabyRef) parts.push(toInline(S.babyCarrierBabyRef));
+    if(S.babyCarrierEnabled&&S.babyCarrierImage) parts.push(toInline(S.babyCarrierImage));
+    if(S.bbqModeEnabled&&S.bbqPhoto) parts.push(toInline(S.bbqPhoto));
+    if(S.tondeuseModeEnabled&&S.tondeuseImage) parts.push(toInline(S.tondeuseImage));
+    if(S.strollerModeEnabled&&S.strollerImage) parts.push(toInline(S.strollerImage));
+    if(S.strollerModeEnabled&&S.strollerBabyRef) parts.push(toInline(S.strollerBabyRef));
+    if(S.cleaningModeEnabled&&S.cleaningToolImage) parts.push(toInline(S.cleaningToolImage));
+    if(S.interphoneModeEnabled){
+      var imgMap={1:S.interphonePortalImage,2:S.interphoneInteriorImage,3:S.interphonePortalOpenImage};
+      var img=imgMap[S.interphoneStep];
+      if(img) parts.push(toInline(img));
+      if(S.interphoneVisitorImage) parts.push(toInline(S.interphoneVisitorImage));
+    }
+    for(var ddi=0;ddi<S.dressingOutfits.length;ddi++){
+      var o=S.dressingOutfits[ddi];
+      if(o.source==='image'&&o.image){ parts.push({text:'IMAGE TENUE POUR '+o.label.toUpperCase()+' :'}); parts.push(toInline(o.image)); }
+    }
+    var payload={
+      contents:[{parts:parts}],
+      generationConfig:{responseModalities:['TEXT','IMAGE'],temperature:0.4,topP:0.4,topK:32},
+      systemInstruction:{parts:[{text:buildSystem()}]}
+    };
+    var res=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent?key='+S.apiKey,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    if(!res.ok){ var e=await res.json(); throw new Error(e.error?e.error.message:'Erreur API '+res.status); }
+    var data=await res.json();
+    var imgData=null;
+    var cparts=(data.candidates&&data.candidates[0]&&data.candidates[0].content&&data.candidates[0].content.parts)||[];
+    for(var pi=0;pi<cparts.length;pi++){ if(cparts[pi].inlineData){ imgData='data:'+cparts[pi].inlineData.mimeType+';base64,'+cparts[pi].inlineData.data; break; } }
+    if(!imgData) throw new Error('Aucune image generee.');
+    S.resultImage=imgData;
+  } catch(err){
+    S.error='Erreur : '+err.message;
+  } finally {
+    clearInterval(interval);
+    S.loading=false;
+    render();
+  }
 }
 
-// INIT
 render();
 </script>
 </body>
