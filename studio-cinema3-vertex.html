@@ -241,8 +241,8 @@ body{min-height:100vh;background:radial-gradient(circle at top right,#0a192f,#05
     <h1 class="splash-title">Studio<br>Cinema</h1>
     <p class="splash-desc">Genere des scenes cinematographiques avec des acteurs IA - solo ou duo - avec synchronisation labiale et controle camera total.</p>
     <div class="api-section">
-      <label class="api-label">Cle API Vertex AI Express Mode</label>
-      <input type="password" id="apiKeyInput" class="api-input" placeholder="AQ..." autocomplete="off">
+      <label class="api-label">Cle API Google AI Studio</label>
+      <input type="password" id="apiKeyInput" class="api-input" placeholder="AIza..." autocomplete="off">
     </div>
     <button class="splash-cta" id="splashBtn">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m9 8 6 4-6 4V8z"/></svg>
@@ -872,8 +872,24 @@ function buildPrompt() {
   return 'Cinematic video: ' + (dir||'A person acting.') + '\n' + dlg + '\n' + voice + '\nSKIN: Natural texture. IDENTITY: Consistent with reference photo. LIGHTING: Cinematic.\nStyle: High-end film. Camera angle: ' + angle + '. Camera movement: ' + move + '.\nActing: ' + act.label + ', emotion: ' + emo + '.';
 }
 
-// API - Gemini API avec cle AIza ou Vertex Express AQ
+// API - Google GenAI SDK (meme pattern que Google AI Studio original)
 function sleep(ms) { return new Promise(function(r){ setTimeout(r,ms); }); }
+
+var sdkModule = null;
+async function loadSDK() {
+  if (sdkModule) return sdkModule;
+  var cdns = [
+    'https://esm.sh/@google/genai@latest',
+    'https://cdn.jsdelivr.net/npm/@google/genai@latest/+esm'
+  ];
+  for (var i = 0; i < cdns.length; i++) {
+    try {
+      sdkModule = await import(cdns[i]);
+      return sdkModule;
+    } catch(e) { console.warn('CDN failed:', cdns[i]); }
+  }
+  throw new Error('Impossible de charger le SDK Google GenAI. Verifiez votre connexion.');
+}
 
 async function generateVideo() {
   if (isGen) return;
@@ -886,91 +902,61 @@ async function generateVideo() {
   document.getElementById('genBtn').disabled = true;
   document.getElementById('genOv').style.display = 'flex';
   document.getElementById('dlBtn').style.display = 'none';
-  setProg(0, 'Initialisation...');
+  setProg(0, 'Chargement du SDK...');
 
   try {
+    var sdk = await loadSDK();
+    var GoogleGenAI = sdk.GoogleGenAI;
+    var ai = new GoogleGenAI({ apiKey: API_KEY });
+
     var prompt = buildPrompt();
     var finalAR = mode==='duo' ? '16:9' : AR;
     var b64 = activeImg.split(',')[1];
     var mime = activeImg.split(';')[0].split(':')[1];
 
-    // Vertex AI Express Mode endpoint
-    var model = 'veo-3.1-generate-001';
-    var endpoint = 'https://aiplatform.googleapis.com/v1/publishers/google/models/' + model + ':predictLongRunning?key=' + encodeURIComponent(API_KEY);
+    var soloText = document.getElementById('soloTa').value.trim();
+    var hasDialogue = mode==='solo' ? !!soloText : duoLines.some(function(l){ return l.text.trim(); });
+    var model = hasDialogue ? 'veo-3.1-generate-001' : 'veo-3.0-fast-generate-001';
 
     setProg(10, 'Envoi de la requete a Veo...');
 
-    var body = {
-      instances: [{
-        prompt: prompt,
-        image: {bytesBase64Encoded: b64, mimeType: mime}
-      }],
-      parameters: {
+    var operation = await ai.models.generateVideos({
+      model: model,
+      prompt: prompt,
+      image: { imageBytes: b64, mimeType: mime },
+      config: {
+        numberOfVideos: 1,
         aspectRatio: finalAR,
-        durationSeconds: dur,
-        sampleCount: 1
+        durationSeconds: dur
       }
-    };
-
-    var res = await fetch(endpoint, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(body)
     });
-
-    if (!res.ok) {
-      var txt = await res.text();
-      var parsed;
-      try { parsed = JSON.parse(txt); } catch(e) {}
-      var msg = (parsed && parsed.error && parsed.error.message) || txt;
-      if (res.status===403) throw new Error('403 : Acces refuse - verifiez vos permissions Veo');
-      if (res.status===401) throw new Error('401 : Cle API non reconnue');
-      if (res.status===404) throw new Error('404 : Modele introuvable');
-      if (res.status===429) throw new Error('429 : Quota depasse - reessayez plus tard');
-      throw new Error('Erreur ' + res.status + ': ' + msg);
-    }
-
-    var opData = await res.json();
-    var opName = opData.name;
-    if (!opName) throw new Error('Pas de nom d operation retourne');
 
     setProg(15, 'Rendu cinematographique en cours...');
 
-    // Polling
     var attempts = 0;
-    var maxAttempts = 120;
-    var done = false;
-    var finalOp;
-
-    while (!done && attempts < maxAttempts) {
-      await sleep(attempts < 3 ? 5000 : attempts < 10 ? 8000 : 12000);
+    while (!operation.done && attempts < 120) {
+      await sleep(5000);
       attempts++;
-      setProg(Math.min(95, 15 + (attempts/maxAttempts)*80), 'Rendu en cours...');
-
-      var pollEndpoint = 'https://aiplatform.googleapis.com/v1/' + opName + '?key=' + encodeURIComponent(API_KEY);
-      var pollRes = await fetch(pollEndpoint);
-      if (!pollRes.ok) {
-        var pollTxt = await pollRes.text();
-        throw new Error('Polling erreur ' + pollRes.status + ': ' + pollTxt);
-      }
-      finalOp = await pollRes.json();
-      if (finalOp.error) throw new Error('Erreur Veo: ' + finalOp.error.message);
-      if (finalOp.done) done = true;
+      setProg(Math.min(95, 15 + (attempts/120)*80), 'Rendu en cours...');
+      operation = await ai.operations.getVideosOperation({ operation: operation });
+      if (operation.error) throw new Error('Erreur Veo: ' + operation.error.message);
     }
 
-    if (!done) throw new Error('Rendu trop long - reessayez');
+    if (!operation.done) throw new Error('Rendu trop long - reessayez');
 
-    // Extract video
-    var preds = finalOp.response && finalOp.response.predictions;
-    var videoB64 = null;
-    if (preds && preds[0]) {
-      videoB64 = preds[0].bytesBase64Encoded || (preds[0].video && preds[0].video.bytesBase64Encoded);
-    }
-    if (!videoB64) throw new Error('Aucune video dans la reponse');
+    var videoUri = operation.response &&
+      operation.response.generatedVideos &&
+      operation.response.generatedVideos[0] &&
+      operation.response.generatedVideos[0].video &&
+      operation.response.generatedVideos[0].video.uri;
 
-    setProg(97, 'Finalisation...');
-    var bytes = Uint8Array.from(atob(videoB64), function(c){ return c.charCodeAt(0); });
-    var blob = new Blob([bytes], {type:'video/mp4'});
+    if (!videoUri) throw new Error('Aucune video dans la reponse');
+
+    setProg(97, 'Telechargement de la video...');
+    var videoRes = await fetch(videoUri + '?key=' + encodeURIComponent(API_KEY));
+    if (!videoRes.ok) throw new Error('Erreur telechargement video: ' + videoRes.status);
+
+    var blob = await videoRes.blob();
     var url = URL.createObjectURL(blob);
     curVideoUrl = url;
 
@@ -988,7 +974,11 @@ async function generateVideo() {
 
   } catch(err) {
     console.error(err);
-    showToast(String(err.message || err).slice(0,200), 'err', 8000);
+    var msg = String(err.message || err);
+    if (msg.includes('403')) msg = '403 : Acces refuse. Verifiez que Veo est active sur votre projet.';
+    if (msg.includes('429')) msg = '429 : Quota depasse. Reessayez dans quelques minutes.';
+    if (msg.includes('404')) msg = '404 : Modele introuvable. Votre cle na peut-etre pas acces a Veo.';
+    showToast(msg.slice(0,200), 'err', 8000);
     setProg(0, 'Erreur');
   } finally {
     isGen = false;
