@@ -241,12 +241,8 @@ body{min-height:100vh;background:radial-gradient(circle at top right,#0a192f,#05
     <h1 class="splash-title">Studio<br>Cinema</h1>
     <p class="splash-desc">Genere des scenes cinematographiques avec des acteurs IA - solo ou duo - avec synchronisation labiale et controle camera total.</p>
     <div class="api-section">
-      <label class="api-label">Cle API Vertex AI</label>
-      <input type="password" id="apiKeyInput" class="api-input" placeholder="AIza..." autocomplete="off">
-    </div>
-    <div class="api-section">
-      <label class="api-label">Google Cloud Project ID</label>
-      <input type="text" id="projectIdInput" class="api-input" placeholder="mon-projet-123456" autocomplete="off">
+      <label class="api-label">Cle API Vertex AI Express Mode</label>
+      <input type="password" id="apiKeyInput" class="api-input" placeholder="AQ..." autocomplete="off">
     </div>
     <button class="splash-cta" id="splashBtn">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m9 8 6 4-6 4V8z"/></svg>
@@ -542,7 +538,6 @@ var LANGS = [
 
 // STATE
 var API_KEY = '';
-var PROJECT_ID = '';
 var mode = 'solo';
 var AR = '9:16';
 var dur = 8;
@@ -619,15 +614,13 @@ window.addEventListener('load', function() {
 // SPLASH
 function enterApp() {
   var k = document.getElementById('apiKeyInput').value.trim();
-  var p = document.getElementById('projectIdInput').value.trim();
   var err = document.getElementById('splash-error');
-  if (!k || !p) {
-    err.textContent = 'Veuillez entrer votre cle API et votre Project ID.';
+  if (!k) {
+    err.textContent = 'Veuillez entrer votre cle API.';
     err.style.display = 'block';
     return;
   }
   API_KEY = k;
-  PROJECT_ID = p;
   err.style.display = 'none';
   document.getElementById('splash').style.display = 'none';
   document.getElementById('app').classList.add('visible');
@@ -903,8 +896,7 @@ async function generateVideo() {
 
     // Vertex AI Express Mode endpoint
     var model = 'veo-3.1-generate-001';
-    var location = 'us-central1';
-    var endpoint = 'https://' + location + '-aiplatform.googleapis.com/v1/projects/' + encodeURIComponent(PROJECT_ID) + '/locations/' + location + '/publishers/google/models/' + model + ':predictLongRunning';
+    var endpoint = 'https://aiplatform.googleapis.com/v1/publishers/google/models/' + model + ':predictLongRunning?key=' + encodeURIComponent(API_KEY);
 
     setProg(10, 'Envoi de la requete a Veo...');
 
@@ -922,7 +914,7 @@ async function generateVideo() {
 
     var res = await fetch(endpoint, {
       method: 'POST',
-      headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + API_KEY},
+      headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(body)
     });
 
@@ -955,9 +947,8 @@ async function generateVideo() {
       attempts++;
       setProg(Math.min(95, 15 + (attempts/maxAttempts)*80), 'Rendu en cours...');
 
-      var location = 'us-central1';
-      var pollEndpoint = 'https://' + location + '-aiplatform.googleapis.com/v1/' + opName;
-      var pollRes = await fetch(pollEndpoint, {headers: {'Authorization': 'Bearer ' + API_KEY}});
+      var pollEndpoint = 'https://aiplatform.googleapis.com/v1/' + opName + '?key=' + encodeURIComponent(API_KEY);
+      var pollRes = await fetch(pollEndpoint);
       if (!pollRes.ok) {
         var pollTxt = await pollRes.text();
         throw new Error('Polling erreur ' + pollRes.status + ': ' + pollTxt);
