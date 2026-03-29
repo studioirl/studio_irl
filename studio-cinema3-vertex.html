@@ -407,6 +407,14 @@ body{min-height:100vh;background:radial-gradient(circle at top right,#0a192f,#05
           </div>
         </div>
         <div class="r-sec">
+          <div class="r-sec-title">Audio</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text2);">Silence arriere-plan</span>
+            <div id="silenceBtn" onclick="toggleSilence()" style="cursor:pointer;padding:5px 12px;border-radius:999px;background:var(--green);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;border:1px solid rgba(74,222,128,0.4);transition:all 0.2s;">ON</div>
+          </div>
+          <p style="font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--text3);margin-top:4px;">Evite les voix et bruits en arriere-plan</p>
+        </div>
+        <div class="r-sec">
           <div class="r-sec-title">Emotion Visuelle</div>
           <div id="emoContainer"></div>
         </div>
@@ -494,6 +502,7 @@ var mode = 'solo', AR = '9:16', dur = 8;
 var selAngle = null, selMove = null, selEmo = null, selAct = 'sincere', selLang = 'fr_fr';
 var isGen = false, curVideoUrl = null, vidHistory = [];
 var selRate = 'normal';
+var silenceBG = true;
 var imgs = {solo:null,A:null,B:null}, voices = {solo:null,A:null,B:null};
 var duoLines = [{id:1,who:'A',text:''},{id:2,who:'B',text:''},{id:3,who:'A',text:''}], lc = 4;
 
@@ -702,13 +711,26 @@ function buildPrompt() {
   promptParts.push('Camera angle: ' + angle + '.');
   if (selMove) promptParts.push('Camera: ' + move + '.');
   if (selEmo) promptParts.push('Expression: ' + emo + '.');
-  promptParts.push('IMPORTANT: Only ONE person speaks. Single voice only. No background voices, no other speakers, no crowd sounds. Only the person visible on screen speaks. Say EXACTLY the words given, nothing more, nothing less. Do not add extra words, sounds or syllables at the end. Stop speaking when the text is finished.');
+  if (silenceBG) {
+    promptParts.push('AUDIO: Only ONE person speaks — the person visible on screen. Absolute silence in the background: no crowd, no studio audience, no other voices, no music, no ambient noise. Say EXACTLY the given words — nothing more, nothing less, no extra syllables. Stop speaking immediately when the text ends. Single clean voice only.');
+  } else {
+    promptParts.push('AUDIO: Only ONE person speaks. Say EXACTLY the given words.');
+  }
   promptParts.push(lang.prompt);
   if (selRate === 'slow') promptParts.push('Speech pace: slow and clear, deliberate pauses between sentences, easy to follow.');
   if (selRate === 'veryslow') promptParts.push('Speech pace: very slow and extremely clear, long pauses between each sentence, like a teacher explaining carefully.');
   if (selRate === 'normal') promptParts.push('Speech pace: natural and clear, not too fast. Articulate every word clearly. Pause at every punctuation mark. Never rush or swallow words.');
   promptParts.push(SKIN);
   return promptParts.join(' ');
+}
+
+function toggleSilence() {
+  silenceBG = !silenceBG;
+  var btn = document.getElementById('silenceBtn');
+  btn.textContent = silenceBG ? 'ON' : 'OFF';
+  btn.style.background = silenceBG ? 'var(--green)' : 'rgba(255,255,255,0.05)';
+  btn.style.color = silenceBG ? 'var(--bg)' : 'var(--text3)';
+  btn.style.borderColor = silenceBG ? 'rgba(74,222,128,0.4)' : 'var(--border)';
 }
 
 function setRate(r) {
