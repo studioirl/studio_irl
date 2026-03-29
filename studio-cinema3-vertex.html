@@ -457,26 +457,26 @@ var EMOTIONS = [
   {label:'Complicite',group:'Relationnelles'},{label:'Regard amoureux',group:'Relationnelles'}
 ];
 var ACTING = [
-  {id:'sincere',label:'Sincere et Authentique',desc:'regard franc, gestes mesures'},
-  {id:'touching',label:'Touchant et Emu',desc:'voix legerement tremblante'},
-  {id:'calm',label:'Calme et Serein',desc:'voix posee, apaisement'},
-  {id:'determined',label:'Determine et Fort',desc:'regard fixe, gestes precis'},
-  {id:'joy',label:'Joie et Eclats',desc:'sourire large, energie vive'},
-  {id:'vulnerable',label:'Vulnerable et Fragile',desc:'voix basse, hesitation'},
-  {id:'confident',label:'Confiant et Charismatique',desc:'port de tete assure'},
-  {id:'nostalgic',label:'Nostalgique',desc:'regard dans le vague'},
-  {id:'intense',label:'Intense et Magnetique',desc:'presence hypnotique'},
-  {id:'playful',label:'Espiegle et Complice',desc:'malice naturelle'},
-  {id:'angry',label:'Colere Contenue',desc:'tension machoire'},
-  {id:'surprised',label:'Surpris et Stupefait',desc:'sourcils leves'}
+  {id:'sincere',label:'Sincere et Authentique',desc:'regard franc, gestes mesures',voice:'soft warm voice, gentle tone, natural and calm delivery'},
+  {id:'touching',label:'Touchant et Emu',desc:'voix legerement tremblante',voice:'soft emotional voice, slightly trembling, tender tone'},
+  {id:'calm',label:'Calme et Serein',desc:'voix posee, apaisement',voice:'calm soft voice, slow peaceful delivery, soothing tone'},
+  {id:'determined',label:'Determine et Fort',desc:'regard fixe, gestes precis',voice:'clear confident voice, steady firm tone, not aggressive'},
+  {id:'joy',label:'Joie et Eclats',desc:'sourire large, energie vive',voice:'bright cheerful voice, warm and energetic tone'},
+  {id:'vulnerable',label:'Vulnerable et Fragile',desc:'voix basse, hesitation',voice:'soft quiet voice, gentle hesitant tone, barely above whisper'},
+  {id:'confident',label:'Confiant et Charismatique',desc:'port de tete assure',voice:'warm confident voice, smooth and assured tone'},
+  {id:'nostalgic',label:'Nostalgique',desc:'regard dans le vague',voice:'soft dreamy voice, slow wistful tone'},
+  {id:'intense',label:'Intense et Magnetique',desc:'presence hypnotique',voice:'deep focused voice, intense but controlled tone'},
+  {id:'playful',label:'Espiegle et Complice',desc:'malice naturelle',voice:'light playful voice, fun and warm tone'},
+  {id:'angry',label:'Colere Contenue',desc:'tension machoire',voice:'tense controlled voice, restrained emotional tone'},
+  {id:'surprised',label:'Surpris et Stupefait',desc:'sourcils leves',voice:'surprised warm voice, natural spontaneous tone'}
 ];
 var LANGS = [
-  {id:'fr_fr',flag:'🇫🇷',label:'Francais France',sub:'Accent parisien',prompt:'VOICE: Parisian French. Clear native accent.'},
-  {id:'fr_be',flag:'🇧🇪',label:'Francais Belgique',sub:'Accent belge',prompt:'VOICE: Belgian French. Walloon accent.'},
-  {id:'fr_ch',flag:'🇨🇭',label:'Francais Suisse',sub:'Suisse romand',prompt:'VOICE: Swiss French. Romand accent.'},
-  {id:'en_us',flag:'🇺🇸',label:'English USA',sub:'American neutral',prompt:'VOICE: American English. Neutral Midwestern accent.'},
-  {id:'en_gb',flag:'🇬🇧',label:'English UK',sub:'BBC RP',prompt:'VOICE: British English. RP accent.'},
-  {id:'es',flag:'🇪🇸',label:'Espanol Espana',sub:'Castillan Madrid',prompt:'VOICE: Castilian Spanish. Neutral Spain accent.'}
+  {id:'fr_fr',flag:'🇫🇷',label:'Francais France',sub:'Accent parisien',prompt:'LANGUAGE: French only. Speak exclusively in French. Parisian accent. Never use English or any other language.'},
+  {id:'fr_be',flag:'🇧🇪',label:'Francais Belgique',sub:'Accent belge',prompt:'LANGUAGE: French only. Speak exclusively in French. Belgian Walloon accent. Never use English.'},
+  {id:'fr_ch',flag:'🇨🇭',label:'Francais Suisse',sub:'Suisse romand',prompt:'LANGUAGE: French only. Speak exclusively in French. Swiss Romand accent. Never use English.'},
+  {id:'en_us',flag:'🇺🇸',label:'English USA',sub:'American neutral',prompt:'LANGUAGE: English only. Speak exclusively in English. American neutral accent. Never use French.'},
+  {id:'en_gb',flag:'🇬🇧',label:'English UK',sub:'BBC RP',prompt:'LANGUAGE: English only. Speak exclusively in English. British RP accent. Never use French.'},
+  {id:'es',flag:'🇪🇸',label:'Espanol Espana',sub:'Castillan Madrid',prompt:'LANGUAGE: Spanish only. Speak exclusively in Spanish. Castilian accent. Never use English or French.'}
 ];
 var SKIN = 'Realistic video. Keep the person identity from the reference photo.';
 
@@ -680,10 +680,19 @@ function buildPrompt() {
   var promptParts = [];
   if (dir) promptParts.push(dir);
   else promptParts.push('A person on camera.');
-  if (solo) promptParts.push('The person speaks. Lip sync with the voice.');
+  if (solo) {
+    promptParts.push('The person says: "' + solo + '".');
+    if (act.voice) promptParts.push('Voice: ' + act.voice + '.');
+    promptParts.push('Perfect lip sync.');
+  } else if (mode === 'duo') {
+    var dlines = []; for (var i=0; i<duoLines.length; i++) { if (duoLines[i].text.trim()) dlines.push(duoLines[i].who + ': "' + duoLines[i].text.trim() + '"'); }
+    if (dlines.length) { promptParts.push(dlines.join(' ')); promptParts.push('Perfect lip sync.'); }
+    if (act.voice) promptParts.push('Voice tone: ' + act.voice + '.');
+  }
   promptParts.push('Camera angle: ' + angle + '.');
   if (selMove) promptParts.push('Camera: ' + move + '.');
   if (selEmo) promptParts.push('Expression: ' + emo + '.');
+  promptParts.push(lang.prompt);
   promptParts.push(SKIN);
   return promptParts.join(' ');
 }
@@ -722,11 +731,13 @@ async function generateVideo() {
 
     setProg(10, 'Envoi de la requete a Veo...');
 
+    var solo = document.getElementById('soloTa').value.trim();
+    var hasText = mode==='solo' ? !!solo : duoLines.some(function(l){ return l.text.trim(); });
     var opData = await callProxy('/generate', {
       apiKey: API_KEY,
       body: {
         instances: [{ prompt: prompt, image: { bytesBase64Encoded: b64, mimeType: mime } }],
-        parameters: { aspectRatio: finalAR, durationSeconds: dur, sampleCount: 1, generateAudio: true, resolution: '720p' }
+        parameters: { aspectRatio: finalAR, durationSeconds: dur, sampleCount: 1, generateAudio: hasText, resolution: '720p' }
       }
     });
 
