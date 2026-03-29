@@ -747,10 +747,19 @@ async function generateVideo() {
 
     if (!done) throw new Error('Rendu trop long. Reessayez.');
 
-    var preds = finalOp.response && finalOp.response.predictions;
+    // fetchPredictOperation retourne: response.videos[0].bytesBase64Encoded
     var videoB64 = null;
-    if (preds && preds[0]) { videoB64 = preds[0].bytesBase64Encoded || (preds[0].video && preds[0].video.bytesBase64Encoded); }
-    if (!videoB64) throw new Error('Aucune video dans la reponse.');
+    var resp = finalOp.response;
+    if (resp) {
+      if (resp.videos && resp.videos[0]) {
+        videoB64 = resp.videos[0].bytesBase64Encoded;
+      } else if (resp.predictions && resp.predictions[0]) {
+        videoB64 = resp.predictions[0].bytesBase64Encoded || (resp.predictions[0].video && resp.predictions[0].video.bytesBase64Encoded);
+      } else if (resp.generatedSamples && resp.generatedSamples[0]) {
+        videoB64 = resp.generatedSamples[0].video && resp.generatedSamples[0].video.bytesBase64Encoded;
+      }
+    }
+    if (!videoB64) throw new Error('Aucune video dans la reponse. Structure: ' + JSON.stringify(Object.keys(resp||{})));
 
     setProg(97, 'Finalisation...');
     var bytes = Uint8Array.from(atob(videoB64), function(c){ return c.charCodeAt(0); });
