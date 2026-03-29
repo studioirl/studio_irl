@@ -478,7 +478,7 @@ var LANGS = [
   {id:'en_gb',flag:'🇬🇧',label:'English UK',sub:'BBC RP',prompt:'VOICE: British English. RP accent.'},
   {id:'es',flag:'🇪🇸',label:'Espanol Espana',sub:'Castillan Madrid',prompt:'VOICE: Castilian Spanish. Neutral Spain accent.'}
 ];
-var SKIN = 'SKIN: Natural texture, visible pores. IDENTITY: Consistent with reference photo. LIGHTING: Cinematic lighting.';
+var SKIN = 'Realistic video. Keep the person identity from the reference photo.';
 
 var API_KEY = '';
 var mode = 'solo', AR = '9:16', dur = 8;
@@ -677,7 +677,15 @@ function buildPrompt() {
   }
   var noAudio = mode==='solo' ? !solo : duoLines.every(function(l){ return !l.text.trim(); });
   var voice = noAudio ? 'SILENT: No audio.' : lang.prompt + ' Natural voice, perfect lip-sync.';
-  return 'Cinematic video: ' + (dir||'A person acting.') + '\n' + dlg + '\n' + voice + '\n' + SKIN + '\nStyle: High-end film. Camera angle: ' + angle + '. Camera movement: ' + move + '.\nActing: ' + act.label + ', emotion: ' + emo + '.';
+  var promptParts = [];
+  if (dir) promptParts.push(dir);
+  else promptParts.push('A person on camera.');
+  if (solo) promptParts.push('The person speaks. Lip sync with the voice.');
+  promptParts.push('Camera angle: ' + angle + '.');
+  if (selMove) promptParts.push('Camera: ' + move + '.');
+  if (selEmo) promptParts.push('Expression: ' + emo + '.');
+  promptParts.push(SKIN);
+  return promptParts.join(' ');
 }
 
 function sleep(ms) { return new Promise(function(r){ setTimeout(r, ms); }); }
