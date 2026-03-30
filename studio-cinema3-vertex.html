@@ -991,6 +991,20 @@ async function generateVideo() {
     if (!done) throw new Error('Rendu trop long. Reessayez.');
 
     // fetchPredictOperation retourne: response.videos[0].bytesBase64Encoded
+    // Check if proxy returned a GCS URL directly
+    if (finalOp.videoUrl) {
+      var url = finalOp.videoUrl;
+      curVideoUrl = url;
+      var vid = document.getElementById('prevVid');
+      vid.src = url;
+      document.getElementById('prevPH').style.display = 'none';
+      document.getElementById('dlBtn').style.display = '';
+      if (continuityMode) { setTimeout(function() { extractLastFrame(); }, 500); }
+      vidHistory.unshift({id:Date.now(), url:url});
+      renderHistory();
+      showToast('Video generee !', 'ok', 4000);
+      return;
+    }
     var videoB64 = null;
     var resp = finalOp.response;
     if (resp) {
@@ -1050,7 +1064,38 @@ function loadHist(url) {
   var vid = document.getElementById('previewVid'); vid.src = url; vid.style.display = '';
   document.getElementById('prevPH').style.display = 'none'; document.getElementById('dlBtn').style.display = '';
 }
-function dlVid() { if (!curVideoUrl) return; var a = document.createElement('a'); a.href = curVideoUrl; a.download = 'studio-cinema-' + Date.now() + '.mp4'; a.click(); }
+function dlVid() {
+  if (!curVideoUrl) return;
+  // GCS URL = direct download link, just open it
+  if (curVideoUrl.indexOf('storage.googleapis.com') !== -1) {
+    var a = document.createElement('a');
+    a.href = curVideoUrl;
+    a.download = 'studio-cinema-' + Date.now() + '.mp4';
+    a.target = '_blank';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    return;
+  }
+  // Blob URL fallback for Safari
+  fetch(curVideoUrl)
+    .then(function(r){ return r.blob(); })
+    .then(function(blob){
+      var reader = new FileReader();
+      reader.onloadend = function(){
+        var a = document.createElement('a');
+        a.href = reader.result;
+        a.download = 'studio-cinema-' + Date.now() + '.mp4';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      };
+      reader.readAsDataURL(blob);
+    })
+    .catch(function(){
+      window.open(curVideoUrl, '_blank');
+    });
+}
 
 var toastTm;
 function showToast(msg, type, duration) {
