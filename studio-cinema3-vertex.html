@@ -255,6 +255,20 @@ body{min-height:100vh;background:radial-gradient(circle at top right,#0a192f,#05
             <div class="change-ov"><span class="change-lbl">Changer</span></div>
           </div>
         </div>
+        <div style="margin-top:8px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text3);text-transform:uppercase;">Image de fin (optionnel)</span>
+            <span id="endFrameHint" style="font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--text3);">Dernier frame</span>
+          </div>
+          <div class="upload-zone" id="uploadEnd" style="aspect-ratio:3/4;">
+            <span class="upload-icon" style="font-size:14px;">&#127922;</span>
+            <span class="upload-txt">Image de fin (optionnel)</span>
+            <div class="change-ov"><span class="change-lbl">Changer</span></div>
+          </div>
+          <div id="endRemoveWrap" style="display:none;margin-top:4px;">
+            <button onclick="removeEndFrame()" style="width:100%;padding:4px;background:none;border:1px solid rgba(239,68,68,0.3);border-radius:6px;color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:8px;cursor:pointer;">Retirer image de fin</button>
+          </div>
+        </div>
         <div id="photoDuo" style="display:none">
           <div class="upload-grid">
             <div>
@@ -282,6 +296,7 @@ body{min-height:100vh;background:radial-gradient(circle at top right,#0a192f,#05
         <input type="file" id="imgSolo" accept="image/*" style="display:none">
         <input type="file" id="imgA" accept="image/*" style="display:none">
         <input type="file" id="imgB" accept="image/*" style="display:none">
+        <input type="file" id="imgEnd" accept="image/*" style="display:none">
       </div>
       <div class="sec">
         <div class="sec-title">Angle Camera</div>
@@ -523,7 +538,7 @@ var silenceBG = true;
 var continuityMode = false;
 var lastFrameB64 = null;
 var lastFrameMime = 'image/jpeg';
-var imgs = {solo:null,A:null,B:null}, voices = {solo:null,A:null,B:null};
+var imgs = {solo:null,A:null,B:null,end:null}, voices = {solo:null,A:null,B:null};
 var duoLines = [{id:1,who:'A',text:''},{id:2,who:'B',text:''},{id:3,who:'A',text:''}], lc = 4;
 
 window.addEventListener('load', function() {
@@ -537,6 +552,8 @@ window.addEventListener('load', function() {
   document.getElementById('uploadA').addEventListener('click', function(){ document.getElementById('imgA').click(); });
   document.getElementById('uploadB').addEventListener('click', function(){ document.getElementById('imgB').click(); });
   document.getElementById('imgSolo').addEventListener('change', function(e){ loadImg(e,'solo'); });
+  document.getElementById('uploadEnd').addEventListener('click', function(){ document.getElementById('imgEnd').click(); });
+  document.getElementById('imgEnd').addEventListener('change', function(e){ loadEndFrame(e); });
   document.getElementById('imgA').addEventListener('change', function(e){ loadImg(e,'A'); });
   document.getElementById('imgB').addEventListener('change', function(e){ loadImg(e,'B'); });
   document.getElementById('fmt916').addEventListener('click', function(){ setAR('9:16'); });
@@ -694,6 +711,49 @@ function loadImg(e, slot) {
     imgEl.src = originalData;
   };
   reader.readAsDataURL(file);
+}
+
+function loadEndFrame(e) {
+  var file = e.target.files && e.target.files[0]; if (!file) return;
+  var reader = new FileReader();
+  reader.onloadend = function() {
+    var imgEl = new Image();
+    imgEl.onload = function() {
+      var canvas = document.createElement('canvas');
+      var maxSize = 1920;
+      var w = imgEl.width, h = imgEl.height;
+      if (w > maxSize || h > maxSize) {
+        if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
+        else { w = Math.round(w * maxSize / h); h = maxSize; }
+      }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(imgEl, 0, 0, w, h);
+      var compressed = canvas.toDataURL('image/jpeg', 0.92);
+      imgs.end = compressed;
+      var zone = document.getElementById('uploadEnd');
+      zone.classList.add('loaded');
+      zone.querySelectorAll('.av-img').forEach(function(el){ el.remove(); });
+      var img = document.createElement('img'); img.className = 'av-img'; img.src = compressed;
+      zone.insertBefore(img, zone.firstChild);
+      document.getElementById('endRemoveWrap').style.display = 'block';
+      document.getElementById('endFrameHint').textContent = 'Actif';
+      document.getElementById('endFrameHint').style.color = 'var(--green)';
+      showToast('Image de fin chargee');
+    };
+    imgEl.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeEndFrame() {
+  imgs.end = null;
+  var zone = document.getElementById('uploadEnd');
+  zone.classList.remove('loaded');
+  zone.querySelectorAll('.av-img').forEach(function(el){ el.remove(); });
+  document.getElementById('endRemoveWrap').style.display = 'none';
+  document.getElementById('endFrameHint').textContent = 'Dernier frame';
+  document.getElementById('endFrameHint').style.color = 'var(--text3)';
+  document.getElementById('imgEnd').value = '';
 }
 
 function loadVoice(e, slot) {
@@ -885,9 +945,6 @@ async function generateVideo() {
       b64 = activeImg.split(',')[1];
       mime = activeImg.split(';')[0].split(':')[1];
     }
-    // In continuity mode, also keep original avatar for identity reference
-    var origB64 = activeImg ? activeImg.split(',')[1] : null;
-    var origMime = activeImg ? activeImg.split(';')[0].split(':')[1] : null;
 
     setProg(10, 'Envoi de la requete a Veo...');
 
@@ -896,7 +953,7 @@ async function generateVideo() {
     var opData = await callProxy('/generate', {
       apiKey: API_KEY,
       body: {
-        instances: [{ prompt: prompt, image: { bytesBase64Encoded: b64, mimeType: mime } }],
+        instances: [{ prompt: prompt, image: { bytesBase64Encoded: b64, mimeType: mime }, lastImage: imgs.end ? { bytesBase64Encoded: imgs.end.split(',')[1], mimeType: 'image/jpeg' } : undefined }],
         parameters: { aspectRatio: finalAR, durationSeconds: dur, sampleCount: 1, generateAudio: hasText, resolution: '720p' }
       }
     });
