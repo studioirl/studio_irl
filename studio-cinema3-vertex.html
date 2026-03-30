@@ -424,6 +424,19 @@ body{min-height:100vh;background:radial-gradient(circle at top right,#0a192f,#05
         </div>
       </div>
       <div class="gen-area">
+        <div style="margin-bottom:10px;padding:10px;background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.25);border-radius:10px;display:none;" id="continuityPanel">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--purple);text-transform:uppercase;font-weight:700;">Mode Continuite</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--text3);">Dernier frame comme base</span>
+          </div>
+          <div style="width:100%;height:2px;background:rgba(139,92,246,0.3);border-radius:2px;margin-bottom:8px;"></div>
+          <p style="font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--text3);margin-bottom:6px;">La suite repart du dernier mouvement de la video precedente.</p>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:8px;">
+          <button id="continuityBtn" onclick="toggleContinuity()" style="flex:1;padding:9px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,0.03);font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text3);cursor:pointer;transition:all 0.2s;font-weight:700;">
+            &#128279; Continuite OFF
+          </button>
+        </div>
         <button class="gen-btn" id="genBtn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m9 8 6 4-6 4V8z"/></svg>
           Generer la scene
@@ -503,6 +516,9 @@ var selAngle = null, selMove = null, selEmo = null, selAct = 'sincere', selLang 
 var isGen = false, curVideoUrl = null, vidHistory = [];
 var selRate = 'normal';
 var silenceBG = true;
+var continuityMode = false;
+var lastFrameB64 = null;
+var lastFrameMime = 'image/jpeg';
 var imgs = {solo:null,A:null,B:null}, voices = {solo:null,A:null,B:null};
 var duoLines = [{id:1,who:'A',text:''},{id:2,who:'B',text:''},{id:3,who:'A',text:''}], lc = 4;
 
@@ -724,6 +740,53 @@ function buildPrompt() {
   return promptParts.join(' ');
 }
 
+function toggleContinuity() {
+  if (!curVideoUrl) {
+    showToast('Generez d abord une video pour activer la continuite', 'warn');
+    return;
+  }
+  continuityMode = !continuityMode;
+  var btn = document.getElementById('continuityBtn');
+  var panel = document.getElementById('continuityPanel');
+  if (continuityMode) {
+    btn.textContent = '\u{1F517} Continuite ON';
+    btn.style.background = 'rgba(139,92,246,0.15)';
+    btn.style.borderColor = 'rgba(139,92,246,0.5)';
+    btn.style.color = 'var(--purple)';
+    panel.style.display = 'block';
+    extractLastFrame();
+    showToast('Continuite activee - derniere image capturee', 'ok');
+  } else {
+    btn.textContent = '\u{1F517} Continuite OFF';
+    btn.style.background = 'rgba(255,255,255,0.03)';
+    btn.style.borderColor = 'var(--border)';
+    btn.style.color = 'var(--text3)';
+    panel.style.display = 'none';
+    lastFrameB64 = null;
+  }
+}
+
+function extractLastFrame() {
+  if (!curVideoUrl) return;
+  var video = document.createElement('video');
+  video.src = curVideoUrl;
+  video.crossOrigin = 'anonymous';
+  video.addEventListener('loadedmetadata', function() {
+    video.currentTime = video.duration - 0.1;
+  });
+  video.addEventListener('seeked', function() {
+    var canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    var ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    var dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+    lastFrameB64 = dataUrl.split(',')[1];
+    lastFrameMime = 'image/jpeg';
+  });
+  video.load();
+}
+
 function toggleSilence() {
   silenceBG = !silenceBG;
   var btn = document.getElementById('silenceBtn');
@@ -776,8 +839,14 @@ async function generateVideo() {
   try {
     var prompt = buildPrompt();
     var finalAR = mode==='duo' ? '16:9' : AR;
-    var b64 = activeImg.split(',')[1];
-    var mime = activeImg.split(';')[0].split(':')[1];
+    var b64, mime;
+    if (continuityMode && lastFrameB64) {
+      b64 = lastFrameB64;
+      mime = lastFrameMime;
+    } else {
+      b64 = activeImg.split(',')[1];
+      mime = activeImg.split(';')[0].split(':')[1];
+    }
 
     setProg(10, 'Envoi de la requete a Veo...');
 
@@ -832,6 +901,10 @@ async function generateVideo() {
     vid.src = url; vid.style.display = '';
     document.getElementById('prevPH').style.display = 'none';
     document.getElementById('dlBtn').style.display = '';
+    // Update continuity frame after new generation
+    if (continuityMode) {
+      setTimeout(function() { extractLastFrame(); }, 500);
+    }
     vidHistory.unshift({id:Date.now(), url:url});
     if (vidHistory.length > 10) vidHistory.pop();
     renderHistory();
