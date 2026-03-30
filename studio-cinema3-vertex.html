@@ -275,6 +275,10 @@ body{min-height:100vh;background:radial-gradient(circle at top right,#0a192f,#05
             </div>
           </div>
         </div>
+        <div style="display:flex;justify-content:space-between;margin-top:4px;">
+          <span style="font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--text3);">Poids image</span>
+          <span id="size_solo" style="font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--text3);">—</span>
+        </div>
         <input type="file" id="imgSolo" accept="image/*" style="display:none">
         <input type="file" id="imgA" accept="image/*" style="display:none">
         <input type="file" id="imgB" accept="image/*" style="display:none">
@@ -680,7 +684,12 @@ function loadImg(e, slot) {
       zone.querySelectorAll('.av-img').forEach(function(el){ el.remove(); });
       var img = document.createElement('img'); img.className = 'av-img'; img.src = compressed;
       zone.insertBefore(img, zone.firstChild);
-      showToast('Photo chargee (' + Math.round(compressed.length * 0.75 / 1024) + ' KB)');
+      var sizeKB = Math.round(compressed.length * 0.75 / 1024);
+      showToast('Photo chargee — ' + sizeKB + ' KB');
+      // Show size under upload zone
+      var zoneId2 = slot==='solo' ? 'uploadSolo' : slot==='A' ? 'uploadA' : 'uploadB';
+      var sizeEl = document.getElementById('size_' + slot);
+      if (sizeEl) { sizeEl.textContent = sizeKB + ' KB'; sizeEl.style.color = sizeKB > 3000 ? 'var(--accent)' : 'var(--green)'; }
     };
     imgEl.src = originalData;
   };
@@ -794,19 +803,24 @@ function extractLastFrame() {
   if (!curVideoUrl) return;
   var video = document.createElement('video');
   video.src = curVideoUrl;
-  video.crossOrigin = 'anonymous';
+  video.muted = true;
   video.addEventListener('loadedmetadata', function() {
-    video.currentTime = video.duration - 0.1;
+    // Go to 85% of video to avoid end artifacts
+    video.currentTime = video.duration * 0.85;
   });
   video.addEventListener('seeked', function() {
     var canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    // Cap at 1280px for Veo compatibility
+    var maxW = 1280;
+    var w = video.videoWidth, h = video.videoHeight;
+    if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+    canvas.width = w; canvas.height = h;
     var ctx = canvas.getContext('2d');
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    var dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+    ctx.drawImage(video, 0, 0, w, h);
+    var dataUrl = canvas.toDataURL('image/jpeg', 0.88);
     lastFrameB64 = dataUrl.split(',')[1];
     lastFrameMime = 'image/jpeg';
+    console.log('Last frame captured:', Math.round(dataUrl.length * 0.75 / 1024), 'KB');
   });
   video.load();
 }
