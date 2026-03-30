@@ -654,14 +654,35 @@ function loadImg(e, slot) {
   var file = e.target.files && e.target.files[0]; if (!file) return;
   var reader = new FileReader();
   reader.onloadend = function() {
-    imgs[slot] = reader.result;
-    var zoneId = slot==='solo' ? 'uploadSolo' : slot==='A' ? 'uploadA' : 'uploadB';
-    var zone = document.getElementById(zoneId);
-    zone.classList.add('loaded');
-    zone.querySelectorAll('.av-img').forEach(function(el){ el.remove(); });
-    var img = document.createElement('img'); img.className = 'av-img'; img.src = reader.result;
-    zone.insertBefore(img, zone.firstChild);
-    showToast('Photo chargee');
+    var originalData = reader.result;
+    // Compress image to stay under 5MB for Veo
+    var imgEl = new Image();
+    imgEl.onload = function() {
+      var canvas = document.createElement('canvas');
+      var maxSize = 1920; // max dimension
+      var w = imgEl.width, h = imgEl.height;
+      if (w > maxSize || h > maxSize) {
+        if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
+        else { w = Math.round(w * maxSize / h); h = maxSize; }
+      }
+      canvas.width = w; canvas.height = h;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(imgEl, 0, 0, w, h);
+      // Try quality 0.92 first
+      var compressed = canvas.toDataURL('image/jpeg', 0.92);
+      // If still too big, reduce more
+      var sizeKB = Math.round(compressed.length * 0.75 / 1024);
+      if (sizeKB > 4000) compressed = canvas.toDataURL('image/jpeg', 0.80);
+      imgs[slot] = compressed;
+      var zoneId = slot==='solo' ? 'uploadSolo' : slot==='A' ? 'uploadA' : 'uploadB';
+      var zone = document.getElementById(zoneId);
+      zone.classList.add('loaded');
+      zone.querySelectorAll('.av-img').forEach(function(el){ el.remove(); });
+      var img = document.createElement('img'); img.className = 'av-img'; img.src = compressed;
+      zone.insertBefore(img, zone.firstChild);
+      showToast('Photo chargee (' + Math.round(compressed.length * 0.75 / 1024) + ' KB)');
+    };
+    imgEl.src = originalData;
   };
   reader.readAsDataURL(file);
 }
@@ -731,6 +752,9 @@ function buildPrompt() {
     promptParts.push('AUDIO: Only ONE person speaks — the person visible on screen. Background: very soft quiet room ambience only, no crowd, no studio audience, no other voices, no music. Clean natural room tone, no interference, no static noise. Say EXACTLY the given words — nothing more, nothing less. Single clean natural voice only.');
   } else {
     promptParts.push('AUDIO: Only ONE person speaks. Say EXACTLY the given words.');
+  }
+  if (continuityMode && lastFrameB64) {
+    promptParts.push('IDENTITY LOCK: Preserve EXACTLY the same eye color, skin tone, hair color and facial features as the reference person. Do not alter any physical characteristics between shots.');
   }
   promptParts.push(lang.prompt);
   if (selRate === 'slow') promptParts.push('Speech pace: slow and clear, deliberate pauses between sentences, easy to follow.');
@@ -847,6 +871,9 @@ async function generateVideo() {
       b64 = activeImg.split(',')[1];
       mime = activeImg.split(';')[0].split(':')[1];
     }
+    // In continuity mode, also keep original avatar for identity reference
+    var origB64 = activeImg ? activeImg.split(',')[1] : null;
+    var origMime = activeImg ? activeImg.split(';')[0].split(':')[1] : null;
 
     setProg(10, 'Envoi de la requete a Veo...');
 
