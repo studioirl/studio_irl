@@ -1,0 +1,1448 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studio ARCHITECTE — AI Pro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --blue:#3b82f6;--blue2:#2563eb;--blue3:#1d4ed8;
+  --slate50:#f8fafc;--slate100:#f1f5f9;--slate200:#e2e8f0;
+  --slate300:#cbd5e1;--slate400:#94a3b8;--slate500:#64748b;
+  --slate600:#475569;--slate700:#334155;--slate800:#1e293b;
+  --slate900:#0f172a;--slate950:#020617;
+  --white:#fff;--red:#ef4444;--green:#22c55e;
+}
+html{font-family:'Inter',sans-serif;background:var(--slate50);color:var(--slate950);}
+body{min-height:100vh;}
+::-webkit-scrollbar{width:8px;}
+::-webkit-scrollbar-track{background:#f1f1f1;}
+::-webkit-scrollbar-thumb{background:var(--slate300);border-radius:10px;}
+::-webkit-scrollbar-thumb:hover{background:var(--slate400);}
+
+/* ANIMATIONS */
+@keyframes progress{0%{width:0}50%{width:70%}100%{width:100%}}
+@keyframes bounce{0%,100%{transform:translateY(-25%);animation-timing-function:cubic-bezier(0.8,0,1,1)}50%{transform:translateY(0);animation-timing-function:cubic-bezier(0,0,0.2,1)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.animate-bounce{animation:bounce 1s infinite;}
+.animate-spin{animation:spin 1s linear infinite;}
+.animate-pulse{animation:pulse 2s infinite;}
+.animate-progress{animation:progress 30s ease-in-out infinite;}
+.animate-in{animation:fadeIn 0.5s ease both;}
+.slide-up{animation:slideUp 0.5s ease both;}
+
+/* FONT SERIF */
+.font-serif{font-family:'Playfair Display',serif;}
+
+/* LOADING OVERLAY */
+#loadingOverlay{
+  position:fixed;inset:0;z-index:1000;
+  background:rgba(2,6,23,0.98);
+  display:none;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:40px;text-align:center;
+}
+#loadingOverlay.active{display:flex;}
+.loading-icon{color:var(--blue);margin-bottom:32px;font-size:80px;}
+.loading-title{font-family:'Playfair Display',serif;color:white;font-size:clamp(24px,4vw,40px);font-style:italic;margin-bottom:24px;}
+.loading-bar-wrap{width:256px;height:4px;background:rgba(255,255,255,0.1);border-radius:999px;overflow:hidden;}
+.loading-bar{height:100%;background:var(--blue);border-radius:999px;}
+
+/* PAGES */
+.page{display:none;}
+.page.active{display:block;}
+
+/* ACCUEIL */
+#accueil{
+  min-height:100vh;position:relative;overflow:hidden;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:24px;text-align:center;
+}
+.accueil-bg{
+  position:absolute;inset:0;z-index:0;
+  background-image:url('https://images.unsplash.com/photo-1503387762-592deb58ef4e?q=80&w=2831&auto=format&fit=crop');
+  background-size:cover;background-position:center;
+  filter:brightness(0.3) blur(2px);
+}
+.accueil-overlay{position:absolute;inset:0;z-index:0;background:linear-gradient(to bottom,rgba(2,6,23,0.95),rgba(2,6,23,0.9),rgba(2,6,23,0.95));}
+.accueil-content{position:relative;z-index:10;display:flex;flex-direction:column;align-items:center;}
+.accueil-icon{color:var(--blue);margin-bottom:32px;font-size:80px;}
+.accueil-title{font-family:'Playfair Display',serif;color:white;font-size:clamp(48px,10vw,120px);font-weight:700;line-height:1;letter-spacing:-0.04em;margin-bottom:8px;}
+.accueil-title span{color:var(--blue);font-style:italic;}
+.accueil-sub{color:#60a5fa;font-size:clamp(16px,2vw,22px);font-weight:700;margin-bottom:32px;}
+.accueil-btns{display:flex;flex-direction:column;gap:24px;margin-top:32px;}
+.btn-accueil{padding:40px 80px;border-radius:999px;font-weight:900;font-size:clamp(20px,3vw,28px);display:flex;align-items:center;justify-content:center;gap:24px;cursor:pointer;border:none;transition:all 0.2s;box-shadow:0 20px 60px rgba(0,0,0,0.4);}
+.btn-accueil:hover{transform:scale(1.05);}
+.btn-accueil:active{transform:scale(0.97);}
+.btn-white{background:white;color:var(--slate950);}
+.btn-white:hover{background:var(--blue2);color:white;}
+.btn-blue{background:var(--blue2);color:white;}
+.btn-blue:hover{background:var(--blue3);}
+.btn-dark{background:var(--slate900);color:#60a5fa;border:4px solid var(--blue2);}
+.btn-dark:hover{background:var(--blue2);color:white;}
+
+/* CONSTRUCTION HEADER */
+.page-header{
+  padding:32px;border-bottom:1px solid var(--slate200);
+  background:white;position:sticky;top:0;z-index:30;
+  display:flex;justify-content:space-between;align-items:center;
+  box-shadow:0 1px 4px rgba(0,0,0,0.05);
+}
+.page-header-title{font-family:'Playfair Display',serif;font-size:22px;font-style:italic;font-weight:700;}
+.back-btn{padding:16px;border-radius:999px;border:none;background:none;cursor:pointer;transition:background 0.2s;}
+.back-btn:hover{background:var(--slate100);}
+.back-btn svg{width:24px;height:24px;display:block;}
+
+/* MAIN CONTAINER */
+.page-main{max-width:1024px;margin:0 auto;padding:48px 32px;display:flex;flex-direction:column;gap:64px;}
+
+/* STEP CONTENT */
+.step-title{font-size:clamp(32px,5vw,56px);font-weight:900;text-align:center;letter-spacing:-0.03em;}
+.step-sub{color:var(--slate500);font-size:20px;text-align:center;margin-top:16px;}
+.step-center{text-align:center;}
+
+/* GRID CARDS */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:40px;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;}
+.grid-4{display:grid;grid-template-columns:repeat(2,1fr);gap:24px;}
+.grid-5{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;}
+@media(min-width:768px){.grid-4{grid-template-columns:repeat(4,1fr);}}
+.sel-card{
+  padding:48px 32px;border-radius:48px;border:4px solid var(--slate200);
+  background:white;cursor:pointer;transition:all 0.2s;
+  display:flex;flex-direction:column;align-items:center;gap:24px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.04);
+}
+.sel-card:hover{border-color:var(--blue);}
+.sel-card.active{border-color:var(--blue2);background:#eff6ff;box-shadow:0 8px 32px rgba(37,99,235,0.15);}
+.sel-card svg{width:48px;height:48px;color:var(--blue);display:block;}
+.sel-card .card-title{font-weight:900;font-size:clamp(18px,2.5vw,28px);color:var(--slate900);}
+.sel-card .card-desc{color:var(--slate500);font-size:16px;text-align:center;}
+
+/* NUMBER BUTTONS */
+.num-btns{display:flex;justify-content:center;flex-wrap:wrap;gap:24px;}
+.num-btn{width:80px;height:80px;border-radius:24px;border:4px solid var(--slate200);background:white;font-size:28px;font-weight:900;cursor:pointer;transition:all 0.2s;}
+.num-btn:hover{border-color:var(--blue2);}
+.num-btn.active{background:var(--blue2);border-color:var(--blue2);color:white;box-shadow:0 4px 16px rgba(37,99,235,0.3);}
+.appt-btn{padding:48px 64px;border-radius:48px;border:4px solid var(--slate200);background:white;font-size:32px;font-weight:900;cursor:pointer;transition:all 0.2s;}
+.appt-btn:hover{border-color:var(--blue);}
+.appt-btn.active{border-color:var(--blue2);background:#eff6ff;}
+
+/* BEDROOM CARDS */
+.chamber-card{padding:32px;background:white;border:1px solid var(--slate100);border-radius:24px;}
+.chamber-label{font-size:12px;font-weight:900;color:var(--blue);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:16px;}
+.bedroom-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.bed-btn{padding:16px;border-radius:12px;font-size:14px;font-weight:700;border:2px solid transparent;background:var(--slate50);cursor:pointer;transition:all 0.2s;}
+.bed-btn.active{background:#eff6ff;border-color:var(--blue);}
+
+/* BATHROOM SECTION */
+.bath-row{display:flex;align-items:center;justify-content:space-between;padding:24px;background:white;border-radius:16px;border:1px solid var(--slate100);}
+.bath-btns{display:flex;gap:8px;}
+.bath-btn{padding:8px 16px;border-radius:8px;font-size:14px;font-weight:700;border:1px solid var(--slate200);background:var(--slate50);cursor:pointer;transition:all 0.2s;}
+.bath-btn.active{background:var(--blue2);color:white;border-color:var(--blue2);}
+
+/* ROOMS GRID */
+.room-btn{
+  padding:32px 16px;border-radius:32px;border:4px solid var(--slate200);
+  background:white;cursor:pointer;transition:all 0.2s;
+  display:flex;flex-direction:column;align-items:center;gap:16px;
+}
+.room-btn:hover{border-color:var(--slate300);}
+.room-btn.active{border-color:var(--blue2);background:var(--blue2);color:white;box-shadow:0 4px 20px rgba(37,99,235,0.3);}
+.room-btn svg{width:32px;height:32px;display:block;}
+.room-btn span{font-weight:900;font-size:11px;text-transform:uppercase;letter-spacing:-0.01em;text-align:center;}
+
+/* TV / SALON OPTIONS */
+.opts-box{background:white;padding:48px;border-radius:32px;box-shadow:0 4px 24px rgba(0,0,0,0.06);border:1px solid var(--slate100);}
+.opts-section{margin-bottom:32px;}
+.opts-label{font-size:12px;font-weight:900;color:var(--slate600);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:16px;}
+.opts-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.opt-btn{padding:24px;border-radius:16px;border:4px solid var(--slate200);font-weight:700;cursor:pointer;transition:all 0.2s;background:white;}
+.opt-btn.active{border-color:var(--blue2);background:#eff6ff;color:var(--blue2);}
+.opts-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.check-opt{padding:24px;border-radius:16px;border:4px solid var(--slate200);cursor:pointer;transition:all 0.2s;background:white;display:flex;align-items:center;gap:12px;}
+.check-opt.active{border-color:var(--blue2);background:#eff6ff;}
+.check-circle{width:24px;height:24px;border-radius:999px;border:2px solid var(--slate300);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.check-circle.checked{border-color:var(--blue2);background:var(--blue2);}
+.check-circle svg{width:14px;height:14px;color:white;display:block;}
+
+/* EXTERIOR STEPS */
+.pool-grid,.stair-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;}
+.stair-grid{grid-template-columns:1fr 1fr;}
+.ext-btn{padding:48px 32px;border-radius:32px;border:4px solid var(--slate200);background:white;cursor:pointer;transition:all 0.2s;display:flex;flex-direction:column;align-items:center;gap:16px;box-shadow:0 2px 8px rgba(0,0,0,0.04);}
+.ext-btn svg{width:48px;height:48px;color:var(--blue);}
+.ext-btn .ext-label{font-weight:900;font-size:18px;}
+.ext-btn.active{border-color:var(--blue2);background:var(--blue2);color:white;box-shadow:0 8px 32px rgba(37,99,235,0.3);}
+.ext-btn.active svg{color:white;}
+
+/* NEXT BUTTON */
+.btn-next{padding:32px 96px;background:var(--slate950);color:white;border-radius:999px;font-weight:900;font-size:22px;border:none;cursor:pointer;transition:all 0.2s;box-shadow:0 8px 32px rgba(0,0,0,0.2);}
+.btn-next:hover{background:var(--blue2);}
+.btn-next.blue{background:var(--blue2);}
+.btn-next.blue:hover{background:var(--blue3);}
+.btn-next.big{font-size:28px;padding:40px 120px;}
+.btn-next:disabled{background:var(--slate300);cursor:not-allowed;}
+.center-btn{display:flex;justify-content:center;}
+
+/* ERROR */
+.error-box{padding:24px;background:#fef2f2;color:#b91c1c;border-radius:24px;border:1px solid #fecaca;display:flex;align-items:center;gap:24px;}
+.error-box svg{width:32px;height:32px;flex-shrink:0;}
+
+/* DECORATION PAGE */
+#decoration{background:var(--slate900);color:white;min-height:100vh;}
+.deco-header{padding:32px;border-bottom:1px solid rgba(255,255,255,0.1);position:sticky;top:0;background:rgba(15,23,42,0.9);backdrop-filter:blur(20px);z-index:50;display:flex;justify-content:space-between;align-items:center;}
+.deco-title{font-family:'Playfair Display',serif;font-size:28px;font-style:italic;font-weight:700;}
+.deco-status{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:0.2em;color:#60a5fa;}
+.deco-main{max-width:1400px;margin:0 auto;padding:48px 32px;}
+.images-vides-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:32px;margin-bottom:96px;}
+.image-vide-card{background:rgba(255,255,255,0.05);padding:24px;border-radius:32px;border:1px solid rgba(255,255,255,0.1);display:flex;flex-direction:column;gap:16px;}
+.image-vide-img{position:relative;aspect-ratio:16/9;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,0.1);background:var(--slate800);}
+.image-vide-img img{width:100%;height:100%;object-fit:cover;opacity:0.7;}
+.brut-badge{position:absolute;top:16px;left:16px;background:rgba(0,0,0,0.6);padding:4px 12px;border-radius:999px;font-size:10px;font-weight:900;color:white;}
+.image-vide-name{font-weight:700;text-align:center;color:var(--slate400);}
+.ref-label{font-size:10px;font-weight:900;color:#60a5fa;text-transform:uppercase;letter-spacing:0.1em;}
+.ref-upload{display:block;cursor:pointer;}
+.ref-upload-zone{padding:16px;border:2px dashed rgba(255,255,255,0.2);border-radius:12px;display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--slate500);transition:all 0.2s;}
+.ref-upload-zone:hover{border-color:var(--blue);color:#60a5fa;}
+.ref-upload-zone svg{width:24px;height:24px;display:block;}
+.ref-upload-zone span{font-size:10px;font-weight:700;text-transform:uppercase;}
+.ref-preview{position:relative;border-radius:12px;overflow:hidden;border:2px solid var(--blue);aspect-ratio:16/9;}
+.ref-preview img{width:100%;height:100%;object-fit:cover;}
+.ref-remove-btn{position:absolute;top:8px;right:8px;padding:6px;background:#ef4444;border-radius:8px;border:none;cursor:pointer;opacity:0;transition:opacity 0.2s;}
+.ref-preview:hover .ref-remove-btn{opacity:1;}
+.ref-remove-btn svg{width:14px;height:14px;color:white;display:block;}
+.ref-ok-badge{position:absolute;bottom:8px;left:8px;background:var(--blue2);padding:4px 8px;border-radius:6px;font-size:9px;font-weight:900;color:white;text-transform:uppercase;}
+
+.deco-params-box{max-width:900px;margin:0 auto;padding:64px;background:rgba(255,255,255,0.05);border-radius:64px;border:1px solid rgba(255,255,255,0.1);backdrop-filter:blur(16px);box-shadow:0 20px 60px rgba(0,0,0,0.3);}
+.deco-params-title{font-family:'Playfair Display',serif;font-size:40px;font-style:italic;font-weight:700;text-align:center;margin-bottom:8px;}
+.deco-params-sub{color:var(--slate400);text-align:center;margin-bottom:48px;}
+.deco-selects{display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-bottom:32px;}
+.deco-select-wrap{display:flex;flex-direction:column;gap:8px;}
+.deco-select-label{font-size:10px;font-weight:900;color:#60a5fa;text-transform:uppercase;letter-spacing:0.1em;}
+.deco-select{width:100%;padding:24px;background:var(--slate800);border:1px solid rgba(255,255,255,0.1);border-radius:16px;color:white;font-size:14px;outline:none;cursor:pointer;}
+.deco-select:focus{border-color:var(--blue);}
+.color-btns{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:32px;}
+.color-btn{padding:8px 16px;border-radius:999px;border:1px solid rgba(255,255,255,0.1);background:var(--slate800);color:var(--slate300);font-size:12px;font-weight:700;cursor:pointer;transition:all 0.2s;}
+.color-btn.active{background:var(--blue2);border-color:var(--blue2);color:white;}
+.deco-textarea{width:100%;padding:32px;background:var(--slate800);border:1px solid rgba(255,255,255,0.1);border-radius:24px;color:white;font-family:'Inter',sans-serif;font-size:14px;height:128px;outline:none;resize:none;margin-bottom:32px;}
+.deco-textarea:focus{border-color:var(--blue);}
+.deco-textarea::placeholder{color:var(--slate500);}
+.btn-render{width:100%;padding:48px;background:var(--blue2);border:none;border-radius:999px;font-weight:900;font-size:28px;color:white;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:24px;box-shadow:0 20px 60px rgba(37,99,235,0.3);}
+.btn-render:hover{background:var(--blue3);transform:scale(1.02);}
+
+/* RESULTAT */
+#resultat{background:var(--slate950);color:white;min-height:100vh;padding-bottom:160px;}
+.result-header{padding:32px;border-bottom:1px solid rgba(255,255,255,0.1);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--slate950);z-index:50;}
+.result-title{font-family:'Playfair Display',serif;font-size:28px;font-style:italic;font-weight:700;}
+.close-btn{padding:16px;background:rgba(255,255,255,0.1);border-radius:999px;border:none;cursor:pointer;color:white;transition:background 0.2s;}
+.close-btn:hover{background:rgba(255,255,255,0.2);}
+.close-btn svg{width:24px;height:24px;display:block;}
+.result-main{max-width:1400px;margin:0 auto;padding:48px 32px;}
+.result-piece{margin-bottom:128px;}
+.result-piece-header{display:flex;flex-direction:column;gap:24px;padding:0 16px;margin-bottom:48px;}
+@media(min-width:768px){.result-piece-header{flex-direction:row;justify-content:space-between;align-items:flex-end;}}
+.result-piece-name{font-size:clamp(36px,6vw,72px);font-weight:900;letter-spacing:-0.03em;}
+.result-piece-actions{display:flex;gap:16px;}
+.btn-split{padding:16px 32px;background:white;color:var(--slate950);border:none;border-radius:16px;font-weight:900;font-size:14px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:12px;box-shadow:0 4px 16px rgba(0,0,0,0.1);}
+.btn-split:hover{background:var(--blue2);color:white;}
+.btn-split svg{width:20px;height:20px;display:block;}
+.btn-dl{padding:16px;background:var(--blue2);border-radius:16px;border:none;cursor:pointer;transition:background 0.2s;}
+.btn-dl:hover{background:var(--blue3);}
+.btn-dl svg{width:24px;height:24px;color:white;display:block;}
+.result-master{position:relative;aspect-ratio:16/9;border-radius:64px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.5);background:var(--slate900);border:1px solid rgba(255,255,255,0.05);cursor:pointer;}
+.result-master img{width:100%;height:100%;object-fit:cover;transition:transform 5s;}
+.result-master:hover img{transform:scale(1.05);}
+.master-badge{position:absolute;top:32px;left:32px;padding:8px 24px;background:rgba(255,255,255,0.1);backdrop-filter:blur(8px);border-radius:999px;border:1px solid rgba(255,255,255,0.2);font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:0.2em;}
+.slices-section{margin-top:32px;}
+.slices-label{display:flex;align-items:center;gap:12px;padding:0 24px;margin-bottom:32px;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:0.2em;color:var(--slate400);}
+.slices-label svg{width:16px;height:16px;color:var(--blue);}
+.slices-grid{display:grid;grid-template-columns:1fr;gap:32px;}
+@media(min-width:640px){.slices-grid{grid-template-columns:1fr 1fr;}}
+@media(min-width:1024px){.slices-grid{grid-template-columns:repeat(3,1fr);}}
+.slice-card{border-radius:24px;overflow:hidden;border:1px solid rgba(255,255,255,0.1);background:var(--slate800);box-shadow:0 8px 32px rgba(0,0,0,0.3);}
+.slice-img{position:relative;aspect-ratio:16/9;cursor:pointer;overflow:hidden;}
+.slice-img img{width:100%;height:100%;object-fit:cover;transition:transform 0.7s;}
+.slice-card:hover .slice-img img{transform:scale(1.1);}
+.slice-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.8),transparent);opacity:0;transition:opacity 0.2s;display:flex;align-items:flex-end;padding:24px;}
+.slice-card:hover .slice-overlay{opacity:1;}
+.slice-dl-btn{padding:16px;background:white;color:var(--slate950);border:none;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer;display:flex;align-items:center;gap:8px;}
+.slice-dl-btn svg{width:18px;height:18px;display:block;}
+.slice-info{padding:16px 20px;}
+.slice-name{font-weight:900;color:#60a5fa;font-size:12px;text-transform:uppercase;letter-spacing:0.2em;}
+.slice-meta{color:var(--slate500);font-size:10px;margin-top:4px;font-weight:700;text-transform:uppercase;}
+/* Excluded volume badge in slice cards */
+.slice-excluded{color:var(--slate600);font-size:9px;margin-top:2px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;}
+
+.result-export{text-align:center;padding:80px;background:rgba(255,255,255,0.05);border-radius:80px;border:1px solid rgba(255,255,255,0.1);box-shadow:0 20px 60px rgba(0,0,0,0.3);margin-top:80px;}
+.result-export h2{font-family:'Playfair Display',serif;font-size:clamp(36px,6vw,72px);font-style:italic;font-weight:700;margin-bottom:40px;}
+.btn-export{padding:40px 128px;background:var(--blue2);border:none;border-radius:999px;font-weight:900;font-size:clamp(24px,4vw,40px);color:white;cursor:pointer;display:inline-flex;align-items:center;gap:32px;box-shadow:0 20px 60px rgba(37,99,235,0.4);transition:all 0.2s;}
+.btn-export:hover{transform:scale(1.05);}
+.btn-export svg{width:40px;height:40px;display:block;}
+
+/* ARCHISPLIT MODAL */
+.modal-overlay{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(2,6,23,0.9);backdrop-filter:blur(8px);}
+.modal-box{background:white;border-radius:48px;width:100%;max-width:960px;padding:48px;box-shadow:0 40px 80px rgba(0,0,0,0.3);position:relative;max-height:90vh;overflow-y:auto;}
+.modal-close{position:absolute;top:32px;right:32px;padding:12px;border-radius:999px;border:none;background:var(--slate100);cursor:pointer;transition:background 0.2s;}
+.modal-close:hover{background:var(--slate200);}
+.modal-close svg{width:24px;height:24px;display:block;}
+.modal-title{font-size:32px;font-weight:900;display:flex;align-items:center;gap:16px;margin-bottom:8px;}
+.modal-title svg{width:32px;height:32px;color:var(--blue2);}
+.modal-sub{color:var(--slate500);font-size:16px;margin-bottom:32px;}
+.slices-select-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-height:50vh;overflow-y:auto;padding-right:8px;margin-bottom:32px;}
+.slice-sel-btn{padding:20px 24px;border-radius:16px;border:4px solid var(--slate100);background:var(--slate50);cursor:pointer;transition:all 0.2s;display:flex;align-items:flex-start;gap:16px;text-align:left;}
+.slice-sel-btn.active{border-color:var(--blue2);background:#eff6ff;}
+.slice-sel-btn:hover{background:white;border-color:var(--slate300);}
+.slice-check{width:24px;height:24px;border-radius:999px;border:2px solid var(--slate300);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;}
+.slice-check.checked{border-color:var(--blue2);background:var(--blue2);}
+.slice-check svg{width:14px;height:14px;color:white;display:block;}
+.slice-sel-info{flex:1;min-width:0;}
+.slice-sel-name{font-weight:700;color:var(--slate900);font-size:14px;line-height:1.3;}
+.slice-sel-fov{font-size:10px;color:var(--slate500);font-weight:900;text-transform:uppercase;letter-spacing:0.2em;margin-top:4px;}
+/* NEW: visible/excluded volume in modal */
+.slice-sel-visible{font-size:11px;color:#2563eb;font-weight:600;margin-top:6px;line-height:1.4;}
+.slice-sel-excluded{font-size:10px;color:#ef4444;font-weight:600;margin-top:3px;line-height:1.3;}
+.btn-extract{width:100%;padding:32px;background:var(--blue2);color:white;border:none;border-radius:999px;font-weight:900;font-size:22px;cursor:pointer;transition:all 0.2s;box-shadow:0 8px 32px rgba(37,99,235,0.3);}
+.btn-extract:hover{background:var(--blue3);}
+.btn-extract:disabled{opacity:0.4;cursor:not-allowed;}
+
+/* MODE OPTIONNEL */
+#modeOptio{background:var(--slate50);min-height:100vh;padding-bottom:160px;}
+/* MODE ISOLE */
+#modeIsole{background:var(--slate50);min-height:100vh;padding-bottom:160px;}
+.isole-grid{display:grid;grid-template-columns:1fr 1fr;gap:48px;margin-bottom:64px;}
+@media(max-width:768px){.isole-grid{grid-template-columns:1fr;}}
+.isole-card{background:white;padding:48px;border-radius:48px;box-shadow:0 4px 32px rgba(0,0,0,0.08);border:1px solid var(--slate100);}
+.isole-card-title{font-size:28px;font-weight:900;display:flex;align-items:center;gap:12px;margin-bottom:8px;}
+.isole-card-title svg{width:28px;height:28px;color:var(--blue2);}
+.isole-card-sub{color:var(--slate500);margin-bottom:32px;}
+.upload-zone-isole{display:block;width:100%;aspect-ratio:16/9;border:4px dashed var(--slate200);border-radius:32px;cursor:pointer;background:var(--slate50);transition:all 0.2s;}
+.upload-zone-isole:hover{border-color:var(--blue);}
+.upload-zone-inner{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:var(--slate400);}
+.upload-zone-inner svg{width:64px;height:64px;display:block;}
+.upload-zone-inner span{font-weight:900;font-size:18px;text-transform:uppercase;letter-spacing:0.1em;}
+.master-preview{position:relative;aspect-ratio:16/9;border-radius:32px;overflow:hidden;border:4px solid var(--blue);box-shadow:0 8px 32px rgba(37,99,235,0.2);}
+.master-preview img{width:100%;height:100%;object-fit:cover;}
+.master-remove{position:absolute;top:16px;right:16px;padding:12px;background:#ef4444;color:white;border:none;border-radius:999px;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.2);}
+.master-remove svg{width:20px;height:20px;display:block;}
+
+/* UPDATED: ArchiSplit slice list with richer info */
+.slice-list{display:flex;flex-direction:column;gap:12px;max-height:480px;overflow-y:auto;padding-right:8px;margin-bottom:32px;}
+.slice-list-item{
+  padding:20px 24px;border-radius:16px;border:4px solid var(--slate100);
+  background:var(--slate50);cursor:pointer;transition:all 0.2s;
+  display:flex;align-items:flex-start;gap:16px;
+}
+.slice-list-item:hover{border-color:var(--slate300);background:white;}
+.slice-list-item.active{border-color:var(--blue2);background:#eff6ff;}
+.slice-list-check{width:22px;height:22px;border-radius:999px;border:2px solid var(--slate300);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;transition:all 0.2s;}
+.slice-list-check.checked{border-color:var(--blue2);background:var(--blue2);}
+.slice-list-check svg{width:13px;height:13px;color:white;display:block;}
+.slice-list-body{flex:1;min-width:0;}
+.slice-list-name{font-weight:700;color:var(--slate900);font-size:14px;line-height:1.3;}
+.slice-list-fov{font-size:10px;color:var(--slate500);font-weight:900;text-transform:uppercase;letter-spacing:0.15em;margin-top:4px;}
+.slice-list-visible{font-size:12px;color:#2563eb;font-weight:600;margin-top:5px;line-height:1.4;}
+.slice-list-excluded{font-size:11px;color:#ef4444;font-weight:600;margin-top:3px;line-height:1.3;}
+
+.btn-start-split{width:100%;padding:32px;background:var(--blue2);color:white;border:none;border-radius:999px;font-weight:900;font-size:22px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:16px;box-shadow:0 8px 32px rgba(37,99,235,0.3);}
+.btn-start-split:hover{background:var(--blue3);}
+.btn-start-split:disabled{opacity:0.3;cursor:not-allowed;}
+.btn-start-split svg{width:24px;height:24px;display:block;}
+
+/* UTILITY */
+.hidden{display:none!important;}
+.flex-center{display:flex;justify-content:center;}
+.mt-8{margin-top:32px;}
+.mt-12{margin-top:48px;}
+.mt-16{margin-top:64px;}
+.text-center{text-align:center;}
+.w-full{width:100%;}
+.gap-row{display:flex;align-items:center;gap:8px;}
+</style>
+</head>
+<body>
+
+<!-- LOADING OVERLAY -->
+<div id="loadingOverlay">
+  <div class="loading-icon">🏗️</div>
+  <h2 class="loading-title" id="loadingMsg">Coulage des fondations...</h2>
+  <div class="loading-bar-wrap"><div class="loading-bar animate-progress"></div></div>
+</div>
+
+<!-- ARCHISPLIT MODAL -->
+<div class="modal-overlay hidden" id="splitModal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeSplitModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    <h3 class="modal-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>ArchiSplit — Découpage technique</h3>
+    <p class="modal-sub">Générez des vues isolées et précises de cette pièce.</p>
+    <div class="slices-select-grid" id="slicesSelectGrid"></div>
+    <button class="btn-extract" id="btnExtract" onclick="runArchiSplit()" disabled>Extraire les plans</button>
+  </div>
+</div>
+
+<!-- SPLASH / ACCUEIL -->
+<div id="accueil" class="page active">
+  <div class="accueil-bg"></div>
+  <div class="accueil-overlay"></div>
+  <div class="accueil-content animate-in">
+    <div class="accueil-icon animate-pulse">✨</div>
+    <h1 class="accueil-title">Studio <span>ARCHITECTE</span></h1>
+    <p class="accueil-sub">Donnez vie à vos projets immobiliers les plus fous.</p>
+
+    <!-- API KEY -->
+    <div style="display:flex;flex-direction:column;gap:8px;width:100%;max-width:420px;margin-bottom:32px;">
+      <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.2em;color:#9ca3af;">Clé API Vertex AI (Express Mode)</label>
+      <input type="password" id="apiKeyInput" placeholder="AIza..." style="width:100%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);border-radius:12px;padding:14px 16px;font-size:13px;font-family:monospace;color:white;outline:none;" autocomplete="off">
+      <p style="font-size:11px;color:#60a5fa;font-weight:600;text-align:center;">⚡ Obtenez votre clé sur console.cloud.google.com/vertex-ai/studio/express</p>
+    </div>
+    <p id="apiError" style="color:#f87171;font-size:12px;font-weight:600;display:none;margin-bottom:8px;"></p>
+
+    <div class="accueil-btns">
+      <button class="btn-accueil btn-white" onclick="enterApp('projet')">Projet Complet <span style="font-size:40px;">🏠</span></button>
+      <button class="btn-accueil btn-blue" onclick="enterApp('piece')">Pièce Unique <span style="font-size:40px;">✨</span></button>
+      <button class="btn-accueil btn-dark" onclick="enterApp('isole')">ArchiSplit - Mode Isolé <span style="font-size:40px;">✂️</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- CONSTRUCTION -->
+<div id="construction" class="page">
+  <header class="page-header">
+    <button class="back-btn" onclick="prevStep()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <span class="page-header-title">Chantier — Étape <span id="stepNum">1</span></span>
+    <div style="width:40px;"></div>
+  </header>
+  <div class="page-main">
+    <div id="errorBox" class="error-box hidden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><p id="errorMsg"></p></div>
+    <div id="stepContent"></div>
+  </div>
+</div>
+
+<!-- MODE OPTIONNEL -->
+<div id="modeOptio" class="page">
+  <header class="page-header">
+    <button class="back-btn" onclick="showPage('accueil')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <span class="page-header-title">Mode Pièce Unique</span>
+    <div style="width:40px;"></div>
+  </header>
+  <div class="page-main" id="optioMain"></div>
+</div>
+
+<!-- MODE ISOLE -->
+<div id="modeIsole" class="page">
+  <header class="page-header">
+    <button class="back-btn" onclick="showPage('accueil')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <span class="page-header-title">ArchiSplit — Laboratoire de Découpage</span>
+    <div style="width:40px;"></div>
+  </header>
+  <div class="page-main" id="isoleMain"></div>
+</div>
+
+<!-- DECORATION -->
+<div id="decoration" class="page">
+  <header class="deco-header">
+    <h2 class="deco-title">Squelette Béton Validé</h2>
+    <div class="deco-status"><span style="animation:pulse 2s infinite;width:16px;height:16px;font-size:16px;">💡</span>Équipement technique en attente</div>
+  </header>
+  <div class="deco-main" id="decoMain"></div>
+</div>
+
+<!-- RESULTAT -->
+<div id="resultat" class="page">
+  <header class="result-header">
+    <h2 class="result-title">Dossier Architecte AI Pro</h2>
+    <button class="close-btn" onclick="showPage('accueil')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+  </header>
+  <div class="result-main" id="resultMain"></div>
+</div>
+
+<script>
+// ==================== CONSTANTS ====================
+const MODEL = 'gemini-3-pro-image-preview';
+
+const BEDROOM_TYPES = ['Adulte','Enfant','Adolescent','Bébé','Amis'];
+const BATHROOM_TYPES = ['Douche','Baignoire','Mixte'];
+const HOUSE_STYLES = ['Moderne','Contemporain','Minimaliste','Méditerranéen','Colonial','Urbain Chic','Luxe'];
+const APPART_STYLES = ['Moderne','Contemporain','Scandinave','Minimaliste','Industriel','Haussmannien','Luxe','Japandi','Bohème Chic'];
+const FURNITURE_STYLES = ['IKEA (Accessible & Réaliste)','Moderne','Bohème','Scandinave','Classique','Mixte'];
+const WALL_COLORS = ['Blanc Albâtre','Beige Sable','Gris Perle','Gris Minéral','Gris Anthracite','Noir Mat','Bleu Canard','Bleu Nuit','Bleu Glacier','Vert Sauge','Vert Olive','Vert Forêt','Rose Poudré','Terracotta','Ocre Jaune','Bordeaux','Prune','Taupe','Greige','Crème'];
+const LOADING_MSGS = ['Coulage des fondations en béton armé...','Élévation de la structure brute...','Installation des volumes architecturaux...','Vérification des accès et circulation...','Finalisation du squelette béton...','Intégration de la domotique et réseaux...','Préparation du rendu 4K final...'];
+
+const VILLA_ROOMS = [
+  {id:'Entrée',label:'Entrée'},{id:'Escalier',label:'Escalier',mandatory:true},
+  {id:'Salon',label:'Salon'},{id:'Salle à manger',label:'Salle à manger'},
+  {id:'Cuisine',label:'Cuisine'},{id:'Cellier',label:'Cellier'},
+  {id:'Bureau',label:'Bureau'},{id:'Buanderie',label:'Buanderie'},
+  {id:'Cave à vin',label:'Cave à vin'},{id:'WC RDC',label:'WC RDC'},
+  {id:'Salle de jeu',label:'Salle de jeu'},{id:'Salle de sport',label:'Salle de sport'},
+  {id:'Jardin',label:'Jardin'},{id:'Terrasse',label:'Terrasse'},
+  {id:'Garage',label:'Garage'},{id:'Atelier',label:'Atelier Bricolage'},
+  {id:'Dressing',label:'Dressing'},{id:'Vanity',label:'Coin Coiffeuse'},
+];
+const APPT_ROOMS = [
+  {id:'Entrée',label:'Entrée'},{id:'Salon',label:'Salon'},
+  {id:'Salle à manger',label:'Salle à manger'},{id:'Cuisine',label:'Cuisine'},
+  {id:'Bureau',label:'Bureau'},{id:'Salle de jeu',label:'Salle de jeu'},
+  {id:'Salle de sport',label:'Salle de sport'},{id:'Dressing',label:'Dressing'},
+  {id:'Vanity',label:'Coin Coiffeuse'},{id:'Balcon',label:'Balcon'},
+  {id:'Terrasse fermée',label:'Terrasse fermée'},{id:'Cellier',label:'Cellier'},
+  {id:'Buanderie',label:'Buanderie'},{id:'Cave à vin',label:'Cave à vin'},
+];
+
+// ==================== UPDATED CAMERA SLICES (from ArchiSplit module v2) ====================
+const CAMERA_SLICES = [
+  {
+    id: 'CAMERA_SLICE_03',
+    label: '🔄 Vue latérale gauche complète',
+    camera_position: 'mur_A',
+    camera_orientation: 'vers_mur_lateral',
+    depth: 'plan_moyen',
+    visible_volume: 'Côté gauche de la pièce isolé (ex: baignoire, étagères gauche)',
+    excluded_volume: 'Côté droit',
+    camera_fov: 75
+  },
+  {
+    id: 'CAMERA_SLICE_04',
+    label: '🔄 Vue latérale droite complète',
+    camera_position: 'mur_B',
+    camera_orientation: 'vers_mur_lateral',
+    depth: 'plan_moyen',
+    visible_volume: 'Côté droit de la pièce isolé (ex: lavabo, meuble droit)',
+    excluded_volume: 'Côté gauche',
+    camera_fov: 75
+  },
+  {
+    id: 'CAMERA_SLICE_07',
+    label: '📐 Angle gauche (perspective diagonale)',
+    camera_position: 'angle',
+    camera_orientation: 'vers_angle',
+    depth: 'plan_large',
+    visible_volume: 'Angle gauche, profondeur spatiale, 2 murs visibles',
+    excluded_volume: 'Angle opposé',
+    camera_fov: 85
+  },
+  {
+    id: 'CAMERA_SLICE_08',
+    label: '📐 Angle droit (perspective diagonale)',
+    camera_position: 'angle',
+    camera_orientation: 'vers_angle',
+    depth: 'plan_large',
+    visible_volume: 'Angle droit, profondeur spatiale, 2 murs visibles',
+    excluded_volume: 'Angle opposé',
+    camera_fov: 85
+  },
+  {
+    id: 'CAMERA_SLICE_10',
+    label: '🎯 Vue centrée sur élément principal',
+    camera_position: 'centre',
+    camera_orientation: 'vers_mur_oppose',
+    depth: 'plan_moyen',
+    visible_volume: 'Centré sur élément principal (miroir, fenêtre, meuble central) - ISOLÉ',
+    excluded_volume: 'Éléments périphériques',
+    camera_fov: 65
+  }
+];
+
+const GLOBAL_PROMPT = `
+MANDATORY TECHNICAL RULES:
+- VISIBLE LIGHT SWITCHES in every room near the door.
+- FUNCTIONAL LIGHTING: visible chandelier or decorative pendant light in main rooms.
+- BATHROOMS/WC: VISIBLE VMC on ceiling.
+- ALL CEILINGS: completely finished (zero raw concrete in final renders).
+- ALL WALLS: completely finished with paint, wallpaper, or tiles.
+- JACUZZI: perfectly round, filled with bubbling water.
+- NO RUGS in Bathrooms, Kitchens, or Garages.
+- GARAGE: strictly technical.
+- APARTMENT MODE: NO POOLS, NO GARDENS, NO GARAGES.
+- T3/T4: NO STAIRS, PLAIN-PIED ONLY.
+`;
+
+// ==================== STATE ====================
+let API_KEY = '';
+let step = 1;
+let loadingInterval = null;
+
+const config = {
+  type:'', appartementType:'', pieces:[], nbChambres:1,
+  chambresDetail:['Adulte'], jacuzziType:'Aucun', poolType:'Aucune',
+  nbBathrooms:1, bathroomTypes:['Douche'], nbToilets:1,
+  stairType:'Classique', gardenType:'Simple', houseStyle:'',
+  furnitureStyle:FURNITURE_STYLES[0], wallColor:WALL_COLORS[0],
+  salonOptions:{tv:'Murale',cadres:true,plantes:true,meubleDecoratif:true,tableaux:true},
+  dressingGender:'Femme', pieceOptionnelle:'', typePieceOptionnelle:''
+};
+let imagesVides = [];
+let imagesFinales = [];
+let descriptionDecoration = '';
+let activeSplitImageId = null;
+let selectedSlices = [];
+let masterImageIsole = null;
+let selectedSlicesIsole = [];
+
+const isVilla = () => config.type === 'maison';
+const isT5 = () => config.appartementType === 'T5';
+
+// ==================== NAV ====================
+document.getElementById('apiKeyInput').addEventListener('keydown', e => { if(e.key==='Enter') { enterApp('projet'); } });
+
+function enterApp(mode) {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  const err = document.getElementById('apiError');
+  if(!key){ err.textContent='Veuillez entrer votre clé API Vertex AI.'; err.style.display='block'; return; }
+  API_KEY = key;
+  err.style.display = 'none';
+  if(mode==='projet'){ showPage('construction'); step=1; renderStep(); }
+  else if(mode==='piece'){ showPage('modeOptio'); renderOptio(); }
+  else if(mode==='isole'){ showPage('modeIsole'); renderIsole(); }
+}
+
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ==================== LOADING ====================
+function startLoading(msg) {
+  document.getElementById('loadingMsg').textContent = msg || LOADING_MSGS[0];
+  document.getElementById('loadingOverlay').classList.add('active');
+  let idx = 0;
+  loadingInterval = setInterval(() => {
+    idx = (idx+1) % LOADING_MSGS.length;
+    document.getElementById('loadingMsg').textContent = LOADING_MSGS[idx];
+  }, 3000);
+}
+function stopLoading() {
+  document.getElementById('loadingOverlay').classList.remove('active');
+  if(loadingInterval) clearInterval(loadingInterval);
+}
+function setLoadingMsg(msg) { document.getElementById('loadingMsg').textContent = msg; }
+
+// ==================== VERTEX API ====================
+async function callVertex(parts, aspectRatio='16:9') {
+  const endpoint = `https://aiplatform.googleapis.com/v1/publishers/google/models/${MODEL}:generateContent?key=${encodeURIComponent(API_KEY)}`;
+  const body = {
+    contents:[{role:'user',parts}],
+    generationConfig:{
+      responseModalities:['IMAGE','TEXT'],
+      imageConfig:{aspectRatio,imageSize:'4K'}
+    }
+  };
+  const res = await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(!res.ok){const t=await res.text();let d;try{d=JSON.parse(t);}catch(e){}const msg3=d?.error?.message||t;
+      if(res.status===400){throw new Error(`ERREUR 400 : ${msg3} — Activez Vertex AI API sur console.cloud.google.com/apis/library`);}
+      if(res.status===401){throw new Error(`ERREUR 401 : Clé non reconnue — console.cloud.google.com/apis/credentials`);}
+      if(res.status===403){throw new Error(`ERREUR 403 : Accès refusé — Activez Vertex AI API et vérifiez les restrictions`);}
+      if(res.status===404){throw new Error(`ERREUR 404 : Modèle non trouvé — Activez Vertex AI API sur votre projet`);}
+      throw new Error(`Erreur ${res.status}: ${msg3}`);}
+  const data = await res.json();
+  for(const part of (data.candidates?.[0]?.content?.parts||[])){
+    if(part.inlineData?.data) return `data:image/png;base64,${part.inlineData.data}`;
+  }
+  throw new Error('Aucune image générée.');
+}
+
+// ==================== PROMPT BUILDER ====================
+function getPieceConstraints(piece, type, subType, isEmpty, gardenType, decoParams) {
+  const lightingRule = isEmpty
+    ? 'Construction site temporary lighting'
+    : 'Modern CHANDELIER or PENDANT LIGHT fixture hanging from ceiling (NO recessed LED spots, NO track lighting — MUST be visible decorative chandelier or hanging pendant)';
+
+  const base = {
+    mandatory: ['Visible wall light switch near door', lightingRule, 'Finished ceiling (no raw concrete in final render)'],
+    forbidden: [],
+    context: ''
+  };
+
+  if(type==='appartement' && piece.includes('Entrée immeuble')){
+    base.mandatory.push('EXTERIOR STREET-LEVEL VIEW of modern residential apartment building entrance','LARGE GLASS DOOR (full-height transparent glass panels with metal frame)','DIGITAL INTERCOM SYSTEM clearly visible on right side of door','VISIBLE MAILBOX WALL through the glass door','Building entrance number displayed on facade','Clean modern facade','Sidewalk and street pavement visible in foreground','PARKING SPACE MARKINGS on street level','Realistic urban apartment building exterior','NO interior furniture visible from outside');
+    base.forbidden.push('NO chairs, sofas, tables inside entrance area','NO people in shot','NO villa or house facade');
+    base.context = 'EXTERIOR STREET VIEW photographed from sidewalk, looking at modern French apartment building glass entrance door';
+    return base;
+  }
+
+  if(type==='appartement' && piece.includes('Hall immeuble')){
+    base.mandatory.push('INTERIOR ground floor entrance hall of apartment building','WALL OF MAILBOXES prominently displayed','ELEVATOR DOOR clearly visible','Clean polished floor','Neutral walls','Minimal functional space');
+    base.forbidden.push('ABSOLUTELY NO sofas, armchairs, benches','NO reception desk','NO people in the scene');
+    base.context = 'FUNCTIONAL APARTMENT BUILDING ENTRANCE HALL — minimalist interior space with mailboxes and elevator';
+    return base;
+  }
+
+  if(piece==='Ascenseur immeuble'){
+    base.mandatory.push('Modern elevator cabin INTERIOR view','Stainless steel or brushed metal elevator walls','Elevator control panel with floor buttons clearly visible','Mirror on back or side wall','Handrail mounted on walls');
+    base.forbidden.push('NO living room furniture','NO people in elevator');
+    base.context = 'Interior of modern apartment building elevator cabin, functional and clean';
+    return base;
+  }
+
+  if(piece.includes('WC')){
+    base.mandatory.push('Wall-mounted toilet bowl','Small wall-mounted sink (40cm max)','Toilet paper holder','Ceiling VMC vent');
+    base.forbidden.push('NO bathtubs','NO showers','NO large vanities','NO beds','NO sofas');
+    base.context = 'TINY separate toilet room, MAXIMUM 2m², compact and functional ONLY';
+  }
+
+  if(piece.includes('Salle de bain') || piece.includes("Salle d'eau")){
+    base.mandatory.push('Visible ceiling VMC ventilation grill','Large mirror above sink','Towel rack','Modern rectangular tiles');
+    if(subType==='Douche'){ base.mandatory.push('Walk-in RECTANGULAR glass shower cabin','Rain showerhead'); base.forbidden.push('NO bathtubs'); }
+    else if(subType==='Baignoire'){ base.mandatory.push('RECTANGULAR freestanding bathtub'); base.forbidden.push('NO showers'); }
+    else if(subType==='Mixte') base.mandatory.push('RECTANGULAR freestanding bathtub AND separate walk-in shower');
+    base.forbidden.push('NO carpets','NO rugs','NO beds','NO sofas');
+    base.context = 'Modern wet room with waterproof materials, elegant and functional';
+  }
+
+  if(piece.includes('Chambre') || piece.includes('Suite')){
+    if(subType==='Bébé'){ base.mandatory.push('Baby CRIB with mobile','BUILT-IN WALL WARDROBE with sliding doors','TOY CHEST or storage bins filled with toys','Bookshelf with children\'s books'); }
+    else if(subType==='Enfant'){ base.mandatory.push("Child's bed with colorful bedding","BUILT-IN WALL WARDROBE with sliding doors","TOY CHEST or storage bins filled with toys","Desk with chair for homework","Bookshelf with children's books","Visible toys scattered naturally"); }
+    else if(subType==='Adolescent'){ base.mandatory.push('Teen bed with modern bedding','Desk with computer setup','Wall shelves with books and items','Wardrobe'); }
+    else { base.mandatory.push('Bed as focal point','Bedside tables with lamps','Wardrobe or closet'); }
+    base.forbidden.push('NO water taps','NO sinks','NO showers','NO pools');
+    base.context = 'Bedroom located on UPPER FLOOR';
+  }
+
+  if(piece==='Salon'){
+    const opts = decoParams.salonOptions||{};
+    base.mandatory.push('Large comfortable SECTIONAL SOFA oriented toward TV wall','Coffee table in front of sofa','Modern CHANDELIER','Area rug under sofa');
+    if(opts.tv==='Murale') base.mandatory.push('LARGE FLAT-SCREEN TV mounted on wall');
+    else if(opts.tv==='Sur meuble') base.mandatory.push('LARGE FLAT-SCREEN TV on modern media console');
+    if(opts.cadres) base.mandatory.push('2-3 EMPTY PICTURE FRAMES on wall');
+    if(opts.plantes) base.mandatory.push('1-2 DECORATIVE POTTED PLANTS');
+    if(opts.meubleDecoratif) base.mandatory.push('Decorative SIDEBOARD with family PHOTO FRAMES');
+    base.forbidden.push('NO empty rooms','NO recessed LED ceiling lights');
+    base.context = type==='maison' ? 'Spacious 60m² luxury villa living room' : 'Modern living room';
+  }
+
+  if(piece==='Cuisine'){
+    const hasBaby = (decoParams.chambresDetail||[]).includes('Bébé');
+    base.mandatory.push('Modern kitchen with full cabinetry and appliances','LARGE DINING TABLE for 8 PEOPLE','8 DINING CHAIRS around table','Pendant chandelier above dining table');
+    if(hasBaby) base.mandatory.push('HIGH CHAIR for baby positioned at table');
+    base.forbidden.push('NO empty kitchens');
+    base.context = 'Kitchen with dining space for 8, GROUND FLOOR';
+  }
+
+  if(piece==='Dressing' || piece.includes('Dressing')){
+    base.mandatory.push('Walk-in closet or dressing room with organized storage','Clothing rods with hanging garments','Shelving units','Full-length mirror');
+    if(subType==='Homme'){ base.mandatory.push('Hanging SUITS and dress shirts','TIE RACK visible','Men\'s dress shoes','Dark wood palette'); base.forbidden.push('NO dresses','NO makeup'); }
+    else if(subType==='Femme'){ base.mandatory.push('Hanging DRESSES and elegant coats','SHOE DISPLAY with HIGH HEELS','Handbag shelves','Soft colors palette'); base.forbidden.push('NO men\'s suits'); }
+    base.context = 'Luxury walk-in closet, organized storage';
+  }
+
+  if(piece==='Salle de jeu'){ base.mandatory.push("CHILDREN'S PLAYROOM","Colorful foam floor mats","TOY STORAGE UNITS","PLAY KITCHEN SET","BUILDING BLOCKS","Toy box"); base.forbidden.push('NO adult furniture','NO beds'); base.context = "Dedicated children's playroom, vibrant and fun space"; }
+  if(piece==='Salle de sport'){ base.mandatory.push('HOME GYM / FITNESS ROOM','RUBBER FLOOR MATS','DUMBBELL RACK','WEIGHT BENCH','YOGA MAT','Large WALL MIRROR'); base.forbidden.push('NO beds','NO kitchen appliances','NO children\'s toys'); base.context = 'Dedicated home gym, professional workout space'; }
+  if(piece==='Garage'){ base.mandatory.push('Sectional garage door (closed)','Concrete technical floor','Storage shelves on walls'); base.forbidden.push('NO sofas','NO plants','NO children toys','NO decorative items'); base.context = 'Technical garage, strictly functional'; }
+
+  if(piece==='Jardin'){
+    base.mandatory.push('Green grass lawn','Trees and bushes','Outdoor landscaping');
+    if(gardenType==='Jeux') base.mandatory.push('Wooden playground structure: swing set, slide');
+    if(gardenType==='Mare') base.mandatory.push('Small NATURAL pond with aquatic plants');
+    if(gardenType==='Mixte') base.mandatory.push('LEFT SIDE: Wooden playground; RIGHT SIDE: Natural pond');
+    base.context = 'EXTERIOR BACKYARD garden';
+  }
+
+  if(piece==='Cellier'){ base.mandatory.push('Food storage shelves','Pantry organization','Visible food items'); base.context = 'Food storage pantry'; }
+  if(piece.includes('Cave')){ base.mandatory.push('Wine rack with bottles','Climate-controlled storage','Stone or brick walls'); base.context = 'Wine cellar'; }
+  if(piece==='Buanderie'){ base.mandatory.push('Washing machine','Dryer','Laundry storage shelves'); base.context = 'Laundry room'; }
+  if(piece.includes('Vanity') || piece.includes('Coiffeuse')){ base.mandatory.push('Vanity mirror with Hollywood lights','Dressing table','Makeup storage','Cushioned stool'); }
+  if(piece==='Extérieur Villa'){ base.mandatory.push('Modern villa R+1 facade','Large windows','Entrance door','Landscaping around villa'); base.context = 'EXTERIOR FACADE of luxury villa R+1'; }
+
+  if(piece.includes('Piscine')){
+    base.mandatory.push('Rectangular swimming pool','Blue water','Non-slip pool deck','MANDATORY security fence (NF P90-306, min 1.10m height) with self-closing gate');
+    if(piece.includes('Extérieure')) base.mandatory.push('Outdoor lounge chairs','Outdoor landscaping');
+    if(piece.includes('Intérieure')) base.mandatory.push('Indoor pool enclosure','Ceiling with skylights');
+  }
+
+  if(piece==='Jacuzzi'){ base.mandatory.push('PERFECTLY ROUND jacuzzi','Bubbling water','Jets visible','Mood lighting'); base.forbidden.push('NO square jacuzzi'); }
+  if(piece==='Terrasse'){ base.mandatory.push('Outdoor patio','Outdoor furniture: table and chairs','Tiled or wooden deck'); }
+
+  return base;
+}
+
+function buildPrompt(piece, type, subType, isEmpty, decoParams={}, gardenType='Simple') {
+  const constraints = getPieceConstraints(piece, type, subType, isEmpty, gardenType, decoParams);
+  const mandatoryStr = constraints.mandatory.map(m=>`- ${m}`).join('\n');
+  const forbiddenStr = constraints.forbidden.map(f=>`- ${f}`).join('\n');
+
+  if(isEmpty){
+    return `Professional architectural photography, 4K HDR, 16:9 landscape.
+SCENE: RAW CONCRETE CONSTRUCTION PHASE of ${piece} in ${type==='maison'?'luxury villa R+1':'urban apartment'}.
+Structure: Grey concrete walls, floors and ceilings. NO furniture. NO decoration.
+${constraints.context?`Context: ${constraints.context}`:''}
+MANDATORY:\n${mandatoryStr}
+FORBIDDEN:\n${forbiddenStr}
+${GLOBAL_PROMPT}`;
+  }
+  const style = decoParams.style||'Moderne';
+  const fur = decoParams.furnitureStyle||'Contemporary';
+  const wall = decoParams.wallColor||'Off-white';
+  return `Ultra-high-end architectural interior photography, 4K cinematic render, 16:9 landscape.
+SCENE: ${piece}${subType?` (${subType})`:''} in ${type==='maison'?'luxury villa R+1':'premium apartment'}.
+Architecture: ${style}. Furniture: ${fur}. Wall color: ${wall}.
+${constraints.context?`Context: ${constraints.context}`:''}
+${decoParams.desc?`Custom notes: ${decoParams.desc}`:''}
+MANDATORY:\n${mandatoryStr}
+STRICTLY FORBIDDEN:\n${forbiddenStr}
+${GLOBAL_PROMPT}`;
+}
+
+// ==================== ARCHI_SPLIT PROMPT BUILDER ====================
+function generateSliceCutPrompt(originalRoomLabel, slice) {
+  return `╔═══════════════════════════════════════════════════════════════╗
+║ ARCHI_SPLIT — DÉCOUPAGE RÉEL D'IMAGE                          ║
+║ ${slice.id}: ${slice.label}                                   ║
+╚═══════════════════════════════════════════════════════════════╝
+
+📷 IMAGE ORIGINALE: ${originalRoomLabel}
+🎯 OBJECTIF: GÉNÉRER UNE NOUVELLE IMAGE qui montre UNIQUEMENT: ${slice.visible_volume}
+
+🔒 RÈGLES ABSOLUES DE DÉCOUPAGE (FIDÉLITÉ 100%):
+1. CONSERVATION TOTALE:
+   - Utilisez l'image jointe comme SOURCE UNIQUE.
+   - ✅ Mêmes murs (couleur, texture, matériaux)
+   - ✅ Mêmes objets visibles dans cette zone
+   - ✅ Même éclairage et ombres
+   - ✅ Mêmes proportions
+   - ✅ Même style architectural
+
+2. RECADRAGE UNIQUEMENT:
+   - Changer l'angle de caméra pour isoler la zone.
+   - Ajuster le FOV à ${slice.camera_fov}°.
+   - Position caméra: ${slice.camera_position}
+   - Orientation: ${slice.camera_orientation}
+   - Profondeur de vue: ${slice.depth}
+
+3. INTERDICTIONS STRICTES:
+   - ❌ NE PAS inventer de nouveaux éléments
+   - ❌ NE PAS déplacer les objets existants
+   - ❌ NE PAS modifier les couleurs
+   - ❌ NE PAS changer l'éclairage
+   - ❌ NE PAS ajouter des meubles qui n'existent pas
+
+${slice.excluded_volume ? `4. ZONE EXCLUE (ne doit PAS apparaître): ${slice.excluded_volume}` : ''}
+
+🎬 RÉSULTAT ATTENDU:
+Une image qui montre UNIQUEMENT la zone spécifiée, comme si on avait
+recadré/zoomé sur cette partie spécifique de la pièce originale.
+Cette image sera utilisée pour placer des avatars. Elle DOIT être simple et claire.`;
+}
+
+// ==================== CONSTRUCTION STEPS ====================
+function prevStep() {
+  if(step<=1){ showPage('accueil'); return; }
+  if(step===5.1) step=5;
+  else if(step===5.5) step=config.pieces.includes('Dressing')?5.1:5;
+  else if(step===6){ if(config.pieces.includes('Salon')) step=5.5; else if(config.pieces.includes('Dressing')) step=5.1; else step=5; }
+  else step--;
+  renderStep();
+}
+
+function nextStep() {
+  document.getElementById('errorBox').classList.add('hidden');
+  if(step===5){
+    if(config.pieces.includes('Dressing')) step=5.1;
+    else if(config.pieces.includes('Salon')) step=5.5;
+    else if(!isVilla()&&(config.appartementType==='T3'||config.appartementType==='T4')) { runStructureGen(); return; }
+    else step=6;
+  } else if(step===5.1){
+    if(config.pieces.includes('Salon')) step=5.5;
+    else if(!isVilla()&&(config.appartementType==='T3'||config.appartementType==='T4')) { runStructureGen(); return; }
+    else step=6;
+  } else if(step===5.5){
+    if(!isVilla()&&(config.appartementType==='T3'||config.appartementType==='T4')) { runStructureGen(); return; }
+    else step=6;
+  } else step++;
+  renderStep();
+}
+
+function renderStep() {
+  document.getElementById('stepNum').textContent = step;
+  const el = document.getElementById('stepContent');
+
+  if(step===1){
+    el.innerHTML = `<div class="step-title">Type de Bien</div>
+    <div class="grid-2 mt-12">
+      <div class="sel-card ${config.type==='maison'?'active':''}" onclick="setType('maison')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <div class="card-title">Villa R+1</div>
+        <div class="card-desc">16:9 Paysage. Jardin, Garage, Piscine possible.</div>
+      </div>
+      <div class="sel-card ${config.type==='appartement'?'active':''}" onclick="setType('appartement')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/></svg>
+        <div class="card-title">Appartement</div>
+        <div class="card-desc">16:9 Cinema format. T3 à T5 Duplex.</div>
+      </div>
+    </div>`;
+  }
+  else if(step===2){
+    if(isVilla()){
+      el.innerHTML = `<div class="step-title">Nombre de Chambres</div>
+      <div class="num-btns mt-12">${[1,2,3,4,5].map(n=>`<button class="num-btn ${config.nbChambres===n?'active':''}" onclick="setNbChambres(${n})">${n}</button>`).join('')}</div>`;
+    } else {
+      el.innerHTML = `<div class="step-title">Configuration Appartement</div>
+      <div class="num-btns mt-12">${['T3','T4','T5'].map(t=>`<button class="appt-btn ${config.appartementType===t?'active':''}" onclick="setApptType('${t}')">${t}</button>`).join('')}</div>`;
+    }
+  }
+  else if(step===3){
+    el.innerHTML = `<div class="step-title">Type de Chambres</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-top:48px;">
+      ${config.chambresDetail.map((type,idx)=>`
+      <div class="chamber-card">
+        <div class="chamber-label">Chambre ${idx+1}${isVilla()&&idx===0?' (Suite Parentale)':''}</div>
+        <div class="bedroom-btns">
+          ${BEDROOM_TYPES.map(bt=>`<button class="bed-btn ${type===bt?'active':''}" onclick="setBedroomType(${idx},'${bt}')">${bt}</button>`).join('')}
+        </div>
+      </div>`).join('')}
+    </div>
+    <div class="center-btn mt-12"><button class="btn-next" onclick="nextStep()">Continuer</button></div>`;
+  }
+  else if(step===4){
+    el.innerHTML = `<div class="step-title">Salles d'Eau & WC</div>
+    <div class="grid-2 mt-12">
+      <div>
+        <div class="opts-label">Nb Salles de bain (max 3)</div>
+        <div style="display:flex;gap:16px;">${[1,2,3].map(n=>`<button class="num-btn ${config.nbBathrooms===n?'active':''}" onclick="setNbBath(${n})">${n}</button>`).join('')}</div>
+      </div>
+      <div>
+        <div class="opts-label">Nb WC Séparés (max 2)</div>
+        <div style="display:flex;gap:16px;">${[1,2].map(n=>`<button class="num-btn ${config.nbToilets===n?'active':''}" onclick="config.nbToilets=${n};renderStep()">${n}</button>`).join('')}</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px;margin-top:32px;">
+      ${config.bathroomTypes.map((type,idx)=>`
+      <div class="bath-row">
+        <span style="font-weight:700;">Sanitaire ${idx+1}</span>
+        <div class="bath-btns">${BATHROOM_TYPES.map(bt=>`<button class="bath-btn ${type===bt?'active':''}" onclick="setBathType(${idx},'${bt}')">${bt}</button>`).join('')}</div>
+      </div>`).join('')}
+    </div>
+    <div class="center-btn mt-12"><button class="btn-next" onclick="nextStep()">Suivant</button></div>`;
+  }
+  else if(step===5){
+    const rooms = isVilla() ? VILLA_ROOMS : APPT_ROOMS.filter(r=>{
+      if(!isT5()&&r.id==='Cave à vin') return false;
+      if(isT5()&&r.id==='Balcon') return false;
+      if(!isT5()&&r.id==='Terrasse fermée') return false;
+      if(!isT5()&&r.id==='Salle de sport') return false;
+      if(config.appartementType==='T3'&&(r.id==='Dressing'||r.id==='Vanity')) return false;
+      return true;
+    });
+    el.innerHTML = `<div class="step-title">Pièces de Vie</div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:48px;">
+      ${rooms.map(r=>`<button class="room-btn ${config.pieces.includes(r.id)||r.mandatory?'active':''}" onclick="${r.mandatory?'':` togglePiece('${r.id}')`}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+        <span>${r.label}</span>
+        ${config.pieces.includes(r.id)||r.mandatory?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>':''}
+      </button>`).join('')}
+    </div>
+    <div class="center-btn mt-12"><button class="btn-next big" onclick="nextStep()">Continuer</button></div>`;
+  }
+  else if(step===5.1){
+    el.innerHTML = `<div class="step-title">Configuration du Dressing</div>
+    <div class="grid-2 mt-12">
+      <div class="sel-card ${config.dressingGender==='Femme'?'active':''}" onclick="config.dressingGender='Femme';renderStep()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+        <div class="card-title">Dressing Femme</div>
+      </div>
+      <div class="sel-card ${config.dressingGender==='Homme'?'active':''}" onclick="config.dressingGender='Homme';renderStep()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+        <div class="card-title">Dressing Homme</div>
+      </div>
+    </div>
+    <div class="center-btn mt-12"><button class="btn-next" onclick="nextStep()">Continuer</button></div>`;
+  }
+  else if(step===5.5){
+    const opts = config.salonOptions;
+    el.innerHTML = `<div class="step-title">Configuration du Salon</div>
+    <div class="opts-box mt-12">
+      <div class="opts-section">
+        <div class="opts-label">Télévision</div>
+        <div class="opts-grid-3">${['Aucune','Murale','Sur meuble'].map(v=>`<button class="opt-btn ${opts.tv===v?'active':''}" onclick="config.salonOptions.tv='${v}';renderStep()">${v==='Aucune'?'Sans TV':v}</button>`).join('')}</div>
+      </div>
+      <div class="opts-section">
+        <div class="opts-label">Éléments décoratifs</div>
+        <div class="opts-grid-2">${[{k:'cadres',l:'Cadres vierges au mur'},{k:'plantes',l:'Plantes décoratives'},{k:'meubleDecoratif',l:'Meuble avec cadres photos'},{k:'tableaux',l:'Tableaux muraux'}].map(o=>`<button class="check-opt ${opts[o.k]?'active':''}" onclick="config.salonOptions.${o.k}=!config.salonOptions.${o.k};renderStep()"><div class="check-circle ${opts[o.k]?'checked':''}">${opts[o.k]?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>':''}</div><span style="font-weight:700;">${o.l}</span></button>`).join('')}</div>
+      </div>
+    </div>
+    <div class="center-btn mt-12"><button class="btn-next" onclick="nextStep()">Continuer</button></div>`;
+  }
+  else if(step===6&&(isVilla()||isT5())){
+    el.innerHTML = `<div class="step-title">${isVilla()?'Accès Étage':'Escalier Duplex'}</div>
+    <div class="stair-grid mt-12">
+      ${[{v:'Classique',l:'Escalier Classique',icon:'📐'},{v:'Escamotable',l:'Escalier Escamotable',icon:'🔧'}].map(s=>`<button class="ext-btn ${config.stairType===s.v?'active':''}" onclick="config.stairType='${s.v}';nextStep()">
+        <span style="font-size:48px;">${s.icon}</span>
+        <div class="ext-label">${s.l}</div>
+      </button>`).join('')}
+    </div>`;
+  }
+  else if(step===7&&isVilla()){
+    el.innerHTML = `<div class="step-title">Équipements Extérieurs</div>
+    <div style="margin-top:48px;">
+      <h4 style="font-size:22px;font-weight:700;text-align:center;color:var(--slate600);margin-bottom:16px;">Piscine</h4>
+      <div class="pool-grid">${['Aucune','Intérieure','Extérieure'].map(p=>`<button class="ext-btn ${config.poolType===p?'active':''}" onclick="config.poolType='${p}';renderStep()">
+        <span style="font-size:48px;">🏊</span><div class="ext-label">${p}</div>
+      </button>`).join('')}</div>
+    </div>
+    <div style="margin-top:48px;">
+      <h4 style="font-size:22px;font-weight:700;text-align:center;color:var(--slate600);margin-bottom:16px;">Jacuzzi (Rond)</h4>
+      <div style="display:flex;flex-direction:column;gap:16px;max-width:400px;margin:0 auto;">
+        ${['Aucun','Intérieur','Extérieur'].map(t=>`<button class="ext-btn ${config.jacuzziType===t?'active':''}" onclick="config.jacuzziType='${t}';renderStep()" style="flex-direction:row;justify-content:flex-start;padding:24px 32px;">
+          <span style="font-size:32px;">🛁</span><div class="ext-label">Jacuzzi ${t}</div>
+        </button>`).join('')}
+      </div>
+    </div>
+    <div class="center-btn mt-12"><button class="btn-next blue" onclick="${config.pieces.includes('Jardin')?'nextStep()':'runStructureGen()'}">
+      ${config.pieces.includes('Jardin')?'Suivant':'Générer la Structure'}
+    </button></div>`;
+  }
+  else if(step===7&&!isVilla()&&isT5()){
+    el.innerHTML = `<div class="step-title">Jacuzzi Duplex</div>
+    <div style="display:flex;flex-direction:column;gap:16px;max-width:400px;margin:48px auto 0;">
+      ${['Aucun','Intérieur'].map(t=>`<button class="ext-btn ${config.jacuzziType===t?'active':''}" onclick="config.jacuzziType='${t}';renderStep()">
+        <span style="font-size:48px;">🛁</span><div class="ext-label">${t==='Aucun'?'Pas de Jacuzzi':'Jacuzzi Intérieur Rond'}</div>
+      </button>`).join('')}
+    </div>
+    <div class="center-btn mt-12"><button class="btn-next blue" onclick="runStructureGen()">Lancer le Chantier</button></div>`;
+  }
+  else if(step===8&&isVilla()){
+    el.innerHTML = `<div class="step-title">Aménagement Jardin</div>
+    <div class="grid-2 mt-12">
+      ${[{id:'Simple',l:'Herbe & Végétation',i:'🌿'},{id:'Jeux',l:'Espace Jeux Enfants',i:'🛝'},{id:'Mare',l:'Mare Naturelle',i:'🌿'},{id:'Mixte',l:'Mixte (Jeux + Mare)',i:'✨'}].map(g=>`<button class="ext-btn ${config.gardenType===g.id?'active':''}" onclick="config.gardenType='${g.id}';renderStep()">
+        <span style="font-size:48px;">${g.i}</span><div class="ext-label">${g.l}</div>
+      </button>`).join('')}
+    </div>
+    <div class="center-btn mt-12"><button class="btn-next blue big" onclick="runStructureGen()">Lancer le Chantier</button></div>`;
+  }
+}
+
+// Controls
+function setType(t){ config.type=t; if(t==='maison'){config.nbChambres=1;config.chambresDetail=['Adulte'];}; renderStep(); setTimeout(nextStep,300); }
+function setNbChambres(n){ config.nbChambres=n; config.chambresDetail=Array(n).fill('Adulte'); renderStep(); setTimeout(nextStep,300); }
+function setApptType(t){ config.appartementType=t; const nb=t==='T3'?2:t==='T4'?3:4; config.nbChambres=nb; config.chambresDetail=Array(nb).fill('Adulte'); renderStep(); setTimeout(nextStep,300); }
+function setBedroomType(idx,type){ config.chambresDetail[idx]=type; renderStep(); }
+function setNbBath(n){ config.nbBathrooms=n; config.bathroomTypes=Array(n).fill('Douche'); renderStep(); }
+function setBathType(idx,type){ config.bathroomTypes[idx]=type; renderStep(); }
+function togglePiece(id){ if(config.pieces.includes(id)) config.pieces=config.pieces.filter(p=>p!==id); else config.pieces.push(id); renderStep(); }
+
+// ==================== STRUCTURE GENERATION ====================
+async function runStructureGen() {
+  startLoading('Coulage des fondations...');
+  const plan = buildPlan();
+  imagesVides = [];
+  try {
+    for(const item of plan){
+      setLoadingMsg(`Volume : ${item.name}...`);
+      const prompt = buildPrompt(item.name,config.type,item.sub,true,{},config.gardenType);
+      const url = await callVertex([{text:prompt}]);
+      imagesVides.push({id:`${item.name}-${Date.now()}`,piece:item.name+(item.sub?` (${item.sub})`:''),url,prompt:'Raw'});
+    }
+    stopLoading();
+    renderDecoPage();
+    showPage('decoration');
+  } catch(err){
+    stopLoading();
+    document.getElementById('errorBox').classList.remove('hidden');
+    document.getElementById('errorMsg').textContent = 'Erreur : ' + err.message;
+  }
+}
+
+function buildPlan(){
+  const plan = [];
+  if(isVilla()){
+    plan.push({name:'Extérieur Villa'});
+    if(config.poolType==='Intérieure') plan.push({name:'Piscine Intérieure'});
+    plan.push({name:'Escalier',sub:config.stairType});
+    config.pieces.forEach(p=>{ if(!['Jardin','Garage','Terrasse','Dressing','Vanity','Escalier','Salle de jeu','Salle de sport'].includes(p)) plan.push({name:p}); });
+    config.chambresDetail.forEach((t,i)=>plan.push({name:i===0?'Suite Parentale':'Chambre',sub:t}));
+    config.bathroomTypes.forEach((t,i)=>plan.push({name:`Salle de bain ${i+1}`,sub:t}));
+    for(let i=0;i<config.nbToilets;i++) plan.push({name:`WC ${i+1}`});
+    if(config.pieces.includes('Dressing')) plan.push({name:'Dressing',sub:config.dressingGender});
+    if(config.pieces.includes('Vanity')) plan.push({name:'Coin Vanity'});
+    if(config.pieces.includes('Salle de jeu')) plan.push({name:'Salle de jeu'});
+    if(config.pieces.includes('Salle de sport')) plan.push({name:'Salle de sport'});
+    if(config.pieces.includes('Garage')) plan.push({name:'Garage'});
+    if(config.poolType==='Extérieure') plan.push({name:'Piscine Extérieure'});
+    if(config.jacuzziType!=='Aucun') plan.push({name:'Jacuzzi',sub:config.jacuzziType});
+    if(config.pieces.includes('Jardin')) plan.push({name:'Jardin'});
+  } else {
+    plan.push({name:'Entrée immeuble (extérieur)'});
+    plan.push({name:'Hall immeuble (intérieur)'});
+    plan.push({name:'Ascenseur immeuble'});
+    if(isT5()){
+      plan.push({name:'Escalier Duplex',sub:config.stairType});
+      if(config.jacuzziType==='Intérieur') plan.push({name:'Jacuzzi',sub:'Intérieur'});
+    }
+    config.pieces.forEach(p=>{ if(!['Dressing','Vanity','Balcon','Terrasse fermée','Salle de jeu','Salle de sport'].includes(p)) plan.push({name:p}); });
+    config.chambresDetail.forEach((t,i)=>plan.push({name:`Chambre ${i+1}`,sub:t}));
+    config.bathroomTypes.forEach((t,i)=>plan.push({name:`Salle d'eau ${i+1}`,sub:t}));
+    for(let i=0;i<config.nbToilets;i++) plan.push({name:`WC ${i+1}`});
+    if(config.pieces.includes('Dressing')) plan.push({name:'Dressing',sub:config.dressingGender});
+    if(config.pieces.includes('Vanity')) plan.push({name:'Coin Vanity'});
+    if(config.pieces.includes('Salle de jeu')) plan.push({name:'Salle de jeu'});
+    if(config.pieces.includes('Salle de sport')) plan.push({name:'Salle de sport'});
+    if(config.pieces.includes('Balcon')&&!isT5()) plan.push({name:'Balcon',sub:config.appartementType});
+    if(config.pieces.includes('Terrasse fermée')&&isT5()) plan.push({name:'Terrasse fermée T5'});
+  }
+  return plan;
+}
+
+// ==================== DECORATION PAGE ====================
+function renderDecoPage(){
+  const el = document.getElementById('decoMain');
+  const cardsHtml = imagesVides.map((img,idx)=>`
+    <div class="image-vide-card" id="card-${idx}">
+      <div class="image-vide-img"><img src="${img.url}" alt="${img.piece}"><div class="brut-badge">BRUT</div></div>
+      <div class="image-vide-name">${img.piece}</div>
+      <div>
+        <div class="ref-label">Photo de référence (Style)</div>
+        ${!img.referencePhoto?`
+        <label class="ref-upload" for="ref-${idx}">
+          <div class="ref-upload-zone">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span>AJOUTER INSPIRATION</span>
+          </div>
+          <input type="file" accept="image/*" id="ref-${idx}" style="display:none;" onchange="addRefPhoto(${idx},event)">
+        </label>`:`
+        <div class="ref-preview">
+          <img src="${img.referencePhoto}" alt="ref">
+          <button class="ref-remove-btn" onclick="removeRefPhoto(${idx})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
+          <div class="ref-ok-badge">INSPIRATION OK</div>
+        </div>`}
+      </div>
+    </div>`).join('');
+
+  const styleOpts = (isVilla()?HOUSE_STYLES:APPART_STYLES).map(s=>`<option value="${s}">${s}</option>`).join('');
+  const furOpts = FURNITURE_STYLES.map(s=>`<option value="${s}" ${config.furnitureStyle===s?'selected':''}>${s}</option>`).join('');
+  const colorBtns = WALL_COLORS.map(c=>`<button class="color-btn ${config.wallColor===c?'active':''}" onclick="config.wallColor='${c}';renderDecoPage()">${c}</button>`).join('');
+
+  el.innerHTML = `
+    <div class="images-vides-grid">${cardsHtml}</div>
+    <div class="deco-params-box">
+      <h3 class="deco-params-title">Finition & Domotique</h3>
+      <p class="deco-params-sub">Paramètres globaux pour toutes les pièces</p>
+      <div class="deco-selects">
+        <div class="deco-select-wrap">
+          <label class="deco-select-label">STYLE ARCHITECTURAL</label>
+          <select class="deco-select" onchange="config.houseStyle=this.value"><option value="">-- Choisir un style --</option>${styleOpts}</select>
+        </div>
+        <div class="deco-select-wrap">
+          <label class="deco-select-label">MOBILIER</label>
+          <select class="deco-select" onchange="config.furnitureStyle=this.value">${furOpts}</select>
+        </div>
+      </div>
+      <div class="opts-label" style="color:#60a5fa;">NUANCIER MURS</div>
+      <div class="color-btns">${colorBtns}</div>
+      <textarea class="deco-textarea" placeholder="Description globale..." onchange="descriptionDecoration=this.value"></textarea>
+      <button class="btn-render" onclick="runFinalRender()">Lancer le Rendu Final ✨</button>
+    </div>`;
+}
+
+function addRefPhoto(idx,e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => { imagesVides[idx].referencePhoto = ev.target.result; renderDecoPage(); };
+  reader.readAsDataURL(file);
+}
+function removeRefPhoto(idx){ imagesVides[idx].referencePhoto = undefined; renderDecoPage(); }
+
+// ==================== FINAL RENDER ====================
+async function runFinalRender(){
+  startLoading('Rendu final en cours...');
+  imagesFinales = [];
+  const decoParams = {style:config.houseStyle||'Moderne',furnitureStyle:config.furnitureStyle,wallColor:config.wallColor,desc:descriptionDecoration,salonOptions:config.salonOptions,chambresDetail:config.chambresDetail};
+  try {
+    for(const img of imagesVides){
+      setLoadingMsg(`Rendu final : ${img.piece}...`);
+      const sub = img.piece.match(/\(([^)]+)\)/)?.[1];
+      const baseName = img.piece.split(' (')[0];
+      const prompt = buildPrompt(baseName,config.type,sub,false,decoParams,config.gardenType);
+      const parts = [{text:prompt}];
+      const structData = img.url.includes(',')?img.url.split(',')[1]:img.url;
+      parts.push({inlineData:{data:structData,mimeType:'image/png'}});
+      parts.push({text:'REFERENCE 1 (STRUCTURE): Use EXACT room dimensions. Transform ALL concrete into finished materials. ZERO raw concrete.'});
+      if(img.referencePhoto){
+        const refData = img.referencePhoto.includes(',')?img.referencePhoto.split(',')[1]:img.referencePhoto;
+        parts.push({inlineData:{data:refData,mimeType:'image/jpeg'}});
+        parts.push({text:'REFERENCE 2 (STYLE): Replicate EXACTLY the color palette, materials, and furniture style.'});
+      }
+      const url = await callVertex(parts);
+      imagesFinales.push({id:`f-${img.id}`,piece:img.piece,url,prompt:'Final'});
+    }
+    stopLoading();
+    renderResultPage();
+    showPage('resultat');
+  } catch(err){
+    stopLoading();
+    alert('Erreur rendu final: ' + err.message);
+  }
+}
+
+// ==================== RESULT PAGE ====================
+function renderResultPage(){
+  const el = document.getElementById('resultMain');
+  el.innerHTML = imagesFinales.map(img=>`
+    <div class="result-piece" id="piece-${img.id}">
+      <div class="result-piece-header">
+        <div class="result-piece-name">${img.piece}</div>
+        <div class="result-piece-actions">
+          <button class="btn-split" onclick="openSplitModal('${img.id}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            ArchiSplit (Slices)
+          </button>
+          <button class="btn-dl" onclick="dlImg('${img.url}','${img.piece}.png')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="result-master">
+        <img src="${img.url}" alt="${img.piece}">
+        <div class="master-badge">Master View 4K</div>
+      </div>
+      ${img.slices&&img.slices.length>0?`
+      <div class="slices-section">
+        <div class="slices-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Plans techniques extraits</div>
+        <div class="slices-grid">
+          ${img.slices.map(s=>`
+          <div class="slice-card">
+            <div class="slice-img">
+              <img src="${s.url}" alt="${s.label}">
+              <div class="slice-overlay"><button class="slice-dl-btn" onclick="dlImg('${s.url}','${img.piece}_${s.id}.png')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Télécharger</button></div>
+            </div>
+            <div class="slice-info">
+              <div class="slice-name">${s.label}</div>
+              <div class="slice-meta">FOV: ${s.camera_fov}° | ${s.camera_position}</div>
+              ${s.visible_volume?`<div class="slice-excluded">✅ ${s.visible_volume}</div>`:''}
+              ${s.excluded_volume?`<div class="slice-excluded">🚫 Exclu: ${s.excluded_volume}</div>`:''}
+            </div>
+          </div>`).join('')}
+        </div>
+      </div>`:''}`).join('') +
+  `<div class="result-export">
+    <h2>Projet Finalisé.</h2>
+    <button class="btn-export" onclick="exportZip()">
+      Télécharger le Pack Complet ZIP
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    </button>
+  </div>`;
+}
+
+// ==================== ARCHISPLIT MODAL ====================
+function openSplitModal(imgId){
+  activeSplitImageId = imgId;
+  selectedSlices = [];
+  const grid = document.getElementById('slicesSelectGrid');
+  grid.innerHTML = CAMERA_SLICES.map(s=>`
+    <button class="slice-sel-btn" id="ss-${s.id}" onclick="toggleSliceSelect('${s.id}')">
+      <div class="slice-check" id="sc-${s.id}"></div>
+      <div class="slice-sel-info">
+        <div class="slice-sel-name">${s.label}</div>
+        <div class="slice-sel-fov">FOV: ${s.camera_fov}° · ${s.camera_position}</div>
+        <div class="slice-sel-visible">✅ ${s.visible_volume}</div>
+        ${s.excluded_volume?`<div class="slice-sel-excluded">🚫 Exclu: ${s.excluded_volume}</div>`:''}
+      </div>
+    </button>`).join('');
+  document.getElementById('btnExtract').disabled = true;
+  document.getElementById('splitModal').classList.remove('hidden');
+}
+
+function closeSplitModal(){ document.getElementById('splitModal').classList.add('hidden'); }
+
+function toggleSliceSelect(id){
+  if(selectedSlices.includes(id)) selectedSlices=selectedSlices.filter(s=>s!==id);
+  else selectedSlices.push(id);
+  CAMERA_SLICES.forEach(s=>{
+    const btn=document.getElementById(`ss-${s.id}`);
+    const chk=document.getElementById(`sc-${s.id}`);
+    const active=selectedSlices.includes(s.id);
+    if(btn) btn.className='slice-sel-btn'+(active?' active':'');
+    if(chk){ chk.className='slice-check'+(active?' checked':''); chk.innerHTML=active?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>':''; }
+  });
+  document.getElementById('btnExtract').disabled = selectedSlices.length===0;
+}
+
+async function runArchiSplit(){
+  if(!activeSplitImageId||selectedSlices.length===0) return;
+  const img = imagesFinales.find(i=>i.id===activeSplitImageId);
+  if(!img) return;
+  closeSplitModal();
+  startLoading('ArchiSplit en cours...');
+  const newSlices = [];
+  try {
+    for(const sliceId of selectedSlices){
+      const slice = CAMERA_SLICES.find(s=>s.id===sliceId);
+      if(!slice) continue;
+      setLoadingMsg(`ArchiSplit : ${slice.label}...`);
+      const prompt = generateSliceCutPrompt(img.piece, slice);
+      const imgData = img.url.includes(',')?img.url.split(',')[1]:img.url;
+      const url = await callVertex([
+        {inlineData:{data:imgData,mimeType:'image/png'}},
+        {text:prompt}
+      ]);
+      newSlices.push({...slice,url});
+    }
+    const imgIdx = imagesFinales.findIndex(i=>i.id===activeSplitImageId);
+    if(imgIdx>=0) imagesFinales[imgIdx].slices = newSlices;
+    stopLoading();
+    renderResultPage();
+  } catch(err){
+    stopLoading();
+    alert('Erreur ArchiSplit: ' + err.message);
+  }
+}
+
+// ==================== MODE OPTIONNEL ====================
+function renderOptio(){
+  const el = document.getElementById('optioMain');
+  const pieces = ['Salon','Cuisine','Chambre Adulte','Chambre Enfant','Chambre Bébé','Salle de bain','WC','Bureau','Dressing Femme','Dressing Homme','Salle de jeu','Salle de sport','Cellier','Buanderie','Cave à vin',...(config.type==='maison'?['Garage','Jardin','Terrasse','Atelier']:['Balcon'])];
+  el.innerHTML = `
+    <div class="step-title text-center">Quelle pièce veux-tu créer ?</div>
+    <p class="step-sub">Sélectionne UNE pièce à générer en mode 4K</p>
+    <div class="grid-2 mt-12" style="max-width:640px;margin:48px auto 0;">
+      <div class="sel-card ${config.type==='maison'?'active':''}" onclick="config.type='maison';renderOptio()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+        <div class="card-title">Villa</div>
+      </div>
+      <div class="sel-card ${config.type==='appartement'?'active':''}" onclick="config.type='appartement';renderOptio()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/></svg>
+        <div class="card-title">Appartement</div>
+      </div>
+    </div>
+    ${config.type?`
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:24px;margin-top:48px;max-width:960px;margin-left:auto;margin-right:auto;">
+      ${pieces.map(p=>{
+        const parts=p.split(' ');
+        const key=parts[0];
+        const sub=parts.slice(1).join(' ');
+        const isActive = config.pieceOptionnelle===key&&(!sub||config.typePieceOptionnelle===sub);
+        return `<button class="room-btn ${isActive?'active':''}" onclick="config.pieceOptionnelle='${key}';config.typePieceOptionnelle='${sub}';renderOptio()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+          <span>${p}</span>
+        </button>`;
+      }).join('')}
+    </div>
+    ${config.pieceOptionnelle?`<div class="center-btn mt-12 slide-up"><button class="btn-next blue big" onclick="runOptioGen()">Générer cette pièce</button></div>`:''}
+    `:''}`;
+}
+
+async function runOptioGen(){
+  startLoading(`Génération de ${config.pieceOptionnelle}...`);
+  try {
+    const prompt = buildPrompt(config.pieceOptionnelle,config.type,config.typePieceOptionnelle,true,{},'Simple');
+    const url = await callVertex([{text:prompt}]);
+    imagesVides = [{id:`${config.pieceOptionnelle}-${Date.now()}`,piece:config.pieceOptionnelle+(config.typePieceOptionnelle?` (${config.typePieceOptionnelle})`:''),url,prompt:'Raw'}];
+    stopLoading();
+    renderDecoPage();
+    showPage('decoration');
+  } catch(err){
+    stopLoading();
+    alert('Erreur: ' + err.message);
+  }
+}
+
+// ==================== MODE ISOLE ====================
+function renderIsole(){
+  const el = document.getElementById('isoleMain');
+  const sliceItems = CAMERA_SLICES.map(s=>`
+    <div class="slice-list-item ${selectedSlicesIsole.includes(s.id)?'active':''}" onclick="toggleSliceIsole('${s.id}')">
+      <div class="slice-list-check ${selectedSlicesIsole.includes(s.id)?'checked':''}">
+        ${selectedSlicesIsole.includes(s.id)?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>':''}
+      </div>
+      <div class="slice-list-body">
+        <div class="slice-list-name">${s.label}</div>
+        <div class="slice-list-fov">FOV: ${s.camera_fov}° · ${s.camera_position}</div>
+        <div class="slice-list-visible">✅ ${s.visible_volume}</div>
+        ${s.excluded_volume?`<div class="slice-list-excluded">🚫 Exclu: ${s.excluded_volume}</div>`:''}
+      </div>
+    </div>`).join('');
+
+  el.innerHTML = `
+    <div class="isole-grid">
+      <div class="isole-card">
+        <h3 class="isole-card-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+          1. Image Master
+        </h3>
+        <p class="isole-card-sub">Importez le rendu ou la photo à découper.</p>
+        ${!masterImageIsole?`
+        <label class="upload-zone-isole" for="masterUpload">
+          <div class="upload-zone-inner">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span>DÉPOSER L'IMAGE</span>
+          </div>
+          <input type="file" accept="image/*" id="masterUpload" style="display:none;" onchange="handleMasterUpload(event)">
+        </label>`:`
+        <div class="master-preview">
+          <img src="${masterImageIsole}" alt="Master">
+          <button class="master-remove" onclick="masterImageIsole=null;renderIsole()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          </button>
+        </div>`}
+      </div>
+      <div class="isole-card">
+        <h3 class="isole-card-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          2. Plans Techniques
+        </h3>
+        <p class="isole-card-sub">Sélectionnez les angles à extraire.</p>
+        <div class="slice-list">${sliceItems}</div>
+        <button class="btn-start-split" onclick="runIsoleGen()" ${(!masterImageIsole||selectedSlicesIsole.length===0)?'disabled':''}>
+          Démarrer le Découpage
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+        </button>
+      </div>
+    </div>`;
+}
+
+function handleMasterUpload(e){
+  const file=e.target.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{masterImageIsole=ev.target.result;renderIsole();};
+  reader.readAsDataURL(file);
+}
+
+function toggleSliceIsole(id){
+  if(selectedSlicesIsole.includes(id)) selectedSlicesIsole=selectedSlicesIsole.filter(s=>s!==id);
+  else selectedSlicesIsole.push(id);
+  renderIsole();
+}
+
+async function runIsoleGen(){
+  if(!masterImageIsole||selectedSlicesIsole.length===0) return;
+  startLoading('ArchiSplit Mode Isolé...');
+  const newSlices = [];
+  try {
+    for(const sliceId of selectedSlicesIsole){
+      const slice=CAMERA_SLICES.find(s=>s.id===sliceId);
+      if(!slice) continue;
+      setLoadingMsg(`ArchiSplit : ${slice.label}...`);
+      const prompt = generateSliceCutPrompt('Image Master', slice);
+      const imgData=masterImageIsole.includes(',')?masterImageIsole.split(',')[1]:masterImageIsole;
+      const url=await callVertex([{inlineData:{data:imgData,mimeType:'image/png'}},{text:prompt}]);
+      newSlices.push({...slice,url});
+    }
+    imagesFinales = [{id:'archi-master',piece:'Master Image',url:masterImageIsole,prompt:'Master',slices:newSlices}];
+    stopLoading();
+    renderResultPage();
+    showPage('resultat');
+  } catch(err){
+    stopLoading();
+    alert('Erreur ArchiSplit: ' + err.message);
+  }
+}
+
+// ==================== UTILS ====================
+function dlImg(url,name){
+  const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
+
+function exportZip(){
+  imagesFinales.forEach((img,i)=>{
+    setTimeout(()=>dlImg(img.url,`${img.piece.replace(/\s+/g,'_')}_MASTER.png`),i*300);
+    (img.slices||[]).forEach((s,j)=>setTimeout(()=>dlImg(s.url,`${img.piece.replace(/\s+/g,'_')}_SLICE_${s.id}.png`),(i+j+1)*300));
+  });
+}
+</script>
+</body>
+</html>
