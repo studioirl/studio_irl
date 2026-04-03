@@ -968,7 +968,11 @@ async function generateVideo() {
     var opData = await callProxy('/generate', {
       apiKey: API_KEY,
       body: {
-        instances: [{ prompt: prompt, image: { bytesBase64Encoded: b64, mimeType: mime }, lastImage: imgs.end ? { bytesBase64Encoded: imgs.end.split(',')[1], mimeType: 'image/jpeg' } : undefined }],
+        instances: [(function() {
+          var inst = { prompt: prompt, image: { bytesBase64Encoded: b64, mimeType: mime } };
+          if (imgs.end) inst.lastImage = { bytesBase64Encoded: imgs.end.split(',')[1], mimeType: 'image/jpeg' };
+          return inst;
+        })()],
         parameters: { aspectRatio: finalAR, durationSeconds: dur, sampleCount: 1, generateAudio: hasText, resolution: '720p' }
       }
     });
@@ -1040,7 +1044,8 @@ async function generateVideo() {
 
   } catch(err) {
     console.error(err);
-    showToast(String(err.message||err).slice(0,200), 'err', 8000);
+    var errMsg = typeof err === 'string' ? err : (err && err.message) ? err.message : JSON.stringify(err);
+    showToast('Erreur Veo: ' + String(errMsg).slice(0,200), 'err', 8000);
     setProg(0, 'Erreur');
   } finally {
     isGen = false;
