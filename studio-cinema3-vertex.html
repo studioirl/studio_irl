@@ -547,7 +547,7 @@ var LANGS = [
   {id:'en_gb',flag:'🇬🇧',label:'English UK',sub:'BBC RP',prompt:'LANGUAGE: English only. Speak exclusively in English. British RP accent. Never use French.'},
   {id:'es',flag:'🇪🇸',label:'Espanol Espana',sub:'Castillan Madrid',prompt:'LANGUAGE: Spanish only. Speak exclusively in Spanish. Castilian accent. Never use English or French.'}
 ];
-var SKIN = 'Cinematic video. Fictional character for creative film production. Reference image defines visual style and appearance only. Not a real person.';
+var SKIN = 'PHOTOREALISM: Realistic cinematic footage, raw photo style. SKIN: Natural texture, visible pores. REFERENCE IMAGE: This image is the source of truth for the identity of the person and the background. RULE: YOU MUST COPY THE IDENTITY, FACIAL FEATURES, HAIR, AND CLOTHING FROM THE REFERENCE IMAGE EXACTLY. RULE: DO NOT GENERATE A NEW PERSON. DO NOT CHANGE THE PERSON.';
 
 var API_KEY = '';
 var mode = 'solo', AR = '9:16', dur = 8;
@@ -807,51 +807,45 @@ document.getElementById(‘duoLines’).querySelectorAll(’.rm-btn’).forEach(
 }
 
 function buildPrompt() {
-var angle = ‘Face frontale’, move = ‘Fixe naturel’, emo = selEmo||‘Naturelle’;
+var angle = 'Face frontale', move = 'Fixe naturel', emo = selEmo||'Naturelle';
 for (var i=0; i<ANGLES.length; i++) { if (ANGLES[i].id===selAngle) { angle=ANGLES[i].label; break; } }
 for (var i=0; i<MOVES.length; i++) { if (MOVES[i].id===selMove) { move=MOVES[i].label; break; } }
 var act = ACTING[0]; for (var i=0; i<ACTING.length; i++) { if (ACTING[i].id===selAct) { act=ACTING[i]; break; } }
 var lang = LANGS[0]; for (var i=0; i<LANGS.length; i++) { if (LANGS[i].id===selLang) { lang=LANGS[i]; break; } }
-var solo = document.getElementById(‘soloTa’).value.trim();
-var dir = document.getElementById(‘promptDir’).value.trim();
-var dlg = ‘’;
-if (mode===‘solo’) {
-dlg = solo ? ‘The person says: “’ + solo + ‘”. Lip movements perfectly synchronized.’ : ‘The person is silent, powerful cinematic performance, ’ + act.desc + ‘.’;
+var solo = document.getElementById('soloTa').value.trim();
+var dir = document.getElementById('promptDir').value.trim();
+var noAudio = mode==='solo' ? !solo : duoLines.every(function(l){ return !l.text.trim(); });
+var sceneDesc = dir || 'A high-quality cinematic portrait, looking naturally at the camera with subtle facial expressions.';
+var dialogueBlock = '';
+if (mode === 'solo') {
+  if (solo) {
+    dialogueBlock = 'DIALOGUE: "' + solo + '"\nRULE: The actor must say exactly these words with perfect lip-sync.';
+    if (act.voice) dialogueBlock += '\nVOICE TONE: ' + act.voice + '.';
+  } else {
+    dialogueBlock = 'NO DIALOGUE. Fully silent cinematic performance. Actor delivers powerful silent presence with: ' + act.desc + '.';
+  }
 } else {
-var parts = []; for (var i=0; i<duoLines.length; i++) { if (duoLines[i].text.trim()) parts.push(‘Avatar ’ + duoLines[i].who + ’ says: “’ + duoLines[i].text.trim() + ‘”.’); }
-dlg = ‘A conversation: ’ + parts.join(’ ‘) + ’ Lip movements perfectly synchronized.’;
+  var validLines = duoLines.filter(function(l){ return l.text.trim(); });
+  if (validLines.length > 0) {
+    var scriptLines = validLines.map(function(l, idx) {
+      var speaker = 'AVATAR ' + l.who;
+      var listener = 'AVATAR ' + (l.who === 'A' ? 'B' : 'A');
+      return '--- SEQUENCE ' + (idx+1) + ' ---\n' + speaker + ' SPEAKS: "' + l.text.trim() + '"\n' + listener + ' LISTENS: Silent, natural facial reactions, eye contact with ' + speaker + '.';
+    });
+    dialogueBlock = 'SCRIPT:\n' + scriptLines.join('\n\n') + '\nRULE: Perfect lip-sync for each speaker.';
+    if (act.voice) dialogueBlock += '\nVOICE TONE: ' + act.voice + '.';
+  } else {
+    dialogueBlock = 'NO DIALOGUE. Fully silent cinematic performance. AVATAR A and AVATAR B interact naturally with subtle facial expressions, eye contact, and authentic presence.';
+  }
 }
-var noAudio = mode===‘solo’ ? !solo : duoLines.every(function(l){ return !l.text.trim(); });
-var voice = noAudio ? ‘SILENT: No audio.’ : lang.prompt + ’ Natural voice, perfect lip-sync.’;
-var promptParts = [];
-if (dir) promptParts.push(dir);
-else promptParts.push(‘A person on camera.’);
-if (solo) {
-promptParts.push(‘The person says: “’ + solo + ‘”.’);
-if (act.voice) promptParts.push(‘Voice: ’ + act.voice + ‘.’);
-promptParts.push(‘Perfect lip sync.’);
-} else if (mode === ‘duo’) {
-var dlines = []; for (var i=0; i<duoLines.length; i++) { if (duoLines[i].text.trim()) dlines.push(duoLines[i].who + ‘: “’ + duoLines[i].text.trim() + ‘”’); }
-if (dlines.length) { promptParts.push(dlines.join(’ ’)); promptParts.push(‘Perfect lip sync.’); }
-if (act.voice) promptParts.push(’Voice tone: ’ + act.voice + ‘.’);
-}
-promptParts.push(’Camera angle: ’ + angle + ‘.’);
-if (selMove) promptParts.push(’Camera: ’ + move + ‘.’);
-if (selEmo) promptParts.push(‘Expression: ’ + emo + ‘.’);
-if (silenceBG) {
-promptParts.push(‘AUDIO: Only ONE person speaks — the person visible on screen. Background: very soft quiet room ambience only, no crowd, no studio audience, no other voices, no music. Clean natural room tone, no interference, no static noise. Say EXACTLY the given words — nothing more, nothing less. Single clean natural voice only.’);
-} else {
-promptParts.push(‘AUDIO: Only ONE person speaks. Say EXACTLY the given words.’);
-}
-if (continuityMode && lastFrameB64) {
-promptParts.push(‘IDENTITY LOCK: Preserve EXACTLY the same eye color, skin tone, hair color and facial features as the reference person. Do not alter any physical characteristics between shots.’);
-}
-promptParts.push(lang.prompt);
-if (selRate === ‘slow’) promptParts.push(‘Speech pace: slow and clear, deliberate pauses between sentences, easy to follow.’);
-if (selRate === ‘veryslow’) promptParts.push(‘Speech pace: very slow and extremely clear, long pauses between each sentence, like a teacher explaining carefully.’);
-if (selRate === ‘normal’) promptParts.push(‘Speech pace: natural and clear, not too fast. Articulate every word clearly. Pause at every punctuation mark. Never rush or swallow words.’);
-promptParts.push(SKIN);
-return promptParts.join(’ ’);
+var voiceBlock = noAudio ? 'SILENT: No audio.' : lang.prompt + ' Natural human voice, perfect lip-sync.' + (silenceBG ? ' Background: very soft quiet room ambience only, no crowd, no other voices, no music.' : '');
+var rateBlock = selRate === 'slow' ? 'Speech pace: slow and clear, deliberate pauses between sentences.' : selRate === 'veryslow' ? 'Speech pace: very slow and extremely clear, long pauses between each sentence.' : 'Speech pace: natural and clear. Articulate every word clearly. Never rush.';
+var cameraBlock = 'Camera angle: ' + angle + '.' + (selMove ? ' Camera movement: ' + move + '.' : '') + (selEmo ? ' Facial expression: ' + emo + '.' : '');
+var actingBlock = 'Acting style: ' + (act ? act.label : 'Natural') + '.';
+var promptParts = ['Cinematic video of ' + (mode === 'solo' ? 'one person' : 'two people') + '.', 'SCENE: ' + sceneDesc, SKIN, dialogueBlock, voiceBlock, rateBlock, cameraBlock, actingBlock];
+if (continuityMode && lastFrameB64) promptParts.push('IDENTITY LOCK: Preserve EXACTLY the same eye color, skin tone, hair color and facial features as the reference person.');
+promptParts.push('Style: Professional cinematography, natural lighting.');
+return promptParts.join('\n');
 }
 
 function toggleContinuity() {
