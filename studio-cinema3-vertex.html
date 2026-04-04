@@ -504,19 +504,30 @@ body{min-height:100vh;background:radial-gradient(circle at top right,#0a192f,#05
 var PROXY_URL = 'https://studio-cinema-proxy-738708455173.europe-west1.run.app';
 
 var ANGLES = [
-  {id:'frontal',label:'Face frontale',icon:'👤'},{id:'three-left',label:'3/4 gauche',icon:'↖'},
-  {id:'three-right',label:'3/4 droite',icon:'↗'},{id:'profile',label:'Profil leger',icon:'➡'},
-  {id:'shoulder',label:'Over shoulder',icon:'🎬'},{id:'twoshot',label:'Two-shot',icon:'👥'},
-  {id:'chest',label:'Plan poitrine',icon:'🎯'},{id:'closeup',label:'Gros plan',icon:'🔍'},
-  {id:'waist',label:'Plan taille',icon:'📱'},{id:'wide',label:'Plan large',icon:'🌍'}
+  {id:'frontal',label:'Face frontale',icon:'👤',prompt:'straight-on eye-level frontal shot, camera at eye level, subject centered, direct gaze'},
+  {id:'three-left',label:'3/4 gauche',icon:'↖',prompt:'three-quarter left angle, subject turned 45 degrees left, natural stance'},
+  {id:'three-right',label:'3/4 droite',icon:'↗',prompt:'three-quarter right angle, subject turned 45 degrees right, natural stance'},
+  {id:'profile',label:'Profil leger',icon:'➡',prompt:'slight profile, subject angled 30 degrees, natural relaxed posture'},
+  {id:'shoulder',label:'Over shoulder',icon:'🎬',prompt:'over-the-shoulder shot, foreground shoulder visible, subject in mid-ground'},
+  {id:'twoshot',label:'Two-shot',icon:'👥',prompt:'two-shot, both subjects fully visible, natural conversational distance'},
+  {id:'chest',label:'Plan poitrine',icon:'🎯',prompt:'medium close-up, framed from chest up, natural head room'},
+  {id:'closeup',label:'Gros plan',icon:'🔍',prompt:'close-up shot, face fills frame, sharp focus on eyes'},
+  {id:'waist',label:'Plan taille',icon:'📱',prompt:'waist-up shot, framed from waist, natural vertical framing'},
+  {id:'wide',label:'Plan large',icon:'🌍',prompt:'wide contextual shot, full body visible, environment in frame'}
 ];
 var MOVES = [
-  {id:'pushin',label:'Travelling avant',icon:'▶'},{id:'pullback',label:'Travelling arriere',icon:'◀'},
-  {id:'lateral',label:'Lateral',icon:'↔'},{id:'orbit',label:'Orbite 90',icon:'🔄'},
-  {id:'pan',label:'Panoramique',icon:'⟺'},{id:'tilt',label:'Tilt vertical',icon:'↕'},
-  {id:'shoulder',label:'Epaule',icon:'🤳'},{id:'static',label:'Fixe emotionnel',icon:'⬤'},
-  {id:'enter',label:'Entree champ',icon:'🚶'},{id:'parallax',label:'Parallax',icon:'🪟'},
-  {id:'rack',label:'Rack focus',icon:'🎯'},{id:'handheld',label:'Handheld subtil',icon:'🎥'}
+  {id:'pushin',label:'Travelling avant',icon:'▶',prompt:'smooth natural push-in at normal human walking speed, not slow motion, steady forward move'},
+  {id:'pullback',label:'Travelling arriere',icon:'◀',prompt:'smooth natural pull-back at normal speed, not slow motion, steady backward move'},
+  {id:'lateral',label:'Lateral',icon:'↔',prompt:'natural lateral slide at normal speed, fluid sideways movement, not slow motion'},
+  {id:'orbit',label:'Orbite 90',icon:'🔄',prompt:'90-degree orbit around subject at natural speed, smooth circular movement'},
+  {id:'pan',label:'Panoramique',icon:'⟺',prompt:'horizontal pan at natural documentary speed, smooth left-to-right movement'},
+  {id:'tilt',label:'Tilt vertical',icon:'↕',prompt:'vertical tilt at natural speed, smooth up-down camera movement'},
+  {id:'shoulder',label:'Epaule',icon:'🤳',prompt:'handheld shoulder-mounted feel, natural human breathing movement, organic micro-shake, real documentary style'},
+  {id:'static',label:'Fixe emotionnel',icon:'⬤',prompt:'static locked-off shot with natural organic breathing micro-movement, subtle life in frame'},
+  {id:'enter',label:'Entree champ',icon:'🚶',prompt:'subject enters frame at natural walking pace, real-time motion, not slow'},
+  {id:'parallax',label:'Parallax',icon:'🪟',prompt:'parallax camera movement at natural speed, foreground and background shift organically'},
+  {id:'rack',label:'Rack focus',icon:'🎯',prompt:'rack focus pull at natural cinematic speed, sharp focus shift between subjects'},
+  {id:'handheld',label:'Handheld subtil',icon:'🎥',prompt:'subtle handheld movement, natural human operator breathing, organic slight instability, real cinema verite style'}
 ];
 var EMOTIONS = [
   {label:'Joie',group:'Positives'},{label:'Eclat de rire',group:'Positives'},
@@ -840,11 +851,17 @@ if (mode === 'solo') {
 }
 var voiceBlock = noAudio ? 'SILENT: No audio.' : lang.prompt + ' Natural human voice, perfect lip-sync.' + (silenceBG ? ' Background: very soft quiet room ambience only, no crowd, no other voices, no music.' : '');
 var rateBlock = selRate === 'slow' ? 'Speech pace: slow and clear, deliberate pauses between sentences.' : selRate === 'veryslow' ? 'Speech pace: very slow and extremely clear, long pauses between each sentence.' : 'Speech pace: natural and clear. Articulate every word clearly. Never rush.';
-var cameraBlock = 'Camera angle: ' + angle + '.' + (selMove ? ' Camera movement: ' + move + '.' : '') + (selEmo ? ' Facial expression: ' + emo + '.' : '');
+// Use detailed prompt if available, else fallback to label
+var angleObj = null; for (var i=0; i<ANGLES.length; i++) { if (ANGLES[i].id===selAngle) { angleObj=ANGLES[i]; break; } }
+var moveObj = null; for (var i=0; i<MOVES.length; i++) { if (MOVES[i].id===selMove) { moveObj=MOVES[i]; break; } }
+var anglePrompt = angleObj ? angleObj.prompt : 'straight-on eye-level shot, natural framing';
+var movePrompt = moveObj ? moveObj.prompt : 'static shot with natural organic micro-movement';
+var cameraBlock = 'CAMERA ANGLE: ' + anglePrompt + '. CAMERA MOVEMENT: ' + movePrompt + '.' + (selEmo ? ' FACIAL EXPRESSION: ' + emo + '.' : '');
 var actingBlock = 'Acting style: ' + (act ? act.label : 'Natural') + '.';
-var promptParts = ['Cinematic video of ' + (mode === 'solo' ? 'one person' : 'two people') + '.', 'SCENE: ' + sceneDesc, SKIN, dialogueBlock, voiceBlock, rateBlock, cameraBlock, actingBlock];
+var motionBlock = 'MOTION RULES: All movements at REAL natural human speed -- not slow motion, not sped up. Camera moves at normal operator speed. Actor gestures and head movements at normal conversational pace. NO slow motion. NO artificial speed ramping. Movements feel like real documentary footage, not cinematic slow-mo. Natural, alive, human-paced.';
+var promptParts = ['Cinematic video of ' + (mode === 'solo' ? 'one person' : 'two people') + '.', 'SCENE: ' + sceneDesc, SKIN, motionBlock, dialogueBlock, voiceBlock, rateBlock, cameraBlock, actingBlock];
 if (continuityMode && lastFrameB64) promptParts.push('IDENTITY LOCK: Preserve EXACTLY the same eye color, skin tone, hair color and facial features as the reference person.');
-promptParts.push('Style: Professional cinematography, natural lighting.');
+promptParts.push('Style: Professional cinematography, natural lighting. Real-time motion, no slow motion effects. Human-paced energy throughout.');
 return promptParts.join('\n');
 }
 
