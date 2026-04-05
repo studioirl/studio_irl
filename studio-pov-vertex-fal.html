@@ -1015,7 +1015,6 @@ async function callVertexAPI(subject) {
 
 // ─── Appel kie.ai — Nano Banana Pro ──────────────────────────────────────────
 async function callKieAPI(subject) {
-  const kieAR = aspectRatio; // kie.ai accepte 9:16, 16:9, 1:1, 4:5 etc. directement
 
   const povSpecs = `POV angle: ${angle}, height: ${height}, distance: ${distance}, involvement: ${involvement}, environment: ${pov}. Asymmetry ${asymmetry}%, imperfection ${imperfection}%, intimacy ${intimacy}%, focus ${focus}%.${humanPerceptionMode ? ' Human perception simulation active.' : ''}`;
 
@@ -1028,20 +1027,19 @@ async function callKieAPI(subject) {
   updateLoadingMessage("Envoi vers kie.ai / Nano Banana Pro...");
 
   // Étape 1 : créer la tâche
+  // Les images de référence doivent être des URLs publiques — on les envoie en base64
+  const imageInput = avatarImages.slice(0, 4); // max 4 images
+
   const taskBody = {
     model: 'nano-banana-pro',
     input: {
       prompt,
-      aspect_ratio: kieAR,
-      resolution: '2K',
-      output_format: 'jpg'
+      aspect_ratio: aspectRatio, // 9:16, 16:9, 1:1, 4:5 etc.
+      resolution: '1K',
+      output_format: 'jpg',
+      image_input: imageInput // tableau de base64 data URIs
     }
   };
-
-  // Ajouter les images de référence si présentes
-  if (avatarImages.length > 0) {
-    taskBody.input.image_input = avatarImages.slice(0, 4).map(img => img); // base64 data URI
-  }
 
   const createRes = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
     method: 'POST',
@@ -1055,24 +1053,25 @@ async function callKieAPI(subject) {
   let createData = {};
   try { createData = await createRes.json(); } catch(_) {}
 
-  if (!createRes.ok) {
-    const msg = createData?.message || createData?.error || `Erreur HTTP ${createRes.status}`;
-    if (createRes.status === 401) throw new Error('Clé kie.ai invalide. Vérifiez votre clé sur kie.ai/api-key');
-    if (createRes.status === 403) throw new Error('Accès refusé kie.ai. Vérifiez votre compte et vos crédits.');
-    if (createRes.status === 429) throw new Error('Trop de requêtes kie.ai. Attendez quelques secondes.');
-    throw new Error(`Erreur kie.ai ${createRes.status}: ${msg}`);
+  if (!createRes.ok || createData.code !== 200) {
+    const msg = createData?.msg || createData?.message || createData?.error || `Erreur HTTP ${createRes.status}`;
+    if (createRes.status === 401 || createData.code === 401) throw new Error('Clé kie.ai invalide. Vérifiez votre clé sur kie.ai/api-key');
+    if (createRes.status === 403 || createData.code === 403) throw new Error('Accès refusé kie.ai. Vérifiez votre compte et vos crédits.');
+    if (createRes.status === 429 || createData.code === 429) throw new Error('Trop de requêtes kie.ai. Attendez quelques secondes.');
+    throw new Error(`Erreur kie.ai: ${msg}`);
   }
 
-  const taskId = createData?.data?.taskId || createData?.taskId;
-  if (!taskId) throw new Error('Aucun taskId retourné par kie.ai.');
+  // La réponse exacte est : { code: 200, msg: "success", data: { taskId: "task_nano-banana-pro_..." } }
+  const taskId = createData?.data?.taskId;
+  if (!taskId) throw new Error(`Aucun taskId retourné par kie.ai. Réponse: ${JSON.stringify(createData)}`);
 
-  // Étape 2 : polling jusqu'à ce que la tâche soit terminée
+  // Étape 2 : polling
   updateLoadingMessage('Nano Banana Pro génère votre image...');
-  const maxPolls = 60; // max 60 tentatives = ~2 minutes
-  for (let i = 0; i < maxPolls; i++) {
-    await sleep(3000); // attendre 3 secondes entre chaque polling
+  const maxPolls = 60;
 
-    updateLoadingMessage(`Nano Banana Pro en cours... (${i * 3 + 3}s)`);
+  for (let i = 0; i < maxPolls; i++) {
+    await sleep(3000);
+    updateLoadingMessage(`Nano Banana Pro en cours... (${(i + 1) * 3}s)`);
 
     const statusRes = await fetch(`https://api.kie.ai/api/v1/jobs/getTask?taskId=${taskId}`, {
       headers: { 'Authorization': `Bearer ${apiKey}` }
@@ -1083,29 +1082,25 @@ async function callKieAPI(subject) {
 
     if (!statusRes.ok) continue;
 
-    const status = statusData?.data?.status || statusData?.status;
-    const outputs = statusData?.data?.output || statusData?.output;
+    const taskData = statusData?.data;
+    const status = taskData?.status;
 
-    if (status === 'FAILED' || status === 'failed') {
+    if (status === 'FAILED' || status === 'failed' || status === 'ERROR') {
       throw new Error('Génération kie.ai échouée. Réessayez.');
     }
 
     if (status === 'SUCCESS' || status === 'success' || status === 'COMPLETED' || status === 'completed') {
-      // Récupérer l'URL de l'image
-      let imageUrl = null;
-      if (Array.isArray(outputs) && outputs.length > 0) {
-        imageUrl = outputs[0]?.url || outputs[0];
-      } else if (typeof outputs === 'string') {
-        imageUrl = outputs;
-      } else if (statusData?.data?.images?.[0]?.url) {
-        imageUrl = statusData.data.images[0].url;
-      }
+      // Chercher l'URL de l'image dans tous les endroits possibles
+      let imageUrl = taskData?.output?.images?.[0]?.url
+        || taskData?.output?.[0]?.url
+        || taskData?.output?.[0]
+        || taskData?.images?.[0]?.url
+        || taskData?.result?.url
+        || taskData?.url;
 
-      if (!imageUrl) throw new Error('Image non trouvée dans la réponse kie.ai.');
+      if (!imageUrl) throw new Error(`Image non trouvée dans la réponse kie.ai. Data: ${JSON.stringify(taskData).slice(0, 200)}`);
 
       updateLoadingMessage("Récupération de l'image...");
-
-      // Convertir URL → base64 pour stockage IndexedDB
       const imgRes = await fetch(imageUrl);
       const blob = await imgRes.blob();
       return new Promise((resolve, reject) => {
@@ -1115,7 +1110,7 @@ async function callKieAPI(subject) {
         reader.readAsDataURL(blob);
       });
     }
-    // Sinon on continue le polling (status PENDING, IN_PROGRESS, etc.)
+    // Continuer le polling si status PENDING, IN_PROGRESS, PROCESSING, etc.
   }
 
   throw new Error('Timeout kie.ai : génération trop longue. Réessayez.');
