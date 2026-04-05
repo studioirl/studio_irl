@@ -635,7 +635,7 @@ async function enterStudio() {
   if (selectedEngine === 'kie') {
     engineBadge.textContent = 'KIE.AI';
     engineBadge.className = 'badge badge-green';
-    modelLabel.textContent = 'Nano Banana Pro · kie.ai';
+    modelLabel.textContent = 'Nano Banana 2 · kie.ai';
     footerText.textContent = 'STUDIO POV — 2025 · Powered by kie.ai';
   } else {
     engineBadge.textContent = 'VERTEX AI';
@@ -1062,7 +1062,7 @@ async function callKieAPI(subject) {
   updateLoadingMessage("Envoi vers kie.ai / Nano Banana Pro...");
 
   const taskBody = {
-    model: 'nano-banana-pro',
+    model: 'nano-banana-2',
     input: {
       prompt,
       aspect_ratio: aspectRatio,
@@ -1095,12 +1095,11 @@ async function callKieAPI(subject) {
   const taskId = createData?.data?.taskId;
   if (!taskId) throw new Error(`Aucun taskId retourné par kie.ai. Réponse: ${JSON.stringify(createData)}`);
 
-  // Debug : 3 polls seulement, afficher la réponse brute
-  updateLoadingMessage('Nano Banana Pro génère votre image...');
+  updateLoadingMessage('Nano Banana 2 génère votre image...');
   let lastStatusData = {};
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 60; i++) {
     await sleep(5000);
-    updateLoadingMessage(`Poll ${i+1}/3 — taskId: ${taskId}`);
+    updateLoadingMessage(`Nano Banana 2 en cours... (${(i + 1) * 5}s)`);
 
     let statusData = {};
     try {
@@ -1124,7 +1123,7 @@ async function callKieAPI(subject) {
         imageUrl = r?.resultUrls?.[0] || r?.images?.[0]?.url || r?.url;
       } catch(_) {}
       if (!imageUrl) throw new Error(`Success mais pas d'URL. resultJson: ${statusData?.data?.resultJson}`);
-      updateLoadingMessage("Récupération...");
+      updateLoadingMessage("Récupération de l'image...");
       const imgRes = await fetch(imageUrl);
       const blob = await imgRes.blob();
       return new Promise((resolve, reject) => {
@@ -1210,7 +1209,7 @@ function renderResults() {
   container.innerHTML = '';
   results.forEach((r) => {
     const arClass = r.aspectRatio === '9:16' ? 'ar-9-16' : r.aspectRatio === '16:9' ? 'ar-16-9' : r.aspectRatio === '4:5' ? 'ar-4-5' : 'ar-1-1';
-    const engineLabel = r.engine === 'kie' ? 'NANO BANANA PRO · KIE.AI' : 'GEMINI 3.1 FLASH IMAGE 4K';
+    const engineLabel = r.engine === 'kie' ? 'NANO BANANA 2 · KIE.AI' : 'GEMINI 3.1 FLASH IMAGE 4K';
     const badgeClass = r.engine === 'kie' ? 'img-badge img-badge-green' : 'img-badge img-badge-grad';
 
     const card = document.createElement('div');
