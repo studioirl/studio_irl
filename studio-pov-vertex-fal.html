@@ -1095,35 +1095,35 @@ async function callKieAPI(subject) {
   const taskId = createData?.data?.taskId;
   if (!taskId) throw new Error(`Aucun taskId retourné par kie.ai. Réponse: ${JSON.stringify(createData)}`);
 
-  // Polling
   updateLoadingMessage('Nano Banana Pro génère votre image...');
-  for (let i = 0; i < 60; i++) {
-    await sleep(3000);
-    updateLoadingMessage(`Nano Banana Pro en cours... (${(i + 1) * 3}s)`);
+  let lastStatusData = {};
+  for (let i = 0; i < 100; i++) {
+    await sleep(5000);
+    updateLoadingMessage(`Nano Banana Pro en cours... (${(i + 1) * 5}s)`);
 
-    const statusRes = await fetch(`https://api.kie.ai/api/v1/jobs/getTask?taskId=${taskId}`, {
+    const statusRes = await fetch(`https://api.kie.ai/api/v1/jobs/recordInfo?taskId=${taskId}`, {
       headers: { 'Authorization': `Bearer ${apiKey}` }
     });
     let statusData = {};
     try { statusData = await statusRes.json(); } catch(_) {}
+    lastStatusData = statusData;
     if (!statusRes.ok) continue;
 
     const taskData = statusData?.data;
-    const status = taskData?.status;
+    const state = taskData?.state;
 
-    if (status === 'FAILED' || status === 'failed' || status === 'ERROR') {
-      throw new Error('Génération kie.ai échouée. Réessayez.');
+    if (state === 'fail') {
+      throw new Error(`Génération kie.ai échouée: ${taskData?.failMsg || 'Erreur inconnue'}`);
     }
 
-    if (status === 'SUCCESS' || status === 'success' || status === 'COMPLETED' || status === 'completed') {
-      const imageUrl = taskData?.output?.images?.[0]?.url
-        || taskData?.output?.[0]?.url
-        || taskData?.output?.[0]
-        || taskData?.images?.[0]?.url
-        || taskData?.result?.url
-        || taskData?.url;
+    if (state === 'success') {
+      let imageUrl = null;
+      try {
+        const resultJson = JSON.parse(taskData?.resultJson || '{}');
+        imageUrl = resultJson?.resultUrls?.[0] || resultJson?.images?.[0]?.url || resultJson?.url;
+      } catch(_) {}
 
-      if (!imageUrl) throw new Error(`Image non trouvée. Data: ${JSON.stringify(taskData).slice(0, 300)}`);
+      if (!imageUrl) throw new Error(`Image non trouvée. resultJson: ${taskData?.resultJson?.slice(0, 200)}`);
 
       updateLoadingMessage("Récupération de l'image...");
       const imgRes = await fetch(imageUrl);
@@ -1136,7 +1136,8 @@ async function callKieAPI(subject) {
       });
     }
   }
-  throw new Error('Timeout kie.ai : génération trop longue. Réessayez.');
+  // Debug : afficher la dernière réponse reçue
+  throw new Error(`Timeout kie.ai. Dernière réponse: ${JSON.stringify(lastStatusData).slice(0, 500)}`);
 }
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
