@@ -1095,37 +1095,36 @@ async function callKieAPI(subject) {
   const taskId = createData?.data?.taskId;
   if (!taskId) throw new Error(`Aucun taskId retourné par kie.ai. Réponse: ${JSON.stringify(createData)}`);
 
+  // Debug : 3 polls seulement, afficher la réponse brute
   updateLoadingMessage('Nano Banana Pro génère votre image...');
   let lastStatusData = {};
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < 3; i++) {
     await sleep(5000);
-    updateLoadingMessage(`Nano Banana Pro en cours... (${(i + 1) * 5}s)`);
+    updateLoadingMessage(`Poll ${i+1}/3 — taskId: ${taskId}`);
 
-    const statusRes = await fetch(`https://api.kie.ai/api/v1/jobs/recordInfo?taskId=${taskId}`, {
-      headers: { 'Authorization': `Bearer ${apiKey}` }
-    });
     let statusData = {};
-    try { statusData = await statusRes.json(); } catch(_) {}
-    lastStatusData = statusData;
-    if (!statusRes.ok) continue;
-
-    const taskData = statusData?.data;
-    const state = taskData?.state;
-
-    if (state === 'fail') {
-      throw new Error(`Génération kie.ai échouée: ${taskData?.failMsg || 'Erreur inconnue'}`);
+    try {
+      const statusRes = await fetch(`https://api.kie.ai/api/v1/jobs/recordInfo?taskId=${taskId}`, {
+        headers: { 'Authorization': `Bearer ${apiKey}` }
+      });
+      statusData = await statusRes.json();
+    } catch(e) {
+      lastStatusData = { fetchError: e.message };
+      continue;
     }
+    lastStatusData = statusData;
+
+    const state = statusData?.data?.state;
+    if (state === 'fail') throw new Error(`Fail: ${statusData?.data?.failMsg}`);
 
     if (state === 'success') {
       let imageUrl = null;
       try {
-        const resultJson = JSON.parse(taskData?.resultJson || '{}');
-        imageUrl = resultJson?.resultUrls?.[0] || resultJson?.images?.[0]?.url || resultJson?.url;
+        const r = JSON.parse(statusData?.data?.resultJson || '{}');
+        imageUrl = r?.resultUrls?.[0] || r?.images?.[0]?.url || r?.url;
       } catch(_) {}
-
-      if (!imageUrl) throw new Error(`Image non trouvée. resultJson: ${taskData?.resultJson?.slice(0, 200)}`);
-
-      updateLoadingMessage("Récupération de l'image...");
+      if (!imageUrl) throw new Error(`Success mais pas d'URL. resultJson: ${statusData?.data?.resultJson}`);
+      updateLoadingMessage("Récupération...");
       const imgRes = await fetch(imageUrl);
       const blob = await imgRes.blob();
       return new Promise((resolve, reject) => {
