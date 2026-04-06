@@ -692,10 +692,6 @@ footer p {
 document.getElementById('year').textContent = new Date().getFullYear();
 
 // ==================== STATE ====================
-// Gemini 3.1 Flash Image Preview — génère texte ET images via generateContent
-const MODEL = 'gemini-3.1-flash-image-preview';
-// gemini-3.1-flash-image-preview est disponible uniquement en région "global"
-const VERTEX_ENDPOINT = `https://aiplatform.googleapis.com/v1beta1/publishers/google/models/${MODEL}:generateContent`;
 
 let API_KEY = '';
 let isFamilyMode = false;
@@ -974,12 +970,10 @@ Composition : placer toutes les personnes dans le cadre, aucune coupée hors cha
 Éclairage naturel et réaliste. Photographie brute haute définition.`;
 }
 
-// ---- Appel API Vertex AI Express — Gemini 3.1 Flash Image ----
-// Format generateContent (contents + parts), pas instances Imagen
+// ---- Appel API — copie exacte du pattern Studio POV qui fonctionne ----
 async function callVertexGenerate(avatarKeys, promptText) {
-  const url = `${VERTEX_ENDPOINT}?key=${API_KEY}`;
+  const apiAR = aspectRatio === '4:5' ? '3:4' : aspectRatio;
 
-  // Construction des parts : images de référence en premier, puis le prompt texte
   const parts = [];
   avatarKeys.forEach((key, i) => {
     parts.push({
@@ -992,33 +986,37 @@ async function callVertexGenerate(avatarKeys, promptText) {
   });
   parts.push({ text: promptText });
 
-  // Mapping aspect ratio — Gemini image génère en carré par défaut,
-  // on force via le prompt si nécessaire (l'API ne prend pas aspectRatio pour Gemini)
-  const arHint = aspectRatio !== '1:1'
-    ? `\nFormat de sortie souhaité : ${aspectRatio === '9:16' ? 'portrait vertical (9:16)' : 'paysage horizontal (16:9)'}.`
-    : '';
-  if (arHint) parts[parts.length - 1].text += arHint;
-
   const body = {
     contents: [{ role: 'user', parts }],
     generationConfig: {
-      responseModalities: ['IMAGE', 'TEXT'],
-      temperature: 1.0
+      responseModalities: ['IMAGE'],
+      imageConfig: {
+        aspectRatio: apiAR,
+        imageSize: '4K'
+      }
     }
   };
 
-  const res = await fetch(url, {
+  // Endpoint identique à Studio POV (celui qui fonctionne)
+  const endpoint = `https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-3.1-flash-image-preview:generateContent?key=${encodeURIComponent(API_KEY)}`;
+
+  const res = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
   });
 
+  let data = {};
+  try { data = await res.json(); } catch(_) {}
+
   if (!res.ok) {
-    const txt = await res.text();
-    let data; try { data = JSON.parse(txt); } catch(e) { data = null; }
-    throw Object.assign(new Error(`HTTP ${res.status}: ${data?.error?.message || txt.slice(0, 300)}`), { status: res.status });
+    const msg = data?.error?.message || `Erreur HTTP ${res.status}`;
+    if (res.status === 401) throw new Error("Clé API invalide.");
+    if (res.status === 403) throw new Error("Accès refusé. Vérifie ta clé Vertex AI Express Mode.");
+    if (res.status === 404) throw new Error(`Modèle introuvable : ${msg}`);
+    throw Object.assign(new Error(`HTTP ${res.status}: ${msg}`), { status: res.status });
   }
-  return res.json();
+  return data;
 }
 
 async function handleGenerate() {
@@ -1060,19 +1058,14 @@ async function handleGenerate() {
     try {
       const response = await callVertexGenerate(avatarKeys, finalPrompt);
 
-      // Gemini retourne candidates[0].content.parts[]
-      if (!response.candidates?.length) throw new Error("Aucun résultat retourné.");
-
-      const candidate = response.candidates[0];
+      const candidate = response?.candidates?.[0];
+      if (!candidate) throw new Error("Aucune réponse du modèle.");
       if (candidate.finishReason === 'SAFETY') throw new Error("Génération bloquée par les filtres. Reformulez le prompt.");
 
-      // Chercher la part image dans les parts
       const imagePart = (candidate.content?.parts || []).find(p => p.inlineData?.data);
-      if (!imagePart) throw new Error("Aucune image dans la réponse. Le modèle a peut-être généré du texte uniquement.");
+      if (!imagePart) throw new Error("Aucune image dans la réponse.");
 
-      const base64 = imagePart.inlineData.data;
-      const mime = imagePart.inlineData.mimeType || 'image/png';
-      const imageUrl = `data:${mime};base64,${base64}`;
+      const imageUrl = `data:image/png;base64,${imagePart.inlineData.data}`;
 
       setLoading(false);
       showResult(imageUrl);
