@@ -692,13 +692,9 @@ footer p {
 document.getElementById('year').textContent = new Date().getFullYear();
 
 // ==================== STATE ====================
-// CORRIGÉ : Nom du modèle Imagen 3.1 Flash via Vertex AI Express
-const MODEL = 'imagen-3.1-flash-preview';
-
-// CORRIGÉ : Endpoint Vertex AI Express (clé AQ...)
-// Format : https://us-central1-aiplatform.googleapis.com/v1/projects/{project}/locations/us-central1/publishers/google/models/{model}:predict
-// Mais en Express Mode (clé API directe), on utilise le gateway simplifié :
-const VERTEX_ENDPOINT = `https://us-central1-aiplatform.googleapis.com/v1beta1/publishers/google/models/${MODEL}:predict`;
+// Gemini 3.1 Flash Image Preview — génère texte ET images via generateContent
+const MODEL = 'gemini-3.1-flash-image-preview';
+const VERTEX_ENDPOINT = `https://us-central1-aiplatform.googleapis.com/v1beta1/publishers/google/models/${MODEL}:generateContent`;
 
 let API_KEY = '';
 let isFamilyMode = false;
@@ -977,41 +973,36 @@ Composition : placer toutes les personnes dans le cadre, aucune coupée hors cha
 Éclairage naturel et réaliste. Photographie brute haute définition.`;
 }
 
-// ---- Appel API Vertex AI Express (Imagen) ----
-// CORRIGÉ : Format d'appel pour Imagen via Vertex AI Express avec clé API AQ...
+// ---- Appel API Vertex AI Express — Gemini 3.1 Flash Image ----
+// Format generateContent (contents + parts), pas instances Imagen
 async function callVertexGenerate(avatarKeys, promptText) {
   const url = `${VERTEX_ENDPOINT}?key=${API_KEY}`;
 
-  // Imagen attend un format "instances" avec le prompt et les images de référence
-  const instance = {
-    prompt: promptText
-  };
-
-  // Si des images de référence sont présentes, on les ajoute comme referenceImages
-  if (avatarKeys.length > 0) {
-    instance.referenceImages = avatarKeys.map((key, i) => ({
-      referenceType: 'REFERENCE_TYPE_SUBJECT',
-      referenceId: i + 1,
-      referenceImage: {
-        bytesBase64Encoded: avatars[key].data
+  // Construction des parts : images de référence en premier, puis le prompt texte
+  const parts = [];
+  avatarKeys.forEach((key, i) => {
+    parts.push({
+      inlineData: {
+        mimeType: avatars[key].mime,
+        data: avatars[key].data
       }
-    }));
-  }
+    });
+    parts.push({ text: `[Référence personne ${i + 1} : ${key}]` });
+  });
+  parts.push({ text: promptText });
 
-  // Mapping aspect ratio vers format Imagen
-  const arMap = {
-    '1:1': '1:1',
-    '9:16': '9:16',
-    '16:9': '16:9'
-  };
+  // Mapping aspect ratio — Gemini image génère en carré par défaut,
+  // on force via le prompt si nécessaire (l'API ne prend pas aspectRatio pour Gemini)
+  const arHint = aspectRatio !== '1:1'
+    ? `\nFormat de sortie souhaité : ${aspectRatio === '9:16' ? 'portrait vertical (9:16)' : 'paysage horizontal (16:9)'}.`
+    : '';
+  if (arHint) parts[parts.length - 1].text += arHint;
 
   const body = {
-    instances: [instance],
-    parameters: {
-      aspectRatio: arMap[aspectRatio] || '1:1',
-      sampleCount: 1,
-      safetySetting: 'block_only_high',
-      personGeneration: 'allow_adult'
+    contents: [{ role: 'user', parts }],
+    generationConfig: {
+      responseModalities: ['IMAGE', 'TEXT'],
+      temperature: 1.0
     }
   };
 
@@ -1024,7 +1015,7 @@ async function callVertexGenerate(avatarKeys, promptText) {
   if (!res.ok) {
     const txt = await res.text();
     let data; try { data = JSON.parse(txt); } catch(e) { data = null; }
-    throw Object.assign(new Error(`HTTP ${res.status}: ${data?.error?.message || txt.slice(0, 200)}`), { status: res.status });
+    throw Object.assign(new Error(`HTTP ${res.status}: ${data?.error?.message || txt.slice(0, 300)}`), { status: res.status });
   }
   return res.json();
 }
@@ -1068,15 +1059,19 @@ async function handleGenerate() {
     try {
       const response = await callVertexGenerate(avatarKeys, finalPrompt);
 
-      // Imagen retourne predictions[].bytesBase64Encoded
-      const predictions = response.predictions;
-      if (!predictions?.length) throw new Error("Aucune image retournée par le modèle.");
+      // Gemini retourne candidates[0].content.parts[]
+      if (!response.candidates?.length) throw new Error("Aucun résultat retourné.");
 
-      const imageData = predictions[0]?.bytesBase64Encoded;
-      if (!imageData) throw new Error("Données image manquantes dans la réponse.");
+      const candidate = response.candidates[0];
+      if (candidate.finishReason === 'SAFETY') throw new Error("Génération bloquée par les filtres. Reformulez le prompt.");
 
-      const mimeType = predictions[0]?.mimeType || 'image/png';
-      const imageUrl = `data:${mimeType};base64,${imageData}`;
+      // Chercher la part image dans les parts
+      const imagePart = (candidate.content?.parts || []).find(p => p.inlineData?.data);
+      if (!imagePart) throw new Error("Aucune image dans la réponse. Le modèle a peut-être généré du texte uniquement.");
+
+      const base64 = imagePart.inlineData.data;
+      const mime = imagePart.inlineData.mimeType || 'image/png';
+      const imageUrl = `data:${mime};base64,${base64}`;
 
       setLoading(false);
       showResult(imageUrl);
