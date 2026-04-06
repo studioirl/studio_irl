@@ -1029,12 +1029,15 @@ async function uploadImageToKie(base64DataUri) {
 // ─── Appel kie.ai — Nano Banana 2 ────────────────────────────────────────────
 async function callKieAPI(subject) {
 
-  const povSpecs = `POV angle: ${angle}, height: ${height}, distance: ${distance}, involvement: ${involvement}, environment: ${pov}. Asymmetry ${asymmetry}%, imperfection ${imperfection}%, intimacy ${intimacy}%, focus ${focus}%.${humanPerceptionMode ? ' Human perception simulation active.' : ''}`;
+  // Même povSpecs que Vertex — tous les réglages de l'appli injectés
+  const povSpecs = `POSITION: ${pov === 'interior' ? 'Intérieur' : 'Extérieur'}\nSTATUT: ${involvement === 'discreet' ? 'Discret' : 'Impliqué'}\nANGLE: ${angle}\nHAUTEUR: ${height}\nDISTANCE: ${distance}\nASYMÉTRIE: ${asymmetry}%\nIMPERFECTION: ${imperfection}%\nINTIMITÉ: ${intimacy}%\nFOCUS: ${focus}%\nMODE PERCEPTION: ${humanPerceptionMode ? 'ACTIVÉ' : 'DÉSACTIVÉ'}`;
 
-  let prompt = `Ultra-realistic 4K POV photography. ${subject}. ${povSpecs}. Natural skin texture with visible pores, credible lighting, authentic human posture, no artificial rendering, spontaneous captured moment, documentary style.`;
+  const systemContext = `Ultra-realistic 4K POV photo. Natural skin texture with visible pores and imperfections. Credible human lighting, no artificial rendering. Authentic spontaneous posture. Asymmetric framing, human eye simulation.`;
+
+  let prompt = `${systemContext}\n${subject}\n${povSpecs}\nPhoto POV réaliste, rendu propre, détails humains crédibles, scène naturelle, qualité premium 4K.`;
 
   if (avatarImages.length > 0) {
-    prompt = `Ultra-realistic 4K POV photography. Preserve exact facial identity and physical characteristics from the reference image(s). ${subject}. ${povSpecs}. Same face, same skin tone, same morphology as reference. Natural lighting, authentic posture, no beauty filter, no AI smoothing.`;
+    prompt = `${systemContext}\nPreserve exact facial identity from reference image(s) — same face, same skin tone, same morphology.\n${subject}\n${povSpecs}\nSame face as reference. Natural lighting, authentic posture, no beauty filter, no AI smoothing. Photo POV réaliste, qualité premium 4K.`;
   }
 
   // Uploader les images de référence vers kie.ai
