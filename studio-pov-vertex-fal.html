@@ -616,7 +616,6 @@ async function enterStudio() {
     return;
   }
 
-  // Validation basique du format de clé
   if (selectedEngine === 'vertex' && !k.startsWith('AQ')) {
     if (!confirm('⚠️ Cette clé ne commence pas par "AQ". Les clés Vertex AI Express Mode commencent par AQ. Continuer quand même ?')) return;
   }
@@ -627,7 +626,6 @@ async function enterStudio() {
   app.classList.add('visible');
   if (isMobile) document.getElementById('mobileWarn').classList.add('show');
 
-  // Mise à jour des labels selon le moteur
   const engineBadge = document.getElementById('engineBadge');
   const modelLabel = document.getElementById('modelLabel');
   const footerText = document.getElementById('footerText');
@@ -654,7 +652,7 @@ function showSplash() {
   document.getElementById('app').classList.remove('visible');
 }
 
-// ─── IndexedDB — stockage images lourdes ──────────────────────────────────────
+// ─── IndexedDB ────────────────────────────────────────────────────────────────
 const DB_NAME = 'studio-pov-db';
 const DB_VERSION = 1;
 let db = null;
@@ -723,7 +721,7 @@ async function idbClear(store) {
   });
 }
 
-// ─── Persistance — settings/prompt en localStorage, images en IndexedDB ───────
+// ─── Persistance ──────────────────────────────────────────────────────────────
 function saveSettings() {
   try {
     localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify({
@@ -734,17 +732,14 @@ function saveSettings() {
   } catch(e) { console.warn('Erreur sauvegarde settings:', e); }
 }
 
-// saveState reste disponible pour compatibilité — sauvegarde settings + avatars + résultats meta
 async function saveState() {
   saveSettings();
-  // Avatars en IndexedDB
   try {
     await idbClear('avatars');
     for (let i = 0; i < avatarImages.length; i++) {
       await idbSet('avatars', `avatar_${i}`, avatarImages[i]);
     }
   } catch(e) { console.warn('Erreur sauvegarde avatars IDB:', e); }
-  // Résultats meta (sans dataUrl) en localStorage — les images sont dans IDB
   try {
     const meta = results.map(r => ({ id: r.id, aspectRatio: r.aspectRatio, engine: r.engine, timestamp: r.timestamp }));
     localStorage.setItem(STORAGE_KEYS.results, JSON.stringify(meta));
@@ -771,14 +766,12 @@ async function loadState() {
     document.getElementById('subjectInput').value = savedPrompt;
   } catch(e) { console.warn('Erreur chargement settings:', e); }
 
-  // Avatars depuis IndexedDB
   try {
     await openDB();
     const allAvatars = await idbGetAll('avatars');
     avatarImages = allAvatars.filter(Boolean);
   } catch(e) { console.warn('Erreur chargement avatars IDB:', e); avatarImages = []; }
 
-  // Résultats : meta depuis localStorage + dataUrl depuis IndexedDB
   try {
     const meta = JSON.parse(localStorage.getItem(STORAGE_KEYS.results) || '[]');
     const loaded = [];
@@ -926,13 +919,12 @@ async function generate() {
       : await callVertexAPI(subject);
 
     const id = Date.now().toString();
-    // Stocker l'image dans IndexedDB (pas localStorage)
     await idbSet('images', `result_${id}`, imgDataUrl);
 
-    const r = { id, dataUrl: imgDataUrl, aspectRatio, engine: selectedEngine, timestamp: Date.now() };    results.unshift(r);
+    const r = { id, dataUrl: imgDataUrl, aspectRatio, engine: selectedEngine, timestamp: Date.now() };
+    results.unshift(r);
     if (results.length > 5) {
       const removed = results.pop();
-      // Supprimer l'ancienne image d'IndexedDB aussi
       try { await idbDelete('images', `result_${removed.id}`); } catch(_) {}
     }
     renderResults();
@@ -1013,7 +1005,7 @@ async function callVertexAPI(subject) {
   throw lastErr || new Error("La génération Vertex a échoué.");
 }
 
-// ─── Upload image vers kie.ai → retourne une URL publique ─────────────────────
+// ─── Upload image vers kie.ai ─────────────────────────────────────────────────
 async function uploadImageToKie(base64DataUri) {
   const res = await fetch('https://kieai.redpandaai.co/api/file-base64-upload', {
     method: 'POST',
@@ -1022,7 +1014,7 @@ async function uploadImageToKie(base64DataUri) {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      base64Data: base64DataUri, // accepte directement le data URI complet
+      base64Data: base64DataUri, // data URI complet accepté par l'API
       uploadPath: 'images/studio-pov'
     })
   });
@@ -1034,7 +1026,7 @@ async function uploadImageToKie(base64DataUri) {
   return data.data.downloadUrl;
 }
 
-// ─── Appel kie.ai — Nano Banana Pro ──────────────────────────────────────────
+// ─── Appel kie.ai — Nano Banana 2 ────────────────────────────────────────────
 async function callKieAPI(subject) {
 
   const povSpecs = `POV angle: ${angle}, height: ${height}, distance: ${distance}, involvement: ${involvement}, environment: ${pov}. Asymmetry ${asymmetry}%, imperfection ${imperfection}%, intimacy ${intimacy}%, focus ${focus}%.${humanPerceptionMode ? ' Human perception simulation active.' : ''}`;
@@ -1045,7 +1037,7 @@ async function callKieAPI(subject) {
     prompt = `Ultra-realistic 4K POV photography. Preserve exact facial identity and physical characteristics from the reference image(s). ${subject}. ${povSpecs}. Same face, same skin tone, same morphology as reference. Natural lighting, authentic posture, no beauty filter, no AI smoothing.`;
   }
 
-  // Uploader les images de référence vers kie.ai pour obtenir des URLs publiques
+  // Uploader les images de référence vers kie.ai
   let imageUrls = [];
   if (avatarImages.length > 0) {
     updateLoadingMessage("Upload des images de référence...");
@@ -1059,16 +1051,16 @@ async function callKieAPI(subject) {
     }
   }
 
-  updateLoadingMessage("Envoi vers kie.ai / Nano Banana Pro...");
+  updateLoadingMessage("Envoi vers kie.ai / Nano Banana 2...");
 
   const taskBody = {
     model: 'nano-banana-2',
     input: {
       prompt,
       aspect_ratio: aspectRatio,
-      resolution: '1K',
-      output_format: 'jpg',
-      image_input: imageUrls // URLs publiques
+      resolution: '4K',       // ← CORRECTION : était '1K', maintenant 4K comme Vertex
+      output_format: 'png',   // ← CORRECTION : était 'jpg', PNG sans perte
+      image_input: imageUrls  // URLs publiques des images de référence
     }
   };
 
@@ -1095,7 +1087,7 @@ async function callKieAPI(subject) {
   const taskId = createData?.data?.taskId;
   if (!taskId) throw new Error(`Aucun taskId retourné par kie.ai. Réponse: ${JSON.stringify(createData)}`);
 
-  updateLoadingMessage('Nano Banana 2 génère votre image...');
+  updateLoadingMessage('Nano Banana 2 génère votre image 4K...');
   let lastStatusData = {};
   for (let i = 0; i < 60; i++) {
     await sleep(5000);
@@ -1123,7 +1115,7 @@ async function callKieAPI(subject) {
         imageUrl = r?.resultUrls?.[0] || r?.images?.[0]?.url || r?.url;
       } catch(_) {}
       if (!imageUrl) throw new Error(`Success mais pas d'URL. resultJson: ${statusData?.data?.resultJson}`);
-      updateLoadingMessage("Récupération de l'image...");
+      updateLoadingMessage("Récupération de l'image 4K...");
       const imgRes = await fetch(imageUrl);
       const blob = await imgRes.blob();
       return new Promise((resolve, reject) => {
@@ -1134,7 +1126,6 @@ async function callKieAPI(subject) {
       });
     }
   }
-  // Debug : afficher la dernière réponse reçue
   throw new Error(`Timeout kie.ai. Dernière réponse: ${JSON.stringify(lastStatusData).slice(0, 500)}`);
 }
 
@@ -1241,9 +1232,7 @@ function renderResults() {
 }
 
 function downloadImage(dataUrl, id) {
-  // Sur mobile iOS, le lien download ne fonctionne pas — on ouvre dans un nouvel onglet
   if (isMobile && /iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-    // Convertir base64 en Blob puis en URL objet pour iOS
     try {
       const byteStr = atob(dataUrl.split(',')[1]);
       const mime = dataUrl.split(',')[0].split(':')[1].split(';')[0];
@@ -1253,7 +1242,6 @@ function downloadImage(dataUrl, id) {
       const blob = new Blob([ab], { type: mime });
       const blobUrl = URL.createObjectURL(blob);
       const w = window.open(blobUrl, '_blank');
-      // Libérer la mémoire après 60s
       setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
       if (!w) alert("Appuie longuement sur l'image dans le nouvel onglet, puis choisis « Enregistrer l'image ».");
     } catch(e) {
@@ -1261,7 +1249,6 @@ function downloadImage(dataUrl, id) {
     }
     return;
   }
-  // Desktop / Android — téléchargement direct
   const a = document.createElement('a');
   a.href = dataUrl;
   a.download = `studio-pov-capture-${id}.jpg`;
