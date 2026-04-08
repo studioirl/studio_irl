@@ -344,7 +344,7 @@
 
     <div class="api-section">
       <label class="api-label" id="apiLabel">Clé API Vertex AI (Express Mode)</label>
-      <input type="password" id="apiKeyInput" class="api-input" placeholder="AIza..." autocomplete="off">
+      <input type="password" id="apiKeyInput" class="api-input" placeholder="AQ..." autocomplete="off">
       <p class="vertex-note" id="apiNote">⚡ Utilise ta clé Vertex Express Mode (commence par AQ…)</p>
     </div>
 
@@ -791,7 +791,7 @@ function selectEngine(eng) {
   if (eng === 'vertex') {
     lbl.textContent  = 'Clé API Vertex AI (Express Mode)';
     note.textContent = '⚡ Utilise ta clé Vertex Express Mode (commence par AQ…)';
-    inp.placeholder  = 'AIza...';
+    inp.placeholder  = 'AQ...';
   } else {
     lbl.textContent  = 'Clé API kie.ai';
     note.textContent = '🍌 Clé disponible sur kie.ai/api-key';
@@ -1160,14 +1160,24 @@ Cadrage plein pied.
 // ─────────────────────────────────────────────────────────────
 // VERTEX AI
 // ─────────────────────────────────────────────────────────────
-async function callVertex(prompt, imageBase64 = null) {
-  const endpoint = `https://aiplatform.googleapis.com/v1/publishers/google/models/${VERTEX_MODEL}:generateContent?key=${encodeURIComponent(API_KEY)}`;
+
+/**
+ * Vertex AI Express Mode — clé AQ...
+ * Identique à Studio POV : imageSize 4K + aspectRatio 9:16
+ */
+function getVertexEndpoint() {
+  return `https://aiplatform.googleapis.com/v1/publishers/google/models/${VERTEX_MODEL}:generateContent?key=${encodeURIComponent(API_KEY)}`;
+}
+
+async function callVertex(prompt, imageBase64 = null, statusCb = null) {
+  const endpoint = getVertexEndpoint();
 
   const parts = [{ text: prompt }];
   if (imageBase64) {
     parts.unshift({ inlineData: { mimeType: 'image/jpeg', data: imageBase64 } });
   }
 
+  // Meme config que Studio POV
   const body = {
     contents: [{ role: 'user', parts }],
     generationConfig: {
@@ -1176,30 +1186,42 @@ async function callVertex(prompt, imageBase64 = null) {
     }
   };
 
-  const retryWaits = [3000, 6000, 12000];
+  const retryWaits = [4000, 8000, 15000];
   let lastError = null;
 
   for (let attempt = 0; attempt <= retryWaits.length; attempt++) {
     try {
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
+      statusCb?.(attempt === 0 ? 'Envoi vers Gemini…' : `Nouvelle tentative ${attempt + 1}…`);
+
+      // Timeout explicite de 90s pour éviter d'attendre à l'infini
+      const controller = new AbortController();
+      const timeoutId  = setTimeout(() => controller.abort(), 90_000);
+
+      let res;
+      try {
+        res = await fetch(endpoint, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify(body),
+          signal:  controller.signal
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       if (!res.ok) {
         let errorText = '';
         try { const j = await res.json(); errorText = j?.error?.message || JSON.stringify(j); } catch { errorText = await res.text(); }
         const msg = String(errorText || '').trim();
-        if (res.status === 401) throw new Error('Clé Vertex non reconnue.');
-        if (res.status === 403) throw new Error('Accès refusé. Vérifie la clé Vertex.');
-        if (res.status === 404) throw new Error('Modèle image introuvable.');
-        if (res.status === 429) throw new Error(`Quota dépassé. ${msg}`);
-        if (res.status >= 500) throw new Error(`Serveur Vertex indisponible. ${msg}`);
+        if (res.status === 401) throw new Error('Clé API non reconnue. Vérifie ta clé Gemini / Vertex.');
+        if (res.status === 403) throw new Error('Accès refusé. Vérifie les permissions de la clé.');
+        if (res.status === 404) throw new Error('Modèle introuvable. Vérifie le nom du modèle.');
+        if (res.status === 429) throw new Error(`Quota dépassé — réessaye dans quelques secondes. ${msg}`);
+        if (res.status >= 500) throw new Error(`Serveur Gemini indisponible (${res.status}). ${msg}`);
         throw new Error(msg || `Erreur HTTP ${res.status}`);
       }
 
-      const data = await res.json();
+      const data    = await res.json();
       const partsOut = data?.candidates?.[0]?.content?.parts || [];
       for (const part of partsOut) {
         if (part.inlineData?.data) {
@@ -1207,16 +1229,29 @@ async function callVertex(prompt, imageBase64 = null) {
           return `data:${mime};base64,${part.inlineData.data}`;
         }
       }
-      throw new Error("Aucune image renvoyée par Vertex.");
+
+      // Vérifier si bloqué par safety
+      const reason = data?.candidates?.[0]?.finishReason;
+      if (reason === 'SAFETY') throw new Error('Génération bloquée par les filtres de sécurité. Reformule ta demande.');
+
+      throw new Error("Aucune image dans la réponse Gemini.");
     } catch (err) {
       lastError = err;
       const msg = String(err.message || '').toLowerCase();
-      const retryable = msg.includes('quota') || msg.includes('429') || msg.includes('server') || msg.includes('failed to fetch') || msg.includes('networkerror') || msg.includes('load failed');
-      if (retryable && attempt < retryWaits.length) { await sleep(retryWaits[attempt]); continue; }
-      throw err;
+      // Abort signal = timeout
+      if (err.name === 'AbortError') {
+        lastError = new Error('Timeout 90s dépassé. Le serveur ne répond pas. Vérifie ta clé et réessaye.');
+      }
+      const retryable = msg.includes('quota') || msg.includes('429') || msg.includes('500') || msg.includes('502') || msg.includes('503') || msg.includes('indisponible') || msg.includes('failed to fetch') || msg.includes('networkerror') || msg.includes('load failed');
+      if (retryable && attempt < retryWaits.length) {
+        statusCb?.(`Serveur occupé, attente ${Math.round(retryWaits[attempt]/1000)}s…`);
+        await sleep(retryWaits[attempt]);
+        continue;
+      }
+      throw lastError;
     }
   }
-  throw lastError || new Error("Échec de génération Vertex.");
+  throw lastError || new Error("Échec de génération Gemini.");
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -1319,7 +1354,7 @@ async function callEngine(prompt, refDataUrl = null, statusCallback = null) {
   } else {
     // Pour Vertex : on passe l'image source originale (pas l'image générée)
     const b64 = refDataUrl ? refDataUrl.split(',')[1] : null;
-    return callVertex(prompt, b64);
+    return callVertex(prompt, b64, statusCallback);
   }
 }
 
