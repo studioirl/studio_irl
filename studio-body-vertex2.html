@@ -934,20 +934,26 @@ function toggleLock() {
 }
 
 function updateLockUI() {
-  const lockBtn = document.getElementById('lockBtn');
-  const syncBtn = document.getElementById('syncBtn');
+  const lockBtn     = document.getElementById('lockBtn');
   const genFrontBtn = document.getElementById('genFrontBtn');
 
-  lockBtn.className = 'action-btn ' + (isLocked ? 'lock-on' : 'lock-off');
+  lockBtn.className   = 'action-btn ' + (isLocked ? 'lock-on' : 'lock-off');
   lockBtn.textContent = isLocked ? 'Déverrouiller les paramètres' : "J'active Body Look (verrouillage)";
 
-  document.querySelectorAll('aside input, aside select, aside button:not(#lockBtn):not(#originsBtn):not([onclick="openBodyLookModal()"])').forEach(el => {
+  // Désactiver/réactiver les contrôles sidebar (sauf boutons de navigation)
+  document.querySelectorAll(
+    'aside input, aside select, aside button:not(#lockBtn):not(#originsBtn):not([onclick="openBodyLookModal()"])'
+  ).forEach(el => {
     if (isLocked) el.setAttribute('disabled', 'disabled');
     else el.removeAttribute('disabled');
   });
 
-  if (isLocked) { genFrontBtn.setAttribute('disabled', 'disabled'); syncBtn.classList.remove('hidden'); }
-  else { genFrontBtn.removeAttribute('disabled'); syncBtn.classList.add('hidden'); }
+  if (isLocked) {
+    genFrontBtn.setAttribute('disabled', 'disabled');
+  } else {
+    genFrontBtn.removeAttribute('disabled');
+  }
+  // syncBtn n'est PAS géré ici — il est affiché/caché par generateFront() uniquement
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -974,7 +980,7 @@ function resetImages() {
     dl.style.display = 'none';
     // Remettre le statut d'attente sur les vues secondaires
     const st = tl.querySelector('.thumb-status');
-    if (st) st.textContent = 'En attente…';
+    if (st) st.textContent = 'Lancer 360° →';
   });
 
   const mainImg     = document.getElementById('mainViewImg');
@@ -1028,8 +1034,19 @@ function selectView(view) {
   const mainImg     = document.getElementById('mainViewImg');
   const mainLoading = document.getElementById('mainViewLoading');
   const url         = getImageUrl(view);
-  if (url) { mainImg.src = url; mainImg.style.display = 'block'; mainLoading.style.display = 'none'; }
-  else { mainImg.style.display = 'none'; mainLoading.style.display = 'flex'; }
+  if (url) {
+    mainImg.src = url;
+    mainImg.style.display = 'block';
+    mainLoading.style.display = 'none';
+  } else {
+    mainImg.style.display = 'none';
+    mainLoading.style.display = 'flex';
+    // Message adapté selon si génération en cours ou pas encore lancée
+    const statusEl = document.getElementById('mainLoadingStatus');
+    if (!isLoading && view !== 'front') {
+      statusEl.textContent = 'Lance le 360° pour générer cette vue';
+    }
+  }
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -1384,6 +1401,8 @@ async function generateFront() {
     setViewImage('front', blobUrl);
     selectView('front');
 
+    // Afficher les boutons post-génération
+    document.getElementById('syncBtn').classList.remove('hidden');       // TOUJOURS visible après la face
     document.getElementById('lockBtnWrap').classList.remove('hidden');
     document.getElementById('bodyLookBtnWrap').classList.remove('hidden');
     document.getElementById('exportBtnWrap').classList.remove('hidden');
@@ -1398,7 +1417,12 @@ async function generateFront() {
 }
 
 async function generateRest() {
-  if (!imageStore.front || isLoading) return;
+  // Vérifier qu'on a bien une face générée
+  if (!imageStore.front) {
+    alert('Génère d\'abord la vue de face.');
+    return;
+  }
+  if (isLoading) return;
 
   isLoading = true;
   const syncBtn = document.getElementById('syncBtnInner');
@@ -1411,36 +1435,42 @@ async function generateRest() {
     { key: 'back',         label: 'Dos'           }
   ];
 
-  for (const view of views) {
-    showThumbLoading(view.key, 'Génération…');
+  try {
+    for (const view of views) {
+      // Afficher le spinner sur la miniature ET sur la vue principale si sélectionnée
+      showThumbLoading(view.key, 'Génération…');
+      if (currentView === view.key) {
+        document.getElementById('mainViewImg').style.display = 'none';
+        document.getElementById('mainViewLoading').style.display = 'flex';
+        setText('mainLoadingStatus', 'Génération…');
+      }
 
-    // FIX PRINCIPAL : prompt complet avec description de la vue
-    // On passe la photo source originale (pas l'image générée) pour garder la cohérence du visage
-    const prompt = buildViewPrompt(view.key);
+      const prompt = buildViewPrompt(view.key);
 
-    try {
-      const statusCb = (msg) => {
-        const st = document.getElementById('tl-' + view.key)?.querySelector('.thumb-status');
-        if (st) st.textContent = msg;
-        // Si c'est la vue sélectionnée, mettre à jour le spinner principal
-        if (currentView === view.key) setText('mainLoadingStatus', msg);
-      };
+      try {
+        const statusCb = (msg) => {
+          const tl = document.getElementById('tl-' + view.key);
+          const st = tl?.querySelector('.thumb-status');
+          if (st) st.textContent = msg;
+          if (currentView === view.key) setText('mainLoadingStatus', msg);
+        };
 
-      const dataUrl = await callEngine(prompt, basePhotoDataUrl, statusCb);
-      const blobUrl = storeImage(view.key, dataUrl);
-      setViewImage(view.key, blobUrl);
-    } catch (err) {
-      console.error(`Erreur ${view.key}:`, err);
-      // Marquer l'erreur sur la miniature
-      const st = document.getElementById('tl-' + view.key)?.querySelector('.thumb-status');
-      if (st) st.textContent = '❌ Erreur';
+        const dataUrl = await callEngine(prompt, basePhotoDataUrl, statusCb);
+        const blobUrl = storeImage(view.key, dataUrl);
+        setViewImage(view.key, blobUrl);
+      } catch (err) {
+        console.error('Erreur ' + view.key + ':', err);
+        const tl = document.getElementById('tl-' + view.key);
+        const st = tl?.querySelector('.thumb-status');
+        if (st) st.textContent = '❌ ' + (err.message || 'Erreur');
+      }
     }
+  } finally {
+    isLoading = false;
+    syncBtn.disabled    = false;
+    syncBtn.textContent = 'Relancer 360°';
+    setText('mainLoadingStatus', '');
   }
-
-  isLoading = false;
-  syncBtn.disabled    = false;
-  syncBtn.textContent = 'Synchroniser les vues (360°)';
-  setText('mainLoadingStatus', '');
 }
 
 // ─────────────────────────────────────────────────────────────
