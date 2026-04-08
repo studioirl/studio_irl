@@ -1,0 +1,1499 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Studio Body — 4K Ultra Realistic</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue: #2563eb;
+      --blue-dark: #1d4ed8;
+      --blue-light: #eff6ff;
+      --blue-border: #bfdbfe;
+      --slate-50: #f8fafc;
+      --slate-100: #f1f5f9;
+      --slate-200: #e2e8f0;
+      --slate-300: #cbd5e1;
+      --slate-400: #94a3b8;
+      --slate-500: #64748b;
+      --slate-600: #475569;
+      --slate-700: #334155;
+      --slate-800: #1e293b;
+      --slate-900: #0f172a;
+      --white: #ffffff;
+      --red: #ef4444;
+      --red-soft: #fef2f2;
+      --green: #10b981;
+      --violet: #7c3aed;
+      --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      --shadow-lg: 0 24px 60px rgba(15, 23, 42, 0.12);
+    }
+
+    html { font-family: 'Inter', sans-serif; background: var(--slate-50); color: var(--slate-900); }
+    body { min-height: 100vh; overflow-x: hidden; background: var(--slate-50); }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--slate-100); }
+    ::-webkit-scrollbar-thumb { background: var(--slate-300); border-radius: 999px; }
+
+    input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; background: var(--slate-200); border-radius: 999px; cursor: pointer; outline: none; }
+    input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--blue); border: 2px solid white; box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3); }
+
+    .hidden { display: none !important; }
+    .mt-2 { margin-top: 8px; }
+    .mt-3 { margin-top: 12px; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.45} }
+
+    /* SPLASH */
+    #splash {
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 32px 20px; text-align: center;
+      background: radial-gradient(circle at top, rgba(37,99,235,0.07), transparent 35%), var(--slate-50);
+    }
+
+    .splash-card {
+      width: 100%; max-width: 640px;
+      background: white; border: 1px solid var(--slate-200); border-radius: 32px;
+      padding: 40px 32px; box-shadow: var(--shadow-lg);
+    }
+
+    .splash-logo {
+      width: 74px; height: 74px; border-radius: 24px; background: var(--blue); color: white;
+      font-size: 26px; font-weight: 800; display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 24px; box-shadow: 0 16px 40px rgba(37, 99, 235, 0.28);
+    }
+
+    .splash-title { font-size: clamp(32px, 6vw, 48px); font-weight: 300; letter-spacing: -0.03em; margin-bottom: 12px; color: var(--slate-800); }
+    .splash-title span { color: var(--blue); font-weight: 700; }
+    .splash-desc { color: var(--slate-500); font-size: 17px; line-height: 1.7; max-width: 520px; margin: 0 auto 28px; }
+
+    /* Engine selector */
+    .engine-row {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+      max-width: 420px; margin: 0 auto 20px;
+    }
+    .engine-btn {
+      padding: 14px 10px; border: 2px solid var(--slate-200); border-radius: 14px;
+      background: var(--blue-light); cursor: pointer; font-family: 'Inter', sans-serif;
+      font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em;
+      color: var(--slate-500); transition: all .2s; display: flex; flex-direction: column; align-items: center; gap: 4px;
+    }
+    .engine-btn:hover { border-color: var(--blue); }
+    .engine-btn.active-vertex { background: var(--slate-900); border-color: var(--slate-900); color: white; }
+    .engine-btn.active-kie { background: linear-gradient(135deg, var(--violet), #4338ca); border-color: var(--violet); color: white; }
+    .engine-btn .engine-sub { font-size: 9px; opacity: .7; font-weight: 600; }
+
+    .api-section { width: 100%; max-width: 420px; margin: 0 auto 20px; display: flex; flex-direction: column; gap: 8px; text-align: left; }
+    .api-label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .18em; color: var(--slate-500); }
+    .api-input { width: 100%; padding: 15px 16px; border: 1px solid var(--slate-200); background: white; border-radius: 14px; outline: none; font-size: 14px; font-family: monospace; transition: .2s; }
+    .api-input:focus { border-color: var(--blue); box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.10); }
+    .vertex-note { font-size: 11px; color: var(--blue); font-weight: 700; }
+
+    .splash-cta { border: none; border-radius: 16px; background: var(--blue); color: white; padding: 16px 28px; font-size: 14px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; box-shadow: 0 8px 24px rgba(37, 99, 235, 0.24); transition: .2s; }
+    .splash-cta:hover { background: var(--blue-dark); transform: translateY(-1px); }
+    .splash-cta:active { transform: scale(.98); }
+
+    #splash-error { margin-top: 12px; font-size: 12px; font-weight: 700; color: var(--red); display: none; }
+
+    /* GENDER */
+    #genderSelect { min-height: 100vh; display: none; align-items: center; justify-content: center; padding: 28px; background: var(--slate-50); }
+    #genderSelect.visible { display: flex; }
+
+    .gender-wrap { width: 100%; max-width: 980px; }
+    .gender-head { text-align: center; margin-bottom: 36px; }
+    .gender-title { font-size: clamp(30px, 5vw, 42px); font-weight: 300; color: var(--slate-800); margin-bottom: 10px; }
+    .gender-title span { color: var(--blue); font-weight: 700; }
+    .gender-desc { color: var(--slate-500); font-size: 17px; line-height: 1.6; }
+
+    .gender-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
+    @media (max-width: 700px) { .gender-grid { grid-template-columns: 1fr; } }
+
+    .gender-card { border: none; background: white; border-radius: 28px; overflow: hidden; cursor: pointer; box-shadow: var(--shadow); transition: .3s; text-align: left; }
+    .gender-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-lg); }
+    .gender-card-img { aspect-ratio: 3 / 4; overflow: hidden; background: var(--slate-100); }
+    .gender-card-img img { width: 100%; height: 100%; object-fit: cover; display: block; filter: grayscale(.2); transition: .5s; }
+    .gender-card:hover .gender-card-img img { transform: scale(1.05); filter: grayscale(0); }
+    .gender-card-body { padding: 22px; }
+    .gender-card-body h2 { font-size: 28px; font-weight: 800; color: var(--slate-800); margin-bottom: 8px; }
+    .gender-card-body p { color: var(--slate-500); line-height: 1.6; }
+
+    /* APP */
+    #mainApp { display: none; min-height: 100vh; flex-direction: column; background: var(--slate-50); }
+    #mainApp.visible { display: flex; }
+
+    .app-header {
+      height: 68px; background: rgba(255,255,255,.92); backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--slate-200); display: flex; align-items: center;
+      justify-content: space-between; padding: 0 20px; position: sticky; top: 0; z-index: 30;
+    }
+
+    .app-brand { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+    .app-brand-title { font-size: 18px; font-weight: 300; color: var(--slate-800); }
+    .app-brand-title span { color: var(--blue); font-weight: 700; }
+    .app-brand-badge { font-size: 9px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; color: var(--slate-500); background: var(--slate-100); padding: 4px 10px; border-radius: 999px; }
+
+    .header-right { display: flex; align-items: center; gap: 10px; }
+    .gender-pill { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .16em; color: var(--blue); background: var(--blue-light); border: 1px solid var(--blue-border); padding: 7px 12px; border-radius: 999px; }
+    .engine-pill { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; padding: 7px 12px; border-radius: 999px; }
+    .engine-pill-vertex { color: var(--slate-700); background: var(--slate-100); border: 1px solid var(--slate-200); }
+    .engine-pill-kie { color: white; background: var(--violet); border: 1px solid var(--violet); }
+
+    .status-live { display: flex; align-items: center; gap: 8px; font-size: 10px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: var(--slate-500); }
+    .status-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--green); box-shadow: 0 0 12px rgba(16,185,129,.45); animation: pulse 2s infinite; }
+
+    .app-body { display: flex; flex: 1; min-height: 0; }
+
+    aside { width: 400px; background: white; border-right: 1px solid var(--slate-200); display: flex; flex-direction: column; min-height: 0; }
+    .sidebar-content { flex: 1; overflow-y: auto; padding: 22px; }
+    .sidebar-footer { padding: 18px 22px; border-top: 1px solid var(--slate-200); background: var(--slate-50); }
+
+    .section-title { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .18em; color: var(--slate-500); margin: 24px 0 14px; display: flex; align-items: center; justify-content: space-between; }
+    .section-title:first-child { margin-top: 0; }
+    .info-btn { border: none; background: none; cursor: pointer; color: var(--blue); font-size: 10px; font-weight: 800; text-decoration: underline; }
+
+    .upload-zone { aspect-ratio: 1; border: 2px dashed var(--slate-200); border-radius: 24px; background: var(--slate-50); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; cursor: pointer; transition: .2s; }
+    .upload-zone:hover { border-color: var(--blue); background: white; }
+    .upload-zone.has-img { border-style: solid; border-color: var(--blue-border); background: var(--blue-light); }
+    .upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .upload-placeholder { text-align: center; padding: 20px; }
+    .upload-placeholder svg { width: 42px; height: 42px; color: var(--slate-400); display: block; margin: 0 auto 10px; }
+    .upload-placeholder p { font-size: 12px; font-weight: 700; color: var(--slate-500); }
+    .upload-zone img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: none; border-radius: 22px; }
+
+    .btn-grid-2, .btn-grid-4, .btn-grid-5 { display: grid; gap: 8px; }
+    .btn-grid-2 { grid-template-columns: repeat(2, 1fr); }
+    .btn-grid-4 { grid-template-columns: repeat(4, 1fr); }
+    .btn-grid-5 { grid-template-columns: repeat(5, 1fr); }
+
+    .sel-btn { padding: 10px 8px; border-radius: 12px; border: 1px solid var(--slate-200); background: white; color: var(--slate-600); cursor: pointer; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; transition: .2s; }
+    .sel-btn:hover { border-color: var(--blue-border); color: var(--blue); }
+    .sel-btn.active { background: var(--blue); border-color: var(--blue); color: white; box-shadow: 0 6px 16px rgba(37,99,235,.24); }
+
+    .num-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .num-field label, .chest-label { display: block; margin-bottom: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--slate-500); }
+    .num-input, .chest-select { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid var(--slate-200); background: var(--slate-50); text-align: center; font-weight: 700; outline: none; }
+    .num-input:focus, .chest-select:focus { border-color: var(--blue); background: white; }
+    .num-input.blue { color: var(--blue); }
+
+    .origins-btn { width: 100%; padding: 13px; border: none; border-radius: 14px; background: var(--slate-900); color: white; cursor: pointer; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .18em; transition: .2s; }
+    .origins-btn:hover { background: var(--slate-800); }
+    .origins-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    .slider-row { margin-bottom: 18px; }
+    .slider-header { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 8px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+    .slider-header .lbl { color: var(--slate-500); }
+    .slider-header .val { color: var(--slate-700); }
+    .slider-header .val-blue { color: var(--blue); }
+
+    .chest-box { background: var(--blue-light); border: 1px solid var(--blue-border); border-radius: 18px; padding: 16px; }
+    .chest-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+
+    .stretch-box { background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: 18px; padding: 16px; }
+    .stretch-zone { background: white; border: 1px solid var(--slate-200); border-radius: 14px; padding: 12px; margin-bottom: 10px; }
+    .stretch-zone:last-child { margin-bottom: 0; }
+    .stretch-zone-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .zone-toggle { border: none; padding: 7px 12px; border-radius: 10px; cursor: pointer; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; }
+    .zone-toggle.on { background: var(--blue); color: white; }
+    .zone-toggle.off { background: var(--slate-100); color: var(--slate-500); }
+    .intensity-btns { display: flex; gap: 6px; }
+    .int-btn { flex: 1; padding: 6px 4px; border-radius: 8px; border: 1px solid var(--slate-200); background: white; color: var(--slate-500); cursor: pointer; font-size: 8px; font-weight: 800; text-transform: uppercase; }
+    .int-btn.active { background: var(--slate-900); color: white; border-color: var(--slate-900); }
+
+    .action-btn { width: 100%; border: none; border-radius: 18px; padding: 16px; cursor: pointer; transition: .2s; font-size: 13px; font-weight: 800; letter-spacing: .06em; }
+    .action-btn.primary { background: var(--blue); color: white; box-shadow: 0 10px 24px rgba(37,99,235,.24); }
+    .action-btn.primary:hover { background: var(--blue-dark); }
+    .action-btn.primary:disabled { background: var(--slate-300); box-shadow: none; cursor: not-allowed; }
+    .action-btn.dark { background: var(--slate-900); color: white; }
+    .action-btn.dark:hover { background: black; }
+    .action-btn.dark:disabled { background: var(--slate-300); cursor: not-allowed; }
+    .action-btn.outline { background: white; border: 1px solid var(--slate-200); color: var(--slate-600); }
+    .action-btn.outline:hover { background: var(--slate-50); }
+    .action-btn.body-look { background: var(--blue-light); color: var(--blue); border: 1px solid var(--blue-border); }
+    .action-btn.lock-on { background: var(--red); color: white; }
+    .action-btn.lock-off { background: var(--blue-light); color: var(--blue); border: 1px solid var(--blue-border); }
+    .action-btn-sm { padding: 12px 14px; font-size: 10px; text-transform: uppercase; letter-spacing: .16em; }
+    .flex-row { display: flex; align-items: center; justify-content: center; gap: 8px; }
+
+    .main-content { flex: 1; overflow-y: auto; padding: 28px; min-width: 0; }
+    .images-wrap { max-width: 980px; margin: 0 auto; }
+
+    .empty-state { aspect-ratio: 4 / 3; border: 2px dashed var(--slate-200); border-radius: 40px; background: white; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; text-align: center; }
+    .empty-icon { width: 96px; height: 96px; border-radius: 24px; background: var(--blue-light); border: 1px solid var(--blue-border); display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
+    .empty-icon svg { width: 40px; height: 40px; color: var(--blue); }
+    .empty-title { font-size: 22px; font-weight: 700; margin-bottom: 8px; color: var(--slate-800); }
+    .empty-desc { color: var(--slate-500); line-height: 1.7; max-width: 420px; }
+
+    .main-view-wrap { position: relative; max-width: 500px; margin: 0 auto 40px; }
+    .main-view { aspect-ratio: 3 / 4; border-radius: 34px; overflow: hidden; background: white; box-shadow: var(--shadow-lg); border: 1px solid var(--slate-200); }
+    .main-view img { width: 100%; height: 100%; object-fit: cover; display: none; }
+    .main-view-loading { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: white; color: var(--slate-500); text-align: center; padding: 24px; }
+    .spin { width: 64px; height: 64px; border-radius: 50%; border: 4px solid var(--blue-border); border-top-color: var(--blue); animation: spin 1s linear infinite; margin-bottom: 18px; }
+
+    .loading-status { font-size: 11px; font-weight: 700; color: var(--slate-400); margin-top: 8px; font-style: italic; }
+
+    .main-view-badge { position: absolute; top: 22px; left: 50%; transform: translateX(-50%); background: rgba(37,99,235,.94); color: white; padding: 9px 18px; border-radius: 999px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .16em; white-space: nowrap; box-shadow: 0 10px 24px rgba(37,99,235,.22); }
+
+    .dl-overlay-btn { position: absolute; right: 22px; bottom: 22px; width: 52px; height: 52px; border: none; border-radius: 50%; background: rgba(255,255,255,.94); color: var(--blue); cursor: pointer; box-shadow: var(--shadow); opacity: 0; transition: .25s; display: flex; align-items: center; justify-content: center; }
+    .main-view-wrap:hover .dl-overlay-btn { opacity: 1; }
+    .dl-overlay-btn svg { width: 22px; height: 22px; }
+
+    .thumbs-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; max-width: 820px; margin: 0 auto; }
+    .thumb-wrap { display: flex; flex-direction: column; gap: 10px; }
+    .thumb { aspect-ratio: 3 / 4; border-radius: 18px; background: white; border: 2px solid transparent; box-shadow: var(--shadow); overflow: hidden; position: relative; cursor: pointer; transition: .25s; }
+    .thumb.active { border-color: var(--blue); transform: scale(1.03); box-shadow: 0 0 0 4px rgba(37,99,235,.1), var(--shadow); }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; display: none; }
+    .thumb-loading { width: 100%; height: 100%; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 14px; color: var(--slate-400); text-align: center; }
+    .thumb-spin { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--blue-border); border-top-color: var(--blue); animation: spin 1s linear infinite; margin-bottom: 10px; }
+    .thumb-status { font-size: 9px; font-weight: 700; color: var(--slate-400); margin-top: 4px; }
+
+    .thumb-dl-btn { position: absolute; top: 8px; right: 8px; width: 34px; height: 34px; border: none; border-radius: 10px; background: rgba(255,255,255,.95); color: var(--blue); cursor: pointer; display: none; align-items: center; justify-content: center; box-shadow: var(--shadow); }
+    .thumb-dl-btn svg { width: 16px; height: 16px; }
+
+    .view-label { text-align: center; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; }
+    .view-label.active { color: var(--blue); }
+    .view-label.inactive { color: var(--slate-500); }
+
+    /* Erreur banner */
+    .err-banner { background: var(--red-soft); border: 1px solid #fecaca; border-radius: 14px; padding: 12px 16px; display: flex; gap: 10px; align-items: flex-start; margin-top: 12px; }
+    .err-banner p { font-size: 12px; font-weight: 700; color: #b91c1c; line-height: 1.5; }
+
+    .modal-overlay { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 22px; background: rgba(15,23,42,.6); backdrop-filter: blur(8px); }
+    .modal-box { width: 100%; max-width: 720px; max-height: 90vh; overflow: hidden; display: flex; flex-direction: column; background: white; border-radius: 28px; box-shadow: 0 30px 80px rgba(15,23,42,.28); }
+    .modal-header { padding: 22px 26px; border-bottom: 1px solid var(--slate-200); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .modal-header.blue { background: var(--blue); color: white; border-bottom: none; }
+    .modal-title { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; }
+    .modal-close { border: none; background: none; cursor: pointer; padding: 8px; border-radius: 999px; color: inherit; }
+    .modal-header.blue .modal-close { background: rgba(255,255,255,.15); }
+    .modal-header.blue .modal-close:hover { background: rgba(255,255,255,.24); }
+    .modal-close svg { width: 22px; height: 22px; }
+    .modal-body { padding: 28px 30px; overflow-y: auto; }
+    .modal-footer { padding: 20px 24px; background: var(--slate-50); border-top: 1px solid var(--slate-200); }
+
+    .bl-desc { font-size: 18px; font-weight: 600; line-height: 1.6; color: var(--slate-800); margin-bottom: 16px; }
+    .bl-desc span { color: var(--blue); }
+    .bl-list { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+    .bl-list li { display: flex; gap: 10px; color: var(--slate-600); line-height: 1.6; }
+    .bl-info-box { background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: 18px; padding: 20px; margin-bottom: 24px; }
+    .bl-info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 22px; }
+    .bl-col-label { font-size: 12px; font-weight: 800; text-transform: uppercase; margin-bottom: 8px; }
+    .bl-col-label.grey { color: var(--slate-500); }
+    .bl-col-label.blue { color: var(--blue); }
+    .bl-col ul { list-style: none; display: flex; flex-direction: column; gap: 5px; color: var(--slate-600); font-size: 14px; }
+    .bl-center { border: 2px dashed var(--blue-border); border-radius: 18px; padding: 22px; text-align: center; margin-bottom: 22px; }
+    .bl-center p:first-child { color: var(--slate-500); margin-bottom: 8px; font-style: italic; }
+    .bl-center p:last-child { font-size: 20px; font-weight: 800; color: var(--slate-800); }
+    .bl-steps { color: var(--slate-600); line-height: 1.8; font-size: 14px; }
+    .bl-steps .label { display: block; margin-bottom: 8px; font-size: 12px; font-weight: 800; text-transform: uppercase; color: var(--slate-800); }
+
+    .origins-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .origins-list-title, .mix-title { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--slate-500); margin-bottom: 16px; }
+    .region-label { font-size: 12px; font-weight: 800; color: var(--blue); margin-bottom: 8px; }
+    .region-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .origin-tag { border: 1px solid var(--slate-200); background: var(--slate-50); color: var(--slate-600); padding: 6px 12px; border-radius: 10px; font-size: 12px; cursor: pointer; transition: .2s; }
+    .origin-tag:hover { border-color: var(--blue-border); background: white; color: var(--blue); }
+    .mix-box { background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: 18px; padding: 18px; }
+    .mix-item { background: white; border: 1px solid var(--slate-200); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+    .mix-item:last-child { margin-bottom: 0; }
+    .mix-item-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .mix-item-name { font-size: 14px; font-weight: 700; color: var(--slate-700); }
+    .mix-remove { border: none; background: none; color: #f87171; cursor: pointer; padding: 4px; }
+    .mix-remove svg { width: 16px; height: 16px; }
+    .mix-slider-row { display: flex; align-items: center; gap: 14px; }
+    .mix-val { min-width: 44px; text-align: right; font-family: monospace; font-size: 14px; font-weight: 800; color: var(--blue); }
+    .mix-empty { color: var(--slate-500); font-style: italic; font-size: 14px; }
+
+    .modal-btns { display: flex; gap: 14px; }
+    .modal-btn { flex: 1; padding: 12px 20px; border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; transition: .2s; }
+    .modal-btn.cancel { background: white; color: var(--slate-600); border: 1px solid var(--slate-200); }
+    .modal-btn.cancel:hover { background: var(--slate-50); }
+    .modal-btn.apply { background: var(--blue); color: white; border: none; box-shadow: 0 8px 20px rgba(37,99,235,.2); }
+    .modal-btn.apply:hover { background: var(--blue-dark); }
+    .modal-btn.confirm { background: var(--slate-900); color: white; border: none; width: 100%; }
+    .modal-btn.confirm:hover { background: black; }
+
+    @media (max-width: 1100px) { .app-body { flex-direction: column; } aside { width: 100%; border-right: none; border-bottom: 1px solid var(--slate-200); } }
+    @media (max-width: 760px) { .thumbs-grid { grid-template-columns: repeat(2, 1fr); } .num-grid { grid-template-columns: 1fr 1fr 1fr; } .btn-grid-5 { grid-template-columns: repeat(5, 1fr); } .origins-grid, .bl-info-grid { grid-template-columns: 1fr; } .main-content { padding: 20px; } .sidebar-content { padding: 18px; } .sidebar-footer { padding: 16px 18px; } }
+  </style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-card">
+    <div class="splash-logo">SB</div>
+    <h1 class="splash-title">STUDIO <span>BODY</span></h1>
+    <p class="splash-desc">Modélise le corps de ton avatar IA à partir de morphologies humaines réalistes en 4K.</p>
+
+    <p style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.18em;color:var(--slate-500);margin-bottom:12px;">Moteur de génération</p>
+    <div class="engine-row">
+      <button class="engine-btn active-vertex" id="eng-vertex" onclick="selectEngine('vertex')">
+        <span>🔷 Vertex AI</span>
+        <span class="engine-sub">Gemini Flash Image</span>
+      </button>
+      <button class="engine-btn" id="eng-kie" onclick="selectEngine('kie')">
+        <span>🍌 kie.ai</span>
+        <span class="engine-sub">Nano Banana Pro</span>
+      </button>
+    </div>
+
+    <div class="api-section">
+      <label class="api-label" id="apiLabel">Clé API Vertex AI (Express Mode)</label>
+      <input type="password" id="apiKeyInput" class="api-input" placeholder="AIza..." autocomplete="off">
+      <p class="vertex-note" id="apiNote">⚡ Utilise ta clé Vertex Express Mode (commence par AQ…)</p>
+    </div>
+
+    <button class="splash-cta" onclick="enterApp()">Accéder au Studio</button>
+    <p id="splash-error"></p>
+  </div>
+</div>
+
+<!-- GENDER -->
+<div id="genderSelect">
+  <div class="gender-wrap">
+    <div class="gender-head">
+      <h1 class="gender-title">STUDIO <span>BODY</span></h1>
+      <p class="gender-desc">Choisis une base anatomique avant de lancer le studio.</p>
+    </div>
+    <div class="gender-grid">
+      <button class="gender-card" onclick="selectGender('femme')">
+        <div class="gender-card-img">
+          <img src="https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&q=80&w=800" alt="Femme">
+        </div>
+        <div class="gender-card-body"><h2>Femme</h2><p>Morphologie féminine, détails naturels, proportions réalistes.</p></div>
+      </button>
+      <button class="gender-card" onclick="selectGender('homme')">
+        <div class="gender-card-img">
+          <img src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=800" alt="Homme">
+        </div>
+        <div class="gender-card-body"><h2>Homme</h2><p>Structure masculine réaliste, masses et volumes cohérents.</p></div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="mainApp">
+  <header class="app-header">
+    <div class="app-brand" onclick="goGenderSelect()">
+      <span class="app-brand-title">STUDIO <span>BODY</span></span>
+      <span class="app-brand-badge">4K Anatomical</span>
+    </div>
+    <div class="header-right">
+      <span class="gender-pill" id="genderPill">Femme</span>
+      <span class="engine-pill engine-pill-vertex" id="enginePill">Vertex AI</span>
+      <div class="status-live">
+        <span class="status-dot"></span>
+        <span id="statusLabel">Vertex actif</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="app-body">
+    <aside>
+      <div class="sidebar-content">
+        <div class="section-title">Référence Identité</div>
+        <label class="upload-zone" id="uploadZone">
+          <div class="upload-placeholder" id="uploadPlaceholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+            </svg>
+            <p>Visage source</p>
+          </div>
+          <img id="basePhotoPreview" alt="Source">
+          <input type="file" accept="image/*" id="basePhotoInput" onchange="handleBasePhoto(event)">
+        </label>
+
+        <div class="section-title">Biométrie de base</div>
+        <div class="btn-grid-2" style="margin-bottom:16px;">
+          <button class="sel-btn" data-group="bodyType" data-val="mince" onclick="setParam('bodyType','mince')">Mince</button>
+          <button class="sel-btn active" data-group="bodyType" data-val="moyenne" onclick="setParam('bodyType','moyenne')">Moyenne</button>
+          <button class="sel-btn" data-group="bodyType" data-val="surpoids" onclick="setParam('bodyType','surpoids')">Surpoids</button>
+          <button class="sel-btn" data-group="bodyType" data-val="obèse" onclick="setParam('bodyType','obèse')">Obèse</button>
+        </div>
+
+        <div class="num-grid" style="margin-bottom:16px;">
+          <div class="num-field"><label>Âge</label><input type="number" id="p_age" class="num-input" value="28" oninput="params.age=toNum(this.value,28)"></div>
+          <div class="num-field"><label>Taille cm</label><input type="number" id="p_height" class="num-input" value="165" oninput="params.height=toNum(this.value,165)"></div>
+          <div class="num-field"><label>Poids kg</label><input type="number" id="p_weight" class="num-input blue" value="60" oninput="params.weight=toNum(this.value,60)"></div>
+        </div>
+
+        <button class="origins-btn" id="originsBtn" onclick="openOriginsModal()">Mixité des Origines (<span id="originsCount">1</span>)</button>
+
+        <div class="section-title">Morphologie & Sculpture</div>
+        <div class="btn-grid-5" style="margin-bottom:16px;">
+          <button class="sel-btn" data-group="morph" data-val="triangle" onclick="setParam('morphology','triangle')" title="Triangle">▲</button>
+          <button class="sel-btn" data-group="morph" data-val="triangle inversé" onclick="setParam('morphology','triangle inversé')" title="Triangle inversé">▼</button>
+          <button class="sel-btn active" data-group="morph" data-val="X" onclick="setParam('morphology','X')">X</button>
+          <button class="sel-btn" data-group="morph" data-val="H" onclick="setParam('morphology','H')">H</button>
+          <button class="sel-btn" data-group="morph" data-val="O" onclick="setParam('morphology','O')">O</button>
+        </div>
+
+        <div class="slider-row">
+          <div class="slider-header"><span class="lbl">Distribution masse</span><span class="val" id="v_dist">50%</span></div>
+          <input type="range" min="0" max="100" value="50" oninput="params.distribution=+this.value;setText('v_dist',this.value+'%')">
+        </div>
+        <div class="slider-row">
+          <div class="slider-header"><span class="lbl">Taille</span><span class="val" id="v_waist">80 cm</span></div>
+          <input type="range" min="60" max="150" value="80" oninput="params.waistCirc=+this.value;setText('v_waist',this.value+' cm')">
+        </div>
+        <div class="slider-row">
+          <div class="slider-header"><span class="lbl">Hanches</span><span class="val" id="v_hip">95 cm</span></div>
+          <input type="range" min="70" max="160" value="95" oninput="params.hipCirc=+this.value;setText('v_hip',this.value+' cm')">
+        </div>
+        <div class="slider-row">
+          <div class="slider-header"><span class="lbl">Cuisses</span><span class="val" id="v_thigh">58 cm</span></div>
+          <input type="range" min="40" max="95" value="58" oninput="params.thighCirc=+this.value;setText('v_thigh',this.value+' cm')">
+        </div>
+        <div class="slider-row">
+          <div class="slider-header"><span class="lbl">Volume fessier</span><span class="val val-blue" id="v_glut">50/100</span></div>
+          <input type="range" min="0" max="100" value="50" oninput="params.glutealVolume=+this.value;setText('v_glut',this.value+'/100')">
+        </div>
+
+        <div class="section-title">Musculature</div>
+        <div class="btn-grid-2" style="margin-bottom:16px;">
+          <button class="sel-btn" data-group="tone" data-val="souple" onclick="setParam('tone','souple')">Souple</button>
+          <button class="sel-btn active" data-group="tone" data-val="tonique" onclick="setParam('tone','tonique')">Tonique</button>
+          <button class="sel-btn" data-group="tone" data-val="athlétique" onclick="setParam('tone','athlétique')">Athlétique</button>
+          <button class="sel-btn" data-group="tone" data-val="musclé" onclick="setParam('tone','musclé')">Musclé</button>
+        </div>
+
+        <div class="section-title" style="margin-top:0;">Abdominaux</div>
+        <div class="btn-grid-4">
+          <button class="sel-btn active" data-group="abs" data-val="absents" onclick="setParam('absDefinition','absents')">Abs.</button>
+          <button class="sel-btn" data-group="abs" data-val="légèrement visibles" onclick="setParam('absDefinition','légèrement visibles')">Légr.</button>
+          <button class="sel-btn" data-group="abs" data-val="visibles" onclick="setParam('absDefinition','visibles')">Vis.</button>
+          <button class="sel-btn" data-group="abs" data-val="très marqués" onclick="setParam('absDefinition','très marqués')">Marq.</button>
+        </div>
+
+        <div id="chestSection">
+          <div class="section-title">Poitrine</div>
+          <div class="chest-box">
+            <div class="chest-grid">
+              <div>
+                <label class="chest-label">Dos</label>
+                <select class="chest-select" id="p_chestBand" onchange="params.chestBand=toNum(this.value,90)">
+                  <option value="75">75</option><option value="80">80</option><option value="85">85</option>
+                  <option value="90" selected>90</option><option value="95">95</option><option value="100">100</option>
+                  <option value="105">105</option><option value="110">110</option><option value="115">115</option>
+                </select>
+              </div>
+              <div>
+                <label class="chest-label">Bonnet</label>
+                <select class="chest-select" id="p_chestCup" onchange="params.chestCup=this.value">
+                  <option>A</option><option selected>B</option><option>C</option><option>D</option>
+                  <option>E</option><option>F</option><option>G</option><option>H</option><option>I</option><option>J</option>
+                </select>
+              </div>
+            </div>
+            <div class="slider-row" style="margin-bottom:0;">
+              <div class="slider-header"><span class="lbl" style="color:var(--blue)">Projection</span><span class="val val-blue" id="v_chest">50%</span></div>
+              <input type="range" min="0" max="100" value="50" oninput="params.chestVolume=+this.value;setText('v_chest',this.value+'%')">
+            </div>
+          </div>
+        </div>
+
+        <div class="section-title">
+          Réalisme & Marqueurs
+          <button class="info-btn" onclick="openBodyLookModal()">Infos</button>
+        </div>
+        <div class="stretch-box">
+          <div class="slider-row">
+            <div class="slider-header"><span class="lbl">Gravité ventre</span><span class="val val-blue" id="v_grav">0%</span></div>
+            <input type="range" min="0" max="15" id="gravSlider" value="0" oninput="params.bellyGravity=+this.value;setText('v_grav',this.value+'%')">
+          </div>
+          <div class="section-title" style="margin:0 0 12px;">Vergetures</div>
+          <div id="stretchZones"></div>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <div id="exportBtnWrap" class="hidden">
+          <button class="action-btn outline action-btn-sm flex-row" onclick="exportAll()" style="margin-bottom:12px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Exporter pack 4K
+          </button>
+        </div>
+        <div id="bodyLookBtnWrap" class="hidden">
+          <button class="action-btn body-look action-btn-sm flex-row" onclick="openBodyLookModal()" style="margin-bottom:12px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Body Look — Définition
+          </button>
+        </div>
+        <div id="mainGenBtn">
+          <button class="action-btn primary" id="genFrontBtn" onclick="generateFront()">Lancer le rendu (face)</button>
+        </div>
+        <div id="syncBtn" class="hidden mt-3">
+          <button class="action-btn dark" id="syncBtnInner" onclick="generateRest()">Synchroniser les vues (360°)</button>
+        </div>
+        <div id="lockBtnWrap" class="hidden mt-3">
+          <button class="action-btn lock-off" id="lockBtn" onclick="toggleLock()">J'active Body Look (verrouillage)</button>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div class="images-wrap">
+        <div class="empty-state" id="emptyState">
+          <div class="empty-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 16l4.586-4.586a2 2 0 0 1 2.828 0L16 16"/>
+              <path d="M14 14l1.586-1.586a2 2 0 0 1 2.828 0L20 14"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/><rect x="3" y="3" width="18" height="18" rx="2"/>
+            </svg>
+          </div>
+          <h3 class="empty-title">Prêt pour la génération</h3>
+          <p class="empty-desc">Télécharge ta photo source, règle les paramètres biométriques, puis lance la vue de face.</p>
+        </div>
+
+        <div id="imagesArea" class="hidden">
+          <div class="main-view-wrap">
+            <div class="main-view" id="mainView">
+              <div class="main-view-loading" id="mainViewLoading">
+                <div class="spin"></div>
+                <p>Génération du rendu 4K...</p>
+                <p class="loading-status" id="mainLoadingStatus"></p>
+              </div>
+              <img id="mainViewImg" alt="Vue principale">
+            </div>
+            <div class="main-view-badge" id="mainViewBadge">Vue de Face</div>
+            <button class="dl-overlay-btn" onclick="downloadCurrent()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="thumbs-grid">
+            <div class="thumb-wrap">
+              <div class="thumb active" id="thumb-front" onclick="selectView('front')">
+                <div class="thumb-loading" id="tl-front"><div class="thumb-spin"></div></div>
+                <img id="ti-front" alt="Face">
+                <button class="thumb-dl-btn" onclick="event.stopPropagation();downloadView('front')" id="tdl-front">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                </button>
+              </div>
+              <p class="view-label active" id="vl-front">Face</p>
+            </div>
+            <div class="thumb-wrap">
+              <div class="thumb" id="thumb-profileLeft" onclick="selectView('profileLeft')">
+                <div class="thumb-loading" id="tl-profileLeft"><div class="thumb-spin"></div><p class="thumb-status">En attente…</p></div>
+                <img id="ti-profileLeft" alt="Profil gauche">
+                <button class="thumb-dl-btn" onclick="event.stopPropagation();downloadView('profileLeft')" id="tdl-profileLeft">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                </button>
+              </div>
+              <p class="view-label inactive" id="vl-profileLeft">Profil G</p>
+            </div>
+            <div class="thumb-wrap">
+              <div class="thumb" id="thumb-profileRight" onclick="selectView('profileRight')">
+                <div class="thumb-loading" id="tl-profileRight"><div class="thumb-spin"></div><p class="thumb-status">En attente…</p></div>
+                <img id="ti-profileRight" alt="Profil droit">
+                <button class="thumb-dl-btn" onclick="event.stopPropagation();downloadView('profileRight')" id="tdl-profileRight">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                </button>
+              </div>
+              <p class="view-label inactive" id="vl-profileRight">Profil D</p>
+            </div>
+            <div class="thumb-wrap">
+              <div class="thumb" id="thumb-back" onclick="selectView('back')">
+                <div class="thumb-loading" id="tl-back"><div class="thumb-spin"></div><p class="thumb-status">En attente…</p></div>
+                <img id="ti-back" alt="Dos">
+                <button class="thumb-dl-btn" onclick="event.stopPropagation();downloadView('back')" id="tdl-back">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                </button>
+              </div>
+              <p class="view-label inactive" id="vl-back">Dos</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- MODAL: Body Look -->
+<div class="modal-overlay hidden" id="bodyLookModal">
+  <div class="modal-box">
+    <div class="modal-header blue">
+      <h2 class="modal-title">BODY LOOK — DÉFINITION OFFICIELLE</h2>
+      <button class="modal-close" onclick="closeBodyLookModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p class="bl-desc">Body Look est un mode de <span>verrouillage visuel</span>.</p>
+      <ul class="bl-list">
+        <li><span style="color:var(--blue);font-weight:800;">👉</span><span>Il fige le corps et le visage de référence.</span></li>
+        <li><span style="color:var(--blue);font-weight:800;">👉</span><span>Il empêche toute altération d'identité.</span></li>
+        <li><span style="color:var(--blue);font-weight:800;">👉</span><span>Il autorise uniquement la rotation du point de vue.</span></li>
+      </ul>
+      <div class="bl-info-box">
+        <p style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--slate-500);margin-bottom:14px;">À quoi sert Body Look</p>
+        <div class="bl-info-grid">
+          <div class="bl-col">
+            <p class="bl-col-label grey">Ce qui ne change jamais</p>
+            <ul><li>• Le visage</li><li>• La coiffure</li><li>• Les traits</li><li>• Les proportions validées</li></ul>
+          </div>
+          <div class="bl-col">
+            <p class="bl-col-label blue">Ce qui change</p>
+            <ul><li>• L'angle</li><li>• La vue</li><li>• La perspective</li></ul>
+          </div>
+        </div>
+      </div>
+      <div class="bl-center">
+        <p>On ne recrée pas un nouveau corps</p>
+        <p>👉 On observe le même corps sous plusieurs angles</p>
+      </div>
+      <div class="bl-steps">
+        <span class="label">Logique d'utilisation</span>
+        <p><strong>Étape 1</strong> — Génération de la vue face.</p>
+        <p><strong>Étape 2</strong> — Validation utilisateur.</p>
+        <p><strong>Étape 3</strong> — Activation de Body Look.</p>
+        <p><strong>Étape 4</strong> — Rotation 360° du même corps.</p>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="modal-btn confirm" onclick="closeBodyLookModal()">J'ai compris</button></div>
+  </div>
+</div>
+
+<!-- MODAL: Origins -->
+<div class="modal-overlay hidden" id="originsModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title" style="color:var(--slate-800);">Mode Métissage</h2>
+        <p style="font-size:14px;color:var(--slate-500);margin-top:4px;">Fusionne jusqu'à 3 origines.</p>
+      </div>
+      <button class="modal-close" onclick="closeOriginsModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="origins-grid">
+        <div><p class="origins-list-title">Origines disponibles</p><div id="originsListEl"></div></div>
+        <div class="mix-box"><p class="mix-title">Pondération du mix</p><div id="mixItems"><p class="mix-empty">Sélectionne au moins une origine…</p></div></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <div class="modal-btns">
+        <button class="modal-btn cancel" onclick="closeOriginsModal()">Annuler</button>
+        <button class="modal-btn apply" onclick="applyOrigins()">Appliquer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────
+// CONFIGURATION
+// ─────────────────────────────────────────────────────────────
+const VERTEX_MODEL = 'gemini-3.1-flash-image-preview';
+const KIE_MODEL    = 'nano-banana-2';
+
+const ORIGINS_LIST = {
+  'Afrique': ['Afrique Subsaharienne', "Afrique de l'Ouest", "Afrique de l'Est"],
+  'Europe': ['Nordique', 'Est-Européen', 'Ouest-Européen', 'Méditerranéen'],
+  'Moyen-Orient': ['Oriental', 'Nordique-Moyen-Orient', 'Nord-Africain', 'Arabe'],
+  'Asie': ['Est-asiatique', 'Sud-asiatique', 'Sud-Est asiatique'],
+  'Amériques': ['Afro-descendant', 'Latino-américain', 'Native américain']
+};
+
+const STRETCH_ZONES = ['ventre', 'hanches', 'cuisses', 'fesses', 'bras'];
+
+// ─────────────────────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────────────────────
+let API_KEY   = '';
+let ENGINE    = 'vertex'; // 'vertex' | 'kie'
+let gender    = 'femme';
+let isLocked  = false;
+let isLoading = false;
+let basePhotoDataUrl = null;  // data URL brut pour l'envoi API
+let currentView = 'front';
+let tempOrigins = [];
+
+// Stockage Blob (évite les problèmes mémoire Safari avec les data URLs)
+// key: view name → { blobUrl, dataUrl }
+const imageStore = { front: null, profileLeft: null, profileRight: null, back: null };
+
+const viewLabels = {
+  front: 'Vue de Face',
+  profileLeft: 'Profil Gauche',
+  profileRight: 'Profil Droit',
+  back: 'Vue de Dos'
+};
+
+const params = {
+  age: 28, height: 165, weight: 60,
+  bodyType: 'moyenne', morphology: 'X',
+  distribution: 50, glutealVolume: 50,
+  origins: [{ origin: 'Méditerranéen', weight: 100 }],
+  tone: 'tonique', waistCirc: 80, hipCirc: 95, thighCirc: 58,
+  chestBand: 90, chestCup: 'B', chestVolume: 50,
+  absDefinition: 'absents', bellyGravity: 0, stretchMarks: []
+};
+
+// ─────────────────────────────────────────────────────────────
+// UTILITAIRES
+// ─────────────────────────────────────────────────────────────
+function setText(id, value) { const el = document.getElementById(id); if (el) el.textContent = value; }
+function toNum(v, fb = 0) { const n = Number(v); return Number.isFinite(n) ? n : fb; }
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function sanitizeText(str) { return String(str ?? '').replace(/[<>]/g, ''); }
+
+function dataUrlToBlob(dataUrl) {
+  const [header, b64] = dataUrl.split(',');
+  const mime = header.match(/:(.*?);/)[1];
+  const raw = atob(b64);
+  const arr = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+  return new Blob([arr], { type: mime });
+}
+
+function storeImage(view, dataUrl) {
+  // Révoquer l'ancien blob si existant
+  if (imageStore[view]?.blobUrl) {
+    try { URL.revokeObjectURL(imageStore[view].blobUrl); } catch(_) {}
+  }
+  const blob = dataUrlToBlob(dataUrl);
+  const blobUrl = URL.createObjectURL(blob);
+  imageStore[view] = { blobUrl, dataUrl };
+  return blobUrl;
+}
+
+function getImageUrl(view) {
+  return imageStore[view]?.blobUrl || null;
+}
+
+function getImageDataUrl(view) {
+  return imageStore[view]?.dataUrl || null;
+}
+
+// ─────────────────────────────────────────────────────────────
+// ENGINE SELECTOR (splash)
+// ─────────────────────────────────────────────────────────────
+function selectEngine(eng) {
+  ENGINE = eng;
+  document.getElementById('eng-vertex').className = 'engine-btn' + (eng === 'vertex' ? ' active-vertex' : '');
+  document.getElementById('eng-kie').className    = 'engine-btn' + (eng === 'kie'    ? ' active-kie'    : '');
+
+  const lbl  = document.getElementById('apiLabel');
+  const note = document.getElementById('apiNote');
+  const inp  = document.getElementById('apiKeyInput');
+
+  if (eng === 'vertex') {
+    lbl.textContent  = 'Clé API Vertex AI (Express Mode)';
+    note.textContent = '⚡ Utilise ta clé Vertex Express Mode (commence par AQ…)';
+    inp.placeholder  = 'AIza...';
+  } else {
+    lbl.textContent  = 'Clé API kie.ai';
+    note.textContent = '🍌 Clé disponible sur kie.ai/api-key';
+    inp.placeholder  = 'kie_...';
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// SPLASH / GENDER
+// ─────────────────────────────────────────────────────────────
+function enterApp() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  const err = document.getElementById('splash-error');
+  if (!key) {
+    err.textContent = 'Veuillez entrer votre clé API.';
+    err.style.display = 'block';
+    return;
+  }
+  API_KEY = key;
+  err.style.display = 'none';
+  document.getElementById('splash').style.display = 'none';
+  document.getElementById('genderSelect').classList.add('visible');
+}
+
+document.getElementById('apiKeyInput').addEventListener('keydown', e => { if (e.key === 'Enter') enterApp(); });
+
+function selectGender(g) {
+  gender = g;
+  document.getElementById('genderSelect').classList.remove('visible');
+  document.getElementById('mainApp').classList.add('visible');
+  document.getElementById('genderPill').textContent = g === 'femme' ? 'Femme' : 'Homme';
+  document.getElementById('chestSection').style.display = g === 'femme' ? 'block' : 'none';
+
+  // Pill moteur
+  const pill = document.getElementById('enginePill');
+  if (ENGINE === 'kie') {
+    pill.textContent = 'kie.ai';
+    pill.className = 'engine-pill engine-pill-kie';
+    document.getElementById('statusLabel').textContent = 'kie.ai actif';
+  } else {
+    pill.textContent = 'Vertex AI';
+    pill.className = 'engine-pill engine-pill-vertex';
+    document.getElementById('statusLabel').textContent = 'Vertex actif';
+  }
+
+  renderStretchZones();
+  updateGravityMax();
+}
+
+function goGenderSelect() {
+  document.getElementById('mainApp').classList.remove('visible');
+  document.getElementById('genderSelect').classList.add('visible');
+  resetImages();
+  isLocked = false;
+  updateLockUI();
+}
+
+// ─────────────────────────────────────────────────────────────
+// PARAMÈTRES
+// ─────────────────────────────────────────────────────────────
+function setParam(key, value) {
+  if (isLocked) return;
+  params[key] = value;
+  const groupMap = { bodyType: 'bodyType', morphology: 'morph', tone: 'tone', absDefinition: 'abs' };
+  const group = groupMap[key];
+  if (group) {
+    document.querySelectorAll(`[data-group="${group}"]`).forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.val === value);
+    });
+  }
+  if (key === 'bodyType') updateGravityMax();
+}
+
+function updateGravityMax() {
+  const slider = document.getElementById('gravSlider');
+  if (!slider) return;
+  const max = params.bodyType === 'obèse' ? 100 : params.bodyType === 'surpoids' ? 65 : 15;
+  slider.max = String(max);
+  if (toNum(slider.value) > max) { slider.value = String(max); params.bellyGravity = max; setText('v_grav', `${max}%`); }
+}
+
+function handleBasePhoto(event) {
+  if (isLocked) return;
+  const file = event.target.files?.[0];
+  if (!file || !file.type.startsWith('image/')) { alert("Charge une image valide."); return; }
+  const reader = new FileReader();
+  reader.onload = () => {
+    basePhotoDataUrl = reader.result;
+    document.getElementById('uploadZone').classList.add('has-img');
+    document.getElementById('uploadPlaceholder').style.display = 'none';
+    const img = document.getElementById('basePhotoPreview');
+    img.src = basePhotoDataUrl;
+    img.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+// ─────────────────────────────────────────────────────────────
+// STRETCH ZONES
+// ─────────────────────────────────────────────────────────────
+function renderStretchZones() {
+  const container = document.getElementById('stretchZones');
+  container.innerHTML = STRETCH_ZONES.map(zone => {
+    const mark = params.stretchMarks.find(m => m.zone === zone);
+    return `
+      <div class="stretch-zone">
+        <div class="stretch-zone-header">
+          <button class="zone-toggle ${mark ? 'on' : 'off'}" onclick="toggleStretchZone('${zone}')">${zone}</button>
+        </div>
+        ${mark ? `<div class="intensity-btns">
+          ${['légère','modérée','marquée'].map(level =>
+            `<button class="int-btn ${mark.intensity === level ? 'active' : ''}" onclick="setStretchIntensity('${zone}','${level}')">${level}</button>`
+          ).join('')}
+        </div>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+function toggleStretchZone(zone) {
+  if (isLocked) return;
+  const index = params.stretchMarks.findIndex(m => m.zone === zone);
+  if (index >= 0) params.stretchMarks.splice(index, 1);
+  else params.stretchMarks.push({ zone, intensity: 'modérée' });
+  renderStretchZones();
+}
+
+function setStretchIntensity(zone, intensity) {
+  if (isLocked) return;
+  const mark = params.stretchMarks.find(m => m.zone === zone);
+  if (mark) { mark.intensity = intensity; renderStretchZones(); }
+}
+
+// ─────────────────────────────────────────────────────────────
+// LOCK
+// ─────────────────────────────────────────────────────────────
+function toggleLock() {
+  isLocked = !isLocked;
+  updateLockUI();
+}
+
+function updateLockUI() {
+  const lockBtn = document.getElementById('lockBtn');
+  const syncBtn = document.getElementById('syncBtn');
+  const genFrontBtn = document.getElementById('genFrontBtn');
+
+  lockBtn.className = 'action-btn ' + (isLocked ? 'lock-on' : 'lock-off');
+  lockBtn.textContent = isLocked ? 'Déverrouiller les paramètres' : "J'active Body Look (verrouillage)";
+
+  document.querySelectorAll('aside input, aside select, aside button:not(#lockBtn):not(#originsBtn):not([onclick="openBodyLookModal()"])').forEach(el => {
+    if (isLocked) el.setAttribute('disabled', 'disabled');
+    else el.removeAttribute('disabled');
+  });
+
+  if (isLocked) { genFrontBtn.setAttribute('disabled', 'disabled'); syncBtn.classList.remove('hidden'); }
+  else { genFrontBtn.removeAttribute('disabled'); syncBtn.classList.add('hidden'); }
+}
+
+// ─────────────────────────────────────────────────────────────
+// IMAGE UI
+// ─────────────────────────────────────────────────────────────
+function showImagesArea() {
+  document.getElementById('emptyState').classList.add('hidden');
+  document.getElementById('imagesArea').classList.remove('hidden');
+}
+
+function resetImages() {
+  // Révoquer blobs
+  Object.keys(imageStore).forEach(k => {
+    if (imageStore[k]?.blobUrl) { try { URL.revokeObjectURL(imageStore[k].blobUrl); } catch(_) {} }
+    imageStore[k] = null;
+  });
+
+  ['front','profileLeft','profileRight','back'].forEach(view => {
+    const img = document.getElementById('ti-' + view);
+    const tl  = document.getElementById('tl-' + view);
+    const dl  = document.getElementById('tdl-' + view);
+    img.style.display = 'none'; img.src = '';
+    tl.style.display = view === 'front' ? 'flex' : 'none';
+    dl.style.display = 'none';
+    // Remettre le statut d'attente sur les vues secondaires
+    const st = tl.querySelector('.thumb-status');
+    if (st) st.textContent = 'En attente…';
+  });
+
+  const mainImg     = document.getElementById('mainViewImg');
+  const mainLoading = document.getElementById('mainViewLoading');
+  mainImg.style.display = 'none'; mainImg.src = '';
+  mainLoading.style.display = 'flex';
+  setText('mainLoadingStatus', '');
+
+  document.getElementById('imagesArea').classList.add('hidden');
+  document.getElementById('emptyState').classList.remove('hidden');
+  document.getElementById('syncBtn').classList.add('hidden');
+  document.getElementById('lockBtnWrap').classList.add('hidden');
+  document.getElementById('bodyLookBtnWrap').classList.add('hidden');
+  document.getElementById('exportBtnWrap').classList.add('hidden');
+  selectView('front');
+}
+
+function setViewImage(view, blobUrl) {
+  const img = document.getElementById('ti-' + view);
+  const tl  = document.getElementById('tl-' + view);
+  const dl  = document.getElementById('tdl-' + view);
+  img.src = blobUrl; img.style.display = 'block';
+  tl.style.display = 'none';
+  dl.style.display = 'flex';
+
+  if (currentView === view) {
+    const mainImg     = document.getElementById('mainViewImg');
+    const mainLoading = document.getElementById('mainViewLoading');
+    mainImg.src = blobUrl; mainImg.style.display = 'block';
+    mainLoading.style.display = 'none';
+  }
+}
+
+function showThumbLoading(view, statusText = 'Génération…') {
+  const tl = document.getElementById('tl-' + view);
+  if (tl) {
+    tl.style.display = 'flex';
+    const st = tl.querySelector('.thumb-status');
+    if (st) st.textContent = statusText;
+  }
+}
+
+function selectView(view) {
+  currentView = view;
+  ['front','profileLeft','profileRight','back'].forEach(v => {
+    document.getElementById('thumb-' + v).classList.toggle('active', v === view);
+    document.getElementById('vl-' + v).className = 'view-label ' + (v === view ? 'active' : 'inactive');
+  });
+  setText('mainViewBadge', viewLabels[view]);
+
+  const mainImg     = document.getElementById('mainViewImg');
+  const mainLoading = document.getElementById('mainViewLoading');
+  const url         = getImageUrl(view);
+  if (url) { mainImg.src = url; mainImg.style.display = 'block'; mainLoading.style.display = 'none'; }
+  else { mainImg.style.display = 'none'; mainLoading.style.display = 'flex'; }
+}
+
+// ─────────────────────────────────────────────────────────────
+// DOWNLOAD (Safari-safe via Blob)
+// ─────────────────────────────────────────────────────────────
+function downloadBlobUrl(blobUrl, filename) {
+  const a = document.createElement('a');
+  a.href = blobUrl; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+function downloadCurrent() {
+  const url = getImageUrl(currentView);
+  if (url) downloadBlobUrl(url, `studio-body-${currentView}.png`);
+}
+
+function downloadView(view) {
+  const url = getImageUrl(view);
+  if (url) downloadBlobUrl(url, `studio-body-${view}.png`);
+}
+
+function exportAll() {
+  Object.entries(imageStore).forEach(([key, val], i) => {
+    if (val?.blobUrl) setTimeout(() => downloadBlobUrl(val.blobUrl, `studio-body-${key}.png`), i * 300);
+  });
+}
+
+// ─────────────────────────────────────────────────────────────
+// PROMPT BUILDERS
+// ─────────────────────────────────────────────────────────────
+function getBodyTypeSignature() {
+  switch (params.bodyType) {
+    case 'mince':   return "SILHOUETTE MINCE : structure osseuse légère, faible masse graisseuse, lignes fines.";
+    case 'moyenne': return "SILHOUETTE MOYENNE : équilibre naturel entre muscle et masse adipeuse.";
+    case 'surpoids':return "SILHOUETTE SURPOIDS : volumes généreux, courbes marquées, section médiane élargie.";
+    case 'obèse':   return "SILHOUETTE OBÈSE : volumes massifs, abdomen proéminent, plis naturels visibles.";
+    default:        return "SILHOUETTE NATURELLE.";
+  }
+}
+
+function buildStretchPrompt() {
+  if (!params.stretchMarks.length) return "PEAU : sans vergetures visibles.";
+  return `VERGETURES :\n${params.stretchMarks.map(m => `- ${m.zone} : intensité ${m.intensity}`).join('\n')}\nAspect fin, irrégulier, jamais symétrique.`;
+}
+
+function getGlutealDesc() {
+  const v = params.glutealVolume;
+  if (v >= 80) return "Fessier très développé, projection forte, volume net.";
+  if (v >= 60) return "Fessier développé, projection visible, volume ferme.";
+  if (v >= 40) return "Fessier modéré, forme naturelle.";
+  return "Fessier discret, projection faible, forme compacte.";
+}
+
+function buildBodyPrompt() {
+  const originString = params.origins.map(i => `${i.origin} (${i.weight}%)`).join(', ');
+  const chestInfo = gender === 'femme'
+    ? `Poitrine : taille ${params.chestBand}${params.chestCup}, projection ${params.chestVolume}%.`
+    : '';
+  const gravityInfo = params.bellyGravity > 0
+    ? `Gravité abdominale : ${params.bellyGravity}%. Ptose naturelle des tissus.`
+    : 'Abdomen : sans effet notable de gravité.';
+
+  return `
+BIO :
+- Sexe : ${gender}
+- Âge : ${params.age} ans
+- Taille : ${params.height} cm
+- Poids : ${params.weight} kg
+- Origines : ${originString}
+
+MORPHOLOGIE :
+- Type corporel : ${params.bodyType}
+- Signature : ${getBodyTypeSignature()}
+- Forme générale : ${params.morphology}
+- Distribution masse : ${params.distribution}%
+- Tour de taille : ${params.waistCirc} cm
+- Hanches : ${params.hipCirc} cm
+- Cuisses : ${params.thighCirc} cm
+- Tonicité : ${params.tone}
+- ${getGlutealDesc()}
+- Abdominaux : ${params.absDefinition}
+- ${gravityInfo}
+- ${buildStretchPrompt()}
+${chestInfo}
+
+TENUE :
+${gender === 'femme' ? "Brassière nude et legging nude ajusté." : "Boxer ou short nude simple."}
+`;
+}
+
+/**
+ * Construit le prompt complet pour une vue donnée.
+ * FIX : les vues secondaires utilisent le prompt complet (pas l'image front comme référence)
+ *       car l'API Vertex image génère à partir du texte — renvoyer l'image générée ne garantit
+ *       pas la cohérence et peut échouer silencieusement.
+ */
+function buildViewPrompt(viewKey) {
+  const viewDesc = {
+    front:        'FACE complète, posture neutre, corps entier, pieds visibles.',
+    profileLeft:  'PROFIL GAUCHE strict (90° vers la gauche), corps entier, pieds visibles.',
+    profileRight: 'PROFIL DROIT strict (90° vers la droite), corps entier, pieds visibles.',
+    back:         'DOS complet (vue arrière à 180°), corps entier, pieds visibles.'
+  };
+
+  const intro = viewKey === 'front'
+    ? 'Photographie 4K ultra réaliste d\'un corps humain complet.'
+    : `Photographie 4K ultra réaliste. Même personne, même corps, même visage et même coiffure que la vue de face déjà générée.
+IMPORTANT : NE PAS modifier les proportions. NE PAS changer le visage. NE PAS changer les cheveux. MÊME tenue.`;
+
+  return `
+${intro}
+Règles absolues :
+- Corps entier tête aux pieds
+- Pieds visibles
+- Aucun rendu plastique ni idéalisation
+- Texture de peau réelle visible
+- Proportions anatomiques cohérentes
+- Lumière naturelle simple
+
+${buildBodyPrompt()}
+
+Vue demandée :
+${viewDesc[viewKey]}
+Cadrage plein pied.
+`;
+}
+
+// ─────────────────────────────────────────────────────────────
+// VERTEX AI
+// ─────────────────────────────────────────────────────────────
+async function callVertex(prompt, imageBase64 = null) {
+  const endpoint = `https://aiplatform.googleapis.com/v1/publishers/google/models/${VERTEX_MODEL}:generateContent?key=${encodeURIComponent(API_KEY)}`;
+
+  const parts = [{ text: prompt }];
+  if (imageBase64) {
+    parts.unshift({ inlineData: { mimeType: 'image/jpeg', data: imageBase64 } });
+  }
+
+  const body = {
+    contents: [{ role: 'user', parts }],
+    generationConfig: {
+      responseModalities: ['IMAGE'],
+      imageConfig: { aspectRatio: '9:16', imageSize: '4K' }
+    }
+  };
+
+  const retryWaits = [3000, 6000, 12000];
+  let lastError = null;
+
+  for (let attempt = 0; attempt <= retryWaits.length; attempt++) {
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+      if (!res.ok) {
+        let errorText = '';
+        try { const j = await res.json(); errorText = j?.error?.message || JSON.stringify(j); } catch { errorText = await res.text(); }
+        const msg = String(errorText || '').trim();
+        if (res.status === 401) throw new Error('Clé Vertex non reconnue.');
+        if (res.status === 403) throw new Error('Accès refusé. Vérifie la clé Vertex.');
+        if (res.status === 404) throw new Error('Modèle image introuvable.');
+        if (res.status === 429) throw new Error(`Quota dépassé. ${msg}`);
+        if (res.status >= 500) throw new Error(`Serveur Vertex indisponible. ${msg}`);
+        throw new Error(msg || `Erreur HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+      const partsOut = data?.candidates?.[0]?.content?.parts || [];
+      for (const part of partsOut) {
+        if (part.inlineData?.data) {
+          const mime = part.inlineData.mimeType || 'image/png';
+          return `data:${mime};base64,${part.inlineData.data}`;
+        }
+      }
+      throw new Error("Aucune image renvoyée par Vertex.");
+    } catch (err) {
+      lastError = err;
+      const msg = String(err.message || '').toLowerCase();
+      const retryable = msg.includes('quota') || msg.includes('429') || msg.includes('server') || msg.includes('failed to fetch') || msg.includes('networkerror') || msg.includes('load failed');
+      if (retryable && attempt < retryWaits.length) { await sleep(retryWaits[attempt]); continue; }
+      throw err;
+    }
+  }
+  throw lastError || new Error("Échec de génération Vertex.");
+}
+
+// ─────────────────────────────────────────────────────────────
+// KIE.AI
+// ─────────────────────────────────────────────────────────────
+async function uploadImageToKie(dataUrl) {
+  const res = await fetch('https://kieai.redpandaai.co/api/file-base64-upload', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ base64Data: dataUrl, uploadPath: 'images/studio-body' })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.data?.downloadUrl) throw new Error(`Upload kie.ai échoué: ${data.msg || res.status}`);
+  return data.data.downloadUrl;
+}
+
+async function callKie(prompt, imageDataUrl = null, statusCallback = null) {
+  let imageUrls = [];
+  if (imageDataUrl) {
+    statusCallback?.('Upload de la référence vers kie.ai…');
+    try { imageUrls.push(await uploadImageToKie(imageDataUrl)); } catch(e) { console.warn('Upload ref kie.ai échoué:', e.message); }
+  }
+
+  statusCallback?.('Envoi vers Nano Banana Pro…');
+
+  const fullPrompt = `Ultra-realistic 4K full-body photo, natural skin texture, no AI smoothing, authentic lighting.\n${prompt}`;
+
+  const taskBody = {
+    model: KIE_MODEL,
+    input: {
+      prompt: fullPrompt,
+      aspect_ratio: '9:16',
+      resolution: '4K',
+      output_format: 'png',
+      image_input: imageUrls
+    }
+  };
+
+  const createRes = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(taskBody)
+  });
+
+  const createData = await createRes.json().catch(() => ({}));
+  if (!createRes.ok || createData.code !== 200) {
+    const msg = createData?.msg || createData?.message || `Erreur HTTP ${createRes.status}`;
+    if (createRes.status === 401 || createData.code === 401) throw new Error('Clé kie.ai invalide.');
+    if (createRes.status === 403 || createData.code === 403) throw new Error('Accès refusé kie.ai. Vérifiez vos crédits.');
+    throw new Error(`Erreur kie.ai: ${msg}`);
+  }
+
+  const taskId = createData?.data?.taskId;
+  if (!taskId) throw new Error('Aucun taskId retourné par kie.ai.');
+
+  // Polling
+  for (let i = 0; i < 60; i++) {
+    await sleep(5000);
+    statusCallback?.(`Nano Banana génère… (${(i + 1) * 5}s)`);
+
+    let statusData = {};
+    try {
+      const statusRes = await fetch(`https://api.kie.ai/api/v1/jobs/recordInfo?taskId=${taskId}`, {
+        headers: { 'Authorization': `Bearer ${API_KEY}` }
+      });
+      statusData = await statusRes.json();
+    } catch(e) { continue; }
+
+    const state = statusData?.data?.state;
+    if (state === 'fail') throw new Error(`Génération kie.ai échouée: ${statusData?.data?.failMsg}`);
+
+    if (state === 'success') {
+      let imageUrl = null;
+      try {
+        const r = JSON.parse(statusData?.data?.resultJson || '{}');
+        imageUrl = r?.resultUrls?.[0] || r?.images?.[0]?.url || r?.url;
+      } catch(_) {}
+      if (!imageUrl) throw new Error('Succès kie.ai mais URL manquante.');
+
+      statusCallback?.('Téléchargement de l\'image…');
+      const imgRes = await fetch(imageUrl);
+      const blob   = await imgRes.blob();
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror   = reject;
+        reader.readAsDataURL(blob);
+      });
+    }
+  }
+  throw new Error('Timeout kie.ai (5 min dépassées).');
+}
+
+// ─────────────────────────────────────────────────────────────
+// GÉNÉRATION PRINCIPALE
+// ─────────────────────────────────────────────────────────────
+async function callEngine(prompt, refDataUrl = null, statusCallback = null) {
+  if (ENGINE === 'kie') {
+    return callKie(prompt, refDataUrl, statusCallback);
+  } else {
+    // Pour Vertex : on passe l'image source originale (pas l'image générée)
+    const b64 = refDataUrl ? refDataUrl.split(',')[1] : null;
+    return callVertex(prompt, b64);
+  }
+}
+
+function setGenLoading(state, label = null) {
+  const btn = document.getElementById('genFrontBtn');
+  btn.disabled   = state;
+  btn.textContent = label || (state ? 'Calcul en cours…' : 'Lancer le rendu (face)');
+}
+
+async function generateFront() {
+  if (!basePhotoDataUrl) { alert("Ajoute d'abord une photo source."); return; }
+  if (isLoading) return;
+
+  isLoading = true;
+  resetImages();
+  showImagesArea();
+  setGenLoading(true);
+  setText('mainLoadingStatus', 'Initialisation…');
+
+  const prompt = buildViewPrompt('front');
+
+  try {
+    const statusCb = (msg) => setText('mainLoadingStatus', msg);
+    // On passe la photo source uniquement pour la vue front
+    const dataUrl = await callEngine(prompt, basePhotoDataUrl, statusCb);
+    const blobUrl = storeImage('front', dataUrl);
+    setViewImage('front', blobUrl);
+    selectView('front');
+
+    document.getElementById('lockBtnWrap').classList.remove('hidden');
+    document.getElementById('bodyLookBtnWrap').classList.remove('hidden');
+    document.getElementById('exportBtnWrap').classList.remove('hidden');
+    setText('mainLoadingStatus', '');
+  } catch (err) {
+    alert('Erreur rendu face : ' + err.message);
+    console.error(err);
+  } finally {
+    isLoading = false;
+    setGenLoading(false);
+  }
+}
+
+async function generateRest() {
+  if (!imageStore.front || isLoading) return;
+
+  isLoading = true;
+  const syncBtn = document.getElementById('syncBtnInner');
+  syncBtn.disabled    = true;
+  syncBtn.textContent = 'Synchronisation 360° en cours…';
+
+  const views = [
+    { key: 'profileLeft',  label: 'Profil Gauche' },
+    { key: 'profileRight', label: 'Profil Droit'  },
+    { key: 'back',         label: 'Dos'           }
+  ];
+
+  for (const view of views) {
+    showThumbLoading(view.key, 'Génération…');
+
+    // FIX PRINCIPAL : prompt complet avec description de la vue
+    // On passe la photo source originale (pas l'image générée) pour garder la cohérence du visage
+    const prompt = buildViewPrompt(view.key);
+
+    try {
+      const statusCb = (msg) => {
+        const st = document.getElementById('tl-' + view.key)?.querySelector('.thumb-status');
+        if (st) st.textContent = msg;
+        // Si c'est la vue sélectionnée, mettre à jour le spinner principal
+        if (currentView === view.key) setText('mainLoadingStatus', msg);
+      };
+
+      const dataUrl = await callEngine(prompt, basePhotoDataUrl, statusCb);
+      const blobUrl = storeImage(view.key, dataUrl);
+      setViewImage(view.key, blobUrl);
+    } catch (err) {
+      console.error(`Erreur ${view.key}:`, err);
+      // Marquer l'erreur sur la miniature
+      const st = document.getElementById('tl-' + view.key)?.querySelector('.thumb-status');
+      if (st) st.textContent = '❌ Erreur';
+    }
+  }
+
+  isLoading = false;
+  syncBtn.disabled    = false;
+  syncBtn.textContent = 'Synchroniser les vues (360°)';
+  setText('mainLoadingStatus', '');
+}
+
+// ─────────────────────────────────────────────────────────────
+// MODALS
+// ─────────────────────────────────────────────────────────────
+function openBodyLookModal()  { document.getElementById('bodyLookModal').classList.remove('hidden'); }
+function closeBodyLookModal() { document.getElementById('bodyLookModal').classList.add('hidden'); }
+function openOriginsModal() {
+  if (isLocked) return;
+  tempOrigins = JSON.parse(JSON.stringify(params.origins));
+  renderOriginsModal();
+  document.getElementById('originsModal').classList.remove('hidden');
+}
+function closeOriginsModal() { document.getElementById('originsModal').classList.add('hidden'); }
+function applyOrigins() {
+  params.origins = JSON.parse(JSON.stringify(tempOrigins));
+  setText('originsCount', String(params.origins.length));
+  closeOriginsModal();
+}
+
+function renderOriginsModal() {
+  document.getElementById('originsListEl').innerHTML = Object.entries(ORIGINS_LIST).map(([region, origins]) => `
+    <div>
+      <p class="region-label">${region}</p>
+      <div class="region-tags">
+        ${origins.map(o => `<button class="origin-tag" onclick="addOrigin(${JSON.stringify(o)})">+ ${o}</button>`).join('')}
+      </div>
+    </div>
+  `).join('');
+  renderMixItems();
+}
+
+function addOrigin(origin) {
+  if (tempOrigins.some(i => i.origin === origin) || tempOrigins.length >= 3) return;
+  tempOrigins.push({ origin, weight: 0 });
+  const avg = Math.floor(100 / tempOrigins.length);
+  let total = 0;
+  tempOrigins.forEach((item, i) => { item.weight = i === tempOrigins.length - 1 ? 100 - total : avg; total += item.weight; });
+  renderMixItems();
+}
+
+function removeOrigin(origin) {
+  if (tempOrigins.length <= 1) return;
+  tempOrigins = tempOrigins.filter(i => i.origin !== origin);
+  const avg = Math.floor(100 / tempOrigins.length);
+  let total = 0;
+  tempOrigins.forEach((item, i) => { item.weight = i === tempOrigins.length - 1 ? 100 - total : avg; total += item.weight; });
+  renderMixItems();
+}
+
+function updateMixWeight(index, value) {
+  const newVal = Math.max(0, Math.min(100, Number(value)));
+  tempOrigins[index].weight = newVal;
+  let remainder = 100 - newVal;
+  const others = tempOrigins.filter((_, i) => i !== index);
+  if (others.length > 0) {
+    const totalOthers = others.reduce((s, i) => s + i.weight, 0) || 1;
+    tempOrigins.forEach((item, i) => { if (i !== index) item.weight = Math.round((item.weight / totalOthers) * remainder); });
+    const total = tempOrigins.reduce((s, i) => s + i.weight, 0);
+    if (tempOrigins[0]) tempOrigins[0].weight += 100 - total;
+  }
+  renderMixItems();
+}
+
+function renderMixItems() {
+  const el = document.getElementById('mixItems');
+  if (!tempOrigins.length) { el.innerHTML = '<p class="mix-empty">Sélectionne au moins une origine…</p>'; return; }
+  el.innerHTML = tempOrigins.map((item, index) => `
+    <div class="mix-item">
+      <div class="mix-item-header">
+        <span class="mix-item-name">${sanitizeText(item.origin)}</span>
+        <button class="mix-remove" onclick="removeOrigin(${JSON.stringify(item.origin)})">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="mix-slider-row">
+        <input type="range" min="0" max="100" value="${item.weight}" oninput="updateMixWeight(${index}, this.value)">
+        <span class="mix-val">${item.weight}%</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ─────────────────────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────────────────────
+renderStretchZones();
+updateGravityMax();
+</script>
+</body>
+</html>
