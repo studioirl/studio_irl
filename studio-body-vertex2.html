@@ -691,58 +691,57 @@
 </div>
 
 <script>
-// ─────────────────────────────────────────────────────────────
-// CONFIGURATION
-// ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// STUDIO BODY — Configuration
+// ═══════════════════════════════════════════════════════════════
 const VERTEX_MODEL = 'gemini-3.1-flash-image-preview';
 const KIE_MODEL    = 'nano-banana-2';
+const VERTEX_ENDPOINT = 'https://aiplatform.googleapis.com/v1/publishers/google/models/';
 
 const ORIGINS_LIST = {
-  'Afrique': ['Afrique Subsaharienne', "Afrique de l'Ouest", "Afrique de l'Est"],
-  'Europe': ['Nordique', 'Est-Européen', 'Ouest-Européen', 'Méditerranéen'],
-  'Moyen-Orient': ['Oriental', 'Nordique-Moyen-Orient', 'Nord-Africain', 'Arabe'],
-  'Asie': ['Est-asiatique', 'Sud-asiatique', 'Sud-Est asiatique'],
-  'Amériques': ['Afro-descendant', 'Latino-américain', 'Native américain']
+  'Afrique':       ['Afrique Subsaharienne', "Afrique de l'Ouest", "Afrique de l'Est"],
+  'Europe':        ['Nordique', 'Est-Européen', 'Ouest-Européen', 'Méditerranéen'],
+  'Moyen-Orient':  ['Oriental', 'Nordique-Moyen-Orient', 'Nord-Africain', 'Arabe'],
+  'Asie':          ['Est-asiatique', 'Sud-asiatique', 'Sud-Est asiatique'],
+  'Amériques':     ['Afro-descendant', 'Latino-américain', 'Native américain']
 };
-
 const STRETCH_ZONES = ['ventre', 'hanches', 'cuisses', 'fesses', 'bras'];
 
-// ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
 // STATE
-// ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
 let API_KEY   = '';
-let ENGINE    = 'vertex'; // 'vertex' | 'kie'
+let ENGINE    = 'vertex';
 let gender    = 'femme';
 let isLocked  = false;
 let isLoading = false;
-let basePhotoDataUrl = null;  // data URL brut pour l'envoi API
+let basePhotoDataUrl = null;
 let currentView = 'front';
 let tempOrigins = [];
 
-// Stockage Blob (évite les problèmes mémoire Safari avec les data URLs)
-// key: view name → { blobUrl, dataUrl }
+// Stockage Blob — évite les crashs Safari avec les data URLs massives
 const imageStore = { front: null, profileLeft: null, profileRight: null, back: null };
 
 const viewLabels = {
-  front: 'Vue de Face',
-  profileLeft: 'Profil Gauche',
+  front:        'Vue de Face',
+  profileLeft:  'Profil Gauche',
   profileRight: 'Profil Droit',
-  back: 'Vue de Dos'
+  back:         'Vue de Dos'
 };
 
 const params = {
-  age: 28, height: 165, weight: 60,
+  age: 28, height: 170, weight: 65,
   bodyType: 'moyenne', morphology: 'X',
-  distribution: 50, glutealVolume: 50,
-  origins: [{ origin: 'Méditerranéen', weight: 100 }],
-  tone: 'tonique', waistCirc: 80, hipCirc: 95, thighCirc: 58,
-  chestBand: 90, chestCup: 'B', chestVolume: 50,
-  absDefinition: 'absents', bellyGravity: 0, stretchMarks: []
+  distribution: 50, glutealVolume: 40,
+  origins: [{ origin: 'Ouest-Européen', weight: 100 }],
+  tone: 'tonique', waistCirc: 70, hipCirc: 95, thighCirc: 55,
+  chestBand: 85, chestCup: 'B', chestVolume: 50,
+  absDefinition: 'légèrement visibles', bellyGravity: 0, stretchMarks: []
 };
 
-// ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
 // UTILITAIRES
-// ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
 function setText(id, value) { const el = document.getElementById(id); if (el) el.textContent = value; }
 function toNum(v, fb = 0) { const n = Number(v); return Number.isFinite(n) ? n : fb; }
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
@@ -751,46 +750,35 @@ function sanitizeText(str) { return String(str ?? '').replace(/[<>]/g, ''); }
 function dataUrlToBlob(dataUrl) {
   const [header, b64] = dataUrl.split(',');
   const mime = header.match(/:(.*?);/)[1];
-  const raw = atob(b64);
-  const arr = new Uint8Array(raw.length);
+  const raw  = atob(b64);
+  const arr  = new Uint8Array(raw.length);
   for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
   return new Blob([arr], { type: mime });
 }
 
 function storeImage(view, dataUrl) {
-  // Révoquer l'ancien blob si existant
-  if (imageStore[view]?.blobUrl) {
-    try { URL.revokeObjectURL(imageStore[view].blobUrl); } catch(_) {}
-  }
-  const blob = dataUrlToBlob(dataUrl);
+  if (imageStore[view]?.blobUrl) try { URL.revokeObjectURL(imageStore[view].blobUrl); } catch(_) {}
+  const blob    = dataUrlToBlob(dataUrl);
   const blobUrl = URL.createObjectURL(blob);
   imageStore[view] = { blobUrl, dataUrl };
   return blobUrl;
 }
+function getImageUrl(view)     { return imageStore[view]?.blobUrl || null; }
+function getImageDataUrl(view) { return imageStore[view]?.dataUrl || null; }
 
-function getImageUrl(view) {
-  return imageStore[view]?.blobUrl || null;
-}
-
-function getImageDataUrl(view) {
-  return imageStore[view]?.dataUrl || null;
-}
-
-// ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
 // ENGINE SELECTOR (splash)
-// ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
 function selectEngine(eng) {
   ENGINE = eng;
   document.getElementById('eng-vertex').className = 'engine-btn' + (eng === 'vertex' ? ' active-vertex' : '');
   document.getElementById('eng-kie').className    = 'engine-btn' + (eng === 'kie'    ? ' active-kie'    : '');
-
   const lbl  = document.getElementById('apiLabel');
   const note = document.getElementById('apiNote');
   const inp  = document.getElementById('apiKeyInput');
-
   if (eng === 'vertex') {
     lbl.textContent  = 'Clé API Vertex AI (Express Mode)';
-    note.textContent = '⚡ Utilise ta clé Vertex Express Mode (commence par AQ…)';
+    note.textContent = '⚡ Clé Vertex Express Mode (commence par AQ…)';
     inp.placeholder  = 'AQ...';
   } else {
     lbl.textContent  = 'Clé API kie.ai';
@@ -799,23 +787,18 @@ function selectEngine(eng) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
 // SPLASH / GENDER
-// ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
 function enterApp() {
   const key = document.getElementById('apiKeyInput').value.trim();
   const err = document.getElementById('splash-error');
-  if (!key) {
-    err.textContent = 'Veuillez entrer votre clé API.';
-    err.style.display = 'block';
-    return;
-  }
+  if (!key) { err.textContent = 'Veuillez entrer votre clé API.'; err.style.display = 'block'; return; }
   API_KEY = key;
   err.style.display = 'none';
   document.getElementById('splash').style.display = 'none';
   document.getElementById('genderSelect').classList.add('visible');
 }
-
 document.getElementById('apiKeyInput').addEventListener('keydown', e => { if (e.key === 'Enter') enterApp(); });
 
 function selectGender(g) {
@@ -824,8 +807,6 @@ function selectGender(g) {
   document.getElementById('mainApp').classList.add('visible');
   document.getElementById('genderPill').textContent = g === 'femme' ? 'Femme' : 'Homme';
   document.getElementById('chestSection').style.display = g === 'femme' ? 'block' : 'none';
-
-  // Pill moteur
   const pill = document.getElementById('enginePill');
   if (ENGINE === 'kie') {
     pill.textContent = 'kie.ai';
@@ -836,7 +817,6 @@ function selectGender(g) {
     pill.className = 'engine-pill engine-pill-vertex';
     document.getElementById('statusLabel').textContent = 'Vertex actif';
   }
-
   renderStretchZones();
   updateGravityMax();
 }
@@ -849,19 +829,15 @@ function goGenderSelect() {
   updateLockUI();
 }
 
-// ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
 // PARAMÈTRES
-// ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
 function setParam(key, value) {
   if (isLocked) return;
   params[key] = value;
   const groupMap = { bodyType: 'bodyType', morphology: 'morph', tone: 'tone', absDefinition: 'abs' };
   const group = groupMap[key];
-  if (group) {
-    document.querySelectorAll(`[data-group="${group}"]`).forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.val === value);
-    });
-  }
+  if (group) document.querySelectorAll(`[data-group="${group}"]`).forEach(btn => btn.classList.toggle('active', btn.dataset.val === value));
   if (key === 'bodyType') updateGravityMax();
 }
 
@@ -883,94 +859,73 @@ function handleBasePhoto(event) {
     document.getElementById('uploadZone').classList.add('has-img');
     document.getElementById('uploadPlaceholder').style.display = 'none';
     const img = document.getElementById('basePhotoPreview');
-    img.src = basePhotoDataUrl;
-    img.style.display = 'block';
+    img.src = basePhotoDataUrl; img.style.display = 'block';
   };
   reader.readAsDataURL(file);
 }
 
-// ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
 // STRETCH ZONES
-// ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
 function renderStretchZones() {
   const container = document.getElementById('stretchZones');
   container.innerHTML = STRETCH_ZONES.map(zone => {
     const mark = params.stretchMarks.find(m => m.zone === zone);
-    return `
-      <div class="stretch-zone">
-        <div class="stretch-zone-header">
-          <button class="zone-toggle ${mark ? 'on' : 'off'}" onclick="toggleStretchZone('${zone}')">${zone}</button>
-        </div>
-        ${mark ? `<div class="intensity-btns">
-          ${['légère','modérée','marquée'].map(level =>
-            `<button class="int-btn ${mark.intensity === level ? 'active' : ''}" onclick="setStretchIntensity('${zone}','${level}')">${level}</button>`
-          ).join('')}
-        </div>` : ''}
+    return `<div class="stretch-zone">
+      <div class="stretch-zone-header">
+        <button class="zone-toggle ${mark ? 'on' : 'off'}" onclick="toggleStretchZone('${zone}')">${zone}</button>
       </div>
-    `;
+      ${mark ? `<div class="intensity-btns">${['légère','modérée','marquée'].map(level =>
+        `<button class="int-btn ${mark.intensity === level ? 'active' : ''}" onclick="setStretchIntensity('${zone}','${level}')">${level}</button>`
+      ).join('')}</div>` : ''}
+    </div>`;
   }).join('');
 }
-
 function toggleStretchZone(zone) {
   if (isLocked) return;
-  const index = params.stretchMarks.findIndex(m => m.zone === zone);
-  if (index >= 0) params.stretchMarks.splice(index, 1);
+  const idx = params.stretchMarks.findIndex(m => m.zone === zone);
+  if (idx >= 0) params.stretchMarks.splice(idx, 1);
   else params.stretchMarks.push({ zone, intensity: 'modérée' });
   renderStretchZones();
 }
-
 function setStretchIntensity(zone, intensity) {
   if (isLocked) return;
   const mark = params.stretchMarks.find(m => m.zone === zone);
   if (mark) { mark.intensity = intensity; renderStretchZones(); }
 }
 
-// ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
 // LOCK
-// ─────────────────────────────────────────────────────────────
-function toggleLock() {
-  isLocked = !isLocked;
-  updateLockUI();
-}
+// ═══════════════════════════════════════════════════════════════
+function toggleLock() { isLocked = !isLocked; updateLockUI(); }
 
 function updateLockUI() {
   const lockBtn     = document.getElementById('lockBtn');
   const genFrontBtn = document.getElementById('genFrontBtn');
-
   lockBtn.className   = 'action-btn ' + (isLocked ? 'lock-on' : 'lock-off');
   lockBtn.textContent = isLocked ? 'Déverrouiller les paramètres' : "J'active Body Look (verrouillage)";
-
-  // Désactiver/réactiver les contrôles sidebar (sauf boutons de navigation)
-  document.querySelectorAll(
-    'aside input, aside select, aside button:not(#lockBtn):not(#originsBtn):not([onclick="openBodyLookModal()"])'
-  ).forEach(el => {
+  document.querySelectorAll('aside input, aside select, aside button:not(#lockBtn):not(#originsBtn):not([onclick="openBodyLookModal()"])').forEach(el => {
     if (isLocked) el.setAttribute('disabled', 'disabled');
     else el.removeAttribute('disabled');
   });
-
-  if (isLocked) {
-    genFrontBtn.setAttribute('disabled', 'disabled');
-  } else {
-    genFrontBtn.removeAttribute('disabled');
-  }
-  // syncBtn n'est PAS géré ici — il est affiché/caché par generateFront() uniquement
+  if (isLocked) genFrontBtn.setAttribute('disabled', 'disabled');
+  else genFrontBtn.removeAttribute('disabled');
+  // syncBtn géré uniquement par generateFront()
 }
 
-// ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
 // IMAGE UI
-// ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
 function showImagesArea() {
   document.getElementById('emptyState').classList.add('hidden');
   document.getElementById('imagesArea').classList.remove('hidden');
 }
 
 function resetImages() {
-  // Révoquer blobs
   Object.keys(imageStore).forEach(k => {
-    if (imageStore[k]?.blobUrl) { try { URL.revokeObjectURL(imageStore[k].blobUrl); } catch(_) {} }
+    if (imageStore[k]?.blobUrl) try { URL.revokeObjectURL(imageStore[k].blobUrl); } catch(_) {}
     imageStore[k] = null;
   });
-
   ['front','profileLeft','profileRight','back'].forEach(view => {
     const img = document.getElementById('ti-' + view);
     const tl  = document.getElementById('tl-' + view);
@@ -978,17 +933,14 @@ function resetImages() {
     img.style.display = 'none'; img.src = '';
     tl.style.display = view === 'front' ? 'flex' : 'none';
     dl.style.display = 'none';
-    // Remettre le statut d'attente sur les vues secondaires
     const st = tl.querySelector('.thumb-status');
-    if (st) st.textContent = 'Lancer 360° →';
+    if (st) st.textContent = view === 'front' ? '' : 'Lancer 360° →';
   });
-
-  const mainImg     = document.getElementById('mainViewImg');
+  const mainImg = document.getElementById('mainViewImg');
   const mainLoading = document.getElementById('mainViewLoading');
   mainImg.style.display = 'none'; mainImg.src = '';
   mainLoading.style.display = 'flex';
   setText('mainLoadingStatus', '');
-
   document.getElementById('imagesArea').classList.add('hidden');
   document.getElementById('emptyState').classList.remove('hidden');
   document.getElementById('syncBtn').classList.add('hidden');
@@ -1005,22 +957,19 @@ function setViewImage(view, blobUrl) {
   img.src = blobUrl; img.style.display = 'block';
   tl.style.display = 'none';
   dl.style.display = 'flex';
-
   if (currentView === view) {
-    const mainImg     = document.getElementById('mainViewImg');
-    const mainLoading = document.getElementById('mainViewLoading');
+    const mainImg = document.getElementById('mainViewImg');
     mainImg.src = blobUrl; mainImg.style.display = 'block';
-    mainLoading.style.display = 'none';
+    document.getElementById('mainViewLoading').style.display = 'none';
   }
 }
 
-function showThumbLoading(view, statusText = 'Génération…') {
+function showThumbLoading(view, statusText) {
   const tl = document.getElementById('tl-' + view);
-  if (tl) {
-    tl.style.display = 'flex';
-    const st = tl.querySelector('.thumb-status');
-    if (st) st.textContent = statusText;
-  }
+  if (!tl) return;
+  tl.style.display = 'flex';
+  const st = tl.querySelector('.thumb-status');
+  if (st) st.textContent = statusText || 'Génération…';
 }
 
 function selectView(view) {
@@ -1030,171 +979,209 @@ function selectView(view) {
     document.getElementById('vl-' + v).className = 'view-label ' + (v === view ? 'active' : 'inactive');
   });
   setText('mainViewBadge', viewLabels[view]);
-
   const mainImg     = document.getElementById('mainViewImg');
   const mainLoading = document.getElementById('mainViewLoading');
-  const url         = getImageUrl(view);
+  const url = getImageUrl(view);
   if (url) {
-    mainImg.src = url;
-    mainImg.style.display = 'block';
-    mainLoading.style.display = 'none';
+    mainImg.src = url; mainImg.style.display = 'block'; mainLoading.style.display = 'none';
   } else {
-    mainImg.style.display = 'none';
-    mainLoading.style.display = 'flex';
-    // Message adapté selon si génération en cours ou pas encore lancée
+    mainImg.style.display = 'none'; mainLoading.style.display = 'flex';
     const statusEl = document.getElementById('mainLoadingStatus');
-    if (!isLoading && view !== 'front') {
-      statusEl.textContent = 'Lance le 360° pour générer cette vue';
-    }
+    if (!isLoading && view !== 'front') statusEl.textContent = 'Lance le 360° pour générer cette vue';
+    else if (!isLoading) statusEl.textContent = '';
   }
 }
 
-// ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
 // DOWNLOAD (Safari-safe via Blob)
-// ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
 function downloadBlobUrl(blobUrl, filename) {
   const a = document.createElement('a');
   a.href = blobUrl; a.download = filename;
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
-
-function downloadCurrent() {
-  const url = getImageUrl(currentView);
-  if (url) downloadBlobUrl(url, `studio-body-${currentView}.png`);
-}
-
-function downloadView(view) {
-  const url = getImageUrl(view);
-  if (url) downloadBlobUrl(url, `studio-body-${view}.png`);
-}
-
+function downloadCurrent() { const url = getImageUrl(currentView); if (url) downloadBlobUrl(url, `studio-body-${currentView}.png`); }
+function downloadView(view) { const url = getImageUrl(view); if (url) downloadBlobUrl(url, `studio-body-${view}.png`); }
 function exportAll() {
   Object.entries(imageStore).forEach(([key, val], i) => {
     if (val?.blobUrl) setTimeout(() => downloadBlobUrl(val.blobUrl, `studio-body-${key}.png`), i * 300);
   });
 }
 
-// ─────────────────────────────────────────────────────────────
-// PROMPT BUILDERS
-// ─────────────────────────────────────────────────────────────
-function getBodyTypeSignature() {
-  switch (params.bodyType) {
-    case 'mince':   return "SILHOUETTE MINCE : structure osseuse légère, faible masse graisseuse, lignes fines.";
-    case 'moyenne': return "SILHOUETTE MOYENNE : équilibre naturel entre muscle et masse adipeuse.";
-    case 'surpoids':return "SILHOUETTE SURPOIDS : volumes généreux, courbes marquées, section médiane élargie.";
-    case 'obèse':   return "SILHOUETTE OBÈSE : volumes massifs, abdomen proéminent, plis naturels visibles.";
-    default:        return "SILHOUETTE NATURELLE.";
+// ═══════════════════════════════════════════════════════════════
+// PROMPT BUILDERS — portage exact de GeminiService (AI Studio)
+// ═══════════════════════════════════════════════════════════════
+
+function getBodyTypeSignature(type) {
+  switch(type) {
+    case 'mince':    return "SILHOUETTE MINCE : Structure osseuse apparente, muscles fins, absence de graisse sous-cutanée.";
+    case 'moyenne':  return "SILHOUETTE MOYENNE : Équilibre standard entre muscle et masse adipeuse.";
+    case 'surpoids': return "SILHOUETTE SURPOIDS (PLUS-SIZE) : Volumes généreux, courbes prononcées, build substantiel, visage rond, bras et jambes épais, section médiane large.";
+    case 'obèse':    return "SILHOUETTE OBÈSE (HEAVY BUILD) : Volumes massifs, abdomen proéminent avec effet de pesanteur, plis cutanés naturels (folds), silhouette lourde, largeur corporelle maximale, réalisme anatomique des tissus mous.";
+    default: return "";
   }
 }
 
-function buildStretchPrompt() {
-  if (!params.stretchMarks.length) return "PEAU : sans vergetures visibles.";
-  return `VERGETURES :\n${params.stretchMarks.map(m => `- ${m.zone} : intensité ${m.intensity}`).join('\n')}\nAspect fin, irrégulier, jamais symétrique.`;
+function buildStretchMarksPrompt(marks) {
+  if (!marks.length) return "PEAU : Lisse, sans marque apparente.";
+  const details = marks.map(m => `- ${m.zone} : intensité ${m.intensity}`).join('\n');
+  return `
+      ### RÈGLES STRICTES VERGETURES ###
+      Zones : ${details}
+      - Fines et irrégulières, JAMAIS symétriques ni uniformes.
+      - Couleur : Réalisme cicatriciel (légèrement plus clair/foncé que la peau).
+      - Respect de la texture cutanée humaine réelle.`;
 }
 
-function getGlutealDesc() {
+function buildAnatomicalMasterConstraints() {
+  return `
+      ### ANATOMICAL MASTER RENDER — SPECIFICATION STRICTE ###
+      - RENDU : Photographie humaine réelle, conditions naturelles. Équivalent photo DSLR / capteur plein format. Zéro intention esthétique ou publicitaire.
+      
+      - PEAU (MICRO RÉALISME AVANCÉ) : Texture cutanée HD visible et réelle. Grain de peau perceptible. Micro-variations de texture non uniformes. Légères ruptures de grain entre zones. Subtiles irrégularités naturelles : pores de tailles variables, micro-brillances localisées, transitions non lissées. AUCUN lissage. AUCUN filtre beauté. AUCUNE peau plastique/cireuse.
+      
+      - LUMIÈRE : Naturelle non idéalisée. Source douce mais directionnelle. Légères asymétries d'ombre. Zones subtilement plus chaudes et plus froides. Pas d'éclairage studio parfait.
+      
+      - CAMERA : Look téléobjectif portrait (85mm), perspective neutre, pas de grand-angle. Pas de déformation perspective. Locked, Eye-level.
+      
+      - NETTETÉ PHOTOGRAPHIQUE RÉALISTE : Focus net et précis sur tout le corps. Très légère perte de piqué sur les zones périphériques. AUCUNE netteté uniforme globale numérique.
+      
+      - HAIR LOCK : Stabilité capillaire absolue. La longueur, texture, implantation, raie et masse des cheveux de l'image source doivent être strictement respectées. Interdiction de raccourcir, lisser ou modifier la coiffure.
+      
+      - NO-GO : Interdiction de lissage esthétique, rendu CGI, effet beauté automatique, corps idéalisé. La netteté visuelle ne doit jamais modifier les volumes ou proportions définies.`;
+}
+
+function buildGlutealDescription() {
   const v = params.glutealVolume;
-  if (v >= 80) return "Fessier très développé, projection forte, volume net.";
-  if (v >= 60) return "Fessier développé, projection visible, volume ferme.";
-  if (v >= 40) return "Fessier modéré, forme naturelle.";
-  return "Fessier discret, projection faible, forme compacte.";
-}
-
-function buildBodyPrompt() {
-  const originString = params.origins.map(i => `${i.origin} (${i.weight}%)`).join(', ');
-  const chestInfo = gender === 'femme'
-    ? `Poitrine : taille ${params.chestBand}${params.chestCup}, projection ${params.chestVolume}%.`
-    : '';
-  const gravityInfo = params.bellyGravity > 0
-    ? `Gravité abdominale : ${params.bellyGravity}%. Ptose naturelle des tissus.`
-    : 'Abdomen : sans effet notable de gravité.';
-
-  return `
-BIO :
-- Sexe : ${gender}
-- Âge : ${params.age} ans
-- Taille : ${params.height} cm
-- Poids : ${params.weight} kg
-- Origines : ${originString}
-
-MORPHOLOGIE :
-- Type corporel : ${params.bodyType}
-- Signature : ${getBodyTypeSignature()}
-- Forme générale : ${params.morphology}
-- Distribution masse : ${params.distribution}%
-- Tour de taille : ${params.waistCirc} cm
-- Hanches : ${params.hipCirc} cm
-- Cuisses : ${params.thighCirc} cm
-- Tonicité : ${params.tone}
-- ${getGlutealDesc()}
-- Abdominaux : ${params.absDefinition}
-- ${gravityInfo}
-- ${buildStretchPrompt()}
-${chestInfo}
-
-TENUE :
-${gender === 'femme' ? "Brassière nude et legging nude ajusté." : "Boxer ou short nude simple."}
-`;
-}
-
-/**
- * Construit le prompt complet pour une vue donnée.
- * FIX : les vues secondaires utilisent le prompt complet (pas l'image front comme référence)
- *       car l'API Vertex image génère à partir du texte — renvoyer l'image générée ne garantit
- *       pas la cohérence et peut échouer silencieusement.
- */
-function buildViewPrompt(viewKey) {
-  const viewDesc = {
-    front:        'FACE complète, posture neutre, corps entier, pieds visibles.',
-    profileLeft:  'PROFIL GAUCHE strict (90° vers la gauche), corps entier, pieds visibles.',
-    profileRight: 'PROFIL DROIT strict (90° vers la droite), corps entier, pieds visibles.',
-    back:         'DOS complet (vue arrière à 180°), corps entier, pieds visibles.'
-  };
-
-  const intro = viewKey === 'front'
-    ? 'Photographie 4K ultra réaliste d\'un corps humain complet.'
-    : `Photographie 4K ultra réaliste. Même personne, même corps, même visage et même coiffure que la vue de face déjà générée.
-IMPORTANT : NE PAS modifier les proportions. NE PAS changer le visage. NE PAS changer les cheveux. MÊME tenue.`;
-
-  return `
-${intro}
-Règles absolues :
-- Corps entier tête aux pieds
-- Pieds visibles
-- Aucun rendu plastique ni idéalisation
-- Texture de peau réelle visible
-- Proportions anatomiques cohérentes
-- Lumière naturelle simple
-
-${buildBodyPrompt()}
-
-Vue demandée :
-${viewDesc[viewKey]}
-Cadrage plein pied.
-`;
-}
-
-// ─────────────────────────────────────────────────────────────
-// VERTEX AI
-// ─────────────────────────────────────────────────────────────
-
-/**
- * Vertex AI Express Mode — clé AQ...
- * Identique à Studio POV : imageSize 4K + aspectRatio 9:16
- */
-function getVertexEndpoint() {
-  return `https://aiplatform.googleapis.com/v1/publishers/google/models/${VERTEX_MODEL}:generateContent?key=${encodeURIComponent(API_KEY)}`;
-}
-
-async function callVertex(prompt, imageBase64 = null, statusCb = null) {
-  const endpoint = getVertexEndpoint();
-
-  const parts = [{ text: prompt }];
-  if (imageBase64) {
-    parts.unshift({ inlineData: { mimeType: 'image/jpeg', data: imageBase64 } });
+  let desc = '';
+  if (v >= 80) {
+    desc = "RÉGION FESSIÈRE : Développement glutéal prononcé et sculpté. Gluteus maximus et medius pleinement développés avec projection visible de 12-15cm depuis la base lombaire. Forme arrondie, galbée et soulevée (lifted). Séparation musculaire visible. Volume substantiel avec courbe naturelle en arc. Hip dips naturels si morphologie le permet.";
+  } else if (v >= 60) {
+    desc = "RÉGION FESSIÈRE : Développement glutéal modéré à fort. Projection de 8-12cm. Forme arrondie et ferme avec lift naturel. Définition musculaire moyenne. Courbes féminines équilibrées.";
+  } else if (v >= 40) {
+    desc = "RÉGION FESSIÈRE : Développement glutéal modéré. Projection de 5-8cm. Forme naturelle avec tonus musculaire présent. Courbe douce sans emphase.";
+  } else {
+    desc = "RÉGION FESSIÈRE : Développement glutéal minimal. Projection de 3-5cm. Forme athlétique compacte, tonus ferme sans volume prononcé.";
   }
+  if (params.tone === 'tonique' || params.tone === 'athlétique' || params.tone === 'musclé') {
+    desc += " Les muscles fessiers sont fermes, soutenus et projetés vers l'arrière. Aucun affaissement.";
+  } else if (params.tone === 'souple') {
+    desc += " Volume maintenu avec douceur tissulaire naturelle, projection conservée, rendu plus rond.";
+  } else {
+    desc += " Légère gravité autorisée, sans effondrement.";
+  }
+  return desc;
+}
 
-  // Meme config que Studio POV
+function buildBodyBlock() {
+  const originString = params.origins.map(o => `${o.origin} (${o.weight}%)`).join(', ');
+  const chestInfo    = gender === 'femme' ? `Poitrine : Taille ${params.chestBand}${params.chestCup}. Volume projection: ${params.chestVolume}%.` : '';
+  const absInfo      = params.absDefinition ? `Abdominaux : ${params.absDefinition}.` : '';
+  const gravityInfo  = params.bellyGravity > 0
+    ? `GRAVITÉ ABDOMINALE : ${params.bellyGravity}%. Ptose naturelle des tissus mous et des graisses.`
+    : "ABDOMEN : Ferme.";
+
+  return `
+      ### CADRAGE ET COMPOSITION STRICTS ###
+      - PLAN COMPLET : DE LA TÊTE AUX PIEDS (FULL BODY SHOT).
+      - L'INTÉGRALITÉ DU CORPS DOIT ÊTRE DANS LE CADRE.
+      - LES PIEDS DOIVENT ÊTRE ENTIÈREMENT VISIBLES ET POSÉS AU SOL DANS L'IMAGE.
+      - AUCUNE coupe du sommet du crâne ni des pieds.
+      
+      ### SCULPTURE ANATOMIQUE PRÉCISE ###
+      ${getBodyTypeSignature(params.bodyType)}
+      Morphologie dominante : ${params.morphology}.
+      Distribution de masse : ${params.distribution}% (équilibre anatomique strict).
+      Origines ethniques : ${originString}.
+      
+      ### BIOMÉTRIE TECHNIQUE ###
+      - Taille ${params.height}cm, Poids ${params.weight}kg, Âge ${params.age} ans.
+      - Tonicité musculaire : ${params.tone}.
+      - Mensurations : Taille (Ventre) ${params.waistCirc}cm, Hanches ${params.hipCirc}cm, Cuisses ${params.thighCirc}cm.
+      ${buildGlutealDescription()}
+      ${chestInfo}
+      ${absInfo}
+      
+      ### MARQUEURS DE RÉALISME BRUT ###
+      ${gravityInfo}
+      ${buildStretchMarksPrompt(params.stretchMarks)}
+      
+      TENUE : ${gender === 'femme' ? "brassière et legging nude ultra-ajustés" : "boxer nude simple"}.`;
+}
+
+function buildFrontPrompt() {
+  return `${buildAnatomicalMasterConstraints()}
+      
+      Génère une photographie 4K ultra-réaliste d'un avatar ${gender} DE FACE.
+      
+      ### PLAN COMPLET : TÊTE AUX PIEDS (FEET INCLUDED) ###
+      Tout le corps doit être visible, incluant impérativement les pieds.
+      
+      ### IDENTITÉ CANONIQUE (IMAGE SOURCE) ###
+      Utilise EXCLUSIVEMENT le visage et les cheveux de l'IMAGE SOURCE. L'identité faciale et la longueur des cheveux doivent être strictement identiques.
+      
+      ${buildBodyBlock()}
+      
+      STYLE : Piqué photographique HD, capteur plein format. Sharp focus sur tout le corps. Photographie humaine réelle, sans intention publicitaire. 4K UHD.`;
+}
+
+function buildViewPrompt(viewKey) {
+  // Portage exact de generateAdditionalViews() de GeminiService
+  const viewNames = {
+    profileLeft:  'profil gauche',
+    profileRight: 'profil droit',
+    back:         'dos'
+  };
+  const view = viewNames[viewKey];
+
+  return `${buildAnatomicalMasterConstraints()}
+      
+      ### MODE ROTATION 360° - VUE ${view.toUpperCase()} ###
+      
+      INSTRUCTION PRIMAIRE : L'IMAGE SOURCE jointe est la vue de face validée. Tu dois générer la vue "${view}" du MÊME individu en rotation stricte autour de l'axe vertical.
+      
+      ### COHÉRENCE IDENTITAIRE ABSOLUE ###
+      - VISAGE : Mêmes traits exacts (forme du nez, lèvres, yeux, mâchoire, front).
+      - CHEVEUX : Longueur, texture, couleur et volume IDENTIQUES à l'image source (HAIR LOCK). AUCUNE variation automatique entre générations.
+      - CARNATION : Tonalité de peau exactement identique (${params.origins.map(o => o.origin).join(', ')}).
+      - ÂGE : ${params.age} ans, signes cutanés cohérents.
+      
+      ### COHÉRENCE CORPORELLE ABSOLUE ###
+      ${getBodyTypeSignature(params.bodyType)}
+      Morphologie : ${params.morphology}.
+      Taille ${params.height}cm, Poids ${params.weight}kg.
+      Tonicité : ${params.tone}.
+      
+      MENSURATIONS EXACTES (à respecter scrupuleusement) :
+      - Tour de taille (Ventre) : ${params.waistCirc}cm
+      - Tour de hanches : ${params.hipCirc}cm  
+      - Tour de cuisses : ${params.thighCirc}cm
+      
+      ${buildBodyBlock()}
+      
+      ### RÈGLE CRITIQUE POUR PROFILS ET DOS ###
+      Pour la vue "${view}", la projection fessière et la forme du corps doivent correspondre EXACTEMENT aux volumes définis, sans réinterprétation ni compensation asymétrique.
+      ${viewKey === 'profileLeft'  ? '- INSTRUCTION SPÉCIFIQUE : Rotation du corps vers la GAUCHE (vue de profil gauche). 90° depuis la face.' : ''}
+      ${viewKey === 'profileRight' ? '- INSTRUCTION SPÉCIFIQUE : Rotation du corps vers la DROITE (vue de profil droit). 90° depuis la face.' : ''}
+      ${viewKey === 'back'         ? '- INSTRUCTION SPÉCIFIQUE : Vue de DOS complète. 180° depuis la face. Dos, nuque, fessiers et mollets visibles.' : ''}
+      SYMÉTRIE DE CONSISTANCE : rotation inverse pour les profils.
+      
+      ### CADRAGE ###
+      PLAN COMPLET : DE LA TÊTE AUX PIEDS. Les pieds doivent être entièrement visibles.
+      STYLE : 4K UHD, focus net, photographie studio neutre, équivalent capteur plein format, aucun filtre ni retouche.`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// VERTEX AI — appel REST direct (même pattern que Studio POV)
+// ═══════════════════════════════════════════════════════════════
+async function callVertex(prompt, imageBase64, statusCb) {
+  const endpoint = `${VERTEX_ENDPOINT}${VERTEX_MODEL}:generateContent?key=${encodeURIComponent(API_KEY)}`;
+
+  // La partie image AVANT le texte (comme dans GeminiService)
+  const parts = [];
+  if (imageBase64) parts.push({ inlineData: { mimeType: 'image/jpeg', data: imageBase64 } });
+  parts.push({ text: prompt });
+
   const body = {
     contents: [{ role: 'user', parts }],
     generationConfig: {
@@ -1203,77 +1190,67 @@ async function callVertex(prompt, imageBase64 = null, statusCb = null) {
     }
   };
 
-  const retryWaits = [4000, 8000, 15000];
+  const retryWaits = [5000, 10000, 20000];
   let lastError = null;
 
   for (let attempt = 0; attempt <= retryWaits.length; attempt++) {
     try {
-      statusCb?.(attempt === 0 ? 'Envoi vers Gemini…' : `Nouvelle tentative ${attempt + 1}…`);
+      statusCb?.(attempt === 0 ? 'Envoi vers Vertex AI…' : `Nouvelle tentative ${attempt}/${retryWaits.length}…`);
 
-      // Timeout explicite de 90s pour éviter d'attendre à l'infini
       const controller = new AbortController();
-      const timeoutId  = setTimeout(() => controller.abort(), 90_000);
+      const tid = setTimeout(() => controller.abort(), 120_000); // 2 min timeout
 
       let res;
       try {
         res = await fetch(endpoint, {
-          method:  'POST',
+          method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify(body),
-          signal:  controller.signal
+          body: JSON.stringify(body),
+          signal: controller.signal
         });
-      } finally {
-        clearTimeout(timeoutId);
-      }
+      } finally { clearTimeout(tid); }
 
       if (!res.ok) {
-        let errorText = '';
-        try { const j = await res.json(); errorText = j?.error?.message || JSON.stringify(j); } catch { errorText = await res.text(); }
-        const msg = String(errorText || '').trim();
-        if (res.status === 401) throw new Error('Clé API non reconnue. Vérifie ta clé Gemini / Vertex.');
-        if (res.status === 403) throw new Error('Accès refusé. Vérifie les permissions de la clé.');
-        if (res.status === 404) throw new Error('Modèle introuvable. Vérifie le nom du modèle.');
-        if (res.status === 429) throw new Error(`Quota dépassé — réessaye dans quelques secondes. ${msg}`);
-        if (res.status >= 500) throw new Error(`Serveur Gemini indisponible (${res.status}). ${msg}`);
-        throw new Error(msg || `Erreur HTTP ${res.status}`);
+        let msg = '';
+        try { const j = await res.json(); msg = j?.error?.message || JSON.stringify(j); } catch { msg = await res.text(); }
+        msg = String(msg || '').trim();
+        if (res.status === 401) throw new Error('Clé API non reconnue — vérifie ta clé Vertex (AQ…).');
+        if (res.status === 403) throw new Error('Accès refusé — vérifie les permissions de ta clé Vertex.');
+        if (res.status === 404) throw new Error('Modèle introuvable — ' + msg);
+        if (res.status === 429) throw new Error('Quota dépassé. ' + msg);
+        throw new Error(`Erreur HTTP ${res.status}: ${msg}`);
       }
 
-      const data    = await res.json();
-      const partsOut = data?.candidates?.[0]?.content?.parts || [];
-      for (const part of partsOut) {
+      const data      = await res.json();
+      const finReason = data?.candidates?.[0]?.finishReason;
+      if (finReason === 'SAFETY') throw new Error('Génération bloquée par les filtres de sécurité.');
+
+      for (const part of (data?.candidates?.[0]?.content?.parts || [])) {
         if (part.inlineData?.data) {
           const mime = part.inlineData.mimeType || 'image/png';
           return `data:${mime};base64,${part.inlineData.data}`;
         }
       }
-
-      // Vérifier si bloqué par safety
-      const reason = data?.candidates?.[0]?.finishReason;
-      if (reason === 'SAFETY') throw new Error('Génération bloquée par les filtres de sécurité. Reformule ta demande.');
-
-      throw new Error("Aucune image dans la réponse Gemini.");
+      throw new Error("Aucune image dans la réponse Vertex.");
     } catch (err) {
       lastError = err;
-      const msg = String(err.message || '').toLowerCase();
-      // Abort signal = timeout
-      if (err.name === 'AbortError') {
-        lastError = new Error('Timeout 90s dépassé. Le serveur ne répond pas. Vérifie ta clé et réessaye.');
-      }
-      const retryable = msg.includes('quota') || msg.includes('429') || msg.includes('500') || msg.includes('502') || msg.includes('503') || msg.includes('indisponible') || msg.includes('failed to fetch') || msg.includes('networkerror') || msg.includes('load failed');
+      if (err.name === 'AbortError') { lastError = new Error('Timeout 2min — le serveur ne répond pas.'); break; }
+      const m = String(err.message || '').toLowerCase();
+      const retryable = m.includes('quota') || m.includes('429') || m.includes('500') || m.includes('502') || m.includes('503') || m.includes('indisponible') || m.includes('failed to fetch') || m.includes('networkerror');
       if (retryable && attempt < retryWaits.length) {
-        statusCb?.(`Serveur occupé, attente ${Math.round(retryWaits[attempt]/1000)}s…`);
+        statusCb?.(`Serveur occupé, attente ${retryWaits[attempt]/1000}s…`);
         await sleep(retryWaits[attempt]);
         continue;
       }
       throw lastError;
     }
   }
-  throw lastError || new Error("Échec de génération Gemini.");
+  throw lastError || new Error("Échec Vertex.");
 }
 
-// ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
 // KIE.AI
-// ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
 async function uploadImageToKie(dataUrl) {
   const res = await fetch('https://kieai.redpandaai.co/api/file-base64-upload', {
     method: 'POST',
@@ -1285,26 +1262,17 @@ async function uploadImageToKie(dataUrl) {
   return data.data.downloadUrl;
 }
 
-async function callKie(prompt, imageDataUrl = null, statusCallback = null) {
+async function callKie(prompt, imageDataUrl, statusCb) {
   let imageUrls = [];
   if (imageDataUrl) {
-    statusCallback?.('Upload de la référence vers kie.ai…');
-    try { imageUrls.push(await uploadImageToKie(imageDataUrl)); } catch(e) { console.warn('Upload ref kie.ai échoué:', e.message); }
+    statusCb?.('Upload de la référence vers kie.ai…');
+    try { imageUrls.push(await uploadImageToKie(imageDataUrl)); } catch(e) { console.warn('Upload ref kie.ai:', e.message); }
   }
-
-  statusCallback?.('Envoi vers Nano Banana Pro…');
-
-  const fullPrompt = `Ultra-realistic 4K full-body photo, natural skin texture, no AI smoothing, authentic lighting.\n${prompt}`;
+  statusCb?.('Envoi vers Nano Banana Pro…');
 
   const taskBody = {
     model: KIE_MODEL,
-    input: {
-      prompt: fullPrompt,
-      aspect_ratio: '9:16',
-      resolution: '4K',
-      output_format: 'png',
-      image_input: imageUrls
-    }
+    input: { prompt, aspect_ratio: '9:16', resolution: '4K', output_format: 'png', image_input: imageUrls }
   };
 
   const createRes = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
@@ -1312,116 +1280,105 @@ async function callKie(prompt, imageDataUrl = null, statusCallback = null) {
     headers: { 'Authorization': `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(taskBody)
   });
-
   const createData = await createRes.json().catch(() => ({}));
   if (!createRes.ok || createData.code !== 200) {
-    const msg = createData?.msg || createData?.message || `Erreur HTTP ${createRes.status}`;
+    const msg = createData?.msg || createData?.message || `Erreur ${createRes.status}`;
     if (createRes.status === 401 || createData.code === 401) throw new Error('Clé kie.ai invalide.');
-    if (createRes.status === 403 || createData.code === 403) throw new Error('Accès refusé kie.ai. Vérifiez vos crédits.');
     throw new Error(`Erreur kie.ai: ${msg}`);
   }
 
   const taskId = createData?.data?.taskId;
   if (!taskId) throw new Error('Aucun taskId retourné par kie.ai.');
 
-  // Polling
-  for (let i = 0; i < 60; i++) {
+  for (let i = 0; i < 72; i++) {
     await sleep(5000);
-    statusCallback?.(`Nano Banana génère… (${(i + 1) * 5}s)`);
-
-    let statusData = {};
+    statusCb?.(`Nano Banana génère… (${(i+1)*5}s)`);
     try {
-      const statusRes = await fetch(`https://api.kie.ai/api/v1/jobs/recordInfo?taskId=${taskId}`, {
+      const sr = await fetch(`https://api.kie.ai/api/v1/jobs/recordInfo?taskId=${taskId}`, {
         headers: { 'Authorization': `Bearer ${API_KEY}` }
       });
-      statusData = await statusRes.json();
-    } catch(e) { continue; }
-
-    const state = statusData?.data?.state;
-    if (state === 'fail') throw new Error(`Génération kie.ai échouée: ${statusData?.data?.failMsg}`);
-
-    if (state === 'success') {
-      let imageUrl = null;
-      try {
-        const r = JSON.parse(statusData?.data?.resultJson || '{}');
-        imageUrl = r?.resultUrls?.[0] || r?.images?.[0]?.url || r?.url;
-      } catch(_) {}
-      if (!imageUrl) throw new Error('Succès kie.ai mais URL manquante.');
-
-      statusCallback?.('Téléchargement de l\'image…');
-      const imgRes = await fetch(imageUrl);
-      const blob   = await imgRes.blob();
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result);
-        reader.onerror   = reject;
-        reader.readAsDataURL(blob);
-      });
-    }
+      const sd = await sr.json();
+      const state = sd?.data?.state;
+      if (state === 'fail') throw new Error(`kie.ai: ${sd?.data?.failMsg || 'Échec'}`);
+      if (state === 'success') {
+        let imageUrl = null;
+        try { const r = JSON.parse(sd?.data?.resultJson || '{}'); imageUrl = r?.resultUrls?.[0] || r?.images?.[0]?.url || r?.url; } catch(_) {}
+        if (!imageUrl) throw new Error('Success kie.ai mais URL manquante.');
+        statusCb?.("Téléchargement de l'image…");
+        const imgRes = await fetch(imageUrl);
+        const blob   = await imgRes.blob();
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.onerror   = reject;
+          reader.readAsDataURL(blob);
+        });
+      }
+    } catch(e) { if (e.message.includes('kie.ai')) throw e; }
   }
-  throw new Error('Timeout kie.ai (5 min dépassées).');
+  throw new Error('Timeout kie.ai (6 min).');
 }
 
-// ─────────────────────────────────────────────────────────────
-// GÉNÉRATION PRINCIPALE
-// ─────────────────────────────────────────────────────────────
-async function callEngine(prompt, refDataUrl = null, statusCallback = null) {
-  if (ENGINE === 'kie') {
-    return callKie(prompt, refDataUrl, statusCallback);
-  } else {
-    // Pour Vertex : on passe l'image source originale (pas l'image générée)
-    const b64 = refDataUrl ? refDataUrl.split(',')[1] : null;
-    return callVertex(prompt, b64, statusCallback);
-  }
+// ═══════════════════════════════════════════════════════════════
+// DISPATCH ENGINE
+// ═══════════════════════════════════════════════════════════════
+async function callEngine(prompt, refDataUrl, statusCb) {
+  const b64 = refDataUrl ? refDataUrl.split(',')[1] : null;
+  if (ENGINE === 'kie') return callKie(prompt, refDataUrl, statusCb);
+  return callVertex(prompt, b64, statusCb);
 }
 
-function setGenLoading(state, label = null) {
+// ═══════════════════════════════════════════════════════════════
+// GÉNÉRATION — FACE
+// ═══════════════════════════════════════════════════════════════
+function setGenLoading(state, label) {
   const btn = document.getElementById('genFrontBtn');
-  btn.disabled   = state;
+  btn.disabled    = state;
   btn.textContent = label || (state ? 'Calcul en cours…' : 'Lancer le rendu (face)');
 }
 
 async function generateFront() {
-  if (!basePhotoDataUrl) { alert("Ajoute d'abord une photo source."); return; }
+  if (!basePhotoDataUrl) { alert("Ajoute d'abord une photo source (visage)."); return; }
   if (isLoading) return;
 
   isLoading = true;
   resetImages();
   showImagesArea();
   setGenLoading(true);
-  setText('mainLoadingStatus', 'Initialisation…');
-
-  const prompt = buildViewPrompt('front');
+  setText('mainLoadingStatus', 'Préparation du rendu…');
 
   try {
+    const prompt   = buildFrontPrompt();
     const statusCb = (msg) => setText('mainLoadingStatus', msg);
-    // On passe la photo source uniquement pour la vue front
-    const dataUrl = await callEngine(prompt, basePhotoDataUrl, statusCb);
-    const blobUrl = storeImage('front', dataUrl);
+    const dataUrl  = await callEngine(prompt, basePhotoDataUrl, statusCb);
+    const blobUrl  = storeImage('front', dataUrl);
     setViewImage('front', blobUrl);
     selectView('front');
 
-    // Afficher les boutons post-génération
-    document.getElementById('syncBtn').classList.remove('hidden');       // TOUJOURS visible après la face
+    document.getElementById('syncBtn').classList.remove('hidden');
     document.getElementById('lockBtnWrap').classList.remove('hidden');
     document.getElementById('bodyLookBtnWrap').classList.remove('hidden');
     document.getElementById('exportBtnWrap').classList.remove('hidden');
     setText('mainLoadingStatus', '');
   } catch (err) {
-    alert('Erreur rendu face : ' + err.message);
     console.error(err);
+    alert('Erreur rendu face : ' + err.message);
+    // Remettre l'état vide proprement
+    document.getElementById('imagesArea').classList.add('hidden');
+    document.getElementById('emptyState').classList.remove('hidden');
   } finally {
     isLoading = false;
     setGenLoading(false);
   }
 }
 
+// ═══════════════════════════════════════════════════════════════
+// GÉNÉRATION — 360°
+// Même logique que generateRest() dans App.tsx mais séquentielle
+// pour éviter les quota errors (Vertex ne supporte pas bien le parallèle)
+// ═══════════════════════════════════════════════════════════════
 async function generateRest() {
-  // Vérifier qu'on a bien une face générée
-  if (!imageStore.front) {
-    alert('Génère d\'abord la vue de face.');
-    return;
-  }
+  if (!imageStore.front) { alert("Génère d'abord la vue de face."); return; }
   if (isLoading) return;
 
   isLoading = true;
@@ -1430,15 +1387,16 @@ async function generateRest() {
   syncBtn.textContent = 'Synchronisation 360° en cours…';
 
   const views = [
-    { key: 'profileLeft',  label: 'Profil Gauche' },
-    { key: 'profileRight', label: 'Profil Droit'  },
-    { key: 'back',         label: 'Dos'           }
+    { key: 'profileLeft'  },
+    { key: 'profileRight' },
+    { key: 'back'         }
   ];
 
   try {
     for (const view of views) {
-      // Afficher le spinner sur la miniature ET sur la vue principale si sélectionnée
-      showThumbLoading(view.key, 'Génération…');
+      // Activer le spinner sur la miniature
+      showThumbLoading(view.key, 'En attente…');
+      // Si on regarde cette vue, activer aussi le spinner principal
       if (currentView === view.key) {
         document.getElementById('mainViewImg').style.display = 'none';
         document.getElementById('mainViewLoading').style.display = 'flex';
@@ -1446,23 +1404,25 @@ async function generateRest() {
       }
 
       const prompt = buildViewPrompt(view.key);
+      const statusCb = (msg) => {
+        const tl = document.getElementById('tl-' + view.key);
+        const st = tl?.querySelector('.thumb-status');
+        if (st) st.textContent = msg;
+        if (currentView === view.key) setText('mainLoadingStatus', msg);
+      };
 
+      // On passe la photo SOURCE (pas l'image générée) pour garder cohérence visage
+      // + le prompt décrit précisément l'angle demandé
       try {
-        const statusCb = (msg) => {
-          const tl = document.getElementById('tl-' + view.key);
-          const st = tl?.querySelector('.thumb-status');
-          if (st) st.textContent = msg;
-          if (currentView === view.key) setText('mainLoadingStatus', msg);
-        };
-
+        statusCb('Génération…');
         const dataUrl = await callEngine(prompt, basePhotoDataUrl, statusCb);
         const blobUrl = storeImage(view.key, dataUrl);
         setViewImage(view.key, blobUrl);
-      } catch (err) {
+      } catch(err) {
         console.error('Erreur ' + view.key + ':', err);
         const tl = document.getElementById('tl-' + view.key);
         const st = tl?.querySelector('.thumb-status');
-        if (st) st.textContent = '❌ ' + (err.message || 'Erreur');
+        if (st) st.textContent = '❌ ' + (err.message?.slice(0, 40) || 'Erreur');
       }
     }
   } finally {
@@ -1473,11 +1433,12 @@ async function generateRest() {
   }
 }
 
-// ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
 // MODALS
-// ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
 function openBodyLookModal()  { document.getElementById('bodyLookModal').classList.remove('hidden'); }
 function closeBodyLookModal() { document.getElementById('bodyLookModal').classList.add('hidden'); }
+
 function openOriginsModal() {
   if (isLocked) return;
   tempOrigins = JSON.parse(JSON.stringify(params.origins));
@@ -1554,9 +1515,9 @@ function renderMixItems() {
   `).join('');
 }
 
-// ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
 // INIT
-// ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
 renderStretchZones();
 updateGravityMax();
 </script>
