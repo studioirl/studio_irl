@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studio Family Home — Vertex AI / kie.ai</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#050505;--bg2:#0d0d0d;--glass:rgba(255,255,255,0.04);--border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.12);--text:#fff;--text2:rgba(255,255,255,0.65);--text3:rgba(255,255,255,0.35);--accent:#C97A63;--accent2:#a0522d;--indigo:#6366f1;--purple:#a855f7;--red:#ef4444;--green:#22c55e;--violet:#8b5cf6;--kie:#f59e0b;
+}
+html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow-x:hidden}
+body{background:radial-gradient(ellipse at top right,#1a0a00 0%,var(--bg) 60%)}
+
+/* SPLASH */
+#splash{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center;position:relative}
+.splash-bg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.04}
+.splash-bg img{width:100%;height:100%;object-fit:cover;filter:grayscale(1) blur(2px)}
+.splash-content{position:relative;z-index:10;max-width:560px;width:100%}
+.splash-logo{font-family:'Syne',sans-serif;font-size:clamp(40px,8vw,72px);font-weight:800;text-transform:uppercase;letter-spacing:-0.03em;line-height:0.9;margin-bottom:8px;color:var(--accent)}
+.splash-sub{font-size:12px;font-weight:300;color:var(--text3);letter-spacing:0.4em;text-transform:uppercase;margin-bottom:32px}
+.api-box{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:24px;padding:28px;margin-bottom:24px}
+.api-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.3em;color:var(--text3);margin-bottom:10px;text-align:left;display:block}
+
+/* Sélecteur moteur */
+.engine-selector{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.engine-btn{padding:14px 10px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,0.04);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:5px}
+.engine-btn:hover{border-color:rgba(255,255,255,0.25);color:var(--text)}
+.engine-btn.active-vertex{background:rgba(201,122,99,0.15);border-color:var(--accent);color:var(--accent)}
+.engine-btn.active-kie{background:rgba(245,158,11,0.15);border-color:var(--kie);color:var(--kie)}
+.engine-price{font-size:8px;opacity:.7;font-weight:600}
+
+.api-input{width:100%;background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:12px;padding:14px 16px;font-size:13px;font-family:monospace;color:var(--text);outline:none;transition:border-color 0.2s;margin-bottom:8px}
+.api-input::placeholder{color:rgba(255,255,255,0.15)}
+.api-input:focus{border-color:var(--accent)}
+.engine-note{font-size:11px;font-weight:600;margin-top:6px;text-align:left}
+.engine-note.vertex{color:var(--accent)}
+.engine-note.kie{color:var(--kie)}
+
+/* Pill moteur dans le header */
+.engine-pill{padding:4px 12px;border-radius:999px;font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;cursor:pointer;border:none}
+.engine-pill.vertex{background:rgba(201,122,99,0.15);border:1px solid rgba(201,122,99,0.4);color:var(--accent)}
+.engine-pill.kie{background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.4);color:var(--kie)}
+
+/* Badge résultat */
+.result-engine-badge{position:absolute;top:16px;left:16px;padding:5px 12px;border-radius:999px;font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;z-index:5}
+.result-engine-badge.vertex{background:rgba(201,122,99,0.2);border:1px solid rgba(201,122,99,0.5);color:var(--accent)}
+.result-engine-badge.kie{background:rgba(245,158,11,0.2);border:1px solid rgba(245,158,11,0.5);color:var(--kie)}
+
+.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+.mode-card{position:relative;overflow:hidden;border-radius:24px;border:1px solid var(--border2);cursor:pointer;transition:all 0.3s}
+.mode-card:hover{border-color:var(--accent);transform:scale(1.02)}
+.mode-card-btn{padding:12px;background:var(--accent);border:none;border-radius:12px;color:white;font-family:'Syne',sans-serif;font-weight:700;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;cursor:pointer;width:100%}
+
+/* SETUP */
+#setup{display:none;min-height:100vh;padding:24px;background:var(--bg)}
+.setup-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;max-width:900px;margin-left:auto;margin-right:auto}
+.back-btn{background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:12px;padding:10px 20px;color:var(--text);cursor:pointer;font-size:13px;font-family:'DM Sans',sans-serif;transition:background 0.2s}
+.back-btn:hover{background:rgba(255,255,255,0.1)}
+.setup-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:0.3em;color:var(--accent)}
+.setup-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:900px;margin:0 auto}
+@media(max-width:640px){.setup-grid{grid-template-columns:1fr}.mode-grid{grid-template-columns:1fr}.studio-main{padding:8px;gap:12px}.s-card{padding:14px;border-radius:18px;margin-bottom:10px}.room-cats{flex-wrap:wrap;overflow-x:visible;gap:6px}.cat-btn{flex-shrink:1;padding:7px 12px;font-size:8px}.room-grid{grid-template-columns:repeat(3,1fr);gap:6px}.room-btn{padding:8px 2px;border-radius:12px}.room-btn .icon{font-size:18px;margin-bottom:2px}.room-btn .rlabel{font-size:6px}.output-panel{min-height:300px}.gen-btn{padding:16px;font-size:11px;letter-spacing:0.2em}.app-nav{padding:10px 12px;flex-wrap:wrap;gap:6px}.brand{font-size:13px}.energy-btn{padding:6px 10px;font-size:8px}.nav-badges{gap:4px;flex-wrap:wrap}select.s-select{padding:10px 12px;font-size:11px}.uploader{min-height:80px}.ar-btns{gap:6px}.ar-btn{padding:8px 2px;font-size:8px}.mode-toggle-label{font-size:8px}.s-card-title{font-size:8px}.upload-slots{grid-template-columns:1fr 1fr;gap:8px}}
+.setup-card{background:var(--glass);border:1px solid var(--border);border-radius:32px;padding:28px}
+.setup-card h3{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.3em;color:var(--accent);margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.validate-btn{display:block;width:100%;max-width:900px;margin:24px auto 0;padding:20px;background:#000000;border:none;border-radius:20px;color:#ffffff;font-family:'Syne',sans-serif;font-weight:800;font-size:14px;text-transform:uppercase;letter-spacing:0.3em;cursor:pointer;transition:all 0.2s}
+.validate-btn:hover{background:#222222}
+.validate-btn:disabled{opacity:0.3;cursor:not-allowed}
+.participant-controls{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.participant-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.2em;color:var(--text3);flex:1}
+.cnt-btn{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid var(--border);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:background 0.2s}
+.cnt-btn:hover{background:rgba(255,255,255,0.15)}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.toggle-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.2em;color:var(--text3)}
+.toggle-sw{width:40px;height:22px;border-radius:11px;background:rgba(255,255,255,0.1);position:relative;cursor:pointer;transition:background 0.3s;flex-shrink:0}
+.toggle-sw.on{background:var(--accent)}
+.toggle-sw-thumb{position:absolute;top:3px;left:3px;width:16px;height:16px;background:white;border-radius:50%;transition:transform 0.3s;box-shadow:0 1px 4px rgba(0,0,0,0.3)}
+.toggle-sw.on .toggle-sw-thumb{transform:translateX(18px)}
+.upload-slots{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+
+.uploader{border:2px dashed var(--border);border-radius:16px;min-height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;overflow:hidden;transition:border-color 0.2s;background:rgba(255,255,255,0.02)}
+.uploader:hover{border-color:var(--accent)}
+.uploader.has-img{border-style:solid;border-color:var(--border2)}
+.uploader img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+.uploader-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.2em;color:var(--text3);text-align:center;padding:8px;position:relative;z-index:1}
+.uploader-icon{font-size:20px;margin-bottom:4px;position:relative;z-index:1}
+.uploader input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;z-index:10;width:100%;height:100%}
+.uploader-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.2s;z-index:2;pointer-events:none}
+.uploader.has-img:hover .uploader-overlay{opacity:1;pointer-events:auto}
+.remove-img-btn{background:var(--red);border:none;border-radius:50%;width:28px;height:28px;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px}
+.add-slots-btn{width:100%;padding:12px;background:rgba(255,255,255,0.03);border:2px dashed var(--border);border-radius:12px;color:var(--text3);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.2em;cursor:pointer;transition:all 0.2s;margin-top:16px}
+.add-slots-btn:hover{background:rgba(255,255,255,0.06)}
+
+/* APP */
+#app{display:none;min-height:100vh;flex-direction:column}
+#app.visible{display:flex}
+.app-nav{border-bottom:1px solid var(--border);background:rgba(0,0,0,0.6);backdrop-filter:blur(20px);position:sticky;top:0;z-index:50;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+.brand{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;text-transform:uppercase;letter-spacing:-0.02em;color:var(--accent);cursor:pointer}
+.nav-badges{display:flex;gap:8px;align-items:center}
+.energy-btn{padding:8px 16px;border-radius:999px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;cursor:pointer;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--text3);transition:all 0.2s}
+.energy-btn.active-calm{background:rgba(34,197,94,0.15);border-color:var(--green);color:var(--green)}
+.energy-btn.active-chaos{background:rgba(239,68,68,0.15);border-color:var(--red);color:var(--red)}
+
+.studio-main{flex:1;max-width:1600px;margin:0 auto;width:100%;padding:16px;display:grid;grid-template-columns:320px 1fr 360px;gap:20px}
+@media(max-width:1300px){.studio-main{grid-template-columns:300px 1fr}}
+@media(max-width:900px){.studio-main{grid-template-columns:1fr;padding:10px;gap:12px}.room-grid{grid-template-columns:repeat(3,1fr)}.room-cats{flex-wrap:wrap;overflow-x:visible}}
+.output-col{display:block}
+@media(max-width:1300px){.output-col{grid-column:1/-1}}
+
+.s-card{background:var(--glass);border:1px solid var(--border);border-radius:28px;padding:24px;margin-bottom:16px}
+.s-card-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.35em;color:var(--accent);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+
+.room-cats{display:flex;overflow-x:auto;gap:8px;padding-bottom:8px;margin-bottom:12px;scrollbar-width:none}
+.room-cats::-webkit-scrollbar{display:none}
+.cat-btn{flex-shrink:0;padding:8px 14px;border-radius:999px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;cursor:pointer;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--text3);transition:all 0.2s;white-space:nowrap}
+.cat-btn.active{background:var(--accent);border-color:var(--accent);color:white}
+.room-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.room-btn{padding:10px 4px;border-radius:16px;text-align:center;cursor:pointer;border:1px solid var(--border);background:rgba(255,255,255,0.03);transition:all 0.2s;opacity:0.6}
+.room-btn:hover{opacity:1;border-color:var(--border2)}
+.room-btn.active{background:var(--indigo);border-color:var(--indigo);opacity:1;transform:scale(1.05)}
+.room-btn .icon{font-size:20px;margin-bottom:4px;display:block}
+.room-btn .rlabel{font-size:7px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text2)}
+
+select.s-select{width:100%;background:#111;border:1px solid var(--border);border-radius:12px;padding:12px 14px;font-size:11px;font-family:'DM Sans',sans-serif;color:var(--text);outline:none;cursor:pointer;margin-bottom:12px;appearance:none;background-image:url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");background-repeat:no-repeat;background-position:right 12px center;background-size:14px}
+select.s-select option{background:#111}
+
+.mode-toggle-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)}
+.mode-toggle-row:last-child{border-bottom:none}
+.mode-toggle-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;color:var(--text3)}
+
+.gen-btn{width:100%;padding:24px;border:none;border-radius:20px;background:var(--accent);color:white;font-family:'Syne',sans-serif;font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:0.3em;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:12px;box-shadow:0 20px 50px rgba(201,122,99,0.3)}
+.gen-btn:hover:not(:disabled){transform:scale(1.02);box-shadow:0 24px 60px rgba(201,122,99,0.4)}
+.gen-btn:disabled{opacity:0.4;cursor:not-allowed;box-shadow:none}
+.gen-btn.loading svg{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.output-panel{background:var(--glass);border:1px solid var(--border);border-radius:28px;min-height:600px;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+.output-empty{text-align:center;opacity:0.15}
+.output-empty p{font-family:'Syne',sans-serif;font-size:64px;font-weight:800;text-transform:uppercase;letter-spacing:-0.03em;line-height:1}
+.output-img{width:100%;height:100%;object-fit:contain;border-radius:28px}
+.dl-btn{position:absolute;bottom:20px;right:20px;background:rgba(0,0,0,0.7);border:1px solid var(--border2);border-radius:12px;padding:10px 20px;color:white;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;cursor:pointer;transition:background 0.2s}
+.dl-btn:hover{background:rgba(0,0,0,0.9)}
+
+.error-box{padding:16px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:14px;font-size:11px;font-weight:700;color:#fca5a5;margin-top:12px;display:none}
+.error-box.show{display:block}
+
+.loading-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.8);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;border-radius:28px;z-index:10}
+.loading-spinner{width:60px;height:60px;border:3px solid rgba(201,122,99,0.2);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite}
+.loading-step{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.3em;color:var(--text3);text-align:center;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+textarea.s-textarea{width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:16px;padding:16px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--text);outline:none;resize:vertical;min-height:80px;transition:border-color 0.2s}
+textarea.s-textarea::placeholder{color:var(--text3)}
+textarea.s-textarea:focus{border-color:var(--accent)}
+
+.ar-btns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+.ar-btn{padding:10px 4px;border-radius:12px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;cursor:pointer;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--text3);transition:all 0.2s;text-align:center}
+.ar-btn.active{background:var(--indigo);border-color:var(--indigo);color:white}
+
+.subtype-row{display:none;margin-bottom:12px}
+.subtype-row.show{display:block}
+
+/* Modal clés API */
+.modal-back{position:fixed;inset:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-back.open{display:flex}
+.modal-box{background:#0d0d0d;border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:28px;max-width:440px;width:100%}
+.modal-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;text-transform:uppercase;margin-bottom:20px;color:var(--accent)}
+.modal-engine-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px}
+.modal-tab{padding:10px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,0.03);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;cursor:pointer;color:var(--text3);transition:all 0.2s;text-align:center}
+.modal-tab.active-vertex{background:rgba(201,122,99,0.15);border-color:var(--accent);color:var(--accent)}
+.modal-tab.active-kie{background:rgba(245,158,11,0.15);border-color:var(--kie);color:var(--kie)}
+.modal-key-section{margin-bottom:14px}
+.modal-key-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.2em;color:var(--text3);margin-bottom:6px;display:block}
+.modal-key-input{width:100%;background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:10px;padding:12px 14px;font-size:12px;font-family:monospace;color:var(--text);outline:none;transition:border-color 0.2s}
+.modal-key-input:focus{border-color:var(--accent)}
+.modal-save-btn{width:100%;padding:14px;background:var(--accent);border:none;border-radius:12px;color:white;font-family:'Syne',sans-serif;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:0.2em;cursor:pointer;margin-top:8px}
+.modal-cancel-btn{width:100%;padding:10px;background:none;border:none;color:var(--text3);font-size:11px;cursor:pointer;margin-top:4px}
+.modal-note{font-size:10px;color:var(--text3);margin-top:8px;line-height:1.6;padding:10px;background:rgba(255,255,255,0.03);border-radius:8px}
+.modal-note a{color:var(--accent);text-decoration:none}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-bg"><img src="https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&q=80&w=1600" alt=""></div>
+  <div class="splash-content">
+    <div class="splash-logo">Studio<br>Family Home</div>
+    <div class="splash-sub">Scènes de vie ultra-réalistes 4K</div>
+    <div class="api-box">
+
+      <!-- Sélecteur moteur -->
+      <span class="api-label" style="margin-bottom:8px;display:block">⚡ Choisis ton moteur</span>
+      <div class="engine-selector">
+        <button class="engine-btn active-vertex" id="btn-vertex" onclick="selectEngine('vertex')">
+          <span>🔷 Vertex AI</span>
+          <span class="engine-price">Clé AQ... · Gemini Image</span>
+        </button>
+        <button class="engine-btn" id="btn-kie" onclick="selectEngine('kie')">
+          <span>⚡ kie.ai</span>
+          <span class="engine-price">Clé kie_... · Flux ultra</span>
+        </button>
+      </div>
+
+      <span class="api-label" id="splashKeyLabel1">🔑 Clé API Vertex AI (principale)</span>
+      <input type="password" id="apiKey1Input" class="api-input" placeholder="AQ..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
+
+      <div id="splashKey2Block">
+        <span class="api-label" id="splashKeyLabel2" style="margin-top:4px">🔑 Clé API kie.ai</span>
+        <input type="password" id="apiKey2Input" class="api-input" placeholder="kie_..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
+      </div>
+
+      <p class="engine-note vertex" id="engineNote">⚡ Vertex AI — console.cloud.google.com/vertex-ai/studio</p>
+      <button onclick="showModeGrid()" style="width:100%;margin-top:12px;padding:14px;background:var(--accent);border:none;border-radius:12px;color:white;font-family:'Syne',sans-serif;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:0.2em;cursor:pointer">Valider les clés →</button>
+    </div>
+    <div class="mode-grid" id="modeGrid" style="display:none">
+      <div class="mode-card" onclick="selectMode('SOLO')" style="background:linear-gradient(135deg,#1a1a2e,#16213e);aspect-ratio:unset;padding:32px 16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px">
+        <div style="font-size:40px">🧍</div>
+        <h2 style="font-size:22px;font-family:'Syne',sans-serif;font-weight:800;text-transform:uppercase">Solo</h2>
+        <button class="mode-card-btn">Entrer</button>
+      </div>
+      <div class="mode-card" onclick="selectMode('FAMILY')" style="background:linear-gradient(135deg,#1a1a2e,#16213e);aspect-ratio:unset;padding:32px 16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px">
+        <div style="font-size:40px">👨‍👩‍👧‍👦</div>
+        <h2 style="font-size:22px;font-family:'Syne',sans-serif;font-weight:800;text-transform:uppercase">Famille</h2>
+        <button class="mode-card-btn">Entrer</button>
+      </div>
+    </div>
+    <div id="splashError" style="color:#fca5a5;font-size:11px;font-weight:700;margin-top:12px;display:none"></div>
+  </div>
+</div>
+
+<!-- SETUP -->
+<div id="setup">
+  <div class="setup-header">
+    <button class="back-btn" onclick="goSplash()">← Retour</button>
+    <div class="setup-title" id="setupTitle">Configuration Solo</div>
+    <div style="width:80px"></div>
+  </div>
+  <div class="setup-grid" id="setupGrid"></div>
+  <button class="validate-btn" id="validateBtn" onclick="validateSetup()">Accéder au Studio →</button>
+  <div id="setupError" style="max-width:900px;margin:12px auto 0;text-align:center;color:#fca5a5;font-size:11px;font-weight:700;display:none"></div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <nav class="app-nav">
+    <div class="brand" onclick="goSplash()">Studio Family Home</div>
+    <div class="nav-badges">
+      <button class="engine-pill vertex" id="enginePill" onclick="openApiModal()">VERTEX AI</button>
+      <button class="energy-btn active-calm" id="energyCalmBtn" onclick="setEnergy('calm')">Calme</button>
+      <button class="energy-btn" id="energyChaosBtn" onclick="setEnergy('chaos')">Chaos</button>
+      <button class="back-btn" onclick="goSetup()" style="margin-left:8px">⚙ Famille</button>
+    </div>
+  </nav>
+
+  <div class="studio-main">
+    <!-- COL GAUCHE -->
+    <div>
+      <div class="s-card">
+        <div class="s-card-title">🧬 Avatar DNA</div>
+        <div class="uploader" id="mainAvatarUploader">
+          <div class="uploader-icon">📸</div>
+          <div class="uploader-label">Avatar principal *</div>
+          <input type="file" accept="image/*" onchange="handleUpload(event,'mainAvatar')">
+          <div class="uploader-overlay"><button class="remove-img-btn" onclick="removeImg(event,'mainAvatar')">✕</button></div>
+        </div>
+        <button onclick="goSetup()" style="width:100%;margin-top:10px;padding:8px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;color:var(--text3);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;cursor:pointer">Modifier la famille</button>
+      </div>
+
+      <div class="s-card">
+        <div class="s-card-title">🏠 Pièce</div>
+        <div class="room-cats" id="roomCats"></div>
+        <div class="room-grid" id="roomGrid"></div>
+        <div class="subtype-row" id="cuisineSubtype"><select class="s-select" onchange="setSubtype(this.value)"><option value="">Zone cuisine complète</option><option value="cuisine_plan_travail">Plan de travail</option><option value="cuisine_plaques_cuisson">Plaques de cuisson</option><option value="cuisine_a_table">À table (Cuisine)</option></select></div>
+        <div class="subtype-row" id="chambreSubtype"><select class="s-select" onchange="setSubtype(this.value)" id="chambreSubtypeSelect"></select></div>
+        <div class="subtype-row" id="bureauSubtype"><select class="s-select" onchange="setSubtype(this.value)"><option value="">Type d'ordinateur</option><option value="ordinateur_portable">Ordinateur portable</option><option value="ordinateur_bureau">Ordinateur de bureau</option></select></div>
+        <label class="uploader" id="roomImgUploader" style="margin-top:12px;min-height:100px;cursor:pointer;display:flex">
+          <div class="uploader-icon">🏠</div>
+          <div class="uploader-label" id="roomImgLabel">Photo de la pièce *</div>
+          <input type="file" accept="image/*" id="roomImgInput" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;z-index:10">
+          <div class="uploader-overlay"><button type="button" class="remove-img-btn" id="roomImgRemoveBtn">✕</button></div>
+        </label>
+        <!-- Note kie.ai -->
+        <div id="kieRoomNote" style="display:none;margin-top:12px;padding:12px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:12px;font-size:10px;color:#fcd34d;line-height:1.6">ℹ️ En mode kie.ai, la photo de pièce est décrite dans le prompt (FLUX ne supporte pas plusieurs images de référence simultanément).</div>
+      </div>
+
+      <div class="s-card">
+        <div class="s-card-title">⚙ Modes spéciaux</div>
+        <div class="mode-toggle-row"><span class="mode-toggle-label" style="color:#60a5fa">📱 Mode WhatsApp</span><div class="toggle-sw" id="toggleWhatsapp" onclick="toggleMode('whatsapp')"><div class="toggle-sw-thumb"></div></div></div>
+        <div class="mode-toggle-row"><span class="mode-toggle-label" style="color:#4ade80">🧹 Mode Ménage</span><div class="toggle-sw" id="toggleMenage" onclick="toggleMode('menage')"><div class="toggle-sw-thumb"></div></div></div>
+        <div class="mode-toggle-row"><span class="mode-toggle-label" style="color:#fb923c">👶 Mode Portage</span><div class="toggle-sw" id="togglePortage" onclick="toggleMode('portage')"><div class="toggle-sw-thumb"></div></div></div>
+        <div class="mode-toggle-row"><span class="mode-toggle-label" style="color:#22d3ee">🔔 Mode Interphone</span><div class="toggle-sw" id="toggleInterphone" onclick="toggleMode('interphone')"><div class="toggle-sw-thumb"></div></div></div>
+        <div class="mode-toggle-row"><span class="mode-toggle-label" style="color:#f472b6">👗 Mode Dressing</span><div class="toggle-sw" id="toggleDressing" onclick="toggleMode('dressing')"><div class="toggle-sw-thumb"></div></div></div>
+        <div class="mode-toggle-row" id="bbqModeRow" style="display:none"><span class="mode-toggle-label" style="color:#f87171">🔥 Mode Barbecue</span><div class="toggle-sw" id="toggleBBQ" onclick="toggleMode('bbq')"><div class="toggle-sw-thumb"></div></div></div>
+        <div class="mode-toggle-row"><span class="mode-toggle-label" style="color:#93c5fd">🛒 Mode Poussette</span><div class="toggle-sw" id="togglePoussette" onclick="toggleMode('poussette')"><div class="toggle-sw-thumb"></div></div></div>
+        <div class="mode-toggle-row"><span class="mode-toggle-label" style="color:#a5b4fc">🪞 Mode Miroir</span><div class="toggle-sw" id="toggleMiroir" onclick="toggleMode('miroir')"><div class="toggle-sw-thumb"></div></div></div>
+        <div class="mode-toggle-row" id="chemineeModeRow" style="display:none"><span class="mode-toggle-label" style="color:#fb923c">🔥 Mode Cheminée</span><div class="toggle-sw" id="toggleCheminee" onclick="toggleMode('cheminee')"><div class="toggle-sw-thumb"></div></div></div>
+        <div class="mode-toggle-row" id="tondeuseModRow" style="display:none"><span class="mode-toggle-label" style="color:#84cc16">🌿 Mode Tondeuse</span><div class="toggle-sw" id="toggleTondeuse" onclick="toggleMode('tondeuse')"><div class="toggle-sw-thumb"></div></div></div>
+      </div>
+
+      <div class="s-card" id="tondeuseConfig" style="display:none"><div class="s-card-title" style="color:#84cc16">🌿 Config Tondeuse</div><div class="uploader" id="tondeuseImgUploader" style="min-height:80px"><div class="uploader-icon">🚜</div><div class="uploader-label">Photo de la tondeuse *</div><input type="file" accept="image/*" onchange="handleUpload(event,'tondeuseImg')"><div class="uploader-overlay"><button class="remove-img-btn" onclick="removeImg(event,'tondeuseImg')" type="button">✕</button></div></div></div>
+
+      <div class="s-card" id="whatsappConfig" style="display:none"><div class="s-card-title" style="color:#60a5fa">📱 Config WhatsApp</div><select class="s-select" onchange="state.whatsappCallType=this.value"><option value="video">Appel vidéo</option><option value="audio">Appel audio</option></select><div class="uploader" id="whatsappContactUploader" style="min-height:80px"><div class="uploader-icon">👤</div><div class="uploader-label">Interlocuteur (affiché à l'écran) *</div><input type="file" accept="image/*" onchange="handleUpload(event,'whatsappContact')"><div class="uploader-overlay"><button class="remove-img-btn" onclick="removeImg(event,'whatsappContact')">✕</button></div></div></div>
+
+      <div class="s-card" id="portageConfig" style="display:none"><div class="s-card-title" style="color:#fb923c">👶 Config Portage</div><div class="upload-slots"><div class="uploader" id="babyRefUploader" style="min-height:80px"><div class="uploader-icon">🍼</div><div class="uploader-label">DNA Bébé *</div><input type="file" accept="image/*" onchange="handleUpload(event,'babyRef')"><div class="uploader-overlay"><button class="remove-img-btn" onclick="removeImg(event,'babyRef')">✕</button></div></div><div class="uploader" id="carrierImgUploader" style="min-height:80px"><div class="uploader-icon">🎽</div><div class="uploader-label">Porte-bébé *</div><input type="file" accept="image/*" onchange="handleUpload(event,'carrierImg')"><div class="uploader-overlay"><button class="remove-img-btn" onclick="removeImg(event,'carrierImg')">✕</button></div></div></div></div>
+
+      <div class="s-card" id="bbqConfig" style="display:none"><div class="s-card-title" style="color:#f87171">🔥 Config BBQ</div><div class="uploader" id="bbqRefUploader" style="min-height:80px"><div class="uploader-icon">🍖</div><div class="uploader-label">Photo du barbecue *</div><input type="file" accept="image/*" onchange="handleUpload(event,'bbqRef')"><div class="uploader-overlay"><button class="remove-img-btn" onclick="removeImg(event,'bbqRef')">✕</button></div></div></div>
+
+      <div class="s-card" id="poussetteConfig" style="display:none"><div class="s-card-title" style="color:#93c5fd">🛒 Config Poussette</div><div class="upload-slots"><div class="uploader" id="strollerRefUploader" style="min-height:80px"><div class="uploader-icon">🛒</div><div class="uploader-label">Poussette *</div><input type="file" accept="image/*" onchange="handleUpload(event,'strollerRef')"><div class="uploader-overlay"><button class="remove-img-btn" onclick="removeImg(event,'strollerRef')">✕</button></div></div><div class="uploader" id="strollerBabyUploader" style="min-height:80px"><div class="uploader-icon">👶</div><div class="uploader-label">Bébé *</div><input type="file" accept="image/*" onchange="handleUpload(event,'strollerBaby')"><div class="uploader-overlay"><button class="remove-img-btn" onclick="removeImg(event,'strollerBaby')">✕</button></div></div></div></div>
+
+      <!-- Interphone config -->
+      <div class="s-card" id="interphoneConfig" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px"><div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.2em;color:#22d3ee">⚡ INTERPHONE</div><div id="iphEtapeLabel" style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;color:var(--text3)">ÉTAPE 1/3</div></div>
+        <div style="display:flex;gap:6px;margin:12px 0">
+          <button onclick="setInterphoneStep(1)" id="iphBtn1" style="flex:1;padding:9px 4px;border-radius:10px;font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;cursor:pointer;border:1px solid #22d3ee;background:#22d3ee;color:#000;transition:all 0.2s">① Sonne</button>
+          <button onclick="setInterphoneStep(2)" id="iphBtn2" style="flex:1;padding:9px 4px;border-radius:10px;font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;cursor:pointer;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--text3);transition:all 0.2s">② Écran</button>
+          <button onclick="setInterphoneStep(3)" id="iphBtn3" style="flex:1;padding:9px 4px;border-radius:10px;font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;cursor:pointer;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--text3);transition:all 0.2s">③ Entre</button>
+        </div>
+        <div id="iphStep1">
+          <div style="margin-bottom:12px"><div style="font-size:10px;font-weight:700;color:var(--text2);margin-bottom:6px">Photo Portail <span style="color:#22d3ee">FERMÉ</span> <span style="color:#ef4444">*</span></div><div class="uploader" id="interphonePortalUploader" style="min-height:120px;border-color:rgba(34,211,238,0.3)"><div class="uploader-icon">🚪</div><div class="uploader-label">Cliquer pour uploader</div><input type="file" accept="image/*" onchange="handleUpload(event,'interphonePortal')"><div class="uploader-overlay"><button class="remove-img-btn" onclick="removeImg(event,'interphonePortal')">✕</button></div></div></div>
+          <div><div style="font-size:10px;font-weight:700;color:var(--text2);margin-bottom:6px">Photo du <span style="color:#22d3ee">VISITEUR</span> <span style="color:#ef4444">*</span></div><div class="uploader" id="interphoneVisitorUploader" style="min-height:120px;border-color:rgba(34,211,238,0.3)"><div class="uploader-icon">👤</div><div class="uploader-label">Cliquer pour uploader</div><input type="file" accept="image/*" onchange="handleUpload(event,'interphoneVisitor')"><div class="uploader-overlay"><button class="remove-img-btn" onclick="removeImg(event,'interphoneVisitor')">✕</button></div></div></div>
+        </div>
+        <div id="iphStep2" style="display:none">
+          <div style="margin-bottom:12px"><div style="font-size:10px;font-weight:700;color:var(--text2);margin-bottom:6px">Photo Écran Interphone <span style="color:var(--text3);font-size:8px">(optionnel)</span></div><div class="uploader" id="interphoneInteriorUploader" style="min-height:100px;border-color:rgba(34,211,238,0.2)"><div class="uploader-icon">📟</div><div class="uploader-label">Photo de votre interphone intérieur</div><input type="file" accept="image/*" onchange="handleUpload(event,'interphoneInterior')"><div class="uploader-overlay"><button class="remove-img-btn" onclick="removeImg(event,'interphoneInterior')">✕</button></div></div></div>
+        </div>
+        <div id="iphStep3" style="display:none">
+          <div style="margin-bottom:12px"><div style="font-size:10px;font-weight:700;color:var(--text2);margin-bottom:6px">Photo Portail <span style="color:#22d3ee">OUVERT</span> <span style="color:var(--text3);font-size:8px">(optionnel)</span></div><div class="uploader" id="interphonePortalOpenUploader" style="min-height:100px;border-color:rgba(34,211,238,0.2)"><div class="uploader-icon">🔓</div><div class="uploader-label">Photo portail en position ouverte</div><input type="file" accept="image/*" onchange="handleUpload(event,'interphonePortalOpen')"><div class="uploader-overlay"><button class="remove-img-btn" onclick="removeImg(event,'interphonePortalOpen')">✕</button></div></div></div>
+        </div>
+      </div>
+
+      <div class="s-card" id="menageConfig" style="display:none"><div class="s-card-title" style="color:#4ade80">🧹 Config Ménage</div><label style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;color:var(--text3);display:block;margin-bottom:6px">Type d'outil</label><select class="s-select" id="menageToolSelect" onchange="state.menageToolType=this.value;updateMenageToolLabel()"><option value="passer_aspirateur">🧹 Aspirateur</option><option value="lancer_robot_aspirateur">🤖 Robot aspirateur</option><option value="faire_poussiere_microfibre">🧼 Chiffon microfibre</option><option value="laver_sol_serpillere">🪣 Serpillère + seau</option><option value="ouvrir_fenetres_aerer">🪟 Aérer (fenêtres)</option><option value="nettoyer_poignees_portes">🚪 Nettoyer poignées</option><option value="desinfecter_surfaces">🧴 Désinfectant surfaces</option></select><div class="uploader" id="menageToolImgUploader" style="min-height:80px"><div class="uploader-icon">📸</div><div class="uploader-label" id="menageToolImgLabel">Photo de votre aspirateur (optionnel)</div><input type="file" accept="image/*" onchange="handleUpload(event,'menageToolImg')"><div class="uploader-overlay"><button class="remove-img-btn" onclick="removeImg(event,'menageToolImg')">✕</button></div></div></div>
+
+      <div class="s-card" id="dressingConfig" style="display:none"><div class="s-card-title" style="color:#f472b6">👗 Config Dressing — Tenues</div><div id="dressingOutfitsContainer"></div></div>
+    </div>
+
+    <!-- COL MILIEU -->
+    <div>
+      <div class="s-card">
+        <div class="s-card-title">🎬 Action & Scénario</div>
+        <label style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.2em;color:var(--text3);display:block;margin-bottom:6px">Angle de caméra</label>
+        <select class="s-select" onchange="state.cameraAngle=this.value"><option value="face">Face</option><option value="profil">Profil</option><option value="trois_quarts">Trois quarts</option><option value="plongee_legere">Plongée légère</option><option value="contre_plongee_legere">Contre-plongée légère</option><option value="immersive_organique">Moment capturé</option><option value="pov_mains">POV mains</option><option value="par_dessus_epaule">Par-dessus l'épaule</option></select>
+        <label style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.2em;color:var(--text3);display:block;margin-bottom:6px">Action</label>
+        <select class="s-select" id="actionSelect" onchange="state.action=this.value"><option value="">Sélectionner une action...</option></select>
+        <label style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.2em;color:var(--text3);display:block;margin-bottom:6px">Saison</label>
+        <select class="s-select" onchange="state.season=this.value"><option value="spring">Printemps</option><option value="summer">Été</option><option value="autumn">Automne</option><option value="winter">Hiver</option></select>
+        <label style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.2em;color:var(--text3);display:block;margin-bottom:6px">Météo</label>
+        <select class="s-select" onchange="state.weather=this.value"><option value="sunny">Soleil</option><option value="cloudy">Nuageux</option><option value="rain">Pluie</option><option value="storm">Orage</option><option value="snow">Neige</option></select>
+        <label style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.2em;color:var(--text3);display:block;margin-bottom:6px">Moment de la journée</label>
+        <select class="s-select" onchange="state.dayMoment=this.value"><option value="matin">Matin</option><option value="midi">Midi</option><option value="apres_midi">Après-midi</option><option value="soiree">Soirée</option><option value="nuit">Nuit</option></select>
+        <label style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.2em;color:var(--text3);display:block;margin-bottom:6px">Format image</label>
+        <div class="ar-btns">
+          <div class="ar-btn active" id="ar916" onclick="setAR('9:16')">9:16<br>Portrait</div>
+          <div class="ar-btn" id="ar169" onclick="setAR('16:9')">16:9<br>Paysage</div>
+          <div class="ar-btn" id="ar11" onclick="setAR('1:1')">1:1<br>Carré</div>
+        </div>
+        <label style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.2em;color:var(--text3);display:block;margin-bottom:6px">Description additionnelle</label>
+        <textarea class="s-textarea" id="freeText" placeholder="Ambiance, détails supplémentaires..." rows="3" oninput="state.freeText=this.value"></textarea>
+        <div id="chaosEmotionsBlock" style="display:none;margin-bottom:12px"><div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:16px;padding:16px"><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.2em;color:#f87171;margin-bottom:12px">⚡ Émotions — Mode Chaos</div><label style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;color:var(--text3);display:block;margin-bottom:6px">Émotion Adulte *</label><select class="s-select" id="chaosEmotionAdult" onchange="state.chaosEmotionAdult=this.value"><option value="">Sélectionner...</option><option value="fatigue">Fatigue</option><option value="épuisement">Épuisement</option><option value="frustration">Frustration</option><option value="agacement">Agacement</option><option value="surcharge mentale">Surcharge mentale</option><option value="stress">Stress</option><option value="lassitude">Lassitude</option><option value="résignation">Résignation</option><option value="débordement émotionnel">Débordement émotionnel</option></select><div id="chaosChildEmotion" style="display:none"><label style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;color:var(--text3);display:block;margin-bottom:6px">Émotion Enfant</label><select class="s-select" id="chaosEmotionChild" onchange="state.chaosEmotionChild=this.value"><option value="">Sélectionner...</option><option value="excitation">Excitation</option><option value="agitation">Agitation</option><option value="frustration">Frustration</option><option value="colère">Colère</option><option value="pleurs">Pleurs</option><option value="énervement">Énervement</option><option value="euphorie">Euphorie</option></select></div><div id="chaosBabyEmotion" style="display:none"><label style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;color:var(--text3);display:block;margin-bottom:6px">Émotion Bébé</label><select class="s-select" id="chaosEmotionBaby" onchange="state.chaosEmotionBaby=this.value"><option value="">Sélectionner...</option><option value="pleurs">Pleurs</option><option value="agitation">Agitation</option><option value="inconfort">Inconfort</option><option value="fatigue">Fatigue</option><option value="surstimulation">Surstimulation</option></select></div></div></div>
+        <button class="gen-btn" id="genBtn" onclick="generate()" style="margin-top:16px">
+          <svg id="genIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="24" height="24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          <span id="genLabel">Lancer le Rendu 4K</span>
+        </button>
+        <div class="error-box" id="errorBox"></div>
+      </div>
+    </div>
+
+    <!-- COL DROITE -->
+    <div>
+      <div class="output-panel" id="outputPanel">
+        <div class="output-empty" id="outputEmpty"><p>STUDIO</p><p style="font-size:20px;letter-spacing:0.5em;color:var(--accent)">FAMILY</p></div>
+        <div class="loading-overlay" id="loadingOverlay" style="display:none"><div class="loading-spinner"></div><div class="loading-step" id="loadingStep">Initialisation...</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CLÉS API -->
+<div class="modal-back" id="apiModal">
+  <div class="modal-box">
+    <div class="modal-title">🔑 Clés API</div>
+    <div class="modal-engine-tabs">
+      <div class="modal-tab active-vertex" id="modalTabVertex" onclick="switchModalEngine('vertex')">🔷 Vertex AI</div>
+      <div class="modal-tab" id="modalTabKie" onclick="switchModalEngine('kie')">⚡ kie.ai</div>
+    </div>
+    <div id="modalVertexSection">
+      <div class="modal-key-section">
+        <span class="modal-key-label">Clé Vertex AI (principale)</span>
+        <input type="password" class="modal-key-input" id="modalKey1" placeholder="AQ...">
+      </div>
+      <div class="modal-note">Clé Vertex AI Express Mode — <a href="https://console.cloud.google.com/vertex-ai/studio/express" target="_blank">console.cloud.google.com/vertex-ai</a></div>
+    </div>
+    <div id="modalKieSection" style="display:none">
+      <div class="modal-key-section">
+        <span class="modal-key-label">Clé kie.ai</span>
+        <input type="password" class="modal-key-input" id="modalKey2" placeholder="kie_...">
+      </div>
+      <div class="modal-note">Créez votre clé sur <a href="https://kie.ai/dashboard/keys" target="_blank">kie.ai/dashboard/keys</a></div>
+    </div>
+    <button class="modal-save-btn" onclick="saveApiKeys()">Enregistrer les clés</button>
+    <button class="modal-cancel-btn" onclick="closeApiModal()">Annuler</button>
+  </div>
+</div>
+
+<script>
+// ==================== ENGINE ====================
+let selectedEngine = 'vertex';
+let activeModalEngine = 'vertex';
+
+// Stable blob storage — évite les erreurs de re-fetch
+let lastResultDataUrl = null;
+
+function selectEngine(engine) {
+  selectedEngine = engine;
+  const btnV = document.getElementById('btn-vertex');
+  const btnK = document.getElementById('btn-kie');
+  const lbl1 = document.getElementById('splashKeyLabel1');
+  const lbl2 = document.getElementById('splashKeyLabel2');
+  const key2Block = document.getElementById('splashKey2Block');
+  const note = document.getElementById('engineNote');
+  const inp1 = document.getElementById('apiKey1Input');
+  const inp2 = document.getElementById('apiKey2Input');
+  if (engine === 'vertex') {
+    btnV.className = 'engine-btn active-vertex';
+    btnK.className = 'engine-btn';
+    lbl1.textContent = '🔑 Clé API Vertex AI (principale)';
+    inp1.placeholder = 'AQ...';
+    key2Block.style.display = 'none';
+    note.className = 'engine-note vertex';
+    note.textContent = '⚡ Vertex AI Express Mode — console.cloud.google.com/vertex-ai/studio';
+  } else {
+    btnV.className = 'engine-btn';
+    btnK.className = 'engine-btn active-kie';
+    lbl1.textContent = '🔑 Clé API Vertex AI (principale)';
+    inp1.placeholder = 'AQ...';
+    lbl2.textContent = '🔑 Clé API kie.ai';
+    inp2.placeholder = 'kie_...';
+    key2Block.style.display = 'block';
+    note.className = 'engine-note kie';
+    note.textContent = '⚡ kie.ai — Clé sur kie.ai/dashboard/keys';
+  }
+}
+
+function showModeGrid() {
+  const k1 = document.getElementById('apiKey1Input').value.trim();
+  const k2 = document.getElementById('apiKey2Input').value.trim();
+  const errEl = document.getElementById('splashError');
+  if (!k1) { errEl.textContent = 'Clé Vertex AI obligatoire.'; errEl.style.display = 'block'; return; }
+  if (selectedEngine === 'kie' && !k2) { errEl.textContent = 'Clé kie.ai obligatoire pour ce moteur.'; errEl.style.display = 'block'; return; }
+  errEl.style.display = 'none';
+  state.apiKey1 = k1;
+  state.apiKey2 = k2;
+  document.getElementById('modeGrid').style.display = 'grid';
+}
+
+// Modal API
+function openApiModal() {
+  document.getElementById('modalKey1').value = state.apiKey1 || '';
+  document.getElementById('modalKey2').value = state.apiKey2 || '';
+  document.getElementById('apiModal').classList.add('open');
+}
+function closeApiModal() { document.getElementById('apiModal').classList.remove('open'); }
+function switchModalEngine(eng) {
+  activeModalEngine = eng;
+  document.getElementById('modalTabVertex').className = 'modal-tab' + (eng === 'vertex' ? ' active-vertex' : '');
+  document.getElementById('modalTabKie').className = 'modal-tab' + (eng === 'kie' ? ' active-kie' : '');
+  document.getElementById('modalVertexSection').style.display = eng === 'vertex' ? '' : 'none';
+  document.getElementById('modalKieSection').style.display = eng === 'kie' ? '' : 'none';
+}
+function saveApiKeys() {
+  const k1 = document.getElementById('modalKey1').value.trim();
+  const k2 = document.getElementById('modalKey2').value.trim();
+  if (k1) state.apiKey1 = k1;
+  if (k2) state.apiKey2 = k2;
+  closeApiModal();
+  updateEnginePill();
+}
+function updateEnginePill() {
+  const pill = document.getElementById('enginePill');
+  if (selectedEngine === 'kie') { pill.className = 'engine-pill kie'; pill.textContent = 'KIE.AI'; }
+  else { pill.className = 'engine-pill vertex'; pill.textContent = 'VERTEX AI'; }
+}
+
+// ==================== STATE ====================
+const state = {
+  apiKey1:'', apiKey2:'',
+  appMode:'IDLE', energy:'calm',
+  mainAvatar:'', partner:'', children:[], childCount:0, isBabyPresent:false, babyAgeInMonths:6, guests:[], guestCount:0,
+  room:null, roomSubtype:'', roomImg:'',
+  action:'', cameraAngle:'face', season:'spring', weather:'sunny', dayMoment:'matin', aspectRatio:'9:16', freeText:'',
+  whatsapp:false, menage:false, portage:false, interphone:false, dressing:false, bbq:false, poussette:false, miroir:false, cheminee:false, tondeuse:false,
+  whatsappContact:'', whatsappCallType:'video', babyRef:'', carrierImg:'', bbqRef:'', strollerRef:'', strollerBaby:'',
+  interphonePortal:'', interphoneVisitor:'', interphoneInterior:'', interphonePortalOpen:'', interphoneStep:1,
+  menageToolImg:'', menageToolType:'passer_aspirateur',
+  dressingOutfits:[], tondeuseImg:'',
+  chaosEmotionAdult:'', chaosEmotionChild:'', chaosEmotionBaby:''
+};
+
+// ==================== ROOMS DATA ====================
+const ROOMS=[{cat:'pieces_principales',label:'Principales',rooms:[{key:'salon',label:'Salon',icon:'🛋'},{key:'cuisine',label:'Cuisine',icon:'🍳'},{key:'salle_a_manger',label:'Salle à manger',icon:'🍽️'},{key:'chambre',label:'Chambre',icon:'🛏️'},{key:'entree',label:'Entrée',icon:'🚪'},{key:'escaliers',label:'Escaliers',icon:'🪜'},{key:'salle_de_jeu',label:'Salle de jeu',icon:'🧸'},{key:'bureau',label:'Bureau',icon:'💻'},{key:'dressing',label:'Dressing',icon:'👗'}]},{cat:'salles_de_bain',label:'Bain/Toilettes',rooms:[{key:'salle_de_bain',label:'Salle de bain',icon:'🛁'},{key:'toilettes',label:'Toilettes',icon:'🚽'}]},{cat:'pieces_fonctionnelles',label:'Fonctionnel',rooms:[{key:'buanderie',label:'Buanderie',icon:'🧺'},{key:'cellier_nourriture',label:'Cellier',icon:'🥫'},{key:'cave_vin',label:'Cave à vin',icon:'🍷'},{key:'salle_de_sport',label:'Sport',icon:'🏋️'},{key:'atelier_bricolage',label:'Atelier',icon:'🛠️'},{key:'garage_voiture',label:'Garage',icon:'🚗'},{key:'ascenseur',label:'Ascenseur',icon:'🛗'},{key:'jacuzzi',label:'Jacuzzi',icon:'🫧'}]},{cat:'espaces_exterieurs',label:'Extérieur',rooms:[{key:'jardin',label:'Jardin',icon:'🌿'},{key:'terrace',label:'Terrasse',icon:'⛱️'},{key:'balcon',label:'Balcon',icon:'🏙️'},{key:'piscine',label:'Piscine',icon:'🏊'},{key:'exterior_villa',label:'Extérieur Villa',icon:'🏠'},{key:'mare',label:'Mare',icon:'🦆'}]}];
+
+const ACTIONS={salon:['Se détendre sur le canapé','Regarder un film en famille','Enfants jouent au sol (LEGO/voitures)','Discuter calmement (couple)','Faire un puzzle sur la table basse','Dîner plateau-télé','SOIGNER LE BOBO — Nettoyer la plaie sur le genou','Câlin de réconfort après une blessure','Salon en désordre (jouets partout)','Pleurer (mains sur le visage)','Bouder (bras croisés, dos tourné)','Passer un appel vidéo WhatsApp','Passer un appel audio WhatsApp'],cuisine:['Cuisiner un plat maison','Laver les légumes frais','Préparer un gâteau au chocolat','Faire la vaisselle en discutant','Ranger les courses dans les placards','Préparer le café','Boire un café','Préparer le thé','Préparer un chocolat chaud pour les enfants','Préparer les tartines du petit déjeuner','Préparer le biberon du bébé','Découper des légumes sur le plan de travail','Cuisiner avec les enfants','Passer un appel vidéo WhatsApp','Passer un appel audio WhatsApp'],salle_a_manger:['Mettre la table','Sortir les plats fumants sur la table','Manger tous ensemble','Discuter joyeusement à table','Aider un enfant à couper sa viande','Prendre le petit déjeuner ensemble','Passer un appel vidéo WhatsApp'],chambre:['Se coucher','Se réveiller','S\'habiller','Ranger le lit','Faire le lit / Changer les draps','Scroller sur téléphone allongé','Lire au lit'],chambre_bebe:['Prendre bébé dans les bras','Câliner bébé','Bercer bébé','Coucher bébé','Changer la couche','Habiller bébé','Donner le biberon assis'],chambre_enfant:['Se coucher','Se réveiller','S\'habiller','Jouer dans la chambre','Jouer aux LEGO','Jouer aux voitures','Ranger les jouets'],entree:['Rentrer à la maison','Enlever ses chaussures','Enlever son manteau','Poser ses clés','Rentrer de l\'école avec son cartable','Se préparer à sortir','Quitter la maison'],escaliers:['Monter les escaliers','Descendre les escaliers','Porter l\'enfant pour monter','Porter l\'enfant endormi'],salle_de_jeu:['Construire une tour en LEGO','Dessiner sur le tableau','Jouer à la marchande','Jouer aux voitures (à quatre pattes)','Ranger les jouets'],bureau:['Taper sur l\'ordinateur','Écrire un email','Travailler sur un document','Faire une pause café','Passer un appel vidéo WhatsApp'],dressing:['Choisir sa tenue','Essayer des vêtements devant le miroir','Hésiter entre deux tenues','Ranger des vêtements'],salle_de_bain:['Se brosser les dents devant le miroir','Se coiffer','Appliquer une crème visage','Prendre une douche','Prendre un bain moussant (enfant)'],toilettes:['Nettoyer la cuvette','Nettoyer le lavabo','Passer la serpillère'],buanderie:['Trier le linge par couleur','Lancer une machine','Remplir la machine à laver','Plier les vêtements propres','Repasser les chemises'],jardin:['Entretenir le jardin','Jouer avec les enfants dans l\'herbe','Jouer à la balançoire','Arroser les plantes','Tondre la pelouse','Faire un barbecue'],terrace:['Se détendre sur la terrasse','Prendre l\'apéritif','Boire un cocktail','Lire au soleil'],balcon:['S\'appuyer à la rambarde','Regarder le paysage','Boire un café','Prendre le petit déjeuner'],piscine:['Sauter dans l\'eau','Flotter sur le dos','Nager la brasse','Assis au bord de la piscine'],exterior_villa:['Marcher vers la maison','Retour de balade','Tenir la main d\'un enfant','Chercher ses clés devant la porte','Sonner à l\'interphone'],default:['Scène de vie quotidienne naturelle','Moment spontané']};
+
+const CHAMBRE_SUBTYPES_FAMILY=['chambre_parentale','chambre_enfant','chambre_bebe','chambre_adolescente','chambre_amie'];
+const CHAMBRE_SUBTYPES_SOLO=['chambre_adulte','chambre_amie'];
+const CHAMBRE_SUBTYPE_LABELS={chambre_parentale:'Chambre parentale',chambre_enfant:'Chambre enfant',chambre_bebe:'Chambre bébé',chambre_adolescente:'Chambre adolescente',chambre_amie:"Chambre d'amie",chambre_adulte:'Chambre adulte'};
+
+let currentRoomCat='pieces_principales';
+let loadingInterval=null;
+const LOADING_STEPS=["Vérification de l'intégrité DNA...","Scanning de la structure architecturale...","Injection des protocoles de réalisme...","Rendu 4K Master en cours...","Optimisation du piqué UGC...","Validation finale des émotions..."];
+
+// AR map pour kie.ai
+const KIE_AR_MAP={'9:16':'9:16','16:9':'16:9','1:1':'1:1'};
+
+// ==================== SPLASH ====================
+function checkApiKey(){
+  const k=document.getElementById('apiKey1Input').value.trim();
+  state.apiKey1=k;
+}
+document.getElementById('apiKey1Input').addEventListener('input',checkApiKey);
+document.getElementById('apiKey2Input').addEventListener('input',function(){state.apiKey2=this.value.trim();});
+
+function selectMode(m){
+  const k1=document.getElementById('apiKey1Input').value.trim();
+  const k2=document.getElementById('apiKey2Input').value.trim();
+  if(!k1){showSplashError('Clé Vertex AI obligatoire');return;}
+  if(selectedEngine==='kie'&&!k2){showSplashError('Clé kie.ai obligatoire pour ce moteur');return;}
+  if(selectedEngine==='vertex'&&!k1.startsWith('AQ')){if(!confirm('⚠️ Cette clé ne commence pas par "AQ". Continuer quand même ?'))return;}
+  if(selectedEngine==='kie'&&!k2.startsWith('kie_')){if(!confirm('⚠️ Cette clé kie.ai ne commence pas par "kie_". Continuer quand même ?'))return;}
+  state.apiKey1=k1;
+  state.apiKey2=k2;
+  state.appMode=m;
+  showSetup();
+}
+
+function showSplashError(msg){const el=document.getElementById('splashError');el.textContent=msg;el.style.display='block';}
+function goSplash(){document.getElementById('splash').style.display='flex';document.getElementById('setup').style.display='none';document.getElementById('app').classList.remove('visible');}
+function goSetup(){document.getElementById('app').classList.remove('visible');showSetup();}
+
+function showSetup(){
+  document.getElementById('splash').style.display='none';
+  document.getElementById('setup').style.display='block';
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('setupTitle').textContent=state.appMode==='SOLO'?'Configuration Solo':'Configuration Famille';
+  renderSetup();
+}
+
+// ==================== SETUP ====================
+function renderSetup(){
+  const grid=document.getElementById('setupGrid');
+  grid.innerHTML='';
+  const card1=makeCard('👤 Avatar Principal (DNA) *');
+  card1.appendChild(makeUploader('setupMainAvatar',state.mainAvatar,'Photo de référence visage *','mainAvatar'));
+  grid.appendChild(card1);
+  if(state.appMode==='FAMILY'){
+    const cardBebe=makeCard('🍼 Bébé');
+    cardBebe.appendChild(makeToggleRow('Bébé présent dans les scènes',state.isBabyPresent,'toggleBaby()'));
+    if(state.isBabyPresent){
+      const ageDiv=document.createElement('div');ageDiv.style.marginTop='10px';
+      const lbl=document.createElement('label');lbl.className='toggle-label';lbl.style.cssText='display:block;margin-bottom:6px';lbl.textContent='Âge du bébé (mois)';
+      const inp=document.createElement('input');inp.type='number';inp.min='0';inp.max='36';inp.value=state.babyAgeInMonths;inp.style.cssText='width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:10px;color:white;font-size:13px;outline:none';
+      inp.addEventListener('change',function(){state.babyAgeInMonths=parseInt(this.value)||0;});
+      ageDiv.appendChild(lbl);ageDiv.appendChild(inp);cardBebe.appendChild(ageDiv);
+    }
+    grid.appendChild(cardBebe);
+    const cardConjoint=makeCard('💑 Conjoint');
+    cardConjoint.appendChild(makeToggleRow('Activer le conjoint',state.partner!=='','togglePartner()'));
+    if(state.partner!=='')cardConjoint.appendChild(makeUploader('setupPartner',state.partner==='pending'?'':state.partner,'Photo conjoint','partner'));
+    grid.appendChild(cardConjoint);
+    const cardEnfants=makeCard('👶 Enfants');
+    cardEnfants.appendChild(makePlusMinusRow('Enfants',state.childCount,'addChild(-1)','addChild(1)'));
+    if(state.childCount>0){const slots=document.createElement('div');slots.className='upload-slots';for(let i=0;i<state.children.length;i++)slots.appendChild(makeUploader('setupChild'+i,state.children[i],'Enfant '+(i+1),'child',i));cardEnfants.appendChild(slots);}
+    grid.appendChild(cardEnfants);
+  }
+  const cardInvites=makeCard('👥 Invités');
+  cardInvites.appendChild(makePlusMinusRow('Invités',state.guestCount,'addGuest(-1)','addGuest(1)'));
+  if(state.guestCount>0){const slots2=document.createElement('div');slots2.className='upload-slots';for(let i=0;i<state.guests.length;i++)slots2.appendChild(makeUploader('setupGuest'+i,state.guests[i],'Invité '+(i+1),'guest',i));cardInvites.appendChild(slots2);}
+  grid.appendChild(cardInvites);
+}
+
+function makeCard(title){const card=document.createElement('div');card.className='setup-card';const h3=document.createElement('h3');h3.textContent=title;card.appendChild(h3);return card;}
+function makeToggleRow(label,isOn,onclickStr){const row=document.createElement('div');row.className='toggle-row';const lbl=document.createElement('span');lbl.className='toggle-label';lbl.textContent=label;const sw=document.createElement('div');sw.className='toggle-sw'+(isOn?' on':'');sw.setAttribute('onclick',onclickStr);const thumb=document.createElement('div');thumb.className='toggle-sw-thumb';sw.appendChild(thumb);row.appendChild(lbl);row.appendChild(sw);return row;}
+function makePlusMinusRow(label,count,onMinus,onPlus){const row=document.createElement('div');row.className='participant-controls';row.innerHTML='<span class="participant-label">'+label+'</span><button class="cnt-btn" onclick="'+onMinus+'">&#8722;</button><span style="font-size:14px;font-weight:700;min-width:20px;text-align:center">'+count+'</span><button class="cnt-btn" onclick="'+onPlus+'">+</button>';return row;}
+
+function makeUploader(id,value,label,stateKey,idx){
+  const div=document.createElement('div');div.id=id;div.className='uploader'+(value?' has-img':'');div.style.minHeight='100px';
+  if(value){const img=document.createElement('img');img.src=value;img.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover';div.appendChild(img);const overlay=document.createElement('div');overlay.className='uploader-overlay';const btn=document.createElement('button');btn.className='remove-img-btn';btn.textContent='✕';btn.addEventListener('click',function(e){e.stopPropagation();removeSetupState(stateKey,idx);});overlay.appendChild(btn);div.appendChild(overlay);}
+  else{const icon=document.createElement('div');icon.className='uploader-icon';icon.textContent='📸';const lbl=document.createElement('div');lbl.className='uploader-label';lbl.textContent=label;const input=document.createElement('input');input.type='file';input.accept='image/*';input.addEventListener('change',function(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onloadend=function(){resizeImage(reader.result,1024).then(resized=>{if(stateKey==='mainAvatar')state.mainAvatar=resized;else if(stateKey==='partner')state.partner=resized;else if(stateKey==='child')state.children[idx]=resized;else if(stateKey==='guest')state.guests[idx]=resized;renderSetup();});};reader.readAsDataURL(file);});div.appendChild(icon);div.appendChild(lbl);div.appendChild(input);}
+  return div;
+}
+
+function removeSetupState(key,idx){if(key==='mainAvatar')state.mainAvatar='';else if(key==='partner')state.partner='';else if(key==='child')state.children[idx]='';else if(key==='guest')state.guests[idx]='';renderSetup();}
+function togglePartner(){state.partner=state.partner!==''?'':'pending';renderSetup();}
+function toggleBaby(){state.isBabyPresent=!state.isBabyPresent;renderSetup();}
+function addChild(delta){state.childCount=Math.max(0,state.childCount+delta);if(delta>0)state.children.push('');else state.children.pop();renderSetup();}
+function addGuest(delta){state.guestCount=Math.max(0,state.guestCount+delta);if(delta>0)state.guests.push('');else state.guests.pop();renderSetup();}
+
+function validateSetup(){
+  const err=document.getElementById('setupError');
+  if(!state.mainAvatar){err.textContent='Avatar principal obligatoire !';err.style.display='block';return;}
+  err.style.display='none';
+  showApp();
+}
+
+function showApp(){
+  document.getElementById('setup').style.display='none';
+  document.getElementById('splash').style.display='none';
+  document.getElementById('app').classList.add('visible');
+  updateEnginePill();
+  const kieNote=document.getElementById('kieRoomNote');
+  if(kieNote)kieNote.style.display=selectedEngine==='kie'?'block':'none';
+  initRoomGrid();
+  const roomInput=document.getElementById('roomImgInput');
+  if(roomInput){
+    roomInput.addEventListener('change',function(e){
+      const file=e.target.files[0];if(!file)return;
+      const reader=new FileReader();
+      reader.onloadend=function(){
+        resizeImage(reader.result,1024).then(function(resized){
+          state.roomImg=resized;
+          const uploader=document.getElementById('roomImgUploader');
+          const oldPrev=uploader.querySelector('img.room-preview');if(oldPrev)oldPrev.remove();
+          const img=document.createElement('img');img.className='room-preview';img.src=resized;img.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:14px;z-index:1';
+          uploader.prepend(img);uploader.classList.add('has-img');
+          const icon=uploader.querySelector('.uploader-icon');const lbl=uploader.querySelector('.uploader-label');
+          if(icon)icon.style.display='none';if(lbl)lbl.style.display='none';
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+  const roomRemoveBtn=document.getElementById('roomImgRemoveBtn');
+  if(roomRemoveBtn){
+    roomRemoveBtn.addEventListener('click',function(e){
+      e.preventDefault();e.stopPropagation();state.roomImg='';
+      const uploader=document.getElementById('roomImgUploader');
+      const prev=uploader.querySelector('img.room-preview');if(prev)prev.remove();
+      uploader.classList.remove('has-img');
+      const icon=uploader.querySelector('.uploader-icon');const lbl=uploader.querySelector('.uploader-label');
+      if(icon)icon.style.display='';if(lbl)lbl.style.display='';
+      document.getElementById('roomImgInput').value='';
+    });
+  }
+}
+
+// ==================== ROOM GRID ====================
+function initRoomGrid(){
+  const catsEl=document.getElementById('roomCats');
+  catsEl.innerHTML=ROOMS.map(c=>`<button class="cat-btn ${c.cat===currentRoomCat?'active':''}" onclick="selectRoomCat('${c.cat}')">${c.label}</button>`).join('');
+  renderRoomGrid();
+}
+function selectRoomCat(cat){currentRoomCat=cat;document.querySelectorAll('.cat-btn').forEach(b=>{b.className='cat-btn'+(b.textContent===ROOMS.find(c=>c.cat===cat).label?' active':'');});renderRoomGrid();}
+function renderRoomGrid(){const cat=ROOMS.find(c=>c.cat===currentRoomCat);if(!cat)return;document.getElementById('roomGrid').innerHTML=cat.rooms.map(r=>`<div class="room-btn ${state.room&&state.room.key===r.key?'active':''}" onclick="selectRoom('${r.key}','${r.label}')"><span class="icon">${r.icon}</span><span class="rlabel">${r.label}</span></div>`).join('');}
+
+function selectRoom(key,label){
+  state.room={key,label};state.roomSubtype='';renderRoomGrid();
+  document.getElementById('roomImgLabel').textContent='Photo : '+label+' *';
+  document.getElementById('cuisineSubtype').className='subtype-row'+(key==='cuisine'?' show':'');
+  document.getElementById('bureauSubtype').className='subtype-row'+(key==='bureau'?' show':'');
+  if(key==='chambre'){const subEl=document.getElementById('chambreSubtype');subEl.className='subtype-row show';const opts=state.appMode==='SOLO'?CHAMBRE_SUBTYPES_SOLO:CHAMBRE_SUBTYPES_FAMILY;document.getElementById('chambreSubtypeSelect').innerHTML='<option value="">Type de chambre...</option>'+opts.map(s=>'<option value="'+s+'">'+CHAMBRE_SUBTYPE_LABELS[s]+'</option>').join('');}
+  else document.getElementById('chambreSubtype').className='subtype-row';
+  const bbqRow=document.getElementById('bbqModeRow');if(bbqRow)bbqRow.style.display=['jardin','terrace','balcon'].includes(key)?'flex':'none';
+  updateActions();
+}
+function setSubtype(v){state.roomSubtype=v;updateActions();}
+function updateActions(){const sel=document.getElementById('actionSelect');const key=state.room&&state.room.key||'';const actions=ACTIONS[key]||ACTIONS.default;sel.innerHTML='<option value="">Sélectionner une action...</option>'+actions.map(a=>'<option value="'+a+'">'+a+'</option>').join('');state.action='';}
+
+// ==================== ENERGY ====================
+function setEnergy(e){state.energy=e;document.getElementById('energyCalmBtn').className='energy-btn'+(e==='calm'?' active-calm':'');document.getElementById('energyChaosBtn').className='energy-btn'+(e==='chaos'?' active-chaos':'');const chaosBlock=document.getElementById('chaosEmotionsBlock');if(chaosBlock)chaosBlock.style.display=e==='chaos'?'block':'none';}
+
+// ==================== AR ====================
+function setAR(ar){state.aspectRatio=ar;document.getElementById('ar916').className='ar-btn'+(ar==='9:16'?' active':'');document.getElementById('ar169').className='ar-btn'+(ar==='16:9'?' active':'');document.getElementById('ar11').className='ar-btn'+(ar==='1:1'?' active':'');}
+
+// ==================== MODES ====================
+function toggleMode(m){
+  state[m]=!state[m];
+  const el=document.getElementById('toggle'+m.charAt(0).toUpperCase()+m.slice(1));if(el)el.className='toggle-sw'+(state[m]?' on':'');
+  const configs={whatsapp:'whatsappConfig',portage:'portageConfig',bbq:'bbqConfig',poussette:'poussetteConfig',interphone:'interphoneConfig',menage:'menageConfig',dressing:'dressingConfig',tondeuse:'tondeuseConfig'};
+  if(configs[m])document.getElementById(configs[m]).style.display=state[m]?'block':'none';
+  if(m==='dressing'&&state[m])updateDressingOutfits();
+}
+function setInterphoneStep(step){
+  state.interphoneStep=step;const etapeLabel=document.getElementById('iphEtapeLabel');if(etapeLabel)etapeLabel.textContent='ÉTAPE '+step+'/3';
+  for(let i=1;i<=3;i++){const btn=document.getElementById('iphBtn'+i);if(btn){if(i===step){btn.style.background='#22d3ee';btn.style.borderColor='#22d3ee';btn.style.color='#000';}else{btn.style.background='rgba(255,255,255,0.04)';btn.style.borderColor='rgba(255,255,255,0.08)';btn.style.color='rgba(255,255,255,0.35)';}}const panel=document.getElementById('iphStep'+i);if(panel)panel.style.display=i===step?'block':'none';}
+}
+function updateMenageToolLabel(){const labels={passer_aspirateur:'Photo de votre aspirateur (optionnel)',lancer_robot_aspirateur:'Photo du robot aspirateur (optionnel)',faire_poussiere_microfibre:'Photo du chiffon microfibre (optionnel)',laver_sol_serpillere:'Photo de la serpillère/seau (optionnel)',ouvrir_fenetres_aerer:'Pas de photo requise',nettoyer_poignees_portes:'Photo du spray/chiffon (optionnel)',desinfecter_surfaces:'Photo du produit désinfectant (optionnel)'};const lbl=document.getElementById('menageToolImgLabel');if(lbl)lbl.textContent=labels[state.menageToolType]||'Photo de l\'outil (optionnel)';}
+
+// ==================== DRESSING ====================
+function updateDressingOutfits(){
+  const container=document.getElementById('dressingOutfitsContainer');if(!container)return;
+  const participants=[];
+  participants.push({id:'main',label:'Avatar principal'});
+  if(state.partner&&state.partner!=='pending')participants.push({id:'partner',label:'Conjoint(e)'});
+  state.children.forEach((c,i)=>{if(c)participants.push({id:'child_'+i,label:'Enfant '+(i+1)});});
+  state.guests.forEach((g,i)=>{if(g)participants.push({id:'guest_'+i,label:'Invité '+(i+1)});});
+  participants.forEach(p=>{if(!state.dressingOutfits.find(o=>o.id===p.id))state.dressingOutfits.push({id:p.id,label:p.label,source:'none',image:'',text:''});});
+  container.innerHTML='';
+  participants.forEach(p=>{
+    const outfit=state.dressingOutfits.find(o=>o.id===p.id)||{source:'none',image:'',text:''};
+    const block=document.createElement('div');block.style.cssText='border:1px solid rgba(244,114,182,0.2);border-radius:14px;padding:14px;margin-bottom:10px';
+    block.innerHTML='<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;color:#f472b6;margin-bottom:10px">'+p.label+'</div><div style="display:flex;gap:6px;margin-bottom:10px"><button onclick="setDressingSource(\''+p.id+'\',\'none\')" id="drs_none_'+p.id+'" style="flex:1;padding:6px;border-radius:8px;font-size:8px;font-weight:700;text-transform:uppercase;cursor:pointer;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--text3)">DNA</button><button onclick="setDressingSource(\''+p.id+'\',\'image\')" id="drs_img_'+p.id+'" style="flex:1;padding:6px;border-radius:8px;font-size:8px;font-weight:700;text-transform:uppercase;cursor:pointer;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--text3)">📸 Photo</button><button onclick="setDressingSource(\''+p.id+'\',\'text\')" id="drs_txt_'+p.id+'" style="flex:1;padding:6px;border-radius:8px;font-size:8px;font-weight:700;text-transform:uppercase;cursor:pointer;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--text3)">✏️ Texte</button></div><div id="drs_imgzone_'+p.id+'" style="display:none"><div class="uploader" id="drs_uploader_'+p.id+'" style="min-height:80px"><div class="uploader-icon">👗</div><div class="uploader-label">Photo de la tenue</div><input type="file" accept="image/*" onchange="handleDressingImg(event,\''+p.id+'\')"><div class="uploader-overlay"><button class="remove-img-btn" onclick="removeDressingImg(event,\''+p.id+'\')">✕</button></div></div></div><div id="drs_txtzone_'+p.id+'" style="display:none"><textarea style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(244,114,182,0.3);border-radius:10px;padding:10px;font-size:11px;color:var(--text);outline:none;resize:vertical;min-height:60px;font-family:\'DM Sans\',sans-serif" placeholder="Ex: robe longue bleue marine..." oninput="setDressingText(\''+p.id+'\',this.value)">'+(outfit.text||'')+'</textarea></div>';
+    container.appendChild(block);
+    setTimeout(()=>{highlightDressingSource(p.id,outfit.source||'none');if(outfit.source==='image'&&outfit.image){const upEl=document.getElementById('drs_uploader_'+p.id);if(upEl){const img=document.createElement('img');img.src=outfit.image;img.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;border-radius:14px';upEl.prepend(img);upEl.classList.add('has-img');}}},0);
+  });
+}
+function setDressingSource(participantId,source){const outfit=state.dressingOutfits.find(o=>o.id===participantId);if(outfit)outfit.source=source;highlightDressingSource(participantId,source);document.getElementById('drs_imgzone_'+participantId).style.display=source==='image'?'block':'none';document.getElementById('drs_txtzone_'+participantId).style.display=source==='text'?'block':'none';}
+function highlightDressingSource(participantId,source){['none','img','txt'].forEach(s=>{const btn=document.getElementById('drs_'+s+'_'+participantId);if(!btn)return;if((s==='none'&&source==='none')||(s==='img'&&source==='image')||(s==='txt'&&source==='text')){btn.style.background='#f472b6';btn.style.borderColor='#f472b6';btn.style.color='#000';}else{btn.style.background='rgba(255,255,255,0.04)';btn.style.borderColor='rgba(255,255,255,0.08)';btn.style.color='rgba(255,255,255,0.35)';}});}
+function handleDressingImg(e,participantId){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onloadend=()=>{resizeImage(reader.result,1024).then(resized=>{const outfit=state.dressingOutfits.find(o=>o.id===participantId);if(outfit){outfit.image=resized;outfit.source='image';}const upEl=document.getElementById('drs_uploader_'+participantId);if(upEl){const old=upEl.querySelector('img');if(old)old.remove();const img=document.createElement('img');img.src=resized;img.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;border-radius:14px';upEl.prepend(img);upEl.classList.add('has-img');const icon=upEl.querySelector('.uploader-icon');const lbl=upEl.querySelector('.uploader-label');if(icon)icon.style.display='none';if(lbl)lbl.style.display='none';}});};reader.readAsDataURL(file);}
+function removeDressingImg(e,participantId){e.stopPropagation();const outfit=state.dressingOutfits.find(o=>o.id===participantId);if(outfit){outfit.image='';outfit.source='none';}const upEl=document.getElementById('drs_uploader_'+participantId);if(upEl){const img=upEl.querySelector('img');if(img)img.remove();upEl.classList.remove('has-img');const icon=upEl.querySelector('.uploader-icon');const lbl=upEl.querySelector('.uploader-label');if(icon)icon.style.display='';if(lbl)lbl.style.display='';}highlightDressingSource(participantId,'none');}
+function setDressingText(participantId,text){const outfit=state.dressingOutfits.find(o=>o.id===participantId);if(outfit)outfit.text=text;}
+
+// ==================== UPLOADS ====================
+function handleUpload(e,key){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onloadend=()=>{
+    resizeImage(reader.result,1024).then(resized=>{
+      state[key]=resized;
+      const uploader=document.getElementById(key+'Uploader');
+      if(uploader){const old=uploader.querySelector('img.preview-img');if(old)old.remove();const img=document.createElement('img');img.className='preview-img';img.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1';img.src=resized;uploader.prepend(img);uploader.classList.add('has-img');const icon=uploader.querySelector('.uploader-icon');const label=uploader.querySelector('.uploader-label');if(icon)icon.style.display='none';if(label)label.style.display='none';}
+    });
+  };
+  reader.readAsDataURL(file);
+}
+function removeImg(e,key){e.stopPropagation();state[key]='';const uploader=document.getElementById(key+'Uploader');if(uploader){const img=uploader.querySelector('img.preview-img');if(img)img.remove();uploader.classList.remove('has-img');const icon=uploader.querySelector('.uploader-icon');const label=uploader.querySelector('.uploader-label');if(icon)icon.style.display='';if(label)label.style.display='';}}
+
+// ==================== SYSTEM PROMPT ====================
+const SYSTEM_PROMPT='FRESH HUMAN CAPTURE V11. Technical: RAW 4K, Matte skin, NO BEAUTY FILTERS. Peau humaine biologique: pores visibles, micro-relief irregulier, legeres rougeurs naturelles, duvet fin visible, veines subtiles. Lumiere naturelle et credible. Posture capturee sur le vif, jamais posee. Moment spontane, legerement imparfait. Fidelite identite absolue: meme visage, meme couleur des yeux, meme morphologie. Decor: meme disposition exacte des meubles. RENDU 4K ULTRA-REALISTE.';
+
+// ==================== GENERATE ====================
+async function generate(){
+  const err=document.getElementById('errorBox');err.className='error-box';
+  if(!state.mainAvatar){showError('Avatar DNA obligatoire !');return;}
+  if(!state.roomImg&&!state.poussette&&!state.interphone&&selectedEngine==='vertex'){showError('Photo de la piece obligatoire pour Vertex AI !');return;}
+  if(state.whatsapp&&!state.whatsappContact){showError("Photo de l'interlocuteur WhatsApp obligatoire !");return;}
+  if(state.portage&&(!state.babyRef||!state.carrierImg)){showError('Photos DNA Bebe + Porte-bebe obligatoires !');return;}
+  if(state.bbq&&!state.bbqRef){showError('Photo du barbecue obligatoire !');return;}
+  if(state.poussette&&(!state.strollerRef||!state.strollerBaby)){showError('Photos Poussette + Bebe obligatoires !');return;}
+  if(state.interphone&&(!state.interphonePortal||!state.interphoneVisitor)){showError('Etape Interphone 1 : photo du portail ferme et du visiteur obligatoires !');return;}
+  setLoading(true);
+  try{
+    let result;
+    if(selectedEngine==='kie'){result=await callKie();}
+    else{result=await callVertex();}
+    showResult(result,selectedEngine);
+  }catch(e){showError(e.message||'Erreur de generation.');}
+  finally{setLoading(false);}
+}
+
+// ─── Vertex ────────────────────────────────────────────────────────────────────
+async function callVertex(){
+  const prompt=buildPrompt();
+  const parts=[];
+  parts.push({text:SYSTEM_PROMPT+'\n\n'+prompt});
+  if(state.mainAvatar)parts.push(makeImagePart(state.mainAvatar));
+  if(state.roomImg)parts.push(makeImagePart(state.roomImg));
+  if(state.partner&&state.partner!=='pending')parts.push(makeImagePart(state.partner));
+  state.children.forEach(c=>{if(c)parts.push(makeImagePart(c));});
+  state.guests.forEach(g=>{if(g)parts.push(makeImagePart(g));});
+  if(state.whatsapp&&state.whatsappContact)parts.push(makeImagePart(state.whatsappContact));
+  if(state.portage&&state.babyRef)parts.push(makeImagePart(state.babyRef));
+  if(state.portage&&state.carrierImg)parts.push(makeImagePart(state.carrierImg));
+  if(state.bbq&&state.bbqRef)parts.push(makeImagePart(state.bbqRef));
+  if(state.poussette&&state.strollerRef)parts.push(makeImagePart(state.strollerRef));
+  if(state.poussette&&state.strollerBaby)parts.push(makeImagePart(state.strollerBaby));
+  if(state.menage&&state.menageToolImg){parts.push({text:'OUTIL MENAGE DE REFERENCE :'});parts.push(makeImagePart(state.menageToolImg));}
+  if(state.tondeuse&&state.tondeuseImg){parts.push({text:'TONDEUSE DE REFERENCE :'});parts.push(makeImagePart(state.tondeuseImg));}
+  if(state.interphone){if(state.interphonePortal){parts.push({text:'PORTAIL REFERENCE :'});parts.push(makeImagePart(state.interphonePortal));}if(state.interphoneVisitor){parts.push({text:'VISITEUR (DNA) :'});parts.push(makeImagePart(state.interphoneVisitor));}if(state.interphoneStep===2&&state.interphoneInterior){parts.push({text:'ECRAN INTERPHONE INTERIEUR :'});parts.push(makeImagePart(state.interphoneInterior));}if(state.interphoneStep===3&&state.interphonePortalOpen){parts.push({text:'PORTAIL OUVERT :'});parts.push(makeImagePart(state.interphonePortalOpen));}}
+  if(state.dressing){state.dressingOutfits.forEach(o=>{if(o.source==='image'&&o.image){parts.push({text:'TENUE POUR '+o.label.toUpperCase()+' :'});parts.push(makeImagePart(o.image));}});}
+
+  const body={contents:[{role:'user',parts}],generationConfig:{responseModalities:['IMAGE'],imageConfig:{aspectRatio:state.aspectRatio,imageSize:'4K'}}};
+  const endpoint='https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-3.1-flash-image-preview:generateContent?key='+encodeURIComponent(state.apiKey1);
+  const waitTimes=[5000,10000,20000,40000,60000];let lastErr;
+  for(let attempt=0;attempt<=waitTimes.length;attempt++){
+    try{
+      updateLoadingStep(attempt===0?LOADING_STEPS[0]:'Nouvelle tentative '+attempt+'/'+waitTimes.length+'...');
+      const res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      if(!res.ok){const txt=await res.text();let d;try{d=JSON.parse(txt);}catch(e){}const msg=d&&d.error&&d.error.message||txt;if(res.status===401)throw new Error('Cle API invalide.');if(res.status===403)throw new Error('Acces refuse. Verifiez votre cle Vertex AI (AQ...).');if(res.status===404)throw new Error('Modele introuvable.');if(res.status===429)throw new Error('ERREUR 429: '+msg);throw new Error('Erreur '+res.status+': '+msg);}
+      const data=await res.json();const parts2=(data.candidates&&data.candidates[0]&&data.candidates[0].content&&data.candidates[0].content.parts)||[];for(const p of parts2){if(p.inlineData&&p.inlineData.data)return 'data:image/png;base64,'+p.inlineData.data;}
+      if(data.candidates&&data.candidates[0]&&data.candidates[0].finishReason==='SAFETY')throw new Error('Generation bloquee par les filtres de securite.');
+      throw new Error('Aucune image dans la reponse.');
+    }catch(err){lastErr=err;const msg=String(err.message||'').toLowerCase();const retryable=msg.includes('429')||msg.includes('503')||msg.includes('502')||msg.includes('overloaded')||msg.includes('resource_exhausted')||msg.includes('failed to fetch')||msg.includes('network');if(retryable&&attempt<waitTimes.length){updateLoadingStep('Connexion perdue. Nouvelle tentative dans '+Math.round(waitTimes[attempt]/1000)+'s...');await sleep(waitTimes[attempt]);continue;}throw err;}
+  }
+  throw lastErr||new Error('Generation echouee.');
+}
+
+// ─── kie.ai ────────────────────────────────────────────────────────────────────
+async function callKie(){
+  if(!state.apiKey2){throw new Error('Cle kie.ai manquante. Cliquez sur le badge moteur pour la renseigner.');}
+  const prompt=buildKiePrompt();
+  updateLoadingStep('Envoi vers kie.ai...');
+
+  // kie.ai utilise l'API compatible avec Flux — endpoint standard
+  const body={
+    prompt: prompt,
+    aspect_ratio: state.aspectRatio,
+    num_images: 1,
+    output_format: 'jpeg'
+  };
+
+  // Ajouter l'image avatar comme référence si disponible
+  if(state.mainAvatar){
+    body.image = state.mainAvatar;
+    body.image_strength = 0.75;
+  }
+
+  const res=await fetch('https://api.kie.ai/v1/images/generate',{
+    method:'POST',
+    headers:{
+      'Authorization':'Bearer '+state.apiKey2,
+      'Content-Type':'application/json'
+    },
+    body:JSON.stringify(body)
+  });
+
+  let data={};
+  try{data=await res.json();}catch(_){}
+
+  if(!res.ok){
+    const msg=data.detail||data.error||data.message||'Erreur HTTP '+res.status;
+    if(res.status===401)throw new Error('Cle kie.ai invalide. Verifiez sur kie.ai/dashboard/keys.');
+    if(res.status===403)throw new Error('Acces refuse kie.ai. Verifiez votre compte et vos credits.');
+    if(res.status===429)throw new Error('Trop de requetes kie.ai. Attendez quelques secondes.');
+    throw new Error('Erreur kie.ai '+res.status+': '+msg);
+  }
+
+  // Récupérer l'URL de l'image — stable blob pour éviter les erreurs de stockage
+  const imageUrl = (data.images&&data.images[0]&&data.images[0].url) || data.url || data.output;
+  if(!imageUrl)throw new Error('Aucune image retournee par kie.ai. Verifiez vos credits.');
+
+  updateLoadingStep("Recuperation de l'image...");
+
+  // Convertir en blob stable (stocké en mémoire, pas de re-fetch)
+  const imgRes=await fetch(imageUrl);
+  if(!imgRes.ok)throw new Error('Impossible de recuperer l\'image depuis kie.ai.');
+  const blob=await imgRes.blob();
+
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onloadend=()=>resolve(reader.result);
+    reader.onerror=reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+function buildKiePrompt(){
+  const p=[];
+  p.push('Photorealistic 4K lifestyle photo. Match exact visual identity of the reference person: same face, same skin texture, same proportions.');
+  if(state.room)p.push('Setting: '+state.room.label+(state.roomSubtype?' / '+state.roomSubtype:'')+'.') ;
+  if(state.roomImg)p.push('Room decor as reference image.');
+  else if(state.room)p.push('Realistic '+state.room.label+' interior, natural decor.');
+  if(state.action)p.push('Action: '+state.action+'.');
+  const participants=[];
+  participants.push('the main person (reference)');
+  if(state.partner&&state.partner!=='pending')participants.push('their partner');
+  state.children.forEach((c,i)=>{if(c)participants.push('child '+(i+1));});
+  if(state.isBabyPresent)participants.push('a baby ('+state.babyAgeInMonths+' months old)');
+  state.guests.forEach((g,i)=>{if(g)participants.push('guest '+(i+1));});
+  if(participants.length>1)p.push('People in scene: '+participants.join(', ')+'.');
+  p.push('Season: '+state.season+'. Weather: '+state.weather+'. Time of day: '+state.dayMoment+'.');
+  p.push('Camera angle: '+state.cameraAngle+'.');
+  p.push(state.energy==='chaos'?'Mood: slightly chaotic, lived-in, imperfect, authentic family moment.':'Mood: calm, serene, natural.');
+  if(state.whatsapp)p.push('WhatsApp '+state.whatsappCallType+' call visible on phone screen.');
+  if(state.menage)p.push('Person is doing housework: '+state.menageToolType.replace(/_/g,' ')+'.');
+  if(state.portage)p.push('Baby being carried in baby carrier.');
+  if(state.bbq)p.push('Barbecue in use, cooking scene.');
+  if(state.poussette)p.push('Person with stroller, baby inside.');
+  if(state.miroir)p.push('Mirror reflection visible.');
+  if(state.dressing){const ao=state.dressingOutfits.filter(o=>o.source==='text'&&o.text);ao.forEach(o=>p.push(o.label+' wearing: '+o.text+'.'));}
+  if(state.interphone){const stepDesc={1:'Outdoor: visitor ringing doorbell at closed gate.',2:'Indoor: person looking at intercom screen.',3:'Outdoor: gate open, visitor entering.'};p.push(stepDesc[state.interphoneStep]||stepDesc[1]);}
+  if(state.energy==='chaos'&&state.chaosEmotionAdult)p.push('Adult emotional state: '+state.chaosEmotionAdult+'.');
+  if(state.freeText)p.push(state.freeText);
+  p.push('Natural skin texture with visible pores. No beauty filters. Ultra-realistic.');
+  return p.join(' ');
+}
+
+// ─── Prompt Vertex ─────────────────────────────────────────────────────────────
+function buildPrompt(){
+  const p=[];
+  p.push('FRESH HUMAN CAPTURE V11.');p.push('Technical: RAW 4K, Matte skin, Clean sensor, NO BEAUTY FILTERS.');p.push('');
+  p.push('MODE : '+(state.appMode==='SOLO'?'SOLO':'FAMILLE'));
+  if(state.action)p.push('ACTION : '+state.action);
+  p.push('SAISON : '+state.season+' | METEO : '+state.weather+' | MOMENT : '+state.dayMoment);
+  p.push('ENERGIE : '+(state.energy==='chaos'?'CHAOS — Maison vivante, legerement desordronnee.':'CALME — Atmosphere sereine.'));
+  if(state.room)p.push('PIECE : '+state.room.label+(state.roomSubtype?' / '+state.roomSubtype:''));
+  const participants=[];
+  participants.push('Avatar principal (photo de reference jointe)');
+  if(state.partner&&state.partner!=='pending')participants.push('Conjoint (photo de reference jointe)');
+  state.children.forEach((c,i)=>{if(c)participants.push('Enfant '+(i+1)+' (photo jointe)');});
+  if(state.isBabyPresent)participants.push('Bebe ('+state.babyAgeInMonths+' mois)');
+  state.guests.forEach((g,i)=>{if(g)participants.push('Invite '+(i+1)+' (photo jointe)');});
+  if(participants.length>0)p.push('PARTICIPANTS : '+participants.join(', '));
+  const angles={face:'Vue de face.',profil:'Vue de profil.',trois_quarts:'Vue trois quarts.',plongee_legere:'Legere plongee.',contre_plongee_legere:'Legere contre-plongee.',immersive_organique:'Angle organique, moment capture sur le vif.',pov_mains:'POV mains.',par_dessus_epaule:"Par-dessus l'epaule."};
+  p.push('ANGLE : '+(angles[state.cameraAngle]||state.cameraAngle));
+  if(state.whatsapp)p.push('MODE WHATSAPP ACTIF : Appel '+(state.whatsappCallType==='video'?'video':'audio')+' WhatsApp. Interlocuteur affiche a l\'ecran (photo jointe).');
+  if(state.menage){const tl={passer_aspirateur:"passer l'aspirateur",lancer_robot_aspirateur:'utiliser le robot aspirateur',faire_poussiere_microfibre:'faire la poussiere',laver_sol_serpillere:'laver le sol a la serpillere',ouvrir_fenetres_aerer:"aerer en ouvrant les fenetres",nettoyer_poignees_portes:'nettoyer les poignees',desinfecter_surfaces:'desinfecter les surfaces'};p.push('MODE MENAGE ACTIF : L\'avatar est en train de '+(tl[state.menageToolType]||'faire le menage')+'.');}
+  if(state.portage)p.push('MODE PORTAGE BEBE ACTIF : Bebe porte dans le porte-bebe (photos jointes).');
+  if(state.bbq)p.push('MODE BARBECUE ACTIF : Barbecue identique a la photo de reference. Action de cuisson en cours.');
+  if(state.poussette)p.push('MODE POUSSETTE ACTIF : Poussette identique a la photo de reference. Bebe dedans.');
+  if(state.miroir)p.push('MODE MIROIR ACTIF : Selfie ou scene avec reflet dans le miroir.');
+  if(state.dressing){const ao=state.dressingOutfits.filter(o=>o.source!=='none');if(ao.length>0){p.push('MODE DRESSING — SARTORIAL OVERRIDE (PRIORITE ABSOLUE)');ao.forEach(o=>{if(o.source==='text'&&o.text)p.push('- ['+o.label.toUpperCase()+'] : Porter EXACTEMENT : '+o.text+'.');else if(o.source==='image'&&o.image)p.push('- ['+o.label.toUpperCase()+'] : Porter EXACTEMENT la tenue de la photo jointe.');});}}
+  if(state.interphone){const sd={1:"ETAPE INTERPHONE 1 — VUE EXTERIEURE : Le visiteur se tient devant le portail FERME et sonne a l'interphone.",2:"ETAPE INTERPHONE 2 — VUE INTERIEURE : L'avatar regarde l'ecran de l'interphone mural. Sur l'ecran, on voit le visiteur.",3:"ETAPE INTERPHONE 3 — PORTAIL OUVERT : Vue exterieure. Le portail est ouvert, le visiteur entre."};p.push(sd[state.interphoneStep]||sd[1]);}
+  if(state.cheminee)p.push('MODE CHEMINEE ACTIF : Belle cheminee allumee visible.');
+  if(state.tondeuse)p.push('MODE TONDEUSE ACTIF : Tondeuse identique a la photo de reference. Tonte de pelouse en cours.');
+  if(state.energy==='chaos'){p.push('PREUVES VISUELLES DE CHAOS : Desordre leger, posture legerement affaissee par la fatigue.');if(state.chaosEmotionAdult)p.push('EMOTION ADULTE : '+state.chaosEmotionAdult+' — visible sur le visage.');if(state.chaosEmotionChild)p.push('EMOTION ENFANT : '+state.chaosEmotionChild);if(state.chaosEmotionBaby)p.push('EMOTION BEBE : '+state.chaosEmotionBaby);}
+  if(state.freeText)p.push('\nNOTES : '+state.freeText);
+  p.push('');p.push('OBJECTIF : Realisme biologique BRUT. Teint mat, pores visibles, imperfections reelles.');
+  return p.join('\n');
+}
+
+// ==================== HELPERS ====================
+function resizeImage(b64,maxSize){return new Promise(resolve=>{const img=new Image();img.src=b64;img.onload=()=>{const canvas=document.createElement('canvas');let w=img.width,h=img.height;const max=maxSize||1024;if(w>h){if(w>max){h=Math.round(h*max/w);w=max;}}else{if(h>max){w=Math.round(w*max/h);h=max;}}canvas.width=w;canvas.height=h;canvas.getContext('2d').drawImage(img,0,0,w,h);resolve(canvas.toDataURL('image/jpeg',0.82));};img.onerror=()=>resolve(b64);});}
+function makeImagePart(b64){const data=b64.includes(',')?b64.split(',')[1]:b64;const mimeMatch=b64.match(/^data:(image\/[^;]+);/);const mimeType=mimeMatch?mimeMatch[1]:'image/jpeg';return{inlineData:{data,mimeType}};}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+function setLoading(v){
+  const btn=document.getElementById('genBtn');const icon=document.getElementById('genIcon');const label=document.getElementById('genLabel');const overlay=document.getElementById('loadingOverlay');
+  btn.disabled=v;overlay.style.display=v?'flex':'none';
+  if(v){icon.innerHTML='<path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>';btn.classList.add('loading');label.textContent=selectedEngine==='kie'?'Generation kie.ai...':'Rendu en cours...';let idx=0;clearInterval(loadingInterval);loadingInterval=setInterval(()=>{updateLoadingStep(LOADING_STEPS[idx%LOADING_STEPS.length]);idx++;},2500);}
+  else{icon.innerHTML='<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>';btn.classList.remove('loading');label.textContent='Lancer le Rendu 4K';clearInterval(loadingInterval);}
+}
+function updateLoadingStep(msg){document.getElementById('loadingStep').textContent=msg;}
+function showError(msg){const err=document.getElementById('errorBox');err.textContent=msg;err.className='error-box show';}
+
+function showResult(dataUrl,engine){
+  // Stockage stable en mémoire — évite les erreurs de re-fetch blob
+  lastResultDataUrl = dataUrl;
+
+  const panel=document.getElementById('outputPanel');
+  document.getElementById('outputEmpty').style.display='none';
+  const old=panel.querySelector('.output-img');if(old)old.remove();
+  const oldDl=panel.querySelector('.dl-btn');if(oldDl)oldDl.remove();
+  const oldBadge=panel.querySelector('.result-engine-badge');if(oldBadge)oldBadge.remove();
+
+  const badge=document.createElement('span');
+  badge.className='result-engine-badge '+(engine==='kie'?'kie':'vertex');
+  badge.textContent=engine==='kie'?'KIE.AI · FLUX':'GEMINI · VERTEX AI';
+  panel.appendChild(badge);
+
+  const img=document.createElement('img');img.className='output-img';img.src=dataUrl;panel.appendChild(img);
+
+  const dl=document.createElement('button');dl.className='dl-btn';dl.textContent='⬇ Telecharger';
+  dl.onclick=function(){
+    // iOS Safari : utiliser le dataUrl stocké en mémoire (blob stable)
+    if(/iPhone|iPad|iPod/i.test(navigator.userAgent)){
+      try{
+        const byteStr=atob(lastResultDataUrl.split(',')[1]);
+        const mime=lastResultDataUrl.split(',')[0].split(':')[1].split(';')[0];
+        const ab=new ArrayBuffer(byteStr.length);
+        const ia=new Uint8Array(ab);
+        for(let i=0;i<byteStr.length;i++)ia[i]=byteStr.charCodeAt(i);
+        const blob=new Blob([ab],{type:mime});
+        const blobUrl=URL.createObjectURL(blob);
+        window.open(blobUrl,'_blank');
+        setTimeout(()=>URL.revokeObjectURL(blobUrl),120000);
+      }catch(e){alert("Appuie longuement sur l'image pour l'enregistrer.");}
+      return;
+    }
+    // Desktop / Android
+    const a=document.createElement('a');
+    a.href=lastResultDataUrl;
+    a.download='studio-family-home-'+Date.now()+'.jpg';
+    a.click();
+  };
+  panel.appendChild(dl);
+}
+
+// Fermer modal si clic en dehors
+document.getElementById('apiModal').addEventListener('click',function(e){if(e.target===this)closeApiModal();});
+</script>
+</body>
+</html>
