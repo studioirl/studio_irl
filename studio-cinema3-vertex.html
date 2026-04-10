@@ -248,14 +248,16 @@ body{min-height:100vh;background:radial-gradient(circle at top right,#0a192f,#05
 .modal-back{position:fixed;inset:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);z-index:100;display:none;align-items:center;justify-content:center;padding:20px;}
 .modal-box{background:var(--bg2);border:1px solid var(--border2);border-radius:14px;padding:22px;max-width:370px;width:100%;}
 
-.ios-dl-modal{position:fixed;inset:0;background:rgba(0,0,0,0.93);backdrop-filter:blur(14px);z-index:200;display:none;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;}
+.ios-dl-modal{position:fixed;inset:0;background:#000;z-index:200;display:none;flex-direction:column;}
 .ios-dl-modal.show{display:flex;}
-.ios-dl-modal h3{font-size:17px;font-weight:900;margin-bottom:10px;}
-.ios-dl-modal p{font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:18px;}
-.ios-dl-steps{background:rgba(255,255,255,0.05);border-radius:11px;padding:14px;margin-bottom:18px;text-align:left;width:100%;max-width:320px;}
-.ios-dl-steps li{font-size:12px;color:var(--text2);line-height:1.9;list-style:none;}
-.ios-dl-steps li::before{content:'→ ';}
-.ios-dl-btn{padding:13px 30px;background:white;color:#050b18;border:none;border-radius:999px;font-weight:900;font-size:12px;text-transform:uppercase;letter-spacing:0.1em;cursor:pointer;margin-bottom:8px;}
+.ios-dl-topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:rgba(0,0,0,0.9);flex-shrink:0;}
+.ios-dl-topbar h3{font-size:14px;font-weight:900;color:white;}
+.ios-dl-topbar button{padding:7px 16px;background:white;color:#050b18;border:none;border-radius:999px;font-size:12px;font-weight:900;cursor:pointer;}
+.ios-dl-video-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#000;padding:0;}
+.ios-dl-video-wrap video{width:100%;max-height:70vh;object-fit:contain;}
+.ios-dl-hint{padding:16px;text-align:center;background:rgba(255,255,255,0.05);flex-shrink:0;}
+.ios-dl-hint p{font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(255,255,255,0.6);line-height:1.7;}
+.ios-dl-hint strong{color:white;}
 .ios-close{background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;}
 
 .debug-box{margin-top:6px;padding:6px;background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.18);border-radius:7px;font-family:'JetBrains Mono',monospace;font-size:8px;color:#fca5a5;max-height:65px;overflow-y:auto;display:none;white-space:pre-wrap;word-break:break-all;}
@@ -543,19 +545,16 @@ body{min-height:100vh;background:radial-gradient(circle at top right,#0a192f,#05
 </div>
 
 <div class="ios-dl-modal" id="iosDlModal">
-  <div style="font-size:34px;margin-bottom:14px">📱</div>
-  <h3>Enregistrer la video sur iOS</h3>
-  <p>Safari ne permet pas le telechargement direct des videos. Voici comment l enregistrer :</p>
-  <div class="ios-dl-steps">
-    <ul>
-      <li>La video va s ouvrir dans un nouvel onglet</li>
-      <li>Appuyez et maintenez sur la video</li>
-      <li>Choisissez "Enregistrer la video"</li>
-      <li>Elle sera dans votre Pellicule Photos</li>
-    </ul>
+  <div class="ios-dl-topbar">
+    <h3>📥 Enregistrer la video</h3>
+    <button onclick="document.getElementById('iosDlModal').classList.remove('show')">Fermer</button>
   </div>
-  <button class="ios-dl-btn" id="iosOpenBtn">Ouvrir la video ↗</button>
-  <br><button class="ios-close" onclick="document.getElementById('iosDlModal').classList.remove('show')">Fermer</button>
+  <div class="ios-dl-video-wrap">
+    <video id="iosDlVideo" controls playsinline webkit-playsinline style="width:100%;max-height:70vh;object-fit:contain;background:#000;"></video>
+  </div>
+  <div class="ios-dl-hint">
+    <p>Appuyez sur <strong>⋯</strong> ou maintenez appuyé sur la video<br>puis <strong>"Enregistrer dans Photos"</strong> ou <strong>"Partager"</strong></p>
+  </div>
 </div>
 
 <script>
@@ -826,46 +825,35 @@ function loadHist(url){curVideoUrl=url;var vid=document.getElementById('previewV
 function dlVid(){
   if(!curVideoUrl)return;
   if(isIOS){
-    // iOS: fetch blob, tenter le download direct, fallback modal si bloque
-    var savedBlobUrl=null;
-    fetch(curVideoUrl)
-      .then(function(r){return r.blob();})
-      .then(function(blob){
-        savedBlobUrl=URL.createObjectURL(blob);
-        var a=document.createElement('a');
-        a.href=savedBlobUrl;
-        a.download='studio-cinema-'+Date.now()+'.mp4';
-        a.style.display='none';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        // Afficher le modal apres 1s avec le blob url (appui long fonctionne sur blob)
-        setTimeout(function(){
-          var modal=document.getElementById('iosDlModal');
-          modal.classList.add('show');
-          document.getElementById('iosOpenBtn').onclick=function(){
-            window.open(savedBlobUrl,'_blank');
-            modal.classList.remove('show');
-            setTimeout(function(){if(savedBlobUrl)URL.revokeObjectURL(savedBlobUrl);},60000);
-          };
-        },600);
-      })
-      .catch(function(){
-        var modal=document.getElementById('iosDlModal');
-        modal.classList.add('show');
-        document.getElementById('iosOpenBtn').onclick=function(){
-          window.open(curVideoUrl,'_blank');
-          modal.classList.remove('show');
-        };
-      });
+    // iOS : charger la video dans le player plein ecran du modal
+    // Le player natif Safari affiche les controles de telechargement
+    var modal=document.getElementById('iosDlModal');
+    var iosVid=document.getElementById('iosDlVideo');
+    iosVid.src=curVideoUrl;
+    iosVid.load();
+    modal.classList.add('show');
+    // Tenter aussi navigator.share si disponible (iOS 15+)
+    if(navigator.canShare){
+      fetch(curVideoUrl)
+        .then(function(r){return r.blob();})
+        .then(function(blob){
+          var file=new File([blob],'studio-cinema-'+Date.now()+'.mp4',{type:'video/mp4'});
+          if(navigator.canShare({files:[file]})){
+            navigator.share({files:[file],title:'Studio Cinema'})
+              .then(function(){modal.classList.remove('show');})
+              .catch(function(){/* garde le modal ouvert */});
+          }
+        })
+        .catch(function(){/* garde le modal avec player */});
+    }
     return;
   }
-  // Android Chrome ou URL externe — fetch blob
+  // Android Chrome ou URL externe
   if(isMobile||curVideoUrl.startsWith('http')){
     fetch(curVideoUrl).then(function(r){return r.blob();}).then(function(blob){var blobUrl=URL.createObjectURL(blob);var a=document.createElement('a');a.href=blobUrl;a.download='studio-cinema-'+Date.now()+'.mp4';document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(function(){URL.revokeObjectURL(blobUrl);},15000);}).catch(function(){window.open(curVideoUrl,'_blank');});
     return;
   }
-  // Desktop blob URL local
+  // Desktop
   fetch(curVideoUrl).then(function(r){return r.blob();}).then(function(blob){var reader=new FileReader();reader.onloadend=function(){var a=document.createElement('a');a.href=reader.result;a.download='studio-cinema-'+Date.now()+'.mp4';document.body.appendChild(a);a.click();document.body.removeChild(a);};reader.readAsDataURL(blob);}).catch(function(){window.open(curVideoUrl,'_blank');});
 }
 
