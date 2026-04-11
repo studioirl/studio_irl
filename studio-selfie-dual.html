@@ -3,544 +3,962 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Studio Selfie -- Dual Engine</title>
+<title>Studio Selfie -- IA Dual Engine</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#f0f4ff;--surface:#fff;--blue:#2563eb;--violet:#7c3aed;--indigo:#4338ca;--slate:#1e293b;--muted:#64748b;--border:#e2e8f0;--blue-light:#eff6ff;--green:#16a34a;--red:#dc2626;}
+/* ── base identique App.tsx ── */
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--slate);min-height:100vh;}
+:root{
+  --bg:#000;--zinc950:#09090b;--zinc900:#18181b;--zinc800:#27272a;--zinc700:#3f3f46;
+  --zinc600:#52525b;--zinc500:#71717a;--zinc400:#a1a1aa;--zinc300:#d4d4d8;
+  --white:#fff;--blue:#2563eb;--violet:#7c3aed;--indigo:#4338ca;--green:#16a34a;--red:#dc2626;
+}
+html,body{background:var(--bg);color:var(--white);font-family:'Inter',sans-serif;min-height:100vh;}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-@keyframes ping{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
 @keyframes spin{to{transform:rotate(360deg)}}
-#splash{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;padding:24px;text-align:center;overflow-y:auto;}
-.splash-hero{width:min(360px,90vw);aspect-ratio:9/16;border-radius:2.5rem;overflow:hidden;box-shadow:0 40px 80px -20px rgba(0,0,0,.25);border:4px solid white;position:relative;margin-bottom:28px;background:#1e293b;max-height:35vh;}
-.splash-hero img{width:100%;height:100%;object-fit:cover;}
-.rec{position:absolute;top:14px;left:14px;display:flex;align-items:center;gap:7px;}
-.rec-dot{width:9px;height:9px;border-radius:50%;background:#dc2626;box-shadow:0 0 10px rgba(220,38,38,1);animation:pulse 1.5s infinite;}
-.rec-label{color:white;font-size:9px;font-weight:800;letter-spacing:.25em;text-transform:uppercase;}
-#splash h1{font-size:clamp(2.8rem,8vw,5.5rem);font-weight:800;text-transform:uppercase;letter-spacing:-.03em;background:linear-gradient(135deg,#2563eb,#7c3aed,#4338ca);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1;margin-bottom:5px;}
-#splash .tagline{font-size:clamp(.85rem,2.2vw,1.1rem);font-weight:600;color:var(--slate);font-style:italic;margin-bottom:28px;}
-.api-box{width:min(460px,100%);background:white;border-radius:1.5rem;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.08);border:2px solid var(--border);margin-bottom:16px;}
-.api-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:10px;text-align:left;display:block;}
-.engine-selector{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:18px;}
-.engine-btn{padding:13px 8px;border:2px solid var(--border);border-radius:1rem;background:var(--blue-light);cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:4px;}
-.engine-btn:hover{border-color:var(--blue);}
-.engine-btn.active-vertex{background:var(--slate);border-color:var(--slate);color:white;}
-.engine-btn.active-kie{background:linear-gradient(135deg,var(--violet),var(--indigo));border-color:var(--violet);color:white;}
-.engine-btn .sub{font-size:8px;opacity:.7;font-weight:700;}
-#splash input[type=password]{width:100%;padding:12px 15px;border:2px solid var(--border);border-radius:1rem;font-family:'Space Mono',monospace;font-size:13px;color:var(--slate);background:var(--bg);outline:none;transition:border-color .2s;}
-#splash input[type=password]:focus{border-color:var(--blue);}
-.enter-btn{margin-top:10px;width:100%;padding:15px;border:none;border-radius:1.5rem;background:linear-gradient(135deg,var(--blue),var(--indigo),var(--violet));color:white;font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:.25em;cursor:pointer;transition:transform .15s;box-shadow:0 14px 35px rgba(37,99,235,.35);}
-.enter-btn:hover{transform:scale(1.02);}
-.enter-btn:active{transform:scale(.98);}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+/* ── SPLASH (dual engine - style Studio POV) ── */
+#splash{
+  position:fixed;inset:0;background:#000;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:200;padding:24px;text-align:center;overflow-y:auto;
+}
+.splash-content{width:min(460px,100%);padding-bottom:32px;}
+.splash-logo{width:54px;height:54px;background:white;border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 22px;box-shadow:0 8px 30px rgba(255,255,255,.12);}
+.splash-logo svg{width:28px;height:28px;color:#000;}
+.splash-title{font-size:clamp(40px,8vw,64px);font-weight:900;text-transform:uppercase;font-style:italic;letter-spacing:-.03em;line-height:.9;margin-bottom:8px;}
+.splash-sub{font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.2em;margin-bottom:32px;}
+.engine-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.25em;color:rgba(255,255,255,.35);display:block;margin-bottom:10px;text-align:left;}
+.engine-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px;}
+.engine-card{padding:14px;border:1px solid rgba(255,255,255,.1);border-radius:12px;background:rgba(255,255,255,.03);cursor:pointer;transition:all .2s;text-align:left;}
+.engine-card:hover{border-color:rgba(255,255,255,.25);}
+.engine-card.active-vertex{border-color:#2563eb;background:rgba(37,99,235,.08);}
+.engine-card.active-kie{border-color:#7c3aed;background:rgba(124,58,237,.08);}
+.engine-card-name{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:3px;}
+.engine-card.active-vertex .engine-card-name{color:#60a5fa;}
+.engine-card.active-kie .engine-card-name{color:#a78bfa;}
+.engine-card-desc{font-size:8px;color:rgba(255,255,255,.35);font-family:'JetBrains Mono',monospace;line-height:1.4;}
+.api-section{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;text-align:left;}
+.api-input{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;font-size:13px;font-family:'JetBrains Mono',monospace;color:white;outline:none;transition:all .2s;}
+.api-input::placeholder{color:rgba(255,255,255,.2);}
+.api-input:focus{border-color:rgba(255,255,255,.35);background:rgba(255,255,255,.07);}
+.splash-cta{width:100%;background:white;color:#000;border:none;border-radius:999px;padding:16px 40px;font-weight:900;font-size:12px;text-transform:uppercase;letter-spacing:.18em;cursor:pointer;transition:all .2s;box-shadow:0 16px 50px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;gap:10px;}
+.splash-cta:hover{background:#e4e4e7;transform:translateY(-1px);}
+#splash-err{color:#fca5a5;font-size:11px;font-weight:600;margin-top:9px;display:none;}
+
+/* ── APP SHELL ── */
 #app{display:none;min-height:100vh;flex-direction:column;}
 #app.visible{display:flex;}
-header{border-bottom:1px solid rgba(255,255,255,.1);padding:14px 24px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--slate);z-index:50;gap:14px;flex-wrap:wrap;}
-.header-left{display:flex;align-items:center;gap:12px;cursor:pointer;}
-.header-logo{width:40px;height:40px;background:linear-gradient(135deg,var(--blue),var(--violet));border-radius:11px;display:flex;align-items:center;justify-content:center;transition:transform .2s;}
-.header-logo:hover{transform:rotate(12deg);}
-.header-logo svg{width:20px;height:20px;stroke:white;fill:none;stroke-width:1.5;}
-.header-title h1{font-size:17px;font-weight:800;text-transform:uppercase;letter-spacing:.18em;color:white;}
-.header-badges{display:flex;gap:7px;margin-top:2px;}
-.badge{font-size:8px;font-weight:800;padding:2px 7px;border-radius:999px;text-transform:uppercase;letter-spacing:.12em;}
-.badge-violet{color:var(--violet);font-weight:800;}
-.badge-blue{background:var(--blue);color:white;}
-.badge-green{background:var(--green);color:white;}
-.status-dot{width:11px;height:11px;background:var(--blue);border-radius:50%;box-shadow:0 0 10px rgba(37,99,235,.7);animation:pulse 2s infinite;}
-main{flex:1;max-width:1360px;margin:0 auto;width:100%;padding:24px;display:grid;grid-template-columns:1fr;gap:24px;}
-@media(min-width:900px){main{grid-template-columns:5fr 6fr;}}
-.card{background:white;border-radius:1.4rem;padding:24px;box-shadow:0 4px 28px rgba(0,0,0,.05);border:1px solid var(--border);}
-.card-title{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.35em;margin-bottom:18px;display:flex;align-items:center;gap:9px;}
-.card-title svg{width:15px;height:15px;fill:none;stroke-width:2;}
-.title-blue{color:var(--blue);}
-.title-indigo{color:var(--indigo);}
-.title-violet{color:var(--violet);}
-.upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px;}
-.upload-thumb{aspect-ratio:1;border-radius:1.1rem;overflow:hidden;border:2px solid var(--border);position:relative;background:var(--bg);}
-.upload-thumb img{width:100%;height:100%;object-fit:cover;}
-.upload-thumb .remove-btn{position:absolute;top:5px;right:5px;background:rgba(255,255,255,.9);border:none;border-radius:50%;width:24px;height:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--red);transition:background .2s;}
-.upload-thumb .remove-btn:hover{background:white;}
-.upload-thumb .ref-badge{position:absolute;bottom:5px;left:5px;background:var(--blue);color:white;font-size:7px;font-weight:800;padding:2px 5px;border-radius:3px;text-transform:uppercase;}
-.upload-add{aspect-ratio:1;border-radius:1.1rem;border:2px dashed var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;background:var(--blue-light);transition:all .2s;position:relative;overflow:hidden;}
-.upload-add:hover{border-color:var(--blue);background:white;}
-.upload-add svg{width:20px;height:20px;stroke:var(--blue);fill:none;stroke-width:1.5;}
-.upload-add span{font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);text-align:center;padding:0 5px;}
-.upload-add input{position:absolute;inset:0;opacity:0;cursor:pointer;}
-textarea{width:100%;padding:14px;border:2px solid var(--border);border-radius:1.1rem;font-family:'Space Grotesk',sans-serif;font-size:12px;color:var(--slate);background:var(--blue-light);resize:none;outline:none;transition:border-color .2s,background .2s;min-height:90px;line-height:1.6;}
-textarea:focus{border-color:var(--blue);background:white;}
-textarea::placeholder{color:#94a3b8;}
+
+/* ── HEADER (repris App.tsx) ── */
+.app-header{background:var(--zinc950);border-bottom:1px solid rgba(255,255,255,.08);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:50;}
+.header-brand{display:flex;align-items:center;gap:10px;cursor:pointer;}
+.header-logo{width:34px;height:34px;background:white;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.header-logo svg{width:18px;height:18px;color:#000;}
+.brand-name{font-size:16px;font-weight:600;letter-spacing:-.01em;}
+.engine-pill{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1px solid;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;cursor:pointer;transition:all .2s;}
+.engine-pill.vertex{border-color:rgba(96,165,250,.4);background:rgba(96,165,250,.07);color:#60a5fa;}
+.engine-pill.kie{border-color:rgba(167,139,250,.4);background:rgba(167,139,250,.07);color:#a78bfa;}
+.engine-pill .dot{width:6px;height:6px;border-radius:50%;animation:pulse 2s infinite;}
+.engine-pill.vertex .dot{background:#60a5fa;box-shadow:0 0 6px rgba(96,165,250,.6);}
+.engine-pill.kie .dot{background:#a78bfa;box-shadow:0 0 6px rgba(167,139,250,.6);}
+
+/* ── LAYOUT (repris App.tsx : left panel + viewport) ── */
+.app-body{flex:1;display:flex;flex-direction:row;overflow:hidden;}
+@media(max-width:768px){.app-body{flex-direction:column;overflow-y:auto;}}
+
+/* ── LEFT PANEL ── */
+.panel-left{
+  width:360px;flex-shrink:0;
+  background:var(--zinc950);border-right:1px solid rgba(255,255,255,.06);
+  overflow-y:auto;display:flex;flex-direction:column;
+}
+@media(max-width:768px){.panel-left{width:100%;border-right:none;border-bottom:1px solid rgba(255,255,255,.06);overflow:visible;}}
+
+.sec{padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.06);}
+.sec-label{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.15em;margin-bottom:10px;display:block;}
+
+/* Upload grid (repris App.tsx exactement) */
+.upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.upload-slot{aspect-ratio:1;border-radius:16px;overflow:hidden;border:2px solid rgba(255,255,255,.07);background:rgba(255,255,255,.02);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;position:relative;transition:all .2s;}
+.upload-slot:hover{border-color:rgba(255,255,255,.2);background:rgba(255,255,255,.04);}
+.upload-slot.loaded{border-style:solid;border-color:rgba(255,255,255,.2);}
+.upload-slot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+.upload-slot .change-ov{position:absolute;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;}
+.upload-slot:hover .change-ov{opacity:1;}
+.change-lbl{padding:4px 10px;background:white;color:#000;border-radius:999px;font-size:8px;font-weight:700;text-transform:uppercase;}
+.upload-icon{font-size:20px;opacity:.15;}
+.upload-txt{font-size:8px;color:rgba(255,255,255,.3);font-family:'JetBrains Mono',monospace;text-align:center;}
+.slot-badge{position:absolute;bottom:6px;left:6px;background:rgba(0,0,0,.7);color:rgba(255,255,255,.7);font-size:7px;font-weight:700;font-family:'JetBrains Mono',monospace;padding:2px 6px;border-radius:4px;text-transform:uppercase;}
+
+/* Scene direction */
+.scene-ta{width:100%;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px 12px;font-size:11px;color:white;outline:none;resize:none;height:64px;font-family:'Inter',sans-serif;line-height:1.5;transition:all .2s;}
+.scene-ta:focus{border-color:rgba(255,255,255,.2);background:rgba(255,255,255,.05);}
+.scene-ta::placeholder{color:rgba(255,255,255,.2);}
+.scene-hint{font-family:'JetBrains Mono',monospace;font-size:8px;color:rgba(255,255,255,.25);margin-top:4px;font-style:italic;}
+
+/* Location lock toggle (repris App.tsx) */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;}
+.toggle-label{font-size:12px;font-weight:500;color:rgba(255,255,255,.8);}
+.toggle-desc{font-size:9px;color:rgba(255,255,255,.3);line-height:1.5;margin-top:5px;}
+.switch{width:40px;height:22px;background:rgba(255,255,255,.12);border-radius:999px;position:relative;transition:background .25s;cursor:pointer;flex-shrink:0;}
+.switch.on{background:#2563eb;}
+.switch-knob{position:absolute;top:2px;left:2px;width:18px;height:18px;background:white;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,.3);transition:transform .25s;}
+.switch.on .switch-knob{transform:translateX(18px);}
+
+/* Categories */
 .cat-grid{display:flex;flex-direction:column;gap:7px;}
-.cat-btn{width:100%;padding:11px 14px;border:2px solid var(--border);border-radius:.9rem;background:var(--blue-light);cursor:pointer;text-align:left;transition:all .2s;}
-.cat-btn:hover{border-color:var(--blue);}
-.cat-btn.active{background:var(--slate);border-color:var(--slate);}
-.cat-btn-name{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;display:block;color:var(--muted);}
-.cat-btn.active .cat-btn-name{color:white;}
-.cat-btn-desc{font-size:8px;color:var(--muted);line-height:1.4;margin-top:2px;display:block;}
-.cat-btn.active .cat-btn-desc{color:rgba(255,255,255,.65);}
+.cat-btn{width:100%;padding:11px 13px;border:2px solid rgba(255,255,255,.07);border-radius:12px;background:rgba(255,255,255,.02);cursor:pointer;text-align:left;transition:all .2s;}
+.cat-btn:hover{border-color:rgba(255,255,255,.15);}
+.cat-btn.active{border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.06);}
+.cat-name{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;display:block;color:rgba(255,255,255,.6);}
+.cat-btn.active .cat-name{color:white;}
+.cat-desc{font-size:8px;color:rgba(255,255,255,.3);line-height:1.4;margin-top:2px;display:block;}
+.cat-btn.active .cat-desc{color:rgba(255,255,255,.55);}
+
+/* Angle chips */
 .chips{display:flex;flex-wrap:wrap;gap:6px;}
-.chip{padding:8px 12px;border:2px solid var(--border);border-radius:.7rem;background:var(--blue-light);cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);transition:all .2s;}
-.chip:hover{border-color:var(--blue);}
-.chip.active{background:var(--slate);border-color:var(--slate);color:white;}
-.tog-row{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--blue-light);border-radius:.9rem;border:2px solid var(--border);margin-bottom:10px;transition:all .2s;}
-.tog-row.on{background:white;border-color:var(--blue);}
-.tog-info h4{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--slate);}
-.tog-info p{font-size:8px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;}
-.switch{width:44px;height:26px;background:var(--border);border-radius:999px;position:relative;transition:background .3s;cursor:pointer;flex-shrink:0;}
-.switch.on{background:var(--blue);}
-.switch-thumb{position:absolute;top:3px;left:3px;width:20px;height:20px;background:white;border-radius:50%;box-shadow:0 2px 5px rgba(0,0,0,.2);transition:transform .3s;}
-.switch.on .switch-thumb{transform:translateX(18px);}
-.fmt-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;}
-.fmt-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:12px 4px;border-radius:.7rem;border:2px solid var(--border);background:var(--blue-light);cursor:pointer;transition:all .2s;color:var(--muted);}
-.fmt-btn:hover{border-color:var(--blue);}
-.fmt-btn.active{background:var(--slate);border-color:var(--slate);color:white;transform:scale(1.05);}
-.fmt-btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5;}
-.fmt-btn span{font-size:8px;font-weight:800;}
-.slider-row{margin-bottom:14px;}
-.slider-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;}
-.slider-label{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);}
-.slider-val{font-family:'Space Mono',monospace;font-size:9px;font-weight:700;color:var(--blue);background:var(--blue-light);padding:2px 7px;border-radius:4px;}
-input[type=range]{width:100%;height:6px;appearance:none;background:var(--blue-light);border-radius:3px;cursor:pointer;outline:none;}
-input[type=range]::-webkit-slider-thumb{appearance:none;width:14px;height:14px;border-radius:50%;background:var(--blue);cursor:pointer;transition:transform .15s;}
-input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2);}
-.gen-btn{width:100%;padding:28px;border:none;border-radius:1.8rem;background:linear-gradient(135deg,var(--blue),var(--indigo),var(--violet));color:white;font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.35em;cursor:pointer;transition:transform .2s,box-shadow .2s;box-shadow:0 14px 36px rgba(37,99,235,.35);display:flex;flex-direction:column;align-items:center;gap:9px;}
-.gen-btn:hover:not(:disabled){transform:scale(1.02);}
-.gen-btn:active:not(:disabled){transform:scale(.98);}
-.gen-btn:disabled{background:#e2e8f0;color:#94a3b8;cursor:not-allowed;box-shadow:none;}
-.gen-btn .btn-row{display:flex;align-items:center;gap:14px;}
-.gen-btn svg{width:26px;height:26px;}
+.chip{padding:7px 11px;border:1px solid rgba(255,255,255,.08);border-radius:8px;background:rgba(255,255,255,.02);cursor:pointer;font-size:9px;font-weight:600;color:rgba(255,255,255,.5);transition:all .2s;font-family:'Inter',sans-serif;}
+.chip:hover{border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.8);}
+.chip.active{border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.07);color:white;}
+
+/* Generate button */
+.gen-wrap{padding:14px 18px;border-top:1px solid rgba(255,255,255,.06);background:rgba(0,0,0,.3);flex-shrink:0;}
+.gen-btn{width:100%;padding:14px;background:white;color:#000;border:none;border-radius:12px;font-size:13px;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;text-transform:uppercase;letter-spacing:.05em;box-shadow:0 8px 24px rgba(0,0,0,.4);transition:all .2s;}
+.gen-btn:hover{background:#e4e4e7;transform:translateY(-1px);}
+.gen-btn:active{transform:scale(.97);}
+.gen-btn:disabled{opacity:.3;cursor:not-allowed;transform:none;}
 .gen-btn.loading svg{animation:spin 1s linear infinite;}
-.gen-loading-msg{font-size:8px;font-weight:800;letter-spacing:.12em;color:rgba(255,255,255,.7);}
-.error-box{padding:14px;border-radius:1.1rem;border:2px solid #fecaca;background:#fef2f2;display:none;gap:10px;align-items:flex-start;margin-top:12px;}
-.error-box.show{display:flex;}
-.error-box svg{width:18px;height:18px;stroke:var(--red);fill:none;stroke-width:2;flex-shrink:0;}
-.error-box p{font-size:9px;font-weight:800;color:#b91c1c;letter-spacing:.04em;line-height:1.6;text-transform:uppercase;}
-.results-header{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid var(--border);padding-bottom:18px;margin-bottom:28px;flex-wrap:wrap;gap:12px;}
-.results-title h2{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.45em;}
-.results-status{display:flex;align-items:center;gap:7px;margin-top:4px;}
-.live-dot{width:8px;height:8px;border-radius:50%;background:var(--blue);animation:ping .8s infinite;}
-.empty-state{height:460px;display:flex;flex-direction:column;align-items:center;justify-content:center;border:3px dashed var(--border);border-radius:2.5rem;gap:22px;background:rgba(255,255,255,.5);}
-.empty-icon{width:110px;height:110px;border-radius:50%;background:white;box-shadow:0 14px 40px rgba(0,0,0,.06);display:flex;align-items:center;justify-content:center;border:2px solid var(--border);}
-.empty-icon svg{width:55px;height:55px;stroke:var(--border);fill:none;stroke-width:.5;}
-.empty-text{text-align:center;}
-.empty-text p:first-child{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.7em;color:#cbd5e1;}
-.empty-text p:last-child{font-size:10px;color:#94a3b8;font-weight:600;font-style:italic;margin-top:5px;}
-.img-card{background:white;border-radius:2rem;overflow:hidden;border:2px solid white;box-shadow:0 14px 45px rgba(0,0,0,.08);margin-bottom:30px;transition:transform .4s;}
-.img-card:hover{transform:scale(1.01);}
-.img-thumb{position:relative;cursor:pointer;overflow:hidden;}
-.img-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
-.ar-9-16{aspect-ratio:9/16;} .ar-16-9{aspect-ratio:16/9;} .ar-4-5{aspect-ratio:4/5;} .ar-1-1{aspect-ratio:1;}
-.img-overlay{position:absolute;inset:0;background:rgba(0,0,0,.2);opacity:0;transition:opacity .3s;display:flex;align-items:center;justify-content:center;}
-.img-card:hover .img-overlay{opacity:1;}
-.dl-circle{background:var(--blue);padding:20px;border-radius:50%;box-shadow:0 7px 20px rgba(37,99,235,.4);transform:scale(.7);transition:transform .3s;}
-.img-card:hover .dl-circle{transform:scale(1);}
-.dl-circle svg{width:28px;height:28px;stroke:white;fill:none;stroke-width:2;}
-.img-badges{position:absolute;top:16px;left:16px;display:flex;flex-direction:column;gap:6px;}
-.img-badge{padding:4px 12px;border-radius:.7rem;font-size:8px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;}
-.badge-white{background:rgba(255,255,255,.95);color:var(--slate);}
-.badge-grad{background:linear-gradient(135deg,var(--blue),var(--violet));color:white;}
-.badge-green-solid{background:var(--green);color:white;}
-.img-info{padding:22px;}
-.img-meta{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:9px;}
-.img-meta-txt span{font-family:'Space Mono',monospace;font-size:8px;font-weight:700;color:var(--slate);text-transform:uppercase;letter-spacing:.06em;display:block;}
-.btn-dl{padding:9px 16px;background:var(--blue);color:white;border:none;border-radius:.6rem;font-family:'Space Grotesk',sans-serif;font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;cursor:pointer;transition:transform .15s;}
-.btn-dl:hover{transform:scale(1.05);}
-.btn-reset{display:flex;align-items:center;gap:6px;padding:9px 14px;background:#fef2f2;color:var(--red);border:2px solid #fecaca;border-radius:.6rem;font-family:'Space Grotesk',sans-serif;font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;cursor:pointer;transition:all .2s;}
-.btn-reset:hover{background:var(--red);color:white;}
-.results-actions{display:flex;gap:7px;}
+
+/* ── VIEWPORT (repris App.tsx exactement) ── */
+.panel-right{flex:1;background:var(--zinc900);display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden;}
+@media(max-width:768px){.panel-right{min-height:60vw;}}
+
+/* Phone frame */
+.phone-frame{
+  position:relative;
+  width:min(240px,38vw);aspect-ratio:9/16;
+  background:var(--zinc800);border-radius:2.5rem;overflow:hidden;
+  border:6px solid var(--zinc700);box-shadow:0 24px 60px rgba(0,0,0,.6);
+}
+@media(max-width:768px){.phone-frame{width:min(200px,55vw);}}
+
+.phone-placeholder{
+  width:100%;height:100%;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:10px;opacity:.12;
+}
+.phone-placeholder .cam{font-size:38px;}
+.phone-placeholder p{font-size:9px;text-align:center;padding:0 16px;line-height:1.6;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.08em;}
+
+/* Result image in phone */
+#resultImg{width:100%;height:100%;object-fit:cover;display:none;}
+
+/* Loading overlay */
+.loading-ov{
+  position:absolute;inset:0;background:rgba(0,0,0,.92);z-index:5;
+  display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+}
+.loading-ov.show{display:flex;}
+.bars{display:flex;gap:4px;height:26px;align-items:flex-end;}
+.bar{width:3px;background:#e85d4a;border-radius:2px;animation:barA 1s ease-in-out infinite;}
+.bar:nth-child(2){animation-delay:.1s;}.bar:nth-child(3){animation-delay:.2s;}.bar:nth-child(4){animation-delay:.3s;}.bar:nth-child(5){animation-delay:.4s;}
+@keyframes barA{0%,100%{height:4px;}50%{height:26px;}}
+.gen-status{font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(255,255,255,.6);text-align:center;padding:0 12px;}
+
+/* Download btn (repris App.tsx) */
+.dl-btn{
+  position:absolute;bottom:10px;right:10px;z-index:6;
+  display:none;align-items:center;gap:5px;
+  padding:7px 11px;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);
+  border:1px solid rgba(255,255,255,.15);border-radius:8px;color:white;cursor:pointer;
+  font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;
+  text-transform:uppercase;transition:all .2s;
+}
+.dl-btn:hover{background:#2563eb;border-color:#2563eb;}
+.dl-btn.show{display:flex;}
+
+/* Gallery strip */
+.gallery-strip{
+  position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
+  display:flex;gap:6px;z-index:4;
+}
+.gal-thumb{
+  width:36px;aspect-ratio:9/16;border-radius:8px;overflow:hidden;
+  border:2px solid rgba(255,255,255,.15);cursor:pointer;transition:border-color .2s;
+  flex-shrink:0;background:rgba(255,255,255,.04);
+}
+.gal-thumb:hover{border-color:white;}
+.gal-thumb img{width:100%;height:100%;object-fit:cover;opacity:.7;}
+
+/* Error + shutter flash */
+.err-banner{
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(8px);
+  z-index:999;padding:10px 18px;border-radius:10px;backdrop-filter:blur(14px);
+  display:flex;align-items:center;gap:8px;min-width:240px;max-width:90vw;border:1px solid;
+  font-size:11px;font-weight:600;line-height:1.4;opacity:0;transition:all .3s;pointer-events:none;
+}
+.err-banner.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.err-banner.err{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.3);color:#fca5a5;}
+.err-banner.ok{background:rgba(74,222,128,.1);border-color:rgba(74,222,128,.3);color:#4ade80;}
+.shutter{position:fixed;inset:0;background:white;z-index:500;opacity:0;pointer-events:none;transition:opacity .08s;}
+.shutter.flash{opacity:1;}
+
+/* API Modal */
+.modal-back{position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(8px);z-index:150;display:none;align-items:center;justify-content:center;padding:20px;}
+.modal-back.open{display:flex;}
+.modal-box{background:#0a0a0f;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:26px;max-width:400px;width:100%;}
+.modal-title{font-size:16px;font-weight:800;font-style:italic;text-transform:uppercase;margin-bottom:14px;}
+.modal-btn{width:100%;padding:12px;border:none;border-radius:10px;font-size:12px;font-weight:900;cursor:pointer;text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px;}
+.modal-btn.primary{background:white;color:#000;}
+.modal-btn.secondary{background:none;color:rgba(255,255,255,.3);font-size:10px;margin-bottom:0;}
 </style>
 </head>
 <body>
+
+<!-- Shutter flash -->
+<div class="shutter" id="shutter"></div>
+
+<!-- ═══ SPLASH -- dual engine ═══ -->
 <div id="splash">
-  <div class="splash-hero">
-    <img src="https://images.unsplash.com/photo-1529539795054-3c162aab037a?auto=format&fit=crop&q=80&w=600" alt="">
-    <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.55),rgba(0,0,0,.1))"></div>
-    <div class="rec"><div class="rec-dot"></div><span class="rec-label">SELFIE 4K LIVE</span></div>
-  </div>
-  <h1>STUDIO SELFIE</h1>
-  <div style="height:3px;width:160px;background:linear-gradient(90deg,#2563eb,#7c3aed);border-radius:2px;margin-bottom:16px;"></div>
-  <p class="tagline">Selfies 4K ultra-reels -- IA Dual Engine</p>
-  <div class="api-box">
-    <span class="api-label">Choisir le moteur IA</span>
-    <div class="engine-selector">
-      <button class="engine-btn active-vertex" id="btn-vertex" onclick="selectEngine('vertex')">
-        <span>Vertex AI</span><span class="sub">Cle AQ...</span>
-      </button>
-      <button class="engine-btn" id="btn-kie" onclick="selectEngine('kie')">
-        <span>Kie.ai</span><span class="sub">Nano Banana 2</span>
-      </button>
+  <div class="splash-content">
+    <div class="splash-logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+        <circle cx="12" cy="13" r="4"/>
+      </svg>
     </div>
-    <span class="api-label" id="splashKeyLabel">Cle API Vertex AI Express Mode</span>
-    <input type="password" id="apiKeyInput" placeholder="AQ..." autocomplete="off">
-    <button class="enter-btn" onclick="enterStudio()">LANCER LE STUDIO</button>
-    <p id="splashErr" style="color:#dc2626;font-size:11px;font-weight:700;margin-top:9px;display:none;"></p>
+    <h1 class="splash-title">Studio<br>Selfie</h1>
+    <p class="splash-sub">Selfies 4K Ultra-Reels -- IA Dual Engine</p>
+
+    <span class="engine-label">Choisir le moteur IA</span>
+    <div class="engine-grid">
+      <div class="engine-card active-vertex" id="splashVertex" onclick="selectEngine('vertex')">
+        <span class="engine-card-name">Vertex AI</span>
+        <span class="engine-card-desc">Gemini 3.1 Flash Image<br>Cle AQ...</span>
+      </div>
+      <div class="engine-card" id="splashKie" onclick="selectEngine('kie')">
+        <span class="engine-card-name">Kie.ai</span>
+        <span class="engine-card-desc">Nano Banana 2<br>Cle kie.ai</span>
+      </div>
+    </div>
+
+    <div class="api-section">
+      <label class="engine-label" id="splashKeyLabel">Cle API Vertex AI Express Mode</label>
+      <input type="password" id="apiKeyInput" class="api-input" placeholder="AQ..." autocomplete="off">
+    </div>
+    <button class="splash-cta" onclick="enterStudio()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      LANCER LE STUDIO
+    </button>
+    <p id="splash-err" style="display:none;color:#fca5a5;font-size:11px;font-weight:600;margin-top:9px;"></p>
   </div>
-  <a href="#" id="helpLink" target="_blank" style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);text-decoration:none;">
-    <span id="helpText">Obtenir une cle Vertex AI Express Mode</span>
-  </a>
 </div>
 
+<!-- ═══ APP ═══ -->
 <div id="app">
-  <header>
-    <div class="header-left" onclick="showSplash()">
+  <header class="app-header">
+    <div class="header-brand" onclick="backToSplash()">
       <div class="header-logo">
-        <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
       </div>
-      <div class="header-title">
-        <h1>STUDIO SELFIE</h1>
-        <div class="header-badges">
-          <span class="badge badge-blue">SELFIES 4K</span>
-          <span class="badge badge-violet" id="engineBadge">VERTEX AI</span>
-        </div>
-      </div>
+      <span class="brand-name">Studio Selfie</span>
     </div>
-    <div style="display:flex;align-items:center;gap:12px;">
-      <div style="text-align:right;">
-        <p style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.65);">Simulation Humaine</p>
-        <p style="font-size:8px;font-weight:700;color:#93c5fd;text-transform:uppercase;letter-spacing:.06em;" id="modelLabel">Gemini 3.1 Flash Image Preview</p>
-      </div>
-      <div style="width:40px;height:40px;border-radius:50%;border:3px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;">
-        <div class="status-dot"></div>
-      </div>
+    <div class="engine-pill vertex" id="enginePill" onclick="openModal()">
+      <div class="dot"></div>
+      <span id="enginePillLabel">VERTEX AI</span>
     </div>
   </header>
 
-  <main>
-    <div style="display:flex;flex-direction:column;gap:18px;">
-      <div class="card">
-        <p class="card-title title-blue">
-          <svg viewBox="0 0 24 24" style="stroke:var(--blue)"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-          01. REFERENCES IDENTITE
-        </p>
-        <div id="uploadGrid" class="upload-grid"></div>
-        <textarea id="sceneInput" placeholder="Decrivez l'expression, l'ambiance, le contexte de la scene..."></textarea>
+  <div class="app-body">
+
+    <!-- ─ LEFT PANEL ─ -->
+    <aside class="panel-left">
+
+      <!-- Upload refs -->
+      <div class="sec">
+        <span class="sec-label">Images Reference</span>
+        <div class="upload-grid">
+          <div class="upload-slot" id="slot1" onclick="document.getElementById('f1').click()">
+            <span class="upload-icon">📷</span>
+            <span class="upload-txt">Principale (req.)</span>
+            <div class="change-ov"><span class="change-lbl">Changer</span></div>
+          </div>
+          <div class="upload-slot" id="slot2" onclick="document.getElementById('f2').click()">
+            <span class="upload-icon">👤</span>
+            <span class="upload-txt">Secondaire (opt.)</span>
+            <div class="change-ov"><span class="change-lbl">Changer</span></div>
+          </div>
+        </div>
+        <input type="file" id="f1" accept="image/*" style="display:none" onchange="loadImage(event,'img1')">
+        <input type="file" id="f2" accept="image/*" style="display:none" onchange="loadImage(event,'img2')">
       </div>
 
-      <div class="card">
-        <p class="card-title title-indigo">
-          <svg viewBox="0 0 24 24" style="stroke:var(--indigo)"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
-          02. CATEGORIE SELFIE
-        </p>
+      <!-- Scene direction -->
+      <div class="sec">
+        <span class="sec-label">Direction de Scene</span>
+        <textarea class="scene-ta" id="sceneInput" placeholder="Ex: Air surpris, leger sourire, regard espiegle..."></textarea>
+        <p class="scene-hint">Comportement, expression, intention du sujet.</p>
+      </div>
+
+      <!-- Location lock -->
+      <div class="sec">
+        <div class="toggle-row">
+          <span class="toggle-label">Verrou des Lieux</span>
+          <div class="switch" id="lockSwitch" onclick="toggleLock()"><div class="switch-knob"></div></div>
+        </div>
+        <p class="toggle-desc">Force l'IA a conserver strictement l'environnement des images de reference.</p>
+      </div>
+
+      <!-- Categories -->
+      <div class="sec">
+        <span class="sec-label">Categorie</span>
         <div class="cat-grid" id="catGrid"></div>
       </div>
 
-      <div class="card">
-        <p class="card-title title-violet">
-          <svg viewBox="0 0 24 24" style="stroke:var(--violet)"><path d="M15 3h6v6"/><path d="M10 14L21 3"/></svg>
-          03. ANGLE ET CONTEXTE
-        </p>
+      <!-- Angles -->
+      <div class="sec" style="flex:1;">
+        <span class="sec-label" id="angleLabel">Angle du Selfie</span>
         <div class="chips" id="angleChips"></div>
       </div>
 
-      <div class="card">
-        <p class="card-title title-blue">
-          <svg viewBox="0 0 24 24" style="stroke:var(--blue)"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
-          04. FORMAT
-        </p>
-        <div class="fmt-grid">
-          <button class="fmt-btn active" data-ar="9:16" onclick="setAR('9:16',this)"><svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/></svg><span>9:16</span></button>
-          <button class="fmt-btn" data-ar="16:9" onclick="setAR('16:9',this)"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="10" rx="2"/></svg><span>16:9</span></button>
-          <button class="fmt-btn" data-ar="4:5" onclick="setAR('4:5',this)"><svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/></svg><span>4:5</span></button>
-          <button class="fmt-btn" data-ar="1:1" onclick="setAR('1:1',this)"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/></svg><span>1:1</span></button>
+      <!-- Generate -->
+      <div class="gen-wrap">
+        <button class="gen-btn" id="genBtn" onclick="generate()">
+          <svg id="genIcon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          <span id="genLabel">Prendre un Selfie</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- ─ VIEWPORT (centre) ─ -->
+    <div class="panel-right">
+
+      <!-- Phone frame -->
+      <div class="phone-frame">
+        <div class="phone-placeholder" id="phonePH">
+          <span class="cam">📷</span>
+          <p>Pret pour<br>la capture</p>
         </div>
+        <img id="resultImg" alt="Selfie">
+        <div class="loading-ov" id="loadingOv">
+          <div class="bars">
+            <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+          </div>
+          <div class="gen-status" id="genStatus">Initialisation...</div>
+        </div>
+        <button class="dl-btn" id="dlBtn" onclick="downloadCurrent()">
+          &#11015; Telecharger
+        </button>
       </div>
 
-      <div class="card">
-        <p class="card-title title-indigo">
-          <svg viewBox="0 0 24 24" style="stroke:var(--indigo)"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-          05. REGLAGES AVANCES
-        </p>
-        <div class="tog-row" id="lockRow"><div class="tog-info"><h4>Verrou des Lieux</h4><p id="lockStatus">Desactive</p></div><div class="switch" id="lockSwitch" onclick="toggleLock()"><div class="switch-thumb"></div></div></div>
-        <div class="tog-row" id="perRow"><div class="tog-info"><h4>Mode Perception Humaine</h4><p id="perStatus">Moteur standard</p></div><div class="switch" id="perSwitch" onclick="togglePerception()"><div class="switch-thumb"></div></div></div>
-        <div style="margin-top:6px;">
-          <div class="slider-row"><div class="slider-header"><span class="slider-label">Asymetrie</span><span class="slider-val" id="vAsym">70%</span></div><input type="range" min="0" max="100" value="70" oninput="updateSlider('asym',this.value)"></div>
-          <div class="slider-row"><div class="slider-header"><span class="slider-label">Imperfection</span><span class="slider-val" id="vImperf">60%</span></div><input type="range" min="0" max="100" value="60" oninput="updateSlider('imperf',this.value)"></div>
-          <div class="slider-row"><div class="slider-header"><span class="slider-label">Intimite</span><span class="slider-val" id="vIntim">40%</span></div><input type="range" min="0" max="100" value="40" oninput="updateSlider('intim',this.value)"></div>
-        </div>
-      </div>
+      <!-- Gallery strip -->
+      <div class="gallery-strip" id="galleryStrip"></div>
 
-      <button class="gen-btn" id="genBtn" onclick="generate()">
-        <div class="btn-row">
-          <svg id="genIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-          <span id="genLabel">CAPTURER LE SELFIE 4K</span>
-        </div>
-        <span class="gen-loading-msg" id="genMsg" style="display:none;"></span>
-      </button>
-      <div class="error-box" id="errorBox"><svg viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><p id="errorText"></p></div>
     </div>
+  </div>
+</div>
 
-    <div>
-      <div class="results-header">
-        <div class="results-title">
-          <h2>CAPTURES REELLES</h2>
-          <div class="results-status"><div class="live-dot"></div><span style="font-size:9px;font-weight:800;color:var(--blue);letter-spacing:.2em;text-transform:uppercase;">LIVE</span><span style="font-size:11px;font-family:'Space Mono',monospace;color:var(--muted);font-weight:700;margin-left:12px;" id="captureCount">0 CAPTURES</span></div>
-        </div>
-        <div class="results-actions" id="resultsActions" style="display:none;">
-          <button class="btn-reset" onclick="resetAll()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.21"/></svg>Reset</button>
-        </div>
+<!-- Error banner -->
+<div class="err-banner" id="banner"><span id="bannerMsg"></span></div>
+
+<!-- API Modal -->
+<div class="modal-back" id="apiModal">
+  <div class="modal-box">
+    <div style="font-size:22px;margin-bottom:10px">📷</div>
+    <div class="modal-title">Changer la Cle API</div>
+    <div class="engine-grid" style="margin-bottom:14px;">
+      <div class="engine-card" id="modalVertex" onclick="modalSelectEngine('vertex')" style="padding:10px;">
+        <span class="engine-card-name">Vertex AI</span>
+        <span class="engine-card-desc">Gemini 3.1 Flash</span>
       </div>
-      <div id="emptyState" class="empty-state">
-        <div class="empty-icon"><svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
-        <div class="empty-text"><p>PRET A CAPTURER</p><p>Configure ta scene et declenche la generation.</p></div>
+      <div class="engine-card" id="modalKie" onclick="modalSelectEngine('kie')" style="padding:10px;">
+        <span class="engine-card-name">Kie.ai</span>
+        <span class="engine-card-desc">Nano Banana 2</span>
       </div>
-      <div id="resultsContainer"></div>
     </div>
-  </main>
-  <footer style="padding:28px;text-align:center;border-top:2px solid var(--border);background:rgba(255,255,255,.6);">
-    <p style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.7em;color:#94a3b8;" id="footerText">STUDIO SELFIE 2025</p>
-  </footer>
+    <div class="api-section">
+      <label class="engine-label" id="modalKeyLabel">Cle API</label>
+      <input type="password" id="modalKey" class="api-input" placeholder="Votre cle...">
+    </div>
+    <button class="modal-btn primary" onclick="saveModal()">Enregistrer</button>
+    <button class="modal-btn secondary" onclick="closeModal()">Annuler</button>
+  </div>
 </div>
 
 <script>
-var apiKey='',selectedEngine='vertex',avatarImages=[],results=[],loading=false,aspectRatio='9:16',selCategory='VOLONTAIRE',selAngle='',locationLock=false,humanPerception=false,asymmetry=70,imperfection=60,intimacy=40,loadingInterval=null;
-var isMobile=/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+// ══════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════
+var apiKey = '';
+var engine = 'vertex'; // 'vertex' | 'kie'
+var imgs = { img1: null, img2: null }; // blob URLs
+var imgB64 = { img1: null, img2: null }; // base64 pour les API calls
+var selCategory = 'VOLONTAIRE';
+var selAngle = '';
+var locationLock = false;
+var isGenerating = false;
+var gallery = []; // tableau de blob URLs
+var currentBlobUrl = null;
+var bannerTimer;
+var loadingInterval;
 
-var CATEGORIES={
-  VOLONTAIRE:{label:'Selfie Volontaire',desc:"La personne prend consciemment un selfie. Intention naturelle et imparfaite.",angles:['Miroir - pose esthetique','Miroir - attitude / street','Bras tendu - naturel','Bras tendu - angle accentue','Allonge - lifestyle','Exterieur - lifestyle','Mouvement - activite']},
-  ACCIDENTEL:{label:'Selfie Accidentel',desc:"Photo prise sans intention esthetique. Resulte d'un mouvement ou d'une erreur.",angles:['Obstruction partielle','Cadrage partiel','En mouvement','Ajustement','Contre-plongee accidentelle','Perspective immersive','Relachement instable']},
-  CONTEXTUEL:{label:'Selfie Contextuel',desc:"Le selfie est defini par l'environnement. Le lieu influence le cadrage.",angles:['Miroir','Salle de bain','Lit - canape','Interieur (maison)','Exterieur (rue)','Exterieur (soleil direct)','Voiture','Ascenseur','Lieu public (cafe, restaurant)','Poser au sol']}
-};
-var MSGS_VERTEX=["Initialisation de la capture humaine...","Analyse des references visuelles...","Simulation du geste selfie...","Vertex genere la scene 4K...","Serveur occupe, nouvelle tentative..."];
-var MSGS_KIE=["Envoi vers Nano Banana 2...","Upload des references...","Nano Banana 2 genere la scene...","Rendu haute fidelite en cours...","Presque termine..."];
-
-function selectEngine(e){
-  selectedEngine=e;
-  document.getElementById('btn-vertex').className='engine-btn'+(e==='vertex'?' active-vertex':'');
-  document.getElementById('btn-kie').className='engine-btn'+(e==='kie'?' active-kie':'');
-  document.getElementById('splashKeyLabel').textContent=e==='vertex'?'Cle API Vertex AI Express Mode':'Cle API kie.ai';
-  document.getElementById('apiKeyInput').placeholder=e==='vertex'?'AQ...':'Colle ta cle kie.ai ici...';
-  document.getElementById('helpLink').href=e==='vertex'?'https://cloud.google.com/vertex-ai/generative-ai/docs/start/express-mode/overview':'https://kie.ai/api-key';
-  document.getElementById('helpText').textContent=e==='vertex'?'Obtenir une cle Vertex AI Express Mode':'Creer un compte kie.ai';
-}
-
-function enterStudio(){
-  var k=document.getElementById('apiKeyInput').value.trim();
-  var err=document.getElementById('splashErr');
-  if(!k){err.textContent='Veuillez entrer votre cle API.';err.style.display='block';return;}
-  if(selectedEngine==='vertex'&&!k.startsWith('AQ')){if(!confirm('Cette cle ne commence pas par "AQ". Les cles Vertex AI Express Mode commencent par AQ. Continuer quand meme ?'))return;}
-  apiKey=k;err.style.display='none';
-  document.getElementById('splash').style.display='none';
-  document.getElementById('app').classList.add('visible');
-  if(selectedEngine==='kie'){document.getElementById('engineBadge').textContent='KIE.AI';document.getElementById('engineBadge').className='badge badge-green';document.getElementById('modelLabel').textContent='Nano Banana 2 - kie.ai';document.getElementById('footerText').textContent='STUDIO SELFIE 2025 - Powered by kie.ai';}
-  else{document.getElementById('engineBadge').textContent='VERTEX AI';document.getElementById('engineBadge').className='badge badge-violet';document.getElementById('modelLabel').textContent='Gemini 3.1 Flash Image Preview';document.getElementById('footerText').textContent='STUDIO SELFIE 2025 - Powered by Vertex AI';}
-  renderUploadGrid();renderCategories();renderAngles();renderResults();
-}
-
-function showSplash(){document.getElementById('splash').style.display='flex';document.getElementById('app').classList.remove('visible');}
-
-function renderUploadGrid(){
-  var g=document.getElementById('uploadGrid');g.innerHTML='';
-  avatarImages.forEach(function(img,i){
-    var d=document.createElement('div');d.className='upload-thumb';
-    d.innerHTML='<img src="'+img+'" alt="ref '+(i+1)+'"><button class="remove-btn" onclick="removeAvatar('+i+')"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button><span class="ref-badge">REF '+(i+1)+'</span>';
-    g.appendChild(d);
-  });
-  if(avatarImages.length<4){
-    var a=document.createElement('div');a.className='upload-add';
-    a.innerHTML='<svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span>'+(avatarImages.length===0?'Charger Image Ref':'Ajouter ('+avatarImages.length+'/4)')+'</span><input type="file" multiple accept="image/*" onchange="handleUpload(event)">';
-    g.appendChild(a);
+// ══════════════════════════════════════════════
+//  DATA (identique App.tsx)
+// ══════════════════════════════════════════════
+var CATEGORIES = {
+  VOLONTAIRE: {
+    label: 'Selfie Volontaire',
+    desc: "La personne prend consciemment un selfie. Intention naturelle et imparfaite.",
+    angles: [
+      'Miroir -- pose esthetique',
+      'Miroir -- attitude / street',
+      'Bras tendu -- naturel',
+      'Bras tendu -- angle accentue',
+      'Allonge -- lifestyle',
+      'Exterieur -- lifestyle',
+      'Mouvement -- activite'
+    ]
+  },
+  ACCIDENTEL: {
+    label: 'Selfie Accidentel',
+    desc: "Photo prise sans intention esthetique. Resulte d'un mouvement ou d'une erreur.",
+    angles: [
+      'Obstruction partielle',
+      'Cadrage partiel',
+      'En mouvement',
+      'Ajustement',
+      'Contre-plongee accidentelle',
+      'Perspective immersive',
+      'Relachement instable'
+    ]
+  },
+  CONTEXTUEL: {
+    label: 'Selfie Contextuel',
+    desc: "Le selfie est defini par l'environnement. Le lieu influence le cadrage.",
+    angles: [
+      'Miroir',
+      'Salle de bain',
+      'Lit / canape',
+      'Interieur (maison)',
+      'Exterieur (rue)',
+      'Exterieur (soleil direct)',
+      'Voiture',
+      'Ascenseur',
+      'Lieu public (cafe, restaurant)',
+      'Poser au sol'
+    ]
   }
+};
+
+var MSGS_VERTEX = [
+  "Initialisation de la capture humaine...",
+  "Analyse des references visuelles...",
+  "Simulation du geste selfie...",
+  "Vertex genere la scene 4K...",
+  "Serveur occupe, nouvelle tentative..."
+];
+var MSGS_KIE = [
+  "Envoi vers Nano Banana 2...",
+  "Upload des references...",
+  "Nano Banana 2 genere la scene...",
+  "Rendu haute fidelite en cours...",
+  "Presque termine..."
+];
+
+// ══════════════════════════════════════════════
+//  ENGINE SELECTION
+// ══════════════════════════════════════════════
+function selectEngine(e) {
+  engine = e;
+  document.getElementById('splashVertex').className = 'engine-card' + (e === 'vertex' ? ' active-vertex' : '');
+  document.getElementById('splashKie').className = 'engine-card' + (e === 'kie' ? ' active-kie' : '');
+  document.getElementById('splashKeyLabel').textContent = e === 'vertex' ? 'Cle API Vertex AI Express Mode' : 'Cle API kie.ai';
+  document.getElementById('apiKeyInput').placeholder = e === 'vertex' ? 'AQ...' : 'Cle kie.ai...';
 }
 
-function handleUpload(e){
-  var files=Array.from(e.target.files).slice(0,4-avatarImages.length);
-  files.forEach(function(f){
-    var r=new FileReader();
-    r.onloadend=function(){resizeImage(r.result,function(resized){avatarImages.push(resized);renderUploadGrid();});};
-    r.readAsDataURL(f);
-  });
+function modalSelectEngine(e) {
+  engine = e;
+  document.getElementById('modalVertex').className = 'engine-card' + (e === 'vertex' ? ' active-vertex' : '');
+  document.getElementById('modalKie').className = 'engine-card' + (e === 'kie' ? ' active-kie' : '');
+  document.getElementById('modalKeyLabel').textContent = e === 'vertex' ? 'Cle API Vertex AI Express Mode' : 'Cle API kie.ai';
+  document.getElementById('modalKey').placeholder = e === 'vertex' ? 'AQ...' : 'Cle kie.ai...';
 }
-function removeAvatar(i){avatarImages.splice(i,1);renderUploadGrid();}
-function resizeImage(b64,cb){
-  var img=new Image();img.src=b64;
-  img.onload=function(){
-    var c=document.createElement('canvas'),w=img.width,h=img.height;
-    if(w>1024){h=Math.round(h*1024/w);w=1024;}if(h>1024){w=Math.round(w*1024/h);h=1024;}
-    c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);cb(c.toDataURL('image/jpeg',0.85));
+
+function updateEnginePill() {
+  var pill = document.getElementById('enginePill');
+  var lbl = document.getElementById('enginePillLabel');
+  pill.className = 'engine-pill ' + (engine === 'vertex' ? 'vertex' : 'kie');
+  lbl.textContent = engine === 'vertex' ? 'VERTEX AI' : 'KIE.AI';
+}
+
+// ══════════════════════════════════════════════
+//  SPLASH -> APP
+// ══════════════════════════════════════════════
+function enterStudio() {
+  var k = document.getElementById('apiKeyInput').value.trim();
+  var err = document.getElementById('splash-err');
+  if (!k) { err.textContent = 'Veuillez entrer votre cle API.'; err.style.display = 'block'; return; }
+  if (engine === 'vertex' && !k.startsWith('AQ')) {
+    if (!confirm('Cette cle ne commence pas par "AQ". Les cles Vertex AI Express Mode commencent par AQ. Continuer quand meme ?')) return;
+  }
+  apiKey = k;
+  err.style.display = 'none';
+  document.getElementById('splash').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+  updateEnginePill();
+  renderCategories();
+  renderAngles();
+}
+
+function backToSplash() {
+  document.getElementById('splash').style.display = 'flex';
+  document.getElementById('app').classList.remove('visible');
+}
+
+// ══════════════════════════════════════════════
+//  API MODAL
+// ══════════════════════════════════════════════
+function openModal() {
+  document.getElementById('modalKey').value = apiKey;
+  modalSelectEngine(engine);
+  document.getElementById('apiModal').classList.add('open');
+}
+function closeModal() { document.getElementById('apiModal').classList.remove('open'); }
+function saveModal() {
+  var k = document.getElementById('modalKey').value.trim();
+  if (!k) return;
+  apiKey = k;
+  closeModal();
+  updateEnginePill();
+  showBanner('Cle API mise a jour', 'ok');
+}
+
+// ══════════════════════════════════════════════
+//  IMAGE UPLOAD -- Blob URLs pour Safari
+// ══════════════════════════════════════════════
+function loadImage(e, slot) {
+  var file = e.target.files && e.target.files[0]; if (!file) return;
+  // Revoke previous blob
+  if (imgs[slot]) { URL.revokeObjectURL(imgs[slot]); imgs[slot] = null; }
+
+  var reader = new FileReader();
+  reader.onloadend = function() {
+    var orig = reader.result;
+    var imgEl = new Image();
+    imgEl.onload = function() {
+      var canvas = document.createElement('canvas');
+      var max = 1024, w = imgEl.width, h = imgEl.height;
+      if (w > max) { h = Math.round(h * max / w); w = max; }
+      if (h > max) { w = Math.round(w * max / h); h = max; }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(imgEl, 0, 0, w, h);
+
+      // Garder base64 pour les API calls
+      var b64DataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      imgB64[slot] = b64DataUrl;
+
+      // Blob URL pour l'affichage (Safari safe)
+      canvas.toBlob(function(blob) {
+        imgs[slot] = URL.createObjectURL(blob);
+        updateSlotUI(slot);
+        var sizeKB = Math.round(blob.size / 1024);
+        showBanner('Photo chargee -- ' + sizeKB + ' KB', 'ok');
+      }, 'image/jpeg', 0.85);
+    };
+    imgEl.src = orig;
   };
+  reader.readAsDataURL(file);
+  e.target.value = '';
 }
 
-function renderCategories(){
-  var g=document.getElementById('catGrid');g.innerHTML='';
-  Object.keys(CATEGORIES).forEach(function(key){
-    var cat=CATEGORIES[key];var btn=document.createElement('div');
-    btn.className='cat-btn'+(selCategory===key?' active':'');btn.dataset.key=key;
-    btn.innerHTML='<span class="cat-btn-name">'+cat.label+'</span><span class="cat-btn-desc">'+cat.desc+'</span>';
-    btn.onclick=function(){selCategory=key;selAngle=CATEGORIES[key].angles[0];renderCategories();renderAngles();};
+function updateSlotUI(slot) {
+  var slotId = slot === 'img1' ? 'slot1' : 'slot2';
+  var el = document.getElementById(slotId);
+  el.classList.add('loaded');
+  el.querySelectorAll('.av-img').forEach(function(i) { i.remove(); });
+  var img = document.createElement('img');
+  img.className = 'av-img';
+  img.src = imgs[slot]; // blob URL
+  el.insertBefore(img, el.firstChild);
+
+  var badge = document.createElement('span');
+  badge.className = 'slot-badge';
+  badge.textContent = slot === 'img1' ? 'PRINCIPALE' : 'SECONDAIRE';
+  el.appendChild(badge);
+}
+
+// ══════════════════════════════════════════════
+//  UI RENDERS
+// ══════════════════════════════════════════════
+function renderCategories() {
+  var g = document.getElementById('catGrid'); g.innerHTML = '';
+  Object.keys(CATEGORIES).forEach(function(key) {
+    var cat = CATEGORIES[key];
+    var btn = document.createElement('div');
+    btn.className = 'cat-btn' + (selCategory === key ? ' active' : '');
+    btn.innerHTML = '<span class="cat-name">' + cat.label + '</span><span class="cat-desc">' + cat.desc + '</span>';
+    btn.onclick = function() {
+      selCategory = key;
+      selAngle = CATEGORIES[key].angles[0];
+      renderCategories(); renderAngles();
+    };
     g.appendChild(btn);
   });
 }
-function renderAngles(){
-  var angles=CATEGORIES[selCategory].angles;
-  if(!selAngle||angles.indexOf(selAngle)===-1)selAngle=angles[0];
-  var c=document.getElementById('angleChips');c.innerHTML='';
-  angles.forEach(function(a){
-    var btn=document.createElement('button');btn.className='chip'+(selAngle===a?' active':'');btn.textContent=a;
-    btn.onclick=function(){selAngle=a;renderAngles();};c.appendChild(btn);
+
+function renderAngles() {
+  var angles = CATEGORIES[selCategory].angles;
+  if (!selAngle || angles.indexOf(selAngle) === -1) selAngle = angles[0];
+  document.getElementById('angleLabel').textContent = selCategory === 'CONTEXTUEL' ? 'Contexte / Lieu' : 'Angle du Selfie';
+  var c = document.getElementById('angleChips'); c.innerHTML = '';
+  angles.forEach(function(a) {
+    var btn = document.createElement('button');
+    btn.className = 'chip' + (selAngle === a ? ' active' : '');
+    btn.textContent = a;
+    btn.onclick = function() { selAngle = a; renderAngles(); };
+    c.appendChild(btn);
   });
 }
-function setAR(ar,btn){aspectRatio=ar;document.querySelectorAll('.fmt-btn').forEach(function(b){b.classList.remove('active');});if(btn)btn.classList.add('active');}
-function toggleLock(){locationLock=!locationLock;document.getElementById('lockSwitch').className='switch'+(locationLock?' on':'');document.getElementById('lockRow').className='tog-row'+(locationLock?' on':'');document.getElementById('lockStatus').textContent=locationLock?'Actif - lieu preserve':'Desactive';}
-function togglePerception(){humanPerception=!humanPerception;document.getElementById('perSwitch').className='switch'+(humanPerception?' on':'');document.getElementById('perRow').className='tog-row'+(humanPerception?' on':'');document.getElementById('perStatus').textContent=humanPerception?'Simulation active':'Moteur standard';}
-function updateSlider(n,v){v=parseInt(v,10);if(n==='asym'){asymmetry=v;document.getElementById('vAsym').textContent=v+'%';}if(n==='imperf'){imperfection=v;document.getElementById('vImperf').textContent=v+'%';}if(n==='intim'){intimacy=v;document.getElementById('vIntim').textContent=v+'%';}}
 
-function buildSystemText(){return 'Studio Selfie generates ultra-realistic 4K images by simulating the real gesture of a person taking a selfie. Simulate a real body, a real gesture, a real intention, a real capture. Prioritize human credibility over visual perfection. ZERO smoothing, ZERO beauty filters. Natural skin texture with visible pores, real asymmetry, authentic imperfections. Smartphone lens simulation: wide angle ~24mm, slight proximity distortion, natural depth of field. The image must look like a photo taken quickly with a phone, without aesthetic intention.';}
+function toggleLock() {
+  locationLock = !locationLock;
+  var sw = document.getElementById('lockSwitch');
+  sw.className = 'switch' + (locationLock ? ' on' : '');
+}
 
-function buildPrompt(subject){
-  var catBehavior='';
-  if(selCategory==='VOLONTAIRE')catBehavior='CATEGORY: VOLUNTARY SELFIE - The person consciously takes a selfie. Phone visible at arm length. Natural but voluntary posture. Gaze directed toward screen. Slight framing imperfections. Never too perfect or frozen.';
-  else if(selCategory==='ACCIDENTEL')catBehavior='CATEGORY: ACCIDENTAL SELFIE - Unstable or incoherent framing. Non-posed posture. Phone MUST be active (screen on). Interaction must look involuntary. Sensation of involuntary capture.';
-  else catBehavior='CATEGORY: CONTEXTUAL SELFIE - The decor influences posture and light. Presence of realistic environmental imperfections. Total coherence between environment and image.';
-  var parts=[catBehavior,'ANGLE/CONTEXT: '+selAngle,'ASYMMETRY: '+asymmetry+'% - introduce natural body asymmetry at this level.','IMPERFECTION: '+imperfection+'% - include natural skin and framing imperfections at this level.','INTIMACY: '+intimacy+'% - closeness and intimacy feeling at this level.',humanPerception?'HUMAN PERCEPTION MODE: ACTIVE - maximum simulation of human eye, natural micro-blur, authentic depth.':'',locationLock?'LOCATION LOCK: ACTIVE - strictly preserve the exact environment and furniture from the reference images. DO NOT change the room.':'',avatarImages.length>1?'TWO REFERENCE IMAGES PROVIDED: Include BOTH individuals as a duo. Show strong complicity and closeness. Both faces clearly visible.':'',subject?'SCENE DIRECTION: "'+subject+'"':'','Preserve exact facial identity from reference image - same face, same skin tone, same morphology. Natural lighting, authentic posture, no beauty filter, no AI smoothing. Ultra-realistic 4K selfie photo.'].filter(Boolean).join('\n');
+// ══════════════════════════════════════════════
+//  PROMPT BUILDER (logique gemini.ts)
+// ══════════════════════════════════════════════
+var SYSTEM_RULES = 'Studio Selfie generates ultra-realistic 4K images by simulating the real gesture of a person taking a photo of themselves. Simulate a real body, a real gesture, a real intention, a real capture. Prioritize human credibility over visual perfection. NEVER soften a strong angle. IDENTITY PRESERVATION: DO NOT modify the avatar identity. Preserve the face, traits, skin exactly as in reference images. HUMAN SKIN: ZERO smoothing, ZERO beauty filters. Visible micro-textures, real pores. SMARTPHONE LENS: wide angle ~24mm, slight proximity distortion, natural depth of field, micro digital noise. The image must look like a photo taken quickly with a phone, without aesthetic intention.';
+
+function buildPrompt() {
+  var scene = document.getElementById('sceneInput').value.trim();
+  var cat = CATEGORIES[selCategory];
+  var catBehavior = '';
+
+  if (selCategory === 'VOLONTAIRE') {
+    catBehavior = 'CATEGORY: VOLUNTARY SELFIE -- The person consciously takes a selfie. Phone visible at arm length. Natural but voluntary posture. Gaze directed toward screen. Slight framing imperfections. Never too perfect or frozen.';
+  } else if (selCategory === 'ACCIDENTEL') {
+    catBehavior = 'CATEGORY: ACCIDENTAL SELFIE -- Unstable or incoherent framing. Non-posed posture. Phone MUST be active (screen on). Interaction must look involuntary. Sensation of involuntary capture.';
+  } else {
+    catBehavior = 'CATEGORY: CONTEXTUAL SELFIE -- The decor influences posture and light. Presence of realistic environmental imperfections. Total coherence between environment and image.';
+  }
+
+  var parts = [
+    catBehavior,
+    'ANGLE/CONTEXT: ' + selAngle,
+    locationLock ? 'LOCATION LOCK ACTIVE: Strictly preserve the exact environment and furniture from the reference images. DO NOT change the room.' : '',
+    imgB64.img2 ? 'TWO REFERENCE IMAGES PROVIDED: Include BOTH individuals as a duo. Show strong complicity and closeness. Both faces clearly visible.' : '',
+    scene ? 'SCENE DIRECTION: "' + scene + '"' : '',
+    'Preserve exact facial identity from reference image. Natural lighting, authentic posture, no beauty filter, no AI smoothing. Ultra-realistic 4K selfie photo.'
+  ].filter(Boolean).join('\n');
+
   return parts;
 }
 
-function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
+// ══════════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════════
+function sleep(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
 
-async function callVertexAPI(subject){
-  var apiAR=aspectRatio==='4:5'?'3:4':aspectRatio;
-  var systemText=buildSystemText();
-  var promptText=buildPrompt(subject);
-  var parts=[];
-  avatarImages.slice(0,2).forEach(function(img){parts.push({inlineData:{data:img.split(',')[1],mimeType:'image/jpeg'}});});
-  parts.push({text:promptText});
-  var body={systemInstruction:{parts:[{text:systemText}]},contents:[{role:'user',parts:parts}],generationConfig:{responseModalities:['IMAGE'],imageConfig:{aspectRatio:apiAR,imageSize:'4K'}}};
-  // ENDPOINT IDENTIQUE A STUDIO POV
-  var endpoint='https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-3.1-flash-image-preview:generateContent?key='+encodeURIComponent(apiKey);
-  var waitTimes=[5000,10000,20000,40000,60000];var lastErr;
-  for(var attempt=0;attempt<=waitTimes.length;attempt++){
-    try{
-      updateLoadingMsg(attempt===0?'Envoi vers Vertex...':'Nouvelle tentative '+(attempt+1)+'/'+(waitTimes.length+1)+'...');
-      var res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-      var data={};try{data=await res.json();}catch(_){}
-      if(!res.ok){
-        var msg=(data.error&&data.error.message)?data.error.message:'Erreur HTTP '+res.status;
-        if(res.status===401)throw new Error('Cle API invalide. Verifie ta cle Vertex AI (commence par AQ...).');
-        if(res.status===403)throw new Error('Acces refuse. Verifie que ta cle Vertex AI Express Mode est active.');
-        if(res.status===404)throw new Error('Erreur 404: modele introuvable. '+msg);
-        if(res.status===429)throw new Error('429 RESOURCE_EXHAUSTED: '+msg);
-        throw new Error('Erreur '+res.status+': '+msg);
-      }
-      var candidate=data.candidates&&data.candidates[0];
-      if(!candidate)throw new Error('Aucune reponse du modele.');
-      if(candidate.finishReason==='SAFETY')throw new Error('Generation bloquee par les filtres de securite. Reformule ta demande.');
-      var cparts=(candidate.content&&candidate.content.parts)?candidate.content.parts:[];
-      for(var i=0;i<cparts.length;i++){if(cparts[i].inlineData&&cparts[i].inlineData.data)return 'data:image/png;base64,'+cparts[i].inlineData.data;}
-      throw new Error('Image non trouvee dans la reponse Vertex.');
-    }catch(err){
-      lastErr=err;
-      var em=String(err.message||'').toLowerCase();
-      var retryable=em.includes('429')||em.includes('resource_exhausted')||em.includes('502')||em.includes('503')||em.includes('504')||em.includes('overloaded');
-      if(retryable&&attempt<waitTimes.length){updateLoadingMsg('Vertex sature. Attente '+Math.round(waitTimes[attempt]/1000)+'s...');await sleep(waitTimes[attempt]);continue;}
-      throw err;
-    }
+function setGenUI(on) {
+  document.getElementById('genBtn').disabled = on;
+  document.getElementById('loadingOv').className = 'loading-ov' + (on ? ' show' : '');
+  var msgs = engine === 'kie' ? MSGS_KIE : MSGS_VERTEX;
+  if (on) {
+    var idx = 0;
+    document.getElementById('genStatus').textContent = msgs[0];
+    document.getElementById('genIcon').innerHTML = '<path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>';
+    document.getElementById('genBtn').classList.add('loading');
+    document.getElementById('genLabel').textContent = 'Capture en cours...';
+    clearInterval(loadingInterval);
+    loadingInterval = setInterval(function() {
+      idx = (idx + 1) % msgs.length;
+      document.getElementById('genStatus').textContent = msgs[idx];
+    }, 3000);
+  } else {
+    clearInterval(loadingInterval);
+    document.getElementById('genIcon').innerHTML = '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>';
+    document.getElementById('genBtn').classList.remove('loading');
+    document.getElementById('genLabel').textContent = 'Prendre un Selfie';
   }
-  throw lastErr||new Error('La generation Vertex a echoue.');
 }
 
-async function uploadImageToKie(base64DataUri){
-  var res=await fetch('https://kieai.redpandaai.co/api/file-base64-upload',{method:'POST',headers:{'Authorization':'Bearer '+apiKey,'Content-Type':'application/json'},body:JSON.stringify({base64Data:base64DataUri,uploadPath:'images/studio-selfie'})});
-  var data={};try{data=await res.json();}catch(_){}
-  if(!res.ok||!data.data||!data.data.downloadUrl)throw new Error('Erreur upload image kie.ai: '+(data.msg||res.status));
-  return data.data.downloadUrl;
+function updateStatus(msg) {
+  document.getElementById('genStatus').textContent = msg;
 }
 
-async function callKieAPI(subject){
-  var systemContext='Ultra-realistic 4K selfie photo. Natural skin texture with visible pores and imperfections. Credible human lighting, no artificial rendering. Authentic spontaneous posture. No beauty filter, no AI smoothing.';
-  var promptText=buildPrompt(subject);
-  var fullPrompt=systemContext+(avatarImages.length>0?'\nPreserve exact facial identity from reference image - same face, same skin tone, same morphology.\n':'\n')+promptText;
-  var imageUrls=[];
-  if(avatarImages.length>0){
-    updateLoadingMsg('Upload des images de reference...');
-    for(var i=0;i<Math.min(avatarImages.length,4);i++){try{var url=await uploadImageToKie(avatarImages[i]);imageUrls.push(url);}catch(e){console.warn('Upload echoue:',e.message);}}
+function showBanner(msg, type) {
+  clearTimeout(bannerTimer);
+  var b = document.getElementById('banner');
+  b.className = 'err-banner show ' + (type || 'ok');
+  document.getElementById('bannerMsg').textContent = msg;
+  bannerTimer = setTimeout(function() { b.classList.remove('show'); }, 4000);
+}
+
+// ══════════════════════════════════════════════
+//  DISPLAY RESULT -- Blob URL pour Safari
+// ══════════════════════════════════════════════
+function displayResult(blobUrl) {
+  // Revoke previous result if it was a blob
+  if (currentBlobUrl && currentBlobUrl.startsWith('blob:')) {
+    // Keep it for gallery, don't revoke
   }
-  updateLoadingMsg('Envoi vers kie.ai / Nano Banana 2...');
-  var taskBody={model:'nano-banana-2',input:{prompt:fullPrompt,aspect_ratio:aspectRatio,resolution:'4K',output_format:'png',image_input:imageUrls}};
-  // ENDPOINT IDENTIQUE A STUDIO POV
-  var createRes=await fetch('https://api.kie.ai/api/v1/jobs/createTask',{method:'POST',headers:{'Authorization':'Bearer '+apiKey,'Content-Type':'application/json'},body:JSON.stringify(taskBody)});
-  var createData={};try{createData=await createRes.json();}catch(_){}
-  if(!createRes.ok||createData.code!==200){
-    var msg=createData.msg||createData.message||'Erreur HTTP '+createRes.status;
-    if(createRes.status===401||createData.code===401)throw new Error('Cle kie.ai invalide. Verifiez votre cle sur kie.ai/api-key');
-    if(createRes.status===403||createData.code===403)throw new Error('Acces refuse kie.ai. Verifiez vos credits.');
-    if(createRes.status===429||createData.code===429)throw new Error('Trop de requetes kie.ai. Attendez quelques secondes.');
-    throw new Error('Erreur kie.ai: '+msg);
-  }
-  var taskId=createData.data&&createData.data.taskId;
-  if(!taskId)throw new Error('Aucun taskId retourne par kie.ai. Reponse: '+JSON.stringify(createData));
-  updateLoadingMsg('Nano Banana 2 genere votre image 4K...');
-  var lastStatusData={};
-  for(var poll=0;poll<60;poll++){
-    await sleep(5000);updateLoadingMsg('Nano Banana 2 en cours... ('+((poll+1)*5)+'s)');
-    var statusData={};
-    try{var statusRes=await fetch('https://api.kie.ai/api/v1/jobs/recordInfo?taskId='+taskId,{headers:{'Authorization':'Bearer '+apiKey}});statusData=await statusRes.json();}catch(e){lastStatusData={fetchError:e.message};continue;}
-    lastStatusData=statusData;
-    var state=statusData.data&&statusData.data.state;
-    if(state==='fail')throw new Error('Fail: '+(statusData.data&&statusData.data.failMsg));
-    if(state==='success'){
-      var imageUrl=null;
-      try{var r=JSON.parse(statusData.data.resultJson||'{}');imageUrl=(r.resultUrls&&r.resultUrls[0])||(r.images&&r.images[0]&&r.images[0].url)||r.url;}catch(_){}
-      if(!imageUrl)throw new Error("Success mais pas d'URL. resultJson: "+statusData.data.resultJson);
-      updateLoadingMsg("Recuperation de l'image 4K...");
-      var imgRes=await fetch(imageUrl);var blob=await imgRes.blob();
-      return new Promise(function(resolve,reject){var reader=new FileReader();reader.onloadend=function(){resolve(reader.result);};reader.onerror=reject;reader.readAsDataURL(blob);});
-    }
-  }
-  throw new Error('Timeout kie.ai. Derniere reponse: '+JSON.stringify(lastStatusData).slice(0,500));
+  currentBlobUrl = blobUrl;
+
+  var img = document.getElementById('resultImg');
+  img.src = blobUrl;
+  img.style.display = 'block';
+  document.getElementById('phonePH').style.display = 'none';
+  document.getElementById('dlBtn').classList.add('show');
+
+  // Gallery
+  gallery.unshift(blobUrl);
+  if (gallery.length > 8) gallery.pop();
+  renderGallery();
 }
 
-async function generate(){
-  if(loading)return;
-  var subject=document.getElementById('sceneInput').value.trim();
-  if(!subject&&avatarImages.length===0){showError('Ajoutez une image de reference ou decrivez la scene.');return;}
-  if(!apiKey){showSplash();return;}
-  if(!selAngle){showError('Selectionnez un angle de selfie.');return;}
-  hideError();setLoading(true);
-  try{
-    var imgDataUrl=selectedEngine==='kie'?await callKieAPI(subject):await callVertexAPI(subject);
-    var id=Date.now().toString();
-    results.unshift({id:id,dataUrl:imgDataUrl,aspectRatio:aspectRatio,engine:selectedEngine,timestamp:Date.now(),category:selCategory,angle:selAngle});
-    if(results.length>5)results.pop();
-    renderResults();
-  }catch(err){showError(err.message||'Erreur de generation.');}
-  finally{setLoading(false);}
-}
-
-function setLoading(v){
-  loading=v;var btn=document.getElementById('genBtn');var icon=document.getElementById('genIcon');var lbl=document.getElementById('genLabel');var msg=document.getElementById('genMsg');
-  var msgs=selectedEngine==='kie'?MSGS_KIE:MSGS_VERTEX;
-  btn.disabled=v;
-  if(v){icon.innerHTML='<path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>';btn.classList.add('loading');lbl.textContent='CAPTURE EN COURS...';msg.style.display='block';msg.textContent=msgs[0];var idx=0;clearInterval(loadingInterval);loadingInterval=setInterval(function(){if(!loading)return;idx=(idx+1)%msgs.length;msg.textContent=msgs[idx];},3000);}
-  else{btn.classList.remove('loading');icon.innerHTML='<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>';lbl.textContent='CAPTURER LE SELFIE 4K';msg.style.display='none';clearInterval(loadingInterval);}
-}
-function updateLoadingMsg(text){var m=document.getElementById('genMsg');if(m){m.style.display='block';m.textContent=text;}}
-function showError(msg){document.getElementById('errorText').textContent=msg;document.getElementById('errorBox').classList.add('show');}
-function hideError(){document.getElementById('errorBox').classList.remove('show');}
-
-function renderResults(){
-  var container=document.getElementById('resultsContainer');var empty=document.getElementById('emptyState');var actions=document.getElementById('resultsActions');var count=document.getElementById('captureCount');
-  count.textContent=results.length+' CAPTURE'+(results.length!==1?'S':'');
-  if(results.length===0){empty.style.display='flex';actions.style.display='none';container.innerHTML='';return;}
-  empty.style.display='none';actions.style.display='flex';container.innerHTML='';
-  results.forEach(function(r){
-    var arClass=r.aspectRatio==='9:16'?'ar-9-16':r.aspectRatio==='16:9'?'ar-16-9':r.aspectRatio==='4:5'?'ar-4-5':'ar-1-1';
-    var engineLabel=r.engine==='kie'?'NANO BANANA 2 - KIE.AI':'GEMINI 3.1 FLASH IMAGE 4K';
-    var badgeClass=r.engine==='kie'?'img-badge badge-green-solid':'img-badge badge-grad';
-    var card=document.createElement('div');card.className='img-card';
-    card.innerHTML='<div class="img-thumb" onclick="downloadImage(\''+r.id+'\')">'+'<div class="'+arClass+'"><img src="'+r.dataUrl+'" alt="selfie" loading="lazy"></div>'+'<div class="img-overlay"><div class="dl-circle"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div></div>'+'<div class="img-badges"><span class="img-badge badge-white">'+r.aspectRatio+'</span><span class="'+badgeClass+'">'+engineLabel+'</span><span class="img-badge badge-white">'+r.category+'</span></div></div>'+'<div class="img-info"><div class="img-meta"><div class="img-meta-txt"><span>ANGLE: '+r.angle+'</span><span>ID: SS_'+r.id.slice(-8)+'</span></div>'+'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;"><button class="btn-dl" onclick="downloadImage(\''+r.id+'\')">TELECHARGER</button>'+(isMobile?'<p style="font-size:7px;font-weight:700;color:var(--muted);text-transform:uppercase;">APPUI LONG POUR ENREGISTRER</p>':'')+'</div></div></div>';
-    container.appendChild(card);
+function renderGallery() {
+  var strip = document.getElementById('galleryStrip'); strip.innerHTML = '';
+  gallery.forEach(function(url) {
+    var thumb = document.createElement('div');
+    thumb.className = 'gal-thumb';
+    thumb.dataset.url = url;
+    var img = document.createElement('img');
+    img.src = url; // blob URL
+    thumb.appendChild(img);
+    thumb.onclick = function() {
+      currentBlobUrl = url;
+      document.getElementById('resultImg').src = url;
+      document.getElementById('resultImg').style.display = 'block';
+      document.getElementById('phonePH').style.display = 'none';
+      document.getElementById('dlBtn').classList.add('show');
+    };
+    strip.appendChild(thumb);
   });
 }
 
-function downloadImage(id){
-  var r=results.find(function(x){return x.id===id;});if(!r)return;
-  if(isMobile&&/iPhone|iPad|iPod/i.test(navigator.userAgent)){try{var byteStr=atob(r.dataUrl.split(',')[1]);var mime=r.dataUrl.split(',')[0].split(':')[1].split(';')[0];var ab=new ArrayBuffer(byteStr.length);var ia=new Uint8Array(ab);for(var i=0;i<byteStr.length;i++)ia[i]=byteStr.charCodeAt(i);var blob=new Blob([ab],{type:mime});var blobUrl=URL.createObjectURL(blob);var w=window.open(blobUrl,'_blank');setTimeout(function(){URL.revokeObjectURL(blobUrl);},60000);if(!w)alert("Appuie longuement sur l'image dans le nouvel onglet, puis choisis Enregistrer l'image.");}catch(e){alert("Appuie longuement sur l'image pour l'enregistrer.");}return;}
-  var a=document.createElement('a');a.href=r.dataUrl;a.download='studio-selfie-'+r.id+'.png';document.body.appendChild(a);a.click();document.body.removeChild(a);
+// ══════════════════════════════════════════════
+//  DOWNLOAD -- Blob direct, Safari compatible
+// ══════════════════════════════════════════════
+function downloadCurrent() {
+  if (!currentBlobUrl) return;
+  var isMobile = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (isMobile) {
+    // iOS: ouvrir le blob dans un nouvel onglet, l'utilisateur fait appui long
+    window.open(currentBlobUrl, '_blank');
+    return;
+  }
+  var a = document.createElement('a');
+  a.href = currentBlobUrl;
+  a.download = 'studio-selfie-' + Date.now() + '.png';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
 
-function resetAll(){if(!confirm('Supprimer toutes les captures ?'))return;results=[];avatarImages=[];renderUploadGrid();renderResults();}
+// ══════════════════════════════════════════════
+//  BASE64 -> BLOB URL (helper)
+// ══════════════════════════════════════════════
+function b64ToBlobUrl(b64, mime) {
+  var byteStr = atob(b64);
+  var ab = new ArrayBuffer(byteStr.length);
+  var ia = new Uint8Array(ab);
+  for (var i = 0; i < byteStr.length; i++) ia[i] = byteStr.charCodeAt(i);
+  var blob = new Blob([ab], { type: mime || 'image/png' });
+  return URL.createObjectURL(blob);
+}
 
-selCategory='VOLONTAIRE';selAngle=CATEGORIES.VOLONTAIRE.angles[0];
+// ══════════════════════════════════════════════
+//  VERTEX AI -- endpoint exact Studio POV
+// ══════════════════════════════════════════════
+async function callVertex(promptText) {
+  var apiAR = { '9:16': '9:16', '16:9': '16:9', '4:5': '3:4', '1:1': '1:1' }['9:16']; // selfie = 9:16 par defaut
+  var systemText = SYSTEM_RULES;
+
+  var parts = [];
+  // Images inline si disponibles
+  if (imgB64.img1) parts.push({ inlineData: { data: imgB64.img1.split(',')[1], mimeType: 'image/jpeg' } });
+  if (imgB64.img2) parts.push({ inlineData: { data: imgB64.img2.split(',')[1], mimeType: 'image/jpeg' } });
+  parts.push({ text: promptText });
+
+  var body = {
+    systemInstruction: { parts: [{ text: systemText }] },
+    contents: [{ role: 'user', parts: parts }],
+    generationConfig: {
+      responseModalities: ['IMAGE'],
+      imageConfig: { aspectRatio: '9:16', imageSize: '4K' }
+    }
+  };
+
+  // ENDPOINT IDENTIQUE A STUDIO POV
+  var endpoint = 'https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-3.1-flash-image-preview:generateContent?key=' + encodeURIComponent(apiKey);
+
+  var waitTimes = [5000, 10000, 20000, 40000, 60000];
+  var lastErr;
+
+  for (var attempt = 0; attempt <= waitTimes.length; attempt++) {
+    try {
+      updateStatus(attempt === 0 ? 'Envoi vers Vertex...' : 'Nouvelle tentative ' + (attempt + 1) + '...');
+      var res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      var data = {}; try { data = await res.json(); } catch(_) {}
+
+      if (!res.ok) {
+        var msg = (data.error && data.error.message) ? data.error.message : 'Erreur HTTP ' + res.status;
+        if (res.status === 401) throw new Error('Cle Vertex invalide. Verifie ta cle (commence par AQ...).');
+        if (res.status === 403) throw new Error('Acces refuse. Verifie que ta cle Vertex AI Express Mode est active.');
+        if (res.status === 429) throw new Error('429 RESOURCE_EXHAUSTED: ' + msg);
+        throw new Error('Erreur ' + res.status + ': ' + msg);
+      }
+
+      var candidate = data.candidates && data.candidates[0];
+      if (!candidate) throw new Error('Aucune reponse du modele.');
+      if (candidate.finishReason === 'SAFETY') throw new Error('Generation bloquee par les filtres. Reformule ta demande.');
+
+      var cparts = (candidate.content && candidate.content.parts) || [];
+      for (var i = 0; i < cparts.length; i++) {
+        if (cparts[i].inlineData && cparts[i].inlineData.data) {
+          // Convertir en Blob URL pour Safari
+          return b64ToBlobUrl(cparts[i].inlineData.data, 'image/png');
+        }
+      }
+      throw new Error('Image non trouvee dans la reponse Vertex.');
+
+    } catch(err) {
+      lastErr = err;
+      var em = String(err.message || '').toLowerCase();
+      var retryable = em.includes('429') || em.includes('resource_exhausted') || em.includes('502') || em.includes('503') || em.includes('504') || em.includes('overloaded');
+      if (retryable && attempt < waitTimes.length) {
+        updateStatus('Vertex sature. Attente ' + Math.round(waitTimes[attempt] / 1000) + 's...');
+        await sleep(waitTimes[attempt]);
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw lastErr || new Error('Generation Vertex echouee.');
+}
+
+// ══════════════════════════════════════════════
+//  KIE.AI -- endpoint exact Studio POV
+// ══════════════════════════════════════════════
+async function uploadToKie(b64DataUri) {
+  var res = await fetch('https://kieai.redpandaai.co/api/file-base64-upload', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ base64Data: b64DataUri, uploadPath: 'images/studio-selfie' })
+  });
+  var data = {}; try { data = await res.json(); } catch(_) {}
+  if (!res.ok || !data.data || !data.data.downloadUrl) throw new Error('Erreur upload kie.ai: ' + (data.msg || res.status));
+  return data.data.downloadUrl;
+}
+
+async function callKie(promptText) {
+  var imageUrls = [];
+  if (imgB64.img1) {
+    updateStatus('Upload reference 1...');
+    try { imageUrls.push(await uploadToKie(imgB64.img1)); } catch(e) { console.warn('Upload 1 echoue:', e.message); }
+  }
+  if (imgB64.img2) {
+    updateStatus('Upload reference 2...');
+    try { imageUrls.push(await uploadToKie(imgB64.img2)); } catch(e) { console.warn('Upload 2 echoue:', e.message); }
+  }
+
+  var fullPrompt = SYSTEM_RULES + '\n' + promptText;
+  if (imageUrls.length > 0) fullPrompt = SYSTEM_RULES + '\nPreserve exact facial identity from reference images.\n' + promptText;
+
+  updateStatus('Creation de la tache kie.ai...');
+  var taskBody = {
+    model: 'nano-banana-2',
+    input: { prompt: fullPrompt, aspect_ratio: '9:16', resolution: '4K', output_format: 'png', image_input: imageUrls }
+  };
+
+  // ENDPOINT IDENTIQUE A STUDIO POV
+  var createRes = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify(taskBody)
+  });
+  var createData = {}; try { createData = await createRes.json(); } catch(_) {}
+
+  if (!createRes.ok || createData.code !== 200) {
+    var msg = createData.msg || createData.message || 'Erreur HTTP ' + createRes.status;
+    if (createRes.status === 401 || createData.code === 401) throw new Error('Cle kie.ai invalide.');
+    if (createRes.status === 403 || createData.code === 403) throw new Error('Acces refuse kie.ai. Verifiez vos credits.');
+    throw new Error('Erreur kie.ai: ' + msg);
+  }
+
+  var taskId = createData.data && createData.data.taskId;
+  if (!taskId) throw new Error('Pas de taskId kie.ai. Reponse: ' + JSON.stringify(createData));
+
+  // POLLING IDENTIQUE A STUDIO POV
+  var lastStatus = {};
+  for (var poll = 0; poll < 60; poll++) {
+    await sleep(5000);
+    updateStatus('Nano Banana 2 en cours... (' + ((poll + 1) * 5) + 's)');
+    var sData = {};
+    try {
+      var sRes = await fetch('https://api.kie.ai/api/v1/jobs/recordInfo?taskId=' + taskId, { headers: { 'Authorization': 'Bearer ' + apiKey } });
+      sData = await sRes.json();
+    } catch(e) { lastStatus = { err: e.message }; continue; }
+    lastStatus = sData;
+    var state = sData.data && sData.data.state;
+    if (state === 'fail') throw new Error('Kie.ai fail: ' + (sData.data && sData.data.failMsg));
+    if (state === 'success') {
+      var imageUrl = null;
+      try {
+        var r = JSON.parse(sData.data.resultJson || '{}');
+        imageUrl = (r.resultUrls && r.resultUrls[0]) || (r.images && r.images[0] && r.images[0].url) || r.url;
+      } catch(_) {}
+      if (!imageUrl) throw new Error("Succes mais pas d'URL image.");
+      updateStatus("Recuperation de l'image...");
+      // Fetch -> Blob URL pour Safari
+      var imgRes = await fetch(imageUrl);
+      var blob = await imgRes.blob();
+      return URL.createObjectURL(blob);
+    }
+  }
+  throw new Error('Timeout kie.ai. Derniere reponse: ' + JSON.stringify(lastStatus).slice(0, 300));
+}
+
+// ══════════════════════════════════════════════
+//  GENERATE
+// ══════════════════════════════════════════════
+async function generate() {
+  if (isGenerating) return;
+  var scene = document.getElementById('sceneInput').value.trim();
+  if (!imgB64.img1 && !scene) { showBanner('Chargez une photo ou decrivez la scene', 'err'); return; }
+  if (!apiKey) { openModal(); return; }
+
+  // Shutter flash
+  var sh = document.getElementById('shutter');
+  sh.classList.add('flash');
+  setTimeout(function() { sh.classList.remove('flash'); }, 100);
+
+  isGenerating = true;
+  setGenUI(true);
+
+  try {
+    var prompt = buildPrompt();
+    var blobUrl = engine === 'kie' ? await callKie(prompt) : await callVertex(prompt);
+    displayResult(blobUrl);
+    showBanner('Selfie genere !', 'ok');
+  } catch(err) {
+    console.error(err);
+    showBanner('Erreur : ' + String(err.message || err).slice(0, 180), 'err');
+  } finally {
+    isGenerating = false;
+    setGenUI(false);
+  }
+}
+
+// ══════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════
+selCategory = 'VOLONTAIRE';
+selAngle = CATEGORIES.VOLONTAIRE.angles[0];
+document.getElementById('apiKeyInput').addEventListener('keydown', function(e) { if (e.key === 'Enter') enterStudio(); });
+document.getElementById('modalKey').addEventListener('keydown', function(e) { if (e.key === 'Enter') saveModal(); });
 </script>
 </body>
 </html>
