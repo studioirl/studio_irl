@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studio Selfie -- IA Dual Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#050b18;--bg2:#0a192f;--border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.12);--border3:rgba(255,255,255,0.22);
+  --text:#fff;--text2:rgba(255,255,255,0.7);--text3:rgba(255,255,255,0.4);
+  --accent:#e85d4a;--gold:#d4af37;--green:#4ade80;--purple:#8b5cf6;--blue:#60a5fa;
+}
+html{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);}
+body{min-height:100vh;background:radial-gradient(circle at top right,#0a192f,#050b18 70%);}
+::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:10px;}
+
+/* ── SPLASH ── */
+#splash{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;overflow-y:auto;}
+.splash-content{max-width:480px;width:100%;padding-bottom:40px;}
+.splash-logo{width:60px;height:60px;background:white;border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;box-shadow:0 8px 32px rgba(255,255,255,0.15);}
+.splash-logo svg{width:30px;height:30px;color:#050b18;}
+.splash-title{font-size:clamp(42px,8vw,68px);font-weight:900;text-transform:uppercase;font-style:italic;letter-spacing:-0.03em;line-height:0.88;text-shadow:0 0 20px rgba(255,255,255,0.2);margin-bottom:8px;text-align:center;}
+.splash-sub{font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--text3);text-transform:uppercase;letter-spacing:0.2em;text-align:center;margin-bottom:32px;}
+.engine-select-wrap{margin-bottom:20px;}
+.engine-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.3em;color:var(--text3);margin-bottom:10px;display:block;}
+.engine-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.engine-card{padding:14px;border-radius:12px;border:1px solid var(--border2);background:rgba(255,255,255,0.03);cursor:pointer;transition:all 0.2s;text-align:left;}
+.engine-card:hover{border-color:var(--border3);}
+.engine-card.active{border-color:rgba(255,255,255,0.5);background:rgba(255,255,255,0.07);}
+.engine-card-name{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;display:block;margin-bottom:3px;}
+.engine-card-desc{font-size:9px;color:var(--text3);font-family:'JetBrains Mono',monospace;line-height:1.4;}
+.engine-card.active .engine-card-name{color:white;}
+.engine-card.active .engine-card-desc{color:var(--text2);}
+.api-section{display:flex;flex-direction:column;gap:7px;margin-bottom:16px;}
+.api-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.3em;color:var(--text3);}
+.api-input{width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border2);border-radius:12px;padding:13px 16px;font-size:13px;font-family:'JetBrains Mono',monospace;color:var(--text);outline:none;transition:all 0.2s;}
+.api-input::placeholder{color:rgba(255,255,255,0.2);}
+.api-input:focus{border-color:rgba(255,255,255,0.4);background:rgba(255,255,255,0.08);}
+.splash-cta{width:100%;background:white;color:var(--bg);border:none;border-radius:999px;padding:17px 48px;font-weight:900;font-size:12px;text-transform:uppercase;letter-spacing:0.2em;cursor:pointer;transition:all 0.2s;box-shadow:0 20px 60px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;gap:12px;margin-top:4px;}
+.splash-cta:hover{background:#eff6ff;transform:translateY(-1px);}
+#splash-error{color:#fca5a5;font-size:12px;font-weight:600;margin-top:10px;display:none;text-align:center;}
+
+/* ── APP ── */
+#app{display:none;height:100dvh;flex-direction:column;overflow:hidden;}
+#app.visible{display:flex;}
+
+.app-header{border-bottom:1px solid var(--border);background:rgba(0,0,0,0.5);backdrop-filter:blur(20px);flex-shrink:0;z-index:20;}
+.header-inner{padding:0 20px;height:52px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.brand{display:flex;align-items:center;gap:10px;}
+.rec-dot{width:8px;height:8px;background:var(--accent);border-radius:50%;box-shadow:0 0 10px rgba(232,93,74,0.8);animation:pulse 2s infinite;flex-shrink:0;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
+.brand-logo{width:32px;height:32px;background:white;border-radius:8px;display:flex;align-items:center;justify-content:center;}
+.brand-logo svg{width:16px;height:16px;color:var(--bg);}
+.brand-title{font-size:16px;font-weight:900;text-transform:uppercase;font-style:italic;letter-spacing:-0.02em;}
+.brand-sub{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.15em;}
+.engine-badge{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1px solid;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;cursor:pointer;transition:all 0.2s;}
+.engine-badge.vertex{border-color:rgba(96,165,250,0.4);background:rgba(96,165,250,0.07);color:var(--blue);}
+.engine-badge.kieai{border-color:rgba(139,92,246,0.4);background:rgba(139,92,246,0.07);color:var(--purple);}
+.engine-badge .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.engine-badge.vertex .dot{background:var(--blue);box-shadow:0 0 6px rgba(96,165,250,0.6);}
+.engine-badge.kieai .dot{background:var(--purple);box-shadow:0 0 6px rgba(139,92,246,0.6);}
+
+.app-main{flex:1;display:grid;grid-template-columns:280px 1fr 300px;overflow:hidden;min-height:0;}
+
+@media(max-width:900px){
+  .app-main{grid-template-columns:1fr;grid-template-rows:auto auto auto;overflow-y:auto;height:auto;}
+  .panel-left,.panel-right{border-right:none;border-bottom:1px solid var(--border);}
+  .panel-right-inner{overflow:visible;}
+}
+
+.panel-left{border-right:1px solid var(--border);background:rgba(255,255,255,0.015);overflow-y:auto;}
+.panel-right{border-left:1px solid var(--border);background:rgba(255,255,255,0.015);display:flex;flex-direction:column;overflow:hidden;}
+.panel-right-inner{flex:1;overflow-y:auto;}
+.panel-center{display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);position:relative;overflow:hidden;}
+
+.sec{border-bottom:1px solid var(--border);padding:13px 16px;}
+.sec-title{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:9px;}
+
+/* Upload zones */
+.upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.upload-zone{aspect-ratio:1;border:1px dashed var(--border2);border-radius:12px;background:rgba(255,255,255,0.02);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;transition:all 0.2s;overflow:hidden;position:relative;}
+.upload-zone:hover{border-color:white;background:rgba(255,255,255,0.05);}
+.upload-zone.loaded{border-style:solid;border-color:rgba(255,255,255,0.3);}
+.upload-zone img.av-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+.upload-zone .change-ov{position:absolute;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.2s;}
+.upload-zone:hover .change-ov{opacity:1;}
+.change-lbl{padding:4px 10px;background:white;color:var(--bg);border-radius:999px;font-size:8px;font-weight:700;text-transform:uppercase;}
+.upload-icon{font-size:18px;opacity:0.2;}
+.upload-txt{font-size:8px;color:var(--text3);text-align:center;padding:0 5px;font-family:'JetBrains Mono',monospace;}
+.upload-zone-label{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--text3);text-align:center;display:block;margin-bottom:4px;}
+
+/* Category buttons */
+.cat-btn{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,0.02);cursor:pointer;text-align:left;transition:all 0.2s;margin-bottom:5px;}
+.cat-btn:hover{border-color:var(--border2);}
+.cat-btn.active{border-color:rgba(255,255,255,0.45);background:rgba(255,255,255,0.07);}
+.cat-btn-name{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;display:block;color:var(--text2);}
+.cat-btn.active .cat-btn-name{color:white;}
+.cat-btn-desc{font-size:8px;color:var(--text3);line-height:1.4;margin-top:3px;display:block;}
+.cat-btn.active .cat-btn-desc{color:var(--text2);}
+
+/* Angle chips */
+.chip-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;}
+.chip{padding:6px 8px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,0.02);cursor:pointer;transition:all 0.2s;text-align:left;}
+.chip:hover{border-color:var(--border2);}
+.chip.active{border-color:rgba(255,255,255,0.35);background:rgba(255,255,255,0.06);}
+.chip-lbl{font-size:8.5px;color:var(--text2);line-height:1.3;display:block;}
+.chip.active .chip-lbl{color:white;}
+
+/* Toggle switch */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:4px 0;}
+.toggle-label{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text2);}
+.toggle-btn{width:38px;height:20px;border-radius:999px;background:rgba(255,255,255,0.08);border:1px solid var(--border2);cursor:pointer;position:relative;transition:all 0.2s;flex-shrink:0;}
+.toggle-btn.on{background:var(--green);border-color:rgba(74,222,128,0.4);}
+.toggle-knob{position:absolute;top:2px;left:2px;width:14px;height:14px;background:var(--text3);border-radius:50%;transition:all 0.2s;}
+.toggle-btn.on .toggle-knob{left:20px;background:var(--bg);}
+.toggle-hint{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--text3);line-height:1.5;margin-top:4px;}
+
+/* Scene textarea */
+.scene-ta{width:100%;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;padding:9px 11px;font-size:11px;color:var(--text);outline:none;resize:none;height:62px;transition:all 0.2s;font-family:'Inter',sans-serif;}
+.scene-ta:focus{border-color:var(--border3);background:rgba(255,255,255,0.05);}
+.scene-hint{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--text3);margin-top:4px;font-style:italic;}
+
+/* Preview */
+.preview-phone{width:min(220px,34vw);aspect-ratio:9/16;position:relative;}
+.preview-box{width:100%;height:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border2);border-radius:20px;overflow:hidden;box-shadow:0 30px 70px rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;position:relative;}
+.prev-placeholder{display:flex;flex-direction:column;align-items:center;gap:10px;opacity:0.12;}
+.prev-placeholder .cam{font-size:40px;}
+.prev-placeholder p{font-size:10px;text-align:center;padding:0 20px;line-height:1.6;color:var(--text2);font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;}
+.preview-img{width:100%;height:100%;object-fit:cover;display:none;}
+.gen-ov{position:absolute;inset:0;background:rgba(5,11,24,0.95);z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;display:none;}
+.bars{display:flex;gap:4px;height:28px;align-items:flex-end;}
+.bar{width:3px;background:var(--accent);border-radius:2px;animation:barA 1s ease-in-out infinite;}
+.bar:nth-child(2){animation-delay:0.1s;}.bar:nth-child(3){animation-delay:0.2s;}.bar:nth-child(4){animation-delay:0.3s;}.bar:nth-child(5){animation-delay:0.4s;}
+@keyframes barA{0%,100%{height:4px;}50%{height:28px;}}
+.gen-status{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text2);text-align:center;}
+.prog-bar{width:120px;height:2px;background:var(--border);border-radius:2px;overflow:hidden;}
+.prog-fill{height:100%;background:var(--accent);border-radius:2px;transition:width 0.3s;}
+.dl-btn{position:absolute;bottom:10px;right:10px;z-index:6;padding:7px 10px;background:rgba(0,0,0,0.8);backdrop-filter:blur(8px);border:1px solid var(--border2);border-radius:8px;color:white;cursor:pointer;font-size:11px;transition:all 0.2s;display:none;font-family:'JetBrains Mono',monospace;gap:5px;align-items:center;}
+.dl-btn:hover{background:var(--accent);}
+
+/* Right panel */
+.r-sec{border-bottom:1px solid var(--border);padding:13px 16px;}
+.r-sec-title{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:9px;}
+
+/* History */
+.hist-scroll{display:flex;gap:5px;overflow-x:auto;padding-bottom:4px;}
+.hist-thumb{width:32px;aspect-ratio:9/16;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:6px;overflow:hidden;flex-shrink:0;cursor:pointer;position:relative;transition:border-color 0.2s;}
+.hist-thumb:hover{border-color:var(--border2);}
+.hist-thumb img{width:100%;height:100%;object-fit:cover;opacity:0.65;}
+.hist-idx{position:absolute;bottom:1px;left:0;right:0;font-size:6px;font-family:'JetBrains Mono',monospace;color:rgba(255,255,255,0.4);text-align:center;}
+.hist-empty{font-size:9px;color:var(--text3);text-align:center;padding:8px 0;font-family:'JetBrains Mono',monospace;}
+
+/* Generate area */
+.gen-area{padding:12px 16px;border-top:1px solid var(--border);background:rgba(0,0,0,0.3);flex-shrink:0;}
+.gen-btn{width:100%;padding:13px;background:white;color:var(--bg);border:none;border-radius:12px;font-size:13px;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;text-transform:uppercase;letter-spacing:0.05em;box-shadow:0 10px 30px rgba(0,0,0,0.4);transition:all 0.2s;}
+.gen-btn:hover{background:#eff6ff;transform:translateY(-1px);}
+.gen-btn:active{transform:scale(0.97);}
+.gen-btn:disabled{opacity:0.3;cursor:not-allowed;transform:none;}
+
+/* Shutter flash */
+.shutter-flash{position:fixed;inset:0;background:white;z-index:9999;pointer-events:none;opacity:0;transition:opacity 0.05s;}
+.shutter-flash.flash{opacity:1;}
+
+/* Toast */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(10px);z-index:9999;padding:10px 18px;border-radius:10px;backdrop-filter:blur(16px);display:flex;align-items:center;gap:8px;min-width:240px;max-width:90vw;border:1px solid;font-size:12px;font-weight:600;line-height:1.4;opacity:0;transition:all 0.3s;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.ok{background:rgba(74,222,128,0.1);border-color:rgba(74,222,128,0.3);color:var(--green);}
+.toast.err{background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.3);color:#fca5a5;}
+.toast.warn{background:rgba(234,179,8,0.1);border-color:rgba(234,179,8,0.3);color:#fde047;}
+
+/* Modal */
+.modal-back{position:fixed;inset:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);z-index:100;display:none;align-items:center;justify-content:center;padding:20px;}
+.modal-back.open{display:flex;}
+.modal-box{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:28px;max-width:420px;width:100%;}
+.modal-title{font-size:18px;font-weight:900;font-style:italic;text-transform:uppercase;margin-bottom:16px;}
+.modal-btn{width:100%;padding:12px;border:none;border-radius:10px;font-size:13px;font-weight:900;cursor:pointer;text-transform:uppercase;letter-spacing:0.05em;}
+.modal-btn.primary{background:white;color:var(--bg);margin-bottom:8px;}
+.modal-btn.secondary{background:none;color:var(--text3);font-size:11px;}
+
+/* Polling indicator */
+.polling-badge{display:inline-flex;align-items:center;gap:5px;font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--purple);background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.3);border-radius:999px;padding:3px 9px;margin-top:6px;}
+.poll-dot{width:5px;height:5px;border-radius:50%;background:var(--purple);animation:pulse 1.2s infinite;}
+</style>
+</head>
+<body>
+
+<!-- Shutter Flash -->
+<div class="shutter-flash" id="shutterFlash"></div>
+
+<!-- ═══ SPLASH ═══ -->
+<div id="splash">
+  <div class="splash-content">
+    <div class="splash-logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+        <circle cx="12" cy="13" r="4"/>
+      </svg>
+    </div>
+    <h1 class="splash-title">Studio<br>Selfie</h1>
+    <p class="splash-sub">Selfies 4K Ultra-Réalistes -- IA Dual Engine</p>
+
+    <span class="engine-label">Choisir le moteur IA</span>
+    <div class="engine-grid" style="margin-bottom:20px;">
+      <div class="engine-card active" id="splashVertex" onclick="selectEngine('vertex')">
+        <span class="engine-card-name" style="color:var(--blue);">&#9889; Vertex AI</span>
+        <span class="engine-card-desc">Imagen 3.1 Flash Preview<br>Clé Vertex AI requise</span>
+      </div>
+      <div class="engine-card" id="splashKieai" onclick="selectEngine('kieai')">
+        <span class="engine-card-name" style="color:var(--purple);">&#127757; Kie.ai</span>
+        <span class="engine-card-desc">Nano Banana 2<br>Clé API Kie.ai requise</span>
+      </div>
+    </div>
+
+    <div class="api-section">
+      <label class="api-label" id="splashApiLabel">Clé API Vertex AI</label>
+      <input type="password" id="apiKeyInput" class="api-input" placeholder="AQ..." autocomplete="off">
+    </div>
+    <button class="splash-cta" id="splashBtn" onclick="enterApp()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      LANCER LE STUDIO
+    </button>
+    <p id="splash-error" style="display:none;color:#fca5a5;font-size:12px;font-weight:600;margin-top:10px;text-align:center;"></p>
+  </div>
+</div>
+
+<!-- ═══ APP ═══ -->
+<div id="app">
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand">
+        <div class="rec-dot"></div>
+        <div class="brand-logo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </div>
+        <div>
+          <div class="brand-title">Studio Selfie</div>
+          <div class="brand-sub">Selfies 4K Hyper-Réalistes</div>
+        </div>
+      </div>
+      <div id="engineBadge" class="engine-badge vertex" onclick="showApiModal()">
+        <div class="dot"></div>
+        <span id="engineBadgeLabel">VERTEX AI</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="app-main">
+    <!-- ─ LEFT PANEL ─ -->
+    <aside class="panel-left">
+      <div class="sec">
+        <div class="sec-title">Images Référence</div>
+        <div class="upload-grid">
+          <div>
+            <span class="upload-zone-label">Principale (req.)</span>
+            <div class="upload-zone" id="uploadImg1">
+              <span class="upload-icon">📷</span>
+              <span class="upload-txt">Photo A</span>
+              <div class="change-ov"><span class="change-lbl">Changer</span></div>
+            </div>
+          </div>
+          <div>
+            <span class="upload-zone-label">Secondaire (opt.)</span>
+            <div class="upload-zone" id="uploadImg2">
+              <span class="upload-icon">👤</span>
+              <span class="upload-txt">Photo B</span>
+              <div class="change-ov"><span class="change-lbl">Changer</span></div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:5px;">
+          <span style="font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--text3);">Taille img</span>
+          <span id="imgSizeLabel" style="font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--text3);">--</span>
+        </div>
+        <input type="file" id="fileImg1" accept="image/*" style="display:none">
+        <input type="file" id="fileImg2" accept="image/*" style="display:none">
+      </div>
+
+      <div class="sec">
+        <div class="sec-title">Catégorie</div>
+        <div id="categoryBtns"></div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-title" id="angleTitle">Angle / Contexte</div>
+        <div class="chip-grid" id="angleGrid"></div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-title">Options</div>
+        <div class="toggle-row">
+          <span class="toggle-label">Verrou des Lieux</span>
+          <div class="toggle-btn" id="locationLockBtn" onclick="toggleLocationLock()">
+            <div class="toggle-knob"></div>
+          </div>
+        </div>
+        <p class="toggle-hint">Force l'IA à conserver strictement l'environnement des images de référence.</p>
+      </div>
+
+      <div class="sec">
+        <div class="sec-title">Direction de Scène</div>
+        <textarea class="scene-ta" id="sceneDir" placeholder="ex: Air surpris, léger sourire, regard espiègle..."></textarea>
+        <p class="scene-hint">Comportement, expression, intention du sujet.</p>
+      </div>
+    </aside>
+
+    <!-- ─ CENTER PANEL ─ -->
+    <section class="panel-center">
+      <div class="preview-phone" id="previewPhone">
+        <div class="preview-box">
+          <div class="prev-placeholder" id="prevPH">
+            <span class="cam">📷</span>
+            <p>Configurez et<br>lancez la capture</p>
+          </div>
+          <img class="preview-img" id="previewImg" alt="Selfie">
+          <div class="gen-ov" id="genOv">
+            <div class="bars">
+              <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+            </div>
+            <div style="text-align:center">
+              <div class="gen-status" id="genStat">Initialisation...</div>
+              <div class="prog-bar" style="margin:7px auto 0">
+                <div class="prog-fill" id="progFill" style="width:0%"></div>
+              </div>
+            </div>
+          </div>
+          <div class="dl-btn" id="dlBtn" onclick="dlImg()">
+            &#11015; <span>Télécharger</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─ RIGHT PANEL ─ -->
+    <aside class="panel-right">
+      <div class="panel-right-inner">
+        <div class="r-sec">
+          <div class="r-sec-title">Système de Capture</div>
+          <p style="font-size:9px;color:var(--text3);font-family:'JetBrains Mono',monospace;line-height:1.6;">Studio Selfie simule le geste physique d'une personne prenant un selfie. L'IA modélise la posture, l'intention et la logique optique du smartphone pour produire des résultats ultra-crédibles.</p>
+        </div>
+
+        <div class="r-sec">
+          <div class="r-sec-title">Règles Actives</div>
+          <div id="rulesDisplay" style="display:flex;flex-direction:column;gap:5px;"></div>
+        </div>
+
+        <div class="r-sec">
+          <div class="r-sec-title">Prompt Généré</div>
+          <div id="promptPreview" style="font-size:9px;color:var(--text3);font-family:'JetBrains Mono',monospace;line-height:1.6;max-height:120px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:8px;background:rgba(0,0,0,0.2);">Le prompt apparaîtra ici avant génération...</div>
+        </div>
+
+        <div class="r-sec">
+          <div class="r-sec-title">Historique</div>
+          <div id="histWrap"><p class="hist-empty">Aucun selfie généré</p></div>
+        </div>
+      </div>
+
+      <div class="gen-area">
+        <button class="gen-btn" id="genBtn" onclick="generateSelfie()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          Capturer le Selfie
+        </button>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <span id="toastIcon">✓</span>
+  <span id="toastMsg"></span>
+</div>
+
+<!-- API Modal -->
+<div class="modal-back" id="apiModal">
+  <div class="modal-box">
+    <div style="font-size:24px;margin-bottom:12px">📷</div>
+    <div class="modal-title">Changer la Clé API</div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+      <div class="engine-card" id="modalVertex" onclick="modalSelectEngine('vertex')" style="padding:10px;">
+        <span class="engine-card-name" style="color:var(--blue);">⚡ Vertex AI</span>
+        <span class="engine-card-desc">Imagen 3.1</span>
+      </div>
+      <div class="engine-card" id="modalKieai" onclick="modalSelectEngine('kieai')" style="padding:10px;">
+        <span class="engine-card-name" style="color:var(--purple);">🌐 Kie.ai</span>
+        <span class="engine-card-desc">Nano Banana 2</span>
+      </div>
+    </div>
+
+    <div class="api-section">
+      <label class="api-label" id="modalApiLabel">Clé API</label>
+      <input type="password" id="modalKey" class="api-input" placeholder="Votre clé...">
+    </div>
+    <button class="modal-btn primary" onclick="saveApiKey()">Enregistrer</button>
+    <button class="modal-btn secondary" onclick="closeModal()">Annuler</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════
+var API_KEY = '';
+var ENGINE = 'vertex'; // 'vertex' | 'kieai'
+var imgs = {img1: null, img2: null};
+var selCategory = 'VOLONTAIRE';
+var selAngle = '';
+var locationLock = false;
+var isGen = false;
+var curImgUrl = null;
+var imgHistory = [];
+
+// ── KIE.AI proxy / config ──
+var KIEAI_PROXY = 'https://studio-cinema-proxy-738708455173.europe-west1.run.app'; // same proxy if configured, else direct
+
+// ══════════════════════════════════════════════
+//  DATA
+// ══════════════════════════════════════════════
+var CATEGORIES = {
+  VOLONTAIRE: {
+    label: 'Selfie Volontaire',
+    desc: 'La personne prend consciemment un selfie. Intention naturelle et imparfaite.',
+    angles: [
+      'Miroir -- posé esthétique',
+      'Miroir -- attitude / street',
+      'Bras tendu -- naturel',
+      'Bras tendu -- angle accentué',
+      'Allongé -- lifestyle',
+      'Extérieur -- lifestyle',
+      'Mouvement -- activité'
+    ]
+  },
+  ACCIDENTEL: {
+    label: 'Selfie Accidentel',
+    desc: 'Photo prise sans intention esthétique. Résulte d\'un mouvement ou d\'une erreur.',
+    angles: [
+      'Obstruction partielle',
+      'Cadrage partiel',
+      'En mouvement',
+      'Ajustement',
+      'Contre-plongée accidentelle',
+      'Perspective immersive',
+      'Relâchement instable'
+    ]
+  },
+  CONTEXTUEL: {
+    label: 'Selfie Contextuel',
+    desc: 'Le selfie est défini par l\'environnement. Le lieu influence le cadrage.',
+    angles: [
+      'Miroir',
+      'Salle de bain',
+      'Lit / canapé',
+      'Intérieur (maison)',
+      'Extérieur (rue)',
+      'Extérieur (soleil direct)',
+      'Voiture',
+      'Ascenseur',
+      'Lieu public (café, restaurant)',
+      'Poser au sol'
+    ]
+  }
+};
+
+var RULES_BY_CAT = {
+  VOLONTAIRE: [
+    'Regard dirigé vers le téléphone',
+    'Posture volontaire mais naturelle',
+    'Légères imperfections de cadrage',
+    'Téléphone visible à la main',
+    'Bras influençant la posture'
+  ],
+  ACCIDENTEL: [
+    'Cadrage instable / incohérent',
+    'Posture non posée',
+    'Capture involontaire simulée',
+    'Téléphone actif (écran ON)',
+    'Interaction imprévue visible'
+  ],
+  CONTEXTUEL: [
+    'Décor influençant la posture',
+    'Lumière contextuelle naturelle',
+    'Imperfections liées au lieu',
+    'Cohérence totale environnement/image',
+    'Décor jamais neutre ou clean'
+  ]
+};
+
+// ══════════════════════════════════════════════
+//  SYSTEM PROMPT (Studio Selfie POV)
+// ══════════════════════════════════════════════
+var SYSTEM_PROMPT = `Studio Selfie generates ultra-realistic 4K images by simulating the real gesture of a person taking a photo of themselves.
+
+GLOBAL SYSTEM BEHAVIOR:
+- Simulate a real body, a real gesture, a real intention, a real capture.
+- Prioritize human credibility over visual perfection.
+- NEVER soften a strong angle to make it prettier. Respect the requested angle even if unflattering or awkward.
+- ROLE: You are an application of TRUTH, not art.
+
+IDENTITY PRESERVATION (ABSOLUTE RULES):
+- DO NOT modify the avatar's identity.
+- Preserve the face, traits, skin, and identity exactly as seen in the reference images.
+- Preserve the clothing and proportions.
+- ONLY reposition, reorient, crop, or adapt the angle.
+
+HUMAN SKIN DIRECTIVE:
+- ZERO smoothing, ZERO artificial rendering, ZERO beauty filters.
+- Visible micro-textures, real pores, subtle chromatic variations.
+- RAW: The skin must look unprocessed and real.
+
+TECHNICAL RENDERING (4K):
+- Every pixel must be defined, sharp, and rich in detail.
+- Realistic depth of field, natural background bokeh.
+- Subtle digital noise. Never a plastic or smooth image.
+
+SMARTPHONE LENS LOGIC:
+- Wide angle lens (~24-28mm equivalent), slight proximity distortion.
+- Limited but imperfect depth of field, micro digital noise.
+- Slight image compression, imperfect HDR management.
+
+ABSOLUTE RULE: The image must look like a photo taken quickly with a phone, without aesthetic intention, with natural imperfections. Skin must show visible natural irregularities. The rendering must recall a raw smartphone photo without beauty filters.
+
+FORBIDDEN:
+- Smooth/plastic skin, beauty filters, AI smoothing.
+- Frozen expression, flat lighting.
+- Image resembling illustration or 3D rendering.`;
+
+function buildPrompt() {
+  var cat = CATEGORIES[selCategory];
+  var dir = document.getElementById('sceneDir').value.trim();
+  var hasImg2 = !!imgs.img2;
+
+  var parts = [SYSTEM_PROMPT];
+  parts.push('\n\nCATEGORY: ' + selCategory + ' -- ' + cat.label);
+  parts.push('CATEGORY DEFINITION: ' + cat.desc);
+  parts.push('ANGLE/CONTEXT: ' + selAngle);
+
+  if (selCategory === 'VOLONTAIRE') {
+    parts.push('BEHAVIOR: Phone visible at arm\'s length. Natural but voluntary posture. Gaze directed toward screen. Slight framing imperfections. Never too perfect or frozen.');
+  } else if (selCategory === 'ACCIDENTEL') {
+    parts.push('BEHAVIOR: Unstable or incoherent framing. Non-posed posture. Phone MUST be active (screen on). Interaction must look involuntary. Never a dead or inactive phone.');
+  } else {
+    parts.push('BEHAVIOR: The decor influences posture and light. Presence of realistic environmental imperfections. Never a "clean" or neutral decor. Total coherence between environment and image.');
+  }
+
+  if (locationLock) {
+    parts.push('LOCATION LOCK ACTIVE: You MUST strictly preserve the exact environment, room, and furniture from the reference images. DO NOT change the room. PRESERVE lighting and atmosphere.');
+  }
+
+  if (hasImg2) {
+    parts.push('TWO REFERENCE IMAGES PROVIDED: Include BOTH individuals in the generated selfie as a duo. Show strong complicity, closeness, and interaction. Both faces clearly visible.');
+  }
+
+  if (dir) {
+    parts.push('SCENE DIRECTION: "' + dir + '"');
+  }
+
+  parts.push('\nGenerate a highly detailed 4K photorealistic selfie image following all Studio Selfie rules. Prioritize human credibility and naturalness over beauty.');
+
+  return parts.join('\n');
+}
+
+// ══════════════════════════════════════════════
+//  ENGINE SELECTION
+// ══════════════════════════════════════════════
+function selectEngine(e) {
+  ENGINE = e;
+  document.getElementById('splashVertex').classList.toggle('active', e === 'vertex');
+  document.getElementById('splashKieai').classList.toggle('active', e === 'kieai');
+  var lbl = e === 'vertex' ? 'Clé API Vertex AI' : 'Clé API Kie.ai';
+  var ph = e === 'vertex' ? 'AQ...' : 'sk-...' ;
+  document.getElementById('splashApiLabel').textContent = lbl;
+  document.getElementById('apiKeyInput').placeholder = ph;
+}
+
+function modalSelectEngine(e) {
+  ENGINE = e;
+  document.getElementById('modalVertex').classList.toggle('active', e === 'vertex');
+  document.getElementById('modalKieai').classList.toggle('active', e === 'kieai');
+  document.getElementById('modalApiLabel').textContent = e === 'vertex' ? 'Clé API Vertex AI' : 'Clé API Kie.ai';
+  document.getElementById('modalKey').placeholder = e === 'vertex' ? 'AQ...' : 'sk-...';
+}
+
+function updateEngineBadge() {
+  var badge = document.getElementById('engineBadge');
+  var lbl = document.getElementById('engineBadgeLabel');
+  badge.className = 'engine-badge ' + (ENGINE === 'vertex' ? 'vertex' : 'kieai');
+  lbl.textContent = ENGINE === 'vertex' ? 'VERTEX AI' : 'KIE.AI';
+}
+
+// ══════════════════════════════════════════════
+//  SPLASH → APP
+// ══════════════════════════════════════════════
+function enterApp() {
+  var k = document.getElementById('apiKeyInput').value.trim();
+  var err = document.getElementById('splash-error');
+  if (!k) { err.textContent = 'Veuillez entrer votre clé API.'; err.style.display = 'block'; return; }
+  API_KEY = k;
+  err.style.display = 'none';
+  document.getElementById('splash').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+  updateEngineBadge();
+}
+
+// ══════════════════════════════════════════════
+//  API MODAL
+// ══════════════════════════════════════════════
+function showApiModal() {
+  document.getElementById('modalKey').value = API_KEY;
+  modalSelectEngine(ENGINE);
+  document.getElementById('apiModal').classList.add('open');
+}
+function closeModal() { document.getElementById('apiModal').classList.remove('open'); }
+function saveApiKey() {
+  var k = document.getElementById('modalKey').value.trim();
+  if (!k) return;
+  API_KEY = k;
+  closeModal();
+  updateEngineBadge();
+  showToast('Clé API mise à jour', 'ok');
+}
+
+// ══════════════════════════════════════════════
+//  RENDER UI
+// ══════════════════════════════════════════════
+function renderCategories() {
+  var c = document.getElementById('categoryBtns');
+  c.innerHTML = Object.keys(CATEGORIES).map(function(key) {
+    var cat = CATEGORIES[key];
+    return '<div class="cat-btn' + (selCategory === key ? ' active' : '') + '" data-key="' + key + '">' +
+      '<span class="cat-btn-name">' + cat.label + '</span>' +
+      '<span class="cat-btn-desc">' + cat.desc + '</span>' +
+      '</div>';
+  }).join('');
+  c.querySelectorAll('.cat-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      selCategory = this.dataset.key;
+      selAngle = CATEGORIES[selCategory].angles[0];
+      renderCategories();
+      renderAngles();
+      renderRules();
+      updatePromptPreview();
+    });
+  });
+}
+
+function renderAngles() {
+  var angles = CATEGORIES[selCategory].angles;
+  if (!selAngle || angles.indexOf(selAngle) === -1) selAngle = angles[0];
+  document.getElementById('angleTitle').textContent = selCategory === 'CONTEXTUEL' ? 'Contexte / Lieu' : 'Angle du Selfie';
+  document.getElementById('angleGrid').innerHTML = angles.map(function(a) {
+    return '<div class="chip' + (selAngle === a ? ' active' : '') + '" data-angle="' + a.replace(/"/g,'&quot;') + '"><span class="chip-lbl">' + a + '</span></div>';
+  }).join('');
+  document.getElementById('angleGrid').querySelectorAll('.chip').forEach(function(chip) {
+    chip.addEventListener('click', function() {
+      selAngle = this.dataset.angle;
+      renderAngles();
+      updatePromptPreview();
+    });
+  });
+}
+
+function renderRules() {
+  var rules = RULES_BY_CAT[selCategory] || [];
+  document.getElementById('rulesDisplay').innerHTML = rules.map(function(r) {
+    return '<div style="display:flex;align-items:center;gap:6px;"><span style="color:var(--green);font-size:10px;">✓</span><span style="font-family:\'JetBrains Mono\',monospace;font-size:8px;color:var(--text2);">' + r + '</span></div>';
+  }).join('');
+}
+
+function updatePromptPreview() {
+  if (!selAngle) return;
+  var p = buildPrompt();
+  var preview = p.substring(SYSTEM_PROMPT.length + 2, SYSTEM_PROMPT.length + 200) + '...';
+  document.getElementById('promptPreview').textContent = preview;
+}
+
+// ══════════════════════════════════════════════
+//  LOCATION LOCK
+// ══════════════════════════════════════════════
+function toggleLocationLock() {
+  locationLock = !locationLock;
+  var btn = document.getElementById('locationLockBtn');
+  btn.classList.toggle('on', locationLock);
+  updatePromptPreview();
+}
+
+// ══════════════════════════════════════════════
+//  IMAGE UPLOAD
+// ══════════════════════════════════════════════
+function loadImg(e, slot) {
+  var file = e.target.files && e.target.files[0]; if (!file) return;
+  var reader = new FileReader();
+  reader.onloadend = function() {
+    var orig = reader.result;
+    var imgEl = new Image();
+    imgEl.onload = function() {
+      var canvas = document.createElement('canvas');
+      var max = 1280;
+      var w = imgEl.width, h = imgEl.height;
+      if (w > max || h > max) {
+        if (w > h) { h = Math.round(h*max/w); w = max; }
+        else { w = Math.round(w*max/h); h = max; }
+      }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(imgEl, 0, 0, w, h);
+      var compressed = canvas.toDataURL('image/jpeg', 0.90);
+      imgs[slot] = compressed;
+      var zoneId = slot === 'img1' ? 'uploadImg1' : 'uploadImg2';
+      var zone = document.getElementById(zoneId);
+      zone.classList.add('loaded');
+      zone.querySelectorAll('.av-img').forEach(function(el){ el.remove(); });
+      var img = document.createElement('img'); img.className = 'av-img'; img.src = compressed;
+      zone.insertBefore(img, zone.firstChild);
+      var sizeKB = Math.round(compressed.length * 0.75 / 1024);
+      document.getElementById('imgSizeLabel').textContent = sizeKB + ' KB';
+      showToast('Photo chargée -- ' + sizeKB + ' KB', 'ok');
+    };
+    imgEl.src = orig;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ══════════════════════════════════════════════
+//  GENERATION -- VERTEX AI (Imagen 3.1 Flash)
+// ══════════════════════════════════════════════
+async function generateVertex(prompt, b64Images) {
+  // Vertex AI Imagen via REST API
+  // Using predict endpoint for Imagen 3.1 Flash Preview
+  var endpoint = 'https://us-central1-aiplatform.googleapis.com/v1/projects/test-credit-gratuit/locations/us-central1/publishers/google/models/imagen-3.1-flash-preview-0817:predict';
+
+  var instances = [{
+    prompt: prompt,
+    // If we have a reference image, use it for subject conditioning
+    referenceImages: b64Images.map(function(b64, i) {
+      return {
+        referenceType: 'REFERENCE_TYPE_SUBJECT',
+        referenceId: i + 1,
+        referenceImage: {
+          bytesBase64Encoded: b64.split(',')[1] || b64,
+          mimeType: 'image/jpeg'
+        }
+      };
+    })
+  }];
+
+  var parameters = {
+    sampleCount: 1,
+    aspectRatio: '9:16',
+    safetyFilterLevel: 'BLOCK_FEW',
+    personGeneration: 'ALLOW_ADULT',
+    addWatermark: false
+  };
+
+  var res = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + API_KEY
+    },
+    body: JSON.stringify({ instances: instances, parameters: parameters })
+  });
+
+  if (!res.ok) {
+    var err = await res.json().catch(function(){ return {}; });
+    throw new Error('Vertex AI: ' + (err.error && err.error.message ? err.error.message : res.status));
+  }
+
+  var data = await res.json();
+  var pred = data.predictions && data.predictions[0];
+  if (!pred) throw new Error('Vertex AI: Aucune prédiction retournée');
+
+  var b64 = pred.bytesBase64Encoded || (pred.image && pred.image.bytesBase64Encoded);
+  if (!b64) throw new Error('Vertex AI: Pas de données image dans la réponse');
+  return 'data:image/png;base64,' + b64;
+}
+
+// ══════════════════════════════════════════════
+//  GENERATION -- KIE.AI (Nano Banana 2)
+// ══════════════════════════════════════════════
+async function generateKieai(prompt, b64Images) {
+  // Step 1: Upload reference image and create task
+  var b64 = b64Images[0];
+  var imgData = b64.includes(',') ? b64.split(',')[1] : b64;
+
+  var createBody = {
+    model: 'nano-banana-2',
+    prompt: prompt,
+    image: imgData,
+    aspectRatio: '9:16',
+    numImages: 1
+  };
+
+  var createRes = await fetch('https://api.kie.ai/api/v1/image/generate', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + API_KEY
+    },
+    body: JSON.stringify(createBody)
+  });
+
+  if (!createRes.ok) {
+    var err = await createRes.json().catch(function(){ return {}; });
+    throw new Error('Kie.ai: ' + (err.message || createRes.status));
+  }
+
+  var createData = await createRes.json();
+  var taskId = createData.data && (createData.data.taskId || createData.data.task_id || createData.data.id);
+  if (!taskId) {
+    // Maybe direct response with image
+    if (createData.data && createData.data.imageUrl) return createData.data.imageUrl;
+    throw new Error('Kie.ai: Pas de taskId retourné -- ' + JSON.stringify(createData).slice(0, 200));
+  }
+
+  // Step 2: Poll for result
+  var attempts = 0;
+  var maxAttempts = 60;
+  while (attempts < maxAttempts) {
+    await sleep(5000);
+    attempts++;
+    setProg(Math.min(90, 20 + (attempts / maxAttempts) * 70), 'Polling Kie.ai... (' + attempts + '/' + maxAttempts + ')');
+
+    var pollRes = await fetch('https://api.kie.ai/api/v1/image/task/' + taskId, {
+      headers: { 'Authorization': 'Bearer ' + API_KEY }
+    });
+
+    if (!pollRes.ok) continue;
+    var pollData = await pollRes.json();
+    var status = pollData.data && (pollData.data.status || pollData.data.state);
+
+    if (status === 'completed' || status === 'succeed' || status === 'COMPLETED') {
+      var url = pollData.data.imageUrl || pollData.data.image_url || (pollData.data.images && pollData.data.images[0]);
+      if (url) return url;
+      throw new Error('Kie.ai: Tâche terminée mais pas d\'URL image');
+    }
+    if (status === 'failed' || status === 'FAILED') {
+      throw new Error('Kie.ai: Génération échouée -- ' + (pollData.data.error || 'raison inconnue'));
+    }
+  }
+  throw new Error('Kie.ai: Timeout -- tâche trop longue');
+}
+
+// ══════════════════════════════════════════════
+//  MAIN GENERATE
+// ══════════════════════════════════════════════
+async function generateSelfie() {
+  if (isGen) return;
+  if (!API_KEY) { showApiModal(); return; }
+  if (!imgs.img1) { showToast('Chargez au moins une photo de référence', 'err'); return; }
+  if (!selAngle) { showToast('Sélectionnez un angle', 'warn'); return; }
+
+  isGen = true;
+  document.getElementById('genBtn').disabled = true;
+  document.getElementById('genOv').style.display = 'flex';
+  document.getElementById('previewImg').style.display = 'none';
+  document.getElementById('prevPH').style.display = 'none';
+  document.getElementById('dlBtn').style.display = 'none';
+
+  // Shutter flash
+  var sf = document.getElementById('shutterFlash');
+  sf.classList.add('flash');
+  setTimeout(function(){ sf.classList.remove('flash'); }, 120);
+
+  setProg(5, 'Analyse de la posture et intention...');
+
+  try {
+    var prompt = buildPrompt();
+    document.getElementById('promptPreview').textContent = prompt.substring(SYSTEM_PROMPT.length + 2, SYSTEM_PROMPT.length + 300) + '...';
+
+    var b64Images = [imgs.img1];
+    if (imgs.img2) b64Images.push(imgs.img2);
+
+    setProg(15, ENGINE === 'vertex' ? 'Envoi à Vertex AI Imagen...' : 'Envoi à Kie.ai...');
+
+    var resultUrl;
+    if (ENGINE === 'vertex') {
+      resultUrl = await generateVertex(prompt, b64Images);
+    } else {
+      resultUrl = await generateKieai(prompt, b64Images);
+    }
+
+    setProg(98, 'Finalisation...');
+    curImgUrl = resultUrl;
+
+    var prevImg = document.getElementById('previewImg');
+    prevImg.src = resultUrl;
+    prevImg.style.display = 'block';
+    document.getElementById('prevPH').style.display = 'none';
+    document.getElementById('dlBtn').style.display = 'flex';
+
+    imgHistory.unshift({ id: Date.now(), url: resultUrl });
+    if (imgHistory.length > 12) imgHistory.pop();
+    renderHistory();
+
+    setProg(100, 'Capture terminée !');
+    showToast('Selfie généré !', 'ok', 4000);
+
+  } catch(err) {
+    console.error(err);
+    var msg = err && err.message ? err.message : String(err);
+    showToast('Erreur : ' + msg.slice(0, 180), 'err', 8000);
+    setProg(0, 'Erreur');
+    document.getElementById('prevPH').style.display = 'flex';
+  } finally {
+    isGen = false;
+    document.getElementById('genBtn').disabled = false;
+    document.getElementById('genOv').style.display = 'none';
+  }
+}
+
+// ══════════════════════════════════════════════
+//  HISTORY
+// ══════════════════════════════════════════════
+function renderHistory() {
+  var w = document.getElementById('histWrap');
+  if (!imgHistory.length) { w.innerHTML = '<p class="hist-empty">Aucun selfie généré</p>'; return; }
+  w.innerHTML = '<div class="hist-scroll">' + imgHistory.map(function(v, i) {
+    return '<div class="hist-thumb" data-url="' + v.url + '">' +
+      '<img src="' + v.url + '" referrerpolicy="no-referrer">' +
+      '<span class="hist-idx">#' + (imgHistory.length - i) + '</span></div>';
+  }).join('') + '</div>';
+  w.querySelectorAll('.hist-thumb').forEach(function(el) {
+    el.addEventListener('click', function() { loadHistItem(this.dataset.url); });
+  });
+}
+
+function loadHistItem(url) {
+  curImgUrl = url;
+  var prevImg = document.getElementById('previewImg');
+  prevImg.src = url; prevImg.style.display = 'block';
+  document.getElementById('prevPH').style.display = 'none';
+  document.getElementById('dlBtn').style.display = 'flex';
+}
+
+// ══════════════════════════════════════════════
+//  DOWNLOAD
+// ══════════════════════════════════════════════
+function dlImg() {
+  if (!curImgUrl) return;
+  if (curImgUrl.startsWith('data:')) {
+    var a = document.createElement('a');
+    a.href = curImgUrl;
+    a.download = 'studio-selfie-' + Date.now() + '.jpg';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    return;
+  }
+  // URL externe
+  fetch(curImgUrl)
+    .then(function(r){ return r.blob(); })
+    .then(function(blob){
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url; a.download = 'studio-selfie-' + Date.now() + '.jpg';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    })
+    .catch(function(){ window.open(curImgUrl, '_blank'); });
+}
+
+// ══════════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════════
+function setProg(p, s) {
+  document.getElementById('progFill').style.width = p + '%';
+  document.getElementById('genStat').textContent = s;
+}
+
+function sleep(ms) { return new Promise(function(r){ setTimeout(r, ms); }); }
+
+var toastTm;
+function showToast(msg, type, duration) {
+  type = type || 'ok'; duration = duration || 3500;
+  clearTimeout(toastTm);
+  var t = document.getElementById('toast');
+  var icons = {ok:'✓', err:'✕', warn:'⚠'};
+  t.className = 'toast ' + type;
+  document.getElementById('toastIcon').textContent = icons[type] || '✓';
+  document.getElementById('toastMsg').textContent = msg;
+  t.classList.add('show');
+  toastTm = setTimeout(function(){ t.classList.remove('show'); }, duration);
+}
+
+// ══════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════
+window.addEventListener('load', function() {
+  // Default selections
+  selCategory = 'VOLONTAIRE';
+  selAngle = CATEGORIES.VOLONTAIRE.angles[0];
+
+  renderCategories();
+  renderAngles();
+  renderRules();
+  updatePromptPreview();
+
+  // Upload zones
+  document.getElementById('uploadImg1').addEventListener('click', function(){ document.getElementById('fileImg1').click(); });
+  document.getElementById('uploadImg2').addEventListener('click', function(){ document.getElementById('fileImg2').click(); });
+  document.getElementById('fileImg1').addEventListener('change', function(e){ loadImg(e, 'img1'); });
+  document.getElementById('fileImg2').addEventListener('change', function(e){ loadImg(e, 'img2'); });
+
+  // Splash enter
+  document.getElementById('apiKeyInput').addEventListener('keydown', function(e){ if(e.key==='Enter') enterApp(); });
+  document.getElementById('modalKey').addEventListener('keydown', function(e){ if(e.key==='Enter') saveApiKey(); });
+
+  // Scene dir update
+  document.getElementById('sceneDir').addEventListener('input', updatePromptPreview);
+});
+</script>
+</body>
+</html>
