@@ -3,1011 +3,544 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Studio Selfie -- IA Dual Engine</title>
+<title>Studio Selfie -- Dual Engine</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-:root{
-  --bg:#050b18;--bg2:#0a192f;--border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.12);--border3:rgba(255,255,255,0.22);
-  --text:#fff;--text2:rgba(255,255,255,0.7);--text3:rgba(255,255,255,0.4);
-  --accent:#e85d4a;--gold:#d4af37;--green:#4ade80;--purple:#8b5cf6;--blue:#60a5fa;
-}
-html{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);}
-body{min-height:100vh;background:radial-gradient(circle at top right,#0a192f,#050b18 70%);}
-::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:10px;}
-
-/* ── SPLASH ── */
-#splash{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;overflow-y:auto;}
-.splash-content{max-width:480px;width:100%;padding-bottom:40px;}
-.splash-logo{width:60px;height:60px;background:white;border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;box-shadow:0 8px 32px rgba(255,255,255,0.15);}
-.splash-logo svg{width:30px;height:30px;color:#050b18;}
-.splash-title{font-size:clamp(42px,8vw,68px);font-weight:900;text-transform:uppercase;font-style:italic;letter-spacing:-0.03em;line-height:0.88;text-shadow:0 0 20px rgba(255,255,255,0.2);margin-bottom:8px;text-align:center;}
-.splash-sub{font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--text3);text-transform:uppercase;letter-spacing:0.2em;text-align:center;margin-bottom:32px;}
-.engine-select-wrap{margin-bottom:20px;}
-.engine-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.3em;color:var(--text3);margin-bottom:10px;display:block;}
-.engine-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-.engine-card{padding:14px;border-radius:12px;border:1px solid var(--border2);background:rgba(255,255,255,0.03);cursor:pointer;transition:all 0.2s;text-align:left;}
-.engine-card:hover{border-color:var(--border3);}
-.engine-card.active{border-color:rgba(255,255,255,0.5);background:rgba(255,255,255,0.07);}
-.engine-card-name{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;display:block;margin-bottom:3px;}
-.engine-card-desc{font-size:9px;color:var(--text3);font-family:'JetBrains Mono',monospace;line-height:1.4;}
-.engine-card.active .engine-card-name{color:white;}
-.engine-card.active .engine-card-desc{color:var(--text2);}
-.api-section{display:flex;flex-direction:column;gap:7px;margin-bottom:16px;}
-.api-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.3em;color:var(--text3);}
-.api-input{width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border2);border-radius:12px;padding:13px 16px;font-size:13px;font-family:'JetBrains Mono',monospace;color:var(--text);outline:none;transition:all 0.2s;}
-.api-input::placeholder{color:rgba(255,255,255,0.2);}
-.api-input:focus{border-color:rgba(255,255,255,0.4);background:rgba(255,255,255,0.08);}
-.splash-cta{width:100%;background:white;color:var(--bg);border:none;border-radius:999px;padding:17px 48px;font-weight:900;font-size:12px;text-transform:uppercase;letter-spacing:0.2em;cursor:pointer;transition:all 0.2s;box-shadow:0 20px 60px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;gap:12px;margin-top:4px;}
-.splash-cta:hover{background:#eff6ff;transform:translateY(-1px);}
-#splash-error{color:#fca5a5;font-size:12px;font-weight:600;margin-top:10px;display:none;text-align:center;}
-
-/* ── APP ── */
-#app{display:none;height:100dvh;flex-direction:column;overflow:hidden;}
+:root{--bg:#f0f4ff;--surface:#fff;--blue:#2563eb;--violet:#7c3aed;--indigo:#4338ca;--slate:#1e293b;--muted:#64748b;--border:#e2e8f0;--blue-light:#eff6ff;--green:#16a34a;--red:#dc2626;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--slate);min-height:100vh;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes ping{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+#splash{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;padding:24px;text-align:center;overflow-y:auto;}
+.splash-hero{width:min(360px,90vw);aspect-ratio:9/16;border-radius:2.5rem;overflow:hidden;box-shadow:0 40px 80px -20px rgba(0,0,0,.25);border:4px solid white;position:relative;margin-bottom:28px;background:#1e293b;max-height:35vh;}
+.splash-hero img{width:100%;height:100%;object-fit:cover;}
+.rec{position:absolute;top:14px;left:14px;display:flex;align-items:center;gap:7px;}
+.rec-dot{width:9px;height:9px;border-radius:50%;background:#dc2626;box-shadow:0 0 10px rgba(220,38,38,1);animation:pulse 1.5s infinite;}
+.rec-label{color:white;font-size:9px;font-weight:800;letter-spacing:.25em;text-transform:uppercase;}
+#splash h1{font-size:clamp(2.8rem,8vw,5.5rem);font-weight:800;text-transform:uppercase;letter-spacing:-.03em;background:linear-gradient(135deg,#2563eb,#7c3aed,#4338ca);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1;margin-bottom:5px;}
+#splash .tagline{font-size:clamp(.85rem,2.2vw,1.1rem);font-weight:600;color:var(--slate);font-style:italic;margin-bottom:28px;}
+.api-box{width:min(460px,100%);background:white;border-radius:1.5rem;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.08);border:2px solid var(--border);margin-bottom:16px;}
+.api-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:10px;text-align:left;display:block;}
+.engine-selector{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:18px;}
+.engine-btn{padding:13px 8px;border:2px solid var(--border);border-radius:1rem;background:var(--blue-light);cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:4px;}
+.engine-btn:hover{border-color:var(--blue);}
+.engine-btn.active-vertex{background:var(--slate);border-color:var(--slate);color:white;}
+.engine-btn.active-kie{background:linear-gradient(135deg,var(--violet),var(--indigo));border-color:var(--violet);color:white;}
+.engine-btn .sub{font-size:8px;opacity:.7;font-weight:700;}
+#splash input[type=password]{width:100%;padding:12px 15px;border:2px solid var(--border);border-radius:1rem;font-family:'Space Mono',monospace;font-size:13px;color:var(--slate);background:var(--bg);outline:none;transition:border-color .2s;}
+#splash input[type=password]:focus{border-color:var(--blue);}
+.enter-btn{margin-top:10px;width:100%;padding:15px;border:none;border-radius:1.5rem;background:linear-gradient(135deg,var(--blue),var(--indigo),var(--violet));color:white;font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:.25em;cursor:pointer;transition:transform .15s;box-shadow:0 14px 35px rgba(37,99,235,.35);}
+.enter-btn:hover{transform:scale(1.02);}
+.enter-btn:active{transform:scale(.98);}
+#app{display:none;min-height:100vh;flex-direction:column;}
 #app.visible{display:flex;}
-
-.app-header{border-bottom:1px solid var(--border);background:rgba(0,0,0,0.5);backdrop-filter:blur(20px);flex-shrink:0;z-index:20;}
-.header-inner{padding:0 20px;height:52px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
-.brand{display:flex;align-items:center;gap:10px;}
-.rec-dot{width:8px;height:8px;background:var(--accent);border-radius:50%;box-shadow:0 0 10px rgba(232,93,74,0.8);animation:pulse 2s infinite;flex-shrink:0;}
-@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
-.brand-logo{width:32px;height:32px;background:white;border-radius:8px;display:flex;align-items:center;justify-content:center;}
-.brand-logo svg{width:16px;height:16px;color:var(--bg);}
-.brand-title{font-size:16px;font-weight:900;text-transform:uppercase;font-style:italic;letter-spacing:-0.02em;}
-.brand-sub{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.15em;}
-.engine-badge{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1px solid;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;cursor:pointer;transition:all 0.2s;}
-.engine-badge.vertex{border-color:rgba(96,165,250,0.4);background:rgba(96,165,250,0.07);color:var(--blue);}
-.engine-badge.kieai{border-color:rgba(139,92,246,0.4);background:rgba(139,92,246,0.07);color:var(--purple);}
-.engine-badge .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
-.engine-badge.vertex .dot{background:var(--blue);box-shadow:0 0 6px rgba(96,165,250,0.6);}
-.engine-badge.kieai .dot{background:var(--purple);box-shadow:0 0 6px rgba(139,92,246,0.6);}
-
-.app-main{flex:1;display:grid;grid-template-columns:280px 1fr 300px;overflow:hidden;min-height:0;}
-
-@media(max-width:900px){
-  .app-main{grid-template-columns:1fr;grid-template-rows:auto auto auto;overflow-y:auto;height:auto;}
-  .panel-left,.panel-right{border-right:none;border-bottom:1px solid var(--border);}
-  .panel-right-inner{overflow:visible;}
-}
-
-.panel-left{border-right:1px solid var(--border);background:rgba(255,255,255,0.015);overflow-y:auto;}
-.panel-right{border-left:1px solid var(--border);background:rgba(255,255,255,0.015);display:flex;flex-direction:column;overflow:hidden;}
-.panel-right-inner{flex:1;overflow-y:auto;}
-.panel-center{display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);position:relative;overflow:hidden;}
-
-.sec{border-bottom:1px solid var(--border);padding:13px 16px;}
-.sec-title{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:9px;}
-
-/* Upload zones */
-.upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
-.upload-zone{aspect-ratio:1;border:1px dashed var(--border2);border-radius:12px;background:rgba(255,255,255,0.02);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;transition:all 0.2s;overflow:hidden;position:relative;}
-.upload-zone:hover{border-color:white;background:rgba(255,255,255,0.05);}
-.upload-zone.loaded{border-style:solid;border-color:rgba(255,255,255,0.3);}
-.upload-zone img.av-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
-.upload-zone .change-ov{position:absolute;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.2s;}
-.upload-zone:hover .change-ov{opacity:1;}
-.change-lbl{padding:4px 10px;background:white;color:var(--bg);border-radius:999px;font-size:8px;font-weight:700;text-transform:uppercase;}
-.upload-icon{font-size:18px;opacity:0.2;}
-.upload-txt{font-size:8px;color:var(--text3);text-align:center;padding:0 5px;font-family:'JetBrains Mono',monospace;}
-.upload-zone-label{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--text3);text-align:center;display:block;margin-bottom:4px;}
-
-/* Category buttons */
-.cat-btn{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,0.02);cursor:pointer;text-align:left;transition:all 0.2s;margin-bottom:5px;}
-.cat-btn:hover{border-color:var(--border2);}
-.cat-btn.active{border-color:rgba(255,255,255,0.45);background:rgba(255,255,255,0.07);}
-.cat-btn-name{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;display:block;color:var(--text2);}
+header{border-bottom:1px solid rgba(255,255,255,.1);padding:14px 24px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--slate);z-index:50;gap:14px;flex-wrap:wrap;}
+.header-left{display:flex;align-items:center;gap:12px;cursor:pointer;}
+.header-logo{width:40px;height:40px;background:linear-gradient(135deg,var(--blue),var(--violet));border-radius:11px;display:flex;align-items:center;justify-content:center;transition:transform .2s;}
+.header-logo:hover{transform:rotate(12deg);}
+.header-logo svg{width:20px;height:20px;stroke:white;fill:none;stroke-width:1.5;}
+.header-title h1{font-size:17px;font-weight:800;text-transform:uppercase;letter-spacing:.18em;color:white;}
+.header-badges{display:flex;gap:7px;margin-top:2px;}
+.badge{font-size:8px;font-weight:800;padding:2px 7px;border-radius:999px;text-transform:uppercase;letter-spacing:.12em;}
+.badge-violet{color:var(--violet);font-weight:800;}
+.badge-blue{background:var(--blue);color:white;}
+.badge-green{background:var(--green);color:white;}
+.status-dot{width:11px;height:11px;background:var(--blue);border-radius:50%;box-shadow:0 0 10px rgba(37,99,235,.7);animation:pulse 2s infinite;}
+main{flex:1;max-width:1360px;margin:0 auto;width:100%;padding:24px;display:grid;grid-template-columns:1fr;gap:24px;}
+@media(min-width:900px){main{grid-template-columns:5fr 6fr;}}
+.card{background:white;border-radius:1.4rem;padding:24px;box-shadow:0 4px 28px rgba(0,0,0,.05);border:1px solid var(--border);}
+.card-title{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.35em;margin-bottom:18px;display:flex;align-items:center;gap:9px;}
+.card-title svg{width:15px;height:15px;fill:none;stroke-width:2;}
+.title-blue{color:var(--blue);}
+.title-indigo{color:var(--indigo);}
+.title-violet{color:var(--violet);}
+.upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px;}
+.upload-thumb{aspect-ratio:1;border-radius:1.1rem;overflow:hidden;border:2px solid var(--border);position:relative;background:var(--bg);}
+.upload-thumb img{width:100%;height:100%;object-fit:cover;}
+.upload-thumb .remove-btn{position:absolute;top:5px;right:5px;background:rgba(255,255,255,.9);border:none;border-radius:50%;width:24px;height:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--red);transition:background .2s;}
+.upload-thumb .remove-btn:hover{background:white;}
+.upload-thumb .ref-badge{position:absolute;bottom:5px;left:5px;background:var(--blue);color:white;font-size:7px;font-weight:800;padding:2px 5px;border-radius:3px;text-transform:uppercase;}
+.upload-add{aspect-ratio:1;border-radius:1.1rem;border:2px dashed var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;background:var(--blue-light);transition:all .2s;position:relative;overflow:hidden;}
+.upload-add:hover{border-color:var(--blue);background:white;}
+.upload-add svg{width:20px;height:20px;stroke:var(--blue);fill:none;stroke-width:1.5;}
+.upload-add span{font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);text-align:center;padding:0 5px;}
+.upload-add input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+textarea{width:100%;padding:14px;border:2px solid var(--border);border-radius:1.1rem;font-family:'Space Grotesk',sans-serif;font-size:12px;color:var(--slate);background:var(--blue-light);resize:none;outline:none;transition:border-color .2s,background .2s;min-height:90px;line-height:1.6;}
+textarea:focus{border-color:var(--blue);background:white;}
+textarea::placeholder{color:#94a3b8;}
+.cat-grid{display:flex;flex-direction:column;gap:7px;}
+.cat-btn{width:100%;padding:11px 14px;border:2px solid var(--border);border-radius:.9rem;background:var(--blue-light);cursor:pointer;text-align:left;transition:all .2s;}
+.cat-btn:hover{border-color:var(--blue);}
+.cat-btn.active{background:var(--slate);border-color:var(--slate);}
+.cat-btn-name{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;display:block;color:var(--muted);}
 .cat-btn.active .cat-btn-name{color:white;}
-.cat-btn-desc{font-size:8px;color:var(--text3);line-height:1.4;margin-top:3px;display:block;}
-.cat-btn.active .cat-btn-desc{color:var(--text2);}
-
-/* Angle chips */
-.chip-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;}
-.chip{padding:6px 8px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,0.02);cursor:pointer;transition:all 0.2s;text-align:left;}
-.chip:hover{border-color:var(--border2);}
-.chip.active{border-color:rgba(255,255,255,0.35);background:rgba(255,255,255,0.06);}
-.chip-lbl{font-size:8.5px;color:var(--text2);line-height:1.3;display:block;}
-.chip.active .chip-lbl{color:white;}
-
-/* Toggle switch */
-.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:4px 0;}
-.toggle-label{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text2);}
-.toggle-btn{width:38px;height:20px;border-radius:999px;background:rgba(255,255,255,0.08);border:1px solid var(--border2);cursor:pointer;position:relative;transition:all 0.2s;flex-shrink:0;}
-.toggle-btn.on{background:var(--green);border-color:rgba(74,222,128,0.4);}
-.toggle-knob{position:absolute;top:2px;left:2px;width:14px;height:14px;background:var(--text3);border-radius:50%;transition:all 0.2s;}
-.toggle-btn.on .toggle-knob{left:20px;background:var(--bg);}
-.toggle-hint{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--text3);line-height:1.5;margin-top:4px;}
-
-/* Scene textarea */
-.scene-ta{width:100%;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;padding:9px 11px;font-size:11px;color:var(--text);outline:none;resize:none;height:62px;transition:all 0.2s;font-family:'Inter',sans-serif;}
-.scene-ta:focus{border-color:var(--border3);background:rgba(255,255,255,0.05);}
-.scene-hint{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--text3);margin-top:4px;font-style:italic;}
-
-/* Preview */
-.preview-phone{width:min(220px,34vw);aspect-ratio:9/16;position:relative;}
-.preview-box{width:100%;height:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border2);border-radius:20px;overflow:hidden;box-shadow:0 30px 70px rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;position:relative;}
-.prev-placeholder{display:flex;flex-direction:column;align-items:center;gap:10px;opacity:0.12;}
-.prev-placeholder .cam{font-size:40px;}
-.prev-placeholder p{font-size:10px;text-align:center;padding:0 20px;line-height:1.6;color:var(--text2);font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;}
-.preview-img{width:100%;height:100%;object-fit:cover;display:none;}
-.gen-ov{position:absolute;inset:0;background:rgba(5,11,24,0.95);z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;display:none;}
-.bars{display:flex;gap:4px;height:28px;align-items:flex-end;}
-.bar{width:3px;background:var(--accent);border-radius:2px;animation:barA 1s ease-in-out infinite;}
-.bar:nth-child(2){animation-delay:0.1s;}.bar:nth-child(3){animation-delay:0.2s;}.bar:nth-child(4){animation-delay:0.3s;}.bar:nth-child(5){animation-delay:0.4s;}
-@keyframes barA{0%,100%{height:4px;}50%{height:28px;}}
-.gen-status{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text2);text-align:center;}
-.prog-bar{width:120px;height:2px;background:var(--border);border-radius:2px;overflow:hidden;}
-.prog-fill{height:100%;background:var(--accent);border-radius:2px;transition:width 0.3s;}
-.dl-btn{position:absolute;bottom:10px;right:10px;z-index:6;padding:7px 10px;background:rgba(0,0,0,0.8);backdrop-filter:blur(8px);border:1px solid var(--border2);border-radius:8px;color:white;cursor:pointer;font-size:11px;transition:all 0.2s;display:none;font-family:'JetBrains Mono',monospace;gap:5px;align-items:center;}
-.dl-btn:hover{background:var(--accent);}
-
-/* Right panel */
-.r-sec{border-bottom:1px solid var(--border);padding:13px 16px;}
-.r-sec-title{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:9px;}
-
-/* History */
-.hist-scroll{display:flex;gap:5px;overflow-x:auto;padding-bottom:4px;}
-.hist-thumb{width:32px;aspect-ratio:9/16;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:6px;overflow:hidden;flex-shrink:0;cursor:pointer;position:relative;transition:border-color 0.2s;}
-.hist-thumb:hover{border-color:var(--border2);}
-.hist-thumb img{width:100%;height:100%;object-fit:cover;opacity:0.65;}
-.hist-idx{position:absolute;bottom:1px;left:0;right:0;font-size:6px;font-family:'JetBrains Mono',monospace;color:rgba(255,255,255,0.4);text-align:center;}
-.hist-empty{font-size:9px;color:var(--text3);text-align:center;padding:8px 0;font-family:'JetBrains Mono',monospace;}
-
-/* Generate area */
-.gen-area{padding:12px 16px;border-top:1px solid var(--border);background:rgba(0,0,0,0.3);flex-shrink:0;}
-.gen-btn{width:100%;padding:13px;background:white;color:var(--bg);border:none;border-radius:12px;font-size:13px;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;text-transform:uppercase;letter-spacing:0.05em;box-shadow:0 10px 30px rgba(0,0,0,0.4);transition:all 0.2s;}
-.gen-btn:hover{background:#eff6ff;transform:translateY(-1px);}
-.gen-btn:active{transform:scale(0.97);}
-.gen-btn:disabled{opacity:0.3;cursor:not-allowed;transform:none;}
-
-/* Shutter flash */
-.shutter-flash{position:fixed;inset:0;background:white;z-index:9999;pointer-events:none;opacity:0;transition:opacity 0.05s;}
-.shutter-flash.flash{opacity:1;}
-
-/* Toast */
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(10px);z-index:9999;padding:10px 18px;border-radius:10px;backdrop-filter:blur(16px);display:flex;align-items:center;gap:8px;min-width:240px;max-width:90vw;border:1px solid;font-size:12px;font-weight:600;line-height:1.4;opacity:0;transition:all 0.3s;pointer-events:none;}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
-.toast.ok{background:rgba(74,222,128,0.1);border-color:rgba(74,222,128,0.3);color:var(--green);}
-.toast.err{background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.3);color:#fca5a5;}
-.toast.warn{background:rgba(234,179,8,0.1);border-color:rgba(234,179,8,0.3);color:#fde047;}
-
-/* Modal */
-.modal-back{position:fixed;inset:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);z-index:100;display:none;align-items:center;justify-content:center;padding:20px;}
-.modal-back.open{display:flex;}
-.modal-box{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:28px;max-width:420px;width:100%;}
-.modal-title{font-size:18px;font-weight:900;font-style:italic;text-transform:uppercase;margin-bottom:16px;}
-.modal-btn{width:100%;padding:12px;border:none;border-radius:10px;font-size:13px;font-weight:900;cursor:pointer;text-transform:uppercase;letter-spacing:0.05em;}
-.modal-btn.primary{background:white;color:var(--bg);margin-bottom:8px;}
-.modal-btn.secondary{background:none;color:var(--text3);font-size:11px;}
-
-/* Polling indicator */
-.polling-badge{display:inline-flex;align-items:center;gap:5px;font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--purple);background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.3);border-radius:999px;padding:3px 9px;margin-top:6px;}
-.poll-dot{width:5px;height:5px;border-radius:50%;background:var(--purple);animation:pulse 1.2s infinite;}
+.cat-btn-desc{font-size:8px;color:var(--muted);line-height:1.4;margin-top:2px;display:block;}
+.cat-btn.active .cat-btn-desc{color:rgba(255,255,255,.65);}
+.chips{display:flex;flex-wrap:wrap;gap:6px;}
+.chip{padding:8px 12px;border:2px solid var(--border);border-radius:.7rem;background:var(--blue-light);cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);transition:all .2s;}
+.chip:hover{border-color:var(--blue);}
+.chip.active{background:var(--slate);border-color:var(--slate);color:white;}
+.tog-row{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--blue-light);border-radius:.9rem;border:2px solid var(--border);margin-bottom:10px;transition:all .2s;}
+.tog-row.on{background:white;border-color:var(--blue);}
+.tog-info h4{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--slate);}
+.tog-info p{font-size:8px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;}
+.switch{width:44px;height:26px;background:var(--border);border-radius:999px;position:relative;transition:background .3s;cursor:pointer;flex-shrink:0;}
+.switch.on{background:var(--blue);}
+.switch-thumb{position:absolute;top:3px;left:3px;width:20px;height:20px;background:white;border-radius:50%;box-shadow:0 2px 5px rgba(0,0,0,.2);transition:transform .3s;}
+.switch.on .switch-thumb{transform:translateX(18px);}
+.fmt-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;}
+.fmt-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:12px 4px;border-radius:.7rem;border:2px solid var(--border);background:var(--blue-light);cursor:pointer;transition:all .2s;color:var(--muted);}
+.fmt-btn:hover{border-color:var(--blue);}
+.fmt-btn.active{background:var(--slate);border-color:var(--slate);color:white;transform:scale(1.05);}
+.fmt-btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5;}
+.fmt-btn span{font-size:8px;font-weight:800;}
+.slider-row{margin-bottom:14px;}
+.slider-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;}
+.slider-label{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);}
+.slider-val{font-family:'Space Mono',monospace;font-size:9px;font-weight:700;color:var(--blue);background:var(--blue-light);padding:2px 7px;border-radius:4px;}
+input[type=range]{width:100%;height:6px;appearance:none;background:var(--blue-light);border-radius:3px;cursor:pointer;outline:none;}
+input[type=range]::-webkit-slider-thumb{appearance:none;width:14px;height:14px;border-radius:50%;background:var(--blue);cursor:pointer;transition:transform .15s;}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2);}
+.gen-btn{width:100%;padding:28px;border:none;border-radius:1.8rem;background:linear-gradient(135deg,var(--blue),var(--indigo),var(--violet));color:white;font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.35em;cursor:pointer;transition:transform .2s,box-shadow .2s;box-shadow:0 14px 36px rgba(37,99,235,.35);display:flex;flex-direction:column;align-items:center;gap:9px;}
+.gen-btn:hover:not(:disabled){transform:scale(1.02);}
+.gen-btn:active:not(:disabled){transform:scale(.98);}
+.gen-btn:disabled{background:#e2e8f0;color:#94a3b8;cursor:not-allowed;box-shadow:none;}
+.gen-btn .btn-row{display:flex;align-items:center;gap:14px;}
+.gen-btn svg{width:26px;height:26px;}
+.gen-btn.loading svg{animation:spin 1s linear infinite;}
+.gen-loading-msg{font-size:8px;font-weight:800;letter-spacing:.12em;color:rgba(255,255,255,.7);}
+.error-box{padding:14px;border-radius:1.1rem;border:2px solid #fecaca;background:#fef2f2;display:none;gap:10px;align-items:flex-start;margin-top:12px;}
+.error-box.show{display:flex;}
+.error-box svg{width:18px;height:18px;stroke:var(--red);fill:none;stroke-width:2;flex-shrink:0;}
+.error-box p{font-size:9px;font-weight:800;color:#b91c1c;letter-spacing:.04em;line-height:1.6;text-transform:uppercase;}
+.results-header{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid var(--border);padding-bottom:18px;margin-bottom:28px;flex-wrap:wrap;gap:12px;}
+.results-title h2{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.45em;}
+.results-status{display:flex;align-items:center;gap:7px;margin-top:4px;}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--blue);animation:ping .8s infinite;}
+.empty-state{height:460px;display:flex;flex-direction:column;align-items:center;justify-content:center;border:3px dashed var(--border);border-radius:2.5rem;gap:22px;background:rgba(255,255,255,.5);}
+.empty-icon{width:110px;height:110px;border-radius:50%;background:white;box-shadow:0 14px 40px rgba(0,0,0,.06);display:flex;align-items:center;justify-content:center;border:2px solid var(--border);}
+.empty-icon svg{width:55px;height:55px;stroke:var(--border);fill:none;stroke-width:.5;}
+.empty-text{text-align:center;}
+.empty-text p:first-child{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.7em;color:#cbd5e1;}
+.empty-text p:last-child{font-size:10px;color:#94a3b8;font-weight:600;font-style:italic;margin-top:5px;}
+.img-card{background:white;border-radius:2rem;overflow:hidden;border:2px solid white;box-shadow:0 14px 45px rgba(0,0,0,.08);margin-bottom:30px;transition:transform .4s;}
+.img-card:hover{transform:scale(1.01);}
+.img-thumb{position:relative;cursor:pointer;overflow:hidden;}
+.img-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+.ar-9-16{aspect-ratio:9/16;} .ar-16-9{aspect-ratio:16/9;} .ar-4-5{aspect-ratio:4/5;} .ar-1-1{aspect-ratio:1;}
+.img-overlay{position:absolute;inset:0;background:rgba(0,0,0,.2);opacity:0;transition:opacity .3s;display:flex;align-items:center;justify-content:center;}
+.img-card:hover .img-overlay{opacity:1;}
+.dl-circle{background:var(--blue);padding:20px;border-radius:50%;box-shadow:0 7px 20px rgba(37,99,235,.4);transform:scale(.7);transition:transform .3s;}
+.img-card:hover .dl-circle{transform:scale(1);}
+.dl-circle svg{width:28px;height:28px;stroke:white;fill:none;stroke-width:2;}
+.img-badges{position:absolute;top:16px;left:16px;display:flex;flex-direction:column;gap:6px;}
+.img-badge{padding:4px 12px;border-radius:.7rem;font-size:8px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;}
+.badge-white{background:rgba(255,255,255,.95);color:var(--slate);}
+.badge-grad{background:linear-gradient(135deg,var(--blue),var(--violet));color:white;}
+.badge-green-solid{background:var(--green);color:white;}
+.img-info{padding:22px;}
+.img-meta{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:9px;}
+.img-meta-txt span{font-family:'Space Mono',monospace;font-size:8px;font-weight:700;color:var(--slate);text-transform:uppercase;letter-spacing:.06em;display:block;}
+.btn-dl{padding:9px 16px;background:var(--blue);color:white;border:none;border-radius:.6rem;font-family:'Space Grotesk',sans-serif;font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;cursor:pointer;transition:transform .15s;}
+.btn-dl:hover{transform:scale(1.05);}
+.btn-reset{display:flex;align-items:center;gap:6px;padding:9px 14px;background:#fef2f2;color:var(--red);border:2px solid #fecaca;border-radius:.6rem;font-family:'Space Grotesk',sans-serif;font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;cursor:pointer;transition:all .2s;}
+.btn-reset:hover{background:var(--red);color:white;}
+.results-actions{display:flex;gap:7px;}
 </style>
 </head>
 <body>
-
-<!-- Shutter Flash -->
-<div class="shutter-flash" id="shutterFlash"></div>
-
-<!-- ═══ SPLASH ═══ -->
 <div id="splash">
-  <div class="splash-content">
-    <div class="splash-logo">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-        <circle cx="12" cy="13" r="4"/>
-      </svg>
-    </div>
-    <h1 class="splash-title">Studio<br>Selfie</h1>
-    <p class="splash-sub">Selfies 4K Ultra-Réalistes -- IA Dual Engine</p>
-
-    <span class="engine-label">Choisir le moteur IA</span>
-    <div class="engine-grid" style="margin-bottom:20px;">
-      <div class="engine-card active" id="splashVertex" onclick="selectEngine('vertex')">
-        <span class="engine-card-name" style="color:var(--blue);">&#9889; Vertex AI</span>
-        <span class="engine-card-desc">Imagen 3.1 Flash Preview<br>Clé Vertex AI requise</span>
-      </div>
-      <div class="engine-card" id="splashKieai" onclick="selectEngine('kieai')">
-        <span class="engine-card-name" style="color:var(--purple);">&#127757; Kie.ai</span>
-        <span class="engine-card-desc">Nano Banana 2<br>Clé API Kie.ai requise</span>
-      </div>
-    </div>
-
-    <div class="api-section">
-      <label class="api-label" id="splashApiLabel">Clé API Vertex AI</label>
-      <input type="password" id="apiKeyInput" class="api-input" placeholder="AQ..." autocomplete="off">
-    </div>
-    <button class="splash-cta" id="splashBtn" onclick="enterApp()">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-      LANCER LE STUDIO
-    </button>
-    <p id="splash-error" style="display:none;color:#fca5a5;font-size:12px;font-weight:600;margin-top:10px;text-align:center;"></p>
+  <div class="splash-hero">
+    <img src="https://images.unsplash.com/photo-1529539795054-3c162aab037a?auto=format&fit=crop&q=80&w=600" alt="">
+    <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.55),rgba(0,0,0,.1))"></div>
+    <div class="rec"><div class="rec-dot"></div><span class="rec-label">SELFIE 4K LIVE</span></div>
   </div>
+  <h1>STUDIO SELFIE</h1>
+  <div style="height:3px;width:160px;background:linear-gradient(90deg,#2563eb,#7c3aed);border-radius:2px;margin-bottom:16px;"></div>
+  <p class="tagline">Selfies 4K ultra-reels -- IA Dual Engine</p>
+  <div class="api-box">
+    <span class="api-label">Choisir le moteur IA</span>
+    <div class="engine-selector">
+      <button class="engine-btn active-vertex" id="btn-vertex" onclick="selectEngine('vertex')">
+        <span>Vertex AI</span><span class="sub">Cle AQ...</span>
+      </button>
+      <button class="engine-btn" id="btn-kie" onclick="selectEngine('kie')">
+        <span>Kie.ai</span><span class="sub">Nano Banana 2</span>
+      </button>
+    </div>
+    <span class="api-label" id="splashKeyLabel">Cle API Vertex AI Express Mode</span>
+    <input type="password" id="apiKeyInput" placeholder="AQ..." autocomplete="off">
+    <button class="enter-btn" onclick="enterStudio()">LANCER LE STUDIO</button>
+    <p id="splashErr" style="color:#dc2626;font-size:11px;font-weight:700;margin-top:9px;display:none;"></p>
+  </div>
+  <a href="#" id="helpLink" target="_blank" style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);text-decoration:none;">
+    <span id="helpText">Obtenir une cle Vertex AI Express Mode</span>
+  </a>
 </div>
 
-<!-- ═══ APP ═══ -->
 <div id="app">
-  <header class="app-header">
-    <div class="header-inner">
-      <div class="brand">
-        <div class="rec-dot"></div>
-        <div class="brand-logo">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-        </div>
-        <div>
-          <div class="brand-title">Studio Selfie</div>
-          <div class="brand-sub">Selfies 4K Hyper-Réalistes</div>
+  <header>
+    <div class="header-left" onclick="showSplash()">
+      <div class="header-logo">
+        <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      </div>
+      <div class="header-title">
+        <h1>STUDIO SELFIE</h1>
+        <div class="header-badges">
+          <span class="badge badge-blue">SELFIES 4K</span>
+          <span class="badge badge-violet" id="engineBadge">VERTEX AI</span>
         </div>
       </div>
-      <div id="engineBadge" class="engine-badge vertex" onclick="showApiModal()">
-        <div class="dot"></div>
-        <span id="engineBadgeLabel">VERTEX AI</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div style="text-align:right;">
+        <p style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.65);">Simulation Humaine</p>
+        <p style="font-size:8px;font-weight:700;color:#93c5fd;text-transform:uppercase;letter-spacing:.06em;" id="modelLabel">Gemini 3.1 Flash Image Preview</p>
+      </div>
+      <div style="width:40px;height:40px;border-radius:50%;border:3px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;">
+        <div class="status-dot"></div>
       </div>
     </div>
   </header>
 
-  <div class="app-main">
-    <!-- ─ LEFT PANEL ─ -->
-    <aside class="panel-left">
-      <div class="sec">
-        <div class="sec-title">Images Référence</div>
-        <div class="upload-grid">
-          <div>
-            <span class="upload-zone-label">Principale (req.)</span>
-            <div class="upload-zone" id="uploadImg1">
-              <span class="upload-icon">📷</span>
-              <span class="upload-txt">Photo A</span>
-              <div class="change-ov"><span class="change-lbl">Changer</span></div>
-            </div>
-          </div>
-          <div>
-            <span class="upload-zone-label">Secondaire (opt.)</span>
-            <div class="upload-zone" id="uploadImg2">
-              <span class="upload-icon">👤</span>
-              <span class="upload-txt">Photo B</span>
-              <div class="change-ov"><span class="change-lbl">Changer</span></div>
-            </div>
-          </div>
-        </div>
-        <div style="display:flex;justify-content:space-between;margin-top:5px;">
-          <span style="font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--text3);">Taille img</span>
-          <span id="imgSizeLabel" style="font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--text3);">--</span>
-        </div>
-        <input type="file" id="fileImg1" accept="image/*" style="display:none">
-        <input type="file" id="fileImg2" accept="image/*" style="display:none">
+  <main>
+    <div style="display:flex;flex-direction:column;gap:18px;">
+      <div class="card">
+        <p class="card-title title-blue">
+          <svg viewBox="0 0 24 24" style="stroke:var(--blue)"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          01. REFERENCES IDENTITE
+        </p>
+        <div id="uploadGrid" class="upload-grid"></div>
+        <textarea id="sceneInput" placeholder="Decrivez l'expression, l'ambiance, le contexte de la scene..."></textarea>
       </div>
 
-      <div class="sec">
-        <div class="sec-title">Catégorie</div>
-        <div id="categoryBtns"></div>
+      <div class="card">
+        <p class="card-title title-indigo">
+          <svg viewBox="0 0 24 24" style="stroke:var(--indigo)"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+          02. CATEGORIE SELFIE
+        </p>
+        <div class="cat-grid" id="catGrid"></div>
       </div>
 
-      <div class="sec">
-        <div class="sec-title" id="angleTitle">Angle / Contexte</div>
-        <div class="chip-grid" id="angleGrid"></div>
+      <div class="card">
+        <p class="card-title title-violet">
+          <svg viewBox="0 0 24 24" style="stroke:var(--violet)"><path d="M15 3h6v6"/><path d="M10 14L21 3"/></svg>
+          03. ANGLE ET CONTEXTE
+        </p>
+        <div class="chips" id="angleChips"></div>
       </div>
 
-      <div class="sec">
-        <div class="sec-title">Options</div>
-        <div class="toggle-row">
-          <span class="toggle-label">Verrou des Lieux</span>
-          <div class="toggle-btn" id="locationLockBtn" onclick="toggleLocationLock()">
-            <div class="toggle-knob"></div>
-          </div>
-        </div>
-        <p class="toggle-hint">Force l'IA à conserver strictement l'environnement des images de référence.</p>
-      </div>
-
-      <div class="sec">
-        <div class="sec-title">Direction de Scène</div>
-        <textarea class="scene-ta" id="sceneDir" placeholder="ex: Air surpris, léger sourire, regard espiègle..."></textarea>
-        <p class="scene-hint">Comportement, expression, intention du sujet.</p>
-      </div>
-    </aside>
-
-    <!-- ─ CENTER PANEL ─ -->
-    <section class="panel-center">
-      <div class="preview-phone" id="previewPhone">
-        <div class="preview-box">
-          <div class="prev-placeholder" id="prevPH">
-            <span class="cam">📷</span>
-            <p>Configurez et<br>lancez la capture</p>
-          </div>
-          <img class="preview-img" id="previewImg" alt="Selfie">
-          <div class="gen-ov" id="genOv">
-            <div class="bars">
-              <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
-            </div>
-            <div style="text-align:center">
-              <div class="gen-status" id="genStat">Initialisation...</div>
-              <div class="prog-bar" style="margin:7px auto 0">
-                <div class="prog-fill" id="progFill" style="width:0%"></div>
-              </div>
-            </div>
-          </div>
-          <div class="dl-btn" id="dlBtn" onclick="dlImg()">
-            &#11015; <span>Télécharger</span>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ─ RIGHT PANEL ─ -->
-    <aside class="panel-right">
-      <div class="panel-right-inner">
-        <div class="r-sec">
-          <div class="r-sec-title">Système de Capture</div>
-          <p style="font-size:9px;color:var(--text3);font-family:'JetBrains Mono',monospace;line-height:1.6;">Studio Selfie simule le geste physique d'une personne prenant un selfie. L'IA modélise la posture, l'intention et la logique optique du smartphone pour produire des résultats ultra-crédibles.</p>
-        </div>
-
-        <div class="r-sec">
-          <div class="r-sec-title">Règles Actives</div>
-          <div id="rulesDisplay" style="display:flex;flex-direction:column;gap:5px;"></div>
-        </div>
-
-        <div class="r-sec">
-          <div class="r-sec-title">Prompt Généré</div>
-          <div id="promptPreview" style="font-size:9px;color:var(--text3);font-family:'JetBrains Mono',monospace;line-height:1.6;max-height:120px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:8px;background:rgba(0,0,0,0.2);">Le prompt apparaîtra ici avant génération...</div>
-        </div>
-
-        <div class="r-sec">
-          <div class="r-sec-title">Historique</div>
-          <div id="histWrap"><p class="hist-empty">Aucun selfie généré</p></div>
+      <div class="card">
+        <p class="card-title title-blue">
+          <svg viewBox="0 0 24 24" style="stroke:var(--blue)"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+          04. FORMAT
+        </p>
+        <div class="fmt-grid">
+          <button class="fmt-btn active" data-ar="9:16" onclick="setAR('9:16',this)"><svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/></svg><span>9:16</span></button>
+          <button class="fmt-btn" data-ar="16:9" onclick="setAR('16:9',this)"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="10" rx="2"/></svg><span>16:9</span></button>
+          <button class="fmt-btn" data-ar="4:5" onclick="setAR('4:5',this)"><svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/></svg><span>4:5</span></button>
+          <button class="fmt-btn" data-ar="1:1" onclick="setAR('1:1',this)"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/></svg><span>1:1</span></button>
         </div>
       </div>
 
-      <div class="gen-area">
-        <button class="gen-btn" id="genBtn" onclick="generateSelfie()">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-          Capturer le Selfie
-        </button>
+      <div class="card">
+        <p class="card-title title-indigo">
+          <svg viewBox="0 0 24 24" style="stroke:var(--indigo)"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          05. REGLAGES AVANCES
+        </p>
+        <div class="tog-row" id="lockRow"><div class="tog-info"><h4>Verrou des Lieux</h4><p id="lockStatus">Desactive</p></div><div class="switch" id="lockSwitch" onclick="toggleLock()"><div class="switch-thumb"></div></div></div>
+        <div class="tog-row" id="perRow"><div class="tog-info"><h4>Mode Perception Humaine</h4><p id="perStatus">Moteur standard</p></div><div class="switch" id="perSwitch" onclick="togglePerception()"><div class="switch-thumb"></div></div></div>
+        <div style="margin-top:6px;">
+          <div class="slider-row"><div class="slider-header"><span class="slider-label">Asymetrie</span><span class="slider-val" id="vAsym">70%</span></div><input type="range" min="0" max="100" value="70" oninput="updateSlider('asym',this.value)"></div>
+          <div class="slider-row"><div class="slider-header"><span class="slider-label">Imperfection</span><span class="slider-val" id="vImperf">60%</span></div><input type="range" min="0" max="100" value="60" oninput="updateSlider('imperf',this.value)"></div>
+          <div class="slider-row"><div class="slider-header"><span class="slider-label">Intimite</span><span class="slider-val" id="vIntim">40%</span></div><input type="range" min="0" max="100" value="40" oninput="updateSlider('intim',this.value)"></div>
+        </div>
       </div>
-    </aside>
-  </div>
-</div>
 
-<!-- Toast -->
-<div class="toast" id="toast">
-  <span id="toastIcon">✓</span>
-  <span id="toastMsg"></span>
-</div>
-
-<!-- API Modal -->
-<div class="modal-back" id="apiModal">
-  <div class="modal-box">
-    <div style="font-size:24px;margin-bottom:12px">📷</div>
-    <div class="modal-title">Changer la Clé API</div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
-      <div class="engine-card" id="modalVertex" onclick="modalSelectEngine('vertex')" style="padding:10px;">
-        <span class="engine-card-name" style="color:var(--blue);">⚡ Vertex AI</span>
-        <span class="engine-card-desc">Imagen 3.1</span>
-      </div>
-      <div class="engine-card" id="modalKieai" onclick="modalSelectEngine('kieai')" style="padding:10px;">
-        <span class="engine-card-name" style="color:var(--purple);">🌐 Kie.ai</span>
-        <span class="engine-card-desc">Nano Banana 2</span>
-      </div>
+      <button class="gen-btn" id="genBtn" onclick="generate()">
+        <div class="btn-row">
+          <svg id="genIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          <span id="genLabel">CAPTURER LE SELFIE 4K</span>
+        </div>
+        <span class="gen-loading-msg" id="genMsg" style="display:none;"></span>
+      </button>
+      <div class="error-box" id="errorBox"><svg viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><p id="errorText"></p></div>
     </div>
 
-    <div class="api-section">
-      <label class="api-label" id="modalApiLabel">Clé API</label>
-      <input type="password" id="modalKey" class="api-input" placeholder="Votre clé...">
+    <div>
+      <div class="results-header">
+        <div class="results-title">
+          <h2>CAPTURES REELLES</h2>
+          <div class="results-status"><div class="live-dot"></div><span style="font-size:9px;font-weight:800;color:var(--blue);letter-spacing:.2em;text-transform:uppercase;">LIVE</span><span style="font-size:11px;font-family:'Space Mono',monospace;color:var(--muted);font-weight:700;margin-left:12px;" id="captureCount">0 CAPTURES</span></div>
+        </div>
+        <div class="results-actions" id="resultsActions" style="display:none;">
+          <button class="btn-reset" onclick="resetAll()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.21"/></svg>Reset</button>
+        </div>
+      </div>
+      <div id="emptyState" class="empty-state">
+        <div class="empty-icon"><svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
+        <div class="empty-text"><p>PRET A CAPTURER</p><p>Configure ta scene et declenche la generation.</p></div>
+      </div>
+      <div id="resultsContainer"></div>
     </div>
-    <button class="modal-btn primary" onclick="saveApiKey()">Enregistrer</button>
-    <button class="modal-btn secondary" onclick="closeModal()">Annuler</button>
-  </div>
+  </main>
+  <footer style="padding:28px;text-align:center;border-top:2px solid var(--border);background:rgba(255,255,255,.6);">
+    <p style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.7em;color:#94a3b8;" id="footerText">STUDIO SELFIE 2025</p>
+  </footer>
 </div>
 
 <script>
-// ══════════════════════════════════════════════
-//  STATE
-// ══════════════════════════════════════════════
-var API_KEY = '';
-var ENGINE = 'vertex'; // 'vertex' | 'kieai'
-var imgs = {img1: null, img2: null};
-var selCategory = 'VOLONTAIRE';
-var selAngle = '';
-var locationLock = false;
-var isGen = false;
-var curImgUrl = null;
-var imgHistory = [];
+var apiKey='',selectedEngine='vertex',avatarImages=[],results=[],loading=false,aspectRatio='9:16',selCategory='VOLONTAIRE',selAngle='',locationLock=false,humanPerception=false,asymmetry=70,imperfection=60,intimacy=40,loadingInterval=null;
+var isMobile=/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-// ── KIE.AI proxy / config ──
-var KIEAI_PROXY = 'https://studio-cinema-proxy-738708455173.europe-west1.run.app'; // same proxy if configured, else direct
-
-// ══════════════════════════════════════════════
-//  DATA
-// ══════════════════════════════════════════════
-var CATEGORIES = {
-  VOLONTAIRE: {
-    label: 'Selfie Volontaire',
-    desc: 'La personne prend consciemment un selfie. Intention naturelle et imparfaite.',
-    angles: [
-      'Miroir -- posé esthétique',
-      'Miroir -- attitude / street',
-      'Bras tendu -- naturel',
-      'Bras tendu -- angle accentué',
-      'Allongé -- lifestyle',
-      'Extérieur -- lifestyle',
-      'Mouvement -- activité'
-    ]
-  },
-  ACCIDENTEL: {
-    label: 'Selfie Accidentel',
-    desc: 'Photo prise sans intention esthétique. Résulte d\'un mouvement ou d\'une erreur.',
-    angles: [
-      'Obstruction partielle',
-      'Cadrage partiel',
-      'En mouvement',
-      'Ajustement',
-      'Contre-plongée accidentelle',
-      'Perspective immersive',
-      'Relâchement instable'
-    ]
-  },
-  CONTEXTUEL: {
-    label: 'Selfie Contextuel',
-    desc: 'Le selfie est défini par l\'environnement. Le lieu influence le cadrage.',
-    angles: [
-      'Miroir',
-      'Salle de bain',
-      'Lit / canapé',
-      'Intérieur (maison)',
-      'Extérieur (rue)',
-      'Extérieur (soleil direct)',
-      'Voiture',
-      'Ascenseur',
-      'Lieu public (café, restaurant)',
-      'Poser au sol'
-    ]
-  }
+var CATEGORIES={
+  VOLONTAIRE:{label:'Selfie Volontaire',desc:"La personne prend consciemment un selfie. Intention naturelle et imparfaite.",angles:['Miroir - pose esthetique','Miroir - attitude / street','Bras tendu - naturel','Bras tendu - angle accentue','Allonge - lifestyle','Exterieur - lifestyle','Mouvement - activite']},
+  ACCIDENTEL:{label:'Selfie Accidentel',desc:"Photo prise sans intention esthetique. Resulte d'un mouvement ou d'une erreur.",angles:['Obstruction partielle','Cadrage partiel','En mouvement','Ajustement','Contre-plongee accidentelle','Perspective immersive','Relachement instable']},
+  CONTEXTUEL:{label:'Selfie Contextuel',desc:"Le selfie est defini par l'environnement. Le lieu influence le cadrage.",angles:['Miroir','Salle de bain','Lit - canape','Interieur (maison)','Exterieur (rue)','Exterieur (soleil direct)','Voiture','Ascenseur','Lieu public (cafe, restaurant)','Poser au sol']}
 };
+var MSGS_VERTEX=["Initialisation de la capture humaine...","Analyse des references visuelles...","Simulation du geste selfie...","Vertex genere la scene 4K...","Serveur occupe, nouvelle tentative..."];
+var MSGS_KIE=["Envoi vers Nano Banana 2...","Upload des references...","Nano Banana 2 genere la scene...","Rendu haute fidelite en cours...","Presque termine..."];
 
-var RULES_BY_CAT = {
-  VOLONTAIRE: [
-    'Regard dirigé vers le téléphone',
-    'Posture volontaire mais naturelle',
-    'Légères imperfections de cadrage',
-    'Téléphone visible à la main',
-    'Bras influençant la posture'
-  ],
-  ACCIDENTEL: [
-    'Cadrage instable / incohérent',
-    'Posture non posée',
-    'Capture involontaire simulée',
-    'Téléphone actif (écran ON)',
-    'Interaction imprévue visible'
-  ],
-  CONTEXTUEL: [
-    'Décor influençant la posture',
-    'Lumière contextuelle naturelle',
-    'Imperfections liées au lieu',
-    'Cohérence totale environnement/image',
-    'Décor jamais neutre ou clean'
-  ]
-};
-
-// ══════════════════════════════════════════════
-//  SYSTEM PROMPT (Studio Selfie POV)
-// ══════════════════════════════════════════════
-var SYSTEM_PROMPT = `Studio Selfie generates ultra-realistic 4K images by simulating the real gesture of a person taking a photo of themselves.
-
-GLOBAL SYSTEM BEHAVIOR:
-- Simulate a real body, a real gesture, a real intention, a real capture.
-- Prioritize human credibility over visual perfection.
-- NEVER soften a strong angle to make it prettier. Respect the requested angle even if unflattering or awkward.
-- ROLE: You are an application of TRUTH, not art.
-
-IDENTITY PRESERVATION (ABSOLUTE RULES):
-- DO NOT modify the avatar's identity.
-- Preserve the face, traits, skin, and identity exactly as seen in the reference images.
-- Preserve the clothing and proportions.
-- ONLY reposition, reorient, crop, or adapt the angle.
-
-HUMAN SKIN DIRECTIVE:
-- ZERO smoothing, ZERO artificial rendering, ZERO beauty filters.
-- Visible micro-textures, real pores, subtle chromatic variations.
-- RAW: The skin must look unprocessed and real.
-
-TECHNICAL RENDERING (4K):
-- Every pixel must be defined, sharp, and rich in detail.
-- Realistic depth of field, natural background bokeh.
-- Subtle digital noise. Never a plastic or smooth image.
-
-SMARTPHONE LENS LOGIC:
-- Wide angle lens (~24-28mm equivalent), slight proximity distortion.
-- Limited but imperfect depth of field, micro digital noise.
-- Slight image compression, imperfect HDR management.
-
-ABSOLUTE RULE: The image must look like a photo taken quickly with a phone, without aesthetic intention, with natural imperfections. Skin must show visible natural irregularities. The rendering must recall a raw smartphone photo without beauty filters.
-
-FORBIDDEN:
-- Smooth/plastic skin, beauty filters, AI smoothing.
-- Frozen expression, flat lighting.
-- Image resembling illustration or 3D rendering.`;
-
-function buildPrompt() {
-  var cat = CATEGORIES[selCategory];
-  var dir = document.getElementById('sceneDir').value.trim();
-  var hasImg2 = !!imgs.img2;
-
-  var parts = [SYSTEM_PROMPT];
-  parts.push('\n\nCATEGORY: ' + selCategory + ' -- ' + cat.label);
-  parts.push('CATEGORY DEFINITION: ' + cat.desc);
-  parts.push('ANGLE/CONTEXT: ' + selAngle);
-
-  if (selCategory === 'VOLONTAIRE') {
-    parts.push('BEHAVIOR: Phone visible at arm\'s length. Natural but voluntary posture. Gaze directed toward screen. Slight framing imperfections. Never too perfect or frozen.');
-  } else if (selCategory === 'ACCIDENTEL') {
-    parts.push('BEHAVIOR: Unstable or incoherent framing. Non-posed posture. Phone MUST be active (screen on). Interaction must look involuntary. Never a dead or inactive phone.');
-  } else {
-    parts.push('BEHAVIOR: The decor influences posture and light. Presence of realistic environmental imperfections. Never a "clean" or neutral decor. Total coherence between environment and image.');
-  }
-
-  if (locationLock) {
-    parts.push('LOCATION LOCK ACTIVE: You MUST strictly preserve the exact environment, room, and furniture from the reference images. DO NOT change the room. PRESERVE lighting and atmosphere.');
-  }
-
-  if (hasImg2) {
-    parts.push('TWO REFERENCE IMAGES PROVIDED: Include BOTH individuals in the generated selfie as a duo. Show strong complicity, closeness, and interaction. Both faces clearly visible.');
-  }
-
-  if (dir) {
-    parts.push('SCENE DIRECTION: "' + dir + '"');
-  }
-
-  parts.push('\nGenerate a highly detailed 4K photorealistic selfie image following all Studio Selfie rules. Prioritize human credibility and naturalness over beauty.');
-
-  return parts.join('\n');
+function selectEngine(e){
+  selectedEngine=e;
+  document.getElementById('btn-vertex').className='engine-btn'+(e==='vertex'?' active-vertex':'');
+  document.getElementById('btn-kie').className='engine-btn'+(e==='kie'?' active-kie':'');
+  document.getElementById('splashKeyLabel').textContent=e==='vertex'?'Cle API Vertex AI Express Mode':'Cle API kie.ai';
+  document.getElementById('apiKeyInput').placeholder=e==='vertex'?'AQ...':'Colle ta cle kie.ai ici...';
+  document.getElementById('helpLink').href=e==='vertex'?'https://cloud.google.com/vertex-ai/generative-ai/docs/start/express-mode/overview':'https://kie.ai/api-key';
+  document.getElementById('helpText').textContent=e==='vertex'?'Obtenir une cle Vertex AI Express Mode':'Creer un compte kie.ai';
 }
 
-// ══════════════════════════════════════════════
-//  ENGINE SELECTION
-// ══════════════════════════════════════════════
-function selectEngine(e) {
-  ENGINE = e;
-  document.getElementById('splashVertex').classList.toggle('active', e === 'vertex');
-  document.getElementById('splashKieai').classList.toggle('active', e === 'kieai');
-  var lbl = e === 'vertex' ? 'Clé API Vertex AI' : 'Clé API Kie.ai';
-  var ph = e === 'vertex' ? 'AQ...' : 'sk-...' ;
-  document.getElementById('splashApiLabel').textContent = lbl;
-  document.getElementById('apiKeyInput').placeholder = ph;
-}
-
-function modalSelectEngine(e) {
-  ENGINE = e;
-  document.getElementById('modalVertex').classList.toggle('active', e === 'vertex');
-  document.getElementById('modalKieai').classList.toggle('active', e === 'kieai');
-  document.getElementById('modalApiLabel').textContent = e === 'vertex' ? 'Clé API Vertex AI' : 'Clé API Kie.ai';
-  document.getElementById('modalKey').placeholder = e === 'vertex' ? 'AQ...' : 'sk-...';
-}
-
-function updateEngineBadge() {
-  var badge = document.getElementById('engineBadge');
-  var lbl = document.getElementById('engineBadgeLabel');
-  badge.className = 'engine-badge ' + (ENGINE === 'vertex' ? 'vertex' : 'kieai');
-  lbl.textContent = ENGINE === 'vertex' ? 'VERTEX AI' : 'KIE.AI';
-}
-
-// ══════════════════════════════════════════════
-//  SPLASH → APP
-// ══════════════════════════════════════════════
-function enterApp() {
-  var k = document.getElementById('apiKeyInput').value.trim();
-  var err = document.getElementById('splash-error');
-  if (!k) { err.textContent = 'Veuillez entrer votre clé API.'; err.style.display = 'block'; return; }
-  API_KEY = k;
-  err.style.display = 'none';
-  document.getElementById('splash').style.display = 'none';
+function enterStudio(){
+  var k=document.getElementById('apiKeyInput').value.trim();
+  var err=document.getElementById('splashErr');
+  if(!k){err.textContent='Veuillez entrer votre cle API.';err.style.display='block';return;}
+  if(selectedEngine==='vertex'&&!k.startsWith('AQ')){if(!confirm('Cette cle ne commence pas par "AQ". Les cles Vertex AI Express Mode commencent par AQ. Continuer quand meme ?'))return;}
+  apiKey=k;err.style.display='none';
+  document.getElementById('splash').style.display='none';
   document.getElementById('app').classList.add('visible');
-  updateEngineBadge();
+  if(selectedEngine==='kie'){document.getElementById('engineBadge').textContent='KIE.AI';document.getElementById('engineBadge').className='badge badge-green';document.getElementById('modelLabel').textContent='Nano Banana 2 - kie.ai';document.getElementById('footerText').textContent='STUDIO SELFIE 2025 - Powered by kie.ai';}
+  else{document.getElementById('engineBadge').textContent='VERTEX AI';document.getElementById('engineBadge').className='badge badge-violet';document.getElementById('modelLabel').textContent='Gemini 3.1 Flash Image Preview';document.getElementById('footerText').textContent='STUDIO SELFIE 2025 - Powered by Vertex AI';}
+  renderUploadGrid();renderCategories();renderAngles();renderResults();
 }
 
-// ══════════════════════════════════════════════
-//  API MODAL
-// ══════════════════════════════════════════════
-function showApiModal() {
-  document.getElementById('modalKey').value = API_KEY;
-  modalSelectEngine(ENGINE);
-  document.getElementById('apiModal').classList.add('open');
-}
-function closeModal() { document.getElementById('apiModal').classList.remove('open'); }
-function saveApiKey() {
-  var k = document.getElementById('modalKey').value.trim();
-  if (!k) return;
-  API_KEY = k;
-  closeModal();
-  updateEngineBadge();
-  showToast('Clé API mise à jour', 'ok');
+function showSplash(){document.getElementById('splash').style.display='flex';document.getElementById('app').classList.remove('visible');}
+
+function renderUploadGrid(){
+  var g=document.getElementById('uploadGrid');g.innerHTML='';
+  avatarImages.forEach(function(img,i){
+    var d=document.createElement('div');d.className='upload-thumb';
+    d.innerHTML='<img src="'+img+'" alt="ref '+(i+1)+'"><button class="remove-btn" onclick="removeAvatar('+i+')"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button><span class="ref-badge">REF '+(i+1)+'</span>';
+    g.appendChild(d);
+  });
+  if(avatarImages.length<4){
+    var a=document.createElement('div');a.className='upload-add';
+    a.innerHTML='<svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span>'+(avatarImages.length===0?'Charger Image Ref':'Ajouter ('+avatarImages.length+'/4)')+'</span><input type="file" multiple accept="image/*" onchange="handleUpload(event)">';
+    g.appendChild(a);
+  }
 }
 
-// ══════════════════════════════════════════════
-//  RENDER UI
-// ══════════════════════════════════════════════
-function renderCategories() {
-  var c = document.getElementById('categoryBtns');
-  c.innerHTML = Object.keys(CATEGORIES).map(function(key) {
-    var cat = CATEGORIES[key];
-    return '<div class="cat-btn' + (selCategory === key ? ' active' : '') + '" data-key="' + key + '">' +
-      '<span class="cat-btn-name">' + cat.label + '</span>' +
-      '<span class="cat-btn-desc">' + cat.desc + '</span>' +
-      '</div>';
-  }).join('');
-  c.querySelectorAll('.cat-btn').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      selCategory = this.dataset.key;
-      selAngle = CATEGORIES[selCategory].angles[0];
-      renderCategories();
-      renderAngles();
-      renderRules();
-      updatePromptPreview();
-    });
+function handleUpload(e){
+  var files=Array.from(e.target.files).slice(0,4-avatarImages.length);
+  files.forEach(function(f){
+    var r=new FileReader();
+    r.onloadend=function(){resizeImage(r.result,function(resized){avatarImages.push(resized);renderUploadGrid();});};
+    r.readAsDataURL(f);
   });
 }
+function removeAvatar(i){avatarImages.splice(i,1);renderUploadGrid();}
+function resizeImage(b64,cb){
+  var img=new Image();img.src=b64;
+  img.onload=function(){
+    var c=document.createElement('canvas'),w=img.width,h=img.height;
+    if(w>1024){h=Math.round(h*1024/w);w=1024;}if(h>1024){w=Math.round(w*1024/h);h=1024;}
+    c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);cb(c.toDataURL('image/jpeg',0.85));
+  };
+}
 
-function renderAngles() {
-  var angles = CATEGORIES[selCategory].angles;
-  if (!selAngle || angles.indexOf(selAngle) === -1) selAngle = angles[0];
-  document.getElementById('angleTitle').textContent = selCategory === 'CONTEXTUEL' ? 'Contexte / Lieu' : 'Angle du Selfie';
-  document.getElementById('angleGrid').innerHTML = angles.map(function(a) {
-    return '<div class="chip' + (selAngle === a ? ' active' : '') + '" data-angle="' + a.replace(/"/g,'&quot;') + '"><span class="chip-lbl">' + a + '</span></div>';
-  }).join('');
-  document.getElementById('angleGrid').querySelectorAll('.chip').forEach(function(chip) {
-    chip.addEventListener('click', function() {
-      selAngle = this.dataset.angle;
-      renderAngles();
-      updatePromptPreview();
-    });
+function renderCategories(){
+  var g=document.getElementById('catGrid');g.innerHTML='';
+  Object.keys(CATEGORIES).forEach(function(key){
+    var cat=CATEGORIES[key];var btn=document.createElement('div');
+    btn.className='cat-btn'+(selCategory===key?' active':'');btn.dataset.key=key;
+    btn.innerHTML='<span class="cat-btn-name">'+cat.label+'</span><span class="cat-btn-desc">'+cat.desc+'</span>';
+    btn.onclick=function(){selCategory=key;selAngle=CATEGORIES[key].angles[0];renderCategories();renderAngles();};
+    g.appendChild(btn);
   });
 }
+function renderAngles(){
+  var angles=CATEGORIES[selCategory].angles;
+  if(!selAngle||angles.indexOf(selAngle)===-1)selAngle=angles[0];
+  var c=document.getElementById('angleChips');c.innerHTML='';
+  angles.forEach(function(a){
+    var btn=document.createElement('button');btn.className='chip'+(selAngle===a?' active':'');btn.textContent=a;
+    btn.onclick=function(){selAngle=a;renderAngles();};c.appendChild(btn);
+  });
+}
+function setAR(ar,btn){aspectRatio=ar;document.querySelectorAll('.fmt-btn').forEach(function(b){b.classList.remove('active');});if(btn)btn.classList.add('active');}
+function toggleLock(){locationLock=!locationLock;document.getElementById('lockSwitch').className='switch'+(locationLock?' on':'');document.getElementById('lockRow').className='tog-row'+(locationLock?' on':'');document.getElementById('lockStatus').textContent=locationLock?'Actif - lieu preserve':'Desactive';}
+function togglePerception(){humanPerception=!humanPerception;document.getElementById('perSwitch').className='switch'+(humanPerception?' on':'');document.getElementById('perRow').className='tog-row'+(humanPerception?' on':'');document.getElementById('perStatus').textContent=humanPerception?'Simulation active':'Moteur standard';}
+function updateSlider(n,v){v=parseInt(v,10);if(n==='asym'){asymmetry=v;document.getElementById('vAsym').textContent=v+'%';}if(n==='imperf'){imperfection=v;document.getElementById('vImperf').textContent=v+'%';}if(n==='intim'){intimacy=v;document.getElementById('vIntim').textContent=v+'%';}}
 
-function renderRules() {
-  var rules = RULES_BY_CAT[selCategory] || [];
-  document.getElementById('rulesDisplay').innerHTML = rules.map(function(r) {
-    return '<div style="display:flex;align-items:center;gap:6px;"><span style="color:var(--green);font-size:10px;">✓</span><span style="font-family:\'JetBrains Mono\',monospace;font-size:8px;color:var(--text2);">' + r + '</span></div>';
-  }).join('');
+function buildSystemText(){return 'Studio Selfie generates ultra-realistic 4K images by simulating the real gesture of a person taking a selfie. Simulate a real body, a real gesture, a real intention, a real capture. Prioritize human credibility over visual perfection. ZERO smoothing, ZERO beauty filters. Natural skin texture with visible pores, real asymmetry, authentic imperfections. Smartphone lens simulation: wide angle ~24mm, slight proximity distortion, natural depth of field. The image must look like a photo taken quickly with a phone, without aesthetic intention.';}
+
+function buildPrompt(subject){
+  var catBehavior='';
+  if(selCategory==='VOLONTAIRE')catBehavior='CATEGORY: VOLUNTARY SELFIE - The person consciously takes a selfie. Phone visible at arm length. Natural but voluntary posture. Gaze directed toward screen. Slight framing imperfections. Never too perfect or frozen.';
+  else if(selCategory==='ACCIDENTEL')catBehavior='CATEGORY: ACCIDENTAL SELFIE - Unstable or incoherent framing. Non-posed posture. Phone MUST be active (screen on). Interaction must look involuntary. Sensation of involuntary capture.';
+  else catBehavior='CATEGORY: CONTEXTUAL SELFIE - The decor influences posture and light. Presence of realistic environmental imperfections. Total coherence between environment and image.';
+  var parts=[catBehavior,'ANGLE/CONTEXT: '+selAngle,'ASYMMETRY: '+asymmetry+'% - introduce natural body asymmetry at this level.','IMPERFECTION: '+imperfection+'% - include natural skin and framing imperfections at this level.','INTIMACY: '+intimacy+'% - closeness and intimacy feeling at this level.',humanPerception?'HUMAN PERCEPTION MODE: ACTIVE - maximum simulation of human eye, natural micro-blur, authentic depth.':'',locationLock?'LOCATION LOCK: ACTIVE - strictly preserve the exact environment and furniture from the reference images. DO NOT change the room.':'',avatarImages.length>1?'TWO REFERENCE IMAGES PROVIDED: Include BOTH individuals as a duo. Show strong complicity and closeness. Both faces clearly visible.':'',subject?'SCENE DIRECTION: "'+subject+'"':'','Preserve exact facial identity from reference image - same face, same skin tone, same morphology. Natural lighting, authentic posture, no beauty filter, no AI smoothing. Ultra-realistic 4K selfie photo.'].filter(Boolean).join('\n');
+  return parts;
 }
 
-function updatePromptPreview() {
-  if (!selAngle) return;
-  var p = buildPrompt();
-  var preview = p.substring(SYSTEM_PROMPT.length + 2, SYSTEM_PROMPT.length + 200) + '...';
-  document.getElementById('promptPreview').textContent = preview;
-}
+function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
 
-// ══════════════════════════════════════════════
-//  LOCATION LOCK
-// ══════════════════════════════════════════════
-function toggleLocationLock() {
-  locationLock = !locationLock;
-  var btn = document.getElementById('locationLockBtn');
-  btn.classList.toggle('on', locationLock);
-  updatePromptPreview();
-}
-
-// ══════════════════════════════════════════════
-//  IMAGE UPLOAD
-// ══════════════════════════════════════════════
-function loadImg(e, slot) {
-  var file = e.target.files && e.target.files[0]; if (!file) return;
-  var reader = new FileReader();
-  reader.onloadend = function() {
-    var orig = reader.result;
-    var imgEl = new Image();
-    imgEl.onload = function() {
-      var canvas = document.createElement('canvas');
-      var max = 1280;
-      var w = imgEl.width, h = imgEl.height;
-      if (w > max || h > max) {
-        if (w > h) { h = Math.round(h*max/w); w = max; }
-        else { w = Math.round(w*max/h); h = max; }
+async function callVertexAPI(subject){
+  var apiAR=aspectRatio==='4:5'?'3:4':aspectRatio;
+  var systemText=buildSystemText();
+  var promptText=buildPrompt(subject);
+  var parts=[];
+  avatarImages.slice(0,2).forEach(function(img){parts.push({inlineData:{data:img.split(',')[1],mimeType:'image/jpeg'}});});
+  parts.push({text:promptText});
+  var body={systemInstruction:{parts:[{text:systemText}]},contents:[{role:'user',parts:parts}],generationConfig:{responseModalities:['IMAGE'],imageConfig:{aspectRatio:apiAR,imageSize:'4K'}}};
+  // ENDPOINT IDENTIQUE A STUDIO POV
+  var endpoint='https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-3.1-flash-image-preview:generateContent?key='+encodeURIComponent(apiKey);
+  var waitTimes=[5000,10000,20000,40000,60000];var lastErr;
+  for(var attempt=0;attempt<=waitTimes.length;attempt++){
+    try{
+      updateLoadingMsg(attempt===0?'Envoi vers Vertex...':'Nouvelle tentative '+(attempt+1)+'/'+(waitTimes.length+1)+'...');
+      var res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      var data={};try{data=await res.json();}catch(_){}
+      if(!res.ok){
+        var msg=(data.error&&data.error.message)?data.error.message:'Erreur HTTP '+res.status;
+        if(res.status===401)throw new Error('Cle API invalide. Verifie ta cle Vertex AI (commence par AQ...).');
+        if(res.status===403)throw new Error('Acces refuse. Verifie que ta cle Vertex AI Express Mode est active.');
+        if(res.status===404)throw new Error('Erreur 404: modele introuvable. '+msg);
+        if(res.status===429)throw new Error('429 RESOURCE_EXHAUSTED: '+msg);
+        throw new Error('Erreur '+res.status+': '+msg);
       }
-      canvas.width = w; canvas.height = h;
-      canvas.getContext('2d').drawImage(imgEl, 0, 0, w, h);
-      var compressed = canvas.toDataURL('image/jpeg', 0.90);
-      imgs[slot] = compressed;
-      var zoneId = slot === 'img1' ? 'uploadImg1' : 'uploadImg2';
-      var zone = document.getElementById(zoneId);
-      zone.classList.add('loaded');
-      zone.querySelectorAll('.av-img').forEach(function(el){ el.remove(); });
-      var img = document.createElement('img'); img.className = 'av-img'; img.src = compressed;
-      zone.insertBefore(img, zone.firstChild);
-      var sizeKB = Math.round(compressed.length * 0.75 / 1024);
-      document.getElementById('imgSizeLabel').textContent = sizeKB + ' KB';
-      showToast('Photo chargée -- ' + sizeKB + ' KB', 'ok');
-    };
-    imgEl.src = orig;
-  };
-  reader.readAsDataURL(file);
-}
-
-// ══════════════════════════════════════════════
-//  GENERATION -- VERTEX AI (Imagen 3.1 Flash)
-// ══════════════════════════════════════════════
-async function generateVertex(prompt, b64Images) {
-  // Vertex AI Imagen via REST API
-  // Using predict endpoint for Imagen 3.1 Flash Preview
-  var endpoint = 'https://us-central1-aiplatform.googleapis.com/v1/projects/test-credit-gratuit/locations/us-central1/publishers/google/models/imagen-3.1-flash-preview-0817:predict';
-
-  var instances = [{
-    prompt: prompt,
-    // If we have a reference image, use it for subject conditioning
-    referenceImages: b64Images.map(function(b64, i) {
-      return {
-        referenceType: 'REFERENCE_TYPE_SUBJECT',
-        referenceId: i + 1,
-        referenceImage: {
-          bytesBase64Encoded: b64.split(',')[1] || b64,
-          mimeType: 'image/jpeg'
-        }
-      };
-    })
-  }];
-
-  var parameters = {
-    sampleCount: 1,
-    aspectRatio: '9:16',
-    safetyFilterLevel: 'BLOCK_FEW',
-    personGeneration: 'ALLOW_ADULT',
-    addWatermark: false
-  };
-
-  var res = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + API_KEY
-    },
-    body: JSON.stringify({ instances: instances, parameters: parameters })
-  });
-
-  if (!res.ok) {
-    var err = await res.json().catch(function(){ return {}; });
-    throw new Error('Vertex AI: ' + (err.error && err.error.message ? err.error.message : res.status));
-  }
-
-  var data = await res.json();
-  var pred = data.predictions && data.predictions[0];
-  if (!pred) throw new Error('Vertex AI: Aucune prédiction retournée');
-
-  var b64 = pred.bytesBase64Encoded || (pred.image && pred.image.bytesBase64Encoded);
-  if (!b64) throw new Error('Vertex AI: Pas de données image dans la réponse');
-  return 'data:image/png;base64,' + b64;
-}
-
-// ══════════════════════════════════════════════
-//  GENERATION -- KIE.AI (Nano Banana 2)
-// ══════════════════════════════════════════════
-async function generateKieai(prompt, b64Images) {
-  // Step 1: Upload reference image and create task
-  var b64 = b64Images[0];
-  var imgData = b64.includes(',') ? b64.split(',')[1] : b64;
-
-  var createBody = {
-    model: 'nano-banana-2',
-    prompt: prompt,
-    image: imgData,
-    aspectRatio: '9:16',
-    numImages: 1
-  };
-
-  var createRes = await fetch('https://api.kie.ai/api/v1/image/generate', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + API_KEY
-    },
-    body: JSON.stringify(createBody)
-  });
-
-  if (!createRes.ok) {
-    var err = await createRes.json().catch(function(){ return {}; });
-    throw new Error('Kie.ai: ' + (err.message || createRes.status));
-  }
-
-  var createData = await createRes.json();
-  var taskId = createData.data && (createData.data.taskId || createData.data.task_id || createData.data.id);
-  if (!taskId) {
-    // Maybe direct response with image
-    if (createData.data && createData.data.imageUrl) return createData.data.imageUrl;
-    throw new Error('Kie.ai: Pas de taskId retourné -- ' + JSON.stringify(createData).slice(0, 200));
-  }
-
-  // Step 2: Poll for result
-  var attempts = 0;
-  var maxAttempts = 60;
-  while (attempts < maxAttempts) {
-    await sleep(5000);
-    attempts++;
-    setProg(Math.min(90, 20 + (attempts / maxAttempts) * 70), 'Polling Kie.ai... (' + attempts + '/' + maxAttempts + ')');
-
-    var pollRes = await fetch('https://api.kie.ai/api/v1/image/task/' + taskId, {
-      headers: { 'Authorization': 'Bearer ' + API_KEY }
-    });
-
-    if (!pollRes.ok) continue;
-    var pollData = await pollRes.json();
-    var status = pollData.data && (pollData.data.status || pollData.data.state);
-
-    if (status === 'completed' || status === 'succeed' || status === 'COMPLETED') {
-      var url = pollData.data.imageUrl || pollData.data.image_url || (pollData.data.images && pollData.data.images[0]);
-      if (url) return url;
-      throw new Error('Kie.ai: Tâche terminée mais pas d\'URL image');
-    }
-    if (status === 'failed' || status === 'FAILED') {
-      throw new Error('Kie.ai: Génération échouée -- ' + (pollData.data.error || 'raison inconnue'));
+      var candidate=data.candidates&&data.candidates[0];
+      if(!candidate)throw new Error('Aucune reponse du modele.');
+      if(candidate.finishReason==='SAFETY')throw new Error('Generation bloquee par les filtres de securite. Reformule ta demande.');
+      var cparts=(candidate.content&&candidate.content.parts)?candidate.content.parts:[];
+      for(var i=0;i<cparts.length;i++){if(cparts[i].inlineData&&cparts[i].inlineData.data)return 'data:image/png;base64,'+cparts[i].inlineData.data;}
+      throw new Error('Image non trouvee dans la reponse Vertex.');
+    }catch(err){
+      lastErr=err;
+      var em=String(err.message||'').toLowerCase();
+      var retryable=em.includes('429')||em.includes('resource_exhausted')||em.includes('502')||em.includes('503')||em.includes('504')||em.includes('overloaded');
+      if(retryable&&attempt<waitTimes.length){updateLoadingMsg('Vertex sature. Attente '+Math.round(waitTimes[attempt]/1000)+'s...');await sleep(waitTimes[attempt]);continue;}
+      throw err;
     }
   }
-  throw new Error('Kie.ai: Timeout -- tâche trop longue');
+  throw lastErr||new Error('La generation Vertex a echoue.');
 }
 
-// ══════════════════════════════════════════════
-//  MAIN GENERATE
-// ══════════════════════════════════════════════
-async function generateSelfie() {
-  if (isGen) return;
-  if (!API_KEY) { showApiModal(); return; }
-  if (!imgs.img1) { showToast('Chargez au moins une photo de référence', 'err'); return; }
-  if (!selAngle) { showToast('Sélectionnez un angle', 'warn'); return; }
+async function uploadImageToKie(base64DataUri){
+  var res=await fetch('https://kieai.redpandaai.co/api/file-base64-upload',{method:'POST',headers:{'Authorization':'Bearer '+apiKey,'Content-Type':'application/json'},body:JSON.stringify({base64Data:base64DataUri,uploadPath:'images/studio-selfie'})});
+  var data={};try{data=await res.json();}catch(_){}
+  if(!res.ok||!data.data||!data.data.downloadUrl)throw new Error('Erreur upload image kie.ai: '+(data.msg||res.status));
+  return data.data.downloadUrl;
+}
 
-  isGen = true;
-  document.getElementById('genBtn').disabled = true;
-  document.getElementById('genOv').style.display = 'flex';
-  document.getElementById('previewImg').style.display = 'none';
-  document.getElementById('prevPH').style.display = 'none';
-  document.getElementById('dlBtn').style.display = 'none';
-
-  // Shutter flash
-  var sf = document.getElementById('shutterFlash');
-  sf.classList.add('flash');
-  setTimeout(function(){ sf.classList.remove('flash'); }, 120);
-
-  setProg(5, 'Analyse de la posture et intention...');
-
-  try {
-    var prompt = buildPrompt();
-    document.getElementById('promptPreview').textContent = prompt.substring(SYSTEM_PROMPT.length + 2, SYSTEM_PROMPT.length + 300) + '...';
-
-    var b64Images = [imgs.img1];
-    if (imgs.img2) b64Images.push(imgs.img2);
-
-    setProg(15, ENGINE === 'vertex' ? 'Envoi à Vertex AI Imagen...' : 'Envoi à Kie.ai...');
-
-    var resultUrl;
-    if (ENGINE === 'vertex') {
-      resultUrl = await generateVertex(prompt, b64Images);
-    } else {
-      resultUrl = await generateKieai(prompt, b64Images);
-    }
-
-    setProg(98, 'Finalisation...');
-    curImgUrl = resultUrl;
-
-    var prevImg = document.getElementById('previewImg');
-    prevImg.src = resultUrl;
-    prevImg.style.display = 'block';
-    document.getElementById('prevPH').style.display = 'none';
-    document.getElementById('dlBtn').style.display = 'flex';
-
-    imgHistory.unshift({ id: Date.now(), url: resultUrl });
-    if (imgHistory.length > 12) imgHistory.pop();
-    renderHistory();
-
-    setProg(100, 'Capture terminée !');
-    showToast('Selfie généré !', 'ok', 4000);
-
-  } catch(err) {
-    console.error(err);
-    var msg = err && err.message ? err.message : String(err);
-    showToast('Erreur : ' + msg.slice(0, 180), 'err', 8000);
-    setProg(0, 'Erreur');
-    document.getElementById('prevPH').style.display = 'flex';
-  } finally {
-    isGen = false;
-    document.getElementById('genBtn').disabled = false;
-    document.getElementById('genOv').style.display = 'none';
+async function callKieAPI(subject){
+  var systemContext='Ultra-realistic 4K selfie photo. Natural skin texture with visible pores and imperfections. Credible human lighting, no artificial rendering. Authentic spontaneous posture. No beauty filter, no AI smoothing.';
+  var promptText=buildPrompt(subject);
+  var fullPrompt=systemContext+(avatarImages.length>0?'\nPreserve exact facial identity from reference image - same face, same skin tone, same morphology.\n':'\n')+promptText;
+  var imageUrls=[];
+  if(avatarImages.length>0){
+    updateLoadingMsg('Upload des images de reference...');
+    for(var i=0;i<Math.min(avatarImages.length,4);i++){try{var url=await uploadImageToKie(avatarImages[i]);imageUrls.push(url);}catch(e){console.warn('Upload echoue:',e.message);}}
   }
+  updateLoadingMsg('Envoi vers kie.ai / Nano Banana 2...');
+  var taskBody={model:'nano-banana-2',input:{prompt:fullPrompt,aspect_ratio:aspectRatio,resolution:'4K',output_format:'png',image_input:imageUrls}};
+  // ENDPOINT IDENTIQUE A STUDIO POV
+  var createRes=await fetch('https://api.kie.ai/api/v1/jobs/createTask',{method:'POST',headers:{'Authorization':'Bearer '+apiKey,'Content-Type':'application/json'},body:JSON.stringify(taskBody)});
+  var createData={};try{createData=await createRes.json();}catch(_){}
+  if(!createRes.ok||createData.code!==200){
+    var msg=createData.msg||createData.message||'Erreur HTTP '+createRes.status;
+    if(createRes.status===401||createData.code===401)throw new Error('Cle kie.ai invalide. Verifiez votre cle sur kie.ai/api-key');
+    if(createRes.status===403||createData.code===403)throw new Error('Acces refuse kie.ai. Verifiez vos credits.');
+    if(createRes.status===429||createData.code===429)throw new Error('Trop de requetes kie.ai. Attendez quelques secondes.');
+    throw new Error('Erreur kie.ai: '+msg);
+  }
+  var taskId=createData.data&&createData.data.taskId;
+  if(!taskId)throw new Error('Aucun taskId retourne par kie.ai. Reponse: '+JSON.stringify(createData));
+  updateLoadingMsg('Nano Banana 2 genere votre image 4K...');
+  var lastStatusData={};
+  for(var poll=0;poll<60;poll++){
+    await sleep(5000);updateLoadingMsg('Nano Banana 2 en cours... ('+((poll+1)*5)+'s)');
+    var statusData={};
+    try{var statusRes=await fetch('https://api.kie.ai/api/v1/jobs/recordInfo?taskId='+taskId,{headers:{'Authorization':'Bearer '+apiKey}});statusData=await statusRes.json();}catch(e){lastStatusData={fetchError:e.message};continue;}
+    lastStatusData=statusData;
+    var state=statusData.data&&statusData.data.state;
+    if(state==='fail')throw new Error('Fail: '+(statusData.data&&statusData.data.failMsg));
+    if(state==='success'){
+      var imageUrl=null;
+      try{var r=JSON.parse(statusData.data.resultJson||'{}');imageUrl=(r.resultUrls&&r.resultUrls[0])||(r.images&&r.images[0]&&r.images[0].url)||r.url;}catch(_){}
+      if(!imageUrl)throw new Error("Success mais pas d'URL. resultJson: "+statusData.data.resultJson);
+      updateLoadingMsg("Recuperation de l'image 4K...");
+      var imgRes=await fetch(imageUrl);var blob=await imgRes.blob();
+      return new Promise(function(resolve,reject){var reader=new FileReader();reader.onloadend=function(){resolve(reader.result);};reader.onerror=reject;reader.readAsDataURL(blob);});
+    }
+  }
+  throw new Error('Timeout kie.ai. Derniere reponse: '+JSON.stringify(lastStatusData).slice(0,500));
 }
 
-// ══════════════════════════════════════════════
-//  HISTORY
-// ══════════════════════════════════════════════
-function renderHistory() {
-  var w = document.getElementById('histWrap');
-  if (!imgHistory.length) { w.innerHTML = '<p class="hist-empty">Aucun selfie généré</p>'; return; }
-  w.innerHTML = '<div class="hist-scroll">' + imgHistory.map(function(v, i) {
-    return '<div class="hist-thumb" data-url="' + v.url + '">' +
-      '<img src="' + v.url + '" referrerpolicy="no-referrer">' +
-      '<span class="hist-idx">#' + (imgHistory.length - i) + '</span></div>';
-  }).join('') + '</div>';
-  w.querySelectorAll('.hist-thumb').forEach(function(el) {
-    el.addEventListener('click', function() { loadHistItem(this.dataset.url); });
+async function generate(){
+  if(loading)return;
+  var subject=document.getElementById('sceneInput').value.trim();
+  if(!subject&&avatarImages.length===0){showError('Ajoutez une image de reference ou decrivez la scene.');return;}
+  if(!apiKey){showSplash();return;}
+  if(!selAngle){showError('Selectionnez un angle de selfie.');return;}
+  hideError();setLoading(true);
+  try{
+    var imgDataUrl=selectedEngine==='kie'?await callKieAPI(subject):await callVertexAPI(subject);
+    var id=Date.now().toString();
+    results.unshift({id:id,dataUrl:imgDataUrl,aspectRatio:aspectRatio,engine:selectedEngine,timestamp:Date.now(),category:selCategory,angle:selAngle});
+    if(results.length>5)results.pop();
+    renderResults();
+  }catch(err){showError(err.message||'Erreur de generation.');}
+  finally{setLoading(false);}
+}
+
+function setLoading(v){
+  loading=v;var btn=document.getElementById('genBtn');var icon=document.getElementById('genIcon');var lbl=document.getElementById('genLabel');var msg=document.getElementById('genMsg');
+  var msgs=selectedEngine==='kie'?MSGS_KIE:MSGS_VERTEX;
+  btn.disabled=v;
+  if(v){icon.innerHTML='<path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>';btn.classList.add('loading');lbl.textContent='CAPTURE EN COURS...';msg.style.display='block';msg.textContent=msgs[0];var idx=0;clearInterval(loadingInterval);loadingInterval=setInterval(function(){if(!loading)return;idx=(idx+1)%msgs.length;msg.textContent=msgs[idx];},3000);}
+  else{btn.classList.remove('loading');icon.innerHTML='<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>';lbl.textContent='CAPTURER LE SELFIE 4K';msg.style.display='none';clearInterval(loadingInterval);}
+}
+function updateLoadingMsg(text){var m=document.getElementById('genMsg');if(m){m.style.display='block';m.textContent=text;}}
+function showError(msg){document.getElementById('errorText').textContent=msg;document.getElementById('errorBox').classList.add('show');}
+function hideError(){document.getElementById('errorBox').classList.remove('show');}
+
+function renderResults(){
+  var container=document.getElementById('resultsContainer');var empty=document.getElementById('emptyState');var actions=document.getElementById('resultsActions');var count=document.getElementById('captureCount');
+  count.textContent=results.length+' CAPTURE'+(results.length!==1?'S':'');
+  if(results.length===0){empty.style.display='flex';actions.style.display='none';container.innerHTML='';return;}
+  empty.style.display='none';actions.style.display='flex';container.innerHTML='';
+  results.forEach(function(r){
+    var arClass=r.aspectRatio==='9:16'?'ar-9-16':r.aspectRatio==='16:9'?'ar-16-9':r.aspectRatio==='4:5'?'ar-4-5':'ar-1-1';
+    var engineLabel=r.engine==='kie'?'NANO BANANA 2 - KIE.AI':'GEMINI 3.1 FLASH IMAGE 4K';
+    var badgeClass=r.engine==='kie'?'img-badge badge-green-solid':'img-badge badge-grad';
+    var card=document.createElement('div');card.className='img-card';
+    card.innerHTML='<div class="img-thumb" onclick="downloadImage(\''+r.id+'\')">'+'<div class="'+arClass+'"><img src="'+r.dataUrl+'" alt="selfie" loading="lazy"></div>'+'<div class="img-overlay"><div class="dl-circle"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div></div>'+'<div class="img-badges"><span class="img-badge badge-white">'+r.aspectRatio+'</span><span class="'+badgeClass+'">'+engineLabel+'</span><span class="img-badge badge-white">'+r.category+'</span></div></div>'+'<div class="img-info"><div class="img-meta"><div class="img-meta-txt"><span>ANGLE: '+r.angle+'</span><span>ID: SS_'+r.id.slice(-8)+'</span></div>'+'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;"><button class="btn-dl" onclick="downloadImage(\''+r.id+'\')">TELECHARGER</button>'+(isMobile?'<p style="font-size:7px;font-weight:700;color:var(--muted);text-transform:uppercase;">APPUI LONG POUR ENREGISTRER</p>':'')+'</div></div></div>';
+    container.appendChild(card);
   });
 }
 
-function loadHistItem(url) {
-  curImgUrl = url;
-  var prevImg = document.getElementById('previewImg');
-  prevImg.src = url; prevImg.style.display = 'block';
-  document.getElementById('prevPH').style.display = 'none';
-  document.getElementById('dlBtn').style.display = 'flex';
+function downloadImage(id){
+  var r=results.find(function(x){return x.id===id;});if(!r)return;
+  if(isMobile&&/iPhone|iPad|iPod/i.test(navigator.userAgent)){try{var byteStr=atob(r.dataUrl.split(',')[1]);var mime=r.dataUrl.split(',')[0].split(':')[1].split(';')[0];var ab=new ArrayBuffer(byteStr.length);var ia=new Uint8Array(ab);for(var i=0;i<byteStr.length;i++)ia[i]=byteStr.charCodeAt(i);var blob=new Blob([ab],{type:mime});var blobUrl=URL.createObjectURL(blob);var w=window.open(blobUrl,'_blank');setTimeout(function(){URL.revokeObjectURL(blobUrl);},60000);if(!w)alert("Appuie longuement sur l'image dans le nouvel onglet, puis choisis Enregistrer l'image.");}catch(e){alert("Appuie longuement sur l'image pour l'enregistrer.");}return;}
+  var a=document.createElement('a');a.href=r.dataUrl;a.download='studio-selfie-'+r.id+'.png';document.body.appendChild(a);a.click();document.body.removeChild(a);
 }
 
-// ══════════════════════════════════════════════
-//  DOWNLOAD
-// ══════════════════════════════════════════════
-function dlImg() {
-  if (!curImgUrl) return;
-  if (curImgUrl.startsWith('data:')) {
-    var a = document.createElement('a');
-    a.href = curImgUrl;
-    a.download = 'studio-selfie-' + Date.now() + '.jpg';
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    return;
-  }
-  // URL externe
-  fetch(curImgUrl)
-    .then(function(r){ return r.blob(); })
-    .then(function(blob){
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement('a');
-      a.href = url; a.download = 'studio-selfie-' + Date.now() + '.jpg';
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    })
-    .catch(function(){ window.open(curImgUrl, '_blank'); });
-}
+function resetAll(){if(!confirm('Supprimer toutes les captures ?'))return;results=[];avatarImages=[];renderUploadGrid();renderResults();}
 
-// ══════════════════════════════════════════════
-//  HELPERS
-// ══════════════════════════════════════════════
-function setProg(p, s) {
-  document.getElementById('progFill').style.width = p + '%';
-  document.getElementById('genStat').textContent = s;
-}
-
-function sleep(ms) { return new Promise(function(r){ setTimeout(r, ms); }); }
-
-var toastTm;
-function showToast(msg, type, duration) {
-  type = type || 'ok'; duration = duration || 3500;
-  clearTimeout(toastTm);
-  var t = document.getElementById('toast');
-  var icons = {ok:'✓', err:'✕', warn:'⚠'};
-  t.className = 'toast ' + type;
-  document.getElementById('toastIcon').textContent = icons[type] || '✓';
-  document.getElementById('toastMsg').textContent = msg;
-  t.classList.add('show');
-  toastTm = setTimeout(function(){ t.classList.remove('show'); }, duration);
-}
-
-// ══════════════════════════════════════════════
-//  INIT
-// ══════════════════════════════════════════════
-window.addEventListener('load', function() {
-  // Default selections
-  selCategory = 'VOLONTAIRE';
-  selAngle = CATEGORIES.VOLONTAIRE.angles[0];
-
-  renderCategories();
-  renderAngles();
-  renderRules();
-  updatePromptPreview();
-
-  // Upload zones
-  document.getElementById('uploadImg1').addEventListener('click', function(){ document.getElementById('fileImg1').click(); });
-  document.getElementById('uploadImg2').addEventListener('click', function(){ document.getElementById('fileImg2').click(); });
-  document.getElementById('fileImg1').addEventListener('change', function(e){ loadImg(e, 'img1'); });
-  document.getElementById('fileImg2').addEventListener('change', function(e){ loadImg(e, 'img2'); });
-
-  // Splash enter
-  document.getElementById('apiKeyInput').addEventListener('keydown', function(e){ if(e.key==='Enter') enterApp(); });
-  document.getElementById('modalKey').addEventListener('keydown', function(e){ if(e.key==='Enter') saveApiKey(); });
-
-  // Scene dir update
-  document.getElementById('sceneDir').addEventListener('input', updatePromptPreview);
-});
+selCategory='VOLONTAIRE';selAngle=CATEGORIES.VOLONTAIRE.angles[0];
 </script>
 </body>
 </html>
