@@ -405,51 +405,82 @@ var bannerTimer;
 var loadingInterval;
 
 // ══════════════════════════════════════════════
-//  DATA (identique App.tsx)
+//  DATA
 // ══════════════════════════════════════════════
 var CATEGORIES = {
   VOLONTAIRE: {
     label: 'Selfie Volontaire',
-    desc: "La personne prend consciemment un selfie. Intention naturelle et imparfaite.",
+    desc: "Le sujet controle activement son corps, son angle et son intention visuelle. Photo -> action adaptee.",
     angles: [
-      'Miroir -- pose esthetique',
-      'Miroir -- attitude / street',
-      'Bras tendu -- naturel',
-      'Bras tendu -- angle accentue',
-      'Allonge -- lifestyle',
-      'Exterieur -- lifestyle',
-      'Mouvement -- activite'
+      'Angle sculptant exterieur',
+      'Miroir beauty controle',
+      'Bras tendu outfit style',
+      'Lifestyle pose (faux naturel)',
+      'Miroir attitude destructuree',
+      'Selfie interactif proximite',
+      'Selfie silhouette outfit'
+    ]
+  },
+  NATUREL: {
+    label: 'Selfie Naturel',
+    desc: "La personne agit et la photo s'integre dans l'action. Controle invisible, absence de pose.",
+    angles: [
+      'En mouvement fluide',
+      'Interaction douce (cheveux, objet)',
+      'Regard non direct',
+      'Moment de transition',
+      'Relachement corporel',
+      'Immersion proximite',
+      'Lumiere naturelle utilisee',
+      'En train de parler'
     ]
   },
   ACCIDENTEL: {
     label: 'Selfie Accidentel',
-    desc: "Photo prise sans intention esthetique. Resulte d'un mouvement ou d'une erreur.",
+    desc: "La photo est une consequence, jamais un objectif. Action reelle en cours, declenchement involontaire.",
     angles: [
-      'Obstruction partielle',
-      'Cadrage partiel',
-      'En mouvement',
-      'Ajustement',
+      'Obstruction partielle (action interne)',
+      'Cadrage partiel (capture trop tot)',
+      'En mouvement (action physique)',
+      'Ajustement / prise en main',
       'Contre-plongee accidentelle',
       'Perspective immersive',
-      'Relachement instable'
-    ]
-  },
-  CONTEXTUEL: {
-    label: 'Selfie Contextuel',
-    desc: "Le selfie est defini par l'environnement. Le lieu influence le cadrage.",
-    angles: [
-      'Miroir',
-      'Salle de bain',
-      'Lit / canape',
-      'Interieur (maison)',
-      'Exterieur (rue)',
-      'Exterieur (soleil direct)',
-      'Voiture',
-      'Ascenseur',
-      'Lieu public (cafe, restaurant)',
-      'Poser au sol'
+      'Relachement instable',
+      'Chute / camera au sol'
     ]
   }
+};
+
+// Prompts detailles par angle (injectes dans buildPrompt)
+var ANGLE_PROMPTS = {
+  // ── VOLONTAIRE ──
+  'Angle sculptant exterieur': 'VOLUNTARY SELFIE - SCULPTING ANGLE OUTDOOR: Arm extended, slight downward angle (plongee legere) to refine face. Head slightly raised, neck elongated, jaw defined. Shoulders relaxed but oriented. Direct intense gaze toward camera. Natural outdoor light used deliberately. Everything optimized for face rendering. Controlled imperfection: slight asymmetry, real skin texture.',
+  'Miroir beauty controle': 'VOLUNTARY SELFIE - BEAUTY MIRROR: Phone visible in mirror, held at chest or face height. Body posture straight but slightly asymmetric. Active arm (holding phone creates tension). Other hand actively touching hair (classic beauty pose). Gaze directed toward mirror (indirect camera). Controlled expression. Worked makeup, adjusted hair, visible jewelry. Deliberate soft light.',
+  'Bras tendu outfit style': 'VOLUNTARY SELFIE - OUTFIT STYLE ARM EXTENDED: Arm extended and visible. Slightly plunging angle. Vertical framing including body and accessories. Body oriented (hips, shoulders). One leg slightly forward. Stylized posture. Gaze either direct or detached with attitude (sunglasses). Accessories clearly visible (bag, glasses, jewelry). Stylized expression. Fashion energy.',
+  'Lifestyle pose (faux naturel)': 'VOLUNTARY SELFIE - LIFESTYLE POSED (FALSE NATURAL): Simulates an intimate moment (reading, relaxing) but with aesthetic composition. Arm extended, angle slightly above. Close framing face + torso. Body lying down but structured, shoulders open, flattering posture. Direct gaze, soft controlled smile. Integrated prop (book, cup) BUT deliberately placed. Soft natural light. Adjusted outfit.',
+  'Miroir attitude destructuree': 'VOLUNTARY SELFIE - DECONSTRUCTED MIRROR ATTITUDE: Expressing energy and personality, not just aesthetics. Camera held lower or offset, slightly canted angle. Relaxed posture, one drooping shoulder, head slightly tilted. Gaze not always on camera, sometimes elsewhere with attitude. Micro-movement (hair, hand, hip). Impression of being "between two poses". Raw street energy.',
+  'Selfie interactif proximite': 'VOLUNTARY SELFIE - INTERACTIVE PROXIMITY: Creating direct connection with viewer. Camera very close, possibly slight wide-angle. Body leaning toward camera. Active arm. Direct assumed gaze. Hand entering the frame. Strong proximity and intimacy. Not too clean - keeps impact.',
+  'Selfie silhouette outfit': 'VOLUNTARY SELFIE - SILHOUETTE OUTFIT: Showcasing body and outfit. Camera further away, vertical framing. Constructed posture, body lines visible. Gaze secondary. Readable clothing, controlled proportions. Never too tight a frame.',
+
+  // ── NATUREL ──
+  'En mouvement fluide': 'NATURAL SELFIE - FLUID MOVEMENT: Person is moving or naturally shifting. Typical actions: walking, turning head, moving slightly, adjusting posture in motion. CONTINUOUS movement, never frozen mid-pose. Body in natural transition. No stopping to pose.',
+  'Interaction douce (cheveux, objet)': 'NATURAL SELFIE - SOFT INTERACTION: Person lightly interacts with environment. Examples: touching hair, holding object, adjusting clothing, drinking slightly. Natural non-demonstrative gesture. Body not frozen. Interaction looks real not performed.',
+  'Regard non direct': 'NATURAL SELFIE - INDIRECT GAZE: Gaze NOT fixed on camera. Directions: side, down, elsewhere. Effect: spontaneity, moment captured from outside. No camera stare. Adds authenticity.',
+  'Moment de transition': 'NATURAL SELFIE - TRANSITION MOMENT: In-between moment. Examples: waiting, briefly stopping, breathing, micro-pause. Body relaxed but alive, not immobile. Impression of a fleeting instant captured.',
+  'Relachement corporel': 'NATURAL SELFIE - BODY RELEASE: Body not structured like a pose. Drooping shoulders, asymmetric posture, weight distributed naturally. No "photo tension". Authentic physical relaxation.',
+  'Immersion proximite': 'NATURAL SELFIE - PROXIMITY IMMERSION: Camera close, integrated in subject space. Short distance, visual breathing, intimacy, presence. Framing natural not overly composed.',
+  'Lumiere naturelle utilisee': 'NATURAL SELFIE - NATURAL LIGHT: Light influences behavior without being staged. Examples: sun in eyes causing squint, lateral light creating natural shadows, face adapting to brightness. No perfect studio light.',
+  'En train de parler': 'NATURAL SELFIE - MID-SPEECH: Person is speaking. Mouth slightly open, unfixed gaze, expression in movement. Ultra realistic, instantaneous. Breaks the "frozen photo" look. Extremely powerful for realism.',
+
+  // ── ACCIDENTEL ──
+  'Obstruction partielle (action interne)': 'ACCIDENTAL SELFIE - INTERNAL OBSTRUCTION: Part of image blocked by element from the subject own action. Origins: hand catching something, arm in movement, object already held, worn clothing. Proves real interaction. Everything in the image must already exist in the scene. NO added external elements.',
+  'Cadrage partiel (capture trop tot)': 'ACCIDENTAL SELFIE - PARTIAL FRAMING: Subject poorly framed because camera is uncontrolled. Effects: head cut off, torso truncated, subject offset. Shows capture triggered too early. No posed expression, no camera gaze.',
+  'En mouvement (action physique)': 'ACCIDENTAL SELFIE - PHYSICAL MOVEMENT: Image captured during physical action. Typical: walking, leaning, turning, catching. Creates tension, instability, energy. Person NOT aware of the photo.',
+  'Ajustement / prise en main': 'ACCIDENTAL SELFIE - PHONE ADJUSTMENT: Moment when person manipulates phone. Extreme proximity, unstable angle. Unfinished gesture. Person focused on phone mechanics not on taking photo.',
+  'Contre-plongee accidentelle': 'ACCIDENTAL SELFIE - ACCIDENTAL LOW ANGLE: Low upward angle from uncontrolled position. Origins: phone held low, falling, transitional position. Unusual perspective, involuntary dominance. NO intentional pose.',
+  'Perspective immersive': 'ACCIDENTAL SELFIE - IMMERSIVE PERSPECTIVE: Camera inside the action. Intrusion, proximity, realism. Direct interaction with the body. Triggered involuntarily.',
+  'Relachement instable': 'ACCIDENTAL SELFIE - UNSTABLE RELEASE: Moment when phone slips, is dropped, or changes position. Tilted horizon, loss of control. Person NOT posing.',
+  'Chute / camera au sol': 'ACCIDENTAL SELFIE - PHONE ON GROUND: Phone is on the ground because it was dropped, slipped, or poorly caught. We see a person bending down to retrieve something. IMPORTANT: phone is NOT visible in the frame. Body leaning forward, back slightly curved, head toward ground, arm descending. Gaze directed toward ground, concentrated, NEVER toward camera. Camera: on the ground, slightly tilted, upward angle. Creates implicit narrative - we understand the accident without seeing it.'
 };
 
 var MSGS_VERTEX = [
@@ -611,7 +642,8 @@ function renderCategories() {
 function renderAngles() {
   var angles = CATEGORIES[selCategory].angles;
   if (!selAngle || angles.indexOf(selAngle) === -1) selAngle = angles[0];
-  document.getElementById('angleLabel').textContent = selCategory === 'CONTEXTUEL' ? 'Contexte / Lieu' : 'Angle du Selfie';
+  var labelMap = { VOLONTAIRE: 'Angle du Selfie', NATUREL: 'Comportement', ACCIDENTEL: 'Type d\'Accident' };
+  document.getElementById('angleLabel').textContent = labelMap[selCategory] || 'Angle';
   var c = document.getElementById('angleChips'); c.innerHTML = '';
   angles.forEach(function(a) {
     var btn = document.createElement('button');
@@ -629,31 +661,59 @@ function toggleLock() {
 }
 
 // ══════════════════════════════════════════════
-//  PROMPT BUILDER (logique gemini.ts)
+//  PROMPT BUILDER
 // ══════════════════════════════════════════════
-var SYSTEM_RULES = 'Studio Selfie generates ultra-realistic 4K images by simulating the real gesture of a person taking a photo of themselves. Simulate a real body, a real gesture, a real intention, a real capture. Prioritize human credibility over visual perfection. NEVER soften a strong angle. IDENTITY PRESERVATION: DO NOT modify the avatar identity. Preserve the face, traits, skin exactly as in reference images. HUMAN SKIN: ZERO smoothing, ZERO beauty filters. Visible micro-textures, real pores. SMARTPHONE LENS: wide angle ~24mm, slight proximity distortion, natural depth of field, micro digital noise. The image must look like a photo taken quickly with a phone, without aesthetic intention.';
+var SYSTEM_RULES = [
+  'Studio Selfie generates ultra-realistic 4K images simulating a real person taking a selfie.',
+  'MASTER RULES:',
+  '- Prioritize human credibility over visual perfection.',
+  '- NEVER soften a strong angle or composition to make it prettier.',
+  '- The image must immediately read as a real phone photo, not a generated image.',
+  'IDENTITY: DO NOT modify the avatar. Preserve face, traits, skin, morphology EXACTLY from reference images. Only reposition or reorient.',
+  'HUMAN SKIN: ZERO smoothing. ZERO beauty filter. ZERO AI retouching. Visible pores, micro-textures, real asymmetry, natural imperfections.',
+  'SMARTPHONE OPTICS: Wide angle ~24mm. Slight proximity distortion. Natural imperfect depth of field. Micro digital noise. Slight compression. Imperfect HDR.',
+  'BODY: Physically plausible positions only. Natural asymmetry. Real fabric folds. Authentic posture.',
+  'ABSOLUTE RULE: The viewer must feel "I am there" - not "this was generated".'
+].join(' ');
+
+var CAT_RULES = {
+  VOLONTAIRE: [
+    'CATEGORY LAW - VOLUNTARY SELFIE: Photo comes FIRST, action adapts to it. Subject KNOWS they are being photographed.',
+    'Subject: chooses angle BEFORE capture, adjusts body (shoulders, neck, gaze), controls expression even if it looks "natural".',
+    'Key difference from natural: VOLUNTARY = pose -> photo. NATURAL = action -> photo integration.',
+    'FORBIDDEN in voluntary: truly uncontrolled motion, accidental framing, gaze avoidance (unless stylistic choice).'
+  ].join(' '),
+  NATUREL: [
+    'CATEGORY LAW - NATURAL SELFIE: Person acts FIRST, photo integrates into the action. Control is INVISIBLE.',
+    'Subject: aware of camera BUT not actively posing. Engaged in a real micro-action. Body never frozen for the photo.',
+    'Key: action is continuous. Body relaxed, not structured for photo. Imperfection is organic not accidental.',
+    'THREE PILLARS: fluid movement + light interaction + non-posed gaze.',
+    'FORMULA: Soft action + absence of pose + invisible control = credible natural.',
+    'FORBIDDEN: stopping to pose, rigid body, obvious posing tension.'
+  ].join(' '),
+  ACCIDENTEL: [
+    'CATEGORY LAW - ACCIDENTAL SELFIE: Photo is a CONSEQUENCE, never an objective. Real action interrupted by involuntary trigger.',
+    'Subject: NOT posing. NOT aware of the photo. Engaged in another action. Looking elsewhere. Body in imbalance or transition.',
+    'Camera: not voluntarily framed. Unstable or transitional. Non-optimized moment.',
+    'COHERENCE RULE: Everything in the image must ALREADY EXIST in the scene and be linked to the action. A hand = their own. An object = already in hand. No artificially added elements.',
+    'FORBIDDEN: camera gaze, posed smile, clean posture, balanced framing, any visible intention.',
+    'VALIDATES a real accidental: ongoing action, interrupted gesture, logical imperfection, imperfect BUT scene-coherent framing.'
+  ].join(' ')
+};
 
 function buildPrompt() {
   var scene = document.getElementById('sceneInput').value.trim();
-  var cat = CATEGORIES[selCategory];
-  var catBehavior = '';
-
-  if (selCategory === 'VOLONTAIRE') {
-    catBehavior = 'CATEGORY: VOLUNTARY SELFIE -- The person consciously takes a selfie. Phone visible at arm length. Natural but voluntary posture. Gaze directed toward screen. Slight framing imperfections. Never too perfect or frozen.';
-  } else if (selCategory === 'ACCIDENTEL') {
-    catBehavior = 'CATEGORY: ACCIDENTAL SELFIE -- Unstable or incoherent framing. Non-posed posture. Phone MUST be active (screen on). Interaction must look involuntary. Sensation of involuntary capture.';
-  } else {
-    catBehavior = 'CATEGORY: CONTEXTUAL SELFIE -- The decor influences posture and light. Presence of realistic environmental imperfections. Total coherence between environment and image.';
-  }
+  var anglePrompt = ANGLE_PROMPTS[selAngle] || ('ANGLE: ' + selAngle);
+  var catRule = CAT_RULES[selCategory] || '';
 
   var parts = [
-    catBehavior,
-    'ANGLE/CONTEXT: ' + selAngle,
-    locationLock ? 'LOCATION LOCK ACTIVE: Strictly preserve the exact environment and furniture from the reference images. DO NOT change the room.' : '',
-    imgB64.img2 ? 'TWO REFERENCE IMAGES PROVIDED: Include BOTH individuals as a duo. Show strong complicity and closeness. Both faces clearly visible.' : '',
-    scene ? 'SCENE DIRECTION: "' + scene + '"' : '',
-    'Preserve exact facial identity from reference image. Natural lighting, authentic posture, no beauty filter, no AI smoothing. Ultra-realistic 4K selfie photo.'
-  ].filter(Boolean).join('\n');
+    catRule,
+    anglePrompt,
+    locationLock ? 'LOCATION LOCK ACTIVE: Strictly preserve the exact environment, room, and furniture from the reference images. DO NOT change anything.' : '',
+    imgB64.img2 ? 'DUO MODE: TWO reference images provided. Include BOTH individuals. Show strong complicity and closeness. Both faces clearly visible and naturally integrated.' : '',
+    scene ? 'SCENE DIRECTION (applies on top of angle behavior): "' + scene + '"' : '',
+    'IDENTITY: Preserve exact facial identity from reference. Ultra-realistic 4K smartphone photo. No beauty filter, no AI smoothing, no studio perfection.'
+  ].filter(Boolean).join('\n\n');
 
   return parts;
 }
