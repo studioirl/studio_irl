@@ -204,15 +204,11 @@ textarea.s-textarea:focus{border-color:var(--accent)}
       </div>
 
       <span class="api-label" id="splashKeyLabel1">🔑 Clé API Vertex AI</span>
-      <input type="password" id="apiKey1Input" class="api-input" placeholder="AQ..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
-
-      <div id="splashKey2Block" style="display:none">
-        <span class="api-label" id="splashKeyLabel2" style="margin-top:4px">🔑 Clé API kie.ai</span>
-        <input type="password" id="apiKey2Input" class="api-input" placeholder="kie_..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
-      </div>
+      <input type="password" id="apiKey1Input" class="api-input" placeholder="AQ..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" oninput="splashKeyChanged()">
 
       <p class="engine-note vertex" id="engineNote">⚡ Vertex AI — console.cloud.google.com/vertex-ai/studio</p>
-      <button onclick="showModeGrid()" style="width:100%;margin-top:12px;padding:14px;background:var(--accent);border:none;border-radius:12px;color:white;font-family:'Syne',sans-serif;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:0.2em;cursor:pointer">Valider les clés →</button>
+      <div id="splashError2" style="color:#fca5a5;font-size:11px;font-weight:700;margin-top:8px;display:none;text-align:left;"></div>
+      <button id="validateBtn" onclick="showModeGrid()" style="width:100%;margin-top:12px;padding:14px;background:var(--accent);border:none;border-radius:12px;color:white;font-family:'Syne',sans-serif;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:0.2em;cursor:pointer">Valider →</button>
     </div>
     <div class="mode-grid" id="modeGrid" style="display:none">
       <div class="mode-card" onclick="selectMode('SOLO')" style="background:linear-gradient(135deg,#1a1a2e,#16213e);aspect-ratio:unset;padding:32px 16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px">
@@ -402,6 +398,22 @@ textarea.s-textarea:focus{border-color:var(--accent)}
 </div>
 
 <script>
+
+// ==================== STATE ====================
+const state = {
+  apiKey1:'', apiKey2:'',
+  appMode:'IDLE', energy:'calm',
+  mainAvatar:'', partner:'', children:[], childCount:0, isBabyPresent:false, babyAgeInMonths:6, guests:[], guestCount:0,
+  room:null, roomSubtype:'', roomImg:'',
+  action:'', cameraAngle:'face', season:'spring', weather:'sunny', dayMoment:'matin', aspectRatio:'9:16', freeText:'',
+  whatsapp:false, menage:false, portage:false, interphone:false, dressing:false, bbq:false, poussette:false, miroir:false, cheminee:false, tondeuse:false,
+  whatsappContact:'', whatsappCallType:'video', babyRef:'', carrierImg:'', bbqRef:'', strollerRef:'', strollerBaby:'',
+  interphonePortal:'', interphoneVisitor:'', interphoneInterior:'', interphonePortalOpen:'', interphoneStep:1,
+  menageToolImg:'', menageToolType:'passer_aspirateur',
+  dressingOutfits:[], tondeuseImg:'',
+  chaosEmotionAdult:'', chaosEmotionChild:'', chaosEmotionBaby:''
+};
+
 // ==================== ENGINE ====================
 let selectedEngine = 'vertex';
 let activeModalEngine = 'vertex';
@@ -414,18 +426,17 @@ function selectEngine(engine) {
   const btnV = document.getElementById('btn-vertex');
   const btnK = document.getElementById('btn-kie');
   const lbl1 = document.getElementById('splashKeyLabel1');
-  const lbl2 = document.getElementById('splashKeyLabel2');
-  const key2Block = document.getElementById('splashKey2Block');
   const note = document.getElementById('engineNote');
   const inp1 = document.getElementById('apiKey1Input');
-  const inp2 = document.getElementById('apiKey2Input');
+  // Vider le champ et cacher l'erreur
+  inp1.value = '';
+  document.getElementById('splashError2').style.display = 'none';
+  document.getElementById('modeGrid').style.display = 'none';
   if (engine === 'vertex') {
     btnV.className = 'engine-btn active-vertex';
     btnK.className = 'engine-btn';
     lbl1.textContent = '🔑 Clé API Vertex AI';
     inp1.placeholder = 'AQ...';
-    inp1.style.display = '';
-    key2Block.style.display = 'none';
     note.className = 'engine-note vertex';
     note.textContent = '⚡ Vertex AI Express Mode — console.cloud.google.com/vertex-ai/studio';
   } else {
@@ -433,19 +444,27 @@ function selectEngine(engine) {
     btnK.className = 'engine-btn active-kie';
     lbl1.textContent = '🔑 Clé API kie.ai';
     inp1.placeholder = 'Colle ta cle kie.ai ici...';
-    inp1.style.display = '';
-    key2Block.style.display = 'none';
     note.className = 'engine-note kie';
-    note.textContent = '⚡ kie.ai — Clé sur kie.ai/dashboard/keys';
+    note.textContent = '⚡ kie.ai — Cle sur kie.ai/api-key';
   }
 }
 
+function splashKeyChanged() {
+  const k = document.getElementById('apiKey1Input').value.trim();
+  document.getElementById('splashError2').style.display = 'none';
+}
+
 function showModeGrid() {
-  const k1 = document.getElementById('apiKey1Input').value.trim();
-  const errEl = document.getElementById('splashError');
-  if (!k1) { errEl.textContent = selectedEngine==='kie'?'Cle kie.ai obligatoire.':'Cle Vertex AI obligatoire.'; errEl.style.display = 'block'; return; }
-  errEl.style.display = 'none';
-  if(selectedEngine==='kie'){state.apiKey2=k1;state.apiKey1='';}else{state.apiKey1=k1;state.apiKey2='';}
+  const inp = document.getElementById('apiKey1Input');
+  const k = inp ? inp.value.trim() : '';
+  const errEl = document.getElementById('splashError2') || document.getElementById('splashError');
+  if (!k) {
+    if(errEl){ errEl.textContent = selectedEngine==='kie' ? 'Entrez votre cle kie.ai.' : 'Entrez votre cle Vertex AI.'; errEl.style.display = 'block'; }
+    return;
+  }
+  if(errEl) errEl.style.display = 'none';
+  if(selectedEngine==='kie'){ state.apiKey2 = k; state.apiKey1 = ''; }
+  else { state.apiKey1 = k; state.apiKey2 = ''; }
   document.getElementById('modeGrid').style.display = 'grid';
 }
 
@@ -477,21 +496,6 @@ function updateEnginePill() {
   else { pill.className = 'engine-pill vertex'; pill.textContent = 'VERTEX AI'; }
 }
 
-// ==================== STATE ====================
-const state = {
-  apiKey1:'', apiKey2:'',
-  appMode:'IDLE', energy:'calm',
-  mainAvatar:'', partner:'', children:[], childCount:0, isBabyPresent:false, babyAgeInMonths:6, guests:[], guestCount:0,
-  room:null, roomSubtype:'', roomImg:'',
-  action:'', cameraAngle:'face', season:'spring', weather:'sunny', dayMoment:'matin', aspectRatio:'9:16', freeText:'',
-  whatsapp:false, menage:false, portage:false, interphone:false, dressing:false, bbq:false, poussette:false, miroir:false, cheminee:false, tondeuse:false,
-  whatsappContact:'', whatsappCallType:'video', babyRef:'', carrierImg:'', bbqRef:'', strollerRef:'', strollerBaby:'',
-  interphonePortal:'', interphoneVisitor:'', interphoneInterior:'', interphonePortalOpen:'', interphoneStep:1,
-  menageToolImg:'', menageToolType:'passer_aspirateur',
-  dressingOutfits:[], tondeuseImg:'',
-  chaosEmotionAdult:'', chaosEmotionChild:'', chaosEmotionBaby:''
-};
-
 // ==================== ROOMS DATA ====================
 const ROOMS=[{cat:'pieces_principales',label:'Principales',rooms:[{key:'salon',label:'Salon',icon:'🛋'},{key:'cuisine',label:'Cuisine',icon:'🍳'},{key:'salle_a_manger',label:'Salle à manger',icon:'🍽️'},{key:'chambre',label:'Chambre',icon:'🛏️'},{key:'entree',label:'Entrée',icon:'🚪'},{key:'escaliers',label:'Escaliers',icon:'🪜'},{key:'salle_de_jeu',label:'Salle de jeu',icon:'🧸'},{key:'bureau',label:'Bureau',icon:'💻'},{key:'dressing',label:'Dressing',icon:'👗'}]},{cat:'salles_de_bain',label:'Bain/Toilettes',rooms:[{key:'salle_de_bain',label:'Salle de bain',icon:'🛁'},{key:'toilettes',label:'Toilettes',icon:'🚽'}]},{cat:'pieces_fonctionnelles',label:'Fonctionnel',rooms:[{key:'buanderie',label:'Buanderie',icon:'🧺'},{key:'cellier_nourriture',label:'Cellier',icon:'🥫'},{key:'cave_vin',label:'Cave à vin',icon:'🍷'},{key:'salle_de_sport',label:'Sport',icon:'🏋️'},{key:'atelier_bricolage',label:'Atelier',icon:'🛠️'},{key:'garage_voiture',label:'Garage',icon:'🚗'},{key:'ascenseur',label:'Ascenseur',icon:'🛗'},{key:'jacuzzi',label:'Jacuzzi',icon:'🫧'}]},{cat:'espaces_exterieurs',label:'Extérieur',rooms:[{key:'jardin',label:'Jardin',icon:'🌿'},{key:'terrace',label:'Terrasse',icon:'⛱️'},{key:'balcon',label:'Balcon',icon:'🏙️'},{key:'piscine',label:'Piscine',icon:'🏊'},{key:'exterior_villa',label:'Extérieur Villa',icon:'🏠'},{key:'mare',label:'Mare',icon:'🦆'}]}];
 
@@ -509,18 +513,13 @@ const LOADING_STEPS=["Vérification de l'intégrité DNA...","Scanning de la str
 const KIE_AR_MAP={'9:16':'9:16','16:9':'16:9','1:1':'1:1'};
 
 // ==================== SPLASH ====================
-function checkApiKey(){
-  // Updated in selectMode/showModeGrid based on engine
-}
-document.getElementById('apiKey1Input').addEventListener('input',checkApiKey);
-// apiKey2Input removed - single key field per engine
+// apiKey2Input removed — single field per engine
 
 function selectMode(m){
-  const k1=document.getElementById('apiKey1Input').value.trim();
-  if(!k1){showSplashError(selectedEngine==='kie'?'Cle kie.ai obligatoire':'Cle Vertex AI obligatoire');return;}
-  if(selectedEngine==='vertex'&&!k1.startsWith('AQ')){if(!confirm('Cette cle ne commence pas par AQ. Continuer ?'))return;}
-  if(selectedEngine==='kie'){state.apiKey2=k1;state.apiKey1='';}
-  else{state.apiKey1=k1;state.apiKey2='';}
+  // La clé a déjà été validée dans showModeGrid
+  if(!state.apiKey1 && !state.apiKey2){
+    showSplashError('Veuillez valider vos cles API.');return;
+  }
   state.appMode=m;
   showSetup();
 }
