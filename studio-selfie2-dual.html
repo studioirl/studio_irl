@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studio Selfie</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;background:#000;color:#fff;min-height:100vh;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── SPLASH ── */
+#splash{position:fixed;inset:0;background:#000;display:flex;align-items:center;justify-content:center;z-index:100;padding:24px;overflow-y:auto;}
+.splash-inner{width:min(440px,100%);display:flex;flex-direction:column;align-items:center;gap:0;}
+.splash-logo{width:56px;height:56px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:20px;}
+.splash-logo svg{width:28px;height:28px;color:#000;}
+.splash-h1{font-size:clamp(36px,8vw,60px);font-weight:900;text-align:center;margin-bottom:6px;}
+.splash-sub{font-size:12px;color:rgba(255,255,255,.4);text-align:center;margin-bottom:32px;}
+.splash-box{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:20px;margin-bottom:12px;}
+.splash-box-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.2em;color:rgba(255,255,255,.4);display:block;margin-bottom:10px;}
+.engine-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;}
+.engine-btn{padding:14px;border:2px solid rgba(255,255,255,.1);border-radius:12px;background:transparent;cursor:pointer;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;color:rgba(255,255,255,.5);transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:4px;}
+.engine-btn:hover{border-color:rgba(255,255,255,.3);}
+.engine-btn.on-vertex{border-color:#60a5fa;background:rgba(96,165,250,.1);color:#60a5fa;}
+.engine-btn.on-kie{border-color:#a78bfa;background:rgba(167,139,250,.1);color:#a78bfa;}
+.engine-btn small{font-size:9px;opacity:.7;}
+.key-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.15em;color:rgba(255,255,255,.4);display:block;margin-bottom:8px;}
+#apiKeyInput{width:100%;background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.1);border-radius:10px;padding:13px 14px;font-size:14px;font-family:'Inter',sans-serif;color:#fff;outline:none;transition:border-color .2s;}
+#apiKeyInput:focus{border-color:rgba(255,255,255,.4);}
+#apiKeyInput::placeholder{color:rgba(255,255,255,.2);}
+.splash-btn{width:100%;margin-top:12px;padding:16px;background:#fff;color:#000;border:none;border-radius:999px;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.15em;cursor:pointer;transition:background .2s;}
+.splash-btn:hover{background:#e5e7eb;}
+#splashErr{color:#fca5a5;font-size:11px;font-weight:600;margin-top:8px;display:none;text-align:center;}
+
+/* ── APP ── */
+#app{display:none;min-height:100vh;flex-direction:column;}
+#app.on{display:flex;}
+
+/* header */
+.app-header{background:#000;border-bottom:1px solid rgba(255,255,255,.08);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}
+.header-left{display:flex;align-items:center;gap:10px;}
+.header-logo{width:32px;height:32px;background:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;}
+.header-logo svg{width:16px;height:16px;color:#000;}
+.header-title{font-size:15px;font-weight:700;}
+.engine-pill{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;border:1px solid;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;cursor:pointer;}
+.engine-pill.vertex{border-color:rgba(96,165,250,.4);color:#60a5fa;background:rgba(96,165,250,.07);}
+.engine-pill.kie{border-color:rgba(167,139,250,.4);color:#a78bfa;background:rgba(167,139,250,.07);}
+.pill-dot{width:6px;height:6px;border-radius:50%;animation:pulse 2s infinite;}
+.engine-pill.vertex .pill-dot{background:#60a5fa;}
+.engine-pill.kie .pill-dot{background:#a78bfa;}
+
+/* layout */
+.app-body{flex:1;display:flex;overflow:hidden;}
+@media(max-width:768px){.app-body{flex-direction:column;overflow-y:auto;}}
+
+/* left panel */
+.panel-left{width:320px;flex-shrink:0;background:#09090b;border-right:1px solid rgba(255,255,255,.06);overflow-y:auto;display:flex;flex-direction:column;}
+@media(max-width:768px){.panel-left{width:100%;border-right:none;}}
+.sec{padding:16px;border-bottom:1px solid rgba(255,255,255,.06);}
+.sec-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.15em;color:rgba(255,255,255,.3);display:block;margin-bottom:10px;}
+
+/* upload slots */
+.upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.upload-slot{aspect-ratio:1;border-radius:14px;border:2px dashed rgba(255,255,255,.1);background:rgba(255,255,255,.02);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;position:relative;overflow:hidden;transition:all .2s;}
+.upload-slot:hover{border-color:rgba(255,255,255,.25);background:rgba(255,255,255,.04);}
+.upload-slot.loaded{border-style:solid;border-color:rgba(255,255,255,.2);}
+.upload-slot img.av{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+.upload-slot .chov{position:absolute;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;}
+.upload-slot:hover .chov{opacity:1;}
+.chov span{padding:4px 10px;background:#fff;color:#000;border-radius:999px;font-size:8px;font-weight:700;text-transform:uppercase;}
+.u-icon{font-size:18px;opacity:.15;}
+.u-txt{font-size:8px;color:rgba(255,255,255,.3);text-align:center;}
+
+/* scene textarea */
+.scene-ta{width:100%;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px 12px;font-size:12px;color:#fff;outline:none;resize:none;height:70px;font-family:'Inter',sans-serif;line-height:1.5;margin-top:8px;transition:border-color .2s;}
+.scene-ta:focus{border-color:rgba(255,255,255,.2);}
+.scene-ta::placeholder{color:rgba(255,255,255,.2);}
+
+/* location lock */
+.lock-row{display:flex;align-items:center;justify-content:space-between;}
+.lock-label{font-size:13px;font-weight:500;color:rgba(255,255,255,.8);}
+.lock-desc{font-size:9px;color:rgba(255,255,255,.3);margin-top:5px;line-height:1.5;}
+.sw{width:40px;height:22px;background:rgba(255,255,255,.12);border-radius:999px;position:relative;cursor:pointer;transition:background .25s;flex-shrink:0;}
+.sw.on{background:#2563eb;}
+.sw-k{position:absolute;top:2px;left:2px;width:18px;height:18px;background:#fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,.3);transition:transform .25s;}
+.sw.on .sw-k{transform:translateX(18px);}
+
+/* categories */
+.cat-grid{display:flex;flex-direction:column;gap:6px;}
+.cat-btn{width:100%;padding:10px 12px;border:2px solid rgba(255,255,255,.07);border-radius:12px;background:rgba(255,255,255,.02);cursor:pointer;text-align:left;transition:all .2s;}
+.cat-btn:hover{border-color:rgba(255,255,255,.15);}
+.cat-btn.active{border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.06);}
+.cat-name{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;display:block;color:rgba(255,255,255,.5);}
+.cat-btn.active .cat-name{color:#fff;}
+.cat-desc{font-size:8px;color:rgba(255,255,255,.3);line-height:1.4;margin-top:2px;display:block;}
+.cat-btn.active .cat-desc{color:rgba(255,255,255,.5);}
+
+/* chips */
+.chips{display:flex;flex-wrap:wrap;gap:6px;}
+.chip{padding:7px 11px;border:1px solid rgba(255,255,255,.08);border-radius:8px;background:rgba(255,255,255,.02);cursor:pointer;font-size:9px;font-weight:600;color:rgba(255,255,255,.5);transition:all .2s;}
+.chip:hover{border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.8);}
+.chip.active{border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.07);color:#fff;}
+
+/* gen button */
+.gen-wrap{padding:14px;border-top:1px solid rgba(255,255,255,.06);flex-shrink:0;}
+.gen-btn{width:100%;padding:14px;background:#fff;color:#000;border:none;border-radius:12px;font-size:13px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;text-transform:uppercase;letter-spacing:.05em;transition:all .2s;}
+.gen-btn:hover{background:#e5e7eb;transform:translateY(-1px);}
+.gen-btn:disabled{opacity:.3;cursor:not-allowed;transform:none;}
+.gen-btn.loading svg{animation:spin 1s linear infinite;}
+
+/* right panel - viewport */
+.panel-right{flex:1;background:#111;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden;}
+@media(max-width:768px){.panel-right{min-height:70vw;}}
+
+/* phone */
+.phone{width:min(230px,36vw);aspect-ratio:9/16;background:#1c1c1e;border-radius:2.5rem;overflow:hidden;border:6px solid #2c2c2e;box-shadow:0 24px 60px rgba(0,0,0,.7);position:relative;}
+@media(max-width:768px){.phone{width:min(180px,55vw);}}
+.phone-ph{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;opacity:.12;}
+.phone-ph .cam{font-size:36px;}
+.phone-ph p{font-size:9px;text-align:center;padding:0 14px;line-height:1.6;font-family:'Inter',sans-serif;text-transform:uppercase;letter-spacing:.08em;}
+#resultImg{width:100%;height:100%;object-fit:cover;display:none;}
+
+/* loading overlay - style App.tsx original */
+.loading-ov{position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px);z-index:5;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;}
+.loading-ov.show{display:flex;}
+.spinner{position:relative;width:56px;height:56px;}
+.sp-r1{position:absolute;inset:0;border:2px solid rgba(255,255,255,.1);border-radius:50%;animation:spin 2s linear infinite;}
+.sp-r2{position:absolute;inset:6px;border:2px solid rgba(255,255,255,.3);border-radius:50%;border-top-color:transparent;animation:spin 3s linear infinite reverse;}
+.sp-ic{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:18px;animation:pulse 1.5s ease-in-out infinite;}
+.loading-title{font-size:14px;font-weight:500;color:#fff;}
+.loading-msg{font-size:9px;color:rgba(255,255,255,.4);text-align:center;text-transform:uppercase;letter-spacing:.05em;}
+
+/* download */
+.dl-btn{position:absolute;bottom:10px;right:10px;z-index:6;display:none;align-items:center;gap:5px;padding:7px 11px;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#fff;cursor:pointer;font-size:9px;font-weight:700;text-transform:uppercase;transition:all .2s;}
+.dl-btn.show{display:flex;}
+.dl-btn:hover{background:#2563eb;border-color:#2563eb;}
+
+/* gallery */
+.gallery{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:5px;z-index:4;}
+.gal-th{width:32px;aspect-ratio:9/16;border-radius:7px;overflow:hidden;border:2px solid rgba(255,255,255,.15);cursor:pointer;flex-shrink:0;background:rgba(255,255,255,.04);transition:border-color .2s;}
+.gal-th:hover{border-color:#fff;}
+.gal-th img{width:100%;height:100%;object-fit:cover;opacity:.7;}
+
+/* toast */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(8px);z-index:999;padding:10px 18px;border-radius:10px;backdrop-filter:blur(14px);display:flex;align-items:center;gap:8px;min-width:240px;max-width:90vw;border:1px solid;font-size:11px;font-weight:600;opacity:0;transition:all .3s;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.ok{background:rgba(74,222,128,.1);border-color:rgba(74,222,128,.3);color:#4ade80;}
+.toast.err{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.3);color:#fca5a5;}
+
+/* shutter */
+.shutter{position:fixed;inset:0;background:#fff;z-index:500;opacity:0;pointer-events:none;transition:opacity .08s;}
+.shutter.flash{opacity:1;}
+
+/* modal changement cle */
+.modal-back{position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(8px);z-index:150;display:none;align-items:center;justify-content:center;padding:20px;}
+.modal-back.open{display:flex;}
+.modal-box{background:#0a0a0f;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:24px;max-width:380px;width:100%;}
+.modal-title{font-size:15px;font-weight:800;text-transform:uppercase;margin-bottom:14px;}
+.modal-engine-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.modal-key-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.15em;color:rgba(255,255,255,.4);display:block;margin-bottom:8px;}
+#modalKey{width:100%;background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;font-size:13px;font-family:'Inter',sans-serif;color:#fff;outline:none;margin-bottom:10px;}
+#modalKey:focus{border-color:rgba(255,255,255,.35);}
+.modal-save{width:100%;padding:12px;background:#fff;color:#000;border:none;border-radius:10px;font-size:12px;font-weight:800;cursor:pointer;text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px;}
+.modal-cancel{width:100%;padding:8px;background:none;border:none;color:rgba(255,255,255,.3);font-size:11px;cursor:pointer;}
+</style>
+</head>
+<body>
+
+<div class="shutter" id="shutter"></div>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-inner">
+    <div class="splash-logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+        <circle cx="12" cy="13" r="4"/>
+      </svg>
+    </div>
+    <h1 class="splash-h1">Studio Selfie</h1>
+    <p class="splash-sub">Selfies 4K ultra-reels</p>
+
+    <div class="splash-box">
+      <span class="splash-box-label">Moteur IA</span>
+      <div class="engine-grid">
+        <button class="engine-btn on-vertex" id="btn-vertex" onclick="selectEngine('vertex')">
+          Vertex AI<small>Cle AQ...</small>
+        </button>
+        <button class="engine-btn" id="btn-kie" onclick="selectEngine('kie')">
+          Kie.ai<small>Nano Banana 2</small>
+        </button>
+      </div>
+      <span class="key-label" id="keyLabel">Cle API Vertex AI</span>
+      <input type="password" id="apiKeyInput" placeholder="AQ..." autocomplete="off">
+      <button class="splash-btn" onclick="enterStudio()">LANCER LE STUDIO</button>
+      <p id="splashErr"></p>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header class="app-header">
+    <div class="header-left">
+      <div class="header-logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+          <circle cx="12" cy="13" r="4"/>
+        </svg>
+      </div>
+      <span class="header-title">Studio Selfie</span>
+    </div>
+    <div class="engine-pill vertex" id="enginePill" onclick="openModal()">
+      <div class="pill-dot"></div>
+      <span id="enginePillLabel">VERTEX AI</span>
+    </div>
+  </header>
+
+  <div class="app-body">
+    <!-- PANEL GAUCHE -->
+    <aside class="panel-left">
+
+      <div class="sec">
+        <span class="sec-label">Images Reference</span>
+        <div class="upload-grid">
+          <div class="upload-slot" id="slot1" onclick="document.getElementById('f1').click()">
+            <span class="u-icon">&#128247;</span>
+            <span class="u-txt">Principale (req.)</span>
+            <div class="chov"><span>Changer</span></div>
+          </div>
+          <div class="upload-slot" id="slot2" onclick="document.getElementById('f2').click()">
+            <span class="u-icon">&#128100;</span>
+            <span class="u-txt">Secondaire (opt.)</span>
+            <div class="chov"><span>Changer</span></div>
+          </div>
+        </div>
+        <input type="file" id="f1" accept="image/*" style="display:none" onchange="loadImg(event,'img1')">
+        <input type="file" id="f2" accept="image/*" style="display:none" onchange="loadImg(event,'img2')">
+        <textarea class="scene-ta" id="sceneInput" placeholder="Ex: Air surpris, leger sourire, regard espiegle..."></textarea>
+      </div>
+
+      <div class="sec">
+        <div class="lock-row">
+          <span class="lock-label">Verrou des Lieux</span>
+          <div class="sw" id="lockSw" onclick="toggleLock()"><div class="sw-k"></div></div>
+        </div>
+        <p class="lock-desc">Force l'IA a conserver l'environnement des images de reference.</p>
+      </div>
+
+      <div class="sec">
+        <span class="sec-label">Categorie</span>
+        <div class="cat-grid" id="catGrid"></div>
+      </div>
+
+      <div class="sec" style="flex:1;">
+        <span class="sec-label" id="angleLabel">Angle</span>
+        <div class="chips" id="angleChips"></div>
+      </div>
+
+      <div class="gen-wrap">
+        <button class="gen-btn" id="genBtn" onclick="generate()">
+          <svg id="genIcon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+          <span id="genLabel">Prendre un Selfie</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- PANEL DROIT - VIEWPORT -->
+    <div class="panel-right">
+      <div class="phone">
+        <div class="phone-ph" id="phonePH">
+          <span class="cam">&#128247;</span>
+          <p>Pret pour la capture</p>
+        </div>
+        <img id="resultImg" alt="Selfie">
+        <div class="loading-ov" id="loadingOv">
+          <div class="spinner">
+            <div class="sp-r1"></div>
+            <div class="sp-r2"></div>
+            <div class="sp-ic">&#10022;</div>
+          </div>
+          <p class="loading-title">Traitement du Selfie</p>
+          <p class="loading-msg" id="loadingMsg">Simulation de la logique de capture...</p>
+        </div>
+        <button class="dl-btn" id="dlBtn" onclick="downloadImg()">&#11015; Telecharger</button>
+      </div>
+      <div class="gallery" id="gallery"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"><span id="toastMsg"></span></div>
+
+<!-- MODAL CHANGEMENT CLE -->
+<div class="modal-back" id="modal">
+  <div class="modal-box">
+    <p class="modal-title">Changer la Cle API</p>
+    <div class="modal-engine-grid">
+      <button class="engine-btn on-vertex" id="m-vertex" onclick="modalEngine('vertex')">Vertex AI<small>AQ...</small></button>
+      <button class="engine-btn" id="m-kie" onclick="modalEngine('kie')">Kie.ai<small>Nano Banana 2</small></button>
+    </div>
+    <span class="modal-key-label" id="modalKeyLabel">Cle API Vertex AI</span>
+    <input type="password" id="modalKey" placeholder="Votre cle...">
+    <button class="modal-save" onclick="saveModal()">Enregistrer</button>
+    <button class="modal-cancel" onclick="closeModal()">Annuler</button>
+  </div>
+</div>
+
+<script>
+// ── STATE ──
+var apiKey = '';
+var engine = 'vertex';
+var locationLock = false;
+var selCat = 'VOLONTAIRE';
+var selAngle = '';
+var imgB64 = { img1: null, img2: null };
+var imgBlob = { img1: null, img2: null };
+var isGen = false;
+var curBlob = null;
+var galleryBlobs = [];
+var toastTimer;
+var loadingTimer;
+
+// ── CATEGORIES & ANGLES ──
+var CATS = {
+  VOLONTAIRE: {
+    label: 'Selfie Volontaire',
+    desc: "Le bras devient outil de mise en scene. La camera devient filtre physique du reel.",
+    angles: [
+      'Plongee sculptante',
+      'Contre-plongee controlee',
+      'Face directe',
+      'Trois-quarts sculptant',
+      'Proximite intentionnelle',
+      'Outfit etendu',
+      'Miroir',
+      'Bras tendu angle bas'
+    ]
+  },
+  NATUREL: {
+    label: 'Selfie Naturel',
+    desc: "L'image s'integre dans ce que je vis. Le corps continue une action, pas optimise.",
+    angles: [
+      'Legere plongee relachee',
+      'Face naturelle dynamique',
+      'Trois-quarts naturel',
+      'Proximite fluide',
+      'En mouvement (flow)',
+      'Regard hors camera',
+      'Angle bas relache'
+    ]
+  },
+  ACCIDENTEL: {
+    label: 'Selfie Accidentel',
+    desc: "La rupture entre le corps et la camera. Un moment qui n'etait pas cense exister.",
+    angles: [
+      'Chute instable',
+      'Rattrapage (catch moment)',
+      'Contre-plongee accidentelle',
+      'Obstruction active',
+      'Desaxe (misframed)',
+      'Proximite brute',
+      'Sol (chute + recuperation)'
+    ]
+  }
+};
+
+// Prompts detailles par angle
+var ANGLE_PROMPTS = {
+  // VOLONTAIRE
+  'Plongee sculptante': 'HIGH ANGLE SCULPTING SELFIE: camera held above face at arm length, shooting downward. Face rises toward camera. Eyes appear slightly enlarged. Forehead visually shortened. Jaw refined. Pupils directed upward. Light shadow under nose. Neck stretched toward camera. Skin more luminous on upper face. Arm tension visible in posture. Body adapted to high arm position. FORBIDDEN: face crushed, forehead too large, angle too extreme.',
+  'Contre-plongee controlee': 'LOW ANGLE CONTROLLED SELFIE: camera held low, shooting upward. Face descends toward camera. Jaw more present. Neck visible from below. Facial lines reinforced. Nostrils slightly visible but controlled. Chin forward. Shadow under jaw. Gaze downward or straight. Strong physical presence, assurance, attitude. FORBIDDEN: face deformation, accidental look.',
+  'Face directe': 'DIRECT FACE SELFIE: camera held face-level, straight angle. Stable face, apparent symmetry BUT never perfect. Immediate connection. Micro head tilt. One shoulder slightly higher. Gaze alive not frozen. Proximity feeling. FORBIDDEN: too symmetric (robot effect), too perfect (no longer a selfie).',
+  'Trois-quarts sculptant': 'THREE-QUARTER SCULPTING SELFIE: camera slightly offset. Clear separation between two sides of face. Natural depth and relief. One cheek more visible than other. Nose in diagonal. Light shadow on one side of face. Dynamic composition. Natural mastered aesthetic. FORBIDDEN: too frontal (loses relief), too turned (loses connection).',
+  'Proximite intentionnelle': 'INTENTIONAL PROXIMITY SELFIE: camera very close to face. Skin details visible (pores, eyes). Slight immersive distortion. Camera intrudes personal space. Texture of skin, reflections in eyes, breathing visible in posture. FORBIDDEN: too close causing grotesque deformation, too clean losing immersion.',
+  'Outfit etendu': 'EXTENDED OUTFIT SELFIE: camera at maximum arm distance. Readable silhouette. Body slightly elongated. Vertical framing. Body > face hierarchy. Legs slightly elongated. Hips oriented. Body lines visible. FORBIDDEN: too far (no longer selfie), poorly structured body (flat effect).',
+  'Miroir': 'MIRROR SELFIE: phone visible in mirror. Complete composition. Total frame control. Indirect camera. Double perspective (real + reflection). Phone position coherent with hand. Gaze toward mirror. Broken symmetry. FORBIDDEN: too perfect (studio look), phone badly placed.',
+  'Bras tendu angle bas': 'LOW ARM EXTENDED SELFIE: phone held below face, arm extended downward. Real low-angle counter-shot. Subject looks directly downward into camera. Standing or slightly leaning forward. Realistic perspective distortion, subtle facial feature accentuation. Dynamic immersive feel, spontaneous but intentional and controlled. FORBIDDEN: neutral angle, phone on ground, accidental framing.',
+
+  // NATUREL
+  'Legere plongee relachee': 'NATURAL SOFT HIGH ANGLE: arm slightly raised (NOT high). Gentle downward angle 5-15 degrees. Face slightly seen from above BUT no marked beauty effect. Natural proportions, not exaggerated. Head slightly tilted. Shoulders relaxed. Non-constructed posture. Gaze not perfectly aligned. Micro neck movement. Slight asymmetry. FORBIDDEN: angle too high (becomes voluntary), pose too clean.',
+  'Face naturelle dynamique': 'NATURAL DYNAMIC FACE: face toward camera BUT in subtle movement. No perfect symmetry. Arm at face height, almost straight, slight floating. Head in micro rotation. Shoulders offset. Gaze moves slightly. Mouth not totally frozen. Breathing visible. FORBIDDEN: perfect symmetry, frozen gaze (becomes voluntary).',
+  'Trois-quarts naturel': 'NATURAL THREE-QUARTER: face slightly turned. Natural depth. No marked pose. Arm slightly offset, soft non-forced angle. Head turned naturally. Body in movement. Gaze off-axis. Irregular light on face. Non-worked expression. FORBIDDEN: too perfect angle (voluntary), frozen pose.',
+  'Proximite fluide': 'FLUID PROXIMITY NATURAL: face close but breathing. Without strong deformation. Distance 25-40cm. Free angle. Micro face movement. Soft posture. Visible details but natural. Gaze not fixed. Realistic skin. FORBIDDEN: too close (becomes accidental), too controlled (voluntary).',
+  'En mouvement (flow)': 'FLOW MOVEMENT NATURAL SELFIE: slight frame movement. Action in progress. Non-frozen moment. Arm in movement, angle follows body. Walking, turning head, moving slightly. Very light blur. Hair in movement. Offset gaze. FORBIDDEN: too blurry (accidental), too stable (voluntary).',
+  'Regard hors camera': 'OFF-CAMERA GAZE NATURAL: gaze directed elsewhere. External attention. Standard angle but not used to connect. Head turned or tilted. Body engaged elsewhere. Gaze blurry or focused off-frame. Non-posed expression. FORBIDDEN: gaze too styled (voluntary), too empty (incoherent).',
+  'Angle bas relache': 'RELAXED LOW ANGLE NATURAL: slight view from below but without dominance intent. Arm slightly low, gentle upward angle. Relaxed posture, no display. Neck visible. Gaze not worked. FORBIDDEN: angle too strong (accidental or voluntary).',
+
+  // ACCIDENTEL
+  'Chute instable': 'UNSTABLE FALL ACCIDENTAL: image tilted 10-45 degrees, NEVER straight. Unbalanced. Partially readable. Frame feels like it is tipping. Camera in rotation or falling. Non-stabilized axis. Broken horizon. Subject partially visible, often cut or exiting frame, not centered. Dominant diagonal lines. Light directional blur. Objects cut on edges. Badly distributed empty space. FORBIDDEN: straight image, aesthetic composition (becomes voluntary).',
+  'Rattrapage (catch moment)': 'CATCH MOMENT ACCIDENTAL: rapid face entry into frame. Hand or arm in movement. Brutal proximity. Camera unstable but still held, changing orientation. Body leaning toward camera, downward movement, visible imbalance. Partial blurry hand. Gaze downward. Decentered face. Irregular distance. FORBIDDEN: frozen gesture, camera gaze (becomes voluntary).',
+  'Contre-plongee accidentelle': 'ACCIDENTAL LOW ANGLE: view from below. Subject involuntarily dominating. Slightly uncomfortable perspective. Camera too low, held awkwardly. Subject above, leaning posture, gaze off-camera. Visible chin. Shadow under face. Marked vertical perspective. FORBIDDEN: clean flattering angle (becomes voluntary).',
+  'Obstruction active': 'ACTIVE OBSTRUCTION ACCIDENTAL: part of frame blocked. Uncontrolled non-intentional intrusion. Camera in contact with body, partially masked. Gesture in progress (catching, manipulating). Hand linked to action. Blurry finger or palm. Irregular frame edge. Broken depth. FORBIDDEN: clean or aesthetic obstruction (false accidental).',
+  'Desaxe (misframed)': 'MISFRAMED ACCIDENTAL: subject badly placed. Badly distributed frame. Incomplete composition. Camera badly oriented, not yet framed. Head cut. Partial body. Non-centered position. Dominant empty space. Subject at frame edge. Strong asymmetry. FORBIDDEN: badly framed but pretty (stylized voluntary).',
+  'Proximite brute': 'BRUTE PROXIMITY ACCIDENTAL: face too close. Slight deformation. Visual intrusion. Phone too close to subject, uncontrolled distance. Dominant face. Exaggerated proportions. Enlarged nose/mouth. Crushed depth. Visible skin details. FORBIDDEN: extreme deformation (caricature).',
+  'Sol (chute + recuperation)': 'GROUND FALL ACCIDENTAL: phone on ground, front camera active, oriented upward. Phone screen IS visible showing subject face live with camera interface. Subject bends forward to retrieve phone, hand reaching toward it, in natural motion. Photo triggers when hand touches or grazes screen. Real counter-shot, slightly distorted, imperfect, spontaneous. Unbalanced non-posed posture. Slight screen reflection, finger partially visible, cropped framing, slight wide-angle distortion, micro motion blur. FORBIDDEN: screen too perfect, too clean interface, phone too centered, stylized pose.'
+};
+
+var LOADING_MSGS = [
+  "Analyse de la posture et de l'intention...",
+  "Simulation de la distorsion de l'objectif...",
+  "Generation en cours...",
+  "Presque termine..."
+];
+
+// ── SPLASH / ENGINE ──
+function selectEngine(e) {
+  engine = e;
+  document.getElementById('btn-vertex').className = 'engine-btn' + (e==='vertex' ? ' on-vertex' : '');
+  document.getElementById('btn-kie').className = 'engine-btn' + (e==='kie' ? ' on-kie' : '');
+  document.getElementById('keyLabel').textContent = e==='vertex' ? 'Cle API Vertex AI' : 'Cle API kie.ai';
+  document.getElementById('apiKeyInput').placeholder = e==='vertex' ? 'AQ...' : 'Cle kie.ai...';
+}
+
+function enterStudio() {
+  var k = document.getElementById('apiKeyInput').value.trim();
+  var err = document.getElementById('splashErr');
+  if (!k) { err.textContent = 'Veuillez entrer votre cle API.'; err.style.display = 'block'; return; }
+  if (engine === 'vertex' && !k.startsWith('AQ')) {
+    if (!confirm('Cette cle ne commence pas par "AQ". Continuer quand meme ?')) return;
+  }
+  apiKey = k;
+  err.style.display = 'none';
+  document.getElementById('splash').style.display = 'none';
+  document.getElementById('app').classList.add('on');
+  updatePill();
+  renderCats();
+  renderAngles();
+}
+
+function updatePill() {
+  var pill = document.getElementById('enginePill');
+  pill.className = 'engine-pill ' + (engine==='vertex' ? 'vertex' : 'kie');
+  document.getElementById('enginePillLabel').textContent = engine==='vertex' ? 'VERTEX AI' : 'KIE.AI';
+}
+
+// ── MODAL ──
+function openModal() {
+  document.getElementById('modalKey').value = apiKey;
+  modalEngine(engine);
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+function modalEngine(e) {
+  engine = e;
+  document.getElementById('m-vertex').className = 'engine-btn' + (e==='vertex' ? ' on-vertex' : '');
+  document.getElementById('m-kie').className = 'engine-btn' + (e==='kie' ? ' on-kie' : '');
+  document.getElementById('modalKeyLabel').textContent = e==='vertex' ? 'Cle API Vertex AI' : 'Cle API kie.ai';
+  document.getElementById('modalKey').placeholder = e==='vertex' ? 'AQ...' : 'Cle kie.ai...';
+}
+function saveModal() {
+  var k = document.getElementById('modalKey').value.trim();
+  if (!k) return;
+  apiKey = k;
+  updatePill();
+  closeModal();
+  showToast('Cle API mise a jour', 'ok');
+}
+
+// ── UPLOAD (blob pour Safari) ──
+function loadImg(e, slot) {
+  var file = e.target.files && e.target.files[0]; if (!file) return;
+  if (imgBlob[slot]) { URL.revokeObjectURL(imgBlob[slot]); imgBlob[slot] = null; }
+  var reader = new FileReader();
+  reader.onloadend = function() {
+    var img = new Image();
+    img.onload = function() {
+      var canvas = document.createElement('canvas');
+      var max = 1024, w = img.width, h = img.height;
+      if (w > max) { h = Math.round(h*max/w); w = max; }
+      if (h > max) { w = Math.round(w*max/h); h = max; }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      imgB64[slot] = canvas.toDataURL('image/jpeg', 0.85);
+      canvas.toBlob(function(blob) {
+        imgBlob[slot] = URL.createObjectURL(blob);
+        updateSlot(slot);
+        showToast('Photo chargee', 'ok');
+      }, 'image/jpeg', 0.85);
+    };
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+}
+
+function updateSlot(slot) {
+  var el = document.getElementById(slot==='img1' ? 'slot1' : 'slot2');
+  el.classList.add('loaded');
+  el.querySelectorAll('.av').forEach(function(i){ i.remove(); });
+  var img = document.createElement('img'); img.className = 'av'; img.src = imgBlob[slot];
+  el.insertBefore(img, el.firstChild);
+}
+
+// ── CATEGORIES ──
+function renderCats() {
+  var g = document.getElementById('catGrid'); g.innerHTML = '';
+  Object.keys(CATS).forEach(function(key) {
+    var btn = document.createElement('div');
+    btn.className = 'cat-btn' + (selCat===key ? ' active' : '');
+    btn.innerHTML = '<span class="cat-name">'+CATS[key].label+'</span><span class="cat-desc">'+CATS[key].desc+'</span>';
+    btn.onclick = function() { selCat = key; selAngle = CATS[key].angles[0]; renderCats(); renderAngles(); };
+    g.appendChild(btn);
+  });
+}
+
+function renderAngles() {
+  var angles = CATS[selCat].angles;
+  if (!selAngle || angles.indexOf(selAngle)===-1) selAngle = angles[0];
+  var lbl = {VOLONTAIRE:'Angle du Selfie',ACCIDENTEL:"Type d'Accident",CONTEXTUEL:'Contexte / Lieu'};
+  document.getElementById('angleLabel').textContent = lbl[selCat];
+  var c = document.getElementById('angleChips'); c.innerHTML = '';
+  angles.forEach(function(a) {
+    var btn = document.createElement('button');
+    btn.className = 'chip' + (selAngle===a ? ' active' : '');
+    btn.textContent = a;
+    btn.onclick = function() { selAngle = a; renderAngles(); };
+    c.appendChild(btn);
+  });
+}
+
+function toggleLock() {
+  locationLock = !locationLock;
+  var sw = document.getElementById('lockSw');
+  sw.className = 'sw' + (locationLock ? ' on' : '');
+}
+
+// ── PROMPT ──
+var SYSTEM = 'Ultra-realistic 4K selfie photo. Natural skin texture with visible pores and imperfections. No beauty filter, no AI smoothing. Smartphone lens simulation: wide angle, slight distortion, natural depth of field. Preserve exact facial identity from reference images. The viewer must immediately feel where the arm is, where the phone is, and how the image was taken.';
+
+function buildPrompt() {
+  var scene = document.getElementById('sceneInput').value.trim();
+  var anglePrompt = ANGLE_PROMPTS[selAngle] || ('ANGLE: ' + selAngle + '.');
+  var catRule = '';
+  if (selCat === 'VOLONTAIRE') catRule = 'VOLUNTARY SELFIE LAW: photo comes first, action adapts. Subject knows they are photographed. Phone physically held by subject. Every angle must be 100% achievable with one arm holding a phone.';
+  else if (selCat === 'NATUREL') catRule = 'NATURAL SELFIE LAW: action comes first, photo integrates. Body continues action, posture NOT optimized for camera. Control is invisible. The angle must exist without being perceived as a choice.';
+  else catRule = 'ACCIDENTAL SELFIE LAW: photo is a consequence, never an objective. Ongoing action interrupted by involuntary trigger. Body loses control of camera. Movement in progress + imbalance + imperfect framing = credible accidental.';
+  var parts = [catRule, anglePrompt];
+  if (locationLock) parts.push('LOCATION LOCK: preserve exact environment from reference images.');
+  if (imgB64.img2) parts.push('DUO: two people in frame, both faces clearly visible, natural complicity.');
+  if (scene) parts.push('SCENE DIRECTION: "' + scene + '".');
+  return parts.filter(Boolean).join('\n');
+}
+
+// ── HELPERS ──
+function sleep(ms) { return new Promise(function(r){ setTimeout(r, ms); }); }
+
+function b64ToBlob(b64) {
+  var byteStr = atob(b64);
+  var ab = new ArrayBuffer(byteStr.length);
+  var ia = new Uint8Array(ab);
+  for (var i=0; i<byteStr.length; i++) ia[i] = byteStr.charCodeAt(i);
+  return URL.createObjectURL(new Blob([ab], {type:'image/png'}));
+}
+
+function setLoading(on) {
+  isGen = on;
+  document.getElementById('genBtn').disabled = on;
+  document.getElementById('loadingOv').className = 'loading-ov' + (on ? ' show' : '');
+  document.getElementById('genIcon').innerHTML = on
+    ? '<path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>'
+    : '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>';
+  document.getElementById('genLabel').textContent = on ? 'Capture en cours...' : 'Prendre un Selfie';
+  document.getElementById('genBtn').classList.toggle('loading', on);
+  if (on) {
+    var idx = 0;
+    document.getElementById('loadingMsg').textContent = LOADING_MSGS[0];
+    clearInterval(loadingTimer);
+    loadingTimer = setInterval(function(){
+      idx = (idx+1) % LOADING_MSGS.length;
+      document.getElementById('loadingMsg').textContent = LOADING_MSGS[idx];
+    }, 3000);
+  } else {
+    clearInterval(loadingTimer);
+  }
+}
+
+function setMsg(m) { document.getElementById('loadingMsg').textContent = m; }
+
+function showResult(blobUrl) {
+  curBlob = blobUrl;
+  var img = document.getElementById('resultImg');
+  img.src = blobUrl; img.style.display = 'block';
+  document.getElementById('phonePH').style.display = 'none';
+  document.getElementById('dlBtn').classList.add('show');
+  galleryBlobs.unshift(blobUrl);
+  if (galleryBlobs.length > 8) galleryBlobs.pop();
+  renderGallery();
+}
+
+function renderGallery() {
+  var g = document.getElementById('gallery'); g.innerHTML = '';
+  galleryBlobs.forEach(function(url) {
+    var th = document.createElement('div'); th.className = 'gal-th';
+    var img = document.createElement('img'); img.src = url;
+    th.appendChild(img);
+    th.onclick = function() {
+      curBlob = url;
+      document.getElementById('resultImg').src = url;
+      document.getElementById('resultImg').style.display = 'block';
+      document.getElementById('phonePH').style.display = 'none';
+      document.getElementById('dlBtn').classList.add('show');
+    };
+    g.appendChild(th);
+  });
+}
+
+function downloadImg() {
+  if (!curBlob) return;
+  var isMobile = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (isMobile) { window.open(curBlob, '_blank'); return; }
+  var a = document.createElement('a');
+  a.href = curBlob; a.download = 'studio-selfie-' + Date.now() + '.png';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+function showToast(msg, type) {
+  clearTimeout(toastTimer);
+  var t = document.getElementById('toast');
+  t.className = 'toast show ' + (type||'ok');
+  document.getElementById('toastMsg').textContent = msg;
+  toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 4000);
+}
+
+// ── VERTEX AI (copie exacte Studio POV) ──
+async function callVertex(prompt) {
+  var parts = [];
+  if (imgB64.img1) parts.push({ inlineData: { data: imgB64.img1.split(',')[1], mimeType: 'image/jpeg' } });
+  if (imgB64.img2) parts.push({ inlineData: { data: imgB64.img2.split(',')[1], mimeType: 'image/jpeg' } });
+  parts.push({ text: prompt });
+
+  var body = {
+    systemInstruction: { parts: [{ text: SYSTEM }] },
+    contents: [{ role: 'user', parts: parts }],
+    generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: '9:16', imageSize: '4K' } }
+  };
+
+  var endpoint = 'https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-3.1-flash-image-preview:generateContent?key=' + encodeURIComponent(apiKey);
+  var waitTimes = [5000, 10000, 20000, 40000, 60000];
+  var lastErr;
+
+  for (var attempt = 0; attempt <= waitTimes.length; attempt++) {
+    try {
+      setMsg(attempt === 0 ? 'Envoi vers Vertex...' : 'Nouvelle tentative ' + (attempt+1) + '...');
+      var res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      var data = {}; try { data = await res.json(); } catch(_) {}
+      if (!res.ok) {
+        var msg = (data.error && data.error.message) ? data.error.message : 'Erreur HTTP ' + res.status;
+        if (res.status === 401) throw new Error('Cle Vertex invalide (doit commencer par AQ...).');
+        if (res.status === 403) throw new Error('Acces refuse. Verifie ta cle Vertex AI Express Mode.');
+        if (res.status === 429) throw new Error('429 RESOURCE_EXHAUSTED: ' + msg);
+        throw new Error('Erreur ' + res.status + ': ' + msg);
+      }
+      var candidate = data.candidates && data.candidates[0];
+      if (!candidate) throw new Error('Aucune reponse du modele.');
+      if (candidate.finishReason === 'SAFETY') throw new Error('Generation bloquee par les filtres. Reformule ta demande.');
+      var cparts = (candidate.content && candidate.content.parts) || [];
+      for (var i = 0; i < cparts.length; i++) {
+        if (cparts[i].inlineData && cparts[i].inlineData.data) return b64ToBlob(cparts[i].inlineData.data);
+      }
+      throw new Error('Image non trouvee dans la reponse Vertex.');
+    } catch(err) {
+      lastErr = err;
+      var em = String(err.message || '').toLowerCase();
+      var retry = em.includes('429') || em.includes('resource_exhausted') || em.includes('502') || em.includes('503') || em.includes('504') || em.includes('overloaded');
+      if (retry && attempt < waitTimes.length) {
+        setMsg('Vertex sature. Attente ' + Math.round(waitTimes[attempt]/1000) + 's...');
+        await sleep(waitTimes[attempt]); continue;
+      }
+      throw err;
+    }
+  }
+  throw lastErr || new Error('Generation Vertex echouee.');
+}
+
+// ── KIE.AI (copie exacte Studio POV) ──
+async function uploadToKie(b64DataUri) {
+  var res = await fetch('https://kieai.redpandaai.co/api/file-base64-upload', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ base64Data: b64DataUri, uploadPath: 'images/studio-selfie' })
+  });
+  var data = {}; try { data = await res.json(); } catch(_) {}
+  if (!res.ok || !data.data || !data.data.downloadUrl) throw new Error('Erreur upload kie.ai: ' + (data.msg || res.status));
+  return data.data.downloadUrl;
+}
+
+async function callKie(prompt) {
+  var imageUrls = [];
+  if (imgB64.img1) {
+    setMsg('Upload reference 1...');
+    try { imageUrls.push(await uploadToKie(imgB64.img1)); } catch(e) { console.warn(e); }
+  }
+  if (imgB64.img2) {
+    setMsg('Upload reference 2...');
+    try { imageUrls.push(await uploadToKie(imgB64.img2)); } catch(e) { console.warn(e); }
+  }
+  setMsg('Envoi vers Nano Banana 2...');
+  var taskBody = {
+    model: 'nano-banana-2',
+    input: { prompt: SYSTEM + '\n' + prompt, aspect_ratio: '9:16', resolution: '4K', output_format: 'png', image_input: imageUrls }
+  };
+  var createRes = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify(taskBody)
+  });
+  var createData = {}; try { createData = await createRes.json(); } catch(_) {}
+  if (!createRes.ok || createData.code !== 200) {
+    var msg = createData.msg || createData.message || 'Erreur HTTP ' + createRes.status;
+    if (createRes.status === 401 || createData.code === 401) throw new Error('Cle kie.ai invalide.');
+    if (createRes.status === 403 || createData.code === 403) throw new Error('Acces refuse kie.ai. Verifiez vos credits.');
+    throw new Error('Erreur kie.ai: ' + msg);
+  }
+  var taskId = createData.data && createData.data.taskId;
+  if (!taskId) throw new Error('Pas de taskId kie.ai.');
+  for (var poll = 0; poll < 60; poll++) {
+    await sleep(5000);
+    setMsg('Nano Banana 2 en cours... (' + ((poll+1)*5) + 's)');
+    var sData = {};
+    try {
+      var sRes = await fetch('https://api.kie.ai/api/v1/jobs/recordInfo?taskId=' + taskId, { headers: { 'Authorization': 'Bearer ' + apiKey } });
+      sData = await sRes.json();
+    } catch(_) { continue; }
+    var state = sData.data && sData.data.state;
+    if (state === 'fail') throw new Error('Kie.ai fail: ' + (sData.data && sData.data.failMsg));
+    if (state === 'success') {
+      var imageUrl = null;
+      try { var r = JSON.parse(sData.data.resultJson || '{}'); imageUrl = (r.resultUrls && r.resultUrls[0]) || (r.images && r.images[0] && r.images[0].url) || r.url; } catch(_) {}
+      if (!imageUrl) throw new Error("Success mais pas d'URL image.");
+      setMsg("Recuperation de l'image...");
+      var imgRes = await fetch(imageUrl);
+      var blob = await imgRes.blob();
+      return URL.createObjectURL(blob);
+    }
+  }
+  throw new Error('Timeout kie.ai.');
+}
+
+// ── GENERATE ──
+async function generate() {
+  if (isGen) return;
+  if (!apiKey) { openModal(); return; }
+  var scene = document.getElementById('sceneInput').value.trim();
+  if (!imgB64.img1 && !scene) { showToast('Chargez une photo ou decrivez la scene', 'err'); return; }
+
+  // shutter flash
+  var sh = document.getElementById('shutter');
+  sh.classList.add('flash');
+  setTimeout(function(){ sh.classList.remove('flash'); }, 100);
+
+  setLoading(true);
+  try {
+    var prompt = buildPrompt();
+    var blobUrl = engine === 'kie' ? await callKie(prompt) : await callVertex(prompt);
+    showResult(blobUrl);
+    showToast('Selfie genere !', 'ok');
+  } catch(err) {
+    showToast('Erreur: ' + String(err.message || err).slice(0, 160), 'err');
+  } finally {
+    setLoading(false);
+  }
+}
+
+// INIT
+renderCats();
+renderAngles();
+</script>
+</body>
+</html>
