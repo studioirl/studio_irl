@@ -332,7 +332,7 @@ var loadingTimer;
 var CATS = {
   VOLONTAIRE: {
     label: 'Selfie Volontaire',
-    desc: "Le bras devient outil de mise en scene. La camera devient filtre physique du reel.",
+    desc: "Le sujet adapte son corps pour l'image. Controle actif de l'angle, de la posture et de l'intention.",
     angles: [
       'Plongee sculptante',
       'Contre-plongee controlee',
@@ -340,67 +340,85 @@ var CATS = {
       'Trois-quarts sculptant',
       'Proximite intentionnelle',
       'Outfit etendu',
-      'Miroir',
-      'Bras tendu angle bas'
+      'Miroir / surface reflechissante',
+      'Bras tendu angle bas',
+      'Cote profil partiel',
+      'Epaule avancee',
+      'Incline spontane',
+      'Interaction main visible'
     ]
   },
-  NATUREL: {
-    label: 'Selfie Naturel',
-    desc: "L'image s'integre dans ce que je vis. Le corps continue une action, pas optimise.",
+  SPONTANE: {
+    label: 'Selfie Spontane',
+    desc: "La photo s'insere dans le moment, elle ne le cree pas. Action en cours, visage non optimise.",
     angles: [
-      'Legere plongee relachee',
-      'Face naturelle dynamique',
-      'Trois-quarts naturel',
-      'Proximite fluide',
-      'En mouvement (flow)',
-      'Regard hors camera',
-      'Angle bas relache'
+      'En mouvement',
+      'En train de parler',
+      'Reaction / rire',
+      'Regard ailleurs',
+      'Interaction (cheveux / objet)',
+      'Allonge (POV)',
+      'Transition',
+      'Activite (boire / manger)',
+      'Proche instinctif',
+      'Mouvement de tete',
+      'Soleil dans les yeux'
     ]
   },
   ACCIDENTEL: {
     label: 'Selfie Accidentel',
-    desc: "La rupture entre le corps et la camera. Un moment qui n'etait pas cense exister.",
+    desc: "La photo est une consequence, jamais une intention. Le telephone n'est jamais visible.",
     angles: [
-      'Chute instable',
-      'Rattrapage (catch moment)',
+      'Obstruction partielle',
+      'Cadrage partiel',
+      'En mouvement (action physique)',
+      'Ajustement / prise en main',
       'Contre-plongee accidentelle',
-      'Obstruction active',
-      'Desaxe (misframed)',
-      'Proximite brute',
-      'Sol (chute + recuperation)'
+      'Perspective immersive',
+      'Relachement instable',
+      'Chute / camera au sol'
     ]
   }
 };
 
 // Prompts detailles par angle
 var ANGLE_PROMPTS = {
-  // VOLONTAIRE
-  'Plongee sculptante': 'HIGH ANGLE SCULPTING SELFIE: camera held above face at arm length, shooting downward. Face rises toward camera. Eyes appear slightly enlarged. Forehead visually shortened. Jaw refined. Pupils directed upward. Light shadow under nose. Neck stretched toward camera. Skin more luminous on upper face. Arm tension visible in posture. Body adapted to high arm position. FORBIDDEN: face crushed, forehead too large, angle too extreme.',
-  'Contre-plongee controlee': 'LOW ANGLE CONTROLLED SELFIE: camera held low, shooting upward. Face descends toward camera. Jaw more present. Neck visible from below. Facial lines reinforced. Nostrils slightly visible but controlled. Chin forward. Shadow under jaw. Gaze downward or straight. Strong physical presence, assurance, attitude. FORBIDDEN: face deformation, accidental look.',
-  'Face directe': 'DIRECT FACE SELFIE: camera held face-level, straight angle. Stable face, apparent symmetry BUT never perfect. Immediate connection. Micro head tilt. One shoulder slightly higher. Gaze alive not frozen. Proximity feeling. FORBIDDEN: too symmetric (robot effect), too perfect (no longer a selfie).',
-  'Trois-quarts sculptant': 'THREE-QUARTER SCULPTING SELFIE: camera slightly offset. Clear separation between two sides of face. Natural depth and relief. One cheek more visible than other. Nose in diagonal. Light shadow on one side of face. Dynamic composition. Natural mastered aesthetic. FORBIDDEN: too frontal (loses relief), too turned (loses connection).',
-  'Proximite intentionnelle': 'INTENTIONAL PROXIMITY SELFIE: camera very close to face. Skin details visible (pores, eyes). Slight immersive distortion. Camera intrudes personal space. Texture of skin, reflections in eyes, breathing visible in posture. FORBIDDEN: too close causing grotesque deformation, too clean losing immersion.',
-  'Outfit etendu': 'EXTENDED OUTFIT SELFIE: camera at maximum arm distance. Readable silhouette. Body slightly elongated. Vertical framing. Body > face hierarchy. Legs slightly elongated. Hips oriented. Body lines visible. FORBIDDEN: too far (no longer selfie), poorly structured body (flat effect).',
-  'Miroir': 'MIRROR SELFIE: phone visible in mirror. Complete composition. Total frame control. Indirect camera. Double perspective (real + reflection). Phone position coherent with hand. Gaze toward mirror. Broken symmetry. FORBIDDEN: too perfect (studio look), phone badly placed.',
-  'Bras tendu angle bas': 'LOW ARM EXTENDED SELFIE: phone held below face, arm extended downward. Real low-angle counter-shot. Subject looks directly downward into camera. Standing or slightly leaning forward. Realistic perspective distortion, subtle facial feature accentuation. Dynamic immersive feel, spontaneous but intentional and controlled. FORBIDDEN: neutral angle, phone on ground, accidental framing.',
+  // ── VOLONTAIRE ──
+  'Plongee sculptante': 'VOLUNTARY HIGH ANGLE SCULPTING: camera held above face at arm length, shooting downward. Face rises toward camera. Eyes appear slightly enlarged. Forehead visually shortened. Jaw refined. Pupils directed upward. Light shadow under nose. Neck stretched toward camera. Skin more luminous on upper face. Body adapted to high arm position. Smartphone NOT visible (suggested only by angle and arm tension). FORBIDDEN: face crushed, forehead too large, angle too extreme, phone visible.',
+  'Contre-plongee controlee': 'VOLUNTARY LOW ANGLE CONTROLLED: camera held low, shooting upward. Face descends toward camera. Jaw more present. Neck visible from below. Nostrils slightly visible but controlled. Chin forward. Shadow under jaw. Gaze downward or straight. Strong presence, assurance, attitude. Smartphone NOT visible. FORBIDDEN: face deformation, accidental look, phone visible.',
+  'Face directe': 'VOLUNTARY DIRECT FACE: camera held face-level, straight angle. Stable face, apparent symmetry BUT never perfect. Micro head tilt. One shoulder slightly higher. Gaze alive not frozen. Immediate connection, sincerity. Smartphone NOT visible. FORBIDDEN: too symmetric (robot effect), too perfect.',
+  'Trois-quarts sculptant': 'VOLUNTARY THREE-QUARTER SCULPTING: camera slightly offset. Clear separation between two sides of face. Natural depth and relief. One cheek more visible. Nose in diagonal. Light shadow on one side. Dynamic composition. Smartphone NOT visible. FORBIDDEN: too frontal (loses relief), too turned (loses connection).',
+  'Proximite intentionnelle': 'VOLUNTARY INTENTIONAL PROXIMITY: camera very close to face. Skin details visible (pores, eyes, texture). Slight immersive distortion. Reflections in eyes, breathing visible in posture. Strong intimacy and authenticity. Smartphone NOT visible. FORBIDDEN: grotesque deformation, too clean losing immersion.',
+  'Outfit etendu': 'VOLUNTARY EXTENDED OUTFIT: camera at maximum arm distance. Readable silhouette. Body slightly elongated. Vertical framing. Body hierarchy over face. Legs slightly elongated. Hips oriented. Body lines visible. Smartphone NOT visible. FORBIDDEN: too far (no longer selfie), flat body.',
+  'Miroir / surface reflechissante': 'VOLUNTARY MIRROR SELFIE: smartphone IS visible in mirror/reflection, held by subject. Phone position coherent with hand and arm in reflection. Double perspective (real + reflection). Gaze toward mirror. Broken symmetry. Subject controls frame through mirror. RULE: phone visible ONLY in mirror reflection, never floating.',
+  'Bras tendu angle bas': 'VOLUNTARY LOW ARM EXTENDED: phone held below face, arm extended downward. Real low counter-shot. Subject looks directly downward into camera. Realistic perspective distortion. Dynamic immersive feel, spontaneous but controlled. Everything mastered. Smartphone NOT visible. FORBIDDEN: neutral angle, phone on ground, accidental framing.',
+  'Cote profil partiel': 'VOLUNTARY SIDE PARTIAL PROFILE: camera offset to the side. One half of face more visible. Profile of nose stands out. One eye dominant, other more discreet. Gaze often elsewhere, not directly camera. Spontaneous vibe, less frontal. Smartphone NOT visible.',
+  'Epaule avancee': 'VOLUNTARY SHOULDER FORWARD: body slightly turned. One shoulder closer to camera, visually larger. Other shoulder recedes. Creates depth in image. Face remains visible but integrated into body. Natural volume and dimensionality. Smartphone NOT visible.',
+  'Incline spontane': 'VOLUNTARY TILTED ANGLE: photo not perfectly straight. Horizon slightly tilted, face also slightly. Breaks rigidity. Cadrage seems more spontaneous, less frozen. Small detail, huge impact on realism. Controlled imperfection. Smartphone NOT visible.',
+  'Interaction main visible': 'VOLUNTARY HAND INTERACTION: hand enters frame touching hair, face, or cheek. Creates visible interaction. Gaze can follow hand or stay on camera. Makes photo much more human and credible. Hand is in foreground, partially in focus. Smartphone NOT visible in frame.',
 
-  // NATUREL
-  'Legere plongee relachee': 'NATURAL SOFT HIGH ANGLE: arm slightly raised (NOT high). Gentle downward angle 5-15 degrees. Face slightly seen from above BUT no marked beauty effect. Natural proportions, not exaggerated. Head slightly tilted. Shoulders relaxed. Non-constructed posture. Gaze not perfectly aligned. Micro neck movement. Slight asymmetry. FORBIDDEN: angle too high (becomes voluntary), pose too clean.',
-  'Face naturelle dynamique': 'NATURAL DYNAMIC FACE: face toward camera BUT in subtle movement. No perfect symmetry. Arm at face height, almost straight, slight floating. Head in micro rotation. Shoulders offset. Gaze moves slightly. Mouth not totally frozen. Breathing visible. FORBIDDEN: perfect symmetry, frozen gaze (becomes voluntary).',
-  'Trois-quarts naturel': 'NATURAL THREE-QUARTER: face slightly turned. Natural depth. No marked pose. Arm slightly offset, soft non-forced angle. Head turned naturally. Body in movement. Gaze off-axis. Irregular light on face. Non-worked expression. FORBIDDEN: too perfect angle (voluntary), frozen pose.',
-  'Proximite fluide': 'FLUID PROXIMITY NATURAL: face close but breathing. Without strong deformation. Distance 25-40cm. Free angle. Micro face movement. Soft posture. Visible details but natural. Gaze not fixed. Realistic skin. FORBIDDEN: too close (becomes accidental), too controlled (voluntary).',
-  'En mouvement (flow)': 'FLOW MOVEMENT NATURAL SELFIE: slight frame movement. Action in progress. Non-frozen moment. Arm in movement, angle follows body. Walking, turning head, moving slightly. Very light blur. Hair in movement. Offset gaze. FORBIDDEN: too blurry (accidental), too stable (voluntary).',
-  'Regard hors camera': 'OFF-CAMERA GAZE NATURAL: gaze directed elsewhere. External attention. Standard angle but not used to connect. Head turned or tilted. Body engaged elsewhere. Gaze blurry or focused off-frame. Non-posed expression. FORBIDDEN: gaze too styled (voluntary), too empty (incoherent).',
-  'Angle bas relache': 'RELAXED LOW ANGLE NATURAL: slight view from below but without dominance intent. Arm slightly low, gentle upward angle. Relaxed posture, no display. Neck visible. Gaze not worked. FORBIDDEN: angle too strong (accidental or voluntary).',
+  // ── SPONTANE ──
+  'En mouvement': 'SPONTANEOUS MOVEMENT SELFIE: person walking or moving. Body in slight imbalance (one leg forward). Head moves slightly with body. Camera held one-handed, not totally stable, micro oscillations. Cadrage not fixed. Face not perfectly centered. Sensation of displacement. Action in progress > photo. Person does NOT stop to pose. FORBIDDEN: frozen pose, perfect centering.',
+  'En train de parler': 'SPONTANEOUS SPEAKING SELFIE: person speaking at moment of capture. Mouth open or in movement. Facial muscles changing. Camera held close to face, trigger not synchronized with good expression, slight instability. Expression non-frozen, mouth asymmetric, gaze not perfectly aligned. FORBIDDEN: posed smile, frozen expression.',
+  'Reaction / rire': 'SPONTANEOUS REACTION LAUGH SELFIE: emotional reaction - laugh, spontaneous smile. Face naturally deforms (cheeks, eyes). Quick trigger, not adjusted, slight angle variation. Imperfect smile, eyes slightly closed or squinting, visible energy. FORBIDDEN: posed smile, forced expression.',
+  'Regard ailleurs': 'SPONTANEOUS OFF-CAMERA GAZE: person looking at something else, not the camera. Gaze directed toward external point. Camera held normally but not used as focus point. Face not totally oriented toward camera. Gaze "lost" or occupied. Impression of real moment. FORBIDDEN: camera gaze, posed expression.',
+  'Interaction (cheveux / objet)': 'SPONTANEOUS INTERACTION SELFIE: person making gesture - touching hair, adjusting clothing, holding object. Camera held without interrupting gesture, sometimes slightly hindered by movement. Hand visible or partial. Gesture not finished. Credible real interaction. FORBIDDEN: gesture too clean, fake interaction.',
+  'Allonge (POV)': 'SPONTANEOUS LYING DOWN POV: person lying down or in relaxed position. Body spread without tension. Camera held above torso, oriented toward body or environment, natural angle not optimized. Perspective of body (legs, torso) visible. Immersion. Real point of view sensation. FORBIDDEN: constructed pose, optimized angle.',
+  'Transition': 'SPONTANEOUS TRANSITION SELFIE: person between two actions - stopping, changing position, breathing. Camera trigger at wrong timing, no complete stabilization. Intermediate posture. Neither posed nor in full movement. Suspended moment. FORBIDDEN: clear pose, full movement.',
+  'Activite (boire / manger)': 'SPONTANEOUS ACTIVITY SELFIE: person doing simple action - drinking, eating, manipulating. Camera held parallel to action, not centered on face only. Object visible. Natural interaction. Credible scene. FORBIDDEN: posed with object, fake interaction.',
+  'Proche instinctif': 'SPONTANEOUS INSTINCTIVE CLOSE: person brings phone close without thinking. Face slightly forward. Camera very close, angle not corrected, slight distortion. Face dominant. Visible details. Tight/cut framing. FORBIDDEN: calculated proximity, optimized angle.',
+  'Mouvement de tete': 'SPONTANEOUS HEAD MOVEMENT: head turning or tilting during capture. Gaze changing direction. Camera triggers during movement, does not follow perfectly. Intermediate orientation - not totally face nor profile. Living effect. FORBIDDEN: fully frontal, fully profile.',
+  'Soleil dans les yeux': 'SPONTANEOUS SUN IN EYES: person facing sun. Naturally squinting, natural reaction. Camera not adjusted to light, imperfect exposure, spontaneous angle. Hard shadows, overexposed zones, eyes semi-closed, face contracted. FORBIDDEN: adjusted exposure, posed expression, eyes wide open.',
 
-  // ACCIDENTEL
-  'Chute instable': 'UNSTABLE FALL ACCIDENTAL: image tilted 10-45 degrees, NEVER straight. Unbalanced. Partially readable. Frame feels like it is tipping. Camera in rotation or falling. Non-stabilized axis. Broken horizon. Subject partially visible, often cut or exiting frame, not centered. Dominant diagonal lines. Light directional blur. Objects cut on edges. Badly distributed empty space. FORBIDDEN: straight image, aesthetic composition (becomes voluntary).',
-  'Rattrapage (catch moment)': 'CATCH MOMENT ACCIDENTAL: rapid face entry into frame. Hand or arm in movement. Brutal proximity. Camera unstable but still held, changing orientation. Body leaning toward camera, downward movement, visible imbalance. Partial blurry hand. Gaze downward. Decentered face. Irregular distance. FORBIDDEN: frozen gesture, camera gaze (becomes voluntary).',
-  'Contre-plongee accidentelle': 'ACCIDENTAL LOW ANGLE: view from below. Subject involuntarily dominating. Slightly uncomfortable perspective. Camera too low, held awkwardly. Subject above, leaning posture, gaze off-camera. Visible chin. Shadow under face. Marked vertical perspective. FORBIDDEN: clean flattering angle (becomes voluntary).',
-  'Obstruction active': 'ACTIVE OBSTRUCTION ACCIDENTAL: part of frame blocked. Uncontrolled non-intentional intrusion. Camera in contact with body, partially masked. Gesture in progress (catching, manipulating). Hand linked to action. Blurry finger or palm. Irregular frame edge. Broken depth. FORBIDDEN: clean or aesthetic obstruction (false accidental).',
-  'Desaxe (misframed)': 'MISFRAMED ACCIDENTAL: subject badly placed. Badly distributed frame. Incomplete composition. Camera badly oriented, not yet framed. Head cut. Partial body. Non-centered position. Dominant empty space. Subject at frame edge. Strong asymmetry. FORBIDDEN: badly framed but pretty (stylized voluntary).',
-  'Proximite brute': 'BRUTE PROXIMITY ACCIDENTAL: face too close. Slight deformation. Visual intrusion. Phone too close to subject, uncontrolled distance. Dominant face. Exaggerated proportions. Enlarged nose/mouth. Crushed depth. Visible skin details. FORBIDDEN: extreme deformation (caricature).',
-  'Sol (chute + recuperation)': 'GROUND FALL ACCIDENTAL: phone on ground, front camera active, oriented upward. Phone screen IS visible showing subject face live with camera interface. Subject bends forward to retrieve phone, hand reaching toward it, in natural motion. Photo triggers when hand touches or grazes screen. Real counter-shot, slightly distorted, imperfect, spontaneous. Unbalanced non-posed posture. Slight screen reflection, finger partially visible, cropped framing, slight wide-angle distortion, micro motion blur. FORBIDDEN: screen too perfect, too clean interface, phone too centered, stylized pose.'
+  // ── ACCIDENTEL ──
+  'Obstruction partielle': 'ACCIDENTAL PARTIAL OBSTRUCTION: part of image blocked by body element from subject own action. Blurry finger in foreground, sleeve passing in front, object partially before lens, dark or diffuse zone cutting image. Extreme proximity with lens, natural blur (not sharp like distant object), irregular obstruction (never clean). Everything in frame must already exist in scene. FORBIDDEN: object too sharp, aesthetic obstruction, element that does not belong.',
+  'Cadrage partiel': 'ACCIDENTAL PARTIAL FRAMING: camera captures too early or badly oriented. Involuntary trigger, absence of control. Forehead cut, chin absent, half face, subject offset to one side. Arm not yet stabilized, phone badly positioned, movement in progress. FORBIDDEN: artistic cropping, clean symmetry, subject still well centered.',
+  'En mouvement (action physique)': 'ACCIDENTAL PHYSICAL MOVEMENT: photo taken during physical action. Light motion blur, hair in displacement, body not aligned, background slightly streaked. Arm + body movement, trigger during transition. FORBIDDEN: perfect freeze (too sharp), readable pose, fake cinematic movement.',
+  'Ajustement / prise en main': 'ACCIDENTAL PHONE ADJUSTMENT: moment when person manipulates phone. Unstable angle, face very close, strange framing (too low/high), sometimes strong deformation. Phone being repositioned, hand in micro-movement, incoherent distance (too close). FORBIDDEN: beautiful angle, perfect distance, camera gaze.',
+  'Contre-plongee accidentelle': 'ACCIDENTAL LOW ANGLE: phone in low position, angle toward up. Loss of control, unplanned position. Dominant chin, visible nostrils, sky/ceiling in background, strong perspective. Phone low (relaxed hand, fall, displacement), uncontrolled arm. FORBIDDEN: flattering angle, camera gaze, posed posture.',
+  'Perspective immersive': 'ACCIDENTAL IMMERSIVE PERSPECTIVE: camera is "inside" the action. Direct body interaction. Extreme proximity, part of body very close (shoulder, cheek, arm), marked depth. Phone stuck or very close to body, ongoing action (leaning, turning, catching). FORBIDDEN: normal distance, clean image, no element in foreground.',
+  'Relachement instable': 'ACCIDENTAL UNSTABLE RELEASE: phone slips or badly held. Tilted horizon, partial blur, weird angle, frame in fall. Hand letting go, gravity in play, device rotation. FORBIDDEN: stable image, straight horizon, clean composition.',
+  'Chute / camera au sol': 'ACCIDENTAL GROUND FALL: phone on ground after fall. Very low angle, subject above, upward perspective, person bending down. Camera fixed on ground, subject in movement toward it. Gaze toward ground, NEVER toward camera. Non-stable posture, imperfect framing, natural depth (ground to subject). FORBIDDEN: camera gaze, clean pose, frozen scene, phone visible.'
 };
 
 var LOADING_MSGS = [
@@ -514,7 +532,7 @@ function renderCats() {
 function renderAngles() {
   var angles = CATS[selCat].angles;
   if (!selAngle || angles.indexOf(selAngle)===-1) selAngle = angles[0];
-  var lbl = {VOLONTAIRE:'Angle du Selfie',ACCIDENTEL:"Type d'Accident",CONTEXTUEL:'Contexte / Lieu'};
+  var lbl = {VOLONTAIRE:'Angle du Selfie', SPONTANE:'Type de Spontane', ACCIDENTEL:"Type d'Accident"};
   document.getElementById('angleLabel').textContent = lbl[selCat];
   var c = document.getElementById('angleChips'); c.innerHTML = '';
   angles.forEach(function(a) {
@@ -539,9 +557,9 @@ function buildPrompt() {
   var scene = document.getElementById('sceneInput').value.trim();
   var anglePrompt = ANGLE_PROMPTS[selAngle] || ('ANGLE: ' + selAngle + '.');
   var catRule = '';
-  if (selCat === 'VOLONTAIRE') catRule = 'VOLUNTARY SELFIE LAW: photo comes first, action adapts. Subject knows they are photographed. Phone physically held by subject. Every angle must be 100% achievable with one arm holding a phone.';
-  else if (selCat === 'NATUREL') catRule = 'NATURAL SELFIE LAW: action comes first, photo integrates. Body continues action, posture NOT optimized for camera. Control is invisible. The angle must exist without being perceived as a choice.';
-  else catRule = 'ACCIDENTAL SELFIE LAW: photo is a consequence, never an objective. Ongoing action interrupted by involuntary trigger. Body loses control of camera. Movement in progress + imbalance + imperfect framing = credible accidental.';
+  if (selCat === 'VOLONTAIRE') catRule = 'VOLUNTARY SELFIE LAW: subject adapts body for the image. Photo is intentional. Controlled angle, posture and expression. Smartphone never visible except in mirror. Imperfection is controlled but always present.';
+  else if (selCat === 'SPONTANE') catRule = 'SPONTANEOUS SELFIE LAW: photo inserts itself into the moment, does not create it. Action in progress > photo. Person does NOT change body, face or behavior. Camera follows movement, not perfectly stable, triggers during action. Face is in transition, never fixed. Smartphone never visible.';
+  else catRule = 'ACCIDENTAL SELFIE LAW: photo is a consequence, never an intention. Subject not aware of photo. Not posing. Camera not voluntarily framed. Smartphone NEVER visible. Movement in progress + imbalance + imperfect framing = credible accidental.';
   var parts = [catRule, anglePrompt];
   if (locationLock) parts.push('LOCATION LOCK: preserve exact environment from reference images.');
   if (imgB64.img2) parts.push('DUO: two people in frame, both faces clearly visible, natural complicity.');
