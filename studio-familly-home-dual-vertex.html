@@ -199,20 +199,16 @@ textarea.s-textarea:focus{border-color:var(--accent)}
         </button>
         <button class="engine-btn" id="btn-kie" onclick="selectEngine('kie')">
           <span>⚡ kie.ai</span>
-          <span class="engine-price">Clé kie_... · Flux ultra</span>
+          <span class="engine-price">Clé Bearer · Nano Banana 2</span>
         </button>
       </div>
 
-      <span class="api-label" id="splashKeyLabel1">🔑 Clé API Vertex AI (principale)</span>
-      <input type="password" id="apiKey1Input" class="api-input" placeholder="AQ..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
-
-      <div id="splashKey2Block">
-        <span class="api-label" id="splashKeyLabel2" style="margin-top:4px">🔑 Clé API kie.ai</span>
-        <input type="password" id="apiKey2Input" class="api-input" placeholder="kie_..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
-      </div>
+      <span class="api-label" id="splashKeyLabel1">🔑 Clé API Vertex AI</span>
+      <input type="password" id="apiKey1Input" class="api-input" placeholder="AQ..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" oninput="splashKeyChanged()">
 
       <p class="engine-note vertex" id="engineNote">⚡ Vertex AI — console.cloud.google.com/vertex-ai/studio</p>
-      <button onclick="showModeGrid()" style="width:100%;margin-top:12px;padding:14px;background:var(--accent);border:none;border-radius:12px;color:white;font-family:'Syne',sans-serif;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:0.2em;cursor:pointer">Valider les clés →</button>
+      <div id="splashError2" style="color:#fca5a5;font-size:11px;font-weight:700;margin-top:8px;display:none;text-align:left;"></div>
+      <button id="splashValidateBtn" onclick="showModeGrid()" style="width:100%;margin-top:12px;padding:14px;background:var(--accent);border:none;border-radius:12px;color:white;font-family:'Syne',sans-serif;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:0.2em;cursor:pointer">Valider →</button>
     </div>
     <div class="mode-grid" id="modeGrid" style="display:none">
       <div class="mode-card" onclick="selectMode('SOLO')" style="background:linear-gradient(135deg,#1a1a2e,#16213e);aspect-ratio:unset;padding:32px 16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px">
@@ -281,8 +277,7 @@ textarea.s-textarea:focus{border-color:var(--accent)}
           <input type="file" accept="image/*" id="roomImgInput" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;z-index:10">
           <div class="uploader-overlay"><button type="button" class="remove-img-btn" id="roomImgRemoveBtn">✕</button></div>
         </label>
-        <!-- Note kie.ai -->
-        <div id="kieRoomNote" style="display:none;margin-top:12px;padding:12px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:12px;font-size:10px;color:#fcd34d;line-height:1.6">ℹ️ En mode kie.ai, la photo de pièce est décrite dans le prompt (FLUX ne supporte pas plusieurs images de référence simultanément).</div>
+
       </div>
 
       <div class="s-card">
@@ -403,6 +398,22 @@ textarea.s-textarea:focus{border-color:var(--accent)}
 </div>
 
 <script>
+
+// ==================== STATE ====================
+const state = {
+  apiKey1:'', apiKey2:'',
+  appMode:'IDLE', energy:'calm',
+  mainAvatar:'', partner:'', children:[], childCount:0, isBabyPresent:false, babyAgeInMonths:6, guests:[], guestCount:0,
+  room:null, roomSubtype:'', roomImg:'',
+  action:'', cameraAngle:'face', season:'spring', weather:'sunny', dayMoment:'matin', aspectRatio:'9:16', freeText:'',
+  whatsapp:false, menage:false, portage:false, interphone:false, dressing:false, bbq:false, poussette:false, miroir:false, cheminee:false, tondeuse:false,
+  whatsappContact:'', whatsappCallType:'video', babyRef:'', carrierImg:'', bbqRef:'', strollerRef:'', strollerBaby:'',
+  interphonePortal:'', interphoneVisitor:'', interphoneInterior:'', interphonePortalOpen:'', interphoneStep:1,
+  menageToolImg:'', menageToolType:'passer_aspirateur',
+  dressingOutfits:[], tondeuseImg:'',
+  chaosEmotionAdult:'', chaosEmotionChild:'', chaosEmotionBaby:''
+};
+
 // ==================== ENGINE ====================
 let selectedEngine = 'vertex';
 let activeModalEngine = 'vertex';
@@ -415,41 +426,45 @@ function selectEngine(engine) {
   const btnV = document.getElementById('btn-vertex');
   const btnK = document.getElementById('btn-kie');
   const lbl1 = document.getElementById('splashKeyLabel1');
-  const lbl2 = document.getElementById('splashKeyLabel2');
-  const key2Block = document.getElementById('splashKey2Block');
   const note = document.getElementById('engineNote');
   const inp1 = document.getElementById('apiKey1Input');
-  const inp2 = document.getElementById('apiKey2Input');
+  // Vider le champ et cacher l'erreur
+  inp1.value = '';
+  document.getElementById('splashError2').style.display = 'none';
+  document.getElementById('modeGrid').style.display = 'none';
   if (engine === 'vertex') {
     btnV.className = 'engine-btn active-vertex';
     btnK.className = 'engine-btn';
-    lbl1.textContent = '🔑 Clé API Vertex AI (principale)';
+    lbl1.textContent = '🔑 Clé API Vertex AI';
     inp1.placeholder = 'AQ...';
-    key2Block.style.display = 'none';
     note.className = 'engine-note vertex';
     note.textContent = '⚡ Vertex AI Express Mode — console.cloud.google.com/vertex-ai/studio';
   } else {
     btnV.className = 'engine-btn';
     btnK.className = 'engine-btn active-kie';
-    lbl1.textContent = '🔑 Clé API Vertex AI (principale)';
-    inp1.placeholder = 'AQ...';
-    lbl2.textContent = '🔑 Clé API kie.ai';
-    inp2.placeholder = 'kie_...';
-    key2Block.style.display = 'block';
+    lbl1.textContent = '🔑 Clé API kie.ai';
+    inp1.placeholder = 'Colle ta cle kie.ai ici...';
     note.className = 'engine-note kie';
-    note.textContent = '⚡ kie.ai — Clé sur kie.ai/dashboard/keys';
+    note.textContent = '⚡ kie.ai — Cle sur kie.ai/api-key';
   }
 }
 
+function splashKeyChanged() {
+  const k = document.getElementById('apiKey1Input').value.trim();
+  document.getElementById('splashError2').style.display = 'none';
+}
+
 function showModeGrid() {
-  const k1 = document.getElementById('apiKey1Input').value.trim();
-  const k2 = document.getElementById('apiKey2Input').value.trim();
-  const errEl = document.getElementById('splashError');
-  if (!k1) { errEl.textContent = 'Clé Vertex AI obligatoire.'; errEl.style.display = 'block'; return; }
-  if (selectedEngine === 'kie' && !k2) { errEl.textContent = 'Clé kie.ai obligatoire pour ce moteur.'; errEl.style.display = 'block'; return; }
-  errEl.style.display = 'none';
-  state.apiKey1 = k1;
-  state.apiKey2 = k2;
+  const inp = document.getElementById('apiKey1Input');
+  const k = inp ? inp.value.trim() : '';
+  const errEl = document.getElementById('splashError2') || document.getElementById('splashError');
+  if (!k) {
+    if(errEl){ errEl.textContent = selectedEngine==='kie' ? 'Entrez votre cle kie.ai.' : 'Entrez votre cle Vertex AI.'; errEl.style.display = 'block'; }
+    return;
+  }
+  if(errEl) errEl.style.display = 'none';
+  if(selectedEngine==='kie'){ state.apiKey2 = k; state.apiKey1 = ''; }
+  else { state.apiKey1 = k; state.apiKey2 = ''; }
   document.getElementById('modeGrid').style.display = 'grid';
 }
 
@@ -481,21 +496,6 @@ function updateEnginePill() {
   else { pill.className = 'engine-pill vertex'; pill.textContent = 'VERTEX AI'; }
 }
 
-// ==================== STATE ====================
-const state = {
-  apiKey1:'', apiKey2:'',
-  appMode:'IDLE', energy:'calm',
-  mainAvatar:'', partner:'', children:[], childCount:0, isBabyPresent:false, babyAgeInMonths:6, guests:[], guestCount:0,
-  room:null, roomSubtype:'', roomImg:'',
-  action:'', cameraAngle:'face', season:'spring', weather:'sunny', dayMoment:'matin', aspectRatio:'9:16', freeText:'',
-  whatsapp:false, menage:false, portage:false, interphone:false, dressing:false, bbq:false, poussette:false, miroir:false, cheminee:false, tondeuse:false,
-  whatsappContact:'', whatsappCallType:'video', babyRef:'', carrierImg:'', bbqRef:'', strollerRef:'', strollerBaby:'',
-  interphonePortal:'', interphoneVisitor:'', interphoneInterior:'', interphonePortalOpen:'', interphoneStep:1,
-  menageToolImg:'', menageToolType:'passer_aspirateur',
-  dressingOutfits:[], tondeuseImg:'',
-  chaosEmotionAdult:'', chaosEmotionChild:'', chaosEmotionBaby:''
-};
-
 // ==================== ROOMS DATA ====================
 const ROOMS=[{cat:'pieces_principales',label:'Principales',rooms:[{key:'salon',label:'Salon',icon:'🛋'},{key:'cuisine',label:'Cuisine',icon:'🍳'},{key:'salle_a_manger',label:'Salle à manger',icon:'🍽️'},{key:'chambre',label:'Chambre',icon:'🛏️'},{key:'entree',label:'Entrée',icon:'🚪'},{key:'escaliers',label:'Escaliers',icon:'🪜'},{key:'salle_de_jeu',label:'Salle de jeu',icon:'🧸'},{key:'bureau',label:'Bureau',icon:'💻'},{key:'dressing',label:'Dressing',icon:'👗'}]},{cat:'salles_de_bain',label:'Bain/Toilettes',rooms:[{key:'salle_de_bain',label:'Salle de bain',icon:'🛁'},{key:'toilettes',label:'Toilettes',icon:'🚽'}]},{cat:'pieces_fonctionnelles',label:'Fonctionnel',rooms:[{key:'buanderie',label:'Buanderie',icon:'🧺'},{key:'cellier_nourriture',label:'Cellier',icon:'🥫'},{key:'cave_vin',label:'Cave à vin',icon:'🍷'},{key:'salle_de_sport',label:'Sport',icon:'🏋️'},{key:'atelier_bricolage',label:'Atelier',icon:'🛠️'},{key:'garage_voiture',label:'Garage',icon:'🚗'},{key:'ascenseur',label:'Ascenseur',icon:'🛗'},{key:'jacuzzi',label:'Jacuzzi',icon:'🫧'}]},{cat:'espaces_exterieurs',label:'Extérieur',rooms:[{key:'jardin',label:'Jardin',icon:'🌿'},{key:'terrace',label:'Terrasse',icon:'⛱️'},{key:'balcon',label:'Balcon',icon:'🏙️'},{key:'piscine',label:'Piscine',icon:'🏊'},{key:'exterior_villa',label:'Extérieur Villa',icon:'🏠'},{key:'mare',label:'Mare',icon:'🦆'}]}];
 
@@ -513,22 +513,13 @@ const LOADING_STEPS=["Vérification de l'intégrité DNA...","Scanning de la str
 const KIE_AR_MAP={'9:16':'9:16','16:9':'16:9','1:1':'1:1'};
 
 // ==================== SPLASH ====================
-function checkApiKey(){
-  const k=document.getElementById('apiKey1Input').value.trim();
-  state.apiKey1=k;
-}
-document.getElementById('apiKey1Input').addEventListener('input',checkApiKey);
-document.getElementById('apiKey2Input').addEventListener('input',function(){state.apiKey2=this.value.trim();});
+// apiKey2Input removed — single field per engine
 
 function selectMode(m){
-  const k1=document.getElementById('apiKey1Input').value.trim();
-  const k2=document.getElementById('apiKey2Input').value.trim();
-  if(!k1){showSplashError('Clé Vertex AI obligatoire');return;}
-  if(selectedEngine==='kie'&&!k2){showSplashError('Clé kie.ai obligatoire pour ce moteur');return;}
-  if(selectedEngine==='vertex'&&!k1.startsWith('AQ')){if(!confirm('⚠️ Cette clé ne commence pas par "AQ". Continuer quand même ?'))return;}
-  if(selectedEngine==='kie'&&!k2.startsWith('kie_')){if(!confirm('⚠️ Cette clé kie.ai ne commence pas par "kie_". Continuer quand même ?'))return;}
-  state.apiKey1=k1;
-  state.apiKey2=k2;
+  // La clé a déjà été validée dans showModeGrid
+  if(!state.apiKey1 && !state.apiKey2){
+    showSplashError('Veuillez valider vos cles API.');return;
+  }
   state.appMode=m;
   showSetup();
 }
@@ -607,8 +598,6 @@ function showApp(){
   document.getElementById('splash').style.display='none';
   document.getElementById('app').classList.add('visible');
   updateEnginePill();
-  const kieNote=document.getElementById('kieRoomNote');
-  if(kieNote)kieNote.style.display=selectedEngine==='kie'?'block':'none';
   initRoomGrid();
   const roomInput=document.getElementById('roomImgInput');
   if(roomInput){
@@ -784,63 +773,100 @@ async function callVertex(){
   throw lastErr||new Error('Generation echouee.');
 }
 
-// ─── kie.ai ────────────────────────────────────────────────────────────────────
+// ─── kie.ai — exactement comme Studio POV ────────────────────────────────────
+async function uploadImageToKie(base64DataUri){
+  const res=await fetch('https://kieai.redpandaai.co/api/file-base64-upload',{
+    method:'POST',
+    headers:{'Authorization':'Bearer '+state.apiKey2,'Content-Type':'application/json'},
+    body:JSON.stringify({base64Data:base64DataUri,uploadPath:'images/studio-family-home'})
+  });
+  let data={};
+  try{data=await res.json();}catch(_){}
+  if(!res.ok||!data.data||!data.data.downloadUrl){
+    throw new Error('Erreur upload image kie.ai: '+(data.msg||res.status));
+  }
+  return data.data.downloadUrl;
+}
+
 async function callKie(){
   if(!state.apiKey2){throw new Error('Cle kie.ai manquante. Cliquez sur le badge moteur pour la renseigner.');}
   const prompt=buildKiePrompt();
   updateLoadingStep('Envoi vers kie.ai...');
 
-  // kie.ai utilise l'API compatible avec Flux — endpoint standard
-  const body={
-    prompt: prompt,
-    aspect_ratio: state.aspectRatio,
-    num_images: 1,
-    output_format: 'jpeg'
+  // Upload image avatar vers kie.ai pour obtenir une URL publique
+  let imageUrls=[];
+  if(state.mainAvatar){
+    updateLoadingStep('Upload image de reference...');
+    try{
+      const url=await uploadImageToKie(state.mainAvatar);
+      imageUrls.push(url);
+    }catch(e){console.warn('Upload avatar echec:',e.message);}
+  }
+
+  updateLoadingStep('Creation de la tache kie.ai...');
+  const taskBody={
+    model:'nano-banana-2',
+    input:{
+      prompt:prompt,
+      aspect_ratio:state.aspectRatio,
+      resolution:'1K',
+      output_format:'jpg',
+      image_input:imageUrls
+    }
   };
 
-  // Ajouter l'image avatar comme référence si disponible
-  if(state.mainAvatar){
-    body.image = state.mainAvatar;
-    body.image_strength = 0.75;
-  }
-
-  const res=await fetch('https://api.kie.ai/v1/images/generate',{
+  const createRes=await fetch('https://api.kie.ai/api/v1/jobs/createTask',{
     method:'POST',
-    headers:{
-      'Authorization':'Bearer '+state.apiKey2,
-      'Content-Type':'application/json'
-    },
-    body:JSON.stringify(body)
+    headers:{'Authorization':'Bearer '+state.apiKey2,'Content-Type':'application/json'},
+    body:JSON.stringify(taskBody)
   });
+  let createData={};
+  try{createData=await createRes.json();}catch(_){}
 
-  let data={};
-  try{data=await res.json();}catch(_){}
-
-  if(!res.ok){
-    const msg=data.detail||data.error||data.message||'Erreur HTTP '+res.status;
-    if(res.status===401)throw new Error('Cle kie.ai invalide. Verifiez sur kie.ai/dashboard/keys.');
-    if(res.status===403)throw new Error('Acces refuse kie.ai. Verifiez votre compte et vos credits.');
-    if(res.status===429)throw new Error('Trop de requetes kie.ai. Attendez quelques secondes.');
-    throw new Error('Erreur kie.ai '+res.status+': '+msg);
+  if(!createRes.ok||createData.code!==200){
+    const msg=createData&&(createData.msg||createData.message)||'Erreur HTTP '+createRes.status;
+    if(createRes.status===401||createData.code===401)throw new Error('Cle kie.ai invalide. Verifiez sur kie.ai/api-key');
+    if(createRes.status===403||createData.code===403)throw new Error('Acces refuse kie.ai. Verifiez vos credits.');
+    if(createRes.status===429||createData.code===429)throw new Error('Trop de requetes kie.ai. Attendez quelques secondes.');
+    throw new Error('Erreur kie.ai: '+msg);
   }
 
-  // Récupérer l'URL de l'image — stable blob pour éviter les erreurs de stockage
-  const imageUrl = (data.images&&data.images[0]&&data.images[0].url) || data.url || data.output;
-  if(!imageUrl)throw new Error('Aucune image retournee par kie.ai. Verifiez vos credits.');
+  const taskId=createData&&createData.data&&createData.data.taskId;
+  if(!taskId)throw new Error('Aucun taskId retourne par kie.ai. Reponse: '+JSON.stringify(createData));
 
-  updateLoadingStep("Recuperation de l'image...");
+  updateLoadingStep('Nano Banana 2 genere votre image...');
+  let lastStatusData={};
+  for(let i=0;i<60;i++){
+    await new Promise(r=>setTimeout(r,5000));
+    updateLoadingStep('Nano Banana 2 en cours... ('+(((i+1)*5))+'s)');
+    let statusData={};
+    try{
+      const statusRes=await fetch('https://api.kie.ai/api/v1/jobs/recordInfo?taskId='+taskId,{
+        headers:{'Authorization':'Bearer '+state.apiKey2}
+      });
+      statusData=await statusRes.json();
+    }catch(e){lastStatusData={fetchError:e.message};continue;}
+    lastStatusData=statusData;
+    const st=statusData&&statusData.data&&statusData.data.state;
+    if(st==='fail')throw new Error('Fail: '+(statusData.data&&statusData.data.failMsg));
+    if(st==='success'){
+      let imageUrl=null;
+      try{const r=JSON.parse((statusData.data&&statusData.data.resultJson)||'{}');imageUrl=r&&(r.resultUrls&&r.resultUrls[0]||r.images&&r.images[0]&&r.images[0].url||r.url);}catch(_){}
+      if(!imageUrl)throw new Error('Success mais pas URL. resultJson: '+(statusData.data&&statusData.data.resultJson));
+      updateLoadingStep("Recuperation de l'image...");
+      const imgRes=await fetch(imageUrl);
+      const blob=await imgRes.blob();
+      return new Promise((resolve,reject)=>{
+        const reader=new FileReader();
+        reader.onloadend=()=>resolve(reader.result);
+        reader.onerror=reject;
+        reader.readAsDataURL(blob);
+      });
+    }
+  }
+  throw new Error('Timeout kie.ai. Derniere reponse: '+JSON.stringify(lastStatusData).slice(0,500));
+}
 
-  // Convertir en blob stable (stocké en mémoire, pas de re-fetch)
-  const imgRes=await fetch(imageUrl);
-  if(!imgRes.ok)throw new Error('Impossible de recuperer l\'image depuis kie.ai.');
-  const blob=await imgRes.blob();
-
-  return new Promise((resolve,reject)=>{
-    const reader=new FileReader();
-    reader.onloadend=()=>resolve(reader.result);
-    reader.onerror=reject;
-    reader.readAsDataURL(blob);
-  });
 }
 
 function buildKiePrompt(){
@@ -934,7 +960,7 @@ function showResult(dataUrl,engine){
 
   const badge=document.createElement('span');
   badge.className='result-engine-badge '+(engine==='kie'?'kie':'vertex');
-  badge.textContent=engine==='kie'?'KIE.AI · FLUX':'GEMINI · VERTEX AI';
+  badge.textContent=engine==='kie'?'KIE.AI · NANO BANANA 2':'GEMINI · VERTEX AI';
   panel.appendChild(badge);
 
   const img=document.createElement('img');img.className='output-img';img.src=dataUrl;panel.appendChild(img);
