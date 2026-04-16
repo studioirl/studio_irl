@@ -951,11 +951,15 @@ Réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks :
 }
 
 async function callTextAnalyse(prompt) {
-  const endpoint = `https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-3.1-flash-image-preview:generateContent?key=${encodeURIComponent(API_KEY)}`;
+  // Vertex Express : header x-goog-api-key + modèle texte gemini-2.0-flash-lite
+  const endpoint = 'https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-2.0-flash-lite:generateContent';
 
   const resp = await fetch(endpoint, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'x-goog-api-key': API_KEY
+    },
     body: JSON.stringify({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       generationConfig: {
@@ -1130,7 +1134,7 @@ TECHNIQUE : 4K ultra-réaliste, Sony A7R IV, 85mm f/1.4, grain argentique subtil
 
 // ─── VERTEX AI GENERATE ── même modèle/endpoint que Studio POV ──────────────
 async function generateVertex(promptText) {
-  const endpoint = `https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-3.1-flash-image-preview:generateContent?key=${encodeURIComponent(API_KEY)}`;
+  const endpoint = 'https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-3.1-flash-image-preview:generateContent';
 
   const parts = [];
   if (avatarBase64) parts.push({ inlineData: { data: avatarBase64, mimeType: avatarMime } });
@@ -1148,7 +1152,7 @@ async function generateVertex(promptText) {
   let lastErr;
   for (let attempt = 0; attempt <= waitTimes.length; attempt++) {
     try {
-      const resp = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const resp = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': API_KEY }, body: JSON.stringify(body) });
       let data = {};
       try { data = await resp.json(); } catch(_) {}
       if (!resp.ok) {
