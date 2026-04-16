@@ -1125,33 +1125,47 @@ async function generateVideo(){
       generate_audio:generateAudio
     };
 
-    // ── Upload image principale (first_frame)
+    // ── Déterminer si on a une voix de référence
+    var voiceSlots=mode==='solo'?[voices.solo]:[voices.A,voices.B];
+    var hasVoice=voiceSlots.some(function(v){return v&&v.dataUri;});
+
+    // ── Règle Seedance : first_frame_url et reference_audio_urls sont mutuellement exclusifs.
+    // Si voix présente → tout passe par reference_image_urls (mode multimodal).
+    // Si pas de voix et pas de multi-ref → on peut utiliser first_frame_url.
+    var allRefImages=[];
+
+    // Image principale toujours en premier dans les références
     setProg(8,'Upload image principale...');
     var mainUrl=await uploadToKie(mainImg,'cinema/main');
-    inputData.first_frame_url=mainUrl;
+    allRefImages.push(mainUrl);
 
-    // ── Upload image Duo B (last_frame pour duo = 2e perso via référence)
+    // Mode Duo : avatar B aussi en référence
     if(mode==='duo'&&imgs.B){
       setProg(14,'Upload avatar B...');
       var bUrl=await uploadToKie(imgs.B,'cinema/avatarB');
-      inputData.last_frame_url=bUrl;
+      allRefImages.push(bUrl);
     }
 
-    // ── Upload références multi-images
-    var refUrls=[];
+    // Multi-références additionnelles
     if(refImages.length>0){
       setProg(18,'Upload références avatar ('+refImages.length+')...');
       for(var ri=0;ri<refImages.length;ri++){
+        if(allRefImages.length>=9)break;
         var rUrl=await uploadToKie(refImages[ri],'cinema/ref');
-        refUrls.push(rUrl);
+        allRefImages.push(rUrl);
       }
-      inputData.reference_image_urls=refUrls;
     }
 
-    // ── Upload voix de référence
+    // Si voix OU multi-ref → mode multimodal (reference_image_urls)
+    // Si solo simple sans voix ni extra-ref → first_frame_url (meilleure fidélité visage)
+    if(hasVoice||refImages.length>0||mode==='duo'){
+      inputData.reference_image_urls=allRefImages;
+    }else{
+      inputData.first_frame_url=allRefImages[0];
+    }
+
+    // ── Upload voix de référence (seulement si mode multimodal)
     var audioUrls=[];
-    var voiceSlots=mode==='solo'?[voices.solo]:[voices.A,voices.B];
-    var hasVoice=voiceSlots.some(function(v){return v&&v.dataUri;});
     if(hasVoice){
       setProg(22,'Upload voix de référence...');
       for(var vi=0;vi<voiceSlots.length;vi++){
