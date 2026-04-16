@@ -866,8 +866,8 @@ function switchTab(t) {
   currentTab = t;
   document.getElementById('tab-libre').classList.toggle('active', t === 'libre');
   document.getElementById('tab-manual').classList.toggle('active', t === 'manual');
-  document.getElementById('input-libre').style.display = t === 'libre' ? '' : 'none';
-  document.getElementById('sequences-manual').style.display = t === 'manual' ? '' : 'none';
+  document.getElementById('input-libre').style.display = t === 'libre' ? 'block' : 'none';
+  document.getElementById('sequences-manual').style.display = t === 'manual' ? 'block' : 'none';
 }
 
 // ─── MANUAL SEQUENCES ────────────────────────────────────
@@ -951,14 +951,10 @@ Réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks :
 }
 
 async function callTextAnalyse(prompt) {
-  // Même endpoint que Studio POV — fonctionne avec clé AQ et AIza
+  // Même endpoint Vertex que Studio POV — clé AQ passée en paramètre URL
   const endpoint = `https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-3.1-flash-image-preview:generateContent?key=${encodeURIComponent(API_KEY)}`;
-  // Pour l'analyse texte on utilise un modèle texte standard
-  const textEndpoint = API_KEY.startsWith('AQ')
-    ? `https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(API_KEY)}`
-    : `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
 
-  const resp = await fetch(textEndpoint, {
+  const resp = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -967,8 +963,9 @@ async function callTextAnalyse(prompt) {
     })
   });
   const data = await resp.json();
-  if (!resp.ok) throw new Error(data.error?.message || `Erreur API ${resp.status}`);
+  if (!resp.ok) throw new Error(data.error?.message || `Erreur Vertex ${resp.status}`);
   const txt = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  if (!txt) throw new Error('Réponse vide du modèle');
   return JSON.parse(cleanJson(txt));
 }
 function cleanJson(txt) {
