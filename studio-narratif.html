@@ -730,6 +730,9 @@
         <div id="sequences-manual">
           <div id="manual-list"></div>
           <button class="btn-add-seq" onclick="addManualSeq()">+ Ajouter une séquence</button>
+          <button class="btn-analyse" style="margin-top:10px;" onclick="useManualSequences()">
+            <span>⟡</span> <span>Utiliser ces séquences</span>
+          </button>
         </div>
       </div>
 
@@ -819,8 +822,7 @@ function startApp() {
   document.getElementById('app').classList.add('visible');
   document.getElementById('engine-badge').textContent = ENGINE === 'vertex' ? 'Vertex AI' : 'kie.ai';
 
-  // Init manual seq
-  addManualSeq(); addManualSeq(); addManualSeq();
+  // Init manual sequences (créées au chargement du DOM)
 }
 
 // ─── AVATAR ──────────────────────────────────────────────
@@ -930,9 +932,9 @@ Réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks :
 
     let result;
     if (ENGINE === 'vertex') {
-      result = await callVertexAnalyse(prompt);
+      result = await callTextAnalyse(prompt);
     } else {
-      result = await callVertexAnalyse(prompt); // kie.ai ne fait pas d'analyse texte, on utilise toujours Vertex pour ça
+      result = await callTextAnalyse(prompt); // kie.ai ne fait pas d'analyse texte, on utilise toujours Vertex pour ça
     }
 
     sequences = result.sequences || [];
@@ -948,43 +950,27 @@ Réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks :
   }
 }
 
-async function callVertexAnalyse(prompt) {
-  const isVertex = API_KEY && API_KEY.startsWith('AQ');
-  let url, body, headers;
+async function callTextAnalyse(prompt) {
+  // Même endpoint que Studio POV — fonctionne avec clé AQ et AIza
+  const endpoint = `https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-3.1-flash-image-preview:generateContent?key=${encodeURIComponent(API_KEY)}`;
+  // Pour l'analyse texte on utilise un modèle texte standard
+  const textEndpoint = API_KEY.startsWith('AQ')
+    ? `https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(API_KEY)}`
+    : `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
 
-  if (isVertex) {
-    url = `https://aiplatform.googleapis.com/v1/projects/*/locations/*/publishers/google/models/gemini-2.0-flash-001:generateContent`;
-    // Use Express Mode endpoint
-    url = `https://aiplatform.googleapis.com/v1beta1/endpoints/openapi/chat/completions`;
-    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.3, maxOutputTokens: 2048 }
-      })
-    });
-    const data = await resp.json();
-    if (!resp.ok) throw new Error(data.error?.message || 'Erreur API');
-    const txt = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    return JSON.parse(cleanJson(txt));
-  } else {
-    // Google AI Studio key (AIza)
-    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.3, maxOutputTokens: 2048 }
-      })
-    });
-    const data = await resp.json();
-    if (!resp.ok) throw new Error(data.error?.message || 'Erreur API');
-    const txt = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    return JSON.parse(cleanJson(txt));
-  }
+  const resp = await fetch(textEndpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.3, maxOutputTokens: 2048 }
+    })
+  });
+  const data = await resp.json();
+  if (!resp.ok) throw new Error(data.error?.message || `Erreur API ${resp.status}`);
+  const txt = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  return JSON.parse(cleanJson(txt));
 }
-
 function cleanJson(txt) {
   return txt.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim();
 }
@@ -1137,68 +1123,49 @@ RÉALISME ABSOLU :
 TECHNIQUE : 4K ultra-réaliste, Sony A7R IV, 85mm f/1.4, grain argentique subtil, HDR naturel, couleurs profondes non saturées.`;
 }
 
-// ─── VERTEX AI GENERATE ──────────────────────────────────
+// ─── VERTEX AI GENERATE ── même modèle/endpoint que Studio POV ──────────────
 async function generateVertex(promptText) {
-  const isVertexExpress = API_KEY.startsWith('AQ');
+  const endpoint = `https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-3.1-flash-image-preview:generateContent?key=${encodeURIComponent(API_KEY)}`;
 
-  let apiUrl, requestBody;
+  const parts = [];
+  if (avatarBase64) parts.push({ inlineData: { data: avatarBase64, mimeType: avatarMime } });
+  parts.push({ text: promptText });
 
-  if (isVertexExpress) {
-    apiUrl = `https://aiplatform.googleapis.com/v1beta1/projects/-/locations/us-central1/publishers/google/models/gemini-2.0-flash-preview-image-generation:generateContent`;
-    requestBody = {
-      contents: [{
-        role: 'user',
-        parts: [
-          { inline_data: { mime_type: avatarMime, data: avatarBase64 } },
-          { text: promptText }
-        ]
-      }],
-      generationConfig: {
-        responseModalities: ['IMAGE', 'TEXT'],
-        temperature: 0.9
+  const body = {
+    contents: [{ role: 'user', parts }],
+    generationConfig: {
+      responseModalities: ['IMAGE'],
+      imageConfig: { aspectRatio: '9:16', imageSize: '4K' }
+    }
+  };
+
+  const waitTimes = [5000, 10000, 20000, 40000];
+  let lastErr;
+  for (let attempt = 0; attempt <= waitTimes.length; attempt++) {
+    try {
+      const resp = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      let data = {};
+      try { data = await resp.json(); } catch(_) {}
+      if (!resp.ok) {
+        const msg = data?.error?.message || `Erreur HTTP ${resp.status}`;
+        if (resp.status === 429 && attempt < waitTimes.length) { lastErr = new Error(msg); await delay(waitTimes[attempt]); continue; }
+        throw new Error(msg);
       }
-    };
-    const resp = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': API_KEY
-      },
-      body: JSON.stringify(requestBody)
-    });
-    const data = await resp.json();
-    if (!resp.ok) throw new Error(data.error?.message || 'Erreur Vertex');
-    const imgPart = data.candidates?.[0]?.content?.parts?.find(p => p.inline_data);
-    if (!imgPart) throw new Error('Aucune image retournée');
-    return `data:${imgPart.inline_data.mime_type};base64,${imgPart.inline_data.data}`;
-
-  } else {
-    // Google AI Studio key
-    apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent?key=${API_KEY}`;
-    requestBody = {
-      contents: [{
-        role: 'user',
-        parts: [
-          { inline_data: { mime_type: avatarMime, data: avatarBase64 } },
-          { text: promptText }
-        ]
-      }],
-      generationConfig: {
-        responseModalities: ['IMAGE', 'TEXT'],
-        temperature: 0.9
+      const candidate = data?.candidates?.[0];
+      if (!candidate) throw new Error('Aucune réponse du modèle');
+      if (candidate.finishReason === 'SAFETY') throw new Error('Bloqué par les filtres de sécurité');
+      for (const p of (candidate?.content?.parts || [])) {
+        if (p.inlineData?.data) return `data:image/png;base64,${p.inlineData.data}`;
       }
-    };
-    const resp = await fetch(apiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody)
-    });
-    const data = await resp.json();
-    if (!resp.ok) throw new Error(data.error?.message || 'Erreur API');
-    const imgPart = data.candidates?.[0]?.content?.parts?.find(p => p.inline_data);
-    if (!imgPart) throw new Error('Aucune image retournée');
-    return `data:${imgPart.inline_data.mime_type};base64,${imgPart.inline_data.data}`;
+      throw new Error('Image non trouvée dans la réponse');
+    } catch(err) {
+      lastErr = err;
+      const retryable = /429|503|overloaded/i.test(err.message);
+      if (retryable && attempt < waitTimes.length) { await delay(waitTimes[attempt]); continue; }
+      throw err;
+    }
   }
+  throw lastErr || new Error('Génération Vertex échouée');
 }
 
 // ─── KIE.AI GENERATE ─────────────────────────────────────
@@ -1299,18 +1266,12 @@ function toast(msg, type = '') {
   el._t = setTimeout(() => el.classList.remove('show'), 3500);
 }
 
-// ─── INIT MANUAL TAB ─────────────────────────────────────
-// (called when tab clicked)
-// Already init'd in startApp, but wire up the manual generate btn
+// ─── INIT AU CHARGEMENT ──────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  // Override manual tab to add a generate button
-  const manualSection = document.getElementById('sequences-manual');
-  const genBtn = document.createElement('button');
-  genBtn.className = 'btn-analyse';
-  genBtn.style.marginTop = '10px';
-  genBtn.innerHTML = '<span>⟡</span> <span>Utiliser ces séquences</span>';
-  genBtn.onclick = useManualSequences;
-  manualSection.appendChild(genBtn);
+  // Créer 3 séquences manuelles par défaut (tab caché mais les éléments existent)
+  addManualSeq();
+  addManualSeq();
+  addManualSeq();
 });
 </script>
 </body>
