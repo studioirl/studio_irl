@@ -951,7 +951,6 @@ Réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks :
 }
 
 async function callTextAnalyse(prompt) {
-  // Même endpoint Vertex que Studio POV — clé AQ passée en paramètre URL
   const endpoint = `https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-3.1-flash-image-preview:generateContent?key=${encodeURIComponent(API_KEY)}`;
 
   const resp = await fetch(endpoint, {
@@ -959,7 +958,11 @@ async function callTextAnalyse(prompt) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.3, maxOutputTokens: 2048 }
+      generationConfig: {
+        temperature: 0.3,
+        maxOutputTokens: 2048,
+        responseMimeType: 'application/json'
+      }
     })
   });
   const data = await resp.json();
@@ -969,7 +972,12 @@ async function callTextAnalyse(prompt) {
   return JSON.parse(cleanJson(txt));
 }
 function cleanJson(txt) {
-  return txt.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim();
+  txt = txt.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim();
+  // Extraire uniquement le bloc JSON entre { et }
+  const start = txt.indexOf('{');
+  const end = txt.lastIndexOf('}');
+  if (start >= 0 && end >= 0) return txt.slice(start, end + 1);
+  return txt;
 }
 
 // ─── MANUAL → SEQUENCES ──────────────────────────────────
