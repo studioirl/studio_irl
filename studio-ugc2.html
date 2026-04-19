@@ -1194,47 +1194,32 @@ function calcTotal() {
 // URL du serveur Cloud Run
 const CLOUD_FUNCTION_URL = 'https://ugc-proxy-738708455173.europe-west1.run.app';
 
-async function callProxy(model, body) {
+async function callProxy(model, body, countQuota) {
+  // countQuota=true uniquement pour l'appel image final
   const waitTimes = [5000, 10000, 20000, 40000];
   let lastErr;
+  // Pour l'analyse, on utilise ADMIN2024 pour eviter le decompte serveur
+  var codeToSend = countQuota ? state.studentCode : 'ADMIN2024';
   for (let attempt = 0; attempt <= waitTimes.length; attempt++) {
     try {
       const res = await fetch(CLOUD_FUNCTION_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ studentCode: state.studentCode, model: model, body: body })
+        body: JSON.stringify({ studentCode: codeToSend, model: model, body: body })
       });
       if (!res.ok) {
         const txt = await res.text();
         let d; try { d = JSON.parse(txt); } catch(_) {}
         const msg = (d && d.error) || txt;
         if (res.status === 429) {
-          // Forcer le quota a 0 restant visuellement
-          updateQuotaWidget(10, 10);
+          if (state.studentCode !== 'ADMIN2024') updateQuotaWidget(10, 10);
           throw new Error(msg);
         }
         if (res.status === 401) throw new Error('Code invalide : ' + state.studentCode);
         if (msg.includes('503') || msg.includes('overloaded')) throw new Error('RETRY:' + msg);
         throw new Error('Erreur ' + res.status + ': ' + msg);
       }
-      const data = await res.json();
-      // Toujours prendre le MAX entre serveur et localStorage
-      // Le serveur peut redemarrer et perdre sa memoire
-      var serverUsed = data._quota ? data._quota.used : 0;
-      var localUsed = getLocalQuota(state.studentCode);
-      var realUsed = Math.max(serverUsed, localUsed);
-      // Sync localStorage avec la vraie valeur
-      var today = new Date().toISOString().slice(0,10);
-      localStorage.setItem('quota_' + state.studentCode + '_' + today, realUsed);
-      updateQuotaWidget(realUsed, 10);
-      if (realUsed >= 10) {
-        var btn = document.getElementById('genBtn');
-        if (btn) {
-          btn.disabled = true;
-          document.getElementById('genLabel').textContent = 'Quota atteint - Reviens demain';
-        }
-      }
-      return data;
+      return await res.json();
     } catch(err) {
       lastErr = err;
       if (String(err.message).startsWith('RETRY:') && attempt < waitTimes.length) {
@@ -1333,13 +1318,10 @@ async function buildPrompt(scene, shot, specialMode, seqInfo, btsType) {
   const prompt = 'Génère instruction UGC 4K : '+modeStr+' Action="'+action+'". '+identLock+' '+styleStr+' '+locStr+' '+locationStr+' '+dressStr+' '+duoStr+' '+carStr;
   parts.push({ text: prompt });
 
-  const _savedCode = state.studentCode;
-  state.studentCode = 'ADMIN2024';
   const analyzeRes = await callProxy(MODEL_ANALYZE, {
     contents: [{ role: 'user', parts }],
     systemInstruction: { parts: [{ text: buildSystemPrompt() }] }
   });
-  state.studentCode = _savedCode;
   const txt = analyzeRes.candidates && analyzeRes.candidates[0]?.content?.parts;
   return (txt && txt.find(p => p.text)?.text) || prompt;
 }
@@ -1358,7 +1340,7 @@ async function generateImage(prompt) {
   const res = await callProxy(MODEL_IMAGE, {
     contents: [{ role: 'user', parts }],
     generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: state.aspectRatio, imageSize: '4K' } }
-  });
+  }, true);
 
   const cParts = res.candidates && res.candidates[0]?.content?.parts;
   const imgData = cParts && cParts.find(p => p.inlineData);
@@ -1406,9 +1388,11 @@ async function generate() {
       const imgUrl = await generateImage(prompt);
       generatedImages.push(imgUrl);
       addImageToGallery(imgUrl, count);
-      var newQ = incrementLocalQuota(state.studentCode);
-      state.quotaUsed = newQ;
-      updateQuotaWidget(newQ, 10);
+      if (state.studentCode !== 'ADMIN2024') {
+        var newQ = incrementLocalQuota(state.studentCode);
+        state.quotaUsed = newQ;
+        updateQuotaWidget(newQ, 10);
+      }
     } catch(err) { 
       console.error('Generation error:', err);
       showError(err.message || 'Erreur de connexion au serveur. Verifie que le serveur est actif.');
