@@ -113,16 +113,28 @@ const LOADING_MESSAGES = [
 const GLOBAL_PROMPT_RULES = `
 MANDATORY TECHNICAL RULES:
 - VISIBLE LIGHT SWITCHES in every room near the door.
-- FUNCTIONAL LIGHTING (MUST have a visible chandelier or decorative pendant light in main rooms).
-- BATHROOMS/WC MUST HAVE VISIBLE VMC (Ventilation) on ceiling.
-- ALL CEILINGS MUST BE COMPLETELY FINISHED.
+- ALL CEILINGS MUST BE COMPLETELY FINISHED AND PAINTED.
 - ALL SURFACES must show professional finishing in final renders.
-- JACUZZI MUST BE PERFECTLY ROUND AND FILLED WITH BUBBLING WATER.
 - NO RUGS in Bathrooms, Kitchens, or Garages.
-- GARAGE is strictly technical.
-- CELLIER = Food storage. CAVE = Wine racks.
+- GARAGE is strictly technical space only.
+- CELLIER = Food storage shelves only. CAVE = Wine racks only.
 - APARTMENT MODE: NO POOLS, NO GARDENS, NO GARAGES.
 - T3/T4 APARTMENTS: PLAIN-PIED ONLY.
+- JACUZZI MUST BE PERFECTLY ROUND AND FILLED WITH BUBBLING WATER — only in dedicated Jacuzzi room.
+
+STRICT ROOM ISOLATION RULES:
+- GENERATE ONLY THE ROOM SPECIFIED. Do NOT mix rooms.
+- NO furniture from other rooms bleeding into frame.
+- NO kitchen elements in bedrooms. NO bedroom elements in living rooms.
+- NO bathroom elements in any other room. NO pool or jacuzzi visible outside its dedicated room.
+- Each room must look like a standalone space, not connected to another room interior.
+
+WATER POINTS STRICT RULES:
+- SWIMMING POOLS: ONLY in dedicated "Piscine" rooms. FORBIDDEN in all other rooms.
+- JACUZZI: ONLY in dedicated "Jacuzzi" room. FORBIDDEN in garden, living room, bedroom, garage, or any other space.
+- BATHTUBS / SHOWERS: ONLY in Salle de bain or Salle d'eau. FORBIDDEN everywhere else.
+- FOUNTAINS / WATER FEATURES: FORBIDDEN unless explicitly requested.
+- NO random water elements placed in any room not dedicated to water.
 `;
 
 // ============================================================
@@ -274,11 +286,12 @@ const getPieceConstraints = (piece, type, subType, isEmpty, gardenType, decorati
     base.forbidden.push("NO rectangular tubs");
   }
   if (piece === 'Jardin') {
-    base.mandatory.push("Green grass lawn","Mature trees and manicured bushes","Professional outdoor landscaping");
-    if (gardenType === 'Jeux') base.mandatory.push("Wooden playground structure: swing set and slide");
-    if (gardenType === 'Mare') base.mandatory.push("Small NATURAL pond with aquatic plants and stones");
-    if (gardenType === 'Mixte') base.mandatory.push("LEFT SIDE: Wooden playground; RIGHT SIDE: Natural pond");
-    base.context = "EXTERIOR BACKYARD garden, bright natural daylight";
+    base.mandatory.push("Lush green grass lawn","Mature trees and manicured bushes","Garden flowers and plants","Stone or wooden garden path","Natural daylight, blue sky");
+    if (gardenType === 'Jeux') base.mandatory.push("Wooden playground structure with swing set and slide on the grass");
+    if (gardenType === 'Mare') base.mandatory.push("Small natural pond with aquatic plants and stones at ground level");
+    if (gardenType === 'Mixte') base.mandatory.push("LEFT SIDE: wooden playground on grass; RIGHT SIDE: natural pond");
+    base.forbidden.push("NO jacuzzi","NO swimming pool","NO indoor furniture","NO sofas","NO house walls or windows in frame","NO doors","NO interior elements");
+    base.context = "Private residential garden — wide angle exterior shot from inside the garden — purely outdoor green space, sky visible — NO house structure visible in frame";
   }
   if (piece === 'Terrasse' || piece.includes('Terrasse')) {
     base.mandatory.push("Outdoor terrace with premium floor tiles","Outdoor furniture (table and chairs)","Pergola or parasol","Potted plants");
@@ -530,7 +543,7 @@ const generateImage = async (engine, apiKey, piece, type, subType, isEmpty = fal
   if (referencePhoto && !isEmpty) {
     const refData = referencePhoto.includes(',') ? referencePhoto.split(',')[1] : referencePhoto;
     parts.push({ inlineData: { data: refData, mimeType: 'image/jpeg' } });
-    parts.push({ text: 'REFERENCE 2 (STYLE INSPIRATION): Replicate EXACTLY the color palette, materials, furniture style, and lighting mood of this image.' });
+    parts.push({ text: `STYLE INSPIRATION REFERENCE — MANDATORY: You MUST closely reproduce the visual style of this reference image. Replicate: the exact color palette and tones, the materials and textures (wood, stone, fabric, metal), the furniture style and layout approach, the lighting atmosphere and mood, the overall design aesthetic. The result must feel visually SIMILAR to this reference — same vibe, same materials, same colors — without being an exact copy. DO NOT ignore this reference. DO NOT generate a generic room. This reference image defines the style DNA of this room.` });
   }
   return await callVertexGenerate(apiKey, parts);
 };
@@ -633,6 +646,7 @@ const App = ({ apiKey, engine }) => {
       jacuzziType: 'Aucun', poolType: 'Aucune',
       nbBathrooms: 1, bathroomTypes: ['Douche'], nbToilets: 1,
       modeAutomatique: true, stairType: 'Classique', gardenType: 'Simple',
+      gardenView: 'exterieur', gardenViewRoom: 'Salon',
       houseStyle: '', furnitureStyle: FURNITURE_STYLES[0], wallColor: WALL_COLORS[0],
       tvOption: 'Murale',
       salonOptions: { tv: 'Murale', cadres: true, plantes: true, meubleDecoratif: true, tableaux: true },
