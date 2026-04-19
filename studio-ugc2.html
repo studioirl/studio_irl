@@ -103,7 +103,7 @@ button,input,select,textarea{font:inherit}
 .toggle-wrap{position:relative;width:40px;height:22px;flex-shrink:0}
 .toggle-wrap input{opacity:0;width:0;height:0;position:absolute}
 .toggle-track{display:block;width:40px;height:22px;border-radius:11px;background:rgba(255,255,255,0.1);cursor:pointer;transition:background 0.3s;position:relative}
-.toggle-wrap input:checked + .toggle-track{background:var(--active-color,var(–purple))}
+.toggle-wrap input:checked + .toggle-track{background:var(--active-color,var(--purple))}
 .toggle-track::after{content:’’;position:absolute;top:3px;left:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:transform 0.3s;box-shadow:0 1px 4px rgba(0,0,0,0.3)}
 .toggle-wrap input:checked + .toggle-track::after{transform:translateX(18px)}
 .uploader{border:2px dashed var(--border);border-radius:1rem;min-height:80px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;overflow:hidden;transition:all 0.2s;background:rgba(255,255,255,0.02);flex-direction:column;gap:0.4rem}
@@ -1194,32 +1194,47 @@ function calcTotal() {
 // URL du serveur Cloud Run
 const CLOUD_FUNCTION_URL = 'https://ugc-proxy-738708455173.europe-west1.run.app';
 
-async function callProxy(model, body, countQuota) {
-  // countQuota=true uniquement pour l'appel image final
+async function callProxy(model, body) {
   const waitTimes = [5000, 10000, 20000, 40000];
   let lastErr;
-  // Pour l'analyse, on utilise ADMIN2024 pour eviter le decompte serveur
-  var codeToSend = countQuota ? state.studentCode : 'ADMIN2024';
   for (let attempt = 0; attempt <= waitTimes.length; attempt++) {
     try {
       const res = await fetch(CLOUD_FUNCTION_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ studentCode: codeToSend, model: model, body: body })
+        body: JSON.stringify({ studentCode: state.studentCode, model: model, body: body })
       });
       if (!res.ok) {
         const txt = await res.text();
         let d; try { d = JSON.parse(txt); } catch(_) {}
         const msg = (d && d.error) || txt;
         if (res.status === 429) {
-          if (state.studentCode !== 'ADMIN2024') updateQuotaWidget(10, 10);
+          // Forcer le quota a 0 restant visuellement
+          updateQuotaWidget(10, 10);
           throw new Error(msg);
         }
         if (res.status === 401) throw new Error('Code invalide : ' + state.studentCode);
         if (msg.includes('503') || msg.includes('overloaded')) throw new Error('RETRY:' + msg);
         throw new Error('Erreur ' + res.status + ': ' + msg);
       }
-      return await res.json();
+      const data = await res.json();
+      // Toujours prendre le MAX entre serveur et localStorage
+      // Le serveur peut redemarrer et perdre sa memoire
+      var serverUsed = data._quota ? data._quota.used : 0;
+      var localUsed = getLocalQuota(state.studentCode);
+      var realUsed = Math.max(serverUsed, localUsed);
+      // Sync localStorage avec la vraie valeur
+      var today = new Date().toISOString().slice(0,10);
+      localStorage.setItem('quota_' + state.studentCode + '_' + today, realUsed);
+      updateQuotaWidget(realUsed, 10);
+      if (realUsed >= 10) {
+        var btn = document.getElementById('genBtn');
+        if (btn) {
+          btn.disabled = true;
+          document.getElementById('genLabel').textContent = 'Quota atteint - Reviens demain';
+        }
+      }
+      return data;
     } catch(err) {
       lastErr = err;
       if (String(err.message).startsWith('RETRY:') && attempt < waitTimes.length) {
@@ -1251,8 +1266,12 @@ Fidélité absolue au visage, morphologie, teint et coiffure de la photo d'origi
 🚨 DRESS CODE RÉFÉRENCE :
 Quand une tenue référence est fournie, reproduire EXACTEMENT cette tenue.
 
-🚨 RÈGLES PRODUIT :
-Texte produit net, 4K, parfaitement lisible.
+🚨 RÈGLES PRODUIT — CRITIQUE :
+TEXTE SUR PACKAGING : Le texte imprimé sur le produit doit être NET, LISIBLE, DANS LE BON SENS, non inversé, non flou.
+RÈGLE ABSOLUE : Reproduire fidèlement l'emballage fourni en photo. Aucun texte inventé. Aucun texte à l'envers.
+ORIENTATION : Le produit doit toujours être tenu/positionné dans le bon sens, étiquette face caméra, texte horizontal et lisible.
+RÉSOLUTION PRODUIT : Zoom suffisant pour lire le nom du produit clairement.
+INTERDICTION : texte flou, texte inversé en miroir, texte illisible, packaging déformé.
 
 🚨 RÉALISME 4K :
 Peau brute, pores visibles, lumière naturelle. Aucun filtre beauté.
@@ -1318,10 +1337,13 @@ async function buildPrompt(scene, shot, specialMode, seqInfo, btsType) {
   const prompt = 'Génère instruction UGC 4K : '+modeStr+' Action="'+action+'". '+identLock+' '+styleStr+' '+locStr+' '+locationStr+' '+dressStr+' '+duoStr+' '+carStr;
   parts.push({ text: prompt });
 
+  const _sc = state.studentCode;
+  state.studentCode = 'ADMIN2024';
   const analyzeRes = await callProxy(MODEL_ANALYZE, {
     contents: [{ role: 'user', parts }],
     systemInstruction: { parts: [{ text: buildSystemPrompt() }] }
   });
+  state.studentCode = _sc;
   const txt = analyzeRes.candidates && analyzeRes.candidates[0]?.content?.parts;
   return (txt && txt.find(p => p.text)?.text) || prompt;
 }
@@ -1340,7 +1362,7 @@ async function generateImage(prompt) {
   const res = await callProxy(MODEL_IMAGE, {
     contents: [{ role: 'user', parts }],
     generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: state.aspectRatio, imageSize: '4K' } }
-  }, true);
+  });
 
   const cParts = res.candidates && res.candidates[0]?.content?.parts;
   const imgData = cParts && cParts.find(p => p.inlineData);
@@ -1388,11 +1410,9 @@ async function generate() {
       const imgUrl = await generateImage(prompt);
       generatedImages.push(imgUrl);
       addImageToGallery(imgUrl, count);
-      if (state.studentCode !== 'ADMIN2024') {
-        var newQ = incrementLocalQuota(state.studentCode);
-        state.quotaUsed = newQ;
-        updateQuotaWidget(newQ, 10);
-      }
+      var newQ = incrementLocalQuota(state.studentCode);
+      state.quotaUsed = newQ;
+      updateQuotaWidget(newQ, 10);
     } catch(err) { 
       console.error('Generation error:', err);
       showError(err.message || 'Erreur de connexion au serveur. Verifie que le serveur est actif.');
