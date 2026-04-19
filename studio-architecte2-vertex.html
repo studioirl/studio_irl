@@ -286,12 +286,19 @@ const getPieceConstraints = (piece, type, subType, isEmpty, gardenType, decorati
     base.forbidden.push("NO rectangular tubs");
   }
   if (piece === 'Jardin') {
-    base.mandatory.push("Lush green grass lawn","Mature trees and manicured bushes","Garden flowers and plants","Stone or wooden garden path","Natural daylight, blue sky");
+    base.mandatory.push("Private warm residential garden of a family home","Lush green well-maintained grass lawn","Cozy garden furniture: wooden bench or bistro table with chairs on the grass","Stone or gravel garden path","Natural daylight, blue sky, open outdoor space");
     if (gardenType === 'Jeux') base.mandatory.push("Wooden playground structure with swing set and slide on the grass");
-    if (gardenType === 'Mare') base.mandatory.push("Small natural pond with aquatic plants and stones at ground level");
-    if (gardenType === 'Mixte') base.mandatory.push("LEFT SIDE: wooden playground on grass; RIGHT SIDE: natural pond");
-    base.forbidden.push("NO jacuzzi","NO swimming pool","NO indoor furniture","NO sofas","NO house walls or windows in frame","NO doors","NO interior elements");
-    base.context = "Private residential garden — wide angle exterior shot from inside the garden — purely outdoor green space, sky visible — NO house structure visible in frame";
+    if (gardenType === 'Mare') base.mandatory.push("Small charming frog pond with lily pads, aquatic plants, stones around the edge");
+    if (gardenType === 'Mixte') base.mandatory.push("LEFT SIDE: wooden playground on grass; RIGHT SIDE: small frog pond with lily pads");
+    base.forbidden.push(
+      "NO jacuzzi","NO swimming pool","NO indoor furniture","NO sofas",
+      "NO house walls visible in frame","NO house facade","NO windows","NO doors","NO staircases",
+      "NO interior elements of any kind",
+      "NO excessive plants or bushes","NO flower borders everywhere","NO plants lining every edge",
+      "NO public park style","NO botanical garden style",
+      "Keep plants minimal — only natural grass and maybe 1-2 trees maximum"
+    );
+    base.context = "Intimate private family home garden — shot from INSIDE the garden looking outward — grass, sky, open space — warm and simple backyard feel — NO house structure visible — minimal plants, mostly open green lawn";
   }
   if (piece === 'Terrasse' || piece.includes('Terrasse')) {
     base.mandatory.push("Outdoor terrace with premium floor tiles","Outdoor furniture (table and chairs)","Pergola or parasol","Potted plants");
@@ -525,26 +532,41 @@ const generateImage = async (engine, apiKey, piece, type, subType, isEmpty = fal
   const mainPrompt = buildPrompt(piece, type, subType, isEmpty, decorationParams, gardenType);
 
   if (engine === 'kie') {
-    // kie.ai : on passe la structure comme référence principale si dispo
-    const refImage = (!isEmpty && structureImageBase64) ? structureImageBase64 : (referencePhoto || null);
-    const fullPrompt = referencePhoto && !isEmpty
-      ? `${mainPrompt}\nSTYLE REFERENCE: Replicate EXACTLY the color palette, materials, furniture style, and lighting mood of the reference image.`
-      : mainPrompt;
-    return await callKieGenerate(apiKey, fullPrompt, refImage);
+    // kie.ai : inspiration style EN PRIORITÉ sur la structure béton
+    const refImage = (referencePhoto && !isEmpty) ? referencePhoto : ((!isEmpty && structureImageBase64) ? structureImageBase64 : null);
+    const styleNote = referencePhoto && !isEmpty
+      ? `\nSTYLE REFERENCE — MANDATORY: Reproduce a result nearly identical in style to the reference image. Same color palette, same materials, same furniture style, same lighting mood, same atmosphere. The result must look like it belongs to the same interior design project. DO NOT ignore the reference. DO NOT generate a generic room.`
+      : '';
+    return await callKieGenerate(apiKey, mainPrompt + styleNote, refImage);
   }
 
   // Vertex : parts multimodal
-  const parts = [{ text: mainPrompt }];
-  if (structureImageBase64 && !isEmpty) {
-    const data = structureImageBase64.includes(',') ? structureImageBase64.split(',')[1] : structureImageBase64;
-    parts.push({ inlineData: { data, mimeType: 'image/png' } });
-    parts.push({ text: 'REFERENCE 1 (STRUCTURE): Use the EXACT room dimensions and door placements from this concrete structure. Transform ALL concrete surfaces into finished materials. ZERO raw concrete.' });
-  }
+  // ORDRE CRITIQUE : inspiration style EN PREMIER — Vertex traite les images dans l'ordre, la première a plus de poids
+  const parts = [];
+
   if (referencePhoto && !isEmpty) {
     const refData = referencePhoto.includes(',') ? referencePhoto.split(',')[1] : referencePhoto;
     parts.push({ inlineData: { data: refData, mimeType: 'image/jpeg' } });
-    parts.push({ text: `STYLE INSPIRATION REFERENCE — MANDATORY: You MUST closely reproduce the visual style of this reference image. Replicate: the exact color palette and tones, the materials and textures (wood, stone, fabric, metal), the furniture style and layout approach, the lighting atmosphere and mood, the overall design aesthetic. The result must feel visually SIMILAR to this reference — same vibe, same materials, same colors — without being an exact copy. DO NOT ignore this reference. DO NOT generate a generic room. This reference image defines the style DNA of this room.` });
+    parts.push({ text: `⚠️ STYLE REFERENCE — THIS IS YOUR MOST IMPORTANT INSTRUCTION:
+You MUST reproduce a result that looks nearly identical in style to this reference image.
+- SAME color palette: reproduce the exact same tones, shades, warmth/coolness
+- SAME materials: same wood tones, same stone textures, same fabric types, same finishes
+- SAME furniture style: reproduce the same design era, same shapes, same proportions
+- SAME spatial layout approach: similar arrangement, similar density, similar atmosphere
+- SAME lighting mood: same brightness, same warmth, same shadows
+The final image must look like it belongs to the SAME interior design project as this reference.
+DO NOT generate a generic room. DO NOT ignore this image. This image IS the design brief.
+Deviation from this reference style is NOT acceptable.` });
   }
+
+  parts.push({ text: mainPrompt });
+
+  if (structureImageBase64 && !isEmpty) {
+    const data = structureImageBase64.includes(',') ? structureImageBase64.split(',')[1] : structureImageBase64;
+    parts.push({ inlineData: { data, mimeType: 'image/png' } });
+    parts.push({ text: 'STRUCTURE REFERENCE: Use the room dimensions and spatial layout from this concrete structure image. Keep the same proportions and door/window placements. Apply the style from the first reference image onto this structure.' });
+  }
+
   return await callVertexGenerate(apiKey, parts);
 };
 
@@ -940,13 +962,24 @@ const App = ({ apiKey, engine }) => {
             )
           )
         ),
-        state.config.pieceOptionnelle && React.createElement('div', { className: "text-center animate-in" },
+        state.config.pieceOptionnelle && React.createElement('div', { className: "text-center animate-in space-y-8" },
+          state.config.pieceOptionnelle === 'Jardin' && React.createElement('div', { className: "space-y-4" },
+            React.createElement('p', { className: "font-black text-xl text-slate-700" }, "Type de jardin"),
+            React.createElement('div', { className: "flex flex-wrap gap-4 justify-center" },
+              [{ id:'Simple', label:'Jardin simple', icon: Trees }, { id:'Jeux', label:'Espace Jeux', icon: Gamepad2 }, { id:'Mare', label:'Avec mare', icon: Droplet }, { id:'Mixte', label:'Jeux + Mare', icon: Sparkles }].map(opt =>
+                React.createElement('button', { key: opt.id, onClick: () => updateState(p => ({ ...p, config: { ...p.config, gardenType: opt.id } })), className: `px-8 py-5 rounded-2xl border-4 font-black flex items-center gap-3 transition-all ${state.config.gardenType===opt.id ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-200 bg-white'}` },
+                  React.createElement(opt.icon, { size: 24 }), opt.label
+                )
+              )
+            )
+          ),
           error && React.createElement('p', { className: "text-red-600 mb-4 font-bold" }, error),
           React.createElement('button', {
             onClick: async () => {
               setError(null); updateState({ loading: true });
               try {
-                const url = await generateImage(engine, apiKey, state.config.pieceOptionnelle, state.config.type, state.config.typePieceOptionnelle, true, {}, 'Simple');
+                const gardenType = state.config.pieceOptionnelle === 'Jardin' ? (state.config.gardenType || 'Simple') : 'Simple';
+                const url = await generateImage(engine, apiKey, state.config.pieceOptionnelle, state.config.type, state.config.typePieceOptionnelle, true, {}, gardenType);
                 updateState({ imagesVides: [{ id: `${state.config.pieceOptionnelle}-${Date.now()}`, piece: state.config.pieceOptionnelle + (state.config.typePieceOptionnelle ? ` (${state.config.typePieceOptionnelle})` : ''), url, prompt: 'Raw' }], page: 'decoration', loading: false });
               } catch (err) { setError("Erreur : " + err?.message); updateState({ loading: false }); }
             },
