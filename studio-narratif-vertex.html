@@ -1129,10 +1129,12 @@ function switchTab(t) {
   if (t === 'brut') {
     document.getElementById('sequences-output').style.display = 'none';
     document.getElementById('empty-state').style.display = 'none';
-    if (brutData) document.getElementById('brut-result').style.display = '';
-    else document.getElementById('brut-result').style.display = 'none';
+    document.getElementById('brut-result').style.display = brutData ? '' : 'none';
+    const panelRight = document.querySelector('.panel-right');
+    if (panelRight) panelRight.scrollTop = 0;
   } else {
     document.getElementById('brut-result').style.display = 'none';
+    document.getElementById('empty-state').style.display = sequences.length > 0 ? 'none' : '';
     if (sequences.length > 0) {
       document.getElementById('sequences-output').style.display = '';
       document.getElementById('empty-state').style.display = 'none';
@@ -1177,18 +1179,15 @@ async function analyseTexte() {
   btn.disabled = true;
 
   try {
-    const prompt = `Tu es un expert en narration émotionnelle pour stories Instagram.
+    const systemInstruction = `Tu es un expert en narration émotionnelle pour stories Instagram.
 
-Analyse ce texte narratif et découpe-le en séquences émotionnelles distinctes (entre 3 et 7 séquences).
+Analyse le texte narratif fourni par l'utilisateur et découpe-le en séquences émotionnelles distinctes (entre 3 et 7 séquences).
 
 Pour chaque séquence, identifie :
 1. Le texte exact de la séquence
 2. L'émotion dominante (une seule, précise)
 3. La catégorie de l'émotion : positif | introspectif | dynamique | relationnel
 4. Comment le corps incarne cette émotion (posture, regard, position dans l'espace) — 1 phrase courte et précise
-
-TEXTE :
-"${text}"
 
 Réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks :
 {
@@ -1202,7 +1201,7 @@ Réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks :
   ]
 }`;
 
-    const result = await callTextAnalyse(prompt);
+    const result = await callTextAnalyse(systemInstruction, text);
     sequences = result.sequences || [];
     if (sequences.length === 0) throw new Error('Aucune séquence détectée');
     renderSequences();
@@ -1216,13 +1215,14 @@ Réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks :
   }
 }
 
-async function callTextAnalyse(prompt) {
+async function callTextAnalyse(systemInstruction, userText) {
   const endpoint = 'https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-2.5-flash:generateContent';
   const resp = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': API_KEY },
     body: JSON.stringify({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      systemInstruction: { parts: [{ text: systemInstruction }] },
+      contents: [{ role: 'user', parts: [{ text: userText }] }],
       generationConfig: { temperature: 0.3, maxOutputTokens: 2048, responseMimeType: 'application/json' }
     })
   });
@@ -1531,14 +1531,11 @@ async function analyseBrut() {
   btn.disabled = true;
 
   try {
-    const prompt = `Tu es un expert en psychologie des émotions et en narration visuelle intense.
+    const systemInstruction = `Tu es un expert en psychologie des émotions et en narration visuelle intense.
 
-Analyse ce texte et identifie L'ÉMOTION DOMINANTE LA PLUS INTENSE — celle qui a le plus de force, celle qui ferait le plus d'effet visuellement, celle qu'on ressent le plus dans le ventre en lisant.
+Analyse le texte fourni par l'utilisateur et identifie L'ÉMOTION DOMINANTE LA PLUS INTENSE — celle qui a le plus de force, celle qui ferait le plus d'effet visuellement, celle qu'on ressent le plus dans le ventre en lisant.
 
 Peu importe si c'est de la joie, du désespoir, de la colère, du soulagement, de la fierté, de la honte — trouve la plus PUISSANTE et la plus AUTHENTIQUE.
-
-TEXTE :
-"${text}"
 
 Réponds UNIQUEMENT en JSON valide, sans markdown :
 {
@@ -1546,10 +1543,10 @@ Réponds UNIQUEMENT en JSON valide, sans markdown :
   "category": "positif|introspectif|dynamique|relationnel",
   "intensity": "phrase courte sur pourquoi cette émotion est la plus forte dans ce texte",
   "extract": "la phrase ou le passage du texte original qui incarne le mieux cette émotion — 1 à 3 phrases max",
-  "bodyDirective": "comment cette émotion s'incarne physiquement de façon EXTRÊME et sans retenue dans le corps et le visage — 2-3 phrases très précises et intenses"
+  "bodyDirective": "comment cette émotion s'incarne physiquement de façon EXTREME et sans retenue dans le corps et le visage — 2-3 phrases très précises et intenses"
 }`;
 
-    const result = await callTextAnalyse(prompt);
+    const result = await callTextAnalyse(systemInstruction, text);
     brutData = result;
     brutImageUrl = null;
 
@@ -1561,6 +1558,10 @@ Réponds UNIQUEMENT en JSON valide, sans markdown :
     document.getElementById('brut-img-area').innerHTML = '<div style="color:var(--text3);font-size:11px;font-family:\'DM Mono\',monospace;">Non générée</div>';
     document.getElementById('brut-result').style.display = '';
     document.getElementById('empty-state').style.display = 'none';
+    document.getElementById('sequences-output').style.display = 'none';
+    // Scroll panel-right au top pour que la carte soit visible
+    const panelRight = document.querySelector('.panel-right');
+    if (panelRight) panelRight.scrollTop = 0;
 
     toast(`Émotion détectée : ${brutData.emotion}`, 'success');
   } catch(err) {
