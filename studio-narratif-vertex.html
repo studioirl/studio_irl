@@ -709,6 +709,125 @@
   .toast.error { border-color: var(--rouge); color: #e88; }
   .toast.success { border-color: var(--vert); color: #6dbf94; }
 
+  /* ── MODE BRUT ── */
+  .tab.brut { color: var(--text3); }
+  .tab.brut.active { background: var(--rouge); color: #fff; }
+
+  #input-brut { display: none; }
+
+  .brut-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: rgba(212,97,74,0.08);
+    border: 1px solid rgba(212,97,74,0.25);
+    border-radius: 6px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+  }
+  .brut-warning-icon { font-size: 16px; flex-shrink: 0; }
+  .brut-warning-text {
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    color: rgba(232,137,110,0.8);
+    line-height: 1.6;
+    letter-spacing: 0.03em;
+  }
+
+  .btn-brut {
+    width: 100%;
+    background: transparent;
+    border: 1px solid var(--rouge);
+    color: #e8896e;
+    padding: 12px;
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .btn-brut:hover { background: rgba(212,97,74,0.12); }
+
+  /* Zone résultat brut */
+  .brut-result {
+    display: none;
+    margin-top: 24px;
+  }
+  .brut-result-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .brut-result-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 26px;
+    font-weight: 300;
+    font-style: italic;
+    color: #e8896e;
+  }
+  .brut-emotion-detected {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: rgba(232,137,110,0.6);
+  }
+
+  .brut-card {
+    background: var(--surface);
+    border: 1px solid rgba(212,97,74,0.3);
+    border-radius: 8px;
+    overflow: hidden;
+    max-width: 420px;
+  }
+  .brut-card-body {
+    padding: 20px 22px;
+  }
+  .brut-card-emotion {
+    font-size: 20px;
+    font-weight: 600;
+    color: #e8896e;
+    margin-bottom: 6px;
+  }
+  .brut-card-intensity {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: rgba(232,137,110,0.5);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .brut-card-extract {
+    font-size: 12px;
+    font-style: italic;
+    color: var(--text2);
+    line-height: 1.7;
+    border-left: 2px solid rgba(212,97,74,0.3);
+    padding-left: 12px;
+  }
+  .brut-image-area {
+    background: var(--noir2);
+    min-height: 240px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .brut-image-area img { width: 100%; display: block; }
+  .brut-card-actions {
+    padding: 12px 18px;
+    display: flex;
+    gap: 8px;
+    border-top: 1px solid var(--border);
+  }
+
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
@@ -808,6 +927,7 @@
         <div class="tabs">
           <button class="tab active" id="tab-libre" onclick="switchTab('libre')">Texte libre</button>
           <button class="tab" id="tab-manual" onclick="switchTab('manual')">Séquences manuelles</button>
+          <button class="tab brut" id="tab-brut" onclick="switchTab('brut')">⚡ Brut</button>
         </div>
 
         <div id="input-libre">
@@ -830,7 +950,21 @@
         </div>
       </div>
 
-      <!-- Generate -->
+        <!-- MODE BRUT -->
+        <div id="input-brut">
+          <div class="brut-warning">
+            <div class="brut-warning-icon">⚡</div>
+            <div class="brut-warning-text">
+              L'IA va extraire l'émotion la plus intense de ton texte et générer une seule image — brute, sans filtre, sans adoucissement. Un électrochoc visuel.
+            </div>
+          </div>
+          <textarea class="textarea-story" id="brut-text"
+            placeholder="Colle ton texte ici. Peu importe la longueur. L'IA va trouver l'émotion dominante la plus forte et la faire exploser visuellement.&#10;&#10;Ex: J'ai passé 2 ans sans faire une seule vente. Je voyais tout le monde avancer, réussir. Et moi j'avais l'impression que je n'y arriverais jamais. Jamais. J'étais désespérée…"
+            rows="7"></textarea>
+          <button class="btn-brut" onclick="analyseBrut()">
+            <span>⚡</span> <span>Extraire l'émotion dominante</span>
+          </button>
+        </div>
       <div class="section">
         <button class="btn-generate-all" id="btn-gen-all" onclick="generateAll()" disabled>
           Générer toutes les images
@@ -855,6 +989,27 @@
         </div>
         <div class="sequences-grid" id="sequences-grid"></div>
       </div>
+      <!-- RÉSULTAT BRUT -->
+      <div class="brut-result" id="brut-result">
+        <div class="brut-result-header">
+          <div class="brut-result-title">Mode Brut</div>
+          <div class="brut-emotion-detected" id="brut-emotion-label">—</div>
+        </div>
+        <div class="brut-card" id="brut-card">
+          <div class="brut-card-body">
+            <div class="brut-card-emotion" id="brut-emotion-name">—</div>
+            <div class="brut-card-intensity" id="brut-emotion-intensity">Intensité maximale · Sans filtre</div>
+            <div class="brut-card-extract" id="brut-extract">—</div>
+          </div>
+          <div class="brut-image-area" id="brut-img-area">
+            <div style="color:var(--text3);font-size:11px;font-family:'DM Mono',monospace;">Non générée</div>
+          </div>
+          <div class="brut-card-actions">
+            <button class="seq-btn primary" onclick="generateBrut()" style="border-color:var(--rouge);color:#e8896e;" onmouseenter="this.style.background='var(--rouge)';this.style.color='#fff'" onmouseleave="this.style.background='';this.style.color='#e8896e'">Générer l'image brute</button>
+            <button class="seq-btn" onclick="downloadBrut()">Télécharger</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -875,6 +1030,9 @@ let sequences = [];
 let manualSeqCount = 0;
 // MODIFICATION 3 : état carrousel
 let carouselMode = false;
+// MODE BRUT state
+let brutData = null; // { emotion, intensity, extract, category }
+let brutImageUrl = null;
 
 // ─── ENGINE SELECTION ────────────────────────────────────
 function selectEngine(e) {
@@ -960,8 +1118,28 @@ function switchTab(t) {
   currentTab = t;
   document.getElementById('tab-libre').classList.toggle('active', t === 'libre');
   document.getElementById('tab-manual').classList.toggle('active', t === 'manual');
+  document.getElementById('tab-brut').classList.toggle('active', t === 'brut');
   document.getElementById('input-libre').style.display = t === 'libre' ? 'block' : 'none';
   document.getElementById('sequences-manual').style.display = t === 'manual' ? 'block' : 'none';
+  document.getElementById('input-brut').style.display = t === 'brut' ? 'block' : 'none';
+  // Masquer generate-all en mode brut
+  document.getElementById('btn-gen-all').style.display = t === 'brut' ? 'none' : '';
+  document.getElementById('gen-status').style.display = t === 'brut' ? 'none' : '';
+  // Afficher/masquer zones résultat
+  if (t === 'brut') {
+    document.getElementById('sequences-output').style.display = 'none';
+    document.getElementById('empty-state').style.display = 'none';
+    if (brutData) document.getElementById('brut-result').style.display = '';
+    else document.getElementById('brut-result').style.display = 'none';
+  } else {
+    document.getElementById('brut-result').style.display = 'none';
+    if (sequences.length > 0) {
+      document.getElementById('sequences-output').style.display = '';
+      document.getElementById('empty-state').style.display = 'none';
+    } else {
+      document.getElementById('empty-state').style.display = '';
+    }
+  }
 }
 
 // ─── MANUAL SEQUENCES ────────────────────────────────────
@@ -1342,7 +1520,147 @@ async function generateKie(promptText) {
   throw new Error('kie.ai timeout (180s)');
 }
 
-// ─── DOWNLOAD ────────────────────────────────────────────
+// ─── MODE BRUT ────────────────────────────────────────────
+async function analyseBrut() {
+  const text = document.getElementById('brut-text').value.trim();
+  if (!text) return toast('Entre ton texte', 'error');
+  if (!avatarBase64) return toast('Importe ta photo avatar d\'abord', 'error');
+
+  const btn = document.querySelector('.btn-brut');
+  btn.innerHTML = '<span class="seq-loading-dot" style="width:16px;height:16px;display:inline-block"></span> Analyse en cours…';
+  btn.disabled = true;
+
+  try {
+    const prompt = `Tu es un expert en psychologie des émotions et en narration visuelle intense.
+
+Analyse ce texte et identifie L'ÉMOTION DOMINANTE LA PLUS INTENSE — celle qui a le plus de force, celle qui ferait le plus d'effet visuellement, celle qu'on ressent le plus dans le ventre en lisant.
+
+Peu importe si c'est de la joie, du désespoir, de la colère, du soulagement, de la fierté, de la honte — trouve la plus PUISSANTE et la plus AUTHENTIQUE.
+
+TEXTE :
+"${text}"
+
+Réponds UNIQUEMENT en JSON valide, sans markdown :
+{
+  "emotion": "nom précis et fort de l'émotion (ex: Désespoir profond, Joie explosive, Rage contenue, Soulagement total)",
+  "category": "positif|introspectif|dynamique|relationnel",
+  "intensity": "phrase courte sur pourquoi cette émotion est la plus forte dans ce texte",
+  "extract": "la phrase ou le passage du texte original qui incarne le mieux cette émotion — 1 à 3 phrases max",
+  "bodyDirective": "comment cette émotion s'incarne physiquement de façon EXTRÊME et sans retenue dans le corps et le visage — 2-3 phrases très précises et intenses"
+}`;
+
+    const result = await callTextAnalyse(prompt);
+    brutData = result;
+    brutImageUrl = null;
+
+    // Afficher la carte résultat
+    document.getElementById('brut-emotion-label').textContent = 'Émotion dominante détectée';
+    document.getElementById('brut-emotion-name').textContent = brutData.emotion;
+    document.getElementById('brut-emotion-intensity').textContent = brutData.intensity;
+    document.getElementById('brut-extract').textContent = '"' + brutData.extract + '"';
+    document.getElementById('brut-img-area').innerHTML = '<div style="color:var(--text3);font-size:11px;font-family:\'DM Mono\',monospace;">Non générée</div>';
+    document.getElementById('brut-result').style.display = '';
+    document.getElementById('empty-state').style.display = 'none';
+
+    toast(`Émotion détectée : ${brutData.emotion}`, 'success');
+  } catch(err) {
+    toast('Erreur analyse brut : ' + err.message, 'error');
+    console.error(err);
+  } finally {
+    btn.innerHTML = '<span>⚡</span> <span>Extraire l\'émotion dominante</span>';
+    btn.disabled = false;
+  }
+}
+
+async function generateBrut() {
+  if (!brutData) return toast('Lance l\'analyse d\'abord', 'error');
+  if (!avatarBase64) return toast('Photo avatar manquante', 'error');
+
+  const area = document.getElementById('brut-img-area');
+  area.innerHTML = `
+    <div class="seq-loading">
+      <div class="seq-loading-dot"></div>
+      <div class="seq-loading-text">Incarnation brute en cours…</div>
+    </div>
+  `;
+
+  try {
+    const promptText = buildBrutPrompt(brutData);
+    let imageUrl;
+    if (ENGINE === 'kie') {
+      imageUrl = await generateKie(promptText);
+    } else {
+      imageUrl = await generateVertex(promptText);
+    }
+    brutImageUrl = imageUrl;
+    area.innerHTML = `<img src="${imageUrl}" alt="mode brut" />`;
+    toast('Image brute générée ✓', 'success');
+  } catch(err) {
+    area.innerHTML = `<div style="padding:20px;color:#e88;font-size:11px;font-family:'DM Mono',monospace;text-align:center;">Erreur : ${err.message}</div>`;
+    toast('Erreur génération brut : ' + err.message, 'error');
+  }
+}
+
+function buildBrutPrompt(brut) {
+  const lieu = lieuText || document.getElementById('lieu-input').value || 'intérieur brut, lumière crue';
+
+  return `PORTRAIT ÉMOTIONNEL BRUT — INTENSITÉ MAXIMALE — SANS FILTRE
+
+═══════════════════════════════════════════
+IDENTITÉ — VERROUILLÉE À 100%
+═══════════════════════════════════════════
+La personne exacte de la photo de référence. Ses traits, sa morphologie, son visage réel. Zéro modification. Zéro embellissement. La personne telle qu'elle est.
+
+═══════════════════════════════════════════
+DÉCOR — FIGÉ — RIEN À AJOUTER
+═══════════════════════════════════════════
+Décor : ${lieu}
+Strictement ce décor. Aucun objet ajouté. Aucun meuble supplémentaire. Seul ce qui est décrit existe dans l'image.
+
+═══════════════════════════════════════════
+ÉMOTION BRUTE : ${brut.emotion}
+═══════════════════════════════════════════
+CONTEXTE NARRATIF : "${brut.extract}"
+
+INCARNATION PHYSIQUE EXTRÊME :
+${brut.bodyDirective}
+
+RÈGLES DU MODE BRUT — ABSOLUES :
+— Cette émotion doit EXPLOSER visuellement. Pas suggérée. Pas atténuée. VÉCUE à fond.
+— Si désespoir : larmes qui coulent réellement, yeux rouges et gonflés, mâchoire qui tremble, corps qui s'effondre légèrement, regard perdu dans le vide.
+— Si joie explosive : sourire qui déforme le visage, yeux plissés de rire, corps qui rayonne vers l'extérieur, énergie qui déborde.
+— Si colère : mâchoire serrée, regard qui perce, tension dans tout le corps, veines légèrement visibles sur le cou.
+— Si soulagement total : corps qui lâche, épaules qui descendent, expiration visible, larmes de soulagement.
+— AUCUN FILTRE BEAUTÉ. Aucun adoucissement. Les imperfections liées à l'émotion sont présentes : rougeurs, pleurs, sueur légère si nécessaire.
+— La personne ne pose PAS. Elle VIT l'émotion en temps réel. C'est un moment volé, pas construit.
+— L'image doit faire un électrochoc. Elle doit être impossible à ignorer.
+— L'authenticité prime sur l'esthétique. La vérité prime sur la beauté.
+
+TECHNIQUE : 4K ultra-réaliste, Sony A7R IV, 85mm f/1.4, lumière naturelle crue, grain argentique présent, couleurs désaturées et profondes. Photojournalisme de l'intime.`;
+}
+
+function downloadBrut() {
+  if (!brutImageUrl) return toast('Génère l\'image d\'abord', 'error');
+  const a = document.createElement('a');
+  if (brutImageUrl.startsWith('blob:') || brutImageUrl.startsWith('data:')) {
+    a.href = brutImageUrl;
+    a.download = `studio-narratif-brut-${slugify(brutData?.emotion || 'emotion')}.jpg`;
+    a.click();
+  } else {
+    fetch(brutImageUrl).then(r => r.blob()).then(blob => {
+      const url = URL.createObjectURL(blob);
+      a.href = url;
+      a.download = `studio-narratif-brut-${slugify(brutData?.emotion || 'emotion')}.jpg`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    }).catch(() => {
+      window.open(brutImageUrl, '_blank');
+      toast('iOS : Appuie longuement pour enregistrer', 'success');
+    });
+  }
+}
+
+// ─── DOWNLOAD (séquences normales) ───────────────────────
 function downloadImage(idx) {
   const seq = sequences[idx];
   if (!seq || !seq.imageUrl) return toast('Génère l\'image d\'abord', 'error');
@@ -1390,4 +1708,4 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 </body>
-</html>studio-narratif3
+</html>
