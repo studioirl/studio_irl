@@ -1347,7 +1347,13 @@ async function generateSingle(idx) {
 
 // ─── BUILD PROMPT — MODIFICATIONS 1 + 2 ──────────────────
 function buildImagePrompt(seq, idx) {
-  const lieu = lieuText || document.getElementById('lieu-input').value || 'intérieur chaleureux, lumière naturelle douce';
+  // Récupérer le lieu — priorité : lieuText (verrouillé) > valeur input > fallback
+  const inputEl = document.getElementById('lieu-input');
+  const lieu = (lieuText && lieuText.trim()) 
+    ? lieuText.trim() 
+    : (inputEl && inputEl.value && inputEl.value.trim()) 
+      ? inputEl.value.trim() 
+      : '';
   const isCarousel = carouselMode;
 
   // MODIFICATION 2 : intensité émotionnelle renforcée — instructions spécifiques par catégorie
@@ -1366,14 +1372,19 @@ function buildImagePrompt(seq, idx) {
     : `FORMAT : Story portrait 9:16. Cadrage vertical plein corps ou mi-corps selon l'émotion. La personne dans son environnement.`;
 
   // Verrou décor — on le répète 3 fois à des endroits stratégiques du prompt
-  const decor = lieu || 'intérieur chaleureux, lumière naturelle douce';
+  const decor = lieu || '';
+  const hasLieu = decor && decor.trim().length > 0;
+  // Le verrou s'applique dès que lieuLocked=true — même si le champ est vide
   const decorLock = lieuLocked
     ? `
-⚠️ CONSIGNE PRIORITAIRE ABSOLUE — LIRE EN PREMIER :
-LE DÉCOR EST VERROUILLÉ : "${decor}"
-Ce décor NE CHANGE PAS. Il est identique sur TOUTES les images. Tu n'as PAS le droit de modifier ce lieu, d'en inventer un autre, de le remplacer ou de le réinterpréter. Si tu changes le décor, la génération est un ÉCHEC. Décor : "${decor}". Répète-le : "${decor}".
+⚠️ INSTRUCTION N°1 — PRIORITÉ MAXIMALE — À RESPECTER AVANT TOUT :
+DÉCOR STRICTEMENT VERROUILLÉ${hasLieu ? ` : "${decor}"` : ' — GARDER LE MÊME DÉCOR QUE LA SCÈNE PRÉCÉDENTE'}
+Ce décor NE CHANGE PAS entre les images. Même lieu, même environnement, même lumière sur toutes les séquences.${hasLieu ? `
+Reproduis EXACTEMENT ce lieu : "${decor}"` : ''}
+Aucune liberté créative sur le décor. Ce qui change : uniquement la personne, sa posture, son émotion.
 `
-    : '';
+    : (hasLieu ? `Le lieu de la scène est : "${decor}". Respecte ce lieu.
+` : '');
 
   return decorLock + `ULTRA-REALISTIC EMOTIONAL PORTRAIT — 4K RAW HUMAN CAPTURE
 
@@ -1676,7 +1687,7 @@ async function generateBrut() {
 }
 
 function buildBrutPrompt(brut) {
-  const lieu = lieuText || document.getElementById('lieu-input').value || 'intérieur brut, lumière crue';
+  const lieu = lieuText || document.getElementById('lieu-input').value || '';
 
   return `PORTRAIT ÉMOTIONNEL BRUT — INTENSITÉ MAXIMALE — SANS FILTRE
 
