@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Studio Narratif — IRL</title>
+<title>Studio Narratif — IRL V.2026</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400&family=Outfit:wght@300;400;500;600&display=swap');
 
@@ -618,6 +618,23 @@
     line-height: 1.5;
   }
 
+  .seq-cinematic-meta {
+    padding: 0 18px 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .meta-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    color: rgba(200,169,126,0.6);
+    background: rgba(200,169,126,0.07);
+    border: 1px solid rgba(200,169,126,0.15);
+    padding: 3px 8px;
+    border-radius: 3px;
+  }
+
   .seq-image-area {
     position: relative;
     background: var(--noir2);
@@ -847,7 +864,8 @@
     <div class="splash-logo">Studio <span>Narratif</span></div>
     <div class="splash-sub" style="text-align:center;margin-top:8px">Émotions incarnées · IRL</div>
     <!-- MODIFICATION 4 : tagline -->
-    <div class="splash-tagline">Fais ressentir de vraies émotions humaines<br>à ton avatar pour partager ton histoire.</div>
+    <div class="splash-tagline">Matérialise la psyché humaine sans filtre.<br>Chaque image est un secret volé — pas une publicité.</div>
+    <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.3em;color:var(--text3);text-align:center;margin-top:-8px;">IPHONE 17 PRO · HUIS CLOS · V.2026</div>
   </div>
 
   <div class="splash-form">
@@ -999,6 +1017,7 @@
             <div class="brut-card-emotion" id="brut-emotion-name">—</div>
             <div class="brut-card-intensity" id="brut-emotion-intensity">Intensité maximale · Sans filtre</div>
             <div class="brut-card-extract" id="brut-extract">—</div>
+          <div id="brut-cinematic-meta" class="seq-cinematic-meta" style="display:none;padding:10px 0 0;"></div>
           </div>
           <div class="brut-image-area" id="brut-img-area">
             <div style="color:var(--text3);font-size:11px;font-family:'DM Mono',monospace;">Non générée</div>
@@ -1178,24 +1197,31 @@ async function analyseTexte() {
   btn.disabled = true;
 
   try {
-    const systemInstruction = `Tu es un expert en narration émotionnelle pour stories Instagram.
+    const systemInstruction = `Tu es un psychologue de l'image, un réalisateur de l'instant et un expert en narration émotionnelle. Ta mission est de matérialiser la psyché humaine sans filtre.
 
-Analyse le texte narratif fourni par l'utilisateur et découpe-le en séquences émotionnelles distinctes (entre 3 et 7 séquences).
+Analyse le texte narratif fourni et découpe-le en séquences émotionnelles distinctes (entre 3 et 7 séquences).
 
 Pour chaque séquence, identifie :
 1. Le texte exact de la séquence
 2. L'émotion dominante (une seule, précise)
-3. La catégorie de l'émotion : positif | introspectif | dynamique | relationnel
-4. Comment le corps incarne cette émotion (posture, regard, position dans l'espace) — 1 phrase courte et précise
+3. La catégorie : positif | introspectif | dynamique | relationnel
+4. Comment le corps incarne cette émotion (posture, regard, position) — 1 phrase courte et précise
+5. Les MÉTADONNÉES CINÉMATOGRAPHIQUES : 
+   - focus : sur quoi l'objectif se pose (ex: "regard perdu dans le vague", "tempe moite", "main qui se crispe", "pupille dilatée")
+   - angle : angle caméra le plus juste pour la psychologie de cette scène — choisir parmi : "plongée" (vulnérabilité/honte/défaite), "contre-plongée" (fierté/résilience/puissance), "gros plan macro" (vérité d'un détail volé), "angle subjectif intime" (spectateur à 1m dans la pièce)
+   - lumiere : source lumineuse naturelle uniquement (ex: "fenêtre latérale froide", "écran d'ordinateur bleuté", "lampe de bureau rasante", "lumière de couloir filtrante")
 
-Réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks :
+Réponds UNIQUEMENT en JSON valide, sans markdown :
 {
   "sequences": [
     {
       "text": "texte de la séquence",
       "emotion": "nom précis de l'émotion",
       "category": "positif|introspectif|dynamique|relationnel",
-      "bodyHint": "Le corps se... / Le regard se... / Elle se tient..."
+      "bodyHint": "Le corps se... / Le regard se...",
+      "focus": "détail précis sur lequel l'objectif se pose",
+      "angle": "plongée|contre-plongée|gros plan macro|angle subjectif intime",
+      "lumiere": "source lumineuse naturelle précise"
     }
   ]
 }`;
@@ -1250,12 +1276,16 @@ async function useManualSequences() {
   if (btn) { btn.innerHTML = '<span class="seq-loading-dot" style="width:16px;height:16px;display:inline-block"></span> Analyse en cours…'; btn.disabled = true; }
 
   try {
-    const systemInstruction = `Tu es un expert en narration emotionnelle pour stories Instagram.
+    const systemInstruction = `Tu es un psychologue de l'image et réalisateur de l'instant.
 
-Pour chaque sequence de texte fournie, identifie :
-1. L'emotion dominante (une seule, precise)
-2. La categorie : positif | introspectif | dynamique | relationnel
-3. Comment le corps incarne cette emotion (posture, regard) - 1 phrase courte
+Pour chaque séquence de texte fournie, identifie :
+1. L'émotion dominante (une seule, précise)
+2. La catégorie : positif | introspectif | dynamique | relationnel
+3. Comment le corps incarne cette émotion (posture, regard) - 1 phrase courte
+4. Les MÉTADONNÉES CINÉMATOGRAPHIQUES :
+   - focus : détail précis sur lequel l'objectif se pose (ex: "tempe moite", "main qui se crispe", "regard vide")
+   - angle : "plongée" | "contre-plongée" | "gros plan macro" | "angle subjectif intime"
+   - lumiere : source lumineuse naturelle (ex: "fenêtre latérale", "écran bleuté", "lampe rasante")
 
 Reponds UNIQUEMENT en JSON valide :
 {
@@ -1263,7 +1293,10 @@ Reponds UNIQUEMENT en JSON valide :
     {
       "emotion": "nom precis de l'emotion",
       "category": "positif|introspectif|dynamique|relationnel",
-      "bodyHint": "Le corps se... / Le regard se..."
+      "bodyHint": "Le corps se... / Le regard se...",
+      "focus": "detail precis",
+      "angle": "plongee|contre-plongee|gros plan macro|angle subjectif intime",
+      "lumiere": "source lumineuse naturelle"
     }
   ]
 }`;
@@ -1276,7 +1309,10 @@ Reponds UNIQUEMENT en JSON valide :
       text: t,
       emotion: analysed[i]?.emotion || 'Emotion authentique',
       category: analysed[i]?.category || 'introspectif',
-      bodyHint: analysed[i]?.bodyHint || 'Le corps incarne naturellement le moment'
+      bodyHint: analysed[i]?.bodyHint || 'Le corps incarne naturellement le moment',
+      focus: analysed[i]?.focus || 'regard',
+      angle: analysed[i]?.angle || 'angle subjectif intime',
+      lumiere: analysed[i]?.lumiere || 'fenêtre naturelle'
     }));
 
     renderSequences();
@@ -1287,7 +1323,10 @@ Reponds UNIQUEMENT en JSON valide :
       text: t,
       emotion: 'Emotion authentique',
       category: 'introspectif',
-      bodyHint: 'Le corps incarne naturellement le moment'
+      bodyHint: 'Le corps incarne naturellement le moment',
+      focus: 'regard',
+      angle: 'angle subjectif intime',
+      lumiere: 'lumière naturelle'
     }));
     renderSequences();
     toast(`${sequences.length} sequences chargees (sans analyse)`, 'success');
@@ -1322,6 +1361,11 @@ function renderSequences() {
       <div class="seq-text">"${seq.text}"</div>
       <div class="seq-emotion-name">${seq.emotion}</div>
       <div class="seq-body-hint">${seq.bodyHint}</div>
+      ${seq.focus ? `<div class="seq-cinematic-meta">
+        <span class="meta-tag">📐 ${seq.angle || 'angle subjectif'}</span>
+        <span class="meta-tag">🔍 ${seq.focus}</span>
+        <span class="meta-tag">💡 ${seq.lumiere || 'lumière naturelle'}</span>
+      </div>` : ''}
       <div class="seq-image-area" id="img-area-${i}">
         <div style="color:var(--text3);font-size:11px;font-family:'DM Mono',monospace;">Non générée</div>
       </div>
@@ -1385,9 +1429,8 @@ async function generateSingle(idx) {
   }
 }
 
-// ─── BUILD PROMPT — MODIFICATIONS 1 + 2 ──────────────────
+// ─── BUILD PROMPT V.2026 — IPHONE 17 PRO · HUIS CLOS ─────
 function buildImagePrompt(seq, idx) {
-  // Récupérer le lieu — priorité : lieuText (verrouillé) > valeur input > fallback
   const inputEl = document.getElementById('lieu-input');
   const lieu = (lieuText && lieuText.trim()) 
     ? lieuText.trim() 
@@ -1396,158 +1439,112 @@ function buildImagePrompt(seq, idx) {
       : '';
   const isCarousel = carouselMode;
 
-  // MODIFICATION 2 : intensité émotionnelle renforcée — instructions spécifiques par catégorie
-  const emotionIntensityMap = {
-    positif: `JOIE IRRADIANTE : Le visage rayonne d'une émotion pure — sourire qui part des yeux, regard lumineux, épaules ouvertes, corps détendu dans la plénitude. On VOIT le bonheur physiquement. Pas un sourire de façade — une joie qui irradie de l'intérieur vers l'extérieur.`,
-    introspectif: `INTROSPECTION VISIBLE : Le regard porte le poids du moment — yeux légèrement baissés ou perdus dans le vague, mâchoire légèrement crispée, lèvres pincées. L'émotion est intérieure et contenue — on la ressent dans la tension subtile du visage et de la posture, pas forcément dans des larmes. Les larmes n'apparaissent QUE si l'émotion identifiée est explicitement la tristesse ou le désespoir.`,
-    dynamique: `ÉNERGIE INCARNÉE : La tension ou l'élan est dans tout le corps — regard direct et intense, mâchoire ferme, posture assertive. Si c'est de la frustration : sourcils froncés, lèvres serrées, muscles du visage contractés. L'émotion explose doucement mais on la SENT dans chaque détail corporel. Pas de larmes sauf si l'émotion est explicitement liée à la tristesse.`,
-    relationnel: `CONNEXION PALPABLE : Le corps cherche quelqu'un ou quelque chose — regard qui raconte un lien, sourire intime, geste de tendresse vers soi ou vers l'autre. L'amour, la complicité, la protection : tout est dans les micro-expressions du visage et la douceur des gestes.`
+  // Angle cinématographique V.2026
+  const angleMap = {
+    'plongée': `ANGLE PLONGÉE — Caméra positionnée au-dessus du sujet, inclinée vers le bas. Le sujet apparaît petit, vulnérable, dominé par l'espace et les murs. Cet angle écrase, enferme, accentue la honte ou la défaite.`,
+    'contre-plongée': `ANGLE CONTRE-PLONGÉE — Caméra positionnée sous le sujet, regardant vers le haut. Le sujet se découpe sur le plafond ou le ciel, grand, puissant, en train de se relever ou d'imposer sa présence.`,
+    'gros plan macro': `GROS PLAN MACRO — L'objectif se colle à 5-10cm du détail physique révélateur : ${seq.focus || 'un détail du visage'}. Ce fragment de corps dit tout. Rien d'autre n'existe dans l'image. Un secret volé, un instant de vérité pure.`,
+    'angle subjectif intime': `ANGLE SUBJECTIF INTIME — Le spectateur est dans la pièce, à 1 mètre du sujet, comme s'il tenait lui-même l'iPhone. Hauteur des yeux. Légère proximité qui crée l'intimité sans envahir. Le spectateur VOIT sans être vu.`
   };
+  const cinematicAngle = angleMap[seq.angle] || angleMap['angle subjectif intime'];
 
+  // Intensité émotionnelle par catégorie
+  const emotionIntensityMap = {
+    positif: `EXPANSION LUMINEUSE : Le corps occupe tout l'espace disponible. Épaules ouvertes, tête levée, souffle retrouvé. La lumière ${seq.lumiere || 'naturelle'} baigne le visage d'une clarté transcendante.`,
+    introspectif: `IMPLOSION INTÉRIEURE : Le corps occupe le moins d'espace possible. Repli, angles morts, ombres qui envahissent. La lumière ${seq.lumiere || 'froide de la fenêtre'} éclaire seulement un côté du visage.`,
+    dynamique: `TENSION EXPLOSIVE : Chaque muscle du corps porte l'émotion. La lumière ${seq.lumiere || 'rasante'} crée des ombres dures sur les contours du visage.`,
+    relationnel: `CONNEXION PALPABLE : Le corps cherche quelqu'un. La lumière ${seq.lumiere || 'douce'} enveloppe sans aveugler.`
+  };
   const intensityBlock = emotionIntensityMap[seq.category] || emotionIntensityMap.introspectif;
 
-  // MODIFICATION 3 : ratio selon le mode
   const formatBlock = isCarousel
-    ? `FORMAT : Portrait carrousel Instagram 4:5. Cadrage vertical serré sur le haut du corps, visage et buste. La personne occupe les 2/3 de la hauteur de l'image.`
-    : `FORMAT : Story portrait 9:16. Cadrage vertical plein corps ou mi-corps selon l'émotion. La personne dans son environnement.`;
+    ? `FORMAT : Portrait carrousel Instagram 4:5 (1080×1350). Cadrage vertical serré — visage et buste. La personne occupe les 2/3 de la hauteur.`
+    : `FORMAT : Story portrait 9:16. Cadrage vertical — corps entier ou mi-corps selon l'émotion. La personne habitant son espace.`;
 
-  // Verrou décor — on le répète 3 fois à des endroits stratégiques du prompt
   const decor = lieu || '';
-  const hasLieu = decor && decor.trim().length > 0;
-  // Le verrou s'applique dès que lieuLocked=true — même si le champ est vide
+  const hasLieu = decor.trim().length > 0;
   const decorLock = lieuLocked
-    ? `
-⚠️ INSTRUCTION N°1 — PRIORITÉ MAXIMALE — À RESPECTER AVANT TOUT :
-DÉCOR STRICTEMENT VERROUILLÉ${hasLieu ? ` : "${decor}"` : ' — GARDER LE MÊME DÉCOR QUE LA SCÈNE PRÉCÉDENTE'}
-Ce décor NE CHANGE PAS entre les images. Même lieu, même environnement, même lumière sur toutes les séquences.${hasLieu ? `
-Reproduis EXACTEMENT ce lieu : "${decor}"` : ''}
-Aucune liberté créative sur le décor. Ce qui change : uniquement la personne, sa posture, son émotion.
+    ? `⚠️ HUIS CLOS ACTIVÉ — RÈGLE ABSOLUE N°1 :
+DÉCOR STRICTEMENT VERROUILLÉ${hasLieu ? ` : "${decor}"` : ' — MÊME DÉCOR QUE LA SCÈNE PRÉCÉDENTE'}
+Ce lieu NE CHANGE PAS. L'évolution temporelle se lit UNIQUEMENT dans : (1) l'évolution de la lumière, (2) les angles de caméra, (3) la langue du corps. Jamais dans le décor.${hasLieu ? `\nReproduire EXACTEMENT : "${decor}"` : ''}
 `
-    : (hasLieu ? `Le lieu de la scène est : "${decor}". Respecte ce lieu.
-` : '');
+    : (hasLieu ? `Lieu de la scène : "${decor}".\n` : '');
 
-  return decorLock + `ULTRA-REALISTIC EMOTIONAL PORTRAIT — 4K RAW HUMAN CAPTURE
-
-═══════════════════════════════════════════
-IDENTITÉ VISUELLE — VERROUILLÉE À 100%
-═══════════════════════════════════════════
-La personne sur la photo de référence. Son visage exact, ses traits précis, sa morphologie réelle. Aucune modification, aucun embellissement, aucune idéalisation. La personne telle qu'elle est dans la réalité — avec ses imperfections naturelles, sa beauté authentique. Identité absolument verrouillée.
-TENUE VERROUILLÉE : La personne porte exactement les mêmes vêtements que sur la photo de référence. Ne pas changer la tenue, ne pas inventer d'autres vêtements.
+  return decorLock + `PORTRAIT PSYCHOLOGIQUE BRUT — IPHONE 17 PRO NATIVE — SECRET VOLÉ
 
 ═══════════════════════════════════════════
-DÉCOR — IDENTIQUE ET FIGÉ — AUCUNE MODIFICATION AUTORISÉE
+I. LE CAPTEUR : IPHONE 17 PRO NATIVE
 ═══════════════════════════════════════════
-Décor : ${decor}
-RAPPEL CRITIQUE : Ce décor est "${decor}". Tu dois reproduire EXACTEMENT ce lieu. Pas un autre. Pas une interprétation. Ce lieu précis.
+Simule l'optique exacte de l'iPhone 17 Pro. Rendu photographique 4K ultra-réaliste — PAS un rendu de studio de cinéma, PAS un rendu DSLR stylisé. L'esthétique native iPhone : profondeur de champ naturelle et organique, couleurs vraies non saturées, grain numérique subtil.
 
-RÈGLE ABSOLUE DU DÉCOR :
-— Ce décor est IDENTIQUE sur toutes les images. Aucun élément ne doit être ajouté, retiré ou modifié.
-— INTERDICTION TOTALE D'AJOUTER tout objet, meuble ou élément qui n'est pas déjà présent dans la photo de référence OU explicitement écrit dans le texte de la séquence. Aucune invention. Aucun ajout. Si ce n'est pas dans la photo ou dans le texte, ça n'existe pas dans l'image.
-— La lumière, les couleurs, la composition de l'espace restent strictement les mêmes.
-— Seul ce qui bouge : la personne, sa posture, son expression, son émotion. RIEN d'autre.
-— Si le décor est un appartement parisien avec une fenêtre, il n'y a QUE cet appartement et cette fenêtre. Exactement ce qui est décrit, ni plus ni moins. Zéro ajout.
+TEXTURE DE PEAU ABSOLUE : Pores visibles, cernes réels, légères imperfections naturelles. Interdiction totale de lisser ou styliser. Si la personne a des taches, elles sont là. Si elle a des cernes, ils sont là. La peau est vivante.
+
+MODE CINÉMATOGRAPHIQUE APPLE : Pour cette scène d'émotion intense — focus sélectif sur ${seq.focus || 'le regard'}, flou d'arrière-plan organique et doux. L'objectif choisit ce qui compte. Profondeur de champ naturelle iPhone.
+
+LUMIÈRE INCIDENTE UNIQUEMENT : Source lumineuse : ${seq.lumiere || 'fenêtre naturelle'}. Pas d'éclairage de studio. Pas de flash. Lumière qui existe dans la vie réelle de cette personne.
 
 ═══════════════════════════════════════════
-MOMENT NARRATIF
+II. LE CADRAGE : GRAMMAIRE DE L'ÉLECTROCHOC
+═══════════════════════════════════════════
+${cinematicAngle}
+
+FOCUS POINT OBLIGATOIRE : L'objectif se pose sur — ${seq.focus || 'le regard'}. Ce détail est net. Tout le reste peut être légèrement flou. Ce détail raconte tout.
+
+═══════════════════════════════════════════
+III. IDENTITÉ — VERROUILLÉE À 100%
+═══════════════════════════════════════════
+La personne exacte de la photo de référence. Visage, traits, morphologie réels. Zéro modification, zéro embellissement, zéro idéalisation. La personne telle qu'elle est — imperfections comprises. Tenue identique à la photo de référence.
+
+═══════════════════════════════════════════
+IV. HUIS CLOS — DÉCOR FIGÉ
+═══════════════════════════════════════════
+Décor : ${decor || 'environnement de la photo de référence'}
+RÈGLE DU HUIS CLOS : Ce lieu est une prison narrative. L'histoire ne se lit PAS dans le changement de décor — elle se lit dans la lumière, les angles, le corps. INTERDICTION d'ajouter tout objet ou meuble absent de la photo de référence. Zéro invention. Ce lieu précis, exactement tel qu'il est.
+
+═══════════════════════════════════════════
+V. MOMENT NARRATIF
 ═══════════════════════════════════════════
 "${seq.text}"
 
 ═══════════════════════════════════════════
-ÉMOTION INCARNÉE : ${seq.emotion}
+VI. SPECTRE ÉMOTIONNEL — ÉMOTION : ${seq.emotion}
 ═══════════════════════════════════════════
 ${intensityBlock}
 
-Incarnation corporelle spécifique :
-${seq.bodyHint}
+Incarnation corporelle spécifique : ${seq.bodyHint}
 
-RÈGLES D'INCARNATION ÉMOTIONNELLE :
-— L'émotion EST VÉCUE, pas jouée. La différence entre quelqu'un qui ressent vraiment et quelqu'un qui pose pour une photo — on veut le premier.
-— L'émotion doit être IMMÉDIATEMENT LISIBLE sur l'image, sans explication. Un observateur doit ressentir l'émotion en 1 seconde.
+POUSSER À 150% D'INTENSITÉ BRUTE :
+${seq.category === 'introspectif' || seq.category === 'dynamique' ? 
+  'NÉGATIF (IMPLOSION) : Corps occupe le minimum d\'espace. Repli. Angles morts. Ombres envahissantes. Épaules tombantes, dos courbé, regard fuyant.' :
+  'POSITIF (EXPANSION) : Corps occupe tout l\'espace. Épaules ouvertes. Tête levée. Lumière transcendante. Souffle retrouvé.'}
 
-ROUE COMPLÈTE DES ÉMOTIONS — SCANNER ET REPRODUIRE CHAQUE ÉMOTION PRÉCISÉMENT :
+ROUE DES ÉMOTIONS — APPLIQUER PRÉCISÉMENT :
+JOIE → sourire des yeux, joues relevées, corps ouvert et expansif | EXTASE → sourire total, corps vers le haut, mains ouvertes | SÉRÉNITÉ → visage doux, respiration visible | CONFIANCE → menton levé, regard direct, épaules droites | PEUR → yeux écarquillés, corps rigide qui recule | TERREUR → visage figé, bouche ouverte, corps pétrifié | SURPRISE → sourcils levés haut, bouche en O | TRISTESSE → regard baissé, corps affaissé | CHAGRIN → larmes réelles, yeux rouges, corps effondré | MÉLANCOLIE → regard lointain, posture intérieure | COLÈRE → mâchoire serrée, sourcils froncés, corps tendu | RAGE → veines visibles, regard brûlant, corps en tension extrême | HONTE → tête baissée, corps qui cherche à disparaître | FIERTÉ → menton levé, poitrine ouverte, posture d'assurance | DÉSARROI → regard perdu, corps hésitant | RÉSIGNATION → corps qui lâche doucement, épaules tombantes
 
-JOIE → sourire authentique qui part des yeux, joues relevées, regard lumineux et chaud, corps ouvert et détendu, épaules en arrière, posture expansive
-EXTASE → sourire total qui déforme le visage, yeux plissés de rire ou écarquillés de bonheur, corps qui s'élance vers le haut, mains ouvertes, énergie qui déborde de partout
-SÉRÉNITÉ → visage détendu et doux, regard calme et posé, léger sourire intérieur, corps relâché, respiration visible et profonde, posture stable et ancrée
-
-CONFIANCE → menton légèrement levé, regard direct et stable, épaules ouvertes et droites, posture qui occupe l'espace avec assurance, expression ferme et sereine
-ADMIRATION → regard écarquillé et brillant, bouche légèrement entrouverte, corps qui se tourne vers ce qui est admiré, posture ouverte et réceptive
-ACCEPTATION → visage détendu et neutre, regard doux et ouvert, corps relâché, posture non défensive, légère inclinaison vers l'avant
-
-PEUR → yeux écarquillés, pupilles dilatées, sourcils levés et rapprochés, bouche entrouverte, corps rigide ou qui recule, épaules remontées, muscles tendus
-TERREUR → visage figé dans l'effroi, yeux grand ouverts et fixes, bouche ouverte, corps qui se pétrifie ou se recroqueville, mains crispées, souffle coupé visible
-APPRÉHENSION → regard fuyant ou méfiant, lèvres pincées, sourcils légèrement froncés, corps légèrement replié, tension subtile dans les épaules
-
-SURPRISE → yeux grand ouverts, sourcils levés haut, bouche entrouverte en O, corps légèrement en arrière, mains qui se lèvent instinctivement
-STUPÉFACTION → visage totalement figé, regard fixe et vide, bouche ouverte, corps immobile, bras qui tombent, expression de sidération totale
-DISTRACTION → regard qui part ailleurs, tête légèrement tournée, expression flottante, corps en suspension entre deux états
-
-TRISTESSE → regard baissé ou perdu dans le vide, lèvres qui tremblent ou serrées, sourcils en accent circonflexe, corps qui s'affaisse, épaules tombantes
-CHAGRIN → larmes qui coulent réellement sur le visage, yeux rouges et gonflés, lèvres qui tremblent, mâchoire crispée, corps effondré et replié sur lui-même, sanglots visibles
-MÉLANCOLIE → regard lointain et voilé, léger pli aux coins des lèvres, expression douce et triste, corps posé et immobile, posture intérieure et protectrice
-
-DÉGOÛT → nez plissé, lèvre supérieure relevée, regard de côté ou détourné, corps qui recule ou se détourne, expression de répulsion visible
-AVERSION → regard détourné, lèvres pincées avec grimace, corps qui s'écarte, bras qui créent une distance, posture de rejet
-ENNUI → regard vide ou qui traîne, expression plate et molle, corps avachi, tête qui s'appuie sur la main, posture d'affaissement total
-
-COLÈRE → mâchoire serrée et crispée, sourcils froncés et rapprochés, regard perçant et dur, lèvres serrées ou dents visibles, corps tendu et rigide, poings serrés
-RAGE → visage rouge et contracté, veines légèrement visibles sur le cou ou les tempes, regard fixe et brûlant, corps entier en tension extrême, posture agressive et prête à exploser
-AGACEMENT → sourcils légèrement froncés, regard de côté, lèvres pincées, soupir visible, corps légèrement crispé, geste d'impatience
-
-ANTICIPATION → regard vif et orienté vers l'avant, légère tension dans tout le corps, lèvres légèrement entrouvertes, posture penchée en avant, mains actives
-VIGILANCE → regard fixe et concentré, muscles du visage en alerte, corps immobile mais prêt, posture de guet, tension contrôlée
-INTÉRÊT → regard vif et curieux, tête légèrement inclinée, sourcils légèrement levés, corps qui se penche vers ce qui attire, expression ouverte et attentive
-
-AMOUR → regard doux et brillant, sourire intime et profond, corps qui se tourne vers l'autre, gestes de tendresse, expression de chaleur et de connexion totale
-SOUMISSION → regard baissé, épaules rentrées, corps qui se fait petit, posture effacée et non menaçante, expression douce et vulnérable
-FRAYEUR → corps paralysé, regard figé, respiration bloquée visible, muscles pétrifiés, expression entre peur et sidération
-
-OPTIMISME → regard tourné vers l'horizon, sourire léger et confiant, corps droit et ouvert, posture dynamique et tournée vers l'avant
-ESPOIR → regard lumineux malgré la tension, légère crispation mêlée de douceur, corps à mi-chemin entre l'effondrement et le redressement, main sur le cœur possible
-CULPABILITÉ → regard fuyant ou baissé, épaules rentrées, corps qui se fait petit, expression douloureuse et retournée vers l'intérieur, mâchoire crispée
-HONTE → regard qui fuit ou se cache, tête baissée, corps qui cherche à disparaître, rougeur visible sur le visage, posture de repli total
-MÉPRIS → regard de haut, coin de la bouche relevé d'un seul côté, corps redressé avec distance, posture qui crée de la hiérarchie
-FIERTÉ → menton levé, regard direct et lumineux, sourire de satisfaction, épaules ouvertes et droites, poitrine ouverte, posture qui occupe l'espace avec assurance
-DÉSARROI → regard perdu et confus, front plissé, bouche légèrement entrouverte, corps hésitant entre plusieurs directions, posture flottante et déstabilisée
-RÉSIGNATION → regard vide ou baissé, visage plat sans expression forte, corps qui lâche sans s'effondrer vraiment, épaules qui tombent doucement, posture d'abandon calme
-
-RÈGLE ABSOLUE : Identifier précisément l'émotion détectée parmi cette liste et appliquer EXACTEMENT les expressions physiques correspondantes. Ne jamais réduire toutes les émotions à la tristesse ou aux larmes. Les larmes n'apparaissent QUE pour : chagrin, tristesse, désespoir, résignation douloureuse.
-
-POSTURE CORPORELLE — RÈGLE ABSOLUE :
-— Le corps entier exprime l'émotion de façon LISIBLE et EXPLICITE. Pas de micro-mouvements à peine visibles. La posture change radicalement selon l'émotion.
-— Si fatigue ou épuisement : dos qui s'affaisse, épaules tombantes, tête qui penche, corps qui s'avachit sur lui-même.
-— Si douleur ou chagrin : corps qui se replie sur lui-même, genoux ramenés, bras croisés sur la poitrine, colonne vertébrale courbée.
-— Si joie ou soulagement : corps qui s'ouvre et s'étire vers le haut, épaules en arrière, tête levée, posture expansive.
-— Si frustration ou colère : tension dans tout le corps, poings serrés, mâchoire crispée, posture rigide et fermée.
-— Si introspection : corps ramassé, regard vers le bas ou le vague, posture intérieure et protectrice.
-— La personne peut être DEBOUT, ASSISE PAR TERRE, ACCROUPIE, ADOSSÉE À UN MUR, PENCHÉE EN AVANT, ALLONGÉE — la position est dictée par l'émotion, pas par la commodité de la prise de vue.
-— La personne HABITE la scène. Elle ne pose pas. Elle vit un moment réel.
-
-ARRIÈRE-PLAN VIVANT — RÈGLE ABSOLUE :
-— Si des personnes ou animaux sont présents en arrière-plan, ils sont en mouvement naturel. Ils ne restent PAS figés ou identiques d'une image à l'autre.
-— Les silhouettes en fond bougent, marchent, sont floues par le mouvement. Différentes personnes, différentes positions à chaque image.
-— L'arrière-plan doit donner l'impression que la vie continue autour — que ce moment se passe VRAIMENT, maintenant, dans un lieu réel et animé.
-— Le lieu reste identique (même plage, même café, même appartement) mais la vie dans ce lieu est en mouvement constant.
+RÈGLE ABSOLUE : Les larmes N'APPARAISSENT QUE pour chagrin, tristesse profonde, désespoir. Pas pour les autres émotions.
+ZÉRO CLICHÉ : Pas de sourires de pub. Pas de mains sur les tempes génériques. La vérité sale et belle.
 
 ═══════════════════════════════════════════
-RÉALISME ABSOLU
+VII. PROTOCOLE FINAL — LE TEST DE L'ÉLECTROCHOC
 ═══════════════════════════════════════════
-— Micro-textures de peau : pores visibles, légères imperfections naturelles, ni lissé ni plastifié
-— Anti-beautification totale : aucun filtre beauté, aucune peau irréelle
-— Lumière naturelle complexe : ombres douces, reflets subtils, profondeur de champ réelle
-— Expression non construite : émotion qui surgit du moment, pas posée pour la caméra
-— Sensation de moment volé sur le vif — photographie documentaire de l'intime
+Si l'image ressemble à une publicité → ÉCHEC.
+Si l'image ressemble à un secret volé qui force le silence → SUCCÈS.
 
-${formatBlock}
+— La personne ne pose PAS. Elle VIT le moment en temps réel.
+— L'image doit faire un électrochoc. Impossible à ignorer.
+— L'authenticité prime sur l'esthétique. La vérité prime sur la beauté.
+— Arrière-plan : si des silhouettes sont présentes, elles sont floues et en mouvement naturel.
 
-TECHNIQUE : 4K ultra-réaliste, Sony A7R IV, 85mm f/1.4, grain argentique subtil, HDR naturel, couleurs profondes non saturées.`;
+[Focus : ${seq.focus || 'regard'} / Angle : ${seq.angle || 'angle subjectif intime'} / Lumière : ${seq.lumiere || 'naturelle incidente'}]
+
+${formatBlock}`;
 }
+
 
 // ─── VERTEX AI GENERATE ──────────────────────────────────
 async function generateVertex(promptText) {
-  const endpoint = 'https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-3.1-flash-image-preview:generateContent';
+  const endpoint = 'https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-2.0-flash-preview-image-generation:generateContent';
 
-  // MODIFICATION 3 : aspect ratio selon le mode
   const aspectRatio = carouselMode ? '4:5' : '9:16';
 
   const parts = [];
@@ -1558,7 +1555,7 @@ async function generateVertex(promptText) {
     contents: [{ role: 'user', parts }],
     generationConfig: {
       responseModalities: ['IMAGE'],
-      imageConfig: { aspectRatio, imageSize: '4K' }
+      imageConfig: { aspectRatio }
     }
   };
 
@@ -1578,7 +1575,15 @@ async function generateVertex(promptText) {
       if (!candidate) throw new Error('Aucune réponse du modèle');
       if (candidate.finishReason === 'SAFETY') throw new Error('Bloqué par les filtres de sécurité');
       for (const p of (candidate?.content?.parts || [])) {
-        if (p.inlineData?.data) return `data:image/png;base64,${p.inlineData.data}`;
+        if (p.inlineData?.data) {
+          // Convert base64 → Blob URL (Safari-safe, avoids large data URIs in src attributes)
+          const mimeType = p.inlineData.mimeType || 'image/png';
+          const binary = atob(p.inlineData.data);
+          const arr = new Uint8Array(binary.length);
+          for (let i = 0; i < binary.length; i++) arr[i] = binary.charCodeAt(i);
+          const blob = new Blob([arr], { type: mimeType });
+          return URL.createObjectURL(blob);
+        }
       }
       throw new Error('Image non trouvée dans la réponse');
     } catch(err) {
@@ -1655,19 +1660,20 @@ async function analyseBrut() {
   btn.disabled = true;
 
   try {
-    const systemInstruction = `Tu es un expert en psychologie des émotions et en narration visuelle intense.
+    const systemInstruction = `Tu es un psychologue de l'image, réalisateur de l'instant et expert en narration émotionnelle brute.
 
-Analyse le texte fourni par l'utilisateur et identifie L'ÉMOTION DOMINANTE LA PLUS INTENSE — celle qui a le plus de force, celle qui ferait le plus d'effet visuellement, celle qu'on ressent le plus dans le ventre en lisant.
-
-Peu importe si c'est de la joie, du désespoir, de la colère, du soulagement, de la fierté, de la honte — trouve la plus PUISSANTE et la plus AUTHENTIQUE.
+Analyse le texte et identifie L'ÉMOTION DOMINANTE LA PLUS INTENSE — celle qui a le plus de force viscérale, celle qui ferait le plus d'électrochoc visuel.
 
 Réponds UNIQUEMENT en JSON valide, sans markdown :
 {
-  "emotion": "nom précis et fort de l'émotion (ex: Désespoir profond, Joie explosive, Rage contenue, Soulagement total)",
+  "emotion": "nom précis et fort (ex: Désespoir profond, Joie explosive, Rage contenue)",
   "category": "positif|introspectif|dynamique|relationnel",
-  "intensity": "phrase courte sur pourquoi cette émotion est la plus forte dans ce texte",
-  "extract": "la phrase ou le passage du texte original qui incarne le mieux cette émotion — 1 à 3 phrases max",
-  "bodyDirective": "comment cette émotion s'incarne physiquement de façon EXTREME et sans retenue dans le corps et le visage — 2-3 phrases très précises et intenses"
+  "intensity": "pourquoi cette émotion est la plus forte dans ce texte — 1 phrase",
+  "extract": "la phrase du texte original qui incarne le mieux cette émotion — 1 à 3 phrases max",
+  "bodyDirective": "incarnation physique EXTRÊME : posture, visage, muscles — 2-3 phrases très précises",
+  "focus": "détail corporel révélateur pour le gros plan (ex: tempe moite, main crispée, pupille dilatée)",
+  "angle": "angle cinématographique optimal — choisir : plongée | contre-plongée | gros plan macro | angle subjectif intime",
+  "lumiere": "source lumineuse naturelle qui amplifie l'émotion (ex: lumière froide de fenêtre, écran bleuté, lampe rasante)"
 }`;
 
     const result = await callTextAnalyse(systemInstruction, text);
@@ -1679,6 +1685,12 @@ Réponds UNIQUEMENT en JSON valide, sans markdown :
     document.getElementById('brut-emotion-name').textContent = brutData.emotion;
     document.getElementById('brut-emotion-intensity').textContent = brutData.intensity;
     document.getElementById('brut-extract').textContent = '"' + brutData.extract + '"';
+    // Show cinematic meta if available
+    const metaEl = document.getElementById('brut-cinematic-meta');
+    if (metaEl && brutData.focus) {
+      metaEl.innerHTML = `<span class="meta-tag">📐 ${brutData.angle || 'angle subjectif intime'}</span><span class="meta-tag">🔍 ${brutData.focus}</span><span class="meta-tag">💡 ${brutData.lumiere || 'lumière naturelle'}</span>`;
+      metaEl.style.display = 'flex';
+    }
     document.getElementById('brut-img-area').innerHTML = '<div style="color:var(--text3);font-size:11px;font-family:\'DM Mono\',monospace;">Non générée</div>';
     document.getElementById('brut-result').style.display = 'block';
     document.getElementById('empty-state').style.display = 'none';
@@ -1729,152 +1741,119 @@ async function generateBrut() {
 function buildBrutPrompt(brut) {
   const lieu = lieuText || document.getElementById('lieu-input').value || '';
 
-  return `PORTRAIT ÉMOTIONNEL BRUT — INTENSITÉ MAXIMALE — SANS FILTRE
+  const angleMap = {
+    'plongée': `ANGLE PLONGÉE — Caméra au-dessus du sujet, inclinée vers le bas. Corps écrasé, dominé. Renforce la vulnérabilité, la honte, la défaite.`,
+    'contre-plongée': `ANGLE CONTRE-PLONGÉE — Caméra sous le sujet, regard vers le haut. Corps qui se découpe, s'impose. Renforce la fierté, la résilience, la puissance.`,
+    'gros plan macro': `GROS PLAN MACRO — L'objectif à 5cm du détail révélateur : ${brut.focus || 'visage'}. Un fragment de corps dit tout. Secret volé. Vérité pure.`,
+    'angle subjectif intime': `ANGLE SUBJECTIF INTIME — Le spectateur à 1 mètre, comme tenant lui-même l'iPhone. Hauteur des yeux. Intimité sans envahir.`
+  };
+  const cinematicAngle = angleMap[brut.angle] || angleMap['angle subjectif intime'];
+
+  return `PORTRAIT PSYCHOLOGIQUE BRUT — IPHONE 17 PRO NATIVE — ÉLECTROCHOC VISUEL
 
 ═══════════════════════════════════════════
-IDENTITÉ — VERROUILLÉE À 100%
+I. LE CAPTEUR : IPHONE 17 PRO NATIVE
 ═══════════════════════════════════════════
-La personne exacte de la photo de référence. Ses traits, sa morphologie, son visage réel. Zéro modification. Zéro embellissement. La personne telle qu'elle est.
+Optique iPhone 17 Pro. Rendu photographique 4K ultra-réaliste natif. PAS un DSLR stylisé. L'esthétique iPhone : couleurs vraies, profondeur de champ organique, grain numérique subtil.
 
-═══════════════════════════════════════════
-DÉCOR — LIBRE ET AMPLIFIÉ
-═══════════════════════════════════════════
-En mode brut, le décor N'EST PAS verrouillé. Tu choisis librement l'environnement qui amplifie le mieux l'émotion détectée et crée l'électrochoc visuel maximal.
-— Si l'émotion est la colère : décor brut, urbain, tensions dans l'espace.
-— Si l'émotion est la joie explosive : lumière éclatante, espace ouvert, couleurs vives.
-— Si l'émotion est le désespoir : espace confiné, lumière froide, isolement.
-— Si l'émotion est la fierté : décor qui élève, lumière dorée, espace qui grandit la personne.
-Le décor EST l'émotion. Il l'accompagne et l'amplifie.
-
-INTERDICTION : Ne jamais ajouter d'objet ou de meuble qui n'est pas déjà présent dans la photo de référence ou explicitement écrit dans le texte. Le décor est libre mais rien n'est inventé ou ajouté dedans.
-
-TENUE : La personne porte exactement les mêmes vêtements que sur la photo de référence. Tenue verrouillée.
+TEXTURE ABSOLUE : Pores visibles, cernes réels, imperfections naturelles. Zéro lissage. La peau est vivante.
+MODE CINÉMATOGRAPHIQUE APPLE : Focus sélectif sur ${brut.focus || 'le regard'}, flou d'arrière-plan organique.
+LUMIÈRE INCIDENTE UNIQUEMENT : ${brut.lumiere || 'Lumière naturelle'}. Zéro studio. Zéro flash.
 
 ═══════════════════════════════════════════
-ÉMOTION BRUTE : ${brut.emotion}
+II. CADRAGE — GRAMMAIRE DE L'ÉLECTROCHOC
 ═══════════════════════════════════════════
-CONTEXTE NARRATIF : "${brut.extract}"
+${cinematicAngle}
+FOCUS POINT : ${brut.focus || 'regard'} — net, révélateur, volé.
 
-INCARNATION PHYSIQUE EXTRÊME :
-${brut.bodyDirective}
+═══════════════════════════════════════════
+III. IDENTITÉ — VERROUILLÉE À 100%
+═══════════════════════════════════════════
+La personne exacte de la photo de référence. Zéro modification. Zéro embellissement. Tenue identique.
 
-RÈGLES DU MODE BRUT — ABSOLUES :
-— Cette émotion doit EXPLOSER visuellement. Pas suggérée. Pas atténuée. VÉCUE à fond.
-— L'émotion détectée est : ${brut.emotion}. C'est CETTE émotion précise qui doit exploser — pas une autre.
+═══════════════════════════════════════════
+IV. DÉCOR — AMPLIFIÉ LIBREMENT
+═══════════════════════════════════════════
+En mode brut, le décor EST l'émotion. Il amplifie. Il emprisonne.
+${lieu ? `Lieu de base : "${lieu}" — adapter cet espace pour amplifier l'émotion au maximum.` : `Choisir librement l'environnement qui amplifie l'émotion "${brut.emotion}" au maximum.`}
+— Colère/rage → espace urbain brut, murs froids, tension dans l'espace
+— Désespoir/honte → espace confiné, lumière froide, isolement
+— Joie/soulagement → lumière éclatante, espace ouvert, air
+— Fierté/confiance → décor qui élève, lumière dorée
+INTERDICTION : Zéro objet inventé absent de la photo de référence.
 
-ROUE COMPLÈTE DES ÉMOTIONS — SCANNER ET REPRODUIRE CHAQUE ÉMOTION PRÉCISÉMENT :
+═══════════════════════════════════════════
+V. ÉMOTION BRUTE : ${brut.emotion}
+═══════════════════════════════════════════
+CONTEXTE : "${brut.extract}"
+INCARNATION EXTRÊME : ${brut.bodyDirective}
 
-JOIE → sourire authentique qui part des yeux, joues relevées, regard lumineux et chaud, corps ouvert et détendu, épaules en arrière, posture expansive
-EXTASE → sourire total qui déforme le visage, yeux plissés de rire ou écarquillés de bonheur, corps qui s'élance vers le haut, mains ouvertes, énergie qui déborde de partout
-SÉRÉNITÉ → visage détendu et doux, regard calme et posé, léger sourire intérieur, corps relâché, respiration visible et profonde, posture stable et ancrée
+POUSSER À 150% — PAS DE RETENUE :
+JOIE → sourire des yeux, corps expansif | EXTASE → corps vers le haut, mains ouvertes | TRISTESSE → corps affaissé, regard vide | CHAGRIN → larmes réelles, corps effondré | COLÈRE → mâchoire serrée, poings, corps tendu | RAGE → veines visibles, regard brûlant | HONTE → tête baissée, corps qui cherche à disparaître | FIERTÉ → menton levé, poitrine ouverte | DÉSESPOIR → corps au sol, repli total | SOULAGEMENT → corps qui s'ouvre, souffle retrouvé
 
-CONFIANCE → menton légèrement levé, regard direct et stable, épaules ouvertes et droites, posture qui occupe l'espace avec assurance, expression ferme et sereine
-ADMIRATION → regard écarquillé et brillant, bouche légèrement entrouverte, corps qui se tourne vers ce qui est admiré, posture ouverte et réceptive
-ACCEPTATION → visage détendu et neutre, regard doux et ouvert, corps relâché, posture non défensive, légère inclinaison vers l'avant
+RÈGLE ABSOLUE MODE BRUT : Pousser CHAQUE signe physique à son maximum. Corps entier. Pas seulement le visage.
+Les larmes N'APPARAISSENT QUE pour : chagrin, tristesse, désespoir.
 
-PEUR → yeux écarquillés, pupilles dilatées, sourcils levés et rapprochés, bouche entrouverte, corps rigide ou qui recule, épaules remontées, muscles tendus
-TERREUR → visage figé dans l'effroi, yeux grand ouverts et fixes, bouche ouverte, corps qui se pétrifie ou se recroqueville, mains crispées, souffle coupé visible
-APPRÉHENSION → regard fuyant ou méfiant, lèvres pincées, sourcils légèrement froncés, corps légèrement replié, tension subtile dans les épaules
+═══════════════════════════════════════════
+VI. LE TEST FINAL
+═══════════════════════════════════════════
+Si l'image ressemble à une publicité → ÉCHEC TOTAL.
+Si l'image ressemble à un secret volé qui force le silence → SUCCÈS.
 
-SURPRISE → yeux grand ouverts, sourcils levés haut, bouche entrouverte en O, corps légèrement en arrière, mains qui se lèvent instinctivement
-STUPÉFACTION → visage totalement figé, regard fixe et vide, bouche ouverte, corps immobile, bras qui tombent, expression de sidération totale
-DISTRACTION → regard qui part ailleurs, tête légèrement tournée, expression flottante, corps en suspension entre deux états
+AUCUN FILTRE BEAUTÉ. AUCUN ADOUCISSEMENT.
+La personne VIT — elle ne pose pas.
+L'authenticité prime sur tout.
 
-TRISTESSE → regard baissé ou perdu dans le vide, lèvres qui tremblent ou serrées, sourcils en accent circonflexe, corps qui s'affaisse, épaules tombantes
-CHAGRIN → larmes qui coulent réellement sur le visage, yeux rouges et gonflés, lèvres qui tremblent, mâchoire crispée, corps effondré et replié sur lui-même, sanglots visibles
-MÉLANCOLIE → regard lointain et voilé, léger pli aux coins des lèvres, expression douce et triste, corps posé et immobile, posture intérieure et protectrice
+[Focus : ${brut.focus || 'regard'} / Angle : ${brut.angle || 'angle subjectif intime'} / Lumière : ${brut.lumiere || 'naturelle'}]`;
+}
 
-DÉGOÛT → nez plissé, lèvre supérieure relevée, regard de côté ou détourné, corps qui recule ou se détourne, expression de répulsion visible
-AVERSION → regard détourné, lèvres pincées avec grimace, corps qui s'écarte, bras qui créent une distance, posture de rejet
-ENNUI → regard vide ou qui traîne, expression plate et molle, corps avachi, tête qui s'appuie sur la main, posture d'affaissement total
 
-COLÈRE → mâchoire serrée et crispée, sourcils froncés et rapprochés, regard perçant et dur, lèvres serrées ou dents visibles, corps tendu et rigide, poings serrés
-RAGE → visage rouge et contracté, veines légèrement visibles sur le cou ou les tempes, regard fixe et brûlant, corps entier en tension extrême, posture agressive et prête à exploser
-AGACEMENT → sourcils légèrement froncés, regard de côté, lèvres pincées, soupir visible, corps légèrement crispé, geste d'impatience
-
-ANTICIPATION → regard vif et orienté vers l'avant, légère tension dans tout le corps, lèvres légèrement entrouvertes, posture penchée en avant, mains actives
-VIGILANCE → regard fixe et concentré, muscles du visage en alerte, corps immobile mais prêt, posture de guet, tension contrôlée
-INTÉRÊT → regard vif et curieux, tête légèrement inclinée, sourcils légèrement levés, corps qui se penche vers ce qui attire, expression ouverte et attentive
-
-AMOUR → regard doux et brillant, sourire intime et profond, corps qui se tourne vers l'autre, gestes de tendresse, expression de chaleur et de connexion totale
-SOUMISSION → regard baissé, épaules rentrées, corps qui se fait petit, posture effacée et non menaçante, expression douce et vulnérable
-FRAYEUR → corps paralysé, regard figé, respiration bloquée visible, muscles pétrifiés, expression entre peur et sidération
-
-OPTIMISME → regard tourné vers l'horizon, sourire léger et confiant, corps droit et ouvert, posture dynamique et tournée vers l'avant
-ESPOIR → regard lumineux malgré la tension, légère crispation mêlée de douceur, corps à mi-chemin entre l'effondrement et le redressement, main sur le cœur possible
-CULPABILITÉ → regard fuyant ou baissé, épaules rentrées, corps qui se fait petit, expression douloureuse et retournée vers l'intérieur, mâchoire crispée
-HONTE → regard qui fuit ou se cache, tête baissée, corps qui cherche à disparaître, rougeur visible sur le visage, posture de repli total
-MÉPRIS → regard de haut, coin de la bouche relevé d'un seul côté, corps redressé avec distance, posture qui crée de la hiérarchie
-FIERTÉ → menton levé, regard direct et lumineux, sourire de satisfaction, épaules ouvertes et droites, poitrine ouverte, posture qui occupe l'espace avec assurance
-DÉSARROI → regard perdu et confus, front plissé, bouche légèrement entrouverte, corps hésitant entre plusieurs directions, posture flottante et déstabilisée
-RÉSIGNATION → regard vide ou baissé, visage plat sans expression forte, corps qui lâche sans s'effondrer vraiment, épaules qui tombent doucement, posture d'abandon calme
-
-RÈGLE ABSOLUE MODE BRUT : Pousser l'expression à son intensité MAXIMALE. Chaque signe physique listé ci-dessus est amplifié — pas suggéré, pas retenu. L'émotion explose dans le corps entier, pas seulement le visage. Les larmes n'apparaissent QUE pour : chagrin, tristesse, désespoir.
-
-— AUCUN FILTRE BEAUTÉ. Aucun adoucissement. Les imperfections liées à l'émotion sont présentes.
-— La personne ne pose PAS. Elle VIT l'émotion en temps réel. C'est un moment volé, pas construit.
-— L'image doit faire un électrochoc. Elle doit être impossible à ignorer.
-— L'authenticité prime sur l'esthétique. La vérité prime sur la beauté.
-
-POSTURE CORPORELLE BRUTE :
-— La posture EST l'émotion. Entière, sans retenue.
-— Le corps prend la position que l'émotion impose naturellement : effondré, dressé, replié, ouvert, crispé, relâché.
-— Pas de posture neutre debout face caméra. La position du corps dit tout avant même qu'on voie le visage.
-— Épaules, dos, mains, jambes — tout parle.
-
-ARRIÈRE-PLAN VIVANT :
-— Si des personnes sont en arrière-plan, elles sont en mouvement naturel, floues, différentes.
-— Le lieu reste identique mais la vie dans ce lieu continue et bouge.
-
-TECHNIQUE : 4K ultra-réaliste, Sony A7R IV, 85mm f/1.4, lumière naturelle crue, grain argentique présent, couleurs désaturées et profondes. Photojournalisme de l'intime.`;
+// ─── SAFARI-SAFE DOWNLOAD HELPER ─────────────────────────
+async function safariSafeDownload(imageUrl, filename) {
+  // Convert any data: or blob: URL to a proper blob, then use <a> download
+  // Safari requires a blob: URL created from the same origin.
+  try {
+    let blob;
+    if (imageUrl.startsWith('data:')) {
+      // data URI → blob
+      const [header, base64] = imageUrl.split(',');
+      const mime = header.match(/:(.*?);/)[1];
+      const binary = atob(base64);
+      const arr = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) arr[i] = binary.charCodeAt(i);
+      blob = new Blob([arr], { type: mime });
+    } else if (imageUrl.startsWith('blob:')) {
+      const res = await fetch(imageUrl);
+      blob = await res.blob();
+    } else {
+      const res = await fetch(imageUrl);
+      blob = await res.blob();
+    }
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 8000);
+  } catch (err) {
+    // Final fallback: open in new tab for manual save
+    window.open(imageUrl, '_blank');
+    toast('Appuie longuement sur l\'image pour enregistrer (iOS)', 'success');
+  }
 }
 
 function downloadBrut() {
   if (!brutImageUrl) return toast('Génère l\'image d\'abord', 'error');
-  const a = document.createElement('a');
-  if (brutImageUrl.startsWith('blob:') || brutImageUrl.startsWith('data:')) {
-    a.href = brutImageUrl;
-    a.download = `studio-narratif-brut-${slugify(brutData?.emotion || 'emotion')}.jpg`;
-    a.click();
-  } else {
-    fetch(brutImageUrl).then(r => r.blob()).then(blob => {
-      const url = URL.createObjectURL(blob);
-      a.href = url;
-      a.download = `studio-narratif-brut-${slugify(brutData?.emotion || 'emotion')}.jpg`;
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 5000);
-    }).catch(() => {
-      window.open(brutImageUrl, '_blank');
-      toast('iOS : Appuie longuement pour enregistrer', 'success');
-    });
-  }
+  safariSafeDownload(brutImageUrl, `studio-narratif-brut-${slugify(brutData?.emotion || 'emotion')}.jpg`);
 }
 
 // ─── DOWNLOAD (séquences normales) ───────────────────────
 function downloadImage(idx) {
   const seq = sequences[idx];
   if (!seq || !seq.imageUrl) return toast('Génère l\'image d\'abord', 'error');
-
-  const a = document.createElement('a');
-  if (seq.imageUrl.startsWith('blob:') || seq.imageUrl.startsWith('data:')) {
-    a.href = seq.imageUrl;
-    a.download = `studio-narratif-s${String(idx+1).padStart(2,'0')}-${slugify(seq.emotion)}.jpg`;
-    a.click();
-  } else {
-    fetch(seq.imageUrl)
-      .then(r => r.blob())
-      .then(blob => {
-        const url = URL.createObjectURL(blob);
-        a.href = url;
-        a.download = `studio-narratif-s${String(idx+1).padStart(2,'0')}-${slugify(seq.emotion)}.jpg`;
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(url), 5000);
-      })
-      .catch(() => {
-        window.open(seq.imageUrl, '_blank');
-        toast('iOS : Appuie longuement sur l\'image pour l\'enregistrer', 'success');
-      });
-  }
+  safariSafeDownload(seq.imageUrl, `studio-narratif-s${String(idx+1).padStart(2,'0')}-${slugify(seq.emotion)}.jpg`);
 }
 
 function slugify(s) {
