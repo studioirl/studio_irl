@@ -1241,19 +1241,59 @@ function cleanJson(txt) {
 }
 
 // ─── MANUAL → SEQUENCES ──────────────────────────────────
-function useManualSequences() {
+async function useManualSequences() {
   const texts = getManualSequences();
   if (texts.length === 0) return toast('Entre au moins une séquence', 'error');
   if (!avatarBase64) return toast('Importe ta photo avatar d\'abord', 'error');
 
-  sequences = texts.map(t => ({
-    text: t,
-    emotion: 'Émotion authentique',
-    category: 'introspectif',
-    bodyHint: 'Le corps incarne naturellement le moment'
-  }));
-  renderSequences();
-  toast(`${sequences.length} séquences chargées`, 'success');
+  const btn = document.querySelector('#sequences-manual .btn-analyse');
+  if (btn) { btn.innerHTML = '<span class="seq-loading-dot" style="width:16px;height:16px;display:inline-block"></span> Analyse en cours…'; btn.disabled = true; }
+
+  try {
+    const systemInstruction = `Tu es un expert en narration emotionnelle pour stories Instagram.
+
+Pour chaque sequence de texte fournie, identifie :
+1. L'emotion dominante (une seule, precise)
+2. La categorie : positif | introspectif | dynamique | relationnel
+3. Comment le corps incarne cette emotion (posture, regard) - 1 phrase courte
+
+Reponds UNIQUEMENT en JSON valide :
+{
+  "sequences": [
+    {
+      "emotion": "nom precis de l'emotion",
+      "category": "positif|introspectif|dynamique|relationnel",
+      "bodyHint": "Le corps se... / Le regard se..."
+    }
+  ]
+}`;
+
+    const userText = texts.map((t, i) => `Sequence ${i+1}: "${t}"`).join('\n\n');
+    const result = await callTextAnalyse(systemInstruction, userText);
+    const analysed = result.sequences || [];
+
+    sequences = texts.map((t, i) => ({
+      text: t,
+      emotion: analysed[i]?.emotion || 'Emotion authentique',
+      category: analysed[i]?.category || 'introspectif',
+      bodyHint: analysed[i]?.bodyHint || 'Le corps incarne naturellement le moment'
+    }));
+
+    renderSequences();
+    toast(`${sequences.length} sequences analysees`, 'success');
+  } catch(err) {
+    // Fallback si analyse echoue
+    sequences = texts.map(t => ({
+      text: t,
+      emotion: 'Emotion authentique',
+      category: 'introspectif',
+      bodyHint: 'Le corps incarne naturellement le moment'
+    }));
+    renderSequences();
+    toast(`${sequences.length} sequences chargees (sans analyse)`, 'success');
+  } finally {
+    if (btn) { btn.innerHTML = '<span>⟡</span> <span>Utiliser ces sequences</span>'; btn.disabled = false; }
+  }
 }
 
 // ─── RENDER SEQUENCES ────────────────────────────────────
