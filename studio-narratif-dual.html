@@ -1,0 +1,2012 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studio Narratif — IRL V.2026</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400&family=Outfit:wght@300;400;500;600&display=swap');
+
+  :root {
+    --noir: #0a0a0a;
+    --noir2: #111111;
+    --noir3: #181818;
+    --surface: #1e1e1e;
+    --surface2: #252525;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #f0ede8;
+    --text2: rgba(240,237,232,0.6);
+    --text3: rgba(240,237,232,0.35);
+    --accent: #c8a97e;
+    --accent2: #e8d5b5;
+    --accent-glow: rgba(200,169,126,0.15);
+    --rouge: #d4614a;
+    --vert: #4a8f6f;
+    --bleu: #4a7aa8;
+    --violet: #7a5fa8;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--noir);
+    color: var(--text);
+    font-family: 'Outfit', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.4;
+  }
+
+  /* ── SPLASH ── */
+  #splash {
+    position: fixed;
+    inset: 0;
+    background: var(--noir);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 32px;
+    z-index: 1000;
+    transition: opacity 0.6s ease;
+  }
+  #splash.hidden { opacity: 0; pointer-events: none; }
+
+  .splash-logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 52px;
+    font-weight: 300;
+    letter-spacing: 0.05em;
+    color: var(--text);
+  }
+  .splash-logo span { color: var(--accent); font-style: italic; }
+
+  .splash-sub {
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--text3);
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* ← MODIFICATION 4 : nouvelle tagline splash */
+  .splash-tagline {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 17px;
+    font-weight: 300;
+    font-style: italic;
+    color: var(--text2);
+    text-align: center;
+    letter-spacing: 0.02em;
+    margin-top: -16px;
+    max-width: 380px;
+    line-height: 1.6;
+  }
+
+  .splash-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 340px;
+    margin-top: 8px;
+  }
+
+  .splash-input {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    padding: 14px 18px;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 0.05em;
+    border-radius: 4px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .splash-input:focus { border-color: var(--accent); }
+  .splash-input::placeholder { color: var(--text3); }
+
+  .splash-btn {
+    background: var(--accent);
+    color: var(--noir);
+    border: none;
+    padding: 14px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.2s, transform 0.1s;
+  }
+  .splash-btn:hover { background: var(--accent2); transform: translateY(-1px); }
+
+  .engine-select {
+    display: flex;
+    gap: 8px;
+  }
+  .engine-opt {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    color: var(--text2);
+    padding: 10px;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-family: 'DM Mono', monospace;
+    cursor: pointer;
+    border-radius: 4px;
+    text-align: center;
+    transition: all 0.2s;
+  }
+  .engine-opt.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-glow);
+  }
+
+  /* ── APP ── */
+  #app { display: none; min-height: 100vh; }
+  #app.visible { display: block; }
+
+  /* ── HEADER ── */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 32px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: rgba(10,10,10,0.95);
+    backdrop-filter: blur(12px);
+    z-index: 100;
+  }
+
+  .header-logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    font-weight: 300;
+    letter-spacing: 0.05em;
+  }
+  .header-logo span { color: var(--accent); font-style: italic; }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .header-engine {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    text-transform: uppercase;
+    background: var(--accent-glow);
+    border: 1px solid rgba(200,169,126,0.25);
+    padding: 5px 12px;
+    border-radius: 20px;
+  }
+
+  /* ← MODIFICATION 3 : badge format dans le header */
+  .header-format-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    border: 1px solid var(--border2);
+    color: var(--text3);
+    padding: 5px 12px;
+    border-radius: 20px;
+    transition: all 0.2s;
+  }
+  .header-format-badge.carousel {
+    border-color: rgba(74,122,168,0.5);
+    color: #7ab0e8;
+    background: rgba(74,122,168,0.1);
+  }
+
+  /* ── MAIN LAYOUT ── */
+  .main {
+    display: grid;
+    grid-template-columns: 420px 1fr;
+    min-height: calc(100vh - 65px);
+  }
+
+  /* ── LEFT PANEL ── */
+  .panel-left {
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    overflow-y: auto;
+    height: calc(100vh - 65px);
+    position: sticky;
+    top: 65px;
+  }
+
+  .section {
+    padding: 24px 28px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-label {
+    font-size: 9px;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--text3);
+    font-family: 'DM Mono', monospace;
+    margin-bottom: 14px;
+  }
+
+  /* Avatar upload */
+  .avatar-zone {
+    border: 1px dashed var(--border2);
+    border-radius: 6px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .avatar-zone:hover { border-color: var(--accent); background: var(--accent-glow); }
+  .avatar-zone.has-image { border-style: solid; border-color: var(--accent); padding: 0; }
+  .avatar-zone img {
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+    border-radius: 5px;
+    display: block;
+  }
+  .avatar-zone input { display: none; }
+  .avatar-placeholder { color: var(--text3); font-size: 12px; }
+  .avatar-placeholder .icon { font-size: 28px; margin-bottom: 8px; }
+  .avatar-badge {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    background: var(--accent);
+    color: var(--noir);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* Lieu */
+  .lieu-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .lieu-input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    padding: 10px 14px;
+    font-size: 13px;
+    font-family: 'Outfit', sans-serif;
+    border-radius: 4px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .lieu-input:focus { border-color: var(--accent); }
+  .lieu-input::placeholder { color: var(--text3); }
+  .lieu-lock {
+    padding: 10px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+  }
+  .lieu-lock.locked { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+
+  /* ← MODIFICATION 3 : Toggle carrousel */
+  .format-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+  }
+  .format-toggle-row:hover { border-color: var(--bleu); }
+  .format-toggle-row.active { border-color: rgba(74,122,168,0.5); background: rgba(74,122,168,0.07); }
+  .format-toggle-left { display: flex; flex-direction: column; gap: 3px; }
+  .format-toggle-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+    letter-spacing: 0.02em;
+  }
+  .format-toggle-sub {
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    color: var(--text3);
+    letter-spacing: 0.08em;
+  }
+  .format-toggle-row.active .format-toggle-label { color: #7ab0e8; }
+  .format-toggle-row.active .format-toggle-sub { color: rgba(122,176,232,0.6); }
+  .toggle-pill {
+    width: 38px;
+    height: 20px;
+    background: var(--border2);
+    border-radius: 10px;
+    position: relative;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+  .toggle-pill::after {
+    content: '';
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    background: var(--text3);
+    border-radius: 50%;
+    top: 3px;
+    left: 3px;
+    transition: all 0.2s;
+  }
+  .format-toggle-row.active .toggle-pill { background: rgba(74,122,168,0.5); }
+  .format-toggle-row.active .toggle-pill::after { left: 21px; background: #7ab0e8; }
+
+  /* Texte narratif */
+  .tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 14px;
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .tab {
+    flex: 1;
+    padding: 8px;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    font-family: 'DM Mono', monospace;
+    color: var(--text3);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+  .tab.active { background: var(--accent); color: var(--noir); font-weight: 500; }
+
+  .textarea-story {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    padding: 14px;
+    font-size: 13px;
+    font-family: 'Outfit', sans-serif;
+    line-height: 1.7;
+    border-radius: 4px;
+    outline: none;
+    resize: vertical;
+    min-height: 140px;
+    transition: border-color 0.2s;
+  }
+  .textarea-story:focus { border-color: var(--accent); }
+  .textarea-story::placeholder { color: var(--text3); }
+
+  #sequences-manual { display: none; }
+  .seq-manual-item {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+    align-items: flex-start;
+  }
+  .seq-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--accent);
+    padding-top: 11px;
+    min-width: 20px;
+  }
+  .seq-manual-input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    padding: 10px 12px;
+    font-size: 12px;
+    font-family: 'Outfit', sans-serif;
+    border-radius: 4px;
+    outline: none;
+    resize: none;
+    min-height: 60px;
+    transition: border-color 0.2s;
+  }
+  .seq-manual-input:focus { border-color: var(--accent); }
+  .btn-add-seq {
+    background: transparent;
+    border: 1px dashed var(--border2);
+    color: var(--text3);
+    padding: 8px;
+    width: 100%;
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+    margin-top: 4px;
+  }
+  .btn-add-seq:hover { border-color: var(--accent); color: var(--accent); }
+
+  .btn-analyse {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    padding: 12px;
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn-analyse:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+
+  .btn-generate-all {
+    width: 100%;
+    background: var(--accent);
+    border: none;
+    color: var(--noir);
+    padding: 14px;
+    font-size: 11px;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+  }
+  .btn-generate-all:hover { background: var(--accent2); transform: translateY(-1px); }
+  .btn-generate-all:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  /* ── RIGHT PANEL ── */
+  .panel-right {
+    padding: 32px;
+    overflow-y: auto;
+  }
+
+  .sequences-header {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .sequences-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 28px;
+    font-weight: 300;
+    font-style: italic;
+  }
+  .sequences-count {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text3);
+    letter-spacing: 0.1em;
+  }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 60vh;
+    gap: 16px;
+    color: var(--text3);
+    text-align: center;
+  }
+  .empty-icon { font-size: 48px; opacity: 0.4; }
+  .empty-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 24px;
+    font-style: italic;
+    font-weight: 300;
+  }
+  .empty-sub { font-size: 12px; letter-spacing: 0.05em; line-height: 1.7; max-width: 320px; }
+
+  .sequences-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+  }
+
+  .seq-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+    position: relative;
+  }
+  .seq-card:hover { border-color: var(--border2); }
+  .seq-card.generating { border-color: var(--accent); }
+
+  .seq-card-header {
+    padding: 16px 18px 12px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .seq-num-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 0.1em;
+    flex-shrink: 0;
+    padding-top: 2px;
+  }
+
+  .seq-emotion-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    font-family: 'DM Mono', monospace;
+    flex-shrink: 0;
+  }
+  .seq-emotion-tag.positif { background: rgba(74,143,111,0.15); color: #6dbf94; border: 1px solid rgba(74,143,111,0.3); }
+  .seq-emotion-tag.introspectif { background: rgba(74,122,168,0.15); color: #7ab0e8; border: 1px solid rgba(74,122,168,0.3); }
+  .seq-emotion-tag.dynamique { background: rgba(212,97,74,0.15); color: #e8896e; border: 1px solid rgba(212,97,74,0.3); }
+  .seq-emotion-tag.relationnel { background: rgba(122,95,168,0.15); color: #b09de8; border: 1px solid rgba(122,95,168,0.3); }
+
+  .seq-text {
+    padding: 0 18px 12px;
+    font-size: 12px;
+    line-height: 1.65;
+    color: var(--text2);
+    font-style: italic;
+  }
+
+  .seq-emotion-name {
+    padding: 0 18px 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .seq-body-hint {
+    padding: 0 18px 14px;
+    font-size: 11px;
+    color: var(--text3);
+    font-family: 'DM Mono', monospace;
+    line-height: 1.5;
+  }
+
+  .seq-cinematic-meta {
+    padding: 0 18px 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .meta-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    color: rgba(200,169,126,0.6);
+    background: rgba(200,169,126,0.07);
+    border: 1px solid rgba(200,169,126,0.15);
+    padding: 3px 8px;
+    border-radius: 3px;
+  }
+
+  /* ── BLOC MÉTADONNÉES MODE MANUEL ── */
+  .meta-block {
+    margin-top: 10px;
+    background: rgba(200,169,126,0.05);
+    border: 1px solid rgba(200,169,126,0.2);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .meta-block-instruction {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    padding: 8px 12px 6px;
+    border-bottom: 1px solid rgba(200,169,126,0.15);
+    background: rgba(200,169,126,0.08);
+  }
+  .meta-block-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text3);
+    padding: 10px 12px 6px;
+  }
+  .meta-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    padding: 0 10px 10px;
+  }
+  .meta-field {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .meta-field-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 8px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(200,169,126,0.5);
+  }
+  .meta-field-input {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    padding: 6px 8px;
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    border-radius: 3px;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+  .meta-field-input:focus { border-color: var(--accent); }
+  .meta-field-input::placeholder { color: var(--text3); font-size: 10px; }
+
+  .seq-image-area {
+    position: relative;
+    background: var(--noir2);
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .seq-image-area img {
+    width: 100%;
+    display: block;
+    border-radius: 0;
+  }
+
+  .seq-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 40px 20px;
+    color: var(--text3);
+  }
+  .seq-loading-dot {
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--accent);
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .seq-loading-text { font-size: 11px; font-family: 'DM Mono', monospace; letter-spacing: 0.1em; }
+
+  .seq-actions {
+    padding: 12px 18px;
+    display: flex;
+    gap: 8px;
+    border-top: 1px solid var(--border);
+  }
+  .seq-btn {
+    flex: 1;
+    background: transparent;
+    border: 1px solid var(--border2);
+    color: var(--text3);
+    padding: 7px 10px;
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.2s;
+    text-align: center;
+  }
+  .seq-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .seq-btn.primary { border-color: var(--accent); color: var(--accent); }
+  .seq-btn.primary:hover { background: var(--accent); color: var(--noir); }
+
+  .progress-bar {
+    height: 2px;
+    background: var(--border);
+    margin: 0 18px 16px;
+    border-radius: 1px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    transition: width 0.3s ease;
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    padding: 12px 20px;
+    font-size: 12px;
+    font-family: 'DM Mono', monospace;
+    border-radius: 4px;
+    z-index: 9998;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.3s ease;
+    max-width: 340px;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.error { border-color: var(--rouge); color: #e88; }
+  .toast.success { border-color: var(--vert); color: #6dbf94; }
+
+  /* ── MODE BRUT ── */
+  .tab.brut { color: var(--text3); }
+  .tab.brut.active { background: var(--rouge); color: #fff; }
+
+  #input-brut { display: none; }
+
+  .brut-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: rgba(212,97,74,0.08);
+    border: 1px solid rgba(212,97,74,0.25);
+    border-radius: 6px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+  }
+  .brut-warning-icon { font-size: 16px; flex-shrink: 0; }
+  .brut-warning-text {
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    color: rgba(232,137,110,0.8);
+    line-height: 1.6;
+    letter-spacing: 0.03em;
+  }
+
+  .btn-brut {
+    width: 100%;
+    background: transparent;
+    border: 1px solid var(--rouge);
+    color: #e8896e;
+    padding: 12px;
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .btn-brut:hover { background: rgba(212,97,74,0.12); }
+
+  /* Zone résultat brut */
+  .brut-result {
+    margin-top: 24px;
+  }
+  .brut-result-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .brut-result-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 26px;
+    font-weight: 300;
+    font-style: italic;
+    color: #e8896e;
+  }
+  .brut-emotion-detected {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: rgba(232,137,110,0.6);
+  }
+
+  .brut-card {
+    background: var(--surface);
+    border: 1px solid rgba(212,97,74,0.3);
+    border-radius: 8px;
+    overflow: hidden;
+    max-width: 420px;
+  }
+  .brut-card-body {
+    padding: 20px 22px;
+  }
+  .brut-card-emotion {
+    font-size: 20px;
+    font-weight: 600;
+    color: #e8896e;
+    margin-bottom: 6px;
+  }
+  .brut-card-intensity {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: rgba(232,137,110,0.5);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .brut-card-extract {
+    font-size: 12px;
+    font-style: italic;
+    color: var(--text2);
+    line-height: 1.7;
+    border-left: 2px solid rgba(212,97,74,0.3);
+    padding-left: 12px;
+  }
+  .brut-image-area {
+    background: var(--noir2);
+    min-height: 240px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .brut-image-area img { width: 100%; display: block; }
+  .brut-card-actions {
+    padding: 12px 18px;
+    display: flex;
+    gap: 8px;
+    border-top: 1px solid var(--border);
+  }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  @media (max-width: 900px) {
+    .main { grid-template-columns: 1fr; }
+    .panel-left { height: auto; position: relative; top: auto; }
+    .panel-right { padding: 20px; }
+    .sequences-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div style="text-align:center">
+    <div class="splash-logo">Studio <span>Narratif</span></div>
+    <div class="splash-sub" style="text-align:center;margin-top:8px">Émotions incarnées · IRL</div>
+    <!-- MODIFICATION 4 : tagline -->
+    <div class="splash-tagline">Matérialise la psyché humaine sans filtre.<br>Chaque image est un secret volé — pas une publicité.</div>
+    <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.3em;color:var(--text3);text-align:center;margin-top:-8px;">IPHONE 17 PRO · HUIS CLOS · V.2026</div>
+  </div>
+
+  <div class="splash-form">
+    <div class="section-label" style="text-align:center">Moteur de génération</div>
+    <div class="engine-select">
+      <div class="engine-opt active" onclick="selectEngine('vertex')" id="opt-vertex">Vertex AI</div>
+      <div class="engine-opt" onclick="selectEngine('kie')" id="opt-kie">kie.ai</div>
+    </div>
+
+    <div id="vertex-key-group">
+      <input type="password" class="splash-input" id="api-key" placeholder="Clé API Vertex AI (AQ…)" autocomplete="off" />
+    </div>
+    <div id="kie-key-group" style="display:none">
+      <input type="password" class="splash-input" id="kie-key" placeholder="Clé API kie.ai" autocomplete="off" />
+    </div>
+
+    <button class="splash-btn" onclick="startApp()">▶ Entrer dans le studio</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="header">
+    <div class="header-logo">Studio <span>Narratif</span></div>
+    <div class="header-right">
+      <!-- MODIFICATION 3 : badge format dynamique -->
+      <div class="header-format-badge" id="header-format-badge">Story 9:16</div>
+      <div class="header-engine" id="engine-badge">Vertex AI</div>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- LEFT PANEL -->
+    <div class="panel-left">
+
+      <!-- Avatar -->
+      <div class="section">
+        <div class="section-label">Avatar référence *obligatoire</div>
+        <div class="avatar-zone" id="avatar-zone" onclick="document.getElementById('avatar-input').click()">
+          <input type="file" id="avatar-input" accept="image/*" onchange="loadAvatar(event)" />
+          <div class="avatar-placeholder" id="avatar-placeholder">
+            <div class="icon">👤</div>
+            <div>Importer ta photo</div>
+            <div style="font-size:10px;margin-top:4px;color:var(--text3)">Visage net, bonne lumière</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lieu -->
+      <div class="section">
+        <div class="section-label">Lieu / Décor (verrouillé)</div>
+        <div class="lieu-row">
+          <input type="text" class="lieu-input" id="lieu-input" placeholder="Ex: appartement parisien, lumière dorée, fenêtre" />
+          <div class="lieu-lock" id="lieu-lock" onclick="toggleLieuLock()" title="Verrouiller le lieu">🔒</div>
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin-top:6px;font-family:'DM Mono',monospace;">
+          Le décor sera identique sur toutes les images
+        </div>
+      </div>
+
+      <!-- MODIFICATION 3 : Toggle format carrousel -->
+      <div class="section">
+        <div class="section-label">Format des images</div>
+        <div class="format-toggle-row" id="format-toggle" onclick="toggleCarousel()">
+          <div class="format-toggle-left">
+            <div class="format-toggle-label">Mode Carrousel Instagram</div>
+            <div class="format-toggle-sub" id="format-sub-label">Désactivé — Story 9:16 par défaut</div>
+          </div>
+          <div class="toggle-pill" id="toggle-pill"></div>
+        </div>
+      </div>
+
+      <!-- Mode input -->
+      <div class="section">
+        <div class="section-label">Contenu narratif</div>
+        <div class="tabs">
+          <button class="tab active" id="tab-libre" onclick="switchTab('libre')">Texte libre</button>
+          <button class="tab" id="tab-manual" onclick="switchTab('manual')">Séquences manuelles</button>
+          <button class="tab brut" id="tab-brut" onclick="switchTab('brut')">⚡ Brut</button>
+        </div>
+
+        <div id="input-libre">
+          <textarea class="textarea-story" id="story-text"
+            placeholder="Raconte ta story… L'app va analyser les moments émotionnels et créer une image pour chacun.&#10;&#10;Ex: Ce matin je me suis réveillée avec cette boule au ventre. Cette peur de ne pas être assez. Et puis j'ai regardé par la fenêtre…"
+            rows="7"></textarea>
+          <div style="margin-top:10px">
+            <button class="btn-analyse" onclick="analyseTexte()">
+              <span>⟡</span> <span>Analyser et découper</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="sequences-manual">
+          <div id="manual-list"></div>
+          <button class="btn-add-seq" onclick="addManualSeq()">+ Ajouter une séquence</button>
+          <button class="btn-analyse" style="margin-top:10px;" onclick="useManualSequences()">
+            <span>⟡</span> <span>Utiliser ces séquences</span>
+          </button>
+        </div>
+      </div>
+
+        <!-- MODE BRUT -->
+        <div id="input-brut">
+          <div class="brut-warning">
+            <div class="brut-warning-icon">⚡</div>
+            <div class="brut-warning-text">
+              L'IA va extraire l'émotion la plus intense de ton texte et générer une seule image — brute, sans filtre, sans adoucissement. Un électrochoc visuel.
+            </div>
+          </div>
+          <textarea class="textarea-story" id="brut-text"
+            placeholder="Colle ton texte ici. Peu importe la longueur. L'IA va trouver l'émotion dominante la plus forte et la faire exploser visuellement.&#10;&#10;Ex: J'ai passé 2 ans sans faire une seule vente. Je voyais tout le monde avancer, réussir. Et moi j'avais l'impression que je n'y arriverais jamais. Jamais. J'étais désespérée…"
+            rows="7"></textarea>
+          <button class="btn-brut" onclick="analyseBrut()">
+            <span>⚡</span> <span>Extraire l'émotion dominante</span>
+          </button>
+        </div>
+      <div class="section">
+        <button class="btn-generate-all" id="btn-gen-all" onclick="generateAll()" disabled>
+          Générer toutes les images
+        </button>
+        <div style="font-size:10px;color:var(--text3);margin-top:8px;text-align:center;font-family:'DM Mono',monospace;" id="gen-status"></div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="panel-right">
+      <div class="empty-state" id="empty-state">
+        <div class="empty-icon">◈</div>
+        <div class="empty-title">Tes stories prennent vie ici</div>
+        <div class="empty-sub">Entre ton texte narratif, analyse-le,<br>et chaque émotion devient une image<br>ultra-réaliste et incarnée.</div>
+      </div>
+
+      <div id="sequences-output" style="display:none">
+        <div class="sequences-header">
+          <div class="sequences-title">Séquences émotionnelles</div>
+          <div class="sequences-count" id="seq-count"></div>
+        </div>
+        <div class="sequences-grid" id="sequences-grid"></div>
+      </div>
+      <!-- RÉSULTAT BRUT -->
+      <div class="brut-result" id="brut-result" style="display:none">
+        <div class="brut-result-header">
+          <div class="brut-result-title">Mode Brut</div>
+          <div class="brut-emotion-detected" id="brut-emotion-label">—</div>
+        </div>
+        <div class="brut-card" id="brut-card">
+          <div class="brut-card-body">
+            <div class="brut-card-emotion" id="brut-emotion-name">—</div>
+            <div class="brut-card-intensity" id="brut-emotion-intensity">Intensité maximale · Sans filtre</div>
+            <div class="brut-card-extract" id="brut-extract">—</div>
+          <div id="brut-cinematic-meta" class="seq-cinematic-meta" style="display:none;padding:10px 0 0;"></div>
+          </div>
+          <div class="brut-image-area" id="brut-img-area">
+            <div style="color:var(--text3);font-size:11px;font-family:'DM Mono',monospace;">Non générée</div>
+          </div>
+          <div class="brut-card-actions">
+            <button class="seq-btn primary" onclick="generateBrut()" style="border-color:var(--rouge);color:#e8896e;" onmouseenter="this.style.background='var(--rouge)';this.style.color='#fff'" onmouseleave="this.style.background='';this.style.color='#e8896e'">Générer l'image brute</button>
+            <button class="seq-btn" onclick="downloadBrut()">Télécharger</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────
+let ENGINE = 'vertex';
+let API_KEY = '';
+let KIE_KEY = '';
+let avatarBase64 = null;
+let avatarMime = 'image/jpeg';
+let lieuLocked = false;
+let lieuText = '';
+let currentTab = 'libre';
+let sequences = [];
+let manualSeqCount = 0;
+// MODIFICATION 3 : état carrousel
+let carouselMode = false;
+// MODE BRUT state
+let brutData = null; // { emotion, intensity, extract, category }
+let brutImageUrl = null;
+
+// ─── ENGINE SELECTION ────────────────────────────────────
+function selectEngine(e) {
+  ENGINE = e;
+  document.getElementById('opt-vertex').classList.toggle('active', e === 'vertex');
+  document.getElementById('opt-kie').classList.toggle('active', e === 'kie');
+  document.getElementById('vertex-key-group').style.display = e === 'vertex' ? '' : 'none';
+  document.getElementById('kie-key-group').style.display = e === 'kie' ? '' : 'none';
+}
+
+// ─── SPLASH → APP ────────────────────────────────────────
+function startApp() {
+  API_KEY = document.getElementById('api-key').value.trim();
+  KIE_KEY = document.getElementById('kie-key').value.trim();
+
+  if (ENGINE === 'vertex' && !API_KEY) return toast('Entre ta clé API Vertex AI', 'error');
+  if (ENGINE === 'kie' && !KIE_KEY) return toast('Entre ta clé kie.ai', 'error');
+
+  document.getElementById('splash').classList.add('hidden');
+  document.getElementById('app').classList.add('visible');
+  document.getElementById('engine-badge').textContent = ENGINE === 'vertex' ? 'Vertex AI' : 'kie.ai';
+}
+
+// ─── AVATAR ──────────────────────────────────────────────
+function loadAvatar(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  avatarMime = file.type || 'image/jpeg';
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    avatarBase64 = ev.target.result.split(',')[1];
+    const zone = document.getElementById('avatar-zone');
+    zone.classList.add('has-image');
+    zone.innerHTML = `<img src="${ev.target.result}" alt="avatar" /><div class="avatar-badge">VERROUILLÉ</div>`;
+    zone.style.cursor = 'pointer';
+    zone.onclick = () => document.getElementById('avatar-input').click();
+    const inp = document.createElement('input');
+    inp.type = 'file'; inp.id = 'avatar-input'; inp.accept = 'image/*'; inp.style.display = 'none';
+    inp.onchange = loadAvatar;
+    zone.appendChild(inp);
+  };
+  reader.readAsDataURL(file);
+}
+
+// ─── LIEU ────────────────────────────────────────────────
+function toggleLieuLock() {
+  lieuLocked = !lieuLocked;
+  const lock = document.getElementById('lieu-lock');
+  lock.classList.toggle('locked', lieuLocked);
+  lock.textContent = lieuLocked ? '🔐' : '🔒';
+  if (lieuLocked) {
+    lieuText = document.getElementById('lieu-input').value;
+    document.getElementById('lieu-input').disabled = true;
+    toast('Décor verrouillé : ' + (lieuText || 'non défini'), 'success');
+  } else {
+    document.getElementById('lieu-input').disabled = false;
+  }
+}
+
+// MODIFICATION 3 : Toggle carrousel
+function toggleCarousel() {
+  carouselMode = !carouselMode;
+  const row = document.getElementById('format-toggle');
+  const badge = document.getElementById('header-format-badge');
+  const sub = document.getElementById('format-sub-label');
+
+  row.classList.toggle('active', carouselMode);
+  if (carouselMode) {
+    badge.textContent = 'Carrousel 4:5';
+    badge.classList.add('carousel');
+    sub.textContent = 'Activé — Portrait 4:5 (1080×1350)';
+    toast('Mode Carrousel activé — format 4:5', 'success');
+  } else {
+    badge.textContent = 'Story 9:16';
+    badge.classList.remove('carousel');
+    sub.textContent = 'Désactivé — Story 9:16 par défaut';
+    toast('Mode Story 9:16 restauré', 'success');
+  }
+}
+
+// ─── TABS ────────────────────────────────────────────────
+function switchTab(t) {
+  currentTab = t;
+  document.getElementById('tab-libre').classList.toggle('active', t === 'libre');
+  document.getElementById('tab-manual').classList.toggle('active', t === 'manual');
+  document.getElementById('tab-brut').classList.toggle('active', t === 'brut');
+  document.getElementById('input-libre').style.display = t === 'libre' ? 'block' : 'none';
+  document.getElementById('sequences-manual').style.display = t === 'manual' ? 'block' : 'none';
+  document.getElementById('input-brut').style.display = t === 'brut' ? 'block' : 'none';
+  // Masquer generate-all en mode brut
+  document.getElementById('btn-gen-all').style.display = t === 'brut' ? 'none' : '';
+  document.getElementById('gen-status').style.display = t === 'brut' ? 'none' : '';
+  // Afficher/masquer zones résultat
+  if (t === 'brut') {
+    document.getElementById('sequences-output').style.display = 'none';
+    document.getElementById('empty-state').style.display = 'none';
+    document.getElementById('brut-result').style.display = brutData ? 'block' : 'none';
+    const panelRight = document.querySelector('.panel-right');
+    if (panelRight) panelRight.scrollTop = 0;
+  } else {
+    document.getElementById('brut-result').style.display = 'none';
+    document.getElementById('empty-state').style.display = sequences.length > 0 ? 'none' : '';
+    if (sequences.length > 0) {
+      document.getElementById('sequences-output').style.display = '';
+      document.getElementById('empty-state').style.display = 'none';
+    } else {
+      document.getElementById('empty-state').style.display = '';
+    }
+  }
+}
+
+// ─── MANUAL SEQUENCES ────────────────────────────────────
+function addManualSeq() {
+  manualSeqCount++;
+  const n = manualSeqCount;
+  const list = document.getElementById('manual-list');
+  const div = document.createElement('div');
+  div.className = 'seq-manual-item';
+  div.id = 'manual-item-' + n;
+  div.innerHTML = `
+    <div class="seq-num">${n}.</div>
+    <div style="flex:1;display:flex;flex-direction:column;gap:0;">
+      <textarea class="seq-manual-input" id="manual-seq-${n}" placeholder="Décris cette séquence émotionnelle…"></textarea>
+      <div class="meta-block">
+        <div class="meta-block-instruction">↓ Copie-colle les métadonnées obtenues dans Studio Psycho.</div>
+        <div class="meta-block-title">— MÉTADONNÉES —</div>
+        <div class="meta-fields">
+          <div class="meta-field">
+            <div class="meta-field-label">📱 Device</div>
+            <input class="meta-field-input" id="meta-device-${n}" placeholder="iPhone 17 Pro" />
+          </div>
+          <div class="meta-field">
+            <div class="meta-field-label">📐 Angle</div>
+            <input class="meta-field-input" id="meta-angle-${n}" placeholder="ex: plongée" />
+          </div>
+          <div class="meta-field">
+            <div class="meta-field-label">💡 Lumière</div>
+            <input class="meta-field-input" id="meta-lumiere-${n}" placeholder="ex: fenêtre froide" />
+          </div>
+          <div class="meta-field">
+            <div class="meta-field-label">🔍 Focus</div>
+            <input class="meta-field-input" id="meta-focus-${n}" placeholder="ex: main crispée" />
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  list.appendChild(div);
+}
+
+function getManualSequences() {
+  const results = [];
+  for (let i = 1; i <= manualSeqCount; i++) {
+    const el = document.getElementById('manual-seq-' + i);
+    if (el && el.value.trim()) {
+      results.push({
+        text: el.value.trim(),
+        device:  document.getElementById('meta-device-'  + i)?.value.trim() || '',
+        angle:   document.getElementById('meta-angle-'   + i)?.value.trim() || '',
+        lumiere: document.getElementById('meta-lumiere-' + i)?.value.trim() || '',
+        focus:   document.getElementById('meta-focus-'   + i)?.value.trim() || ''
+      });
+    }
+  }
+  return results;
+}
+
+// ─── ANALYSE TEXTE ───────────────────────────────────────
+async function analyseTexte() {
+  const text = document.getElementById('story-text').value.trim();
+  if (!text) return toast('Entre ton texte narratif', 'error');
+  if (!avatarBase64) return toast('Importe ta photo avatar d\'abord', 'error');
+
+  const btn = document.querySelector('.btn-analyse');
+  btn.innerHTML = '<span class="seq-loading-dot" style="width:16px;height:16px;display:inline-block"></span> Analyse en cours…';
+  btn.disabled = true;
+
+  try {
+    const systemInstruction = `Tu es un psychologue de l'image, un réalisateur de l'instant et un expert en narration émotionnelle. Ta mission est de matérialiser la psyché humaine sans filtre.
+
+Analyse le texte narratif fourni et découpe-le en séquences émotionnelles distinctes (entre 3 et 7 séquences).
+
+Pour chaque séquence, identifie :
+1. Le texte exact de la séquence
+2. L'émotion dominante (une seule, précise)
+3. La catégorie : positif | introspectif | dynamique | relationnel
+4. Comment le corps incarne cette émotion (posture, regard, position) — 1 phrase courte et précise
+5. Les MÉTADONNÉES CINÉMATOGRAPHIQUES : 
+   - focus : sur quoi l'objectif se pose (ex: "regard perdu dans le vague", "tempe moite", "main qui se crispe", "pupille dilatée")
+   - angle : angle caméra le plus juste pour la psychologie de cette scène — choisir parmi : "plongée" (vulnérabilité/honte/défaite), "contre-plongée" (fierté/résilience/puissance), "gros plan macro" (vérité d'un détail volé), "angle subjectif intime" (spectateur à 1m dans la pièce)
+   - lumiere : source lumineuse naturelle uniquement (ex: "fenêtre latérale froide", "écran d'ordinateur bleuté", "lampe de bureau rasante", "lumière de couloir filtrante")
+
+Réponds UNIQUEMENT en JSON valide, sans markdown :
+{
+  "sequences": [
+    {
+      "text": "texte de la séquence",
+      "emotion": "nom précis de l'émotion",
+      "category": "positif|introspectif|dynamique|relationnel",
+      "bodyHint": "Le corps se... / Le regard se...",
+      "focus": "détail précis sur lequel l'objectif se pose",
+      "angle": "plongée|contre-plongée|gros plan macro|angle subjectif intime",
+      "lumiere": "source lumineuse naturelle précise"
+    }
+  ]
+}`;
+
+    const result = await callTextAnalyse(systemInstruction, text);
+    sequences = result.sequences || [];
+    if (sequences.length === 0) throw new Error('Aucune séquence détectée');
+    renderSequences();
+    toast(`${sequences.length} séquences détectées ✓`, 'success');
+  } catch(err) {
+    toast('Erreur analyse : ' + err.message, 'error');
+    console.error(err);
+  } finally {
+    btn.innerHTML = '<span>⟡</span> <span>Analyser et découper</span>';
+    btn.disabled = false;
+  }
+}
+
+async function callTextAnalyse(systemInstruction, userText) {
+  const endpoint = 'https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-2.5-flash:generateContent';
+  const resp = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': API_KEY },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: systemInstruction }] },
+      contents: [{ role: 'user', parts: [{ text: userText }] }],
+      generationConfig: { temperature: 0.3, maxOutputTokens: 4096, responseMimeType: 'application/json' }
+    })
+  });
+  const data = await resp.json();
+  if (!resp.ok) throw new Error(data.error?.message || `Erreur Vertex ${resp.status}`);
+  const txt = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  if (!txt) throw new Error('Réponse vide du modèle');
+  return JSON.parse(cleanJson(txt));
+}
+
+function cleanJson(txt) {
+  txt = txt.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim();
+  const start = txt.indexOf('{');
+  const end = txt.lastIndexOf('}');
+  if (start >= 0 && end >= 0) return txt.slice(start, end + 1);
+  return txt;
+}
+
+// ─── MANUAL → SEQUENCES ──────────────────────────────────
+async function useManualSequences() {
+  const items = getManualSequences(); // now returns [{text, device, angle, lumiere, focus}]
+  if (items.length === 0) return toast('Entre au moins une séquence', 'error');
+  if (!avatarBase64) return toast('Importe ta photo avatar d\'abord', 'error');
+
+  const btn = document.querySelector('#sequences-manual .btn-analyse');
+  if (btn) { btn.innerHTML = '<span class="seq-loading-dot" style="width:16px;height:16px;display:inline-block"></span> Analyse en cours…'; btn.disabled = true; }
+
+  try {
+    const systemInstruction = `Tu es un psychologue de l'image et réalisateur de l'instant.
+
+Pour chaque séquence de texte fournie, identifie :
+1. L'émotion dominante (une seule, précise)
+2. La catégorie : positif | introspectif | dynamique | relationnel
+3. Comment le corps incarne cette émotion (posture, regard) - 1 phrase courte
+4. Les MÉTADONNÉES CINÉMATOGRAPHIQUES (uniquement si non fournies par l'utilisateur) :
+   - focus : détail précis sur lequel l'objectif se pose (ex: "tempe moite", "main qui se crispe", "regard vide")
+   - angle : "plongée" | "contre-plongée" | "gros plan macro" | "angle subjectif intime"
+   - lumiere : source lumineuse naturelle (ex: "fenêtre latérale", "écran bleuté", "lampe rasante")
+
+Reponds UNIQUEMENT en JSON valide :
+{
+  "sequences": [
+    {
+      "emotion": "nom precis de l'emotion",
+      "category": "positif|introspectif|dynamique|relationnel",
+      "bodyHint": "Le corps se... / Le regard se...",
+      "focus": "detail precis",
+      "angle": "plongee|contre-plongee|gros plan macro|angle subjectif intime",
+      "lumiere": "source lumineuse naturelle"
+    }
+  ]
+}`;
+
+    const userText = items.map((item, i) => `Sequence ${i+1}: "${item.text}"`).join('\n\n');
+    const result = await callTextAnalyse(systemInstruction, userText);
+    const analysed = result.sequences || [];
+
+    // Métadonnées manuelles > métadonnées IA
+    sequences = items.map((item, i) => ({
+      text: item.text,
+      emotion: analysed[i]?.emotion || 'Emotion authentique',
+      category: analysed[i]?.category || 'introspectif',
+      bodyHint: analysed[i]?.bodyHint || 'Le corps incarne naturellement le moment',
+      focus:   item.focus   || analysed[i]?.focus   || 'regard',
+      angle:   item.angle   || analysed[i]?.angle   || 'angle subjectif intime',
+      lumiere: item.lumiere || analysed[i]?.lumiere || 'fenêtre naturelle',
+      device:  item.device  || 'iPhone 17 Pro'
+    }));
+
+    renderSequences();
+    toast(`${sequences.length} séquences analysées`, 'success');
+  } catch(err) {
+    // Fallback : utiliser les métadonnées manuelles brutes
+    sequences = items.map(item => ({
+      text: item.text,
+      emotion: 'Emotion authentique',
+      category: 'introspectif',
+      bodyHint: 'Le corps incarne naturellement le moment',
+      focus:   item.focus   || 'regard',
+      angle:   item.angle   || 'angle subjectif intime',
+      lumiere: item.lumiere || 'lumière naturelle',
+      device:  item.device  || 'iPhone 17 Pro'
+    }));
+    renderSequences();
+    toast(`${sequences.length} séquences chargées (sans analyse)`, 'success');
+  } finally {
+    if (btn) { btn.innerHTML = '<span>⟡</span> <span>Utiliser ces séquences</span>'; btn.disabled = false; }
+  }
+}
+
+// ─── RENDER SEQUENCES ────────────────────────────────────
+function renderSequences() {
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('sequences-output').style.display = '';
+  document.getElementById('seq-count').textContent = sequences.length + ' séquence' + (sequences.length > 1 ? 's' : '');
+  document.getElementById('btn-gen-all').disabled = false;
+
+  const grid = document.getElementById('sequences-grid');
+  grid.innerHTML = '';
+
+  sequences.forEach((seq, i) => {
+    const card = document.createElement('div');
+    card.className = 'seq-card';
+    card.id = 'seq-card-' + i;
+
+    const catColor = { positif:'positif', introspectif:'introspectif', dynamique:'dynamique', relationnel:'relationnel' }[seq.category] || 'introspectif';
+    const catEmoji = { positif:'🌞', introspectif:'🌧', dynamique:'⚡', relationnel:'❤️' }[seq.category] || '◈';
+
+    card.innerHTML = `
+      <div class="seq-card-header">
+        <div class="seq-num-badge">S${String(i+1).padStart(2,'0')}</div>
+        <div class="seq-emotion-tag ${catColor}">${catEmoji} ${seq.category}</div>
+      </div>
+      <div class="seq-text">"${seq.text}"</div>
+      <div class="seq-emotion-name">${seq.emotion}</div>
+      <div class="seq-body-hint">${seq.bodyHint}</div>
+      ${seq.focus ? `<div class="seq-cinematic-meta">
+        <span class="meta-tag">📐 ${seq.angle || 'angle subjectif'}</span>
+        <span class="meta-tag">🔍 ${seq.focus}</span>
+        <span class="meta-tag">💡 ${seq.lumiere || 'lumière naturelle'}</span>
+      </div>` : ''}
+      <div class="seq-image-area" id="img-area-${i}">
+        <div style="color:var(--text3);font-size:11px;font-family:'DM Mono',monospace;">Non générée</div>
+      </div>
+      <div class="seq-actions">
+        <button class="seq-btn primary" onclick="generateSingle(${i})">Générer</button>
+        <button class="seq-btn" onclick="downloadImage(${i})">Télécharger</button>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+// ─── GENERATE ALL ─────────────────────────────────────────
+async function generateAll() {
+  if (!avatarBase64) return toast('Photo avatar manquante', 'error');
+  if (sequences.length === 0) return toast('Aucune séquence à générer', 'error');
+
+  const btn = document.getElementById('btn-gen-all');
+  btn.disabled = true;
+
+  for (let i = 0; i < sequences.length; i++) {
+    document.getElementById('gen-status').textContent = `Génération ${i+1}/${sequences.length}…`;
+    await generateSingle(i);
+    if (i < sequences.length - 1) await delay(2000);
+  }
+
+  document.getElementById('gen-status').textContent = `✓ ${sequences.length} images générées`;
+  btn.disabled = false;
+  toast('Toutes les images sont prêtes !', 'success');
+}
+
+// ─── GENERATE SINGLE ─────────────────────────────────────
+async function generateSingle(idx) {
+  const seq = sequences[idx];
+  const area = document.getElementById('img-area-' + idx);
+  const card = document.getElementById('seq-card-' + idx);
+
+  card.classList.add('generating');
+  area.innerHTML = `
+    <div class="seq-loading">
+      <div class="seq-loading-dot"></div>
+      <div class="seq-loading-text">Incarnation en cours…</div>
+    </div>
+  `;
+
+  try {
+    const promptText = buildImagePrompt(seq, idx);
+    let imageUrl;
+    if (ENGINE === 'kie') {
+      imageUrl = await generateKie(promptText);
+    } else {
+      imageUrl = await generateVertex(promptText);
+    }
+    area.innerHTML = `<img src="${imageUrl}" alt="séquence ${idx+1}" />`;
+    sequences[idx].imageUrl = imageUrl;
+    card.classList.remove('generating');
+  } catch(err) {
+    area.innerHTML = `<div style="padding:20px;color:#e88;font-size:11px;font-family:'DM Mono',monospace;text-align:center;">Erreur : ${err.message}</div>`;
+    card.classList.remove('generating');
+    toast(`Séquence ${idx+1} : ${err.message}`, 'error');
+  }
+}
+
+// ─── BUILD PROMPT V.2026 — IPHONE 17 PRO · HUIS CLOS ─────
+function buildImagePrompt(seq, idx) {
+  const inputEl = document.getElementById('lieu-input');
+  const lieu = (lieuText && lieuText.trim()) 
+    ? lieuText.trim() 
+    : (inputEl && inputEl.value && inputEl.value.trim()) 
+      ? inputEl.value.trim() 
+      : '';
+  const isCarousel = carouselMode;
+
+  // Angle cinématographique V.2026
+  const angleMap = {
+    'plongée': `ANGLE PLONGÉE — Caméra positionnée au-dessus du sujet, inclinée vers le bas. Le sujet apparaît petit, vulnérable, dominé par l'espace et les murs. Cet angle écrase, enferme, accentue la honte ou la défaite.`,
+    'contre-plongée': `ANGLE CONTRE-PLONGÉE — Caméra positionnée sous le sujet, regardant vers le haut. Le sujet se découpe sur le plafond ou le ciel, grand, puissant, en train de se relever ou d'imposer sa présence.`,
+    'gros plan macro': `GROS PLAN MACRO — L'objectif se colle à 5-10cm du détail physique révélateur : ${seq.focus || 'un détail du visage'}. Ce fragment de corps dit tout. Rien d'autre n'existe dans l'image. Un secret volé, un instant de vérité pure.`,
+    'angle subjectif intime': `ANGLE SUBJECTIF INTIME — Le spectateur est dans la pièce, à 1 mètre du sujet, comme s'il tenait lui-même l'iPhone. Hauteur des yeux. Légère proximité qui crée l'intimité sans envahir. Le spectateur VOIT sans être vu.`
+  };
+  const cinematicAngle = angleMap[seq.angle] || angleMap['angle subjectif intime'];
+
+  // Intensité émotionnelle par catégorie
+  const emotionIntensityMap = {
+    positif: `EXPANSION LUMINEUSE : Le corps occupe tout l'espace disponible. Épaules ouvertes, tête levée, souffle retrouvé. La lumière ${seq.lumiere || 'naturelle'} baigne le visage d'une clarté transcendante.`,
+    introspectif: `IMPLOSION INTÉRIEURE : Le corps occupe le moins d'espace possible. Repli, angles morts, ombres qui envahissent. La lumière ${seq.lumiere || 'froide de la fenêtre'} éclaire seulement un côté du visage.`,
+    dynamique: `TENSION EXPLOSIVE : Chaque muscle du corps porte l'émotion. La lumière ${seq.lumiere || 'rasante'} crée des ombres dures sur les contours du visage.`,
+    relationnel: `CONNEXION PALPABLE : Le corps cherche quelqu'un. La lumière ${seq.lumiere || 'douce'} enveloppe sans aveugler.`
+  };
+  const intensityBlock = emotionIntensityMap[seq.category] || emotionIntensityMap.introspectif;
+
+  const formatBlock = isCarousel
+    ? `FORMAT : Portrait carrousel Instagram 4:5 (1080×1350). Cadrage vertical serré — visage et buste. La personne occupe les 2/3 de la hauteur.`
+    : `FORMAT : Story portrait 9:16. Cadrage vertical — corps entier ou mi-corps selon l'émotion. La personne habitant son espace.`;
+
+  const decor = lieu || '';
+  const hasLieu = decor.trim().length > 0;
+  const decorLock = lieuLocked
+    ? `⚠️ HUIS CLOS ACTIVÉ — RÈGLE ABSOLUE N°1 :
+DÉCOR STRICTEMENT VERROUILLÉ${hasLieu ? ` : "${decor}"` : ' — MÊME DÉCOR QUE LA SCÈNE PRÉCÉDENTE'}
+Ce lieu NE CHANGE PAS. L'évolution temporelle se lit UNIQUEMENT dans : (1) l'évolution de la lumière, (2) les angles de caméra, (3) la langue du corps. Jamais dans le décor.${hasLieu ? `\nReproduire EXACTEMENT : "${decor}"` : ''}
+`
+    : (hasLieu ? `Lieu de la scène : "${decor}".\n` : '');
+
+  return decorLock + `PORTRAIT PSYCHOLOGIQUE BRUT — IPHONE 17 PRO NATIVE — SECRET VOLÉ
+
+═══════════════════════════════════════════
+I. LE CAPTEUR : IPHONE 17 PRO NATIVE
+═══════════════════════════════════════════
+Simule l'optique exacte de l'iPhone 17 Pro${seq.device && seq.device !== 'iPhone 17 Pro' ? ` — ${seq.device}` : ''}. Rendu photographique 4K ultra-réaliste — PAS un rendu de studio de cinéma, PAS un rendu DSLR stylisé. L'esthétique native iPhone : profondeur de champ naturelle et organique, couleurs vraies non saturées, grain numérique subtil.
+
+TEXTURE DE PEAU ABSOLUE : Pores visibles, cernes réels, légères imperfections naturelles. Interdiction totale de lisser ou styliser. Si la personne a des taches, elles sont là. Si elle a des cernes, ils sont là. La peau est vivante.
+
+MODE CINÉMATOGRAPHIQUE APPLE : Pour cette scène d'émotion intense — focus sélectif sur ${seq.focus || 'le regard'}, flou d'arrière-plan organique et doux. L'objectif choisit ce qui compte. Profondeur de champ naturelle iPhone.
+
+LUMIÈRE INCIDENTE UNIQUEMENT : Source lumineuse : ${seq.lumiere || 'fenêtre naturelle'}. Pas d'éclairage de studio. Pas de flash. Lumière qui existe dans la vie réelle de cette personne.
+
+═══════════════════════════════════════════
+II. LE CADRAGE : GRAMMAIRE DE L'ÉLECTROCHOC
+═══════════════════════════════════════════
+${cinematicAngle}
+
+FOCUS POINT OBLIGATOIRE : L'objectif se pose sur — ${seq.focus || 'le regard'}. Ce détail est net. Tout le reste peut être légèrement flou. Ce détail raconte tout.
+
+═══════════════════════════════════════════
+III. IDENTITÉ — VERROUILLÉE À 100%
+═══════════════════════════════════════════
+La personne exacte de la photo de référence. Visage, traits, morphologie réels. Zéro modification, zéro embellissement, zéro idéalisation. La personne telle qu'elle est — imperfections comprises. Tenue identique à la photo de référence.
+
+═══════════════════════════════════════════
+IV. HUIS CLOS — DÉCOR FIGÉ
+═══════════════════════════════════════════
+Décor : ${decor || 'environnement de la photo de référence'}
+RÈGLE DU HUIS CLOS : Ce lieu est une prison narrative. L'histoire ne se lit PAS dans le changement de décor — elle se lit dans la lumière, les angles, le corps. INTERDICTION d'ajouter tout objet ou meuble absent de la photo de référence. Zéro invention. Ce lieu précis, exactement tel qu'il est.
+
+═══════════════════════════════════════════
+V. MOMENT NARRATIF
+═══════════════════════════════════════════
+"${seq.text}"
+
+═══════════════════════════════════════════
+VI. SPECTRE ÉMOTIONNEL — ÉMOTION : ${seq.emotion}
+═══════════════════════════════════════════
+${intensityBlock}
+
+Incarnation corporelle spécifique : ${seq.bodyHint}
+
+POUSSER À 150% D'INTENSITÉ BRUTE :
+${seq.category === 'introspectif' || seq.category === 'dynamique' ? 
+  'NÉGATIF (IMPLOSION) : Corps occupe le minimum d\'espace. Repli. Angles morts. Ombres envahissantes. Épaules tombantes, dos courbé, regard fuyant.' :
+  'POSITIF (EXPANSION) : Corps occupe tout l\'espace. Épaules ouvertes. Tête levée. Lumière transcendante. Souffle retrouvé.'}
+
+ROUE DES ÉMOTIONS — APPLIQUER PRÉCISÉMENT :
+JOIE → sourire des yeux, joues relevées, corps ouvert et expansif | EXTASE → sourire total, corps vers le haut, mains ouvertes | SÉRÉNITÉ → visage doux, respiration visible | CONFIANCE → menton levé, regard direct, épaules droites | PEUR → yeux écarquillés, corps rigide qui recule | TERREUR → visage figé, bouche ouverte, corps pétrifié | SURPRISE → sourcils levés haut, bouche en O | TRISTESSE → regard baissé, corps affaissé | CHAGRIN → larmes réelles, yeux rouges, corps effondré | MÉLANCOLIE → regard lointain, posture intérieure | COLÈRE → mâchoire serrée, sourcils froncés, corps tendu | RAGE → veines visibles, regard brûlant, corps en tension extrême | HONTE → tête baissée, corps qui cherche à disparaître | FIERTÉ → menton levé, poitrine ouverte, posture d'assurance | DÉSARROI → regard perdu, corps hésitant | RÉSIGNATION → corps qui lâche doucement, épaules tombantes
+
+RÈGLE ABSOLUE : Les larmes N'APPARAISSENT QUE pour chagrin, tristesse profonde, désespoir. Pas pour les autres émotions.
+ZÉRO CLICHÉ : Pas de sourires de pub. Pas de mains sur les tempes génériques. La vérité sale et belle.
+
+═══════════════════════════════════════════
+VII. PROTOCOLE FINAL — LE TEST DE L'ÉLECTROCHOC
+═══════════════════════════════════════════
+Si l'image ressemble à une publicité → ÉCHEC.
+Si l'image ressemble à un secret volé qui force le silence → SUCCÈS.
+
+— La personne ne pose PAS. Elle VIT le moment en temps réel.
+— L'image doit faire un électrochoc. Impossible à ignorer.
+— L'authenticité prime sur l'esthétique. La vérité prime sur la beauté.
+— Arrière-plan : si des silhouettes sont présentes, elles sont floues et en mouvement naturel.
+
+═══════════════════════════════════════════
+VIII. CLAUSE DE DÉPLACEMENT ÉMOTIONNEL — L'ANGLE MORT
+═══════════════════════════════════════════
+RÈGLE D'OR DE MISE EN SCÈNE — ABSOLUE ET NON NÉGOCIABLE :
+Si le texte narratif mentionne un objet matériel déclencheur (ordinateur, factures, téléphone, contrat, médicaments, etc.), tu as l'INTERDICTION FORMELLE de centrer l'image sur l'interaction directe avec cet objet.
+
+Le drame ne se joue JAMAIS sur l'outil. Il se joue sur l'humain APRÈS l'outil.
+
+TU DOIS cadrer l'impact invisible du problème :
+— Ne montre PAS le clavier → montre le corps qui s'effondre loin du bureau.
+— Ne montre PAS la facture → montre le regard vide face à un mur.
+— Ne montre PAS le smartphone → montre la main qui l'a lâché au sol.
+— Ne montre PAS l'écran → montre le visage éclairé par sa lueur froide, tourné ailleurs.
+
+L'émotion brute se trouve dans les ANGLES MORTS de la pièce :
+coins de murs, sol, contre un lit, derrière une porte, recroquevillé dans un couloir.
+C'est là que le sujet se réfugie quand il ne peut plus faire face.
+C'est là que tu cadres.
+
+[Focus : ${seq.focus || 'regard'} / Angle : ${seq.angle || 'angle subjectif intime'} / Lumière : ${seq.lumiere || 'naturelle incidente'}]
+
+${formatBlock}`;
+}
+
+
+// ─── VERTEX AI GENERATE ──────────────────────────────────
+async function generateVertex(promptText) {
+  const endpoint = 'https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-3.1-flash-image-preview:generateContent';
+
+  const aspectRatio = carouselMode ? '4:5' : '9:16';
+
+  const parts = [];
+  if (avatarBase64) parts.push({ inlineData: { data: avatarBase64, mimeType: avatarMime } });
+  parts.push({ text: promptText });
+
+  const body = {
+    contents: [{ role: 'user', parts }],
+    generationConfig: {
+      responseModalities: ['IMAGE'],
+      imageConfig: { aspectRatio }
+    }
+  };
+
+  const waitTimes = [5000, 10000, 20000, 40000];
+  let lastErr;
+  for (let attempt = 0; attempt <= waitTimes.length; attempt++) {
+    try {
+      const resp = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': API_KEY }, body: JSON.stringify(body) });
+      let data = {};
+      try { data = await resp.json(); } catch(_) {}
+      if (!resp.ok) {
+        const msg = data?.error?.message || `Erreur HTTP ${resp.status}`;
+        if (resp.status === 429 && attempt < waitTimes.length) { lastErr = new Error(msg); await delay(waitTimes[attempt]); continue; }
+        throw new Error(msg);
+      }
+      const candidate = data?.candidates?.[0];
+      if (!candidate) throw new Error('Aucune réponse du modèle');
+      if (candidate.finishReason === 'SAFETY') throw new Error('Bloqué par les filtres de sécurité');
+      for (const p of (candidate?.content?.parts || [])) {
+        if (p.inlineData?.data) {
+          // Convert base64 → Blob URL (Safari-safe, avoids large data URIs in src attributes)
+          const mimeType = p.inlineData.mimeType || 'image/png';
+          const binary = atob(p.inlineData.data);
+          const arr = new Uint8Array(binary.length);
+          for (let i = 0; i < binary.length; i++) arr[i] = binary.charCodeAt(i);
+          const blob = new Blob([arr], { type: mimeType });
+          return URL.createObjectURL(blob);
+        }
+      }
+      throw new Error('Image non trouvée dans la réponse');
+    } catch(err) {
+      lastErr = err;
+      const retryable = /429|503|overloaded/i.test(err.message);
+      if (retryable && attempt < waitTimes.length) { await delay(waitTimes[attempt]); continue; }
+      throw err;
+    }
+  }
+  throw lastErr || new Error('Génération Vertex échouée');
+}
+
+// ─── KIE.AI GENERATE ─────────────────────────────────────
+async function generateKie(promptText) {
+  // MODIFICATION 3 : dimensions selon le mode
+  const width = carouselMode ? 1080 : 1080;
+  const height = carouselMode ? 1350 : 1920;
+
+  const uploadResp = await fetch('https://kieai.redpandaai.co/api/file-base64-upload', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${KIE_KEY}` },
+    body: JSON.stringify({ base64Data: `data:${avatarMime};base64,${avatarBase64}` })
+  });
+  if (!uploadResp.ok) throw new Error('kie.ai upload failed');
+  const uploadData = await uploadResp.json();
+  const imageUrl = uploadData.downloadUrl;
+  if (!imageUrl) throw new Error('kie.ai : pas de downloadUrl');
+
+  const taskResp = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${KIE_KEY}` },
+    body: JSON.stringify({
+      model: 'nano-banana-2',
+      prompt: promptText,
+      image_input: [imageUrl],
+      width,
+      height
+    })
+  });
+  if (!taskResp.ok) throw new Error('kie.ai task creation failed');
+  const taskData = await taskResp.json();
+  const taskId = taskData.taskId || taskData.data?.taskId;
+  if (!taskId) throw new Error('kie.ai : pas de taskId');
+
+  for (let i = 0; i < 60; i++) {
+    await delay(3000);
+    const pollResp = await fetch(`https://api.kie.ai/api/v1/jobs/recordInfo?taskId=${taskId}`, {
+      headers: { 'Authorization': `Bearer ${KIE_KEY}` }
+    });
+    const pollData = await pollResp.json();
+    const state = pollData.data?.state || pollData.state;
+    if (state === 'success') {
+      const urls = pollData.data?.resultJson?.resultUrls || pollData.resultJson?.resultUrls;
+      if (urls && urls[0]) {
+        const blobResp = await fetch(urls[0]);
+        const blob = await blobResp.blob();
+        return URL.createObjectURL(blob);
+      }
+      throw new Error('Pas d\'URL résultat');
+    }
+    if (state === 'fail') throw new Error('kie.ai génération échouée');
+  }
+  throw new Error('kie.ai timeout (180s)');
+}
+
+// ─── MODE BRUT ────────────────────────────────────────────
+async function analyseBrut() {
+  const text = document.getElementById('brut-text').value.trim();
+  if (!text) return toast('Entre ton texte', 'error');
+  if (!avatarBase64) return toast('Importe ta photo avatar d\'abord', 'error');
+
+  const btn = document.querySelector('.btn-brut');
+  btn.innerHTML = '<span class="seq-loading-dot" style="width:16px;height:16px;display:inline-block"></span> Analyse en cours…';
+  btn.disabled = true;
+
+  try {
+    const systemInstruction = `Tu es un psychologue de l'image, réalisateur de l'instant et expert en narration émotionnelle brute.
+
+Analyse le texte et identifie L'ÉMOTION DOMINANTE LA PLUS INTENSE — celle qui a le plus de force viscérale, celle qui ferait le plus d'électrochoc visuel.
+
+Réponds UNIQUEMENT en JSON valide, sans markdown :
+{
+  "emotion": "nom précis et fort (ex: Désespoir profond, Joie explosive, Rage contenue)",
+  "category": "positif|introspectif|dynamique|relationnel",
+  "intensity": "pourquoi cette émotion est la plus forte dans ce texte — 1 phrase",
+  "extract": "la phrase du texte original qui incarne le mieux cette émotion — 1 à 3 phrases max",
+  "bodyDirective": "incarnation physique EXTRÊME : posture, visage, muscles — 2-3 phrases très précises",
+  "focus": "détail corporel révélateur pour le gros plan (ex: tempe moite, main crispée, pupille dilatée)",
+  "angle": "angle cinématographique optimal — choisir : plongée | contre-plongée | gros plan macro | angle subjectif intime",
+  "lumiere": "source lumineuse naturelle qui amplifie l'émotion (ex: lumière froide de fenêtre, écran bleuté, lampe rasante)"
+}`;
+
+    const result = await callTextAnalyse(systemInstruction, text);
+    brutData = result;
+    brutImageUrl = null;
+
+    // Afficher la carte résultat
+    document.getElementById('brut-emotion-label').textContent = 'Émotion dominante détectée';
+    document.getElementById('brut-emotion-name').textContent = brutData.emotion;
+    document.getElementById('brut-emotion-intensity').textContent = brutData.intensity;
+    document.getElementById('brut-extract').textContent = '"' + brutData.extract + '"';
+    // Show cinematic meta if available
+    const metaEl = document.getElementById('brut-cinematic-meta');
+    if (metaEl && brutData.focus) {
+      metaEl.innerHTML = `<span class="meta-tag">📐 ${brutData.angle || 'angle subjectif intime'}</span><span class="meta-tag">🔍 ${brutData.focus}</span><span class="meta-tag">💡 ${brutData.lumiere || 'lumière naturelle'}</span>`;
+      metaEl.style.display = 'flex';
+    }
+    document.getElementById('brut-img-area').innerHTML = '<div style="color:var(--text3);font-size:11px;font-family:\'DM Mono\',monospace;">Non générée</div>';
+    document.getElementById('brut-result').style.display = 'block';
+    document.getElementById('empty-state').style.display = 'none';
+    document.getElementById('sequences-output').style.display = 'none';
+    // Scroll panel-right au top pour que la carte soit visible
+    const panelRight = document.querySelector('.panel-right');
+    if (panelRight) panelRight.scrollTop = 0;
+
+    toast(`Émotion détectée : ${brutData.emotion}`, 'success');
+  } catch(err) {
+    toast('Erreur analyse brut : ' + err.message, 'error');
+    console.error(err);
+  } finally {
+    btn.innerHTML = '<span>⚡</span> <span>Extraire l\'émotion dominante</span>';
+    btn.disabled = false;
+  }
+}
+
+async function generateBrut() {
+  if (!brutData) return toast('Lance l\'analyse d\'abord', 'error');
+  if (!avatarBase64) return toast('Photo avatar manquante', 'error');
+
+  const area = document.getElementById('brut-img-area');
+  area.innerHTML = `
+    <div class="seq-loading">
+      <div class="seq-loading-dot"></div>
+      <div class="seq-loading-text">Incarnation brute en cours…</div>
+    </div>
+  `;
+
+  try {
+    const promptText = buildBrutPrompt(brutData);
+    let imageUrl;
+    if (ENGINE === 'kie') {
+      imageUrl = await generateKie(promptText);
+    } else {
+      imageUrl = await generateVertex(promptText);
+    }
+    brutImageUrl = imageUrl;
+    area.innerHTML = `<img src="${imageUrl}" alt="mode brut" />`;
+    toast('Image brute générée ✓', 'success');
+  } catch(err) {
+    area.innerHTML = `<div style="padding:20px;color:#e88;font-size:11px;font-family:'DM Mono',monospace;text-align:center;">Erreur : ${err.message}</div>`;
+    toast('Erreur génération brut : ' + err.message, 'error');
+  }
+}
+
+function buildBrutPrompt(brut) {
+  const lieu = lieuText || document.getElementById('lieu-input').value || '';
+
+  const angleMap = {
+    'plongée': `ANGLE PLONGÉE — Caméra au-dessus du sujet, inclinée vers le bas. Corps écrasé, dominé. Renforce la vulnérabilité, la honte, la défaite.`,
+    'contre-plongée': `ANGLE CONTRE-PLONGÉE — Caméra sous le sujet, regard vers le haut. Corps qui se découpe, s'impose. Renforce la fierté, la résilience, la puissance.`,
+    'gros plan macro': `GROS PLAN MACRO — L'objectif à 5cm du détail révélateur : ${brut.focus || 'visage'}. Un fragment de corps dit tout. Secret volé. Vérité pure.`,
+    'angle subjectif intime': `ANGLE SUBJECTIF INTIME — Le spectateur à 1 mètre, comme tenant lui-même l'iPhone. Hauteur des yeux. Intimité sans envahir.`
+  };
+  const cinematicAngle = angleMap[brut.angle] || angleMap['angle subjectif intime'];
+
+  return `PORTRAIT PSYCHOLOGIQUE BRUT — IPHONE 17 PRO NATIVE — ÉLECTROCHOC VISUEL
+
+═══════════════════════════════════════════
+I. LE CAPTEUR : IPHONE 17 PRO NATIVE
+═══════════════════════════════════════════
+Optique iPhone 17 Pro. Rendu photographique 4K ultra-réaliste natif. PAS un DSLR stylisé. L'esthétique iPhone : couleurs vraies, profondeur de champ organique, grain numérique subtil.
+
+TEXTURE ABSOLUE : Pores visibles, cernes réels, imperfections naturelles. Zéro lissage. La peau est vivante.
+MODE CINÉMATOGRAPHIQUE APPLE : Focus sélectif sur ${brut.focus || 'le regard'}, flou d'arrière-plan organique.
+LUMIÈRE INCIDENTE UNIQUEMENT : ${brut.lumiere || 'Lumière naturelle'}. Zéro studio. Zéro flash.
+
+═══════════════════════════════════════════
+II. CADRAGE — GRAMMAIRE DE L'ÉLECTROCHOC
+═══════════════════════════════════════════
+${cinematicAngle}
+FOCUS POINT : ${brut.focus || 'regard'} — net, révélateur, volé.
+
+═══════════════════════════════════════════
+III. IDENTITÉ — VERROUILLÉE À 100%
+═══════════════════════════════════════════
+La personne exacte de la photo de référence. Zéro modification. Zéro embellissement. Tenue identique.
+
+═══════════════════════════════════════════
+IV. DÉCOR — AMPLIFIÉ LIBREMENT
+═══════════════════════════════════════════
+En mode brut, le décor EST l'émotion. Il amplifie. Il emprisonne.
+${lieu ? `Lieu de base : "${lieu}" — adapter cet espace pour amplifier l'émotion au maximum.` : `Choisir librement l'environnement qui amplifie l'émotion "${brut.emotion}" au maximum.`}
+— Colère/rage → espace urbain brut, murs froids, tension dans l'espace
+— Désespoir/honte → espace confiné, lumière froide, isolement
+— Joie/soulagement → lumière éclatante, espace ouvert, air
+— Fierté/confiance → décor qui élève, lumière dorée
+INTERDICTION : Zéro objet inventé absent de la photo de référence.
+
+═══════════════════════════════════════════
+V. ÉMOTION BRUTE : ${brut.emotion}
+═══════════════════════════════════════════
+CONTEXTE : "${brut.extract}"
+INCARNATION EXTRÊME : ${brut.bodyDirective}
+
+POUSSER À 150% — PAS DE RETENUE :
+JOIE → sourire des yeux, corps expansif | EXTASE → corps vers le haut, mains ouvertes | TRISTESSE → corps affaissé, regard vide | CHAGRIN → larmes réelles, corps effondré | COLÈRE → mâchoire serrée, poings, corps tendu | RAGE → veines visibles, regard brûlant | HONTE → tête baissée, corps qui cherche à disparaître | FIERTÉ → menton levé, poitrine ouverte | DÉSESPOIR → corps au sol, repli total | SOULAGEMENT → corps qui s'ouvre, souffle retrouvé
+
+RÈGLE ABSOLUE MODE BRUT : Pousser CHAQUE signe physique à son maximum. Corps entier. Pas seulement le visage.
+Les larmes N'APPARAISSENT QUE pour : chagrin, tristesse, désespoir.
+
+═══════════════════════════════════════════
+VI. LE TEST FINAL
+═══════════════════════════════════════════
+Si l'image ressemble à une publicité → ÉCHEC TOTAL.
+Si l'image ressemble à un secret volé qui force le silence → SUCCÈS.
+
+AUCUN FILTRE BEAUTÉ. AUCUN ADOUCISSEMENT.
+La personne VIT — elle ne pose pas.
+L'authenticité prime sur tout.
+
+═══════════════════════════════════════════
+VII. CLAUSE DE DÉPLACEMENT ÉMOTIONNEL — L'ANGLE MORT
+═══════════════════════════════════════════
+RÈGLE D'OR DE MISE EN SCÈNE — ABSOLUE ET NON NÉGOCIABLE :
+Si le texte mentionne un objet matériel déclencheur (ordinateur, factures, téléphone, contrat, médicaments, etc.), tu as l'INTERDICTION FORMELLE de centrer l'image sur l'interaction directe avec cet objet.
+
+Le drame ne se joue JAMAIS sur l'outil. Il se joue sur l'humain APRÈS l'outil.
+
+TU DOIS cadrer l'impact invisible du problème :
+— Ne montre PAS le clavier → montre le corps qui s'effondre loin du bureau.
+— Ne montre PAS la facture → montre le regard vide face à un mur.
+— Ne montre PAS le smartphone → montre la main qui l'a lâché au sol.
+— Ne montre PAS l'écran → montre le visage éclairé par sa lueur froide, tourné ailleurs.
+
+L'émotion brute se trouve dans les ANGLES MORTS de la pièce :
+coins de murs, sol, contre un lit, derrière une porte.
+C'est là que le sujet se réfugie quand il ne peut plus faire face.
+C'est là que tu cadres.
+
+[Focus : ${brut.focus || 'regard'} / Angle : ${brut.angle || 'angle subjectif intime'} / Lumière : ${brut.lumiere || 'naturelle'}]`;
+}
+
+
+// ─── SAFARI-SAFE DOWNLOAD HELPER ─────────────────────────
+async function safariSafeDownload(imageUrl, filename) {
+  // Convert any data: or blob: URL to a proper blob, then use <a> download
+  // Safari requires a blob: URL created from the same origin.
+  try {
+    let blob;
+    if (imageUrl.startsWith('data:')) {
+      // data URI → blob
+      const [header, base64] = imageUrl.split(',');
+      const mime = header.match(/:(.*?);/)[1];
+      const binary = atob(base64);
+      const arr = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) arr[i] = binary.charCodeAt(i);
+      blob = new Blob([arr], { type: mime });
+    } else if (imageUrl.startsWith('blob:')) {
+      const res = await fetch(imageUrl);
+      blob = await res.blob();
+    } else {
+      const res = await fetch(imageUrl);
+      blob = await res.blob();
+    }
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 8000);
+  } catch (err) {
+    // Final fallback: open in new tab for manual save
+    window.open(imageUrl, '_blank');
+    toast('Appuie longuement sur l\'image pour enregistrer (iOS)', 'success');
+  }
+}
+
+function downloadBrut() {
+  if (!brutImageUrl) return toast('Génère l\'image d\'abord', 'error');
+  safariSafeDownload(brutImageUrl, `studio-narratif-brut-${slugify(brutData?.emotion || 'emotion')}.jpg`);
+}
+
+// ─── DOWNLOAD (séquences normales) ───────────────────────
+function downloadImage(idx) {
+  const seq = sequences[idx];
+  if (!seq || !seq.imageUrl) return toast('Génère l\'image d\'abord', 'error');
+  safariSafeDownload(seq.imageUrl, `studio-narratif-s${String(idx+1).padStart(2,'0')}-${slugify(seq.emotion)}.jpg`);
+}
+
+function slugify(s) {
+  return (s || 'image').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'-').slice(0,30);
+}
+
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function toast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (type ? ' ' + type : '');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 3500);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  addManualSeq();
+  addManualSeq();
+  addManualSeq();
+});
+</script>
+</body>
+</html>
