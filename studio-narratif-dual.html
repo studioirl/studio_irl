@@ -659,40 +659,25 @@
     letter-spacing: 0.2em;
     text-transform: uppercase;
     color: var(--text3);
-    padding: 10px 12px 6px;
+    padding: 8px 12px 4px;
   }
-  .meta-fields {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px;
-    padding: 0 10px 10px;
-  }
-  .meta-field {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-  }
-  .meta-field-label {
-    font-family: 'DM Mono', monospace;
-    font-size: 8px;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: rgba(200,169,126,0.5);
-  }
-  .meta-field-input {
-    background: var(--surface);
-    border: 1px solid var(--border2);
-    color: var(--text);
-    padding: 6px 8px;
+  .meta-prompt-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-top: 1px solid rgba(200,169,126,0.1);
+    color: var(--text2);
+    padding: 10px 12px;
     font-size: 11px;
     font-family: 'DM Mono', monospace;
-    border-radius: 3px;
+    line-height: 1.6;
+    resize: vertical;
+    min-height: 72px;
     outline: none;
-    transition: border-color 0.2s;
-    width: 100%;
+    transition: background 0.2s;
   }
-  .meta-field-input:focus { border-color: var(--accent); }
-  .meta-field-input::placeholder { color: var(--text3); font-size: 10px; }
+  .meta-prompt-input:focus { background: rgba(200,169,126,0.04); }
+  .meta-prompt-input::placeholder { color: var(--text3); font-size: 10px; }
 
   .seq-image-area {
     position: relative;
@@ -1234,26 +1219,9 @@ function addManualSeq() {
     <div style="flex:1;display:flex;flex-direction:column;gap:0;">
       <textarea class="seq-manual-input" id="manual-seq-${n}" placeholder="Décris cette séquence émotionnelle…"></textarea>
       <div class="meta-block">
-        <div class="meta-block-instruction">↓ Copie-colle les métadonnées obtenues dans Studio Psycho.</div>
-        <div class="meta-block-title">— MÉTADONNÉES —</div>
-        <div class="meta-fields">
-          <div class="meta-field">
-            <div class="meta-field-label">📱 Device</div>
-            <input class="meta-field-input" id="meta-device-${n}" placeholder="iPhone 17 Pro" />
-          </div>
-          <div class="meta-field">
-            <div class="meta-field-label">📐 Angle</div>
-            <input class="meta-field-input" id="meta-angle-${n}" placeholder="ex: plongée" />
-          </div>
-          <div class="meta-field">
-            <div class="meta-field-label">💡 Lumière</div>
-            <input class="meta-field-input" id="meta-lumiere-${n}" placeholder="ex: fenêtre froide" />
-          </div>
-          <div class="meta-field">
-            <div class="meta-field-label">🔍 Focus</div>
-            <input class="meta-field-input" id="meta-focus-${n}" placeholder="ex: main crispée" />
-          </div>
-        </div>
+        <div class="meta-block-instruction">↓ Copie-colle l'intégralité du prompt technique obtenu dans Studio Psycho ici.</div>
+        <div class="meta-block-title">— Prompt Technique / Métadonnées —</div>
+        <textarea class="meta-prompt-input" id="meta-prompt-${n}" placeholder="[Device: iPhone 17 Pro] [Angle: plongée] [Lumière: fenêtre froide] [Focus: main crispée]…"></textarea>
       </div>
     </div>
   `;
@@ -1266,11 +1234,8 @@ function getManualSequences() {
     const el = document.getElementById('manual-seq-' + i);
     if (el && el.value.trim()) {
       results.push({
-        text: el.value.trim(),
-        device:  document.getElementById('meta-device-'  + i)?.value.trim() || '',
-        angle:   document.getElementById('meta-angle-'   + i)?.value.trim() || '',
-        lumiere: document.getElementById('meta-lumiere-' + i)?.value.trim() || '',
-        focus:   document.getElementById('meta-focus-'   + i)?.value.trim() || ''
+        text:       el.value.trim(),
+        metaPrompt: document.getElementById('meta-prompt-' + i)?.value.trim() || ''
       });
     }
   }
@@ -1359,7 +1324,7 @@ function cleanJson(txt) {
 
 // ─── MANUAL → SEQUENCES ──────────────────────────────────
 async function useManualSequences() {
-  const items = getManualSequences(); // now returns [{text, device, angle, lumiere, focus}]
+  const items = getManualSequences(); // [{text, metaPrompt}]
   if (items.length === 0) return toast('Entre au moins une séquence', 'error');
   if (!avatarBase64) return toast('Importe ta photo avatar d\'abord', 'error');
 
@@ -1369,58 +1334,66 @@ async function useManualSequences() {
   try {
     const systemInstruction = `Tu es un psychologue de l'image et réalisateur de l'instant.
 
-Pour chaque séquence de texte fournie, identifie :
-1. L'émotion dominante (une seule, précise)
+Pour chaque séquence fournie, tu dois :
+1. Identifier l'émotion dominante (une seule, précise)
 2. La catégorie : positif | introspectif | dynamique | relationnel
-3. Comment le corps incarne cette émotion (posture, regard) - 1 phrase courte
-4. Les MÉTADONNÉES CINÉMATOGRAPHIQUES (uniquement si non fournies par l'utilisateur) :
-   - focus : détail précis sur lequel l'objectif se pose (ex: "tempe moite", "main qui se crispe", "regard vide")
+3. Comment le corps incarne cette émotion (posture, regard) — 1 phrase courte
+4. Extraire ou déduire les métadonnées cinématographiques :
+   - Si un "prompt technique" est fourni avec la séquence, EXTRAIS les valeurs de Device, Angle, Lumière et Focus depuis ce texte libre.
+   - Si aucun prompt technique n'est fourni, DÉDUIS ces valeurs depuis le texte et l'émotion.
    - angle : "plongée" | "contre-plongée" | "gros plan macro" | "angle subjectif intime"
-   - lumiere : source lumineuse naturelle (ex: "fenêtre latérale", "écran bleuté", "lampe rasante")
+   - lumiere : source lumineuse naturelle précise
+   - focus : détail corporel précis sur lequel l'objectif se pose
 
 Reponds UNIQUEMENT en JSON valide :
 {
   "sequences": [
     {
-      "emotion": "nom precis de l'emotion",
+      "emotion": "nom precis",
       "category": "positif|introspectif|dynamique|relationnel",
-      "bodyHint": "Le corps se... / Le regard se...",
+      "bodyHint": "Le corps se...",
       "focus": "detail precis",
-      "angle": "plongee|contre-plongee|gros plan macro|angle subjectif intime",
-      "lumiere": "source lumineuse naturelle"
+      "angle": "angle choisi",
+      "lumiere": "source lumineuse",
+      "device": "iPhone 17 Pro"
     }
   ]
 }`;
 
-    const userText = items.map((item, i) => `Sequence ${i+1}: "${item.text}"`).join('\n\n');
+    const userText = items.map((item, i) => {
+      let block = `Séquence ${i+1} : "${item.text}"`;
+      if (item.metaPrompt) block += `\nPrompt technique fourni : ${item.metaPrompt}`;
+      return block;
+    }).join('\n\n');
+
     const result = await callTextAnalyse(systemInstruction, userText);
     const analysed = result.sequences || [];
 
-    // Métadonnées manuelles > métadonnées IA
     sequences = items.map((item, i) => ({
-      text: item.text,
-      emotion: analysed[i]?.emotion || 'Emotion authentique',
-      category: analysed[i]?.category || 'introspectif',
-      bodyHint: analysed[i]?.bodyHint || 'Le corps incarne naturellement le moment',
-      focus:   item.focus   || analysed[i]?.focus   || 'regard',
-      angle:   item.angle   || analysed[i]?.angle   || 'angle subjectif intime',
-      lumiere: item.lumiere || analysed[i]?.lumiere || 'fenêtre naturelle',
-      device:  item.device  || 'iPhone 17 Pro'
+      text:    item.text,
+      emotion: analysed[i]?.emotion  || 'Emotion authentique',
+      category:analysed[i]?.category || 'introspectif',
+      bodyHint:analysed[i]?.bodyHint || 'Le corps incarne naturellement le moment',
+      focus:   analysed[i]?.focus    || 'regard',
+      angle:   analysed[i]?.angle    || 'angle subjectif intime',
+      lumiere: analysed[i]?.lumiere  || 'lumière naturelle',
+      device:  analysed[i]?.device   || 'iPhone 17 Pro',
+      metaPrompt: item.metaPrompt
     }));
 
     renderSequences();
     toast(`${sequences.length} séquences analysées`, 'success');
   } catch(err) {
-    // Fallback : utiliser les métadonnées manuelles brutes
     sequences = items.map(item => ({
-      text: item.text,
+      text:    item.text,
       emotion: 'Emotion authentique',
-      category: 'introspectif',
-      bodyHint: 'Le corps incarne naturellement le moment',
-      focus:   item.focus   || 'regard',
-      angle:   item.angle   || 'angle subjectif intime',
-      lumiere: item.lumiere || 'lumière naturelle',
-      device:  item.device  || 'iPhone 17 Pro'
+      category:'introspectif',
+      bodyHint:'Le corps incarne naturellement le moment',
+      focus:   'regard',
+      angle:   'angle subjectif intime',
+      lumiere: 'lumière naturelle',
+      device:  'iPhone 17 Pro',
+      metaPrompt: item.metaPrompt
     }));
     renderSequences();
     toast(`${sequences.length} séquences chargées (sans analyse)`, 'success');
@@ -1649,6 +1622,7 @@ C'est là que le sujet se réfugie quand il ne peut plus faire face.
 C'est là que tu cadres.
 
 [Focus : ${seq.focus || 'regard'} / Angle : ${seq.angle || 'angle subjectif intime'} / Lumière : ${seq.lumiere || 'naturelle incidente'}]
+${seq.metaPrompt ? `\nPROMPT TECHNIQUE COMPLET FOURNI PAR L'UTILISATEUR — APPLIQUER EN PRIORITÉ ABSOLUE :\n${seq.metaPrompt}` : ''}
 
 ${formatBlock}`;
 }
