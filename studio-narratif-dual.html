@@ -1506,6 +1506,9 @@ function buildImagePrompt(seq, idx) {
       : '';
   const isCarousel = carouselMode;
 
+  // Mode Manuel sans verrou = Direction Narrative Dynamique
+  const isDynamicMode = (currentTab === 'manual' && !lieuLocked);
+
   // Angle cinématographique V.2026
   const angleMap = {
     'plongée': `ANGLE PLONGÉE — Caméra positionnée au-dessus du sujet, inclinée vers le bas. Le sujet apparaît petit, vulnérable, dominé par l'espace et les murs. Cet angle écrase, enferme, accentue la honte ou la défaite.`,
@@ -1530,14 +1533,60 @@ function buildImagePrompt(seq, idx) {
 
   const decor = lieu || '';
   const hasLieu = decor.trim().length > 0;
-  const decorLock = lieuLocked
-    ? `⚠️ HUIS CLOS ACTIVÉ — RÈGLE ABSOLUE N°1 :
+
+  // Bloc décor : 3 modes possibles
+  let decorBlock;
+  if (lieuLocked) {
+    // HUIS CLOS VERROUILLÉ
+    decorBlock = `⚠️ HUIS CLOS ACTIVÉ — RÈGLE ABSOLUE N°1 :
 DÉCOR STRICTEMENT VERROUILLÉ${hasLieu ? ` : "${decor}"` : ' — MÊME DÉCOR QUE LA SCÈNE PRÉCÉDENTE'}
 Ce lieu NE CHANGE PAS. L'évolution temporelle se lit UNIQUEMENT dans : (1) l'évolution de la lumière, (2) les angles de caméra, (3) la langue du corps. Jamais dans le décor.${hasLieu ? `\nReproduire EXACTEMENT : "${decor}"` : ''}
-`
-    : (hasLieu ? `Lieu de la scène : "${decor}".\n` : '');
 
-  return decorLock + `PORTRAIT PSYCHOLOGIQUE BRUT — IPHONE 17 PRO NATIVE — SECRET VOLÉ
+`;
+  } else if (isDynamicMode) {
+    // DIRECTION NARRATIVE DYNAMIQUE — MODE MANUEL SANS VERROU
+    decorBlock = '';
+  } else {
+    // Mode libre avec lieu suggéré
+    decorBlock = hasLieu ? `Lieu de la scène : "${decor}".\n` : '';
+  }
+
+  // Section IV — varie selon le mode
+  const decorSection = lieuLocked
+    ? '' // déjà en tête via decorBlock
+    : isDynamicMode
+    ? `═══════════════════════════════════════════
+IV. DIRECTION NARRATIVE DYNAMIQUE — [NARRATIVE_RESET]
+═══════════════════════════════════════════
+PRIORITÉ SÉMANTIQUE ABSOLUE : Le texte de cette séquence prime sur tout. Le décor, les accessoires et l'ambiance doivent muter instantanément pour refléter l'intention narrative de ce prompt spécifique.
+
+[NARRATIVE_RESET] — AUTORISATION TOTALE DE RUPTURE :
+— Suppression complète de l'arrière-plan précédent autorisée. Seule la cohérence physique de la personne (visage, identité, tenue) est maintenue comme constante absolue.
+— Le nouveau décor doit être l'environnement OPTIMAL pour l'émotion "${seq.emotion}" et la situation décrite.
+
+[MOOD_MAPPING] — COLORIMÉTRIE ET COMPOSITION :
+— Adapter la colorimétrie à l'émotion dominante : froide si introspection/douleur, chaude si soulagement/joie, contrastée si tension/colère.
+— Ajuster l'angle, la composition et la lumière pour servir l'émotion — pas pour rester cohérent avec l'image précédente.
+
+NEUTRALITÉ D'ENVIRONNEMENT : Esthétique "Studio POV" — réalité brute, lifestyle accessible. Zéro luxe, zéro standing, zéro clinquant SAUF si le texte l'exige explicitement.
+
+INTELLIGENCE DE SITUATION : Traduire les concepts abstraits en situations concrètes et authentiques.
+— Adrénaline → rue, escaliers, mouvement, asphalte mouillé
+— Sérénité → espace ouvert, lumière naturelle, silence visible
+— Effort → sueur, position physique d'effort, environnement fonctionnel
+— Soulagement → corps qui lâche, espace qui s'ouvre, respiration visible
+Jamais de cliché publicitaire. Jamais de "trop propre".
+
+${hasLieu ? `Lieu suggéré (non verrouillé, à adapter si l'émotion l'exige) : "${decor}"` : ''}
+`
+    : `═══════════════════════════════════════════
+IV. HUIS CLOS — DÉCOR FIGÉ
+═══════════════════════════════════════════
+Décor : ${decor || 'environnement de la photo de référence'}
+RÈGLE DU HUIS CLOS : Ce lieu est une prison narrative. L'histoire ne se lit PAS dans le changement de décor — elle se lit dans la lumière, les angles, le corps. INTERDICTION d'ajouter tout objet ou meuble absent de la photo de référence. Zéro invention. Ce lieu précis, exactement tel qu'il est.
+`;
+
+  return decorBlock + `PORTRAIT PSYCHOLOGIQUE BRUT — IPHONE 17 PRO NATIVE — SECRET VOLÉ
 
 ═══════════════════════════════════════════
 I. LE CAPTEUR : IPHONE 17 PRO NATIVE
@@ -1562,11 +1611,7 @@ III. IDENTITÉ — VERROUILLÉE À 100%
 ═══════════════════════════════════════════
 La personne exacte de la photo de référence. Visage, traits, morphologie réels. Zéro modification, zéro embellissement, zéro idéalisation. La personne telle qu'elle est — imperfections comprises. Tenue identique à la photo de référence.
 
-═══════════════════════════════════════════
-IV. HUIS CLOS — DÉCOR FIGÉ
-═══════════════════════════════════════════
-Décor : ${decor || 'environnement de la photo de référence'}
-RÈGLE DU HUIS CLOS : Ce lieu est une prison narrative. L'histoire ne se lit PAS dans le changement de décor — elle se lit dans la lumière, les angles, le corps. INTERDICTION d'ajouter tout objet ou meuble absent de la photo de référence. Zéro invention. Ce lieu précis, exactement tel qu'il est.
+${decorSection}
 
 ═══════════════════════════════════════════
 V. MOMENT NARRATIF
