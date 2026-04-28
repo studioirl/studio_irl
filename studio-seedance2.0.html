@@ -608,7 +608,7 @@ var BASE_QUALITY='Ultra-realistic human. Natural fluid movements at real-life pa
 
 var API_KEY='';
 var mode='solo', AR='9:16', selRes='480p', selDur=8;
-var generateAudio=true, continuityMode=false;
+var generateAudio=true, continuityMode=false, selLang2='fr_fr';
 var isGen=false, curVideoUrl=null, vidHistory=[];
 var imgs={solo:null,A:null,B:null}, voices={solo:null,A:null,B:null};
 var refImages=[];
@@ -685,6 +685,12 @@ function setMode(m){
   document.getElementById('photoTitle').textContent=m==='solo'?'Photo Avatar':'Photos Avatars';
   document.getElementById('dlgSolo').style.display=m==='solo'?'':'none';
   document.getElementById('dlgDuo').style.display=m==='duo'?'':'none';
+}
+function setLang2(l){
+  selLang2=l;
+  document.getElementById('langBtns').querySelectorAll('.dur-btn').forEach(function(btn){
+    btn.classList.toggle('active',btn.dataset.lang===l);
+  });
 }
 function setAR(r){
   AR=r;
@@ -866,6 +872,10 @@ function buildPrompt(){
   if(dir)parts.push(dir);
   else parts.push('A realistic person on camera, ultra-realistic human, professional cinematography.');
 
+  // Langue sélectionnée
+  // Langue forcée — français francophone uniquement, toujours
+  parts.push('MANDATORY LANGUAGE: Speak in French ONLY. French francophone accent. Every single word must be in French. ABSOLUTELY FORBIDDEN: English, Spanish, any other language, any mixed language, any non-French word whatsoever.');
+
   // 2. Références multi-images @Image1..@ImageN
   if(refImages.length>0){
     var tags=refImages.map(function(_,i){return '@Image'+(i+2);}).join(', ');
@@ -895,7 +905,7 @@ function buildPrompt(){
       if(voices.B)parts.push('Vocal style for '+idB+' from '+(voices.A?'@Audio2':'@Audio1')+'.');
     }
     // Intonation humaine — anti IA
-    parts.push('Voice delivery must sound completely human and natural: slight imperfections in intonation, natural breathing between sentences, very subtle hesitations, real emotional coloring, NOT a perfect AI voice. Sound like a real person speaking genuinely.');
+    parts.push('Voice delivery must sound completely human and natural: slight imperfections in intonation, natural breathing between sentences, very subtle hesitations, real emotional coloring, NOT a perfect AI voice. Sound like a real person speaking genuinely. Speech pace must be natural and relaxed — do NOT rush or compress the words to fit the duration. Let the speech breathe naturally.');
   }else{
     parts.push('No dialogue. Generate natural ambient sounds.');
   }
