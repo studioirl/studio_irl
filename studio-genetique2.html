@@ -313,6 +313,7 @@ const STORAGE_KEY  = 'studio-genetique-v29-settings';
 
 const MODES = [
   { id:'PREGNANCY',   label:'Mode Grossesse',      icon:'🤰' },
+  { id:'FETAL_MOVE',  label:'Mouvement Fœtal',     icon:'👣' },
   { id:'CHILD',       label:'Enfant',               icon:'👶' },
   { id:'SIBLING',     label:'Frères & Sœurs',      icon:'👧👦' },
   { id:'GRANDPARENT', label:'Grands-Parents',       icon:'👵👴' },
@@ -605,8 +606,10 @@ function renderFatherUploader(){
 
 function renderParams(){
   switch(activeMode){
-    case 'EVOLUTION': return renderEvolution();
-    case 'PREGNANCY': return renderPregnancy();
+    case 'FETAL_MOVE': return buildFetalMovePrompt();
+    case 'EVOLUTION':   return renderEvolution();
+    case 'FETAL_MOVE':  return renderFetalMoveMode();
+    case 'PREGNANCY':   return renderPregnancy();
     case 'SIBLING':   return renderSibling();
     case 'CHILD':     return renderChild();
     case 'GRANDPARENT': return renderFamily('Grand-Père','Grand-Mère');
@@ -783,6 +786,7 @@ function setSiblingChoice(k,v){ siblingChoice[k]=v; saveSettings(); renderLab();
 function setRelationChoice(k,v){ relationChoice[k]=v; saveSettings(); renderLab(); }
 function toggleZone(z){ if(stretchZones.includes(z)) stretchZones=stretchZones.filter(x=>x!==z); else stretchZones.push(z); saveSettings(); renderLab(); }
 function toggleFetal(){ fetalMovement=!fetalMovement; saveSettings(); renderLab(); }
+function setFetalTwins(v){ isTwins=v; saveSettings(); renderLab(); }
 function setFetalProp(prop,val){ if(prop==='typeA') fetalTypeA=val; if(prop==='typeB') fetalTypeB=val; if(prop==='zoneA') fetalZoneA=val; if(prop==='zoneB') fetalZoneB=val; if(prop==='intensityA') fetalIntensityA=val; if(prop==='intensityB') fetalIntensityB=val; saveSettings(); renderLab(); }
 function toggleBirthOpt(opt){ if(opt==='epidural') birthEpidural=true; if(opt==='no-epidural') birthEpidural=false; if(opt==='father') birthFatherPresent=true; if(opt==='no-father') birthFatherPresent=false; saveSettings(); renderLab(); }
 function setBabyType(t){ birthBabyType=t; saveSettings(); renderLab(); }
@@ -837,6 +841,114 @@ Respect strict de l'identité des visages fournis.`;
     case 'PREGNANCY': return buildPregnancyPrompt(common);
     case 'CHILD': default: return `MODE : ENFANT\nÂge : ${childAge} ans / Sexe : ${selectedSex==='female'?'XX':'XY'} / Yeux : ${selectedEyeColor}\nDominance parentale : ${dominance}% / Ressemblance : ${rl} (${familyResemblance}%)\nCréer un enfant crédible à partir des deux parents fournis, sans cloner exactement un parent.\n${common}`;
   }
+}
+
+function renderFetalMoveMode(){
+  const types=[
+    {id:'pied',    l:'👣 Coup de pied',   desc:'talon/pied'},
+    {id:'coude',   l:'🦾 Coup de coude',  desc:'coude'},
+    {id:'tete',    l:'🔵 Tête',           desc:'crâne'},
+    {id:'fessier', l:'🍑 Fessier',        desc:'fessier'},
+    {id:'dos',     l:'〰️ Dos qui roule',  desc:'dos'},
+  ];
+  const intensities=[
+    {id:0, l:'Légère',    sub:'ondulation 2-3 cm'},
+    {id:1, l:'Marquée',   sub:'bosse 4-6 cm'},
+    {id:2, l:'Prononcée', sub:'saillie 7-10 cm'},
+  ];
+  const typeRowA=types.map(t=>`<button class="ctrl-btn ${fetalTypeA===t.id?'active':''}" style="text-align:left;" onclick="setFetalProp('typeA','${t.id}')">${t.l}</button>`).join('');
+  const typeRowB=types.map(t=>`<button class="ctrl-btn ${fetalTypeB===t.id?'active-rose':''}" style="text-align:left;" onclick="setFetalProp('typeB','${t.id}')">${t.l}</button>`).join('');
+  const zoneGridA=FETAL_ZONES.map(z=>`<button class="fetal-zone ${fetalZoneA===z.id?'active-a':''}" onclick="setFetalProp('zoneA','${z.id}')">${z.label}</button>`).join('');
+  const zoneGridB=FETAL_ZONES.map(z=>`<button class="fetal-zone ${fetalZoneB===z.id?'active-b':''}" onclick="setFetalProp('zoneB','${z.id}')">${z.label}</button>`).join('');
+  const intRowA=intensities.map(item=>`<button class="ctrl-btn ${fetalIntensityA===item.id?'active':''}" onclick="setFetalProp('intensityA',${item.id})">${item.l} <span style="font-size:8px;opacity:.6;">${item.sub}</span></button>`).join('');
+  const intRowB=intensities.map(item=>`<button class="ctrl-btn ${fetalIntensityB===item.id?'active-rose':''}" onclick="setFetalProp('intensityB',${item.id})">${item.l} <span style="font-size:8px;opacity:.6;">${item.sub}</span></button>`).join('');
+
+  const babyBSection=isTwins?`
+    <div class="ctrl" style="background:rgba(244,63,94,0.06);border-color:rgba(244,63,94,0.2);">
+      <div class="ctrl-title" style="color:#fb7185;">👶 Bébé B — Mouvement</div>
+      <div class="ctrl-title" style="margin-bottom:6px;">Type</div>
+      <div class="col" style="gap:6px;">${typeRowB}</div>
+      <div class="ctrl-title" style="margin-top:12px;margin-bottom:6px;">Position</div>
+      <div class="fetal-grid">${zoneGridB}</div>
+      <div class="ctrl-title" style="margin-top:12px;margin-bottom:6px;">Intensité</div>
+      <div class="col" style="gap:6px;">${intRowB}</div>
+    </div>`:'';
+
+  return `
+    <div class="alert rose" style="margin-bottom:16px;">Mode Mouvement Fœtal isolé
+      <p>Upload une photo du ventre enceint. Ce mode agit UNIQUEMENT sur les bosses — il ne modifie pas le reste du corps.</p>
+    </div>
+    <div class="ctrl" style="background:rgba(37,99,235,0.05);border-color:rgba(37,99,235,0.2);">
+      <div class="ctrl-title" style="color:#60a5fa;">Nombre de bébés</div>
+      <div class="row">
+        <button class="ctrl-btn ${!isTwins?'active':''}" onclick="setFetalTwins(false)">👶 Un bébé</button>
+        <button class="ctrl-btn ${isTwins?'active':''}" onclick="setFetalTwins(true)">👶👶 Jumeaux</button>
+      </div>
+    </div>
+    <div class="ctrl" style="background:rgba(37,99,235,0.06);border-color:rgba(37,99,235,0.2);">
+      <div class="ctrl-title" style="color:#60a5fa;">${isTwins?'👶 Bébé A':'👶 Bébé'} — Mouvement</div>
+      <div class="ctrl-title" style="margin-bottom:6px;">Type de mouvement</div>
+      <div class="col" style="gap:6px;">${typeRowA}</div>
+      <div class="ctrl-title" style="margin-top:12px;margin-bottom:6px;">Position sur le ventre</div>
+      <div class="fetal-grid">${zoneGridA}</div>
+      <div class="ctrl-title" style="margin-top:12px;margin-bottom:6px;">Intensité</div>
+      <div class="col" style="gap:6px;">${intRowA}</div>
+    </div>
+    ${babyBSection}`;
+}
+
+function buildFetalMovePrompt(){
+  const typeNames={
+    pied:'un talon ou un pied de bébé',
+    coude:'un coude de bébé',
+    tete:'le sommet du crâne de bébé',
+    fessier:'le fessier de bébé',
+    dos:'le dos de bébé (forme longue et arrondie)',
+  };
+  const zoneNames={
+    hg:'haut gauche du ventre',hc:'haut centre du ventre',hd:'haut droit du ventre',
+    mg:'milieu gauche du ventre',mc:'centre du ventre',md:'milieu droit du ventre',
+    bg:'bas gauche du ventre',bc:'bas centre du ventre',bd:'bas droit du ventre',
+  };
+  const intensityDesc=[
+    'légère ondulation de la surface cutanée — déformation subtile de 2-3 cm, peau tendue localement, contour organique flou',
+    'bosse clairement visible de 4-6 cm — déformation nette sous la peau tendue, forme asymétrique et naturelle',
+    'saillie très prononcée de 7-10 cm — déformation marquée, peau très tendue et légèrement pâlie à l\'apex, forme organique imposante',
+  ];
+  const partA=typeNames[fetalTypeA]||'un pied';
+  const zA=zoneNames[fetalZoneA]||'haut droit du ventre';
+  const iA=intensityDesc[Math.min(2,fetalIntensityA||0)];
+  const partB=typeNames[fetalTypeB]||'un coude';
+  const zB=zoneNames[fetalZoneB]||'milieu gauche du ventre';
+  const iB=intensityDesc[Math.min(2,fetalIntensityB||0)];
+  const common=`Sortie : IMAGE PHOTORÉALISTE UNIQUEMENT. Aucun texte. 4K. Zéro retouche. Respect strict de l'identité et de la posture de la personne.`;
+
+  return `MODE : MOUVEMENT FŒTAL — Simulation de bosses sur le ventre
+
+INSTRUCTION FONDAMENTALE :
+Utiliser la photo fournie comme base exacte.
+NE PAS modifier : la taille du ventre, le visage, les vêtements, la posture, l'arrière-plan, la couleur de peau.
+SEULE MODIFICATION AUTORISÉE : ajouter les déformations cutanées décrites ci-dessous.
+
+MOUVEMENT ${isTwins?'BÉBÉ A':''} — ${typeNames[fetalTypeA]||'pied'} :
+${partA} exerce une pression depuis l'intérieur du ventre, au niveau du ${zA}.
+Résultat visible en surface : ${iA}.
+La déformation est organique et asymétrique — comme si quelque chose pousse doucement de l'intérieur.
+La peau s'étire naturellement depuis l'intérieur, contour flou, forme suit l'anatomie du membre.
+PAS de boule parfaite. PAS de forme géométrique. PAS d'artefact ajouté par-dessus.
+${isTwins?`
+MOUVEMENT BÉBÉ B — ${typeNames[fetalTypeB]||'coude'} :
+${partB} exerce une pression depuis l'intérieur, au niveau du ${zB}.
+Résultat visible : ${iB}.
+Les deux déformations sont simultanément visibles sur le ventre.
+Chacune a sa propre forme organique distincte et asymétrique.`:''}
+
+RÈGLE ANTI-ARTEFACT ABSOLUE :
+La bosse N'EST PAS un objet ajouté par-dessus la peau.
+C'est une DÉFORMATION DE LA SURFACE EXISTANTE du ventre, depuis l'intérieur.
+Texture et couleur de peau identiques à la référence — juste étirées localement.
+Rendu documentaire médical — photoréaliste, jamais illustratif.
+${common}`;
 }
 
 function buildPregnancyPrompt(common){
@@ -944,15 +1056,17 @@ ${common}`;
 
     case 3:{
       const alreadyDidA=birthDone.filter(d=>d===3).length>0;
-      return `MODE : NAISSANCE — ÉTAPE 3 : COURONNEMENT${alreadyDidA?' — BÉBÉ B / JUMEAU B':''}
+      return `MODE : NAISSANCE — ÉTAPE 3 : PREMIER REGARD — LE BÉBÉ ARRIVE${alreadyDidA?' (BÉBÉ B)':''}
 
-SCÈNE : Vue entre les cuisses de la mère, éclairage de salle d'accouchement.
+CONTEXTE : Photographie documentaire médicale d'un accouchement en milieu hospitalier.
 
-SUJET : La tête du bébé est sortie et visible — couronnement. On voit clairement la tête (face ou occiput), éventuellement les épaules qui commencent. Le bébé est couvert de vernix (substance blanchâtre crémeuse) et de traces de sang. C'est biologique, réel et magnifique.
+SCÈNE : Plan rapproché sur les mains gantées de la sage-femme qui tient délicatement un nouveau-né${alreadyDidA?' (second bébé)':''} juste après la naissance. Éclairage médical blanc. Arrière-plan : salle d'accouchement, flou de profondeur, silhouette de la mère allongée non exposée.
 
-SAGE-FEMME : Mains gantées positionnées de chaque côté de la tête du bébé, guidant doucement la sortie. Regard concentré et professionnel.
+LE BÉBÉ : Tenu à deux mains par la sage-femme — nouveau-né réaliste, peau rosée, yeux fermés, membres en position fœtale naturelle. Bébé sain et entier, tenu avec soin.
 
-Ce plan est médical et profondément humain. Lumière crue, réelle. Aucune censure, aucun glamour. C'est la vie qui arrive.
+LA SAGE-FEMME : Blouse et gants médicaux, regard professionnel tourné vers le bébé.
+
+INTENTION : Photo documentaire médicale forte — premier instant de vie, mains professionnelles, lumière clinique. Émotion pure, sans sensationnalisme.
 ${common}`;
     }
 
@@ -987,7 +1101,10 @@ ${common}`;
 
 /* ══ API VERTEX ══ */
 async function callVertexImage(prompt,extraImages=[]){
-  const endpoint=`https://aiplatform.googleapis.com/v1/publishers/google/models/${MODEL_VERTEX}:generateContent?key=${encodeURIComponent(API_KEY)}`;
+  const modelsToTry=['gemini-3.1-flash-image-preview','gemini-3-pro-image-preview'];
+  let lastVertexErr=new Error('Aucun modèle Vertex disponible.');
+  for(const MODEL_TRY of modelsToTry){
+  const endpoint=`https://aiplatform.googleapis.com/v1/publishers/google/models/${MODEL_TRY}:generateContent?key=${encodeURIComponent(API_KEY)}`;
   const parts=[{text:prompt}];
   const refs=[parent1,...extraImages].filter(Boolean);
   refs.forEach(r=>{ const d=dataUrlToInlineData(r); if(d) parts.push({inlineData:d}); });
@@ -1003,7 +1120,8 @@ async function callVertexImage(prompt,extraImages=[]){
       if(!candidate) throw new Error("Aucune réponse du modèle Vertex.");
       if(candidate.finishReason==='SAFETY') throw new Error("Bloqué par les filtres de sécurité.");
       for(const p of(candidate?.content?.parts||[])){ if(p.inlineData?.data) return `data:image/png;base64,${p.inlineData.data}`; }
-      throw new Error("Image non trouvée dans la réponse Vertex.");
+      lastVertexErr=new Error(`${MODEL_TRY}: réponse sans image (bug mai 2026) — essai modèle suivant...`);
+      continue;
     }catch(err){
       lastErr=err; const msg=String(err.message||'').toLowerCase();
       const retryable=msg.includes('429')||msg.includes('resource_exhausted')||msg.includes('502')||msg.includes('503')||msg.includes('overloaded');
@@ -1012,6 +1130,8 @@ async function callVertexImage(prompt,extraImages=[]){
     }
   }
   throw lastErr;
+  } // fin boucle modelsToTry
+  throw lastVertexErr;
 }
 
 /* ══ API KIE.AI ══ */
