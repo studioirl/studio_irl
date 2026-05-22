@@ -455,7 +455,8 @@ async function saveResults(){
 }
 async function loadState(){
   try{
-    const raw=localStorage.getItem(STORAGE_KEY);
+    let raw = null;
+    try { raw=localStorage.getItem(STORAGE_KEY); } catch(lsErr) { console.warn('localStorage indisponible:', lsErr); }
     if(raw){
       const s=JSON.parse(raw);
       activeEngine=s.activeEngine??activeEngine; activeMode=s.activeMode??activeMode;
@@ -509,13 +510,20 @@ function selectEngine(engine){
   }
 }
 async function enterApp(){
-  const key=document.getElementById('apiKeyInput').value.trim();
-  const errEl=document.getElementById('homeError');
-  if(!key){ errEl.textContent='Veuillez entrer votre clé API.'; errEl.style.display='block'; return; }
-  API_KEY=key; errEl.style.display='none';
-  document.getElementById('home').style.display='none';
-  document.getElementById('app').classList.add('visible');
-  updateEngineUI(); buildSidebar(); updateMainTitle(); setView(currentView); renderLab();
+  try {
+    const key=document.getElementById('apiKeyInput').value.trim();
+    console.log('enterApp called, key length:', key.length);
+    const errEl=document.getElementById('homeError');
+    if(!key){ errEl.textContent='Veuillez entrer votre clé API.'; errEl.style.display='block'; return; }
+    API_KEY=key; errEl.style.display='none';
+    document.getElementById('home').style.display='none';
+    document.getElementById('app').classList.add('visible');
+    updateEngineUI(); buildSidebar(); updateMainTitle(); setView(currentView); renderLab();
+  } catch(e) {
+    console.error('enterApp error:', e);
+    const errEl=document.getElementById('homeError');
+    if(errEl){ errEl.textContent='Erreur: '+e.message; errEl.style.display='block'; }
+  }
 }
 function goHome(){ document.getElementById('app').classList.remove('visible'); document.getElementById('home').style.display='flex'; }
 document.getElementById('apiKeyInput').addEventListener('keydown',e=>{ if(e.key==='Enter') enterApp(); });
@@ -862,7 +870,7 @@ function buildPregnancyPrompt(common){
   const breastPrompt=breastDescMap[breastRound];
 
   /* ── Bosses fœtales ── */
-  e du ventre',md:'milieu droit du ventre',bg:'bas gauche du ventre',bc:'bas centre du ventre',bd:'bas droit du ventre'};
+  const zoneNames={hg:'haut gauche du ventre',hc:'haut centre du ventre',hd:'haut droit du ventre',mg:'milieu gauche du ventre',mc:'centre du ventre',md:'milieu droit du ventre',bg:'bas gauche du ventre',bc:'bas centre du ventre',bd:'bas droit du ventre'};
   const typeNames={pied:'talon/pied',coude:'coude',tete:'sommet de crâne',fessier:'fesses/fessier',dos:'dos (longue crête arrondie)'};
   const intensityDesc=['légère ondulation de la peau, déformation subtile de 2-3 cm, peau tendue localement, contour flou et organique','bosse visible de 4-6 cm de diamètre, déformation clairement perceptible sous la peau tendue, forme asymétrique et naturelle','saillie très prononcée de 7-10 cm, déformant nettement la surface du ventre, peau étirée au maximum autour de la proéminence, forme organique naturelle — PAS de boule parfaite'];
   let fetalBlock='';
@@ -1082,7 +1090,10 @@ function updateLoadingStep(text,idx,total){ const bar=document.getElementById('l
 function showErrorState(msg){ const panel=document.getElementById('outputPanel'); if(!panel) return; panel.innerHTML=`<div class="error-state"><span class="e">⚠️</span><strong>${escapeHtml(msg)}</strong><p>Vérifie ta clé API, tes crédits, puis relance.</p></div>`; }
 
 /* ══ INIT ══ */
-(async function init(){ await loadState(); selectEngine(activeEngine); })();
+(async function init(){
+  try { await loadState(); } catch(e) { console.warn('loadState failed (normal en file://):', e); }
+  try { selectEngine(activeEngine); } catch(e) { console.error('selectEngine error:', e); }
+})();
 </script>
 </body>
 </html>
