@@ -416,7 +416,7 @@ Retourne UNIQUEMENT ce JSON valide sans markdown :
 Génère 5 à 7 étapes + 1 finale. Chronologie stricte : préparation → peinture → sol → meubles → déco → rangement → finale.`;
 
   try {
-    const txt = await callGeminiText(key, prompt, base64, mime);
+    const txt = await callGeminiText(key, prompt);
     const clean = txt.replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(clean);
     steps = parsed.steps || [];
@@ -431,13 +431,10 @@ Génère 5 à 7 étapes + 1 finale. Chronologie stricte : préparation → peint
   hideStatus();
 }
 
-async function callGeminiText(key, prompt, base64, mime) {
+async function callGeminiText(key, prompt) {
   const endpoint = `https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-3.1-pro-preview:generateContent?key=${encodeURIComponent(key)}`;
   const body = {
-    contents: [{ role: 'user', parts: [
-      { inlineData: { data: base64, mimeType: mime } },
-      { text: prompt }
-    ]}]
+    contents: [{ role: 'user', parts: [{ text: prompt }] }]
   };
   const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || res.status); }
