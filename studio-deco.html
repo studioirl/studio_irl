@@ -130,6 +130,9 @@
   .step-num.fin { background: var(--dark); }
   .step-name-inp { border: none; background: transparent; font-weight: 500; font-size: 13px; font-family: 'DM Sans', sans-serif; width: 100%; outline: none; color: var(--dark); }
   .step-desc-inp { font-size: 11px; color: var(--dark-l); line-height: 1.5; border: none; background: transparent; resize: none; width: 100%; font-family: 'DM Sans', sans-serif; outline: none; min-height: 34px; }
+  .step-dir-inp { font-size: 11px; color: #8A6A4A; line-height: 1.5; border: 1px dashed var(--clay); background: #fdf5ee; border-radius: 6px; padding: 5px 8px; resize: none; width: 100%; font-family: 'DM Sans', sans-serif; outline: none; min-height: 34px; }
+  .step-dir-inp::placeholder { color: #c4a882; font-style: italic; }
+  .step-dir-inp:focus { border-color: var(--clay-d); background: white; }
   .step-del { background: none; border: none; color: #ccc; cursor: pointer; font-size: 15px; padding: 2px; transition: color .2s; margin-top: 3px; }
   .step-del:hover { color: var(--err); }
   .add-step { margin-top: 9px; background: none; border: 1px dashed var(--dust-d); border-radius: 7px; padding: 9px; width: 100%; font-size: 12px; color: var(--dark-l); cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all .2s; }
@@ -465,9 +468,10 @@ function renderSB() {
     div.className = 'step-item';
     div.innerHTML = `
       <div class="step-num ${s.isFinale ? 'fin' : ''}">${s.isFinale ? '★' : i+1}</div>
-      <div style="display:flex;flex-direction:column;gap:4px">
+      <div style="display:flex;flex-direction:column;gap:5px;width:100%">
         <input class="step-name-inp" value="${esc(s.name)}" onchange="steps[${i}].name=this.value" />
         <textarea class="step-desc-inp" rows="2" onchange="steps[${i}].description=this.value">${esc(s.description)}</textarea>
+        <textarea class="step-dir-inp" rows="2" placeholder="🎬 Direction : qui fait quoi exactement ? ex. Le père peint seul, la mère enceinte tient le pot au sol, personne sur escabeau..." onchange="steps[${i}].direction=this.value">${esc(s.direction||'')}</textarea>
       </div>
       <button class="step-del" onclick="delStep(${i})">×</button>`;
     list.appendChild(div);
@@ -498,46 +502,63 @@ async function genererPlanche() {
   const nbCols = 2;
   const nbRows = Math.ceil(steps.length / nbCols);
 
-  // Description de chaque scène pour la planche
+  // Description ultra-directive de chaque scène
   const scenesDesc = steps.map((s, i) => {
     const label = s.isFinale ? `SCÈNE FINALE` : `SCÈNE ${i+1}`;
-    return `${label} — "${s.name}": ${s.description}`;
-  }).join('\n');
+    let desc = `${label} — "${s.name}"\nDESCRIPTION : ${s.description}`;
+    if (s.direction) desc += `\nDIRECTION OBLIGATOIRE : ${s.direction}`;
+    return desc;
+  }).join('\n\n');
 
   // Contexte personnes
   let personCtx = '';
   if (imgs.p1 && imgs.p2) {
-    personCtx = `DEUX PERSONNES identiques dans TOUTES les scènes — visages, corps, morphologie IDENTIQUES aux photos de référence fournies. Aucune modification physique.`;
-    if (cfg.v1) personCtx += ` Personne 1 : ${cfg.v1}.`;
-    if (cfg.v2) personCtx += ` Personne 2 : ${cfg.v2}.`;
+    personCtx = `EXACTEMENT 2 PERSONNES — ni plus ni moins — identiques dans TOUTES les scènes.
+- Personne 1 : visage, corps, morphologie IDENTIQUES à la photo de référence 1. ${cfg.v1 ? 'Vêtements : ' + cfg.v1 + '.' : ''}
+- Personne 2 : visage, corps, morphologie IDENTIQUES à la photo de référence 2. ${cfg.v2 ? 'Vêtements : ' + cfg.v2 + '.' : ''}
+- Si une personne est enceinte sur sa photo : ventre de grossesse TOUJOURS visible, jamais effacé.
+- INTERDIT : mettre une personne enceinte sur un escabeau, en hauteur, ou en position dangereuse.
+- INTERDIT : inventer une 3ème personne. Seulement les 2 personnes des photos.`;
   } else if (imgs.p1 || imgs.p2) {
-    personCtx = `UNE PERSONNE identique dans TOUTES les scènes — visage, corps, morphologie IDENTIQUES à la photo de référence fournie. Aucune modification physique.`;
-    const v = cfg.v1 || cfg.v2;
-    if (v) personCtx += ` Vêtements : ${v}.`;
+    personCtx = `EXACTEMENT 1 PERSONNE — identique dans TOUTES les scènes.
+- Visage, corps, morphologie IDENTIQUES à la photo de référence. ${(cfg.v1||cfg.v2) ? 'Vêtements : ' + (cfg.v1||cfg.v2) + '.' : ''}
+- Si la personne est enceinte sur sa photo : ventre de grossesse TOUJOURS visible, jamais effacé.
+- INTERDIT : mettre une personne enceinte sur un escabeau ou en position dangereuse.`;
+  } else {
+    personCtx = 'Parents réalistes, 2 personnes maximum, cohérents dans toutes les scènes.';
   }
 
-  const prompt = `Génère une PLANCHE STORYBOARD en grille ${nbCols} colonnes × ${nbRows} lignes.
-Chaque case = une scène de la liste ci-dessous.
-RÈGLE ABSOLUE : C'est LA MÊME PIÈCE, LES MÊMES PERSONNES dans TOUTES les cases.
+  // Constantes visuelles de la pièce extraites de l'inspiration
+  const roomConstants = `PIÈCE IDENTIQUE dans toutes les cases :
+- Même architecture, mêmes proportions, même position des fenêtres et portes
+- Même orientation de la lumière naturelle
+- ${cfg.pays ? 'Style ' + cfg.pays : 'Style contemporain'}
+- ${cfg.style ? 'Décoration ' + cfg.style : ''}
+- Progression logique : pièce vide au début → meubles ajoutés progressivement → tout en place à la fin
+- Les couffins/lits/meubles N'APPARAISSENT PAS avant la scène montage
+${cfg.sup ? '- EXCLURE ABSOLUMENT dans toutes les scènes : ' + cfg.sup : ''}`;
 
-CHAMBRE :
-${cfg.pays ? `- Style architectural et mobilier de ${cfg.pays}` : ''}
-${cfg.style ? `- Style déco : ${cfg.style}` : ''}
-- ${cfg.age === 'bebe' ? 'Chambre bébé 0-2 ans' : 'Chambre enfant'}
-- ${cfg.nb === '2' ? 'Pour jumeaux : 2 lits côte à côte avec espace de passage adulte' : '1 enfant'}
-${cfg.lit ? `- Type de lit : ${cfg.lit}` : ''}
-${cfg.sup ? `- EXCLURE : ${cfg.sup}` : ''}
+  const prompt = `Tu es un directeur artistique de storyboard photo réaliste.
+Génère une PLANCHE STORYBOARD en grille ${nbCols} colonnes × ${nbRows} lignes.
+Chaque case = exactement une scène numérotée.
 
-PERSONNES : ${personCtx || 'Parents réalistes'}
+═══ RÈGLES ABSOLUES ═══
+1. MÊME PIÈCE dans toutes les cases — même architecture, mêmes fenêtres, mêmes murs
+2. MÊMES PERSONNES dans toutes les cases — visages et corps identiques
+3. Suivre la DIRECTION de chaque scène à la lettre — si une direction dit "le père fait X", c'est le père qui fait X
+4. INTERDIT d'inventer des actions, objets ou personnes non mentionnés
+5. Photo ultra-réaliste 4K, lumière naturelle, zéro filtre
 
-RÈGLE MEUBLES : Les couffins/lits N'APPARAISSENT PAS dans les scènes de peinture et sol. Ils apparaissent UNIQUEMENT à partir de la scène montage meubles.
+${roomConstants}
 
-SCÈNES À REPRÉSENTER :
+PERSONNES :
+${personCtx}
+
+═══ SCÈNES ═══
 ${scenesDesc}
 
-STYLE PHOTO : Ultra-réaliste 4K, Sony A7R V, lumière naturelle chaude, grain naturel, zéro filtre, zéro retouche.
-Sépare chaque case par une fine ligne grise. Numérote chaque case en petit en bas à gauche.
-FORBIDDEN : texte dans les images, CGI, peau plastique, personnages différents d'une case à l'autre.`;
+FORMAT : Grille ${nbCols}×${nbRows}, fine ligne grise entre les cases, numéro de scène en petit en bas à gauche de chaque case, label court en bas.
+STYLE : Sony A7R V, 35mm, lumière naturelle chaude, grain naturel, ultra-réaliste, zéro CGI.`;`;
 
   showStatus(`Génération de la planche ${nbCols}×${nbRows} en cours...`);
 
