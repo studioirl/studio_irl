@@ -1217,18 +1217,6 @@ async function generateVideo(){
       if(audioUrls.length)inputData.reference_audio_urls=audioUrls;
     }
 
-    // Upload frames de contrôle
-    if(frames.start){
-      setProg(24,'Upload Start Frame...');
-      var sfUrl=await uploadToKie(frames.start,'cinema/startframe');
-      inputData.first_frame_url=sfUrl;
-    }
-    if(frames.end){
-      setProg(26,'Upload End Frame...');
-      var efUrl=await uploadToKie(frames.end,'cinema/endframe');
-      inputData.last_frame_url=efUrl;
-    }
-
     // Vidéos Motion Transfer / Transition
     var refVideoUrls=[];
     if(motionVideos[1]){
@@ -1239,7 +1227,33 @@ async function generateVideo(){
       setProg(29,'Upload @Video2 (transition)...');
       refVideoUrls.push(await uploadToKie(motionVideos[2].dataUri,'cinema/motion2'));
     }
-    if(refVideoUrls.length)inputData.reference_video_urls=refVideoUrls;
+    if(refVideoUrls.length){
+      inputData.reference_video_urls=refVideoUrls;
+      // Seedance : reference_video_urls est incompatible avec first_frame_url et last_frame_url
+      // On passe tout en reference_image_urls pour éviter le conflit
+      delete inputData.first_frame_url;
+      delete inputData.last_frame_url;
+      // Les frames de contrôle passent en reference_image_urls si pas déjà fait
+      if(!inputData.reference_image_urls)inputData.reference_image_urls=allRefImages;
+      if(frames.start){
+        setProg(24,'Upload Start Frame...');
+        inputData.reference_image_urls.push(await uploadToKie(frames.start,'cinema/startframe'));
+      }
+      if(frames.end){
+        setProg(26,'Upload End Frame...');
+        inputData.reference_image_urls.push(await uploadToKie(frames.end,'cinema/endframe'));
+      }
+    }else{
+      // Pas de vidéo de référence — on peut utiliser first/last frame normalement
+      if(frames.start){
+        setProg(24,'Upload Start Frame...');
+        inputData.first_frame_url=await uploadToKie(frames.start,'cinema/startframe');
+      }
+      if(frames.end){
+        setProg(26,'Upload End Frame...');
+        inputData.last_frame_url=await uploadToKie(frames.end,'cinema/endframe');
+      }
+    }
 
     // Beat Sync audio (en plus des voix de référence)
     if(beatAudio){
