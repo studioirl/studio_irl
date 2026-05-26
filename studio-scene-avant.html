@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Studio Scène — Récits Temporels</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,700;0,900;1,300;1,700;1,900&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #050b18; color: white; }
+    .glass-card { background: rgba(255,255,255,0.03); backdrop-filter: blur(30px); border: 1px solid rgba(255,255,255,0.08); }
+    .text-glow { text-shadow: 0 0 20px rgba(255,255,255,0.2); }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #050b18; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+    @keyframes float { 0%,100%{transform:translateY(0) rotate(12deg);}50%{transform:translateY(-20px) rotate(15deg);} }
+    .animate-float { animation: float 6s ease-in-out infinite; }
+    @keyframes spin { from{transform:rotate(0deg);}to{transform:rotate(360deg);} }
+    .animate-spin { animation: spin 1s linear infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;}50%{opacity:0.4;} }
+    .animate-pulse { animation: pulse 2s ease-in-out infinite; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);} }
+    .animate-in { animation: fadeIn 0.5s ease-out forwards; }
+    .engine-pill {
+      flex:1; padding:14px 10px; border:1px solid rgba(255,255,255,0.1); border-radius:1rem;
+      background:rgba(255,255,255,0.04); cursor:pointer; font-family:'Inter',sans-serif;
+      font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.1em;
+      color:rgba(255,255,255,0.4); transition:all .2s; display:flex; flex-direction:column;
+      align-items:center; gap:5px;
+    }
+    .engine-pill:hover { border-color:rgba(255,255,255,0.3); color:rgba(255,255,255,0.8); }
+    .engine-pill.active-vertex { background:rgba(255,255,255,0.12); border-color:white; color:white; }
+    .engine-pill.active-kie { background:rgba(34,197,94,0.12); border-color:rgb(34,197,94); color:rgb(134,239,172); }
+    .engine-pill .sub { font-size:8px; opacity:0.6; font-weight:600; letter-spacing:.05em; }
+  </style>
+</head>
+<body style="background:radial-gradient(circle at top right,#0a192f,#050b18 70%);" class="min-h-screen">
+
+<!-- MODAL CLÉ API -->
+<div id="apiKeyModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-xl">
+  <div class="glass-card rounded-[3rem] p-12 max-w-lg w-full mx-6 shadow-[0_50px_100px_rgba(0,0,0,0.8)]">
+    <div class="flex items-center gap-4 mb-8">
+      <div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-[#050b18]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+      </div>
+      <div>
+        <h2 class="text-xl font-black uppercase italic tracking-tighter">Studio Scène</h2>
+        <p class="text-[10px] font-bold text-white/30 tracking-widest uppercase">Activation requise</p>
+      </div>
+    </div>
+
+    <!-- SÉLECTEUR MOTEUR -->
+    <p class="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] mb-4">Moteur de génération</p>
+    <div style="display:flex;gap:10px;margin-bottom:20px;">
+      <button class="engine-pill active-vertex" id="btn-vertex" onclick="selectEngine('vertex')">
+        <span>🔷 Vertex AI</span>
+        <span class="sub">Clé AQ...</span>
+      </button>
+      <button class="engine-pill" id="btn-kie" onclick="selectEngine('kie')">
+        <span>🍌 kie.ai</span>
+        <span class="sub">Clé kie_... · Nano Banana 2</span>
+      </button>
+    </div>
+
+    <div class="space-y-4">
+      <input id="apiKeyInput" type="password" id="apiKeyInput" placeholder="AQ..."
+        class="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm outline-none focus:border-white focus:bg-white/10 transition-all placeholder:text-white/20 font-mono" />
+      <div id="apiKeyError" style="display:none" class="text-red-400 text-xs px-2">Clé invalide pour ce moteur.</div>
+      <button id="activateBtn" class="w-full bg-white text-[#050b18] py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-blue-50 transition-all shadow-2xl active:scale-95">
+        ⚡ Activer le Studio
+      </button>
+    </div>
+    <p class="text-[9px] text-white/20 text-center mt-6">Votre clé reste dans votre navigateur et n'est jamais partagée.</p>
+  </div>
+</div>
+
+<!-- APP PRINCIPALE -->
+<div id="mainApp" style="display:none" class="min-h-screen text-white font-light pb-20 relative">
+
+  <div class="fixed inset-0 z-[-1] overflow-hidden pointer-events-none">
+    <img src="https://images.unsplash.com/photo-1594909122845-11baa439b7bf?q=80&w=2000&auto=format&fit=crop" class="w-full h-full object-cover opacity-[0.03] scale-110 blur-[2px] grayscale" />
+    <div class="absolute inset-0 bg-gradient-to-b from-[#050b18] via-transparent to-[#050b18]"></div>
+  </div>
+
+  <header class="border-b border-white/10 bg-black/40 backdrop-blur-xl sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-[#050b18]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.6l13.5-4.6c1-.3 2.1.2 2.4 1.2zm-5 3L3 11"/><path d="M1.93 11.5A2 2 0 0 0 1 13v5a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2v-5a2 2 0 0 0-.93-1.5"/><rect width="4" height="5" x="10" y="13" rx="1"/></svg>
+        </div>
+        <div>
+          <h1 class="text-xl font-black uppercase italic tracking-tighter">Studio Scène</h1>
+          <p id="engineLabel" class="text-[9px] text-white/30 font-black uppercase tracking-widest mt-0.5">Vertex AI · Gemini Flash Image</p>
+        </div>
+      </div>
+      <button id="resetKeyBtn" class="px-6 py-2.5 rounded-full text-[10px] font-black border bg-white/5 border-white/20 text-white hover:bg-white/10 transition-all">
+        🔑 SYSTÈME ACTIF
+      </button>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-6 py-12 relative z-10">
+    <div id="errorBanner" style="display:none" class="mb-8 p-6 bg-red-500/10 border border-red-500/20 rounded-3xl text-red-100 text-sm flex items-center justify-between">
+      <span id="errorText"></span>
+      <button id="closeErrorBtn" class="ml-4 p-2 hover:bg-white/10 rounded-full">✕</button>
+    </div>
+    <div id="successBanner" style="display:none" class="mb-8 p-6 bg-white/5 border border-white/10 rounded-3xl text-white text-sm flex items-center gap-4">
+      <span id="successText"></span>
+    </div>
+
+    <!-- LANDING -->
+    <div id="landingSection">
+      <div class="w-full max-w-6xl mx-auto glass-card rounded-[4rem] overflow-hidden border border-white/10 shadow-[0_50px_100px_rgba(0,0,0,0.5)] relative mb-20 group">
+        <div class="grid grid-cols-1 md:grid-cols-12">
+          <div class="md:col-span-7 p-12 md:p-16 flex flex-col justify-center bg-gradient-to-br from-white/10 to-transparent">
+            <div class="mb-6 flex items-center gap-3">
+              <span class="px-3 py-1 bg-white text-[#050b18] text-[9px] font-black uppercase tracking-widest rounded">Production Studio</span>
+            </div>
+            <h2 class="text-7xl md:text-9xl font-black mb-8 tracking-tighter uppercase italic leading-[0.8] text-glow">Studio<br/>Scène</h2>
+            <p class="text-xl font-light text-white/80 mb-12 leading-relaxed italic max-w-lg border-l border-white/20 pl-6">
+              "prolonge un instant dans le temps et transforme une image figée en une suite de moments vécus."
+            </p>
+            <label class="bg-white text-[#050b18] w-fit px-14 py-6 rounded-full font-black text-xs cursor-pointer hover:bg-blue-50 transition-all shadow-2xl active:scale-95">
+              <span class="uppercase tracking-[0.2em]">📷 DÉMARRER LE TOURNAGE</span>
+              <input type="file" id="fileInput" accept="image/*" style="display:none" />
+            </label>
+          </div>
+          <div class="md:col-span-5 relative h-[35rem] md:h-auto overflow-hidden bg-[#050b18]">
+            <img src="https://images.unsplash.com/photo-1585647347384-2593bc35786b?q=80&w=1200&auto=format&fit=crop" class="w-full h-full object-cover opacity-80 group-hover:scale-110 transition-all duration-[3000ms]" />
+            <div class="absolute inset-0 bg-gradient-to-r from-[#050b18] via-[#050b18]/40 to-transparent"></div>
+            <div class="absolute bottom-10 right-10 w-48 h-48 animate-float">
+              <img src="https://images.unsplash.com/photo-1594909122845-11baa439b7bf?q=80&w=500&auto=format&fit=crop" class="w-full h-full object-contain drop-shadow-[0_30px_60px_rgba(0,0,0,0.9)]" />
+            </div>
+            <div class="absolute top-12 left-12 px-4 py-2 bg-white/10 backdrop-blur-3xl border border-white/20 rounded-xl">
+              <p class="text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-2">
+                <span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span> REC
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WORKSPACE -->
+    <div id="workspaceSection" style="display:none">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-16">
+
+        <!-- PANNEAU GAUCHE -->
+        <div class="lg:col-span-4">
+          <div class="glass-card rounded-[3rem] p-10 sticky top-32 shadow-2xl">
+            <div class="relative group rounded-[2.5rem] overflow-hidden mb-10 shadow-2xl border border-white/10">
+              <img id="refImagePreview" src="" class="w-full aspect-[3/4] object-cover" />
+              <div class="absolute inset-0 bg-blue-900/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center backdrop-blur-sm">
+                <button id="resetImageBtn" class="p-5 bg-white rounded-full text-[#050b18] shadow-2xl hover:scale-110 transition-transform">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                </button>
+              </div>
+              <div class="absolute top-6 left-6 px-4 py-2 bg-white text-[#050b18] rounded-full text-[10px] font-black tracking-widest uppercase">Scène Alpha</div>
+            </div>
+
+            <div id="analyzeSection">
+              <button id="analyzeBtn" class="w-full bg-white text-[#050b18] py-6 rounded-2xl font-black text-xs flex items-center justify-center gap-4 hover:bg-blue-50 shadow-2xl active:scale-[0.98] transition-all">
+                🔒 VERROUILLER L'ADN VISUEL
+              </button>
+            </div>
+
+            <div id="analysisResult" style="display:none" class="space-y-6">
+              <div class="p-6 bg-white/10 border border-white/10 rounded-3xl flex items-center gap-5">
+                <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-[#050b18] font-black">✓</div>
+                <div>
+                  <p class="text-xs font-black text-white uppercase tracking-widest">Réalité Définie</p>
+                  <p class="text-[10px] text-white/40">Continuité physique OK</p>
+                </div>
+              </div>
+              <div class="p-8 bg-white/[0.02] rounded-3xl border border-white/5">
+                <p class="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] mb-3">Inventaire Spatial</p>
+                <p id="analysisSummary" class="text-sm text-white/70 italic leading-relaxed font-light"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PANNEAU DROIT -->
+        <div class="lg:col-span-8 space-y-16">
+
+          <div id="sequenceConfig" style="display:none" class="glass-card rounded-[4rem] p-12 border border-white/10 shadow-2xl">
+            <div class="flex flex-col gap-10">
+              <div class="flex flex-wrap items-center justify-between gap-8">
+                <!-- MODE SELECTOR -->
+                <div class="flex gap-3 bg-white/5 p-2 rounded-full border border-white/10">
+                  <button id="modeAutoBtn" class="px-8 py-3 rounded-full text-[10px] font-black bg-white text-[#050b18] shadow-xl">FLUX NATUREL</button>
+                  <button id="modeManualBtn" class="px-8 py-3 rounded-full text-[10px] font-black opacity-40 hover:opacity-100 transition-all">DIRECTION ARTISTIQUE</button>
+                  <button id="modeAvantBtn" class="px-8 py-3 rounded-full text-[10px] font-black opacity-40 hover:opacity-100 transition-all">MODE AVANT</button>
+                </div>
+                <h2 class="text-2xl font-black italic uppercase tracking-tighter text-glow">Ligne de Temps</h2>
+              </div>
+
+              <!-- Description Mode Avant -->
+              <div id="modeAvantDesc" style="display:none" class="p-6 rounded-3xl border border-amber-500/20 bg-amber-500/5">
+                <p class="text-[10px] font-black text-amber-400 uppercase tracking-[0.3em] mb-2">⏪ RECONSTRUCTION CAUSALE</p>
+                <p class="text-xs text-white/50 font-light leading-relaxed">L'image est une mémoire déjà en cours. Mode Avant remonte le temps — il identifie les causes, reconstruit la timeline invisible et génère les moments qui ont conduit à cet instant précis.</p>
+              </div>
+
+              <div class="space-y-4">
+                <p class="text-[10px] font-black text-white/30 uppercase tracking-[0.3em]">Format de l'image</p>
+                <div class="flex gap-4 flex-wrap">
+                  <button id="ratio_1_1" class="flex items-center gap-3 px-6 py-4 rounded-2xl border text-[11px] font-black uppercase tracking-wider bg-white text-[#050b18] border-white shadow-xl">⬛ Carré (1:1)</button>
+                  <button id="ratio_16_9" class="flex items-center gap-3 px-6 py-4 rounded-2xl border text-[11px] font-black uppercase tracking-wider bg-white/5 border-white/10 text-white/50 hover:border-white/30 transition-all">🖥 Cinéma (16:9)</button>
+                  <button id="ratio_9_16" class="flex items-center gap-3 px-6 py-4 rounded-2xl border text-[11px] font-black uppercase tracking-wider bg-white/5 border-white/10 text-white/50 hover:border-white/30 transition-all">📱 Portrait (9:16)</button>
+                </div>
+              </div>
+
+              <div id="actionInputSection" style="display:none">
+                <textarea id="actionDescription" placeholder="Décrivez l'évolution de la scène..."
+                  class="w-full h-44 bg-white/5 border border-white/10 rounded-[2.5rem] p-10 text-xl outline-none focus:border-white focus:bg-white/10 transition-all placeholder:text-white/10 font-light resize-none"></textarea>
+              </div>
+
+              <button id="generateBtn" class="w-full bg-white text-[#050b18] py-7 rounded-3xl font-black text-sm shadow-[0_20px_50px_rgba(255,255,255,0.1)] hover:bg-blue-50 active:scale-95 transition-all flex items-center justify-center gap-4">
+                ✨ DÉPLOYER LA SÉQUENCE VÉCUE
+              </button>
+            </div>
+          </div>
+
+          <div id="emptyState" class="h-[40rem] flex flex-col items-center justify-center border border-white/5 bg-white/[0.01] rounded-[4rem] opacity-20 border-dashed">
+            <p class="font-black uppercase tracking-[0.8em] text-[10px] text-center px-20 leading-loose">
+              Prêt pour le tournage ?<br/>Analysez votre image source.
+            </p>
+          </div>
+
+          <div id="storyboardSection" style="display:none" class="space-y-12">
+            <div class="flex items-center justify-between px-8">
+              <h3 id="storyboardTitle" class="text-sm font-black uppercase tracking-[0.5em] text-white/30">🎬 Storyboard Temporel</h3>
+              <button id="zipBtn" style="display:none" class="flex items-center gap-3 px-10 py-4 bg-white/5 border border-white/20 rounded-full text-[10px] font-black hover:bg-white hover:text-[#050b18] transition-all">
+                📦 EXPORTER TOUT (.ZIP)
+              </button>
+            </div>
+            <div id="storyboardGrid" class="grid grid-cols-1 md:grid-cols-2 gap-10"></div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="mt-40 py-24 border-t border-white/5 bg-black/40 text-center">
+    <p class="text-[12px] font-medium text-white/40 italic mb-4">"prolonge un instant dans le temps et transforme une image figée en une suite de moments vécus."</p>
+    <p class="text-[9px] font-black uppercase tracking-[1em] text-white/5">© 2025 Studio Scène • Laboratoire de Narration Temporelle</p>
+  </footer>
+</div>
+
+<script type="module">
+import { GoogleGenAI, Type } from "https://cdn.jsdelivr.net/npm/@google/genai@1.34.0/+esm";
+
+// ── STATE ────────────────────────────────────────────────────────────────────
+let API_KEY = sessionStorage.getItem('studio_scene_key') || null;
+let selectedEngine = sessionStorage.getItem('studio_scene_engine') || 'vertex';
+let referenceImage = null;       // base64 pur (pas de data: prefix)
+let referenceImageFull = null;   // data URI complet pour upload kie.ai
+let referenceMime = 'image/jpeg';
+let analysisData = null;
+let isAutoMode = true;
+let isAvantMode = false;
+let aspectRatio = '1:1';
+let generatedPrompts = [];
+let generatedBlobUrls = {};  // id -> blob URL (Safari-safe)
+let generatedBase64 = {};    // id -> base64 pur (pour ZIP)
+
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+function $(id) { return document.getElementById(id); }
+function show(id) { $(id).style.display = ''; }
+function hide(id) { $(id).style.display = 'none'; }
+function showFlex(id) { $(id).style.display = 'flex'; }
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function showError(msg) { $('errorText').textContent = msg; showFlex('errorBanner'); }
+function hideError() { hide('errorBanner'); }
+function showSuccess(msg) {
+  $('successText').textContent = msg;
+  showFlex('successBanner');
+  setTimeout(() => hide('successBanner'), 3000);
+}
+
+function setLoadingBtn(btnId, loading, label) {
+  const btn = $(btnId);
+  btn.disabled = loading;
+  btn.innerHTML = loading ? '<span class="animate-spin inline-block mr-2">⟳</span> En cours...' : label;
+}
+
+// base64 -> Blob URL (Safari-safe)
+function base64ToBlobUrl(b64, mime) {
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  const blob = new Blob([bytes], { type: mime });
+  return URL.createObjectURL(blob);
+}
+
+// ── MOTEUR ───────────────────────────────────────────────────────────────────
+window.selectEngine = function(engine) {
+  selectedEngine = engine;
+  $('btn-vertex').className = 'engine-pill' + (engine === 'vertex' ? ' active-vertex' : '');
+  $('btn-kie').className = 'engine-pill' + (engine === 'kie' ? ' active-kie' : '');
+  $('apiKeyInput').placeholder = engine === 'vertex' ? 'AQ...' : 'kie_...';
+  hide('apiKeyError');
+};
+// Init pill
+selectEngine(selectedEngine);
+
+// ── ACTIVATION ───────────────────────────────────────────────────────────────
+function activateApiKey() {
+  const key = $('apiKeyInput').value.trim();
+  const valid = key && (
+    (selectedEngine === 'vertex' && key.startsWith('AQ')) ||
+    (selectedEngine === 'kie' && (key.startsWith('kie_') || key.length > 10))
+  );
+  if (!valid) { show('apiKeyError'); return; }
+  API_KEY = key;
+  sessionStorage.setItem('studio_scene_key', key);
+  sessionStorage.setItem('studio_scene_engine', selectedEngine);
+  hide('apiKeyModal');
+  show('mainApp');
+  updateEngineLabel();
+}
+
+function resetApiKey() {
+  sessionStorage.removeItem('studio_scene_key');
+  sessionStorage.removeItem('studio_scene_engine');
+  API_KEY = null;
+  $('apiKeyInput').value = '';
+  show('apiKeyModal');
+  hide('mainApp');
+}
+
+function updateEngineLabel() {
+  $('engineLabel').textContent = selectedEngine === 'kie'
+    ? 'kie.ai · Nano Banana 2'
+    : 'Vertex AI · Gemini Flash Image';
+}
+
+if (API_KEY) {
+  hide('apiKeyModal');
+  show('mainApp');
+  updateEngineLabel();
+}
+
+// ── EVENT LISTENERS ───────────────────────────────────────────────────────────
+$('activateBtn').addEventListener('click', activateApiKey);
+$('apiKeyInput').addEventListener('keydown', e => { if (e.key === 'Enter') activateApiKey(); });
+$('resetKeyBtn').addEventListener('click', resetApiKey);
+$('closeErrorBtn').addEventListener('click', hideError);
+$('resetImageBtn').addEventListener('click', resetImage);
+$('analyzeBtn').addEventListener('click', handleAnalyze);
+$('generateBtn').addEventListener('click', handleGenerateSequence);
+$('zipBtn').addEventListener('click', downloadAllAsZip);
+$('fileInput').addEventListener('change', handleImageUpload);
+$('modeAutoBtn').addEventListener('click', () => setMode('auto'));
+$('modeManualBtn').addEventListener('click', () => setMode('manual'));
+$('modeAvantBtn').addEventListener('click', () => setMode('avant'));
+$('ratio_1_1').addEventListener('click', () => setAspectRatio('1:1'));
+$('ratio_16_9').addEventListener('click', () => setAspectRatio('16:9'));
+$('ratio_9_16').addEventListener('click', () => setAspectRatio('9:16'));
+
+// ── IMAGE UPLOAD ──────────────────────────────────────────────────────────────
+function handleImageUpload(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    const result = event.target.result;
+    referenceMime = result.match(/^data:(image\/[a-z+]+);base64,/)?.[1] || 'image/jpeg';
+    referenceImage = result.split(',')[1];
+    referenceImageFull = result;
+    // Affichage via blob URL (Safari-safe)
+    const previewUrl = base64ToBlobUrl(referenceImage, referenceMime);
+    $('refImagePreview').src = previewUrl;
+    analysisData = null;
+    generatedPrompts = [];
+    // Libérer anciens blob URLs
+    Object.values(generatedBlobUrls).forEach(u => URL.revokeObjectURL(u));
+    generatedBlobUrls = {};
+    generatedBase64 = {};
+    hide('landingSection');
+    show('workspaceSection');
+    show('analyzeSection');
+    hide('analysisResult');
+    hide('sequenceConfig');
+    show('emptyState');
+    hide('storyboardSection');
+  };
+  reader.readAsDataURL(file);
+}
+
+function resetImage() {
+  referenceImage = null;
+  referenceImageFull = null;
+  analysisData = null;
+  Object.values(generatedBlobUrls).forEach(u => URL.revokeObjectURL(u));
+  generatedBlobUrls = {};
+  generatedBase64 = {};
+  show('landingSection');
+  hide('workspaceSection');
+}
+
+// ── MODE & RATIO ──────────────────────────────────────────────────────────────
+function setMode(mode) {
+  isAutoMode = (mode === 'auto');
+  isAvantMode = (mode === 'avant');
+  const active = 'px-8 py-3 rounded-full text-[10px] font-black bg-white text-[#050b18] shadow-xl';
+  const inactive = 'px-8 py-3 rounded-full text-[10px] font-black opacity-40 hover:opacity-100 transition-all';
+  $('modeAutoBtn').className = mode === 'auto' ? active : inactive;
+  $('modeManualBtn').className = mode === 'manual' ? active : inactive;
+  $('modeAvantBtn').className = mode === 'avant' ? active : inactive;
+  mode === 'manual' ? show('actionInputSection') : hide('actionInputSection');
+  mode === 'avant' ? show('modeAvantDesc') : hide('modeAvantDesc');
+  $('generateBtn').innerHTML = mode === 'avant' ? '⏪ RECONSTRUIRE LA TIMELINE INVISIBLE' : '✨ DÉPLOYER LA SÉQUENCE VÉCUE';
+}
+
+function setAspectRatio(ratio) {
+  aspectRatio = ratio;
+  ['1:1','16:9','9:16'].forEach(r => {
+    const btn = $('ratio_' + r.replace(':','_'));
+    btn.className = r === ratio
+      ? 'flex items-center gap-3 px-6 py-4 rounded-2xl border text-[11px] font-black uppercase tracking-wider bg-white text-[#050b18] border-white shadow-xl'
+      : 'flex items-center gap-3 px-6 py-4 rounded-2xl border text-[11px] font-black uppercase tracking-wider bg-white/5 border-white/10 text-white/50 hover:border-white/30 transition-all';
+  });
+}
+
+// ── ANALYSE (Vertex uniquement — JSON structuré) ──────────────────────────────
+async function handleAnalyze() {
+  if (!referenceImage) return;
+  setLoadingBtn('analyzeBtn', true, '');
+  hideError();
+  try {
+    const ai = new GoogleGenAI({ apiKey: API_KEY });
+    const prompt = `CAPTURER L'ADN DE L'INSTANT — INVENTAIRE EXHAUSTIF ET DÉFINITIF.
+Analysez cette image comme le point Zéro absolu d'un récit cinématographique.
+Identifiez avec une précision chirurgicale :
+1. personnage : identité visuelle complète, tenue exacte (couleurs, matières, coupes), posture émotionnelle, énergie corporelle.
+2. environnement : géométrie du lieu, textures des surfaces, mobilier avec positions exactes, chaque petit objet visible.
+3. lumière : ambiance lumineuse précise, direction des ombres portées, température colorimétrique.
+RÈGLE ABSOLUE — ZÉRO INVENTION : Cataloguez UNIQUEMENT ce qui est visuellement présent dans l'image.
+Répondez EXCLUSIVEMENT en JSON.`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.1-pro-preview',
+      contents: [{ parts: [
+        { inlineData: { mimeType: referenceMime, data: referenceImage } },
+        { text: prompt }
+      ]}],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            personnage: { type: Type.OBJECT, properties: {
+              apparence: {type:Type.STRING}, expression_faciale:{type:Type.STRING}, posture:{type:Type.STRING},
+              vetements:{type:Type.OBJECT, properties:{haut:{type:Type.STRING},bas:{type:Type.STRING},chaussures:{type:Type.STRING}}, required:["haut","bas","chaussures"]},
+              objets_tenus:{type:Type.ARRAY, items:{type:Type.OBJECT, properties:{objet:{type:Type.STRING},couleur:{type:Type.STRING},matiere:{type:Type.STRING},position:{type:Type.STRING},contenu:{type:Type.STRING}}, required:["objet","couleur","matiere","position","contenu"]}}
+            }, required:["apparence","expression_faciale","posture","vetements","objets_tenus"]},
+            environnement: { type: Type.OBJECT, properties: {
+              lieu:{type:Type.STRING}, murs:{type:Type.STRING}, sol:{type:Type.STRING},
+              meubles:{type:Type.ARRAY, items:{type:Type.OBJECT, properties:{type:{type:Type.STRING},couleur:{type:Type.STRING},position:{type:Type.STRING}}, required:["type","couleur","position"]}},
+              objets_visibles:{type:Type.ARRAY, items:{type:Type.OBJECT, properties:{type:{type:Type.STRING},couleur:{type:Type.STRING},emplacement:{type:Type.STRING}}, required:["type","couleur","emplacement"]}}
+            }, required:["lieu","murs","sol","meubles","objets_visibles"]},
+            lumiere: { type: Type.OBJECT, properties: {type:{type:Type.STRING},direction:{type:Type.STRING},intensite:{type:Type.STRING}}, required:["type","direction","intensite"]}
+          },
+          required: ["personnage","environnement","lumiere"]
+        }
+      }
+    });
+
+    const text = response.text;
+    if (!text) throw new Error("Réponse vide.");
+    const match = text.match(/\{[\s\S]*\}/);
+    analysisData = JSON.parse(match ? match[0] : text);
+    const objets = analysisData.personnage.objets_tenus.map(o => o.objet).join(', ') || 'Aucun objet';
+    $('analysisSummary').innerHTML = `<strong>Lieu :</strong> ${analysisData.environnement.lieu}<br/><strong>Objets :</strong> ${objets}`;
+    hide('analyzeSection');
+    show('analysisResult');
+    show('sequenceConfig');
+    hide('emptyState');
+    showSuccess('Analyse terminée. Séquence prête.');
+  } catch(err) {
+    showError('Erreur analyse : ' + err.message);
+  }
+  setLoadingBtn('analyzeBtn', false, "🔒 VERROUILLER L'ADN VISUEL");
+}
+
+// ── GÉNÉRATION MODE AVANT ─────────────────────────────────────────────────────
+async function handleGenerateAvant(ai) {
+  const prompt = `MODE AVANT — RECONSTRUCTION CAUSALE DE TIMELINE.
+
+Tu analyses une image figée comme une scène vivante ayant une histoire déjà vécue.
+
+DONNÉES DE L'IMAGE FINALE (point d'arrivée) :
+- Lieu : ${analysisData.environnement.lieu}
+- Personnage : ${analysisData.personnage.apparence}
+- Posture actuelle : ${analysisData.personnage.posture}
+- Expression : ${analysisData.personnage.expression_faciale}
+- Objets visibles : ${analysisData.personnage.objets_tenus.map(o => o.objet + ' (' + o.contenu + ')').join(', ') || 'aucun'}
+- Objets dans l'environnement : ${analysisData.environnement.objets_visibles.map(o => o.type).join(', ') || 'aucun'}
+- Lumière : ${analysisData.lumiere.type}, direction ${analysisData.lumiere.direction}
+
+MISSION — RECONSTRUIRE LES 5 MOMENTS QUI ONT CONDUIT À CET INSTANT :
+
+RÈGLE 1 — CAUSALITÉ STRICTE : Chaque objet visible dans l'image finale doit avoir été introduit dans un moment précédent. Aucun élément ne peut apparaître sans transition logique préalable.
+RÈGLE 2 — MÉMOIRE PHYSIQUE DES OBJETS : verre progressivement entamé, chaise qui se recule, coussin déformé, vapeur qui apparaît. Jamais "placés" — toujours "utilisés naturellement".
+RÈGLE 3 — INERTIE HUMAINE : Chaque mouvement respecte le poids, les appuis, la dynamique musculaire, la fatigue naturelle.
+RÈGLE 4 — TEMPS RÉSIDUEL : Traces d'actions très récentes visibles (fumée, mouvement, chaleur, lumière récemment allumée).
+RÈGLE 5 — INTENTION COMPORTEMENTALE : Chaque action a une raison humaine crédible. Rien pour l'esthétique pure.
+RÈGLE 6 — PROGRESSION CHRONOLOGIQUE INVERSE :
+Scène 1 = il y a environ 12-15 minutes
+Scène 2 = il y a environ 8-10 minutes
+Scène 3 = il y a environ 4-6 minutes
+Scène 4 = il y a environ 1-2 minutes
+Scène 5 = l'instant juste avant l'image finale (quelques secondes)
+
+Génère 5 descriptions de scènes précédentes, chronologiquement, reconstruisant la timeline invisible.
+Répondez EXCLUSIVEMENT en JSON avec une liste "scenes".`;
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-3.1-pro-preview',
+    contents: [{ parts: [{ text: prompt }] }],
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: { scenes: { type: Type.ARRAY, items: { type: Type.STRING } } },
+        required: ["scenes"]
+      }
+    }
+  });
+  const text = response.text;
+  if (!text) throw new Error("Réponse vide.");
+  const match = text.match(/\{[\s\S]*\}/);
+  const data = JSON.parse(match ? match[0] : text);
+  return data.scenes || [];
+}
+
+// ── GÉNÉRATION SÉQUENCE (tous modes) ─────────────────────────────────────────
+async function handleGenerateSequence() {
+  if (!analysisData) { showError("Analysez d'abord l'image."); return; }
+  setLoadingBtn('generateBtn', true, '');
+  hideError();
+  generatedPrompts = [];
+  Object.values(generatedBlobUrls).forEach(u => URL.revokeObjectURL(u));
+  generatedBlobUrls = {};
+  generatedBase64 = {};
+
+  const action = (!isAutoMode && !isAvantMode) ? $('actionDescription').value : null;
+
+  try {
+    const ai = new GoogleGenAI({ apiKey: API_KEY });
+    let scenes = [];
+
+    if (isAvantMode) {
+      scenes = await handleGenerateAvant(ai);
+      $('storyboardTitle').innerHTML = '⏪ Timeline Invisible — Reconstruction Causale';
+    } else {
+      const prompt = `ARC NARRATIF CINÉMATOGRAPHIQUE — PROTOCOLE 3 RÈGLES.
+ACTION PRINCIPALE : ${action || "Une séquence narrative complète commençant par l'image source"}.
+CONTEXTE SOURCE :
+- Lieu : ${analysisData.environnement.lieu}
+- Personnage : ${analysisData.personnage.apparence}
+- Position initiale : ${analysisData.personnage.posture}
+- Objets présents : ${analysisData.personnage.objets_tenus.map(o => o.objet).join(', ') || 'aucun'}
+RÈGLE 1 — ZÉRO INVENTION : INTERDIT d'ajouter des objets absents de la source.
+RÈGLE 2 — PROGRESSION IMMÉDIATE : Scène 1 = mouvement déjà commencé. Pose de départ INTERDITE.
+RÈGLE 3 — NARRATION LINÉAIRE : 5 scènes distinctes, arc narratif réel, zéro redondance.
+Répondez EXCLUSIVEMENT en JSON avec une liste "scenes".`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.1-pro-preview',
+        contents: [{ parts: [{ text: prompt }] }],
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: { scenes: { type: Type.ARRAY, items: { type: Type.STRING } } },
+            required: ["scenes"]
+          }
+        }
+      });
+      const text = response.text;
+      if (!text) throw new Error("Réponse vide.");
+      const match = text.match(/\{[\s\S]*\}/);
+      const data = JSON.parse(match ? match[0] : text);
+      scenes = data.scenes || [];
+      $('storyboardTitle').innerHTML = '🎬 Storyboard Temporel';
+    }
+
+    if (!scenes.length) throw new Error("Aucune scène générée.");
+    generatedPrompts = scenes.map((s, i) => ({ id: `${Date.now()}-${i}`, scene: s }));
+    renderStoryboard();
+    showSuccess(isAvantMode ? 'Timeline reconstruite — 5 moments retrouvés.' : 'Storyboard généré !');
+  } catch(err) {
+    showError('Erreur storyboard : ' + err.message);
+  }
+  const genLabel = isAvantMode ? '⏪ RECONSTRUIRE LA TIMELINE INVISIBLE' : '✨ DÉPLOYER LA SÉQUENCE VÉCUE';
+  setLoadingBtn('generateBtn', false, genLabel);
+}
+
+// ── STORYBOARD ────────────────────────────────────────────────────────────────
+function getAspectClass() {
+  if (aspectRatio === '16:9') return 'aspect-video';
+  if (aspectRatio === '9:16') return 'aspect-[9/16]';
+  return 'aspect-square';
+}
+
+function renderStoryboard() {
+  const grid = $('storyboardGrid');
+  grid.innerHTML = '';
+  show('storyboardSection');
+  hide('zipBtn');
+
+  generatedPrompts.forEach((p, i) => {
+    const label = isAvantMode ? `T-${(5-i)*3}min` : `Prise 0${i+1}`;
+    const icon = isAvantMode ? '⏪' : '🖼';
+    const btnLabel = isAvantMode ? 'Reconstruire le moment' : 'Générer le moment';
+    const card = document.createElement('div');
+    card.className = 'glass-card rounded-[3.5rem] overflow-hidden group border border-white/5 hover:border-white/40 transition-all flex flex-col';
+    card.innerHTML = `
+      <div class="${getAspectClass()} bg-white/5 flex items-center justify-center relative overflow-hidden" id="imgContainer-${p.id}">
+        <button class="renderBtn w-full h-full flex flex-col items-center justify-center gap-8 hover:bg-white/[0.04] transition-all min-h-[300px]" data-id="${p.id}" data-index="${i}">
+          <div class="w-24 h-24 border border-white/10 rounded-full flex items-center justify-center group-hover:bg-white group-hover:border-transparent transition-all">
+            <span class="text-3xl opacity-20 group-hover:opacity-100">${icon}</span>
+          </div>
+          <span class="text-[10px] font-black uppercase text-white/20 tracking-[0.5em] group-hover:text-white transition-all">${btnLabel}</span>
+        </button>
+      </div>
+      <div class="p-12 bg-white/[0.01] flex-grow flex items-start gap-6 border-t border-white/5">
+        ${isAvantMode ? `<span class="text-[9px] font-black text-amber-400/60 tracking-widest uppercase mt-1 whitespace-nowrap">${label}</span>` : ''}
+        <p class="text-base font-light italic text-white/40 leading-relaxed border-l border-white/10 pl-8 group-hover:text-white/70 transition-colors">"${p.scene}"</p>
+      </div>`;
+    grid.appendChild(card);
+  });
+
+  document.querySelectorAll('.renderBtn').forEach(btn => {
+    btn.addEventListener('click', () => renderPlan(btn.dataset.id, parseInt(btn.dataset.index)));
+  });
+}
+
+// ── RENDU IMAGE — VERTEX ──────────────────────────────────────────────────────
+async function renderPlanVertex(p) {
+  const ai = new GoogleGenAI({ apiKey: API_KEY });
+  let instruction;
+  if (isAvantMode) {
+    instruction = `PROTOCOLE MODE AVANT — MOMENT PRÉCÉDENT, RECONSTRUCTION CAUSALE.
+- IMAGE FINALE DE RÉFÉRENCE: Utilisez l'image fournie comme point d'arrivée absolu — elle représente l'état final, pas l'état à générer.
+- DÉCOR VERROUILLÉ: ${analysisData.environnement.lieu}. Conservez chaque détail, texture et position des meubles. Zéro élément ajouté.
+- PERSONNAGE VERROUILLÉ: ${analysisData.personnage.apparence}. Même visage, même tenue exacte (${analysisData.personnage.vetements.haut}, ${analysisData.personnage.vetements.bas}, ${analysisData.personnage.vetements.chaussures}).
+- MOMENT À RECONSTRUIRE: ${p.scene}.
+- MÉMOIRE PHYSIQUE: Les objets doivent montrer leur état à CE moment précis — avant d'atteindre leur état dans l'image finale.
+- INERTIE HUMAINE: Corps en transition physique cohérente. Mouvement naturel, poids réaliste.
+- TEMPS RÉSIDUEL: Traces d'actions très récentes visibles.
+- INTENTION COMPORTEMENTALE: Chaque détail a une raison humaine crédible.
+- STYLE: Cinématographique, haute fidélité, photoréaliste.
+- AMBIANCE: Lumière ${analysisData.lumiere.type} depuis ${analysisData.lumiere.direction}.`;
+  } else {
+    instruction = `PROTOCOLE DE CONTINUITÉ NARRATIVE STRICTE.
+- SOURCE FRAME: Utilisez l'image fournie comme référence absolue et immuable.
+- DÉCOR VERROUILLÉ: ${analysisData.environnement.lieu}. Conservez chaque détail, texture et position des meubles. Zéro élément ajouté.
+- PERSONNAGE VERROUILLÉ: ${analysisData.personnage.apparence}. Même visage, même tenue exacte (${analysisData.personnage.vetements.haut}, ${analysisData.personnage.vetements.bas}, ${analysisData.personnage.vetements.chaussures}).
+- RÈGLE 1 — ZÉRO INVENTION: INTERDIT d'ajouter tout objet absent de la source.
+- RÈGLE 2 — PROGRESSION IMMÉDIATE: Mouvement déjà en cours. Pose statique INTERDITE.
+- RÈGLE 3 — ÉTAPE NARRATIVE: ${p.scene}.
+- STYLE: Cinématographique, haute fidélité, photoréaliste.
+- AMBIANCE: Lumière ${analysisData.lumiere.type} depuis ${analysisData.lumiere.direction}.`;
+  }
+
+  const tryGen = async () => await ai.models.generateContent({
+    model: 'gemini-3.1-flash-image-preview',
+    contents: { parts: [
+      { inlineData: { data: referenceImage, mimeType: referenceMime } },
+      { text: instruction }
+    ]},
+    config: { imageConfig: { aspectRatio, imageSize: "1K" } }
+  });
+
+  let response;
+  try {
+    response = await tryGen();
+  } catch(e) {
+    const msg = String(e.message || '').toLowerCase();
+    if (msg.includes('500') || msg.includes('503') || msg.includes('overloaded')) {
+      await sleep(4000);
+      response = await tryGen();
+    } else throw e;
+  }
+
+  const part = response?.candidates?.[0]?.content?.parts?.find(pt => pt.inlineData);
+  if (!part?.inlineData?.data) throw new Error("Aucune image retournée par Vertex.");
+  return { b64: part.inlineData.data, mime: 'image/png' };
+}
+
+// ── RENDU IMAGE — KIE.AI ──────────────────────────────────────────────────────
+async function uploadImageToKie(base64DataUri) {
+  const res = await fetch('https://kieai.redpandaai.co/api/file-base64-upload', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ base64Data: base64DataUri, uploadPath: 'images/studio-scene' })
+  });
+  let data = {};
+  try { data = await res.json(); } catch(_) {}
+  if (!res.ok || !data.data?.downloadUrl) {
+    throw new Error(`Upload kie.ai échoué: ${data.msg || res.status}`);
+  }
+  return data.data.downloadUrl;
+}
+
+async function renderPlanKie(p) {
+  // Upload image de référence
+  let imageUrls = [];
+  if (referenceImageFull) {
+    try {
+      const url = await uploadImageToKie(referenceImageFull);
+      imageUrls.push(url);
+    } catch(e) { console.warn('Upload ref échoué:', e.message); }
+  }
+
+  const modeCtx = isAvantMode
+    ? `CAUSAL RECONSTRUCTION — moment preceding the final image. The reference image is the FINAL STATE. Generate the moment BEFORE.`
+    : `NARRATIVE CONTINUATION — next moment after the reference image.`;
+
+  const prompt = `Ultra-realistic cinematic photography. ${modeCtx}
+SCENE: ${p.scene}.
+LOCKED CHARACTER: ${analysisData.personnage.apparence}. Exact same face, same outfit (${analysisData.personnage.vetements.haut}, ${analysisData.personnage.vetements.bas}).
+LOCKED ENVIRONMENT: ${analysisData.environnement.lieu}. Same textures, same furniture positions. Zero added elements.
+LIGHTING: ${analysisData.lumiere.type} from ${analysisData.lumiere.direction}.
+Photoreal, no AI smoothing, natural human posture, authentic moment.`;
+
+  const taskBody = {
+    model: 'nano-banana-2',
+    input: {
+      prompt,
+      aspect_ratio: aspectRatio,
+      resolution: '1K',
+      output_format: 'jpg',
+      image_input: imageUrls
+    }
+  };
+
+  const createRes = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(taskBody)
+  });
+  let createData = {};
+  try { createData = await createRes.json(); } catch(_) {}
+  if (!createRes.ok || createData.code !== 200) {
+    const msg = createData?.msg || createData?.message || `HTTP ${createRes.status}`;
+    if (createRes.status === 401 || createData.code === 401) throw new Error('Clé kie.ai invalide.');
+    throw new Error(`Erreur kie.ai: ${msg}`);
+  }
+
+  const taskId = createData?.data?.taskId;
+  if (!taskId) throw new Error(`Aucun taskId kie.ai: ${JSON.stringify(createData)}`);
+
+  // Poll
+  for (let i = 0; i < 60; i++) {
+    await sleep(5000);
+    let statusData = {};
+    try {
+      const sr = await fetch(`https://api.kie.ai/api/v1/jobs/recordInfo?taskId=${taskId}`, {
+        headers: { 'Authorization': `Bearer ${API_KEY}` }
+      });
+      statusData = await sr.json();
+    } catch(e) { continue; }
+
+    const state = statusData?.data?.state;
+    if (state === 'fail') throw new Error(`kie.ai fail: ${statusData?.data?.failMsg}`);
+    if (state === 'success') {
+      let imageUrl = null;
+      try {
+        const r = JSON.parse(statusData?.data?.resultJson || '{}');
+        imageUrl = r?.resultUrls?.[0] || r?.images?.[0]?.url || r?.url;
+      } catch(_) {}
+      if (!imageUrl) throw new Error(`kie.ai success sans URL`);
+      // Télécharger et convertir en blob URL (Safari-safe)
+      const imgRes = await fetch(imageUrl);
+      const blob = await imgRes.blob();
+      const b64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+      return { b64, mime: blob.type || 'image/jpeg' };
+    }
+  }
+  throw new Error('Timeout kie.ai (5min).');
+}
+
+// ── RENDU IMAGE — DISPATCH ────────────────────────────────────────────────────
+async function renderPlan(id, index) {
+  if (!referenceImage || !analysisData) return;
+  const p = generatedPrompts[index];
+  if (!p) return;
+
+  const container = $(`imgContainer-${id}`);
+  container.innerHTML = `
+    <div class="flex flex-col items-center justify-center gap-6 w-full h-full min-h-[300px]">
+      <span class="text-5xl animate-spin inline-block opacity-20">⟳</span>
+      <span class="text-[10px] font-black text-white/30 tracking-[0.4em] uppercase animate-pulse">
+        ${selectedEngine === 'kie' ? 'Nano Banana 2...' : 'Développement...'}
+      </span>
+    </div>`;
+
+  try {
+    const { b64, mime } = selectedEngine === 'kie'
+      ? await renderPlanKie(p)
+      : await renderPlanVertex(p);
+
+    // Stocker base64 pour ZIP
+    generatedBase64[id] = { b64, mime };
+
+    // Blob URL pour affichage Safari-safe
+    const blobUrl = base64ToBlobUrl(b64, mime);
+    // Libérer l'ancien si existait
+    if (generatedBlobUrls[id]) URL.revokeObjectURL(generatedBlobUrls[id]);
+    generatedBlobUrls[id] = blobUrl;
+
+    const cardLabel = isAvantMode ? `T-${(5-index)*3}min` : `Prise 0${index+1}`;
+    const engineBadge = selectedEngine === 'kie' ? 'NANO BANANA 2' : 'GEMINI FLASH';
+    container.innerHTML = `
+      <img src="${blobUrl}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[6s]" />
+      <button class="dlBtn absolute top-8 right-8 p-5 bg-white text-[#050b18] rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-2xl hover:scale-110" data-id="${id}" data-num="${index+1}">⬇</button>
+      <div class="absolute bottom-8 left-8 px-6 py-2.5 bg-white/10 backdrop-blur-2xl rounded-full text-[10px] font-black border border-white/20 uppercase tracking-widest">${cardLabel}</div>
+      <div class="absolute top-8 left-8 px-4 py-1.5 bg-black/40 backdrop-blur-sm rounded-full text-[8px] font-black uppercase tracking-widest text-white/60">${engineBadge}</div>`;
+
+    container.querySelector('.dlBtn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      downloadImage(id, index+1);
+    });
+    show('zipBtn');
+  } catch(err) {
+    showError('Erreur rendu : ' + err.message);
+    container.innerHTML = `
+      <button class="renderBtn w-full h-full flex flex-col items-center justify-center gap-4 min-h-[300px] text-red-400/50" data-id="${id}" data-index="${index}">
+        <span class="text-4xl">⚠</span>
+        <span class="text-[10px] font-black uppercase tracking-widest">Réessayer</span>
+      </button>`;
+    container.querySelector('.renderBtn').addEventListener('click', () => renderPlan(id, index));
+  }
+}
+
+// ── TÉLÉCHARGEMENT ────────────────────────────────────────────────────────────
+function downloadImage(id, num) {
+  const entry = generatedBase64[id];
+  if (!entry) return;
+  const ext = entry.mime.includes('png') ? 'png' : 'jpg';
+  const blobUrl = base64ToBlobUrl(entry.b64, entry.mime);
+
+  if (isIOS) {
+    // iOS Safari : ouvrir dans nouvel onglet + appui long
+    const w = window.open(blobUrl, '_blank');
+    if (!w) alert("Appuie longuement sur l'image dans le nouvel onglet, puis 'Enregistrer l'image'.");
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+  } else {
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = `studio_scene_moment_${num}.${ext}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+  }
+}
+
+async function downloadAllAsZip() {
+  const zip = new JSZip();
+  const folder = zip.folder("studio-scene-sequence");
+  Object.entries(generatedBase64).forEach(([id, entry], i) => {
+    const ext = entry.mime.includes('png') ? 'png' : 'jpg';
+    folder.file(`sequence_moment_${i+1}.${ext}`, entry.b64, { base64: true });
+  });
+  const content = await zip.generateAsync({ type: "blob" });
+  const blobUrl = URL.createObjectURL(content);
+  const a = document.createElement('a');
+  a.href = blobUrl;
+  a.download = "studio_scene_sequence.zip";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+}
+</script>
+</body>
+</html>
