@@ -430,52 +430,71 @@ function setAspectRatio(ratio) {
   });
 }
 
-// ── ANALYSE (Vertex uniquement — JSON structuré) ──────────────────────────────
+// ── HELPER — fetch Vertex aiplatform (texte) ──────────────────────────────────
+async function vertexTextFetch(parts, responseSchema) {
+  const endpoint = `https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-3.1-flash-image-preview:generateContent?key=${encodeURIComponent(API_KEY)}`;
+  const body = {
+    contents: [{ role: 'user', parts }],
+    generationConfig: {
+      responseMimeType: 'application/json',
+      responseSchema
+    }
+  };
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  let data = {};
+  try { data = await res.json(); } catch(_) {}
+  if (!res.ok) {
+    const msg = data?.error?.message || `HTTP ${res.status}`;
+    throw new Error(msg);
+  }
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error("Réponse vide du modèle.");
+  return text;
+}
+
+// ── ANALYSE ───────────────────────────────────────────────────────────────────
 async function handleAnalyze() {
   if (!referenceImage) return;
   setLoadingBtn('analyzeBtn', true, '');
   hideError();
   try {
-    const ai = new GoogleGenAI({ apiKey: API_KEY });
-    const prompt = `CAPTURER L'ADN DE L'INSTANT — INVENTAIRE EXHAUSTIF ET DÉFINITIF.
-Analysez cette image comme le point Zéro absolu d'un récit cinématographique.
-Identifiez avec une précision chirurgicale :
-1. personnage : identité visuelle complète, tenue exacte (couleurs, matières, coupes), posture émotionnelle, énergie corporelle.
-2. environnement : géométrie du lieu, textures des surfaces, mobilier avec positions exactes, chaque petit objet visible.
-3. lumière : ambiance lumineuse précise, direction des ombres portées, température colorimétrique.
-RÈGLE ABSOLUE — ZÉRO INVENTION : Cataloguez UNIQUEMENT ce qui est visuellement présent dans l'image.
-Répondez EXCLUSIVEMENT en JSON.`;
+    const prompt = `CAPTURER L'ADN DE L'INSTANT — INVENTAIRE EXHAUSTIF ET DEFINITIF.
+Analysez cette image comme le point Zero absolu d'un recit cinematographique.
+Identifiez avec une precision chirurgicale :
+1. personnage : identite visuelle complete, tenue exacte (couleurs, matieres, coupes), posture emotionnelle, energie corporelle.
+2. environnement : geometrie du lieu, textures des surfaces, mobilier avec positions exactes, chaque petit objet visible.
+3. lumiere : ambiance lumineuse precise, direction des ombres portees, temperature colorimetrique.
+REGLE ABSOLUE : Cataloguez UNIQUEMENT ce qui est visuellement present dans l'image.
+Repondez EXCLUSIVEMENT en JSON valide selon le schema fourni.`;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.1-pro-preview',
-      contents: [{ parts: [
-        { inlineData: { mimeType: referenceMime, data: referenceImage } },
-        { text: prompt }
-      ]}],
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            personnage: { type: Type.OBJECT, properties: {
-              apparence: {type:Type.STRING}, expression_faciale:{type:Type.STRING}, posture:{type:Type.STRING},
-              vetements:{type:Type.OBJECT, properties:{haut:{type:Type.STRING},bas:{type:Type.STRING},chaussures:{type:Type.STRING}}, required:["haut","bas","chaussures"]},
-              objets_tenus:{type:Type.ARRAY, items:{type:Type.OBJECT, properties:{objet:{type:Type.STRING},couleur:{type:Type.STRING},matiere:{type:Type.STRING},position:{type:Type.STRING},contenu:{type:Type.STRING}}, required:["objet","couleur","matiere","position","contenu"]}}
-            }, required:["apparence","expression_faciale","posture","vetements","objets_tenus"]},
-            environnement: { type: Type.OBJECT, properties: {
-              lieu:{type:Type.STRING}, murs:{type:Type.STRING}, sol:{type:Type.STRING},
-              meubles:{type:Type.ARRAY, items:{type:Type.OBJECT, properties:{type:{type:Type.STRING},couleur:{type:Type.STRING},position:{type:Type.STRING}}, required:["type","couleur","position"]}},
-              objets_visibles:{type:Type.ARRAY, items:{type:Type.OBJECT, properties:{type:{type:Type.STRING},couleur:{type:Type.STRING},emplacement:{type:Type.STRING}}, required:["type","couleur","emplacement"]}}
-            }, required:["lieu","murs","sol","meubles","objets_visibles"]},
-            lumiere: { type: Type.OBJECT, properties: {type:{type:Type.STRING},direction:{type:Type.STRING},intensite:{type:Type.STRING}}, required:["type","direction","intensite"]}
-          },
-          required: ["personnage","environnement","lumiere"]
-        }
-      }
-    });
+    const schema = {
+      type: 'OBJECT',
+      properties: {
+        personnage: { type: 'OBJECT', properties: {
+          apparence: {type:'STRING'}, expression_faciale:{type:'STRING'}, posture:{type:'STRING'},
+          vetements:{type:'OBJECT', properties:{haut:{type:'STRING'},bas:{type:'STRING'},chaussures:{type:'STRING'}}, required:['haut','bas','chaussures']},
+          objets_tenus:{type:'ARRAY', items:{type:'OBJECT', properties:{objet:{type:'STRING'},couleur:{type:'STRING'},matiere:{type:'STRING'},position:{type:'STRING'},contenu:{type:'STRING'}}, required:['objet','couleur','matiere','position','contenu']}}
+        }, required:['apparence','expression_faciale','posture','vetements','objets_tenus']},
+        environnement: { type: 'OBJECT', properties: {
+          lieu:{type:'STRING'}, murs:{type:'STRING'}, sol:{type:'STRING'},
+          meubles:{type:'ARRAY', items:{type:'OBJECT', properties:{type:{type:'STRING'},couleur:{type:'STRING'},position:{type:'STRING'}}, required:['type','couleur','position']}},
+          objets_visibles:{type:'ARRAY', items:{type:'OBJECT', properties:{type:{type:'STRING'},couleur:{type:'STRING'},emplacement:{type:'STRING'}}, required:['type','couleur','emplacement']}}
+        }, required:['lieu','murs','sol','meubles','objets_visibles']},
+        lumiere: { type: 'OBJECT', properties: {type:{type:'STRING'},direction:{type:'STRING'},intensite:{type:'STRING'}}, required:['type','direction','intensite']}
+      },
+      required: ['personnage','environnement','lumiere']
+    };
 
-    const text = response.text;
-    if (!text) throw new Error("Réponse vide.");
+    const parts = [
+      { inlineData: { mimeType: referenceMime, data: referenceImage } },
+      { text: prompt }
+    ];
+
+    const text = await vertexTextFetch(parts, schema);
     const match = text.match(/\{[\s\S]*\}/);
     analysisData = JSON.parse(match ? match[0] : text);
     const objets = analysisData.personnage.objets_tenus.map(o => o.objet).join(', ') || 'Aucun objet';
@@ -484,7 +503,7 @@ Répondez EXCLUSIVEMENT en JSON.`;
     show('analysisResult');
     show('sequenceConfig');
     hide('emptyState');
-    showSuccess('Analyse terminée. Séquence prête.');
+    showSuccess('Analyse terminee. Sequence prete.');
   } catch(err) {
     showError('Erreur analyse : ' + err.message);
   }
@@ -492,51 +511,43 @@ Répondez EXCLUSIVEMENT en JSON.`;
 }
 
 // ── GÉNÉRATION MODE AVANT ─────────────────────────────────────────────────────
-async function handleGenerateAvant(ai) {
+async function handleGenerateAvant() {
   const prompt = `MODE AVANT — RECONSTRUCTION CAUSALE DE TIMELINE.
 
-Tu analyses une image figée comme une scène vivante ayant une histoire déjà vécue.
+Tu analyses une image figee comme une scene vivante ayant une histoire deja vecue.
 
-DONNÉES DE L'IMAGE FINALE (point d'arrivée) :
+DONNEES DE L'IMAGE FINALE (point d'arrivee) :
 - Lieu : ${analysisData.environnement.lieu}
 - Personnage : ${analysisData.personnage.apparence}
 - Posture actuelle : ${analysisData.personnage.posture}
 - Expression : ${analysisData.personnage.expression_faciale}
 - Objets visibles : ${analysisData.personnage.objets_tenus.map(o => o.objet + ' (' + o.contenu + ')').join(', ') || 'aucun'}
 - Objets dans l'environnement : ${analysisData.environnement.objets_visibles.map(o => o.type).join(', ') || 'aucun'}
-- Lumière : ${analysisData.lumiere.type}, direction ${analysisData.lumiere.direction}
+- Lumiere : ${analysisData.lumiere.type}, direction ${analysisData.lumiere.direction}
 
-MISSION — RECONSTRUIRE LES 5 MOMENTS QUI ONT CONDUIT À CET INSTANT :
+MISSION — RECONSTRUIRE LES 5 MOMENTS QUI ONT CONDUIT A CET INSTANT :
 
-RÈGLE 1 — CAUSALITÉ STRICTE : Chaque objet visible dans l'image finale doit avoir été introduit dans un moment précédent. Aucun élément ne peut apparaître sans transition logique préalable.
-RÈGLE 2 — MÉMOIRE PHYSIQUE DES OBJETS : verre progressivement entamé, chaise qui se recule, coussin déformé, vapeur qui apparaît. Jamais "placés" — toujours "utilisés naturellement".
-RÈGLE 3 — INERTIE HUMAINE : Chaque mouvement respecte le poids, les appuis, la dynamique musculaire, la fatigue naturelle.
-RÈGLE 4 — TEMPS RÉSIDUEL : Traces d'actions très récentes visibles (fumée, mouvement, chaleur, lumière récemment allumée).
-RÈGLE 5 — INTENTION COMPORTEMENTALE : Chaque action a une raison humaine crédible. Rien pour l'esthétique pure.
-RÈGLE 6 — PROGRESSION CHRONOLOGIQUE INVERSE :
-Scène 1 = il y a environ 12-15 minutes
-Scène 2 = il y a environ 8-10 minutes
-Scène 3 = il y a environ 4-6 minutes
-Scène 4 = il y a environ 1-2 minutes
-Scène 5 = l'instant juste avant l'image finale (quelques secondes)
+REGLE 1 : Chaque objet visible dans l'image finale doit avoir ete introduit dans un moment precedent.
+REGLE 2 : Les objets doivent montrer leur histoire : verre entame, chaise reculee, coussin deforme.
+REGLE 3 : Corps en transition physique coherente. Poids realiste, appuis credibles.
+REGLE 4 : Traces d'actions tres recentes visibles (fumee, mouvement, chaleur).
+REGLE 5 : Chaque action a une raison humaine credible. Rien pour l'esthetique pure.
+REGLE 6 — CHRONOLOGIE :
+Scene 1 = il y a environ 12-15 minutes
+Scene 2 = il y a environ 8-10 minutes
+Scene 3 = il y a environ 4-6 minutes
+Scene 4 = il y a environ 1-2 minutes
+Scene 5 = l'instant juste avant l'image finale (quelques secondes)
 
-Génère 5 descriptions de scènes précédentes, chronologiquement, reconstruisant la timeline invisible.
-Répondez EXCLUSIVEMENT en JSON avec une liste "scenes".`;
+Genere 5 descriptions de scenes precedentes, chronologiquement.
+Reponds en JSON valide avec une liste "scenes".`;
 
-  const response = await ai.models.generateContent({
-    model: 'gemini-3.1-pro-preview',
-    contents: [{ parts: [{ text: prompt }] }],
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: { scenes: { type: Type.ARRAY, items: { type: Type.STRING } } },
-        required: ["scenes"]
-      }
-    }
-  });
-  const text = response.text;
-  if (!text) throw new Error("Réponse vide.");
+  const schema = {
+    type: 'OBJECT',
+    properties: { scenes: { type: 'ARRAY', items: { type: 'STRING' } } },
+    required: ['scenes']
+  };
+  const text = await vertexTextFetch([{ text: prompt }], schema);
   const match = text.match(/\{[\s\S]*\}/);
   const data = JSON.parse(match ? match[0] : text);
   return data.scenes || [];
@@ -555,53 +566,44 @@ async function handleGenerateSequence() {
   const action = (!isAutoMode && !isAvantMode) ? $('actionDescription').value : null;
 
   try {
-    const ai = new GoogleGenAI({ apiKey: API_KEY });
     let scenes = [];
 
     if (isAvantMode) {
-      scenes = await handleGenerateAvant(ai);
-      $('storyboardTitle').innerHTML = '⏪ Timeline Invisible — Reconstruction Causale';
+      scenes = await handleGenerateAvant();
+      $('storyboardTitle').innerHTML = '&#9194; Timeline Invisible — Reconstruction Causale';
     } else {
-      const prompt = `ARC NARRATIF CINÉMATOGRAPHIQUE — PROTOCOLE 3 RÈGLES.
-ACTION PRINCIPALE : ${action || "Une séquence narrative complète commençant par l'image source"}.
+      const prompt = `ARC NARRATIF CINEMATOGRAPHIQUE — PROTOCOLE 3 REGLES.
+ACTION PRINCIPALE : ${action || "Une sequence narrative complete commencant par l'image source"}.
 CONTEXTE SOURCE :
 - Lieu : ${analysisData.environnement.lieu}
 - Personnage : ${analysisData.personnage.apparence}
 - Position initiale : ${analysisData.personnage.posture}
-- Objets présents : ${analysisData.personnage.objets_tenus.map(o => o.objet).join(', ') || 'aucun'}
-RÈGLE 1 — ZÉRO INVENTION : INTERDIT d'ajouter des objets absents de la source.
-RÈGLE 2 — PROGRESSION IMMÉDIATE : Scène 1 = mouvement déjà commencé. Pose de départ INTERDITE.
-RÈGLE 3 — NARRATION LINÉAIRE : 5 scènes distinctes, arc narratif réel, zéro redondance.
-Répondez EXCLUSIVEMENT en JSON avec une liste "scenes".`;
+- Objets presents : ${analysisData.personnage.objets_tenus.map(o => o.objet).join(', ') || 'aucun'}
+REGLE 1 : INTERDIT d'ajouter des objets absents de la source.
+REGLE 2 : Scene 1 = mouvement deja commence. Pose de depart INTERDITE.
+REGLE 3 : 5 scenes distinctes, arc narratif reel, zero redondance.
+Reponds en JSON valide avec une liste "scenes".`;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
-        contents: [{ parts: [{ text: prompt }] }],
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: { scenes: { type: Type.ARRAY, items: { type: Type.STRING } } },
-            required: ["scenes"]
-          }
-        }
-      });
-      const text = response.text;
-      if (!text) throw new Error("Réponse vide.");
+      const schema = {
+        type: 'OBJECT',
+        properties: { scenes: { type: 'ARRAY', items: { type: 'STRING' } } },
+        required: ['scenes']
+      };
+      const text = await vertexTextFetch([{ text: prompt }], schema);
       const match = text.match(/\{[\s\S]*\}/);
       const data = JSON.parse(match ? match[0] : text);
       scenes = data.scenes || [];
-      $('storyboardTitle').innerHTML = '🎬 Storyboard Temporel';
+      $('storyboardTitle').innerHTML = '&#127916; Storyboard Temporel';
     }
 
-    if (!scenes.length) throw new Error("Aucune scène générée.");
+    if (!scenes.length) throw new Error("Aucune scene generee.");
     generatedPrompts = scenes.map((s, i) => ({ id: `${Date.now()}-${i}`, scene: s }));
     renderStoryboard();
-    showSuccess(isAvantMode ? 'Timeline reconstruite — 5 moments retrouvés.' : 'Storyboard généré !');
+    showSuccess(isAvantMode ? 'Timeline reconstruite — 5 moments retrouves.' : 'Storyboard genere !');
   } catch(err) {
     showError('Erreur storyboard : ' + err.message);
   }
-  const genLabel = isAvantMode ? '⏪ RECONSTRUIRE LA TIMELINE INVISIBLE' : '✨ DÉPLOYER LA SÉQUENCE VÉCUE';
+  const genLabel = isAvantMode ? '&#9194; RECONSTRUIRE LA TIMELINE INVISIBLE' : '&#10024; DEPLOYER LA SEQUENCE VECUE';
   setLoadingBtn('generateBtn', false, genLabel);
 }
 
