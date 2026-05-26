@@ -26,7 +26,15 @@ h1{font-size:26px;font-weight:900;font-style:italic;text-transform:uppercase;mar
 .copy-btn.copied{background:rgba(74,222,128,0.15);border-color:rgba(74,222,128,0.4);color:#4ade80;}
 .btn{display:flex;align-items:center;justify-content:center;gap:10px;background:white;color:#050b18;border:none;border-radius:999px;padding:16px 32px;font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;cursor:pointer;text-decoration:none;transition:all 0.2s;box-shadow:0 10px 40px rgba(0,0,0,0.4);width:100%;}
 .btn:hover{background:#eff6ff;transform:translateY(-1px);}
+.result-box{background:rgba(74,222,128,0.05);border:1px solid rgba(74,222,128,0.25);border-radius:10px;padding:14px 16px;margin-top:20px;display:none;}
+.result-box.show{display:block;}
+.result-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;color:#4ade80;margin-bottom:8px;}
+.result-hint{font-size:12px;color:rgba(255,255,255,0.6);line-height:1.7;margin-bottom:10px;}
+.result-hint strong{color:white;}
 .note{margin-top:14px;font-size:11px;color:rgba(255,255,255,0.25);line-height:1.6;text-align:center;}
+.warning-box{background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.3);border-radius:10px;padding:12px 14px;margin-bottom:20px;}
+.warning-text{font-size:11px;color:rgba(245,158,11,0.9);line-height:1.7;}
+.warning-text strong{color:#f59e0b;}
 </style>
 </head>
 <body>
@@ -37,23 +45,37 @@ h1{font-size:26px;font-weight:900;font-style:italic;text-transform:uppercase;mar
   <h1>Studio Cinema</h1>
   <p class="sub">Deploie ton proxy en 5 minutes pour generer tes videos avec Veo.</p>
 
+  <div class="warning-box">
+    <p class="warning-text"><strong>Avant de commencer :</strong> tu dois avoir un compte Google Cloud avec la facturation activee et une cle API Vertex AI Express Mode. Les credits Google Cloud couvrent l utilisation.</p>
+  </div>
+
   <div class="steps">
-    <div class="step"><div class="num">1</div><div class="step-text">Clique sur <strong>Ouvrir Cloud Shell</strong> ci-dessous et connecte-toi avec ton compte Google Cloud</div></div>
+    <div class="step"><div class="num">1</div><div class="step-text">Clique sur <strong>Ouvrir Cloud Shell</strong> ci-dessous et connecte-toi avec ton compte Google</div></div>
     <div class="step"><div class="num">2</div><div class="step-text">Copie la commande ci-dessous et colle-la dans le terminal avec <strong>Ctrl+V</strong> puis <strong>Entree</strong></div></div>
-    <div class="step"><div class="num">3</div><div class="step-text">Attends <strong>3 minutes</strong> que le deploiement se termine</div></div>
-    <div class="step"><div class="num">4</div><div class="step-text">Copie l <strong>URL du service</strong> qui s affiche a la fin et colle-la dans Studio Cinema</div></div>
+    <div class="step"><div class="num">3</div><div class="step-text">Attends <strong>3 a 5 minutes</strong> que le deploiement se termine</div></div>
+    <div class="step"><div class="num">4</div><div class="step-text">A la fin tu verras <strong>URL PROXY</strong> s afficher — copie-la et colle-la dans Studio Cinema</div></div>
   </div>
 
   <div class="cmd-box">
     <div class="cmd-label">Commande a copier-coller</div>
-    <div class="cmd-text" id="cmdText">gcloud services enable run.googleapis.com cloudbuild.googleapis.com storage.googleapis.com aiplatform.googleapis.com --quiet && mkdir -p ~/proxy && cd ~/proxy && curl -fsSL https://raw.githubusercontent.com/studioirl/studio_irl/main/proxy/index.js -o index.js && curl -fsSL https://raw.githubusercontent.com/studioirl/studio_irl/main/proxy/package.json -o package.json && gcloud run deploy studio-cinema-proxy --source . --region europe-west1 --allow-unauthenticated --memory 512Mi --quiet</div>
+    <div class="cmd-text" id="cmdText">gcloud services enable run.googleapis.com cloudbuild.googleapis.com storage.googleapis.com aiplatform.googleapis.com --quiet && mkdir -p ~/proxy && cd ~/proxy && curl -fsSL https://raw.githubusercontent.com/studioirl/studio_irl/main/proxy/index.js -o index.js && curl -fsSL https://raw.githubusercontent.com/studioirl/studio_irl/main/proxy/package.json -o package.json && gcloud run deploy studio-cinema-proxy --source . --region europe-west1 --allow-unauthenticated --memory 512Mi --quiet && PROJECT=$(gcloud config get-value project) && BUCKET="studio-cinema-${PROJECT}" && gsutil mb -l europe-west1 gs://${BUCKET} 2>/dev/null || true && gsutil iam ch allUsers:objectViewer gs://${BUCKET} && echo "" && echo "=============================" && echo "=== DEPLOIEMENT TERMINE ===" && echo "=============================" && echo "" && echo "=== URL PROXY (a copier dans Studio Cinema) ===" && gcloud run services describe studio-cinema-proxy --region europe-west1 --format="value(status.url)" && echo "" && echo "=== BUCKET GCS ===" && echo "gs://${BUCKET}" && echo ""</div>
     <button class="copy-btn" id="copyBtn" onclick="copyCmd()">Copier la commande</button>
   </div>
 
   <a class="btn" href="https://shell.cloud.google.com" target="_blank">
     Ouvrir Cloud Shell
   </a>
-  <p class="note">Tes credits Google Cloud couvrent l utilisation. Tu ne paies rien tant que le credit n est pas epuise.</p>
+
+  <div class="result-box show">
+    <div class="result-label">A la fin du deploiement tu verras</div>
+    <p class="result-hint">
+      <strong>=== URL PROXY (a copier dans Studio Cinema) ===</strong><br>
+      https://studio-cinema-proxy-XXXXXXXXXX.europe-west1.run.app<br><br>
+      Copie cette URL et colle-la dans le champ <strong>URL de mon proxy</strong> sur l ecran d accueil de Studio Cinema.
+    </p>
+  </div>
+
+  <p class="note">Chaque eleve deploie son propre proxy — les frais vont sur ton propre compte Google Cloud.</p>
 </div>
 <script>
 function copyCmd(){
