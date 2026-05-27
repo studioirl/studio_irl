@@ -2,7 +2,7 @@ const http=require('http'),fetch=require('node-fetch'),{Storage}=require('@googl
 async function getProjectId(){const r=await fetch('http://metadata.google.internal/computeMetadata/v1/project/project-id',{headers:{'Metadata-Flavor':'Google'}});return r.text();}
 async function getAccessToken(){const r=await fetch('http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token',{headers:{'Metadata-Flavor':'Google'}});return(await r.json()).access_token;}
 let PROJECT=null,storage=null,BUCKET=null;
-async function init(){PROJECT=await getProjectId();BUCKET='studio-'+PROJECT;storage=new Storage({projectId:PROJECT});try{await storage.createBucket(BUCKET,{location:'EU'});}catch(e){}}
+async function init(){PROJECT=await getProjectId();BUCKET='studio-cinema-'+PROJECT;storage=new Storage({projectId:PROJECT});try{await storage.createBucket(BUCKET,{location:'EU'});}catch(e){}}
 async function saveToGCS(b64,fn){const f=storage.bucket(BUCKET).file(fn);await f.save(Buffer.from(b64,'base64'),{contentType:'video/mp4',metadata:{cacheControl:'public, max-age=3600'}});return`https://storage.googleapis.com/${BUCKET}/${fn}`;}
 const server=http.createServer(function(req,res){
 res.setHeader('Access-Control-Allow-Origin','*');res.setHeader('Access-Control-Allow-Methods','POST,GET,OPTIONS');res.setHeader('Access-Control-Allow-Headers','Content-Type');
