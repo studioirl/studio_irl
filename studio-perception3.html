@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STUDIO PERCEPTION — Vertex AI / kie.ai</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111111;
+    --surface2: #161616;
+    --red: #e02020;
+    --red-hot: #ff2828;
+    --red-dark: #8b0000;
+    --red-glow: rgba(224,32,32,0.18);
+    --red-dim: rgba(224,32,32,0.08);
+    --white: #f0f0f0;
+    --muted: #555;
+    --muted2: #333;
+    --border: #1f1f1f;
+    --border2: #2a2a2a;
+    --text: #d0d0d0;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+
+  /* ─── GRAIN OVERLAY ─── */
+  body::before{
+    content:'';position:fixed;inset:0;
+    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events:none;z-index:9999;opacity:.4;
+  }
+
+  /* ─── SPLASH ─── */
+  #splash{
+    position:fixed;inset:0;background:var(--bg);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    z-index:100;padding:32px;text-align:center;overflow-y:auto;
+  }
+  .splash-eye{
+    width:120px;height:120px;border-radius:50%;
+    border:2px solid var(--red);
+    display:flex;align-items:center;justify-content:center;
+    margin-bottom:40px;position:relative;
+    box-shadow:0 0 60px var(--red-glow), inset 0 0 30px rgba(224,32,32,0.05);
+    animation:eyePulse 3s ease-in-out infinite;
+  }
+  @keyframes eyePulse{0%,100%{box-shadow:0 0 40px var(--red-glow),inset 0 0 20px rgba(224,32,32,0.05)}50%{box-shadow:0 0 80px rgba(224,32,32,0.35),inset 0 0 40px rgba(224,32,32,0.12)}}
+  .splash-eye::before{
+    content:'';position:absolute;inset:-6px;border-radius:50%;
+    border:1px solid rgba(224,32,32,0.2);animation:eyePulse 3s ease-in-out infinite reverse;
+  }
+  .splash-eye svg{width:52px;height:52px;stroke:var(--red);fill:none;stroke-width:1;}
+
+  #splash h1{
+    font-family:'Bebas Neue',sans-serif;
+    font-size:clamp(4rem,14vw,9rem);letter-spacing:.08em;
+    color:var(--white);line-height:.9;margin-bottom:6px;
+  }
+  #splash h1 span{color:var(--red);}
+  .splash-line{height:1px;width:300px;background:linear-gradient(90deg,transparent,var(--red),transparent);margin:20px auto;}
+  .splash-tagline{
+    font-size:clamp(.75rem,2vw,1rem);font-weight:400;color:var(--muted);
+    font-style:italic;letter-spacing:.05em;margin-bottom:48px;
+    max-width:500px;line-height:1.7;
+  }
+  .splash-tagline strong{color:var(--red);font-style:normal;font-weight:600;}
+
+  .api-box{
+    width:min(500px,100%);background:var(--surface);border-radius:1.5rem;
+    padding:32px;border:1px solid var(--border2);margin-bottom:28px;
+    box-shadow:0 40px 80px rgba(0,0,0,.6);
+  }
+  .api-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.2em;color:var(--muted);margin-bottom:14px;text-align:left;}
+
+  .engine-selector{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px;}
+  .engine-btn{
+    padding:18px 10px;border:1px solid var(--border2);border-radius:1rem;
+    background:var(--surface2);cursor:pointer;font-family:'Inter',sans-serif;
+    font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;
+    color:var(--muted);transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:6px;
+  }
+  .engine-btn:hover{border-color:var(--red);color:var(--white);}
+  .engine-btn .engine-price{font-size:8px;opacity:.6;font-weight:500;letter-spacing:.05em;}
+  .engine-btn.active-vertex{background:var(--red-dark);border-color:var(--red);color:var(--white);box-shadow:0 0 30px var(--red-glow);}
+  .engine-btn.active-kie{background:linear-gradient(135deg,#1a0000,#2d0a0a);border-color:var(--red-hot);color:var(--red-hot);box-shadow:0 0 30px rgba(255,40,40,0.2);}
+
+  #splash input[type="password"]{
+    width:100%;padding:16px 18px;border:1px solid var(--border2);border-radius:1rem;
+    font-family:'DM Mono',monospace;font-size:13px;color:var(--white);
+    background:var(--bg);outline:none;transition:border-color .2s,box-shadow .2s;
+  }
+  #splash input[type="password"]:focus{border-color:var(--red);box-shadow:0 0 20px var(--red-glow);}
+  #splash input[type="password"]::placeholder{color:#333;}
+  .enter-btn{
+    margin-top:14px;width:100%;padding:20px;border:none;border-radius:1.2rem;
+    background:linear-gradient(135deg,var(--red-dark),var(--red),#ff0000);
+    color:white;font-family:'Bebas Neue',sans-serif;font-weight:400;
+    font-size:18px;letter-spacing:.4em;cursor:pointer;
+    transition:transform .15s,box-shadow .15s;
+    box-shadow:0 20px 50px rgba(224,32,32,0.4);
+  }
+  .enter-btn:hover{transform:scale(1.02);box-shadow:0 30px 60px rgba(224,32,32,0.5);}
+  .enter-btn:active{transform:scale(.98);}
+
+  .billing-link{
+    display:flex;align-items:center;gap:8px;color:var(--muted);font-size:10px;
+    font-weight:600;text-transform:uppercase;letter-spacing:.2em;text-decoration:none;transition:color .2s;
+  }
+  .billing-link:hover{color:var(--red);}
+
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+  /* ─── APP ─── */
+  #app{display:none;min-height:100vh;flex-direction:column;}
+  #app.visible{display:flex;}
+
+  header{
+    padding:18px 32px;display:flex;justify-content:space-between;align-items:center;
+    position:sticky;top:0;background:rgba(10,10,10,.95);
+    backdrop-filter:blur(20px);z-index:50;gap:16px;flex-wrap:wrap;
+    border-bottom:1px solid var(--border2);
+  }
+  .header-left{display:flex;align-items:center;gap:14px;cursor:pointer;}
+  .header-logo{
+    width:42px;height:42px;border-radius:10px;
+    background:linear-gradient(135deg,var(--red-dark),var(--red));
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 0 20px var(--red-glow);transition:transform .2s;
+  }
+  .header-logo:hover{transform:scale(1.05);}
+  .header-logo svg{width:22px;height:22px;stroke:white;fill:none;stroke-width:1.5;}
+  .header-title h1{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.3em;color:var(--white);}
+  .header-badges{display:flex;gap:8px;margin-top:3px;}
+  .badge{font-size:8px;font-weight:700;padding:3px 8px;border-radius:999px;text-transform:uppercase;letter-spacing:.15em;}
+  .badge-red{background:var(--red);color:white;}
+  .badge-dim{color:var(--red);border:1px solid var(--red-dark);background:var(--red-dim);}
+  .status-dot{width:10px;height:10px;background:var(--red);border-radius:50%;box-shadow:0 0 10px var(--red);animation:pulse 2s infinite;}
+
+  main{flex:1;max-width:1600px;margin:0 auto;width:100%;padding:32px;display:grid;grid-template-columns:1fr;gap:32px;}
+  @media(min-width:1100px){main{grid-template-columns:5fr 7fr;}}
+
+  .card{background:var(--surface);border-radius:1.5rem;padding:32px;border:1px solid var(--border);position:relative;overflow:hidden;}
+  .card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--red-dark),transparent);opacity:.6;}
+  .card-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5em;margin-bottom:24px;display:flex;align-items:center;gap:10px;color:var(--red);}
+  .card-title svg{width:16px;height:16px;fill:none;stroke:var(--red);stroke-width:1.5;}
+
+  /* ─── UPLOAD ─── */
+  .upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;}
+  .upload-thumb{aspect-ratio:1;border-radius:1rem;overflow:hidden;border:1px solid var(--border2);position:relative;background:var(--bg);}
+  .upload-thumb img{width:100%;height:100%;object-fit:cover;}
+  .upload-thumb .remove-btn{
+    position:absolute;top:8px;right:8px;background:rgba(0,0,0,.8);
+    border:1px solid var(--red);border-radius:50%;width:26px;height:26px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;color:var(--red);transition:all .2s;
+  }
+  .upload-thumb .remove-btn:hover{background:var(--red);color:white;}
+  .upload-thumb .ref-badge{position:absolute;bottom:8px;left:8px;background:var(--red);color:white;font-size:7px;font-weight:700;padding:2px 6px;border-radius:4px;text-transform:uppercase;letter-spacing:.1em;}
+  .upload-add{
+    aspect-ratio:1;border-radius:1rem;border:1px dashed var(--border2);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:8px;cursor:pointer;background:var(--surface2);transition:all .2s;position:relative;overflow:hidden;
+  }
+  .upload-add:hover{border-color:var(--red);background:var(--red-dim);}
+  .upload-add svg{width:22px;height:22px;stroke:var(--red);fill:none;stroke-width:1.5;}
+  .upload-add span{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.2em;color:var(--muted);text-align:center;padding:0 8px;}
+  .upload-add input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+
+  textarea{
+    width:100%;padding:18px;border:1px solid var(--border2);border-radius:1rem;
+    font-family:'Inter',sans-serif;font-size:13px;color:var(--text);
+    background:var(--surface2);resize:none;outline:none;
+    transition:border-color .2s,box-shadow .2s;min-height:110px;line-height:1.7;
+  }
+  textarea:focus{border-color:var(--red);box-shadow:0 0 20px var(--red-glow);}
+  textarea::placeholder{color:#333;}
+
+  /* ─── FORMAT GRID ─── */
+  .format-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+  .fmt-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:16px 6px;border-radius:.9rem;border:1px solid var(--border2);background:var(--surface2);cursor:pointer;transition:all .2s;color:var(--muted);}
+  .fmt-btn:hover{border-color:var(--red);color:var(--white);}
+  .fmt-btn.active{background:var(--red-dark);border-color:var(--red);color:var(--white);box-shadow:0 0 20px var(--red-glow);}
+  .fmt-btn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.5;}
+  .fmt-btn span{font-size:8px;font-weight:700;letter-spacing:.1em;}
+
+  /* ─── TOGGLE BUTTONS ─── */
+  .toggle-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .tog-btn{
+    padding:14px;border:1px solid var(--border2);border-radius:.9rem;
+    background:var(--surface2);cursor:pointer;font-family:'Inter',sans-serif;
+    font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.15em;
+    color:var(--muted);transition:all .2s;
+  }
+  .tog-btn:hover{border-color:var(--red);color:var(--white);}
+  .tog-btn.active-red{background:var(--red-dark);border-color:var(--red);color:var(--white);box-shadow:0 0 15px var(--red-glow);}
+  .tog-btn.active-dim{background:#1a0a0a;border-color:#550000;color:#ff6666;}
+
+  /* ─── CHIPS ─── */
+  .chips{display:flex;flex-wrap:wrap;gap:8px;}
+  .chip{
+    padding:9px 14px;border:1px solid var(--border2);border-radius:.6rem;
+    background:var(--surface2);cursor:pointer;font-family:'Inter',sans-serif;
+    font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.15em;
+    color:var(--muted);transition:all .2s;
+  }
+  .chip:hover{border-color:var(--red);color:var(--white);}
+  .chip.active{background:var(--red);border-color:var(--red);color:white;box-shadow:0 4px 14px rgba(224,32,32,0.4);}
+
+  /* ─── SLIDERS ─── */
+  .slider-row{margin-bottom:18px;}
+  .slider-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .slider-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.2em;color:var(--muted);}
+  .slider-value{font-family:'DM Mono',monospace;font-size:10px;font-weight:500;color:var(--red);background:var(--red-dim);padding:3px 8px;border-radius:5px;border:1px solid var(--red-dark);}
+  input[type="range"]{width:100%;height:4px;appearance:none;background:var(--border2);border-radius:2px;cursor:pointer;outline:none;}
+  input[type="range"]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;border-radius:50%;background:var(--red);cursor:pointer;transition:transform .15s;box-shadow:0 0 8px var(--red-glow);}
+  input[type="range"]::-webkit-slider-thumb:hover{transform:scale(1.3);}
+
+  .divider{height:1px;background:var(--border);margin:20px 0;}
+  .section-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.2em;color:var(--muted);margin-bottom:10px;}
+
+  /* ─── SWITCH ─── */
+  .perception-row{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 18px;background:var(--surface2);border-radius:1rem;
+    border:1px solid var(--border2);margin-bottom:20px;transition:all .2s;
+  }
+  .perception-row.on{border-color:var(--red);background:#0f0505;box-shadow:0 0 20px var(--red-glow);}
+  .perception-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;transition:all .2s;background:var(--border2);}
+  .perception-icon.on{background:var(--red);box-shadow:0 0 20px var(--red-glow);}
+  .perception-icon svg{width:20px;height:20px;fill:none;stroke-width:1.5;stroke:var(--muted);}
+  .perception-icon.on svg{stroke:white;}
+  .perception-text h4{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.15em;color:var(--white);}
+  .perception-text p{font-size:8px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-top:2px;}
+  .switch-wrap{cursor:pointer;}
+  .switch{width:48px;height:26px;background:var(--border2);border-radius:999px;position:relative;transition:background .3s;}
+  .switch.on{background:var(--red);}
+  .switch-thumb{position:absolute;top:3px;left:3px;width:20px;height:20px;background:white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,.4);transition:transform .3s;}
+  .switch.on .switch-thumb{transform:translateX(22px);}
+
+  /* ─── GENERATE BUTTON ─── */
+  .gen-btn{
+    width:100%;padding:36px;border:none;border-radius:2rem;
+    background:linear-gradient(135deg,#1a0000,var(--red-dark),var(--red));
+    color:white;font-family:'Bebas Neue',sans-serif;font-weight:400;
+    font-size:20px;letter-spacing:.5em;
+    cursor:pointer;transition:transform .2s,box-shadow .2s;
+    box-shadow:0 20px 60px rgba(224,32,32,0.35);position:relative;overflow:hidden;
+    display:flex;flex-direction:column;align-items:center;gap:10px;
+  }
+  .gen-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent 0%,rgba(255,255,255,.04) 50%,transparent 100%);pointer-events:none;}
+  .gen-btn:hover:not(:disabled){transform:scale(1.02);box-shadow:0 30px 70px rgba(224,32,32,0.5);}
+  .gen-btn:active:not(:disabled){transform:scale(.98);}
+  .gen-btn:disabled{background:var(--surface2);color:var(--muted);cursor:not-allowed;box-shadow:none;}
+  .gen-btn .btn-row{display:flex;align-items:center;gap:18px;}
+  .gen-btn svg{width:28px;height:28px;}
+  .gen-btn.loading svg{animation:spin 1s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .gen-loading-msg{font-family:'DM Mono',monospace;font-size:9px;font-weight:400;letter-spacing:.15em;color:rgba(255,255,255,.5);}
+
+  /* ─── ANALYSIS PANEL ─── */
+  .analysis-panel{
+    background:var(--surface2);border:1px solid var(--border2);border-radius:1.2rem;
+    padding:24px;margin-top:20px;display:none;
+  }
+  .analysis-panel.visible{display:block;}
+  .analysis-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.3em;color:var(--red);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+  .analysis-title::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--red-dark),transparent);}
+  .analysis-text{font-size:12px;font-weight:400;color:var(--text);line-height:1.9;font-style:italic;}
+  .analysis-text strong{color:var(--red);font-style:normal;font-weight:600;}
+  .analysis-loading{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:11px;}
+  .analysis-loading svg{animation:spin 1s linear infinite;stroke:var(--red);fill:none;stroke-width:1.5;}
+
+  .score-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:16px;}
+  .score-item{background:var(--bg);border:1px solid var(--border);border-radius:.8rem;padding:14px;}
+  .score-label{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.15em;color:var(--muted);margin-bottom:8px;}
+  .score-bar{height:3px;background:var(--border2);border-radius:2px;overflow:hidden;}
+  .score-fill{height:100%;background:linear-gradient(90deg,var(--red-dark),var(--red));border-radius:2px;transition:width 1s ease;}
+  .score-val{font-family:'DM Mono',monospace;font-size:11px;color:var(--red);margin-top:5px;}
+
+  /* ─── ERROR ─── */
+  .error-box{padding:18px;border-radius:1rem;border:1px solid #3d0000;background:#0f0000;display:none;gap:14px;align-items:flex-start;margin-top:16px;}
+  .error-box.show{display:flex;}
+  .error-box svg{width:20px;height:20px;stroke:var(--red);fill:none;stroke-width:2;flex-shrink:0;}
+  .error-box p{font-size:10px;font-weight:600;color:#ff6666;letter-spacing:.05em;line-height:1.7;text-transform:uppercase;}
+
+  /* ─── RESULTS ─── */
+  .results-header{
+    display:flex;justify-content:space-between;align-items:flex-end;
+    border-bottom:1px solid var(--border2);padding-bottom:20px;margin-bottom:36px;flex-wrap:wrap;gap:16px;
+  }
+  .results-title h2{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:.5em;color:var(--white);}
+  .results-status{display:flex;align-items:center;gap:8px;margin-top:5px;}
+  .live-dot{width:8px;height:8px;border-radius:50%;background:var(--red);animation:ping .8s infinite;}
+  @keyframes ping{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.4)}}
+  .results-actions{display:flex;gap:10px;}
+  .btn-reset{
+    display:flex;align-items:center;gap:7px;padding:10px 16px;
+    background:#0f0000;color:#ff4444;border:1px solid #3d0000;border-radius:.7rem;
+    font-family:'Inter',sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.15em;cursor:pointer;transition:all .2s;
+  }
+  .btn-reset:hover{background:#3d0000;color:white;}
+  .btn-reset svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;}
+  .btn-dl-all{
+    display:flex;align-items:center;gap:7px;padding:10px 16px;
+    background:var(--red-dark);color:white;border:none;border-radius:.7rem;
+    font-family:'Inter',sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.15em;cursor:pointer;transition:all .2s;
+  }
+  .btn-dl-all:hover{background:var(--red);}
+  .btn-dl-all svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;}
+
+  .empty-state{
+    height:580px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    border:1px dashed var(--border2);border-radius:3rem;gap:28px;
+  }
+  .empty-icon{
+    width:130px;height:130px;border-radius:50%;background:var(--surface);
+    border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;
+    box-shadow:0 0 60px var(--red-glow);
+  }
+  .empty-icon svg{width:60px;height:60px;stroke:var(--border2);fill:none;stroke-width:.8;}
+  .empty-text{text-align:center;}
+  .empty-text p:first-child{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:.8em;color:#222;}
+  .empty-text p:last-child{font-size:11px;color:#333;font-weight:400;font-style:italic;margin-top:6px;}
+
+  /* ─── IMAGE CARD ─── */
+  .img-card{
+    background:var(--surface);border-radius:2rem;overflow:hidden;
+    border:1px solid var(--border);margin-bottom:40px;transition:transform .4s;
+  }
+  .img-card:hover{transform:scale(1.005);}
+  .img-thumb{position:relative;cursor:pointer;overflow:hidden;}
+  .img-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+  .img-thumb .ar-9-16{aspect-ratio:9/16;}
+  .img-thumb .ar-16-9{aspect-ratio:16/9;}
+  .img-thumb .ar-4-5{aspect-ratio:4/5;}
+  .img-thumb .ar-1-1{aspect-ratio:1;}
+  .img-overlay{position:absolute;inset:0;background:rgba(0,0,0,.4);opacity:0;transition:opacity .3s;display:flex;align-items:center;justify-content:center;}
+  .img-card:hover .img-overlay{opacity:1;}
+  .dl-circle{background:var(--red);padding:24px;border-radius:50%;box-shadow:0 10px 30px rgba(224,32,32,.5);transform:scale(.7);transition:transform .4s;}
+  .img-card:hover .dl-circle{transform:scale(1);}
+  .dl-circle svg{width:36px;height:36px;stroke:white;fill:none;stroke-width:2;}
+  .img-badges{position:absolute;top:20px;left:20px;display:flex;flex-direction:column;gap:6px;}
+  .img-badge{padding:5px 12px;border-radius:.8rem;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;}
+  .img-badge-white{background:rgba(0,0,0,.7);color:var(--white);border:1px solid rgba(255,255,255,.1);}
+  .img-badge-red{background:linear-gradient(135deg,var(--red-dark),var(--red));color:white;}
+  .img-badge-kie{background:#1a0000;color:var(--red-hot);border:1px solid var(--red-dark);}
+  .img-info{padding:32px;}
+  .img-meta{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;}
+  .img-meta-txt{display:flex;flex-direction:column;gap:4px;}
+  .img-meta-txt span{font-family:'DM Mono',monospace;font-size:9px;font-weight:400;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;}
+  .btn-dl{padding:10px 18px;background:var(--red-dark);color:white;border:none;border-radius:.6rem;font-family:'Inter',sans-serif;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.15em;cursor:pointer;transition:all .15s;}
+  .btn-dl:hover{background:var(--red);}
+
+  /* ─── DIAGNOSTIC CARD (dans les résultats) ─── */
+  .diagnostic-box{
+    margin:0 32px 28px;padding:24px;
+    background:var(--bg);border:1px solid var(--border2);border-radius:1rem;
+    border-left:3px solid var(--red);
+  }
+  .diagnostic-label{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.3em;color:var(--red);margin-bottom:12px;}
+  .diagnostic-content{font-size:12px;color:var(--text);line-height:1.9;font-style:italic;}
+  .diagnostic-content strong{color:#ff6666;font-style:normal;}
+
+  footer{padding:40px;text-align:center;border-top:1px solid var(--border);}
+  footer p{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1em;color:#222;}
+  footer span{color:var(--red);}
+
+  .mobile-warn{margin:16px 24px 0;padding:14px 18px;background:#0f0800;border:1px solid #331500;border-radius:1rem;display:none;gap:10px;align-items:flex-start;}
+  .mobile-warn.show{display:flex;}
+  .mobile-warn svg{flex-shrink:0;width:18px;height:18px;stroke:#ff8800;fill:none;stroke-width:2;}
+  .mobile-warn p{font-size:11px;font-weight:600;color:#ff8800;line-height:1.5;}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-eye">
+    <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/></svg>
+  </div>
+  <h1>STUDIO<br><span>PERCEPTION</span></h1>
+  <div class="splash-line"></div>
+  <p class="splash-tagline">
+    « Studio Perception ne cherche pas à créer de belles images.<br>
+    Il cherche à créer des images que le <strong>cerveau humain ressent comme vraies</strong>. »
+  </p>
+
+  <div class="api-box">
+    <p class="api-label">⚡ Moteur de génération</p>
+    <div class="engine-selector">
+      <button class="engine-btn active-vertex" id="btn-vertex" onclick="selectEngine('vertex')">
+        <span>🔷 Vertex AI</span>
+        <span class="engine-price">Clé AQ... · Gemini Flash Image</span>
+      </button>
+      <button class="engine-btn" id="btn-kie" onclick="selectEngine('kie')">
+        <span>🍌 kie.ai</span>
+        <span class="engine-price">Clé kie_... · Nano Banana Pro</span>
+      </button>
+    </div>
+    <p class="api-label" id="keyLabel">🔑 Clé API Vertex AI Express Mode</p>
+    <input type="password" id="apiKeyInput" placeholder="AQ..." autocomplete="off">
+    <button class="enter-btn" onclick="enterStudio()">ENTRER DANS LE STUDIO</button>
+  </div>
+
+  <a href="#" id="helpLink" target="_blank" class="billing-link">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <span id="helpText">Obtenir une clé Vertex AI Express Mode</span>
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+  </a>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header>
+    <div class="header-left" onclick="showSplash()">
+      <div class="header-logo">
+        <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      </div>
+      <div class="header-title">
+        <h1>STUDIO PERCEPTION</h1>
+        <div class="header-badges">
+          <span class="badge badge-red">ANALYSE 4K</span>
+          <span class="badge badge-dim" id="engineBadge">VERTEX AI</span>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div style="text-align:right;">
+        <p style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.2em;color:var(--muted);">Moteur Psychologique</p>
+        <p style="font-size:8px;font-weight:500;color:var(--red);text-transform:uppercase;letter-spacing:.1em;" id="modelLabel">Gemini 3.1 Flash Image Preview</p>
+      </div>
+      <div style="width:40px;height:40px;border-radius:50%;border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;">
+        <div class="status-dot"></div>
+      </div>
+    </div>
+  </header>
+
+  <div id="mobileWarn" class="mobile-warn">
+    <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+    <p>MODE MOBILE — Génération plus lente. Relances automatiques si serveur saturé.</p>
+  </div>
+
+  <main>
+    <!-- PANNEAU GAUCHE -->
+    <div style="display:flex;flex-direction:column;gap:24px;">
+
+      <!-- 01. INTENTION -->
+      <div class="card">
+        <p class="card-title">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          01. INTENTION ÉMOTIONNELLE
+        </p>
+        <p class="section-label" style="margin-bottom:10px;">Qu'est-ce que tu voulais faire ressentir ?</p>
+        <div class="chips" style="margin-bottom:18px;" id="emotionChips">
+          <button class="chip active" id="em-empathie" onclick="setEmotion('empathie')">Empathie</button>
+          <button class="chip" id="em-proximite" onclick="setEmotion('proximite')">Proximité</button>
+          <button class="chip" id="em-nostalgie" onclick="setEmotion('nostalgie')">Nostalgie</button>
+          <button class="chip" id="em-malaise" onclick="setEmotion('malaise')">Malaise</button>
+          <button class="chip" id="em-tension" onclick="setEmotion('tension')">Tension</button>
+          <button class="chip" id="em-attachement" onclick="setEmotion('attachement')">Attachement</button>
+          <button class="chip" id="em-authenticite" onclick="setEmotion('authenticite')">Authenticité</button>
+          <button class="chip" id="em-solitude" onclick="setEmotion('solitude')">Solitude</button>
+          <button class="chip" id="em-desir" onclick="setEmotion('desir')">Désir</button>
+          <button class="chip" id="em-douceur" onclick="setEmotion('douceur')">Douceur</button>
+        </div>
+        <textarea id="subjectInput" placeholder="Décris la scène, le contexte, l'atmosphère... Studio Perception l'analysera psychologiquement et reconstruira l'image pour maximiser son impact émotionnel."></textarea>
+      </div>
+
+      <!-- 02. IMAGES DE RÉFÉRENCE -->
+      <div class="card">
+        <p class="card-title">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          02. IMAGES À ANALYSER
+        </p>
+        <div id="uploadGrid" class="upload-grid"></div>
+      </div>
+
+      <!-- 03. FORMAT -->
+      <div class="card">
+        <p class="card-title">
+          <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="18" rx="2"/><line x1="8" y1="21" x2="8" y2="3"/><line x1="16" y1="21" x2="16" y2="3"/></svg>
+          03. CADRAGE DE RECONSTRUCTION
+        </p>
+        <div class="format-grid">
+          <button class="fmt-btn" data-ar="9:16" onclick="setAR('9:16',this)">
+            <svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/></svg><span>9:16</span>
+          </button>
+          <button class="fmt-btn" data-ar="16:9" onclick="setAR('16:9',this)">
+            <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="10" rx="2"/></svg><span>16:9</span>
+          </button>
+          <button class="fmt-btn" data-ar="4:5" onclick="setAR('4:5',this)">
+            <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/></svg><span>4:5</span>
+          </button>
+          <button class="fmt-btn active" data-ar="1:1" onclick="setAR('1:1',this)">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/></svg><span>1:1</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 04. PARAMÈTRES PSYCHOLOGIQUES -->
+      <div class="card">
+        <p class="card-title">
+          <svg viewBox="0 0 24 24"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2v-4M9 21H5a2 2 0 0 1-2-2v-4m0 0h18"/></svg>
+          04. CALIBRAGE PSYCHOLOGIQUE
+        </p>
+
+        <p class="section-label">Mode reconstruction</p>
+        <div class="toggle-grid" style="margin-bottom:18px;">
+          <button class="tog-btn active-red" id="mode-reconstruct" onclick="setMode('reconstruct')">Reconstruction</button>
+          <button class="tog-btn" id="mode-analyse" onclick="setMode('analyse')">Analyse Pure</button>
+        </div>
+
+        <p class="section-label">Niveau de brutalité diagnostic</p>
+        <div class="toggle-grid" style="margin-bottom:18px;">
+          <button class="tog-btn active-dim" id="brutal-full" onclick="setBrutal('full')">Sans Filtre</button>
+          <button class="tog-btn" id="brutal-soft" onclick="setBrutal('soft')">Nuancé</button>
+        </div>
+
+        <p class="section-label">Focus psychologique</p>
+        <div class="chips" style="margin-bottom:18px;">
+          <button class="chip active" id="focus-regard" onclick="setFocusType('regard')">Regard</button>
+          <button class="chip" id="focus-posture" onclick="setFocusType('posture')">Posture</button>
+          <button class="chip" id="focus-lumiere" onclick="setFocusType('lumiere')">Lumière</button>
+          <button class="chip" id="focus-contexte" onclick="setFocusType('contexte')">Contexte</button>
+          <button class="chip" id="focus-global" onclick="setFocusType('global')">Global</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="perception-row" id="perceptionRow">
+          <div style="display:flex;align-items:center;gap:14px;">
+            <div class="perception-icon" id="perceptionIcon">
+              <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+            </div>
+            <div class="perception-text">
+              <h4>Simulation Cerveau Humain</h4>
+              <p id="perceptionStatus">Mode standard</p>
+            </div>
+          </div>
+          <div class="switch-wrap" onclick="togglePerception()">
+            <div class="switch" id="perceptionSwitch"><div class="switch-thumb"></div></div>
+          </div>
+        </div>
+
+        <div class="slider-row">
+          <div class="slider-header"><span class="slider-label">Impact Émotionnel</span><span class="slider-value" id="vImpact">75%</span></div>
+          <input type="range" min="0" max="100" value="75" oninput="updateSlider('impact',this.value)">
+        </div>
+        <div class="slider-row">
+          <div class="slider-header"><span class="slider-label">Crédibilité Humaine</span><span class="slider-value" id="vCredibility">80%</span></div>
+          <input type="range" min="0" max="100" value="80" oninput="updateSlider('credibility',this.value)">
+        </div>
+        <div class="slider-row">
+          <div class="slider-header"><span class="slider-label">Tension Visuelle</span><span class="slider-value" id="vTension">60%</span></div>
+          <input type="range" min="0" max="100" value="60" oninput="updateSlider('tension',this.value)">
+        </div>
+        <div class="slider-row">
+          <div class="slider-header"><span class="slider-label">Chaos Maîtrisé</span><span class="slider-value" id="vChaos">45%</span></div>
+          <input type="range" min="0" max="100" value="45" oninput="updateSlider('chaos',this.value)">
+        </div>
+      </div>
+
+      <!-- BOUTON GÉNÉRER -->
+      <button class="gen-btn" id="genBtn" onclick="generate()">
+        <div class="btn-row">
+          <svg id="genIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+          </svg>
+          <span id="genLabel">ANALYSER & RECONSTRUIRE</span>
+        </div>
+        <span class="gen-loading-msg" id="genMsg" style="display:none;"></span>
+      </button>
+
+      <div class="error-box" id="errorBox">
+        <svg viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <p id="errorText"></p>
+      </div>
+    </div>
+
+    <!-- PANNEAU DROIT — RÉSULTATS -->
+    <div>
+      <div class="results-header">
+        <div class="results-title">
+          <h2>RECONSTRUCTIONS</h2>
+          <div class="results-status">
+            <div class="live-dot"></div>
+            <span style="font-size:9px;font-weight:700;color:var(--red);letter-spacing:.3em;text-transform:uppercase;">PERCEPTION ACTIVE</span>
+            <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);font-weight:400;margin-left:14px;" id="captureCount">0 ANALYSES</span>
+          </div>
+        </div>
+        <div class="results-actions" id="resultsActions" style="display:none;">
+          <button class="btn-reset" onclick="resetAll()">
+            <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.21"/></svg>
+            Reset
+          </button>
+          <button class="btn-dl-all" id="dlAllBtn" onclick="downloadAll()" style="display:none;">
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Tout télécharger
+          </button>
+        </div>
+      </div>
+
+      <div id="emptyState" class="empty-state">
+        <div class="empty-icon">
+          <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </div>
+        <div class="empty-text">
+          <p>ATTENTE DE SIGNAL</p>
+          <p>Le studio observe. Donne-lui une image à analyser.</p>
+        </div>
+      </div>
+
+      <div id="resultsContainer"></div>
+    </div>
+  </main>
+
+  <footer>
+    <p>STUDIO <span>PERCEPTION</span> — 2025 · <span id="footerEngine">Vertex AI</span> · Analyse Psychologique Humaine</p>
+  </footer>
+</div>
+
+<script>
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let apiKey = '';
+let selectedEngine = 'vertex';
+let avatarImages = [];
+let results = [];
+let loading = false;
+let aspectRatio = '1:1';
+let emotion = 'empathie';
+let reconstructMode = 'reconstruct';
+let brutalLevel = 'full';
+let focusType = 'regard';
+let humanPerceptionMode = false;
+let sliders = { impact: 75, credibility: 80, tension: 60, chaos: 45 };
+
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+const STORAGE = {
+  settings: 'studio-perception-v1-settings',
+  prompt: 'studio-perception-v1-prompt',
+  results: 'studio-perception-v1-results'
+};
+
+const LOADING_MSGS_VERTEX = [
+  "Initialisation du moteur perceptif...",
+  "Analyse psychologique de la scène...",
+  "Vertex traite les références...",
+  "Reconstruction émotionnelle en cours...",
+  "Serveur chargé, nouvelle tentative..."
+];
+const LOADING_MSGS_KIE = [
+  "Envoi vers Nano Banana Pro...",
+  "Analyse psychologique en cours...",
+  "Nano Banana Pro reconstruit la scène...",
+  "Rendu haute fidélité émotionnelle...",
+  "Finalisation..."
+];
+
+let loadingMsgIdx = 0, loadingInterval = null;
+
+// ─── MOTEUR ───────────────────────────────────────────────────────────────────
+function selectEngine(engine) {
+  selectedEngine = engine;
+  const bV = document.getElementById('btn-vertex');
+  const bK = document.getElementById('btn-kie');
+  const lbl = document.getElementById('keyLabel');
+  const inp = document.getElementById('apiKeyInput');
+  const hl = document.getElementById('helpLink');
+  const ht = document.getElementById('helpText');
+  if (engine === 'vertex') {
+    bV.className = 'engine-btn active-vertex';
+    bK.className = 'engine-btn';
+    lbl.textContent = '🔑 Clé API Vertex AI Express Mode';
+    inp.placeholder = 'AQ...';
+    hl.href = 'https://cloud.google.com/vertex-ai/generative-ai/docs/start/express-mode/overview';
+    ht.textContent = 'Obtenir une clé Vertex AI Express Mode';
+  } else {
+    bV.className = 'engine-btn';
+    bK.className = 'engine-btn active-kie';
+    lbl.textContent = '🔑 Clé API kie.ai';
+    inp.placeholder = 'Colle ta clé kie.ai ici...';
+    hl.href = 'https://kie.ai/api-key';
+    ht.textContent = 'Créer un compte kie.ai';
+  }
+}
+
+// ─── ENTRÉE ───────────────────────────────────────────────────────────────────
+async function enterStudio() {
+  const k = document.getElementById('apiKeyInput').value.trim();
+  if (!k) { alert(selectedEngine === 'vertex' ? 'Colle ta clé Vertex AI (AQ...).' : 'Colle ta clé kie.ai.'); return; }
+  if (selectedEngine === 'vertex' && !k.startsWith('AQ')) {
+    if (!confirm('⚠️ Cette clé ne commence pas par "AQ". Continuer ?')) return;
+  }
+  apiKey = k;
+  document.getElementById('splash').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+  if (isMobile) document.getElementById('mobileWarn').classList.add('show');
+
+  const eb = document.getElementById('engineBadge');
+  const ml = document.getElementById('modelLabel');
+  const fe = document.getElementById('footerEngine');
+  if (selectedEngine === 'kie') {
+    eb.textContent = 'KIE.AI'; eb.className = 'badge badge-dim';
+    ml.textContent = 'Nano Banana Pro · kie.ai';
+    fe.textContent = 'kie.ai · Nano Banana Pro';
+  } else {
+    eb.textContent = 'VERTEX AI'; eb.className = 'badge badge-dim';
+    ml.textContent = 'Gemini 3.1 Flash Image Preview';
+    fe.textContent = 'Vertex AI · Gemini Flash Image';
+  }
+  await loadState();
+  renderUploadGrid();
+  renderResults();
+}
+
+function showSplash() {
+  document.getElementById('splash').style.display = 'flex';
+  document.getElementById('app').classList.remove('visible');
+}
+
+// ─── INDEXEDDB ────────────────────────────────────────────────────────────────
+const DB_NAME = 'studio-perception-db';
+let db = null;
+function openDB() {
+  return new Promise((res, rej) => {
+    if (db) { res(db); return; }
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = e => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains('images')) d.createObjectStore('images', { keyPath: 'key' });
+      if (!d.objectStoreNames.contains('avatars')) d.createObjectStore('avatars', { keyPath: 'key' });
+    };
+    req.onsuccess = e => { db = e.target.result; res(db); };
+    req.onerror = () => rej(req.error);
+  });
+}
+async function idbSet(store, key, value) {
+  const d = await openDB();
+  return new Promise((res, rej) => { const tx = d.transaction(store,'readwrite'); tx.objectStore(store).put({key,value}); tx.oncomplete=res; tx.onerror=()=>rej(tx.error); });
+}
+async function idbGet(store, key) {
+  const d = await openDB();
+  return new Promise((res, rej) => { const tx = d.transaction(store,'readonly'); const r=tx.objectStore(store).get(key); r.onsuccess=()=>res(r.result?.value??null); r.onerror=()=>rej(r.error); });
+}
+async function idbGetAll(store) {
+  const d = await openDB();
+  return new Promise((res, rej) => { const tx = d.transaction(store,'readonly'); const r=tx.objectStore(store).getAll(); r.onsuccess=()=>res(r.result.map(x=>x.value)); r.onerror=()=>rej(r.error); });
+}
+async function idbDelete(store, key) {
+  const d = await openDB();
+  return new Promise((res, rej) => { const tx = d.transaction(store,'readwrite'); tx.objectStore(store).delete(key); tx.oncomplete=res; tx.onerror=()=>rej(tx.error); });
+}
+async function idbClear(store) {
+  const d = await openDB();
+  return new Promise((res, rej) => { const tx = d.transaction(store,'readwrite'); tx.objectStore(store).clear(); tx.oncomplete=res; tx.onerror=()=>rej(tx.error); });
+}
+
+// ─── PERSISTANCE ──────────────────────────────────────────────────────────────
+function saveSettings() {
+  try {
+    localStorage.setItem(STORAGE.settings, JSON.stringify({ aspectRatio, emotion, reconstructMode, brutalLevel, focusType, humanPerceptionMode, sliders }));
+    localStorage.setItem(STORAGE.prompt, document.getElementById('subjectInput').value || '');
+  } catch(e) {}
+}
+async function saveState() {
+  saveSettings();
+  try {
+    await idbClear('avatars');
+    for (let i = 0; i < avatarImages.length; i++) await idbSet('avatars', `avatar_${i}`, avatarImages[i]);
+  } catch(e) {}
+  try {
+    const meta = results.map(r => ({ id: r.id, aspectRatio: r.aspectRatio, engine: r.engine, timestamp: r.timestamp, emotion: r.emotion, diagnostic: r.diagnostic }));
+    localStorage.setItem(STORAGE.results, JSON.stringify(meta));
+  } catch(e) {}
+}
+async function loadState() {
+  try {
+    const s = JSON.parse(localStorage.getItem(STORAGE.settings) || '{}');
+    const p = localStorage.getItem(STORAGE.prompt) || '';
+    if (s.aspectRatio) setAR(s.aspectRatio, document.querySelector(`[data-ar="${s.aspectRatio}"]`));
+    if (s.emotion) setEmotion(s.emotion);
+    if (s.reconstructMode) setMode(s.reconstructMode);
+    if (s.brutalLevel) setBrutal(s.brutalLevel);
+    if (s.focusType) setFocusType(s.focusType);
+    if (s.humanPerceptionMode !== undefined) { humanPerceptionMode = s.humanPerceptionMode; updatePerceptionUI(); }
+    if (s.sliders) {
+      sliders = s.sliders;
+      ['impact','credibility','tension','chaos'].forEach(k => {
+        const range = document.querySelector(`[oninput*="${k}"]`);
+        if (range) range.value = sliders[k];
+        const val = document.getElementById('v' + k.charAt(0).toUpperCase() + k.slice(1));
+        if (val) val.textContent = sliders[k] + '%';
+      });
+    }
+    document.getElementById('subjectInput').value = p;
+  } catch(e) {}
+  try { await openDB(); avatarImages = (await idbGetAll('avatars')).filter(Boolean); } catch(e) { avatarImages = []; }
+  try {
+    const meta = JSON.parse(localStorage.getItem(STORAGE.results) || '[]');
+    const loaded = [];
+    for (const m of meta) {
+      const dataUrl = await idbGet('images', `result_${m.id}`);
+      if (dataUrl) loaded.push({ ...m, dataUrl });
+    }
+    results = loaded;
+  } catch(e) { results = []; }
+}
+
+// ─── UPLOAD ───────────────────────────────────────────────────────────────────
+function renderUploadGrid() {
+  const grid = document.getElementById('uploadGrid');
+  grid.innerHTML = '';
+  avatarImages.forEach((img, i) => {
+    const div = document.createElement('div');
+    div.className = 'upload-thumb';
+    div.innerHTML = `<img src="${img}" alt="ref ${i+1}"><button class="remove-btn" onclick="removeAvatar(${i})"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button><span class="ref-badge">IMG ${i+1}</span>`;
+    grid.appendChild(div);
+  });
+  if (avatarImages.length < 4) {
+    const add = document.createElement('div');
+    add.className = 'upload-add';
+    add.innerHTML = `<svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span>${avatarImages.length === 0 ? 'Charger image' : `Ajouter (${avatarImages.length}/4)`}</span><input type="file" multiple accept="image/*" onchange="handleUpload(event)">`;
+    grid.appendChild(add);
+  }
+}
+function handleUpload(e) {
+  Array.from(e.target.files).slice(0, 4 - avatarImages.length).forEach(f => {
+    const reader = new FileReader();
+    reader.onloadend = async () => { const r = await resizeImage(reader.result); avatarImages.push(r); renderUploadGrid(); saveState(); };
+    reader.readAsDataURL(f);
+  });
+}
+function removeAvatar(i) { avatarImages.splice(i,1); renderUploadGrid(); saveState(); }
+function resizeImage(b64) {
+  return new Promise(res => {
+    const img = new Image(); img.src = b64;
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      let w = img.width, h = img.height;
+      if (w > 1024) { h *= 1024/w; w = 1024; }
+      if (h > 1024) { w *= 1024/h; h = 1024; }
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      res(c.toDataURL('image/jpeg', 0.82));
+    };
+  });
+}
+
+// ─── CONTRÔLES UI ─────────────────────────────────────────────────────────────
+function setAR(ar, btn) {
+  aspectRatio = ar;
+  document.querySelectorAll('.fmt-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  saveSettings();
+}
+function setEmotion(v) {
+  emotion = v;
+  document.querySelectorAll('#emotionChips .chip').forEach(c => c.classList.remove('active'));
+  const el = document.getElementById('em-' + v);
+  if (el) el.classList.add('active');
+  saveSettings();
+}
+function setMode(v) {
+  reconstructMode = v;
+  document.getElementById('mode-reconstruct').className = 'tog-btn' + (v === 'reconstruct' ? ' active-red' : '');
+  document.getElementById('mode-analyse').className = 'tog-btn' + (v === 'analyse' ? ' active-red' : '');
+  saveSettings();
+}
+function setBrutal(v) {
+  brutalLevel = v;
+  document.getElementById('brutal-full').className = 'tog-btn' + (v === 'full' ? ' active-dim' : '');
+  document.getElementById('brutal-soft').className = 'tog-btn' + (v === 'soft' ? ' active-dim' : '');
+  saveSettings();
+}
+function setFocusType(v) {
+  focusType = v;
+  ['regard','posture','lumiere','contexte','global'].forEach(f => {
+    const el = document.getElementById('focus-' + f);
+    if (el) el.className = 'chip' + (f === v ? ' active' : '');
+  });
+  saveSettings();
+}
+function updateSlider(name, val) {
+  const v = parseInt(val);
+  sliders[name] = v;
+  const key = 'v' + name.charAt(0).toUpperCase() + name.slice(1);
+  document.getElementById(key).textContent = v + '%';
+  saveSettings();
+}
+function togglePerception() { humanPerceptionMode = !humanPerceptionMode; updatePerceptionUI(); saveSettings(); }
+function updatePerceptionUI() {
+  document.getElementById('perceptionIcon').className = 'perception-icon' + (humanPerceptionMode ? ' on' : '');
+  document.getElementById('perceptionSwitch').className = 'switch' + (humanPerceptionMode ? ' on' : '');
+  document.getElementById('perceptionRow').className = 'perception-row' + (humanPerceptionMode ? ' on' : '');
+  document.getElementById('perceptionStatus').textContent = humanPerceptionMode ? 'Simulation cerveau activée' : 'Mode standard';
+}
+
+// ─── PROMPT BUILDER ───────────────────────────────────────────────────────────
+function buildPerceptionPrompt(subject) {
+  const emotionMap = {
+    empathie: 'empathy and emotional connection', proximite: 'closeness and intimacy',
+    nostalgie: 'nostalgia and bittersweet memory', malaise: 'psychological unease and discomfort',
+    tension: 'tension and anticipation', attachement: 'emotional attachment and bond',
+    authenticite: 'raw authenticity and unfiltered realism', solitude: 'deep solitude and isolation',
+    desir: 'desire and longing', douceur: 'gentleness and fragile softness'
+  };
+  const focusMap = {
+    regard: 'eyes and gaze direction — the gaze must create psychological connection',
+    posture: 'body language and posture — every micro-tension must feel real',
+    lumiere: 'lighting and shadows — light must feel lived-in, not studio',
+    contexte: 'environmental context — the space must tell its own story',
+    global: 'full scene — every element must serve the emotional narrative'
+  };
+
+  const modeInstructions = reconstructMode === 'reconstruct'
+    ? `RECONSTRUCT the image to maximize its psychological and emotional impact. You may: add imperfections, break symmetry, adjust posture, modify gaze, introduce controlled chaos, reduce the "posed" feeling, add human micro-details (creases, shadows, off-center elements). The goal is to make this image feel REAL to the human brain.`
+    : `Analyze the psychological impact of this scene and describe what changes would maximize emotional resonance. Then generate a psychologically optimized version.`;
+
+  const brutalInstructions = brutalLevel === 'full'
+    ? `Be brutally honest. If the original image would feel fake, say so. Apply corrections without softening. Examples: "The gaze creates zero connection." "The posture seems forced." "The brain immediately detects this as artificial." Apply ALL necessary fixes.`
+    : `Apply nuanced psychological corrections. Balance authenticity with aesthetic quality.`;
+
+  return `STUDIO PERCEPTION — Psychological Image Analysis & Reconstruction
+
+CORE MISSION: Create an image that the human brain perceives as EMOTIONALLY TRUE.
+
+TARGET EMOTION: ${emotionMap[emotion] || emotion}
+PSYCHOLOGICAL FOCUS: ${focusMap[focusType] || focusType}
+IMPACT LEVEL: ${sliders.impact}%
+HUMAN CREDIBILITY: ${sliders.credibility}%
+VISUAL TENSION: ${sliders.tension}%
+CONTROLLED CHAOS: ${sliders.chaos}%
+HUMAN PERCEPTION SIMULATION: ${humanPerceptionMode ? 'ACTIVE — simulate how a real human brain would process this image' : 'STANDARD'}
+
+SCENE: ${subject}
+
+${modeInstructions}
+
+${brutalInstructions}
+
+TECHNICAL SPECS: Ultra-realistic 4K photography. Natural skin texture. Credible ambient light. Authentic human posture. No beauty filters. No AI smoothing. No Pinterest aesthetic. No studio perfection.
+
+WHAT THE IMAGE MUST DO:
+- Capture attention naturally (not through shock)
+- Trigger an emotional reaction
+- Feel REAL, not generated
+- Create psychological connection
+- Leave a lasting impression
+
+WHAT THE IMAGE MUST NEVER DO:
+- Look too clean
+- Look too posed
+- Look too symmetric
+- Look emotionally empty
+- Look like a stock photo`;
+}
+
+// ─── GÉNÉRATION ───────────────────────────────────────────────────────────────
+async function generate() {
+  if (loading) return;
+  const subject = document.getElementById('subjectInput').value.trim();
+  if (!subject) { showError("Décris l'intention émotionnelle et le contexte de la scène."); return; }
+  if (!apiKey) { showError("Ajoute d'abord ta clé API."); return; }
+  hideError();
+  setLoading(true);
+
+  try {
+    const prompt = buildPerceptionPrompt(subject);
+    const diagnostic = await generateDiagnostic(subject);
+    const imgDataUrl = selectedEngine === 'kie'
+      ? await callKieAPI(prompt)
+      : await callVertexAPI(prompt);
+
+    const id = Date.now().toString();
+    await idbSet('images', `result_${id}`, imgDataUrl);
+    const r = { id, dataUrl: imgDataUrl, aspectRatio, engine: selectedEngine, timestamp: Date.now(), emotion, diagnostic };
+    results.unshift(r);
+    if (results.length > 5) {
+      const removed = results.pop();
+      try { await idbDelete('images', `result_${removed.id}`); } catch(_) {}
+    }
+    renderResults();
+    await saveState();
+  } catch(err) {
+    showError(err.message || "Erreur de génération.");
+  } finally {
+    setLoading(false);
+  }
+}
+
+// ─── DIAGNOSTIC VIA CLAUDE ────────────────────────────────────────────────────
+async function generateDiagnostic(subject) {
+  try {
+    updateLoadingMessage("Analyse psychologique en cours...");
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1000,
+        system: `Tu es Studio Perception, un analyseur psychologique d'images ultra-direct. Tu analyses comment le cerveau humain perçoit une scène. Tu dis la vérité brute — jamais de flatterie. Format: 2-3 phrases de diagnostic percutantes, en français, puis 2-3 phrases sur ce que la reconstruction va corriger. Utilise du markdown minimal (gras pour les points clés). Maximum 120 mots.`,
+        messages: [{
+          role: "user",
+          content: `Analyse psychologique rapide de cette scène : "${subject}". Émotion cible : ${emotion}. Focus : ${focusType}. Mode : ${reconstructMode === 'reconstruct' ? 'reconstruction maximale' : 'analyse pure'}. Niveau brutalité : ${brutalLevel === 'full' ? 'sans filtre' : 'nuancé'}.`
+        }]
+      })
+    });
+    const data = await response.json();
+    return data.content?.[0]?.text || '';
+  } catch(e) {
+    return '';
+  }
+}
+
+// ─── VERTEX AI ────────────────────────────────────────────────────────────────
+async function callVertexAPI(prompt) {
+  const apiAR = aspectRatio === '4:5' ? '3:4' : aspectRatio;
+  const parts = [];
+  avatarImages.slice(0, 2).forEach(img => parts.push({ inlineData: { data: img.split(',')[1], mimeType: 'image/jpeg' } }));
+  parts.push({ text: prompt });
+
+  const body = {
+    systemInstruction: { parts: [{ text: "Ultra-realistic 4K photography. Natural human textures. Credible light. No artificial rendering. No beauty filters. Emotionally raw and authentic." }] },
+    contents: [{ role: 'user', parts }],
+    generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: apiAR, imageSize: "4K" } }
+  };
+
+  const endpoint = `https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-3.1-flash-image-preview:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const waitTimes = [5000, 10000, 20000, 40000, 60000];
+  let lastErr;
+
+  for (let attempt = 0; attempt <= waitTimes.length; attempt++) {
+    try {
+      updateLoadingMessage(attempt === 0 ? "Envoi vers Vertex AI..." : `Tentative ${attempt+1}/${waitTimes.length+1}...`);
+      const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      let data = {};
+      try { data = await res.json(); } catch(_) {}
+      if (!res.ok) {
+        const msg = data?.error?.message || `HTTP ${res.status}`;
+        if (res.status === 401) throw new Error("Clé API invalide (commence par AQ...).");
+        if (res.status === 403) throw new Error("Accès refusé. Vérifie ta clé Vertex AI.");
+        if (res.status === 404) throw new Error(`Modèle introuvable. ${msg}`);
+        if (res.status === 429) throw new Error(`429 RESOURCE_EXHAUSTED: ${msg}`);
+        throw new Error(`Erreur ${res.status}: ${msg}`);
+      }
+      const candidate = data?.candidates?.[0];
+      if (!candidate) throw new Error("Aucune réponse du modèle.");
+      if (candidate.finishReason === 'SAFETY') throw new Error("Bloqué par les filtres de sécurité. Reformule.");
+      for (const p of (candidate?.content?.parts || [])) {
+        if (p.inlineData?.data) return `data:image/png;base64,${p.inlineData.data}`;
+      }
+      throw new Error("Image non trouvée dans la réponse.");
+    } catch(err) {
+      lastErr = err;
+      const msg = String(err.message || '').toLowerCase();
+      const retryable = msg.includes('429') || msg.includes('resource_exhausted') || msg.includes('502') || msg.includes('503') || msg.includes('504') || msg.includes('overloaded');
+      if (retryable && attempt < waitTimes.length) {
+        updateLoadingMessage(`Vertex saturé. Attente ${Math.round(waitTimes[attempt]/1000)}s...`);
+        await sleep(waitTimes[attempt]);
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw lastErr;
+}
+
+// ─── KIE.AI ───────────────────────────────────────────────────────────────────
+async function uploadImageToKie(base64DataUri) {
+  const res = await fetch('https://kieai.redpandaai.co/api/file-base64-upload', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ base64Data: base64DataUri, uploadPath: 'images/studio-perception' })
+  });
+  let data = {};
+  try { data = await res.json(); } catch(_) {}
+  if (!res.ok || !data.data?.downloadUrl) throw new Error(`Upload kie.ai échoué: ${data.msg || res.status}`);
+  return data.data.downloadUrl;
+}
+
+async function callKieAPI(prompt) {
+  let imageUrls = [];
+  if (avatarImages.length > 0) {
+    updateLoadingMessage("Upload des images de référence...");
+    for (let i = 0; i < Math.min(avatarImages.length, 4); i++) {
+      try { imageUrls.push(await uploadImageToKie(avatarImages[i])); } catch(e) { console.warn('Upload échoué:', e.message); }
+    }
+  }
+  updateLoadingMessage("Envoi vers Nano Banana Pro...");
+
+  const taskBody = {
+    model: 'nano-banana-pro',
+    input: { prompt, aspect_ratio: aspectRatio, resolution: '1K', output_format: 'jpg', image_input: imageUrls }
+  };
+
+  const createRes = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(taskBody)
+  });
+  let createData = {};
+  try { createData = await createRes.json(); } catch(_) {}
+  if (!createRes.ok || createData.code !== 200) {
+    const msg = createData?.msg || createData?.message || `HTTP ${createRes.status}`;
+    if (createRes.status === 401 || createData.code === 401) throw new Error('Clé kie.ai invalide.');
+    if (createRes.status === 403 || createData.code === 403) throw new Error('Accès refusé kie.ai. Vérifiez vos crédits.');
+    if (createRes.status === 429 || createData.code === 429) throw new Error('Trop de requêtes kie.ai.');
+    throw new Error(`Erreur kie.ai: ${msg}`);
+  }
+
+  const taskId = createData?.data?.taskId;
+  if (!taskId) throw new Error(`Pas de taskId: ${JSON.stringify(createData)}`);
+
+  updateLoadingMessage('Nano Banana Pro génère...');
+  let lastStatusData = {};
+  for (let i = 0; i < 60; i++) {
+    await sleep(5000);
+    updateLoadingMessage(`Nano Banana Pro en cours... (${(i+1)*5}s)`);
+    let statusData = {};
+    try {
+      const sRes = await fetch(`https://api.kie.ai/api/v1/jobs/recordInfo?taskId=${taskId}`, {
+        headers: { 'Authorization': `Bearer ${apiKey}` }
+      });
+      statusData = await sRes.json();
+    } catch(e) { lastStatusData = { fetchError: e.message }; continue; }
+    lastStatusData = statusData;
+    const state = statusData?.data?.state;
+    if (state === 'fail') throw new Error(`Fail: ${statusData?.data?.failMsg}`);
+    if (state === 'success') {
+      let imageUrl = null;
+      try { const r = JSON.parse(statusData?.data?.resultJson || '{}'); imageUrl = r?.resultUrls?.[0] || r?.images?.[0]?.url || r?.url; } catch(_) {}
+      if (!imageUrl) throw new Error(`Success mais pas d'URL. resultJson: ${statusData?.data?.resultJson}`);
+      updateLoadingMessage("Récupération de l'image...");
+      const imgRes = await fetch(imageUrl);
+      const blob = await imgRes.blob();
+      return new Promise((res, rej) => { const reader = new FileReader(); reader.onloadend = () => res(reader.result); reader.onerror = rej; reader.readAsDataURL(blob); });
+    }
+  }
+  throw new Error(`Timeout kie.ai. ${JSON.stringify(lastStatusData).slice(0,500)}`);
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ─── UI ───────────────────────────────────────────────────────────────────────
+function setLoading(v) {
+  loading = v;
+  const btn = document.getElementById('genBtn');
+  const icon = document.getElementById('genIcon');
+  const label = document.getElementById('genLabel');
+  const msg = document.getElementById('genMsg');
+  const msgs = selectedEngine === 'kie' ? LOADING_MSGS_KIE : LOADING_MSGS_VERTEX;
+  btn.disabled = v;
+  if (v) {
+    icon.innerHTML = '<path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>';
+    btn.classList.add('loading'); label.textContent = 'ANALYSE EN COURS...'; msg.style.display = 'block';
+    clearInterval(loadingInterval); loadingMsgIdx = 0; msg.textContent = msgs[0];
+    loadingInterval = setInterval(() => { if (!loading) return; loadingMsgIdx = (loadingMsgIdx+1)%msgs.length; msg.textContent = msgs[loadingMsgIdx]; }, 3000);
+  } else {
+    btn.classList.remove('loading');
+    icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+    label.textContent = 'ANALYSER & RECONSTRUIRE'; msg.style.display = 'none';
+    clearInterval(loadingInterval);
+  }
+}
+function updateLoadingMessage(m) { const el = document.getElementById('genMsg'); if (el) { el.style.display = 'block'; el.textContent = m; } }
+function showError(msg) { document.getElementById('errorText').textContent = msg; document.getElementById('errorBox').classList.add('show'); }
+function hideError() { document.getElementById('errorBox').classList.remove('show'); }
+
+// ─── RENDER RESULTS ───────────────────────────────────────────────────────────
+function renderResults() {
+  const container = document.getElementById('resultsContainer');
+  const empty = document.getElementById('emptyState');
+  const actions = document.getElementById('resultsActions');
+  const dlAll = document.getElementById('dlAllBtn');
+  const count = document.getElementById('captureCount');
+  count.textContent = results.length + ' ANALYSE' + (results.length !== 1 ? 'S' : '');
+  if (results.length === 0) { empty.style.display = 'flex'; actions.style.display = 'none'; container.innerHTML = ''; return; }
+  empty.style.display = 'none'; actions.style.display = 'flex'; dlAll.style.display = results.length > 1 ? 'flex' : 'none';
+  container.innerHTML = '';
+
+  results.forEach(r => {
+    const arClass = r.aspectRatio === '9:16' ? 'ar-9-16' : r.aspectRatio === '16:9' ? 'ar-16-9' : r.aspectRatio === '4:5' ? 'ar-4-5' : 'ar-1-1';
+    const engineLabel = r.engine === 'kie' ? 'NANO BANANA PRO' : 'GEMINI FLASH 4K';
+    const badgeClass = r.engine === 'kie' ? 'img-badge img-badge-kie' : 'img-badge img-badge-red';
+    const emotionLabel = r.emotion ? r.emotion.toUpperCase() : '';
+
+    // Parse diagnostic markdown basique
+    const diagnosticHTML = r.diagnostic
+      ? r.diagnostic.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>')
+      : '';
+
+    const card = document.createElement('div');
+    card.className = 'img-card';
+    card.innerHTML = `
+      <div class="img-thumb" onclick="downloadImage('${r.dataUrl}','${r.id}')">
+        <div class="${arClass}"><img src="${r.dataUrl}" alt="perception" loading="lazy"></div>
+        <div class="img-overlay"><div class="dl-circle"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div></div>
+        <div class="img-badges">
+          <span class="img-badge img-badge-white">${emotionLabel}</span>
+          <span class="${badgeClass}">${engineLabel}</span>
+        </div>
+      </div>
+      ${diagnosticHTML ? `
+      <div class="diagnostic-box">
+        <div class="diagnostic-label">◉ Diagnostic Perception</div>
+        <div class="diagnostic-content">${diagnosticHTML}</div>
+      </div>` : ''}
+      <div class="img-info">
+        <div class="img-meta">
+          <div class="img-meta-txt">
+            <span>ANALYSED_AT: ${new Date(r.timestamp).toLocaleTimeString()}</span>
+            <span>REF: PERC_${r.id.slice(-8)}</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+            <button class="btn-dl" onclick="downloadImage('${r.dataUrl}','${r.id}')">TÉLÉCHARGER</button>
+          </div>
+        </div>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function downloadImage(dataUrl, id) {
+  if (isMobile && /iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+    try {
+      const byteStr = atob(dataUrl.split(',')[1]);
+      const mime = dataUrl.split(',')[0].split(':')[1].split(';')[0];
+      const ab = new ArrayBuffer(byteStr.length);
+      const ia = new Uint8Array(ab);
+      for (let i = 0; i < byteStr.length; i++) ia[i] = byteStr.charCodeAt(i);
+      const blob = new Blob([ab], { type: mime });
+      const blobUrl = URL.createObjectURL(blob);
+      window.open(blobUrl, '_blank');
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+    } catch(e) { alert("Appuie longuement sur l'image pour l'enregistrer."); }
+    return;
+  }
+  const a = document.createElement('a');
+  a.href = dataUrl; a.download = `studio-perception-${id}.jpg`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+function downloadAll() { results.forEach((r, i) => setTimeout(() => downloadImage(r.dataUrl, `batch_${i+1}`), i * 300)); }
+async function resetAll() {
+  if (!confirm("Supprimer toutes les analyses et réinitialiser ?")) return;
+  results = []; avatarImages = [];
+  try { Object.values(STORAGE).forEach(k => localStorage.removeItem(k)); await idbClear('images'); await idbClear('avatars'); } catch(e) {}
+  document.getElementById('subjectInput').value = '';
+  renderUploadGrid(); renderResults();
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+setAR('1:1', document.querySelector('[data-ar="1:1"]'));
+renderUploadGrid();
+renderResults();
+</script>
+</body>
+</html>
