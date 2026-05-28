@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studio Scene - Recits Temporels</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #050b18; --bg2: #0a192f;
+  --glass: rgba(255,255,255,0.03);
+  --border: rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.1);
+  --border3: rgba(255,255,255,0.2);
+  --text: #ffffff; --text2: rgba(255,255,255,0.7);
+  --text3: rgba(255,255,255,0.4); --text4: rgba(255,255,255,0.1);
+  --red: rgba(239,68,68,0.1); --red2: rgba(239,68,68,0.2); --red-text: #fca5a5;
+  --green: rgba(34,197,94,0.15); --green2: rgba(34,197,94,0.3); --green-text: #86efac;
+}
+html { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); }
+body { min-height: 100vh; background: radial-gradient(circle at top right, #0a192f, #050b18 70%); }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 10px; }
+.glass-card { background: var(--glass); backdrop-filter: blur(30px); border: 1px solid var(--border); }
+.text-glow { text-shadow: 0 0 20px rgba(255,255,255,0.2); }
+
+/* SPLASH */
+#splash {
+  min-height: 100vh; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 32px; text-align: center; overflow: hidden; position: relative;
+}
+.splash-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+.splash-bg img { width:100%; height:100%; object-fit:cover; opacity:0.03; transform:scale(1.1); filter:blur(2px) grayscale(1); }
+.splash-bg::after { content:''; position:absolute; inset:0; background:linear-gradient(to bottom,var(--bg),transparent,var(--bg)); }
+.splash-content { position:relative; z-index:10; max-width:520px; width:100%; }
+.splash-logo { width:48px; height:48px; background:white; border-radius:12px; display:flex; align-items:center; justify-content:center; margin:0 auto 32px; box-shadow:0 8px 32px rgba(255,255,255,0.1); }
+.splash-logo svg { width:24px; height:24px; color:var(--bg); }
+.splash-title { font-size:clamp(48px,10vw,72px); font-weight:900; text-transform:uppercase; font-style:italic; letter-spacing:-0.03em; line-height:0.9; color:white; text-shadow:0 0 20px rgba(255,255,255,0.2); margin-bottom:32px; }
+.splash-desc { font-size:16px; font-weight:300; color:var(--text2); line-height:1.7; font-style:italic; margin-bottom:48px; border-left:1px solid var(--border2); padding-left:20px; text-align:left; }
+
+/* Engine selector */
+.engine-selector { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px; }
+.engine-btn {
+  padding:16px 12px; border:1px solid var(--border2); border-radius:14px;
+  background:rgba(255,255,255,0.04); cursor:pointer;
+  font-family:'Inter',sans-serif; font-size:11px; font-weight:800;
+  text-transform:uppercase; letter-spacing:0.1em; color:var(--text3);
+  transition:all 0.2s; display:flex; flex-direction:column; align-items:center; gap:6px;
+}
+.engine-btn:hover { border-color:var(--border3); color:var(--text2); }
+.engine-btn.active-vertex { background:rgba(255,255,255,0.12); border-color:white; color:white; }
+.engine-btn.active-kie { background:rgba(34,197,94,0.12); border-color:rgb(34,197,94); color:rgb(134,239,172); }
+.engine-btn .engine-sub { font-size:9px; opacity:0.6; font-weight:600; letter-spacing:0.05em; }
+
+.api-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.3em; color:var(--text3); margin-bottom:8px; text-align:left; }
+.api-input { width:100%; background:rgba(255,255,255,0.05); border:1px solid var(--border2); border-radius:12px; padding:14px 16px; font-size:13px; font-family:monospace; color:var(--text); outline:none; transition:all 0.2s; }
+.api-input::placeholder { color:rgba(255,255,255,0.15); }
+.api-input:focus { border-color:rgba(255,255,255,0.4); background:rgba(255,255,255,0.08); }
+#splash-error { color:#fca5a5; font-size:12px; font-weight:600; margin-top:12px; display:none; min-height:20px; }
+.splash-cta {
+  width:100%; background:white; color:var(--bg); border:none; border-radius:999px;
+  padding:18px 48px; font-weight:900; font-size:12px; text-transform:uppercase;
+  letter-spacing:0.2em; cursor:pointer; transition:all 0.2s; margin-top:16px;
+  box-shadow:0 20px 60px rgba(0,0,0,0.3);
+}
+.splash-cta:hover { background:#eff6ff; transform:translateY(-1px); }
+.splash-cta:active { transform:scale(0.97); }
+
+/* APP */
+#app { display:none; min-height:100vh; }
+#app.visible { display:block; }
+.app-header { border-bottom:1px solid var(--border); background:rgba(0,0,0,0.4); backdrop-filter:blur(20px); position:sticky; top:0; z-index:50; }
+.header-inner { max-width:1280px; margin:0 auto; padding:24px; display:flex; align-items:center; justify-content:space-between; }
+.brand { display:flex; align-items:center; gap:16px; }
+.brand-logo { width:40px; height:40px; background:white; border-radius:10px; display:flex; align-items:center; justify-content:center; }
+.brand-logo svg { width:20px; height:20px; color:var(--bg); }
+.brand-info { display:flex; flex-direction:column; gap:2px; }
+.brand-title { font-size:20px; font-weight:900; text-transform:uppercase; font-style:italic; letter-spacing:-0.02em; }
+.brand-engine { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.2em; color:var(--text3); }
+.brand-engine.kie { color:rgb(134,239,172); }
+.active-badge { padding:10px 24px; border-radius:999px; font-size:10px; font-weight:900; letter-spacing:0.3em; text-transform:uppercase; cursor:pointer; transition:all 0.2s; background:rgba(255,255,255,0.05); border:1px solid var(--border2); color:var(--text); }
+
+.app-main { max-width:1280px; margin:0 auto; padding:48px 24px; position:relative; z-index:10; }
+.alert-box { margin-bottom:32px; padding:24px; border-radius:24px; font-size:14px; display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.alert-box.error { background:var(--red); border:1px solid var(--red2); color:var(--red-text); }
+.alert-box.success { background:rgba(255,255,255,0.05); border:1px solid var(--border2); color:var(--text); }
+.alert-close { padding:8px; background:none; border:none; cursor:pointer; color:currentColor; opacity:0.5; border-radius:999px; }
+.alert-close:hover { background:rgba(255,255,255,0.1); opacity:1; }
+
+/* LANDING */
+.landing-wrap { padding:80px 0; display:flex; flex-direction:column; align-items:center; }
+.landing-card { width:100%; max-width:1152px; background:rgba(255,255,255,0.03); backdrop-filter:blur(30px); border:1px solid var(--border); border-radius:64px; overflow:hidden; box-shadow:0 50px 100px rgba(0,0,0,0.5); margin-bottom:80px; }
+.landing-grid { display:grid; grid-template-columns:1fr; }
+@media(min-width:768px){ .landing-grid { grid-template-columns:7fr 5fr; } }
+.landing-text { padding:48px; display:flex; flex-direction:column; justify-content:center; background:linear-gradient(135deg,rgba(255,255,255,0.07),transparent); }
+@media(min-width:768px){ .landing-text { padding:64px; } }
+.landing-badge-white { padding:4px 12px; background:white; color:var(--bg); font-size:9px; font-weight:900; text-transform:uppercase; letter-spacing:0.3em; border-radius:4px; }
+.landing-h2 { font-size:clamp(56px,10vw,96px); font-weight:900; text-transform:uppercase; font-style:italic; letter-spacing:-0.03em; line-height:0.8; color:white; text-shadow:0 0 20px rgba(255,255,255,0.2); margin:24px 0 32px; }
+.landing-quote { font-size:18px; font-weight:300; color:var(--text2); line-height:1.7; font-style:italic; max-width:480px; border-left:1px solid var(--border2); padding-left:24px; margin-bottom:48px; }
+.landing-upload-btn { display:inline-flex; align-items:center; gap:12px; background:white; color:var(--bg); padding:20px 56px; border-radius:999px; font-weight:900; font-size:12px; letter-spacing:0.2em; text-transform:uppercase; cursor:pointer; box-shadow:0 20px 60px rgba(0,0,0,0.4); transition:all 0.2s; position:relative; }
+.landing-upload-btn:hover { background:#eff6ff; transform:translateY(-1px); }
+.landing-upload-btn input { position:absolute; inset:0; opacity:0; cursor:pointer; }
+.landing-visual { position:relative; min-height:400px; background:var(--bg); overflow:hidden; }
+.landing-visual img.main { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0.8; transition:transform 3s; }
+.landing-card:hover .landing-visual img.main { transform:scale(1.1); }
+.landing-visual-overlay { position:absolute; inset:0; background:linear-gradient(to right,var(--bg),rgba(5,11,24,0.4),transparent); }
+.rec-badge { position:absolute; top:48px; left:48px; padding:8px 16px; background:rgba(255,255,255,0.1); backdrop-filter:blur(24px); border:1px solid var(--border2); border-radius:12px; font-size:10px; font-weight:900; text-transform:uppercase; letter-spacing:0.3em; display:flex; align-items:center; gap:8px; }
+.rec-dot { width:8px; height:8px; background:#ef4444; border-radius:50%; animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+.clap-float { position:absolute; bottom:40px; right:40px; width:160px; height:160px; animation:float 6s ease-in-out infinite; }
+.clap-float img { width:100%; height:100%; object-fit:contain; filter:drop-shadow(0 30px 60px rgba(0,0,0,0.9)); }
+@keyframes float { 0%,100%{transform:translateY(0)rotate(12deg)} 50%{transform:translateY(-20px)rotate(15deg)} }
+
+/* STUDIO */
+.studio-grid { display:grid; grid-template-columns:1fr; gap:64px; }
+@media(min-width:1024px){ .studio-grid { grid-template-columns:4fr 8fr; } }
+.ref-card { background:var(--glass); backdrop-filter:blur(30px); border:1px solid var(--border); border-radius:48px; padding:40px; position:sticky; top:128px; }
+.ref-img-wrap { position:relative; border-radius:40px; overflow:hidden; margin-bottom:40px; border:1px solid var(--border2); }
+.ref-img-wrap img { width:100%; aspect-ratio:3/4; object-fit:cover; display:block; }
+.ref-img-overlay { position:absolute; inset:0; background:rgba(10,25,47,0.4); opacity:0; transition:all 0.3s; backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; }
+.ref-img-wrap:hover .ref-img-overlay { opacity:1; }
+.ref-img-del { padding:20px; background:white; border-radius:999px; border:none; cursor:pointer; }
+.ref-img-del svg { width:28px; height:28px; color:var(--bg); display:block; }
+.ref-badge-abs { position:absolute; top:24px; left:24px; padding:8px 24px; background:white; color:var(--bg); border-radius:999px; font-size:10px; font-weight:900; letter-spacing:0.2em; text-transform:uppercase; }
+.analyze-btn { width:100%; background:white; color:var(--bg); border:none; border-radius:16px; padding:24px; font-weight:900; font-size:12px; text-transform:uppercase; letter-spacing:0.1em; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; justify-content:center; gap:16px; }
+.analyze-btn:hover { background:#eff6ff; }
+.analyze-btn:disabled { opacity:0.5; cursor:not-allowed; }
+.analyze-btn svg { width:20px; height:20px; }
+.spin { animation:spin 1s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.analysis-done { display:flex; flex-direction:column; gap:24px; }
+.analysis-check { padding:24px; background:rgba(255,255,255,0.07); border:1px solid var(--border2); border-radius:24px; display:flex; align-items:center; gap:20px; }
+.check-circle { width:40px; height:40px; background:white; border-radius:999px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.check-circle svg { width:20px; height:20px; color:var(--bg); display:block; }
+.check-label { font-size:12px; font-weight:900; text-transform:uppercase; letter-spacing:0.2em; }
+.check-sub { font-size:10px; color:var(--text3); margin-top:2px; }
+.analysis-info { padding:32px; background:rgba(255,255,255,0.02); border-radius:24px; border:1px solid rgba(255,255,255,0.05); }
+.analysis-info-label { font-size:10px; font-weight:900; color:var(--text4); text-transform:uppercase; letter-spacing:0.2em; margin-bottom:16px; }
+.analysis-info p { font-size:14px; color:var(--text2); font-style:italic; line-height:1.8; font-weight:300; }
+.analysis-info strong { color:white; font-weight:700; font-style:normal; margin-right:6px; }
+
+/* RIGHT PANEL */
+.right-panel { display:flex; flex-direction:column; gap:64px; }
+.sequence-card { background:var(--glass); backdrop-filter:blur(30px); border:1px solid var(--border); border-radius:64px; padding:48px; box-shadow:0 20px 60px rgba(0,0,0,0.3); }
+.seq-inner { display:flex; flex-direction:column; gap:40px; }
+.seq-top { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:32px; }
+.mode-toggle { display:flex; gap:8px; background:rgba(255,255,255,0.04); padding:8px; border-radius:999px; border:1px solid var(--border2); flex-wrap:wrap; }
+.mode-btn { padding:12px 28px; border-radius:999px; font-size:10px; font-weight:900; text-transform:uppercase; letter-spacing:0.1em; cursor:pointer; transition:all 0.2s; border:none; }
+.mode-btn.active { background:white; color:var(--bg); box-shadow:0 4px 16px rgba(0,0,0,0.2); }
+.mode-btn.inactive { background:none; color:var(--text); opacity:0.4; }
+.mode-btn.inactive:hover { opacity:1; }
+.seq-title { font-size:24px; font-weight:900; font-style:italic; text-transform:uppercase; letter-spacing:-0.02em; text-shadow:0 0 20px rgba(255,255,255,0.2); }
+
+/* Mode Memory banner */
+.memory-banner { padding:20px 24px; background:rgba(245,158,11,0.07); border:1px solid rgba(245,158,11,0.2); border-radius:20px; }
+.memory-banner-label { font-size:10px; font-weight:900; color:rgb(252,211,77); text-transform:uppercase; letter-spacing:0.3em; margin-bottom:8px; }
+.memory-banner p { font-size:12px; color:var(--text3); font-weight:400; line-height:1.6; }
+
+.format-label { font-size:10px; font-weight:900; color:var(--text3); text-transform:uppercase; letter-spacing:0.3em; margin-bottom:16px; }
+.format-btns { display:flex; gap:16px; flex-wrap:wrap; }
+.fmt-btn { display:flex; align-items:center; gap:12px; padding:16px 24px; border-radius:16px; font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:0.1em; cursor:pointer; transition:all 0.2s; border:1px solid; }
+.fmt-btn.active { background:white; color:var(--bg); border-color:white; }
+.fmt-btn.inactive { background:rgba(255,255,255,0.04); border-color:var(--border2); color:rgba(255,255,255,0.5); }
+.fmt-btn.inactive:hover { border-color:var(--border3); }
+.fmt-btn svg { width:16px; height:16px; }
+.scene-textarea { width:100%; height:176px; background:rgba(255,255,255,0.04); border:1px solid var(--border2); border-radius:40px; padding:40px; font-size:20px; font-weight:300; color:var(--text); outline:none; resize:none; transition:all 0.2s; font-family:'Inter',sans-serif; }
+.scene-textarea::placeholder { color:var(--text4); }
+.scene-textarea:focus { border-color:rgba(255,255,255,0.3); background:rgba(255,255,255,0.07); }
+.gen-seq-btn { width:100%; background:white; color:var(--bg); border:none; border-radius:24px; padding:28px; font-weight:900; font-size:14px; text-transform:uppercase; letter-spacing:0.1em; cursor:pointer; transition:all 0.2s; box-shadow:0 20px 50px rgba(255,255,255,0.07); display:flex; align-items:center; justify-content:center; gap:16px; }
+.gen-seq-btn:hover { background:#eff6ff; }
+.gen-seq-btn:disabled { opacity:0.5; cursor:not-allowed; }
+.gen-seq-btn svg { width:20px; height:20px; }
+
+/* Empty */
+.right-empty { height:640px; display:flex; flex-direction:column; align-items:center; justify-content:center; border:1px dashed rgba(255,255,255,0.05); background:rgba(255,255,255,0.01); border-radius:64px; opacity:0.2; }
+.right-empty svg { width:80px; height:80px; margin-bottom:40px; opacity:0.1; }
+.right-empty p { font-size:10px; font-weight:900; text-transform:uppercase; letter-spacing:0.8em; text-align:center; padding:0 80px; line-height:2; }
+
+/* STORYBOARD */
+.storyboard-wrap { display:flex; flex-direction:column; gap:48px; }
+.storyboard-header { display:flex; align-items:center; justify-content:space-between; padding:0 32px; }
+.storyboard-label { display:flex; align-items:center; gap:16px; }
+.storyboard-label h3 { font-size:14px; font-weight:900; text-transform:uppercase; letter-spacing:0.5em; color:var(--text3); }
+.export-btn { display:flex; align-items:center; gap:12px; padding:16px 40px; background:rgba(255,255,255,0.04); border:1px solid var(--border2); border-radius:999px; font-size:10px; font-weight:900; text-transform:uppercase; letter-spacing:0.1em; cursor:pointer; transition:all 0.2s; color:var(--text); }
+.export-btn:hover { background:white; color:var(--bg); }
+.export-btn svg { width:16px; height:16px; }
+.story-grid { display:grid; grid-template-columns:1fr; gap:40px; }
+@media(min-width:640px){ .story-grid { grid-template-columns:repeat(2,1fr); } }
+.story-card { background:var(--glass); backdrop-filter:blur(30px); border:1px solid rgba(255,255,255,0.05); border-radius:56px; overflow:hidden; transition:all 0.3s; display:flex; flex-direction:column; }
+.story-card:hover { border-color:rgba(255,255,255,0.4); box-shadow:0 40px 80px rgba(0,0,0,0.5); }
+.story-img-wrap { position:relative; overflow:hidden; background:rgba(255,255,255,0.04); }
+.story-img-wrap.ar-45 { aspect-ratio:4/5; }
+.story-img-wrap.ar-169 { aspect-ratio:16/9; }
+.story-img-wrap.ar-916 { aspect-ratio:9/16; }
+.story-img-wrap img { width:100%; height:100%; object-fit:cover; transition:transform 6s; display:block; }
+.story-card:hover .story-img-wrap img { transform:scale(1.1); }
+.story-dl-btn { position:absolute; top:32px; right:32px; padding:20px; background:white; border-radius:999px; border:none; cursor:pointer; opacity:0; transition:all 0.3s; }
+.story-dl-btn:hover { transform:scale(1.1); }
+.story-retry-btn { position:absolute; top:32px; left:32px; padding:16px 20px; background:rgba(0,0,0,0.6); backdrop-filter:blur(8px); border-radius:999px; border:1px solid rgba(255,255,255,0.2); cursor:pointer; opacity:0; transition:all 0.3s; display:flex; align-items:center; gap:8px; color:white; font-size:10px; font-weight:900; text-transform:uppercase; letter-spacing:0.15em; white-space:nowrap; }
+.story-retry-btn:hover { background:white; color:var(--bg); border-color:white; }
+.story-retry-btn svg { width:14px; height:14px; }
+.story-card:hover .story-retry-btn { opacity:1; }
+.story-dl-btn svg { width:24px; height:24px; color:var(--bg); display:block; }
+.story-card:hover .story-dl-btn { opacity:1; }
+.story-prise { position:absolute; bottom:32px; left:32px; padding:10px 24px; background:rgba(255,255,255,0.1); backdrop-filter:blur(20px); border-radius:999px; font-size:10px; font-weight:900; border:1px solid var(--border2); text-transform:uppercase; letter-spacing:0.2em; }
+.story-gen-btn { width:100%; height:100%; min-height:300px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:32px; background:none; border:none; cursor:pointer; transition:background 0.2s; color:var(--text); }
+.story-gen-btn:hover { background:rgba(255,255,255,0.03); }
+.story-gen-btn:disabled { cursor:not-allowed; }
+.gen-circle { width:96px; height:96px; border:1px solid var(--border2); border-radius:999px; display:flex; align-items:center; justify-content:center; transition:all 0.3s; }
+.story-card:hover .gen-circle { background:white; border-color:transparent; }
+.gen-circle svg { width:40px; height:40px; opacity:0.2; transition:all 0.3s; }
+.story-card:hover .gen-circle svg { opacity:1; color:var(--bg); }
+.gen-text { font-size:10px; font-weight:900; text-transform:uppercase; letter-spacing:0.5em; color:var(--text3); transition:color 0.2s; }
+.story-card:hover .gen-text { color:var(--text); }
+.gen-loading { display:flex; flex-direction:column; align-items:center; gap:24px; }
+.gen-spin { width:56px; height:56px; color:rgba(255,255,255,0.2); }
+.gen-loading-text { font-size:10px; font-weight:900; text-transform:uppercase; letter-spacing:0.4em; opacity:0.3; animation:pulse2 2s infinite; }
+@keyframes pulse2 { 0%,100%{opacity:0.3}50%{opacity:1} }
+.story-footer { padding:48px; background:rgba(255,255,255,0.01); flex:1; display:flex; align-items:flex-start; gap:12px; border-top:1px solid rgba(255,255,255,0.05); }
+.story-time-badge { font-size:9px; font-weight:900; color:rgba(252,211,77,0.5); text-transform:uppercase; letter-spacing:0.2em; white-space:nowrap; margin-top:4px; }
+.story-quote { font-size:16px; font-weight:300; font-style:italic; color:var(--text3); line-height:1.7; border-left:1px solid var(--border2); padding-left:32px; transition:color 0.3s; }
+.story-card:hover .story-quote { color:var(--text2); }
+
+.generating-state { padding:80px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:32px; }
+.generating-state svg { width:64px; height:64px; opacity:0.2; }
+.generating-state p { font-size:10px; font-weight:900; text-transform:uppercase; letter-spacing:0.5em; opacity:0.3; }
+
+/* FOOTER */
+.app-footer { margin-top:160px; padding:96px 24px; border-top:1px solid rgba(255,255,255,0.05); background:rgba(0,0,0,0.4); text-align:center; }
+.footer-quote { font-size:12px; font-weight:500; font-style:italic; color:var(--text3); max-width:640px; margin:0 auto 48px; line-height:2; }
+.footer-copy { font-size:9px; font-weight:900; text-transform:uppercase; letter-spacing:0.8em; color:rgba(255,255,255,0.05); }
+
+.fixed-bg { position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
+.fixed-bg img { width:100%; height:100%; object-fit:cover; opacity:0.03; transform:scale(1.1); filter:blur(2px) grayscale(1); }
+.fixed-bg::after { content:''; position:absolute; inset:0; background:linear-gradient(to bottom,var(--bg),transparent,var(--bg)); }
+</style>
+</head>
+<body>
+
+<div class="fixed-bg">
+  <img src="https://images.unsplash.com/photo-1594909122845-11baa439b7bf?q=80&w=2000&auto=format&fit=crop" alt="">
+</div>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-bg">
+    <img src="https://images.unsplash.com/photo-1594909122845-11baa439b7bf?q=80&w=2000&auto=format&fit=crop" alt="">
+  </div>
+  <div class="splash-content">
+    <div class="splash-logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m9 8 6 4-6 4V8z"/></svg>
+    </div>
+    <h1 class="splash-title">Studio<br>Scene</h1>
+    <p class="splash-desc">"prolonge un instant dans le temps et transforme une image en une suite de moments vecus."</p>
+
+    <p class="api-label" style="margin-bottom:10px;">Moteur de generation</p>
+    <div class="engine-selector">
+      <button class="engine-btn active-vertex" id="btn-vertex" onclick="selectEngine('vertex')">
+        <span>Vertex AI</span>
+        <span class="engine-sub">Cle AQ...</span>
+      </button>
+      <button class="engine-btn" id="btn-kie" onclick="selectEngine('kie')">
+        <span>kie.ai</span>
+        <span class="engine-sub">Nano Banana 2</span>
+      </button>
+    </div>
+
+    <p class="api-label" id="keyLabel">Cle API Vertex AI (Express Mode)</p>
+    <input type="password" id="apiKeyInput" class="api-input" placeholder="AQ..." autocomplete="off">
+    <p id="splash-error"></p>
+    <button class="splash-cta" onclick="enterApp()">DEMARRER LE TOURNAGE</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand">
+        <div class="brand-logo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m9 8 6 4-6 4V8z"/></svg>
+        </div>
+        <div class="brand-info">
+          <span class="brand-title">Studio Scene</span>
+          <span class="brand-engine" id="engineLabel">Vertex AI · Gemini</span>
+        </div>
+      </div>
+      <button class="active-badge" onclick="resetToSplash()">🔑 SYSTEME ACTIF</button>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <div id="alertBox" style="display:none;"></div>
+
+    <!-- LANDING -->
+    <div id="landingView">
+      <div class="landing-wrap">
+        <div class="landing-card">
+          <div class="landing-grid">
+            <div class="landing-text">
+              <span class="landing-badge-white">Production Studio</span>
+              <h2 class="landing-h2">Studio<br>Scene</h2>
+              <p class="landing-quote">"prolonge un instant dans le temps et transforme une image en une suite de moments vecus."</p>
+              <label class="landing-upload-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                DEMARRER LE TOURNAGE
+                <input type="file" accept="image/*" onchange="handleImageUpload(event)" style="display:none;">
+              </label>
+            </div>
+            <div class="landing-visual">
+              <img class="main" src="https://images.unsplash.com/photo-1585647347384-2593bc35786b?q=80&w=1200&auto=format&fit=crop" alt="">
+              <div class="landing-visual-overlay"></div>
+              <div class="rec-badge"><span class="rec-dot"></span> REC</div>
+              <div class="clap-float">
+                <img src="https://images.unsplash.com/photo-1594909122845-11baa439b7bf?q=80&w=500&auto=format&fit=crop" alt="">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STUDIO -->
+    <div id="studioView" style="display:none;">
+      <div class="studio-grid">
+        <!-- LEFT -->
+        <div>
+          <div class="ref-card">
+            <div class="ref-img-wrap">
+              <img id="refImg" src="" alt="Reference">
+              <div class="ref-img-overlay">
+                <button class="ref-img-del" onclick="resetToLanding()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:28px;height:28px;color:var(--bg);"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                </button>
+              </div>
+              <div class="ref-badge-abs">Scene Alpha</div>
+            </div>
+
+            <div id="analyzeSection">
+              <button class="analyze-btn" id="analyzeBtn" onclick="handleAnalyze()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                VERROUILLER L'ADN VISUEL
+              </button>
+            </div>
+
+            <div id="analysisResult" style="display:none;" class="analysis-done">
+              <div class="analysis-check">
+                <div class="check-circle">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <div>
+                  <p class="check-label">Realite Definie</p>
+                  <p class="check-sub">Continuite physique OK</p>
+                </div>
+              </div>
+              <div class="analysis-info">
+                <p class="analysis-info-label">Inventaire Spatial</p>
+                <p id="analysisInfoText"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT -->
+        <div class="right-panel">
+          <div id="noAnalysisRight" class="right-empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m9 8 6 4-6 4V8z"/></svg>
+            <p>Pret pour le tournage ?<br>Analysez votre image source.</p>
+          </div>
+
+          <div id="sequenceSection" style="display:none;">
+            <div class="sequence-card">
+              <div class="seq-inner">
+                <div class="seq-top">
+                  <div class="mode-toggle">
+                    <button class="mode-btn active" id="modeAutoBtn" onclick="setMode('auto')">FLUX NATUREL</button>
+                    <button class="mode-btn inactive" id="modeManualBtn" onclick="setMode('manual')">DIRECTION</button>
+                    <button class="mode-btn inactive" id="modeMemoryBtn" onclick="setMode('avant')">MODE MEMORY</button>
+                  </div>
+                  <h2 class="seq-title">Ligne de Temps</h2>
+                </div>
+
+                <div id="avantBanner" style="display:none;" class="memory-banner">
+                  <p class="memory-banner-label">⏪ RECONSTRUCTION CAUSALE</p>
+                  <p>L'image est une memoire deja en cours. Mode Memory remonte le temps et reconstruit la timeline invisible qui a conduit a cet instant.</p>
+                </div>
+
+                <div>
+                  <p class="format-label">Format de l'image</p>
+                  <div class="format-btns">
+                    <button class="fmt-btn active" data-ar="4:5" onclick="setAR('4:5')">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/></svg>
+                      Carousel (4:5)
+                    </button>
+                    <button class="fmt-btn inactive" data-ar="16:9" onclick="setAR('16:9')">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/></svg>
+                      Cinema (16:9)
+                    </button>
+                    <button class="fmt-btn inactive" data-ar="9:16" onclick="setAR('9:16')">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/></svg>
+                      Portrait (9:16)
+                    </button>
+                  </div>
+                </div>
+
+                <div id="manualTextarea" style="display:none;">
+                  <textarea class="scene-textarea" id="actionInput" placeholder="Decrivez l'evolution de la scene..."></textarea>
+                </div>
+
+                <button class="gen-seq-btn" id="genSeqBtn" onclick="handleGenerateSequence()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+                  <span id="genSeqLabel">DEPLOYER LA SEQUENCE VECUE</span>
+                </button>
+              </div>
+            </div>
+
+            <div id="storyboardArea" style="display:none;" class="storyboard-wrap">
+              <div class="storyboard-header">
+                <div class="storyboard-label">
+                  <h3 id="storyboardTitle">Storyboard Temporel</h3>
+                </div>
+                <button class="export-btn" id="exportBtn" style="display:none;" onclick="exportAll()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  EXPORTER (.ZIP)
+                </button>
+              </div>
+              <div class="story-grid" id="storyGrid"></div>
+            </div>
+
+            <div id="generatingState" style="display:none;" class="generating-state">
+              <svg class="spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+              <p>Ecriture du scenario temporel...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="app-footer">
+    <p class="footer-quote">"prolonge un instant dans le temps et transforme une image en une suite de moments vecus."</p>
+    <p class="footer-copy">2025 Studio Scene - Laboratoire de Narration Temporelle</p>
+  </footer>
+</div>
+
+<script>
+// MODELES
+const MODEL_ANALYSIS = 'gemini-2.5-flash';
+const MODEL_IMAGE    = 'gemini-3.1-flash-image-preview';
+
+// FETCH AIPLATFORM (Vertex Express AQ...)
+async function vertexCall(model, contents, generationConfig) {
+  const url = 'https://aiplatform.googleapis.com/v1/publishers/google/models/' + model + ':generateContent?key=' + encodeURIComponent(API_KEY);
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ contents, generationConfig })
+  });
+  if (!res.ok) {
+    let d; try { d = await res.json(); } catch(_) {}
+    throw new Error((d && d.error && d.error.message) || 'HTTP ' + res.status);
+  }
+  return await res.json();
+}
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let API_KEY = '';
+let selectedEngine = 'vertex'; // 'vertex' | 'kie'
+let referenceImage = null;     // base64 pur
+let referenceImageFull = null; // data URI complet (pour upload kie)
+let referenceMime = 'image/jpeg';
+let analysisData = null;
+let currentMode = 'auto'; // 'auto' | 'manual' | 'avant'
+let aspectRatio = '4:5';
+let generatedPrompts = [];
+let generatedBlobUrls = {};  // id -> blob URL affiché (Safari-safe)
+let generatedBase64 = {};    // id -> {b64, mime} pour export ZIP
+let generatingIds = new Set();
+
+const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function escapeHtml(s) {
+  return String(s||'')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+
+function base64ToBlobUrl(b64, mime) {
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  const blob = new Blob([bytes], { type: mime });
+  return URL.createObjectURL(blob);
+}
+
+function showAlert(type, msg) {
+  const box = document.getElementById('alertBox');
+  box.style.display = 'flex';
+  box.innerHTML = `<div class="alert-box ${type}">
+    <span>${escapeHtml(msg)}</span>
+    <button class="alert-close" onclick="document.getElementById('alertBox').style.display='none'">✕</button>
+  </div>`;
+}
+function hideAlert() { document.getElementById('alertBox').style.display = 'none'; }
+function showSuccess(msg) {
+  const box = document.getElementById('alertBox');
+  box.style.display = 'flex';
+  box.innerHTML = `<div class="alert-box success"><span>${escapeHtml(msg)}</span></div>`;
+  setTimeout(() => { box.style.display = 'none'; }, 3000);
+}
+
+// ── MOTEUR ────────────────────────────────────────────────────────────────────
+window.selectEngine = function(engine) {
+  selectedEngine = engine;
+  document.getElementById('btn-vertex').className = 'engine-btn' + (engine==='vertex' ? ' active-vertex' : '');
+  document.getElementById('btn-kie').className    = 'engine-btn' + (engine==='kie'    ? ' active-kie'    : '');
+  document.getElementById('keyLabel').textContent = engine === 'kie'
+    ? 'Cle API kie.ai'
+    : 'Cle API Vertex AI (Express Mode)';
+  document.getElementById('apiKeyInput').placeholder = engine === 'kie' ? 'kie_...' : 'AQ...';
+};
+
+// ── ENTREE APP ────────────────────────────────────────────────────────────────
+window.enterApp = function() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  const errEl = document.getElementById('splash-error');
+  if (!key) { errEl.textContent = 'Entrez votre cle API.'; errEl.style.display = 'block'; return; }
+  API_KEY = key;
+  errEl.style.display = 'none';
+  document.getElementById('splash').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+  document.getElementById('engineLabel').textContent = selectedEngine === 'kie'
+    ? 'kie.ai · Nano Banana 2'
+    : 'Vertex AI · Gemini';
+  document.getElementById('engineLabel').className = 'brand-engine' + (selectedEngine==='kie' ? ' kie' : '');
+};
+document.getElementById('apiKeyInput').addEventListener('keydown', e => { if (e.key === 'Enter') window.enterApp(); });
+
+window.resetToSplash = function() {
+  document.getElementById('splash').style.display = 'flex';
+  document.getElementById('app').classList.remove('visible');
+  resetToLanding();
+};
+
+// ── LANDING ───────────────────────────────────────────────────────────────────
+window.resetToLanding = function() {
+  referenceImage = null; referenceImageFull = null; analysisData = null;
+  generatedPrompts = []; generatingIds.clear();
+  Object.values(generatedBlobUrls).forEach(u => URL.revokeObjectURL(u));
+  generatedBlobUrls = {}; generatedBase64 = {};
+  document.getElementById('landingView').style.display = 'block';
+  document.getElementById('studioView').style.display = 'none';
+  hideAlert();
+};
+
+// ── UPLOAD ────────────────────────────────────────────────────────────────────
+window.handleImageUpload = function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const result = ev.target.result;
+    const m = result.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,/);
+    referenceMime = m ? m[1] : 'image/jpeg';
+    referenceImage = result.split(',')[1];
+    referenceImageFull = result;
+    analysisData = null; generatedPrompts = [];
+    Object.values(generatedBlobUrls).forEach(u => URL.revokeObjectURL(u));
+    generatedBlobUrls = {}; generatedBase64 = {}; generatingIds.clear();
+    // Affichage via blob URL (Safari-safe)
+    document.getElementById('refImg').src = base64ToBlobUrl(referenceImage, referenceMime);
+    document.getElementById('landingView').style.display = 'none';
+    document.getElementById('studioView').style.display = 'block';
+    document.getElementById('analyzeSection').style.display = 'block';
+    document.getElementById('analysisResult').style.display = 'none';
+    document.getElementById('noAnalysisRight').style.display = 'flex';
+    document.getElementById('sequenceSection').style.display = 'none';
+    document.getElementById('storyboardArea').style.display = 'none';
+    document.getElementById('generatingState').style.display = 'none';
+    hideAlert();
+  };
+  reader.readAsDataURL(file);
+};
+
+// ── CONTROLS ──────────────────────────────────────────────────────────────────
+window.setMode = function(mode) {
+  currentMode = mode;
+  ['auto','manual','avant'].forEach(m => {
+    document.getElementById('mode'+m.charAt(0).toUpperCase()+m.slice(1)+'Btn').className =
+      'mode-btn ' + (m === mode ? 'active' : 'inactive');
+  });
+  document.getElementById('manualTextarea').style.display = mode === 'manual' ? 'block' : 'none';
+  document.getElementById('avantBanner').style.display    = mode === 'avant'  ? 'block' : 'none';
+  const label = mode === 'avant'
+    ? '⏪ RECONSTRUIRE LA TIMELINE'
+    : 'DEPLOYER LA SEQUENCE VECUE';
+  document.getElementById('genSeqLabel').textContent = label;
+  if (generatedPrompts.length > 0) renderStoryboard();
+};
+
+window.setAR = function(ar) {
+  aspectRatio = ar;
+  document.querySelectorAll('.fmt-btn').forEach(b => {
+    b.className = 'fmt-btn ' + (b.dataset.ar === ar ? 'active' : 'inactive');
+  });
+  if (generatedPrompts.length > 0) renderStoryboard();
+};
+
+// ANALYSE — fetch direct aiplatform
+async function handleAnalyze() {
+  if (!referenceImage) return;
+  const btn = document.getElementById('analyzeBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<svg class="spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> ANALYSE EN COURS...';
+  hideAlert();
+
+  const prompt = 'CAPTURER L ADN DE L INSTANT. Analysez cette image comme le point Zero d un recit cinematographique. 1. personnage: identite visuelle, tenue exacte, posture, energie. 2. environnement: lieu, textures, mobilier, petits objets. 3. lumiere: ambiance, ombres, temperature. Cataloguez UNIQUEMENT ce qui est visuellement present. Repondez EXCLUSIVEMENT en JSON valide: {"personnage":{"apparence":"","expression_faciale":"","posture":"","vetements":{"haut":"","bas":"","chaussures":""},"objets_tenus":[]},"environnement":{"lieu":"","murs":"","sol":"","meubles":[],"objets_visibles":[]},"lumiere":{"type":"","direction":"","intensite":""}}';
+
+  try {
+    const data = await vertexCall(MODEL_ANALYSIS, [{
+      role: 'user',
+      parts: [
+        { inlineData: { mimeType: referenceMime, data: referenceImage } },
+        { text: prompt }
+      ]
+    }], { temperature: 0.1 });
+
+    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const m = raw.replace(/```json|```/g, '').trim().match(/\{[\s\S]*\}/);
+    if (!m) throw new Error('Reponse JSON introuvable. Reponse brute: ' + raw.slice(0, 200));
+    analysisData = JSON.parse(m[0]);
+    if (!analysisData.personnage) analysisData.personnage = { apparence:'', expression_faciale:'', posture:'', vetements:{haut:'',bas:'',chaussures:''}, objets_tenus:[] };
+    if (!Array.isArray(analysisData.personnage.objets_tenus)) analysisData.personnage.objets_tenus = [];
+    if (!analysisData.environnement) analysisData.environnement = { lieu:'', murs:'', sol:'', meubles:[], objets_visibles:[] };
+    if (!Array.isArray(analysisData.environnement.objets_visibles)) analysisData.environnement.objets_visibles = [];
+    if (!analysisData.lumiere) analysisData.lumiere = { type:'naturelle', direction:'avant', intensite:'moyenne' };
+
+    const objets = analysisData.personnage.objets_tenus.map(function(o) { return o.objet; }).join(', ') || 'Aucun';
+    document.getElementById('analysisInfoText').innerHTML =
+      '<strong>Lieu :</strong> ' + escapeHtml(analysisData.environnement.lieu) + '<br><strong>Objets :</strong> ' + escapeHtml(objets);
+    document.getElementById('analyzeSection').style.display = 'none';
+    document.getElementById('analysisResult').style.display = 'flex';
+    document.getElementById('noAnalysisRight').style.display = 'none';
+    document.getElementById('sequenceSection').style.display = 'block';
+    showSuccess('Analyse terminee. Sequence prete.');
+  } catch (err) {
+    showAlert('error', 'Erreur analyse : ' + err.message);
+    btn.disabled = false;
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> VERROUILLER L ADN VISUEL';
+  }
+}
+document.getElementById('analyzeBtn').onclick = handleAnalyze;
+
+// GENERATE SEQUENCE — fetch direct aiplatform
+async function handleGenerateSequence() {
+  if (!analysisData) { showAlert('error', "Analysez d'abord l'image."); return; }
+  const btn = document.getElementById('genSeqBtn');
+  btn.disabled = true;
+  document.getElementById('storyboardArea').style.display = 'none';
+  document.getElementById('generatingState').style.display = 'flex';
+  generatedPrompts = [];
+  Object.values(generatedBlobUrls).forEach(function(u) { URL.revokeObjectURL(u); });
+  generatedBlobUrls = {}; generatedBase64 = {};
+  hideAlert();
+
+  const action = currentMode === 'manual' ? document.getElementById('actionInput').value.trim() : null;
+
+  var prompt;
+  if (currentMode === 'avant') {
+    prompt = 'MODE MEMORY RECONSTRUCTION CAUSALE. Image finale: Lieu=' + analysisData.environnement.lieu + ' Personnage=' + analysisData.personnage.apparence + ' Posture=' + analysisData.personnage.posture + ' Objets=' + analysisData.personnage.objets_tenus.map(function(o){return o.objet;}).join(', ') + '. Reconstruis 5 moments precedents chronologiques: scene1=il y a 12-15min, scene2=8-10min, scene3=4-6min, scene4=1-2min, scene5=quelques secondes avant. Causalite stricte, memoire physique objets, inertie humaine. Reponds JSON: {"scenes":["...","...","...","...","..."]}';
+  } else {
+    prompt = 'ARC NARRATIF. Action=' + (action || 'sequence narrative depuis image source') + '. Lieu=' + analysisData.environnement.lieu + ' Personnage=' + analysisData.personnage.apparence + ' Posture=' + analysisData.personnage.posture + '. 5 scenes distinctes, progression logique, zero objet invente, mouvement deja en cours scene 1. Reponds JSON: {"scenes":["...","...","...","...","..."]}';
+  }
+
+  try {
+    const data = await vertexCall(MODEL_ANALYSIS, [{
+      role: 'user', parts: [{ text: prompt }]
+    }], { temperature: 0.7 });
+
+    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const m = raw.replace(/```json|```/g, '').trim().match(/\{[\s\S]*\}/);
+    if (!m) throw new Error('Reponse JSON introuvable: ' + raw.slice(0, 200));
+    const parsed = JSON.parse(m[0]);
+    const scenes = parsed.scenes || [];
+    if (!scenes.length) throw new Error('Aucune scene generee.');
+
+    generatedPrompts = scenes.map(function(s, i) { return { id: Date.now() + '-' + i, scene: s }; });
+    document.getElementById('generatingState').style.display = 'none';
+    document.getElementById('storyboardArea').style.display = 'block';
+    document.getElementById('storyboardTitle').textContent = currentMode === 'avant'
+      ? 'Timeline Invisible — Reconstruction Causale'
+      : 'Storyboard Temporel';
+    renderStoryboard();
+    showSuccess(currentMode === 'avant' ? 'Timeline reconstruite.' : 'Storyboard genere !');
+  } catch (err) {
+    showAlert('error', 'Erreur storyboard : ' + err.message);
+    document.getElementById('generatingState').style.display = 'none';
+  } finally {
+    btn.disabled = false;
+  }
+}
+document.getElementById('genSeqBtn').onclick = handleGenerateSequence;
+
+// ── RENDER STORYBOARD ─────────────────────────────────────────────────────────
+function getARClass() {
+  return aspectRatio === '16:9' ? 'ar-169' : aspectRatio === '9:16' ? 'ar-916' : 'ar-45';
+}
+
+function renderStoryboard() {
+  const grid = document.getElementById('storyGrid');
+  const arClass = getARClass();
+  const isAvant = currentMode === 'avant';
+
+  grid.innerHTML = generatedPrompts.map((p, i) => {
+    const blobUrl = generatedBlobUrls[p.id];
+    const loading = generatingIds.has(p.id);
+    const label = isAvant ? `T-${(5-i)*3}min` : `Prise 0${i+1}`;
+    const genIcon = isAvant ? '⏪' : '🖼';
+    const genLabel = isAvant ? 'Reconstruire' : 'Generer le moment';
+
+    return `<div class="story-card" id="card-${p.id}">
+      <div class="story-img-wrap ${arClass}" id="imgwrap-${p.id}">
+        ${blobUrl ? `
+          <img src="${blobUrl}" alt="Instant ${i+1}">
+          <button class="story-dl-btn" onclick="downloadImgById('${p.id}',${i+1})">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <button class="story-retry-btn" onclick="retryPlan('${p.id}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+            Relancer
+          </button>
+          <div class="story-prise">${label}</div>
+        ` : loading ? `
+          <div class="story-gen-btn" style="cursor:default;">
+            <div class="gen-loading">
+              <svg class="gen-spin spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+              <p class="gen-loading-text">${selectedEngine === 'kie' ? 'Nano Banana 2...' : 'Developpement...'}</p>
+            </div>
+          </div>
+        ` : `
+          <button class="story-gen-btn" type="button" onclick="renderPlan('${p.id}')">
+            <div class="gen-circle">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+            </div>
+            <span class="gen-text">${genLabel}</span>
+          </button>
+        \`}
+      </div>
+      <div class="story-footer">
+        \${isAvant ? \`<span class="story-time-badge">\${label}</span>\` : ''}
+        <p class="story-quote">"\${escapeHtml(p.scene)}"</p>
+      </div>
+    </div>\`;
+  }).join('');
+
+  document.getElementById('exportBtn').style.display =
+    Object.keys(generatedBlobUrls).length > 0 ? 'flex' : 'none';
+}
+
+// RENDER IMAGE VERTEX — fetch direct aiplatform
+async function renderPlanVertex(id) {
+  const item = generatedPrompts.find(function(p) { return p.id === id; });
+  if (!item) throw new Error("Scene introuvable.");
+  const isAvant = currentMode === 'avant';
+
+  const instruction = isAvant
+    ? 'PROTOCOLE MODE MEMORY. IMAGE FOURNIE = etat final. Generez le moment AVANT cet etat. DECOR: ' + analysisData.environnement.lieu + '. Zero element ajoute. PERSONNAGE: ' + analysisData.personnage.apparence + '. Meme visage, meme tenue (' + analysisData.personnage.vetements.haut + ', ' + analysisData.personnage.vetements.bas + '). MOMENT: ' + item.scene + '. Memoire physique objets, inertie humaine, traces residuelles. Style cinematographique photorealiste. Lumiere ' + analysisData.lumiere.type + ' depuis ' + analysisData.lumiere.direction + '.'
+    : 'PROTOCOLE CONTINUITE NARRATIVE. SOURCE FRAME = reference absolue. DECOR: ' + analysisData.environnement.lieu + '. Zero element ajoute. PERSONNAGE: ' + analysisData.personnage.apparence + '. Meme visage, meme tenue (' + analysisData.personnage.vetements.haut + ', ' + analysisData.personnage.vetements.bas + '). ETAPE: ' + item.scene + '. Mouvement deja en cours. Style cinematographique photorealiste. Lumiere ' + analysisData.lumiere.type + ' depuis ' + analysisData.lumiere.direction + '.';
+
+  const body = {
+    contents: [{ role: 'user', parts: [
+      { inlineData: { data: referenceImage, mimeType: referenceMime } },
+      { text: instruction }
+    ]}],
+    generationConfig: {
+      responseModalities: ['IMAGE'],
+      imageConfig: { aspectRatio: aspectRatio, imageSize: '4K' }
+    }
+  };
+
+  const waitTimes = [4000, 8000, 15000];
+  let lastErr;
+  for (var attempt = 0; attempt <= waitTimes.length; attempt++) {
+    try {
+      const url = 'https://aiplatform.googleapis.com/v1/publishers/google/models/' + MODEL_IMAGE + ':generateContent?key=' + encodeURIComponent(API_KEY);
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) {
+        let d; try { d = await res.json(); } catch(_) {}
+        throw new Error((d && d.error && d.error.message) || 'HTTP ' + res.status);
+      }
+      const data = await res.json();
+      const parts = (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) || [];
+      for (var i = 0; i < parts.length; i++) {
+        if (parts[i].inlineData && parts[i].inlineData.data) {
+          return { b64: parts[i].inlineData.data, mime: 'image/png' };
+        }
+      }
+      throw new Error("Aucune image retournee par Vertex.");
+    } catch(err) {
+      lastErr = err;
+      const msg = String(err.message || '').toLowerCase();
+      const retryable = msg.includes('429') || msg.includes('503') || msg.includes('502') || msg.includes('overloaded');
+      if (retryable && attempt < waitTimes.length) { await sleep(waitTimes[attempt]); continue; }
+      throw err;
+    }
+  }
+  throw lastErr || new Error("Erreur image Vertex.");
+}
+
+
+// ── RENDER IMAGE — KIE.AI ─────────────────────────────────────────────────────
+async function uploadImageToKie(dataUri) {
+  const res = await fetch('https://kieai.redpandaai.co/api/file-base64-upload', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ base64Data: dataUri, uploadPath: 'images/studio-scene' })
+  });
+  let d = {}; try { d = await res.json(); } catch(_) {}
+  if (!res.ok || !d.data?.downloadUrl) throw new Error(`Upload kie.ai echoue: ${d.msg || res.status}`);
+  return d.data.downloadUrl;
+}
+
+async function renderPlanKie(id) {
+  const item = generatedPrompts.find(p => p.id === id);
+  if (!item) throw new Error("Scene introuvable.");
+  const isAvant = currentMode === 'avant';
+
+  let imageUrls = [];
+  if (referenceImageFull) {
+    try { imageUrls.push(await uploadImageToKie(referenceImageFull)); } catch(e) { console.warn(e); }
+  }
+
+  const prompt = `Ultra-realistic cinematic photography.
+${isAvant ? 'CAUSAL RECONSTRUCTION: the reference image is the FINAL STATE. Generate the moment BEFORE.' : 'NARRATIVE CONTINUATION: generate the next moment after the reference image.'}
+SCENE: ${item.scene}.
+CHARACTER: ${analysisData.personnage.apparence}. Same face, same outfit (${analysisData.personnage.vetements.haut}, ${analysisData.personnage.vetements.bas}).
+ENVIRONMENT: ${analysisData.environnement.lieu}. Same textures, same furniture. Zero added elements.
+LIGHTING: ${analysisData.lumiere.type} from ${analysisData.lumiere.direction}.
+Photoreal, no AI smoothing, authentic human posture.`;
+
+  const createRes = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: 'nano-banana-2', input: { prompt, aspect_ratio: aspectRatio, resolution: '1K', output_format: 'jpg', image_input: imageUrls } })
+  });
+  let cd = {}; try { cd = await createRes.json(); } catch(_) {}
+  if (!createRes.ok || cd.code !== 200) throw new Error(`kie.ai: ${cd.msg || createRes.status}`);
+  const taskId = cd?.data?.taskId;
+  if (!taskId) throw new Error("Pas de taskId kie.ai.");
+
+  for (let i = 0; i < 60; i++) {
+    await sleep(5000);
+    let sd = {}; try { const sr = await fetch(`https://api.kie.ai/api/v1/jobs/recordInfo?taskId=${taskId}`, { headers: { 'Authorization': `Bearer ${API_KEY}` } }); sd = await sr.json(); } catch(_) { continue; }
+    const state = sd?.data?.state;
+    if (state === 'fail') throw new Error(`kie.ai fail: ${sd?.data?.failMsg}`);
+    if (state === 'success') {
+      let imgUrl = null;
+      try { const r = JSON.parse(sd?.data?.resultJson||'{}'); imgUrl = r?.resultUrls?.[0]||r?.images?.[0]?.url||r?.url; } catch(_) {}
+      if (!imgUrl) throw new Error("kie.ai success sans URL.");
+      const blob = await (await fetch(imgUrl)).blob();
+      const b64 = await new Promise((res, rej) => { const fr = new FileReader(); fr.onloadend = () => res(fr.result.split(',')[1]); fr.onerror = rej; fr.readAsDataURL(blob); });
+      return { b64, mime: blob.type || 'image/jpeg' };
+    }
+  }
+  throw new Error("Timeout kie.ai.");
+}
+
+// ── RENDER DISPATCH ───────────────────────────────────────────────────────────
+window.retryPlan = function(id) {
+  // Effacer l'image existante et relancer
+  if (generatedBlobUrls[id]) { URL.revokeObjectURL(generatedBlobUrls[id]); delete generatedBlobUrls[id]; }
+  delete generatedBase64[id];
+  window.renderPlan(id);
+};
+
+window.renderPlan = async function(id) {
+  if (!referenceImage || !analysisData) return;
+  if (generatingIds.has(id)) return;
+  generatingIds.add(id);
+  renderStoryboard();
+  hideAlert();
+
+  try {
+    const result = selectedEngine === 'kie'
+      ? await renderPlanKie(id)
+      : await renderPlanVertex(id);
+
+    generatedBase64[id] = { b64: result.b64, mime: result.mime };
+    if (generatedBlobUrls[id]) URL.revokeObjectURL(generatedBlobUrls[id]);
+    generatedBlobUrls[id] = base64ToBlobUrl(result.b64, result.mime);
+  } catch(err) {
+    showAlert('error', 'Erreur rendu : ' + err.message);
+  } finally {
+    generatingIds.delete(id);
+    renderStoryboard();
+  }
+};
+
+// ── TELECHARGEMENT ────────────────────────────────────────────────────────────
+window.downloadImgById = function(id, num) {
+  const entry = generatedBase64[id];
+  if (!entry) return;
+  const ext = entry.mime.includes('png') ? 'png' : 'jpg';
+  const blobUrl = base64ToBlobUrl(entry.b64, entry.mime);
+  if (isIOS) {
+    const w = window.open(blobUrl, '_blank');
+    if (!w) alert("Appuie longuement sur l'image > Enregistrer.");
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+  } else {
+    const a = document.createElement('a');
+    a.href = blobUrl; a.download = `studio_scene_moment_${num}.${ext}`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+  }
+};
+
+window.exportAll = function() {
+  Object.entries(generatedBase64).forEach(([id, entry], i) => {
+    setTimeout(() => window.downloadImgById(id, i+1), i * 400);
+  });
+};
+</script>
+</body>
+</html>
