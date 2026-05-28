@@ -547,9 +547,34 @@ async function handleGenerateSequence() {
   var action = currentMode === 'manual' ? document.getElementById('actionInput').value.trim() : null;
   var prompt;
   if (currentMode === 'memory') {
-    prompt = 'MODE MEMORY RECONSTRUCTION CAUSALE. Image finale: Lieu=' + analysisData.environnement.lieu + ' Personnage=' + analysisData.personnage.apparence + ' Posture=' + analysisData.personnage.posture + '. Reconstruis 5 moments precedents chronologiques: scene1=il y a 12-15min, scene2=8-10min, scene3=4-6min, scene4=1-2min, scene5=quelques secondes avant. Causalite stricte, memoire physique objets, inertie humaine. Reponds JSON: {"scenes":["...","...","...","...","..."]}';
+    prompt = 'MODE MEMORY - RECONSTRUCTION CAUSALE DE TIMELINE.' +
+      ' Tu analyses une image figee comme une scene vivante ayant une histoire deja vecue.' +
+      ' DONNEES DE L IMAGE FINALE (point d arrivee) :' +
+      ' Lieu : ' + analysisData.environnement.lieu +
+      '. Personnage : ' + analysisData.personnage.apparence +
+      '. Posture actuelle : ' + analysisData.personnage.posture +
+      '. Expression : ' + analysisData.personnage.expression_faciale +
+      '. Objets : ' + analysisData.personnage.objets_tenus.map(function(o){return o.objet;}).join(', ') +
+      '. Lumiere : ' + analysisData.lumiere.type + ', ' + analysisData.lumiere.direction +
+      '. MISSION : RECONSTRUIRE LES 5 MOMENTS QUI ONT CONDUIT A CET INSTANT.' +
+      ' REGLE 1 : Chaque objet visible dans l image finale doit avoir ete introduit dans un moment precedent. Aucun element sans transition logique.' +
+      ' REGLE 2 : Memoire physique des objets : verre entame, chaise reculee, coussin deforme. Jamais places - toujours utilises naturellement.' +
+      ' REGLE 3 : Corps en transition physique coherente. Poids realiste, appuis credibles.' +
+      ' REGLE 4 : Traces d actions tres recentes visibles (fumee, mouvement, chaleur).' +
+      ' REGLE 5 : Chaque action a une raison humaine credible. Rien pour l esthetique pure.' +
+      ' CHRONOLOGIE : Scene 1 = il y a 12-15 minutes. Scene 2 = il y a 8-10 minutes. Scene 3 = il y a 4-6 minutes. Scene 4 = il y a 1-2 minutes. Scene 5 = quelques secondes avant l image finale.' +
+      ' Genere 5 descriptions de scenes precedentes, chronologiques.' +
+      ' Reponds UNIQUEMENT en JSON : {"scenes":["...","...","...","...","..."]}';
   } else {
-    prompt = 'ARC NARRATIF. Action=' + (action || 'sequence narrative depuis image source') + '. Lieu=' + analysisData.environnement.lieu + ' Personnage=' + analysisData.personnage.apparence + '. 5 scenes distinctes, progression logique, zero objet invente. Reponds JSON: {"scenes":["...","...","...","...","..."]}';
+    prompt = 'ARC NARRATIF CINEMATOGRAPHIQUE.' +
+      ' ACTION PRINCIPALE : ' + (action || 'Une sequence narrative complete commencant par l image source') +
+      '. CONTEXTE SOURCE :' +
+      ' Lieu : ' + analysisData.environnement.lieu +
+      '. Personnage : ' + analysisData.personnage.apparence +
+      '. Position initiale : ' + analysisData.personnage.posture +
+      '. Objets presents : ' + (analysisData.personnage.objets_tenus.map(function(o){return o.objet;}).join(', ') || 'aucun') +
+      '. REGLES : 5 scenes distinctes. Progression logique. Zero objet invente. Mouvement deja en cours des la scene 1. Pose statique INTERDITE.' +
+      ' Reponds UNIQUEMENT en JSON : {"scenes":["...","...","...","...","..."]}';
   }
   try {
     var data = await vertexCall(MODEL_ANALYSIS, [{ role: 'user', parts: [{ text: prompt }] }], { temperature: 0.7 });
@@ -610,8 +635,23 @@ async function renderPlanVertex(id) {
   if (!item) throw new Error('Scene introuvable.');
   var isMemory = currentMode === 'memory';
   var instruction = isMemory
-    ? 'PROTOCOLE MODE MEMORY. IMAGE FOURNIE = etat final. Generez le moment AVANT cet etat. DECOR: ' + analysisData.environnement.lieu + '. PERSONNAGE: ' + analysisData.personnage.apparence + '. Meme visage, meme tenue (' + analysisData.personnage.vetements.haut + ', ' + analysisData.personnage.vetements.bas + '). MOMENT: ' + item.scene + '. Style cinematographique photorealiste. Lumiere ' + analysisData.lumiere.type + ' depuis ' + analysisData.lumiere.direction + '.'
-    : 'PROTOCOLE CONTINUITE NARRATIVE. DECOR: ' + analysisData.environnement.lieu + '. PERSONNAGE: ' + analysisData.personnage.apparence + '. Meme tenue (' + analysisData.personnage.vetements.haut + ', ' + analysisData.personnage.vetements.bas + '). ETAPE: ' + item.scene + '. Mouvement deja en cours. Style cinematographique photorealiste. Lumiere ' + analysisData.lumiere.type + ' depuis ' + analysisData.lumiere.direction + '.';
+    ? 'PROTOCOLE MODE MEMORY - MOMENT PRECEDENT, RECONSTRUCTION CAUSALE.' +
+      ' IMAGE FINALE DE REFERENCE : l image fournie represente l etat final, pas l etat a generer.' +
+      ' DECOR VERROUILLE : ' + analysisData.environnement.lieu + '. Conservez chaque detail, texture et position des meubles. Zero element ajoute.' +
+      ' PERSONNAGE VERROUILLE : ' + analysisData.personnage.apparence + '. Meme visage, meme tenue exacte (' + analysisData.personnage.vetements.haut + ', ' + analysisData.personnage.vetements.bas + ', ' + analysisData.personnage.vetements.chaussures + ').' +
+      ' MOMENT A RECONSTRUIRE : ' + item.scene +
+      '. MEMOIRE PHYSIQUE : les objets doivent montrer leur etat a CE moment - avant d atteindre leur etat dans l image finale.' +
+      ' INERTIE HUMAINE : corps en transition physique coherente, mouvement naturel, poids realiste.' +
+      ' TEMPS RESIDUEL : traces d actions tres recentes visibles.' +
+      ' INTENTION COMPORTEMENTALE : chaque detail a une raison humaine credible, rien pour l esthetique pure.' +
+      ' STYLE : cinematographique, haute fidelite, photorealiste. Lumiere ' + analysisData.lumiere.type + ' depuis ' + analysisData.lumiere.direction + '.'
+    : 'PROTOCOLE DE CONTINUITE NARRATIVE STRICTE.' +
+      ' SOURCE FRAME : utilisez l image fournie comme reference absolue et immuable.' +
+      ' DECOR VERROUILLE : ' + analysisData.environnement.lieu + '. Conservez chaque detail, texture et position des meubles. Zero element ajoute.' +
+      ' PERSONNAGE VERROUILLE : ' + analysisData.personnage.apparence + '. Meme visage, meme tenue exacte (' + analysisData.personnage.vetements.haut + ', ' + analysisData.personnage.vetements.bas + ').' +
+      ' ETAPE NARRATIVE : ' + item.scene +
+      '. Mouvement deja en cours. Pose statique INTERDITE.' +
+      ' STYLE : cinematographique, haute fidelite, photorealiste. Lumiere ' + analysisData.lumiere.type + ' depuis ' + analysisData.lumiere.direction + '.';
   var body = {
     contents: [{ role: 'user', parts: [{ inlineData: { data: referenceImage, mimeType: referenceMime } }, { text: instruction }] }],
     generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: aspectRatio, imageSize: '4K' } }
