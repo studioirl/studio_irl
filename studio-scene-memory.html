@@ -448,40 +448,39 @@ body { min-height: 100vh; background: radial-gradient(circle at top right, #0a19
 </div>
 
 <script>
-// MODELES
-const MODEL_ANALYSIS = 'gemini-2.5-flash';
-const MODEL_IMAGE    = 'gemini-3.1-flash-image-preview';
+// STATE - en premier pour eviter la TDZ
+var API_KEY = '';
+var selectedEngine = 'vertex';
+var referenceImage = null;
+var referenceImageFull = null;
+var referenceMime = 'image/jpeg';
+var analysisData = null;
+var currentMode = 'auto';
+var aspectRatio = '4:5';
+var generatedPrompts = [];
+var generatedBlobUrls = {};
+var generatedBase64 = {};
+var generatingIds = new Set();
+var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-// FETCH AIPLATFORM (Vertex Express AQ...)
+// MODELES
+var MODEL_ANALYSIS = 'gemini-2.5-flash';
+var MODEL_IMAGE    = 'gemini-3.1-flash-image-preview';
+
+// FETCH AIPLATFORM
 async function vertexCall(model, contents, generationConfig) {
-  const url = 'https://aiplatform.googleapis.com/v1/publishers/google/models/' + model + ':generateContent?key=' + encodeURIComponent(API_KEY);
-  const res = await fetch(url, {
+  var url = 'https://aiplatform.googleapis.com/v1/publishers/google/models/' + model + ':generateContent?key=' + encodeURIComponent(API_KEY);
+  var res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contents, generationConfig })
+    body: JSON.stringify({ contents: contents, generationConfig: generationConfig })
   });
   if (!res.ok) {
-    let d; try { d = await res.json(); } catch(_) {}
+    var d; try { d = await res.json(); } catch(_) {}
     throw new Error((d && d.error && d.error.message) || 'HTTP ' + res.status);
   }
   return await res.json();
 }
-
-// ── STATE ─────────────────────────────────────────────────────────────────────
-let API_KEY = '';
-let selectedEngine = 'vertex'; // 'vertex' | 'kie'
-let referenceImage = null;     // base64 pur
-let referenceImageFull = null; // data URI complet (pour upload kie)
-let referenceMime = 'image/jpeg';
-let analysisData = null;
-let currentMode = 'auto'; // 'auto' | 'manual' | 'avant'
-let aspectRatio = '4:5';
-let generatedPrompts = [];
-let generatedBlobUrls = {};  // id -> blob URL affiché (Safari-safe)
-let generatedBase64 = {};    // id -> {b64, mime} pour export ZIP
-let generatingIds = new Set();
-
-const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
@@ -493,15 +492,15 @@ function escapeHtml(s) {
 }
 
 function base64ToBlobUrl(b64, mime) {
-  const binary = atob(b64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  const blob = new Blob([bytes], { type: mime });
+  var binary = atob(b64);
+  var bytes = new Uint8Array(binary.length);
+  for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  var blob = new Blob([bytes], { type: mime });
   return URL.createObjectURL(blob);
 }
 
 function showAlert(type, msg) {
-  const box = document.getElementById('alertBox');
+  var box = document.getElementById('alertBox');
   box.style.display = 'flex';
   box.innerHTML = `<div class="alert-box ${type}">
     <span>${escapeHtml(msg)}</span>
@@ -510,7 +509,7 @@ function showAlert(type, msg) {
 }
 function hideAlert() { document.getElementById('alertBox').style.display = 'none'; }
 function showSuccess(msg) {
-  const box = document.getElementById('alertBox');
+  var box = document.getElementById('alertBox');
   box.style.display = 'flex';
   box.innerHTML = `<div class="alert-box success"><span>${escapeHtml(msg)}</span></div>`;
   setTimeout(() => { box.style.display = 'none'; }, 3000);
@@ -564,12 +563,12 @@ window.resetToLanding = function() {
 
 // ── UPLOAD ────────────────────────────────────────────────────────────────────
 window.handleImageUpload = function(e) {
-  const file = e.target.files[0];
+  var file = e.target.files[0];
   if (!file) return;
-  const reader = new FileReader();
+  var reader = new FileReader();
   reader.onload = ev => {
-    const result = ev.target.result;
-    const m = result.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,/);
+    var result = ev.target.result;
+    var m = result.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,/);
     referenceMime = m ? m[1] : 'image/jpeg';
     referenceImage = result.split(',')[1];
     referenceImageFull = result;
@@ -600,7 +599,7 @@ window.setMode = function(mode) {
   });
   document.getElementById('manualTextarea').style.display = mode === 'manual' ? 'block' : 'none';
   document.getElementById('avantBanner').style.display    = mode === 'avant'  ? 'block' : 'none';
-  const label = mode === 'avant'
+  var label = mode === 'avant'
     ? '⏪ RECONSTRUIRE LA TIMELINE'
     : 'DEPLOYER LA SEQUENCE VECUE';
   document.getElementById('genSeqLabel').textContent = label;
@@ -618,15 +617,15 @@ window.setAR = function(ar) {
 // ANALYSE - fetch direct aiplatform
 async function handleAnalyze() {
   if (!referenceImage) return;
-  const btn = document.getElementById('analyzeBtn');
+  var btn = document.getElementById('analyzeBtn');
   btn.disabled = true;
   btn.innerHTML = '<svg class="spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> ANALYSE EN COURS...';
   hideAlert();
 
-  const prompt = 'CAPTURER L ADN DE L INSTANT. Analysez cette image comme le point Zero d un recit cinematographique. 1. personnage: identite visuelle, tenue exacte, posture, energie. 2. environnement: lieu, textures, mobilier, petits objets. 3. lumiere: ambiance, ombres, temperature. Cataloguez UNIQUEMENT ce qui est visuellement present. Repondez EXCLUSIVEMENT en JSON valide: {"personnage":{"apparence":"","expression_faciale":"","posture":"","vetements":{"haut":"","bas":"","chaussures":""},"objets_tenus":[]},"environnement":{"lieu":"","murs":"","sol":"","meubles":[],"objets_visibles":[]},"lumiere":{"type":"","direction":"","intensite":""}}';
+  var prompt = 'CAPTURER L ADN DE L INSTANT. Analysez cette image comme le point Zero d un recit cinematographique. 1. personnage: identite visuelle, tenue exacte, posture, energie. 2. environnement: lieu, textures, mobilier, petits objets. 3. lumiere: ambiance, ombres, temperature. Cataloguez UNIQUEMENT ce qui est visuellement present. Repondez EXCLUSIVEMENT en JSON valide: {"personnage":{"apparence":"","expression_faciale":"","posture":"","vetements":{"haut":"","bas":"","chaussures":""},"objets_tenus":[]},"environnement":{"lieu":"","murs":"","sol":"","meubles":[],"objets_visibles":[]},"lumiere":{"type":"","direction":"","intensite":""}}';
 
   try {
-    const data = await vertexCall(MODEL_ANALYSIS, [{
+    var data = await vertexCall(MODEL_ANALYSIS, [{
       role: 'user',
       parts: [
         { inlineData: { mimeType: referenceMime, data: referenceImage } },
@@ -634,8 +633,8 @@ async function handleAnalyze() {
       ]
     }], { temperature: 0.1 });
 
-    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    const m = raw.replace(/```json|```/g, '').trim().match(/\{[\s\S]*\}/);
+    var raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    var m = raw.replace(/```json|```/g, '').trim().match(/\{[\s\S]*\}/);
     if (!m) throw new Error('Reponse JSON introuvable. Reponse brute: ' + raw.slice(0, 200));
     analysisData = JSON.parse(m[0]);
     if (!analysisData.personnage) analysisData.personnage = { apparence:'', expression_faciale:'', posture:'', vetements:{haut:'',bas:'',chaussures:''}, objets_tenus:[] };
@@ -644,7 +643,7 @@ async function handleAnalyze() {
     if (!Array.isArray(analysisData.environnement.objets_visibles)) analysisData.environnement.objets_visibles = [];
     if (!analysisData.lumiere) analysisData.lumiere = { type:'naturelle', direction:'avant', intensite:'moyenne' };
 
-    const objets = analysisData.personnage.objets_tenus.map(function(o) { return o.objet; }).join(', ') || 'Aucun';
+    var objets = analysisData.personnage.objets_tenus.map(function(o) { return o.objet; }).join(', ') || 'Aucun';
     document.getElementById('analysisInfoText').innerHTML =
       '<strong>Lieu :</strong> ' + escapeHtml(analysisData.environnement.lieu) + '<br><strong>Objets :</strong> ' + escapeHtml(objets);
     document.getElementById('analyzeSection').style.display = 'none';
@@ -663,7 +662,7 @@ document.getElementById('analyzeBtn').onclick = handleAnalyze;
 // GENERATE SEQUENCE - fetch direct aiplatform
 async function handleGenerateSequence() {
   if (!analysisData) { showAlert('error', "Analysez d'abord l'image."); return; }
-  const btn = document.getElementById('genSeqBtn');
+  var btn = document.getElementById('genSeqBtn');
   btn.disabled = true;
   document.getElementById('storyboardArea').style.display = 'none';
   document.getElementById('generatingState').style.display = 'flex';
@@ -672,7 +671,7 @@ async function handleGenerateSequence() {
   generatedBlobUrls = {}; generatedBase64 = {};
   hideAlert();
 
-  const action = currentMode === 'manual' ? document.getElementById('actionInput').value.trim() : null;
+  var action = currentMode === 'manual' ? document.getElementById('actionInput').value.trim() : null;
 
   var prompt;
   if (currentMode === 'avant') {
@@ -682,15 +681,15 @@ async function handleGenerateSequence() {
   }
 
   try {
-    const data = await vertexCall(MODEL_ANALYSIS, [{
+    var data = await vertexCall(MODEL_ANALYSIS, [{
       role: 'user', parts: [{ text: prompt }]
     }], { temperature: 0.7 });
 
-    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    const m = raw.replace(/```json|```/g, '').trim().match(/\{[\s\S]*\}/);
+    var raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    var m = raw.replace(/```json|```/g, '').trim().match(/\{[\s\S]*\}/);
     if (!m) throw new Error('Reponse JSON introuvable: ' + raw.slice(0, 200));
-    const parsed = JSON.parse(m[0]);
-    const scenes = parsed.scenes || [];
+    var parsed = JSON.parse(m[0]);
+    var scenes = parsed.scenes || [];
     if (!scenes.length) throw new Error('Aucune scene generee.');
 
     generatedPrompts = scenes.map(function(s, i) { return { id: Date.now() + '-' + i, scene: s }; });
@@ -716,16 +715,16 @@ function getARClass() {
 }
 
 function renderStoryboard() {
-  const grid = document.getElementById('storyGrid');
-  const arClass = getARClass();
-  const isAvant = currentMode === 'avant';
+  var grid = document.getElementById('storyGrid');
+  var arClass = getARClass();
+  var isAvant = currentMode === 'avant';
 
   grid.innerHTML = generatedPrompts.map((p, i) => {
-    const blobUrl = generatedBlobUrls[p.id];
-    const loading = generatingIds.has(p.id);
-    const label = isAvant ? `T-${(5-i)*3}min` : `Prise 0${i+1}`;
-    const genIcon = isAvant ? '⏪' : '🖼';
-    const genLabel = isAvant ? 'Reconstruire' : 'Generer le moment';
+    var blobUrl = generatedBlobUrls[p.id];
+    var loading = generatingIds.has(p.id);
+    var label = isAvant ? `T-${(5-i)*3}min` : `Prise 0${i+1}`;
+    var genIcon = isAvant ? '⏪' : '🖼';
+    var genLabel = isAvant ? 'Reconstruire' : 'Generer le moment';
 
     return `<div class="story-card" id="card-${p.id}">
       <div class="story-img-wrap ${arClass}" id="imgwrap-${p.id}">
@@ -768,15 +767,15 @@ function renderStoryboard() {
 
 // RENDER IMAGE VERTEX - fetch direct aiplatform
 async function renderPlanVertex(id) {
-  const item = generatedPrompts.find(function(p) { return p.id === id; });
+  var item = generatedPrompts.find(function(p) { return p.id === id; });
   if (!item) throw new Error("Scene introuvable.");
-  const isAvant = currentMode === 'avant';
+  var isAvant = currentMode === 'avant';
 
-  const instruction = isAvant
+  var instruction = isAvant
     ? 'PROTOCOLE MODE MEMORY. IMAGE FOURNIE = etat final. Generez le moment AVANT cet etat. DECOR: ' + analysisData.environnement.lieu + '. Zero element ajoute. PERSONNAGE: ' + analysisData.personnage.apparence + '. Meme visage, meme tenue (' + analysisData.personnage.vetements.haut + ', ' + analysisData.personnage.vetements.bas + '). MOMENT: ' + item.scene + '. Memoire physique objets, inertie humaine, traces residuelles. Style cinematographique photorealiste. Lumiere ' + analysisData.lumiere.type + ' depuis ' + analysisData.lumiere.direction + '.'
     : 'PROTOCOLE CONTINUITE NARRATIVE. SOURCE FRAME = reference absolue. DECOR: ' + analysisData.environnement.lieu + '. Zero element ajoute. PERSONNAGE: ' + analysisData.personnage.apparence + '. Meme visage, meme tenue (' + analysisData.personnage.vetements.haut + ', ' + analysisData.personnage.vetements.bas + '). ETAPE: ' + item.scene + '. Mouvement deja en cours. Style cinematographique photorealiste. Lumiere ' + analysisData.lumiere.type + ' depuis ' + analysisData.lumiere.direction + '.';
 
-  const body = {
+  var body = {
     contents: [{ role: 'user', parts: [
       { inlineData: { data: referenceImage, mimeType: referenceMime } },
       { text: instruction }
@@ -787,22 +786,22 @@ async function renderPlanVertex(id) {
     }
   };
 
-  const waitTimes = [4000, 8000, 15000];
-  let lastErr;
+  var waitTimes = [4000, 8000, 15000];
+  var lastErr;
   for (var attempt = 0; attempt <= waitTimes.length; attempt++) {
     try {
-      const url = 'https://aiplatform.googleapis.com/v1/publishers/google/models/' + MODEL_IMAGE + ':generateContent?key=' + encodeURIComponent(API_KEY);
-      const res = await fetch(url, {
+      var url = 'https://aiplatform.googleapis.com/v1/publishers/google/models/' + MODEL_IMAGE + ':generateContent?key=' + encodeURIComponent(API_KEY);
+      var res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
       if (!res.ok) {
-        let d; try { d = await res.json(); } catch(_) {}
+        var d; try { d = await res.json(); } catch(_) {}
         throw new Error((d && d.error && d.error.message) || 'HTTP ' + res.status);
       }
-      const data = await res.json();
-      const parts = (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) || [];
+      var data = await res.json();
+      var parts = (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) || [];
       for (var i = 0; i < parts.length; i++) {
         if (parts[i].inlineData && parts[i].inlineData.data) {
           return { b64: parts[i].inlineData.data, mime: 'image/png' };
@@ -811,8 +810,8 @@ async function renderPlanVertex(id) {
       throw new Error("Aucune image retournee par Vertex.");
     } catch(err) {
       lastErr = err;
-      const msg = String(err.message || '').toLowerCase();
-      const retryable = msg.includes('429') || msg.includes('503') || msg.includes('502') || msg.includes('overloaded');
+      var msg = String(err.message || '').toLowerCase();
+      var retryable = msg.includes('429') || msg.includes('503') || msg.includes('502') || msg.includes('overloaded');
       if (retryable && attempt < waitTimes.length) { await sleep(waitTimes[attempt]); continue; }
       throw err;
     }
@@ -823,27 +822,27 @@ async function renderPlanVertex(id) {
 
 // ── RENDER IMAGE - KIE.AI ─────────────────────────────────────────────────────
 async function uploadImageToKie(dataUri) {
-  const res = await fetch('https://kieai.redpandaai.co/api/file-base64-upload', {
+  var res = await fetch('https://kieai.redpandaai.co/api/file-base64-upload', {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ base64Data: dataUri, uploadPath: 'images/studio-scene' })
   });
-  let d = {}; try { d = await res.json(); } catch(_) {}
+  var d = {}; try { d = await res.json(); } catch(_) {}
   if (!res.ok || !d.data?.downloadUrl) throw new Error(`Upload kie.ai echoue: ${d.msg || res.status}`);
   return d.data.downloadUrl;
 }
 
 async function renderPlanKie(id) {
-  const item = generatedPrompts.find(p => p.id === id);
+  var item = generatedPrompts.find(p => p.id === id);
   if (!item) throw new Error("Scene introuvable.");
-  const isAvant = currentMode === 'avant';
+  var isAvant = currentMode === 'avant';
 
-  let imageUrls = [];
+  var imageUrls = [];
   if (referenceImageFull) {
     try { imageUrls.push(await uploadImageToKie(referenceImageFull)); } catch(e) { console.warn(e); }
   }
 
-  const prompt = `Ultra-realistic cinematic photography.
+  var prompt = `Ultra-realistic cinematic photography.
 ${isAvant ? 'CAUSAL RECONSTRUCTION: the reference image is the FINAL STATE. Generate the moment BEFORE.' : 'NARRATIVE CONTINUATION: generate the next moment after the reference image.'}
 SCENE: ${item.scene}.
 CHARACTER: ${analysisData.personnage.apparence}. Same face, same outfit (${analysisData.personnage.vetements.haut}, ${analysisData.personnage.vetements.bas}).
@@ -851,27 +850,27 @@ ENVIRONMENT: ${analysisData.environnement.lieu}. Same textures, same furniture. 
 LIGHTING: ${analysisData.lumiere.type} from ${analysisData.lumiere.direction}.
 Photoreal, no AI smoothing, authentic human posture.`;
 
-  const createRes = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
+  var createRes = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ model: 'nano-banana-2', input: { prompt, aspect_ratio: aspectRatio, resolution: '1K', output_format: 'jpg', image_input: imageUrls } })
   });
-  let cd = {}; try { cd = await createRes.json(); } catch(_) {}
+  var cd = {}; try { cd = await createRes.json(); } catch(_) {}
   if (!createRes.ok || cd.code !== 200) throw new Error(`kie.ai: ${cd.msg || createRes.status}`);
-  const taskId = cd?.data?.taskId;
+  var taskId = cd?.data?.taskId;
   if (!taskId) throw new Error("Pas de taskId kie.ai.");
 
-  for (let i = 0; i < 60; i++) {
+  for (var i = 0; i < 60; i++) {
     await sleep(5000);
-    let sd = {}; try { const sr = await fetch(`https://api.kie.ai/api/v1/jobs/recordInfo?taskId=${taskId}`, { headers: { 'Authorization': `Bearer ${API_KEY}` } }); sd = await sr.json(); } catch(_) { continue; }
-    const state = sd?.data?.state;
+    var sd = {}; try { var sr = await fetch(`https://api.kie.ai/api/v1/jobs/recordInfo?taskId=${taskId}`, { headers: { 'Authorization': `Bearer ${API_KEY}` } }); sd = await sr.json(); } catch(_) { continue; }
+    var state = sd?.data?.state;
     if (state === 'fail') throw new Error(`kie.ai fail: ${sd?.data?.failMsg}`);
     if (state === 'success') {
-      let imgUrl = null;
-      try { const r = JSON.parse(sd?.data?.resultJson||'{}'); imgUrl = r?.resultUrls?.[0]||r?.images?.[0]?.url||r?.url; } catch(_) {}
+      var imgUrl = null;
+      try { var r = JSON.parse(sd?.data?.resultJson||'{}'); imgUrl = r?.resultUrls?.[0]||r?.images?.[0]?.url||r?.url; } catch(_) {}
       if (!imgUrl) throw new Error("kie.ai success sans URL.");
-      const blob = await (await fetch(imgUrl)).blob();
-      const b64 = await new Promise((res, rej) => { const fr = new FileReader(); fr.onloadend = () => res(fr.result.split(',')[1]); fr.onerror = rej; fr.readAsDataURL(blob); });
+      var blob = await (await fetch(imgUrl)).blob();
+      var b64 = await new Promise((res, rej) => { var fr = new FileReader(); fr.onloadend = () => res(fr.result.split(',')[1]); fr.onerror = rej; fr.readAsDataURL(blob); });
       return { b64, mime: blob.type || 'image/jpeg' };
     }
   }
@@ -894,7 +893,7 @@ window.renderPlan = async function(id) {
   hideAlert();
 
   try {
-    const result = selectedEngine === 'kie'
+    var result = selectedEngine === 'kie'
       ? await renderPlanKie(id)
       : await renderPlanVertex(id);
 
@@ -911,16 +910,16 @@ window.renderPlan = async function(id) {
 
 // ── TELECHARGEMENT ────────────────────────────────────────────────────────────
 window.downloadImgById = function(id, num) {
-  const entry = generatedBase64[id];
+  var entry = generatedBase64[id];
   if (!entry) return;
-  const ext = entry.mime.includes('png') ? 'png' : 'jpg';
-  const blobUrl = base64ToBlobUrl(entry.b64, entry.mime);
+  var ext = entry.mime.includes('png') ? 'png' : 'jpg';
+  var blobUrl = base64ToBlobUrl(entry.b64, entry.mime);
   if (isIOS) {
-    const w = window.open(blobUrl, '_blank');
+    var w = window.open(blobUrl, '_blank');
     if (!w) alert("Appuie longuement sur l'image > Enregistrer.");
     setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
   } else {
-    const a = document.createElement('a');
+    var a = document.createElement('a');
     a.href = blobUrl; a.download = `studio_scene_moment_${num}.${ext}`;
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
