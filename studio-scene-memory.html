@@ -272,7 +272,7 @@ body { min-height: 100vh; background: radial-gradient(circle at top right, #0a19
     <p class="api-label" id="keyLabel">Cle API Vertex AI (Express Mode)</p>
     <input type="password" id="apiKeyInput" class="api-input" placeholder="AQ..." autocomplete="off">
     <p id="splash-error"></p>
-    <button class="splash-cta" onclick="enterApp()">DEMARRER LE TOURNAGE</button>
+    <button class="splash-cta" id="splashCta">DEMARRER LE TOURNAGE</button>
   </div>
 </div>
 
@@ -528,9 +528,9 @@ window.selectEngine = function(engine) {
 };
 
 // ── ENTREE APP ────────────────────────────────────────────────────────────────
-window.enterApp = function() {
-  const key = document.getElementById('apiKeyInput').value.trim();
-  const errEl = document.getElementById('splash-error');
+function enterApp() {
+  var key = document.getElementById('apiKeyInput').value.trim();
+  var errEl = document.getElementById('splash-error');
   if (!key) { errEl.textContent = 'Entrez votre cle API.'; errEl.style.display = 'block'; return; }
   API_KEY = key;
   errEl.style.display = 'none';
@@ -539,9 +539,11 @@ window.enterApp = function() {
   document.getElementById('engineLabel').textContent = selectedEngine === 'kie'
     ? 'kie.ai · Nano Banana 2'
     : 'Vertex AI · Gemini';
-  document.getElementById('engineLabel').className = 'brand-engine' + (selectedEngine==='kie' ? ' kie' : '');
-};
-document.getElementById('apiKeyInput').addEventListener('keydown', e => { if (e.key === 'Enter') window.enterApp(); });
+  document.getElementById('engineLabel').className = 'brand-engine' + (selectedEngine === 'kie' ? ' kie' : '');
+}
+window.enterApp = enterApp;
+document.getElementById('splashCta').onclick = enterApp;
+document.getElementById('apiKeyInput').addEventListener('keydown', function(e) { if (e.key === 'Enter') enterApp(); });
 
 window.resetToSplash = function() {
   document.getElementById('splash').style.display = 'flex';
@@ -613,7 +615,7 @@ window.setAR = function(ar) {
   if (generatedPrompts.length > 0) renderStoryboard();
 };
 
-// ANALYSE — fetch direct aiplatform
+// ANALYSE - fetch direct aiplatform
 async function handleAnalyze() {
   if (!referenceImage) return;
   const btn = document.getElementById('analyzeBtn');
@@ -658,7 +660,7 @@ async function handleAnalyze() {
 }
 document.getElementById('analyzeBtn').onclick = handleAnalyze;
 
-// GENERATE SEQUENCE — fetch direct aiplatform
+// GENERATE SEQUENCE - fetch direct aiplatform
 async function handleGenerateSequence() {
   if (!analysisData) { showAlert('error', "Analysez d'abord l'image."); return; }
   const btn = document.getElementById('genSeqBtn');
@@ -695,7 +697,7 @@ async function handleGenerateSequence() {
     document.getElementById('generatingState').style.display = 'none';
     document.getElementById('storyboardArea').style.display = 'block';
     document.getElementById('storyboardTitle').textContent = currentMode === 'avant'
-      ? 'Timeline Invisible — Reconstruction Causale'
+      ? 'Timeline Invisible - Reconstruction Causale'
       : 'Storyboard Temporel';
     renderStoryboard();
     showSuccess(currentMode === 'avant' ? 'Timeline reconstruite.' : 'Storyboard genere !');
@@ -764,7 +766,7 @@ function renderStoryboard() {
     Object.keys(generatedBlobUrls).length > 0 ? 'flex' : 'none';
 }
 
-// RENDER IMAGE VERTEX — fetch direct aiplatform
+// RENDER IMAGE VERTEX - fetch direct aiplatform
 async function renderPlanVertex(id) {
   const item = generatedPrompts.find(function(p) { return p.id === id; });
   if (!item) throw new Error("Scene introuvable.");
@@ -819,7 +821,7 @@ async function renderPlanVertex(id) {
 }
 
 
-// ── RENDER IMAGE — KIE.AI ─────────────────────────────────────────────────────
+// ── RENDER IMAGE - KIE.AI ─────────────────────────────────────────────────────
 async function uploadImageToKie(dataUri) {
   const res = await fetch('https://kieai.redpandaai.co/api/file-base64-upload', {
     method: 'POST',
