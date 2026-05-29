@@ -258,27 +258,32 @@ let lIdx = 0, lTmr = null;
 
 // ── SUPABASE ACCESS ──────────────────────────────────────────────────────────
 async function supaFetch(path, method, body) {
-  const res = await fetch(`${SUPA_URL}/rest/v1/${path}`, {
-    method: method || 'GET',
-    headers: {
-      'apikey': SUPA_KEY,
-      'Authorization': `Bearer ${SUPA_KEY}`,
-      'Content-Type': 'application/json',
-      'Prefer': method === 'POST' ? 'return=representation' : ''
-    },
-    body: body ? JSON.stringify(body) : undefined
-  });
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(err);
+  try {
+    const res = await fetch(`${SUPA_URL}/rest/v1/${path}`, {
+      method: method || 'GET',
+      headers: {
+        'apikey': SUPA_KEY,
+        'Authorization': `Bearer ${SUPA_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': method === 'POST' ? 'return=representation' : ''
+      },
+      body: body ? JSON.stringify(body) : undefined
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error('Supabase ' + res.status + ': ' + err);
+    }
+    const txt = await res.text();
+    return txt ? JSON.parse(txt) : null;
+  } catch(e) {
+    if (e.message.includes('Supabase')) throw e;
+    throw new Error('Connexion impossible: ' + e.message);
   }
-  const txt = await res.text();
-  return txt ? JSON.parse(txt) : null;
 }
 
 async function accessStudio() {
   const email = document.getElementById('emailIn').value.trim().toLowerCase();
-  if (!email || !email.includes('@')) {
+  if (!email || email.indexOf('@') === -1 || email.indexOf('.') === -1) {
     showAccessErr('Entre une adresse email valide.');
     return;
   }
@@ -290,7 +295,15 @@ async function accessStudio() {
 
   try {
     // Chercher si l email existe deja
-    const existing = await supaFetch(`acces?email=eq.${encodeURIComponent(email)}&select=*`);
+    let existing;
+    try {
+      existing = await supaFetch(`acces?email=eq.${encodeURIComponent(email)}&select=*`);
+    } catch(supaErr) {
+      showAccessErr('Erreur connexion base de donnees: ' + supaErr.message);
+      btn.disabled = false;
+      btn.textContent = 'ACCEDER AU STUDIO';
+      return;
+    }
 
     if (existing && existing.length > 0) {
       const user = existing[0];
