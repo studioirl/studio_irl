@@ -9,10 +9,10 @@
 :root{--bg:#080808;--red:#d42020;--red2:#ff3333;--redglow:rgba(212,32,32,0.18);--surf:#0f0f0f;--b1:#1c1c1c;--b2:#252525;--text:#c0c0c0;--muted:#484848;--w:#efefef;}
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
-body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:.4;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;opacity:.4;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");}
 
 /* SPLASH EMAIL */
-#splash{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;overflow-y:auto;text-align:center;}
+#splash{position:fixed;inset:0;z-index:300;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;overflow-y:auto;text-align:center;}
 .s-eye{width:80px;height:80px;border-radius:50%;border:1px solid var(--red);display:flex;align-items:center;justify-content:center;margin-bottom:32px;box-shadow:0 0 40px var(--redglow);animation:breathe 4s ease-in-out infinite;}
 @keyframes breathe{0%,100%{box-shadow:0 0 30px var(--redglow)}50%{box-shadow:0 0 70px rgba(212,32,32,0.38)}}
 .s-eye svg{width:36px;height:36px;stroke:var(--red);fill:none;stroke-width:1;}
@@ -22,7 +22,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
 .s-phrase{font-size:clamp(.75rem,2vw,.95rem);font-style:italic;color:var(--muted);max-width:420px;line-height:1.8;margin-bottom:44px;}
 .s-phrase strong{color:var(--red);font-style:normal;}
 
-.access-box{width:min(460px,100%);background:var(--surf);border:1px solid var(--b2);border-radius:1.2rem;padding:32px;margin-bottom:24px;}
+.access-box{width:min(460px,100%);background:var(--surf);border:1px solid var(--b2);border-radius:1.2rem;padding:32px;margin-bottom:24px;position:relative;z-index:301;}
 .access-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.3em;color:var(--muted);margin-bottom:8px;text-align:left;}
 .access-desc{font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:20px;text-align:left;}
 .access-desc strong{color:var(--text);}
@@ -31,7 +31,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
 #splash input[type=email]:focus{border-color:var(--red);box-shadow:0 0 16px var(--redglow);}
 #splash input[type=email]::placeholder{color:#2a2a2a;}
 
-.s-enter{width:100%;padding:18px;border:none;border-radius:1rem;background:linear-gradient(135deg,#700,var(--red));color:white;font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:.4em;cursor:pointer;box-shadow:0 16px 40px rgba(212,32,32,.4);transition:transform .15s,box-shadow .15s;}
+.s-enter{width:100%;padding:18px;border:none;border-radius:1rem;background:linear-gradient(135deg,#700,var(--red));color:white;font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:.4em;cursor:pointer;box-shadow:0 16px 40px rgba(212,32,32,.4);transition:transform .15s,box-shadow .15s;position:relative;z-index:302;}
 .s-enter:hover{transform:scale(1.02);}
 .s-enter:disabled{background:#1a1a1a;color:#333;cursor:not-allowed;box-shadow:none;}
 
@@ -246,7 +246,7 @@ footer span{color:var(--red);}
 // CONFIG SUPABASE
 const SUPA_URL = 'https://tygonygpqrgoarucbfcd.supabase.co';
 const SUPA_KEY = 'sb_publishable_716Slp2LQdU-Nasf7jJ9aw_PGOR3CZS';
-// Cle Vertex cachee dans Cloudflare Worker
+const PROXY_URL = 'https://studio-perception-proxy.anonymedigital.workers.dev';
 const MAX_GEN = 2;
 
 let userEmail = '';
@@ -258,27 +258,32 @@ let lIdx = 0, lTmr = null;
 
 // ── SUPABASE ACCESS ──────────────────────────────────────────────────────────
 async function supaFetch(path, method, body) {
-  const res = await fetch(`${SUPA_URL}/rest/v1/${path}`, {
-    method: method || 'GET',
-    headers: {
-      'apikey': SUPA_KEY,
-      'Authorization': `Bearer ${SUPA_KEY}`,
-      'Content-Type': 'application/json',
-      'Prefer': method === 'POST' ? 'return=representation' : ''
-    },
-    body: body ? JSON.stringify(body) : undefined
-  });
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(err);
+  try {
+    const res = await fetch(`${SUPA_URL}/rest/v1/${path}`, {
+      method: method || 'GET',
+      headers: {
+        'apikey': SUPA_KEY,
+        'Authorization': `Bearer ${SUPA_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': method === 'POST' ? 'return=representation' : ''
+      },
+      body: body ? JSON.stringify(body) : undefined
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error('Supabase ' + res.status + ': ' + err);
+    }
+    const txt = await res.text();
+    return txt ? JSON.parse(txt) : null;
+  } catch(e) {
+    if (e.message.includes('Supabase')) throw e;
+    throw new Error('Connexion impossible: ' + e.message);
   }
-  const txt = await res.text();
-  return txt ? JSON.parse(txt) : null;
 }
 
 async function accessStudio() {
   const email = document.getElementById('emailIn').value.trim().toLowerCase();
-  if (!email || !email.includes('@')) {
+  if (!email || email.indexOf('@') === -1 || email.indexOf('.') === -1) {
     showAccessErr('Entre une adresse email valide.');
     return;
   }
@@ -290,7 +295,15 @@ async function accessStudio() {
 
   try {
     // Chercher si l email existe deja
-    const existing = await supaFetch(`acces?email=eq.${encodeURIComponent(email)}&select=*`);
+    let existing;
+    try {
+      existing = await supaFetch(`acces?email=eq.${encodeURIComponent(email)}&select=*`);
+    } catch(supaErr) {
+      showAccessErr('Erreur connexion base de donnees: ' + supaErr.message);
+      btn.disabled = false;
+      btn.textContent = 'ACCEDER AU STUDIO';
+      return;
+    }
 
     if (existing && existing.length > 0) {
       const user = existing[0];
@@ -460,7 +473,15 @@ Maximum 180 mots. Francais. Direct. Brutal.`;
     const proxyBody = { model: 'gemini-2.0-flash', payload: body };
     const res = await fetch(PROXY_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(proxyBody) });
     const data = await res.json();
-    return data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    console.log('[getDiag] proxy response:', JSON.stringify(data).slice(0, 500));
+    // Chercher le texte dans tous les formats possibles de réponse
+    const txt =
+      data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+      data?.content?.parts?.[0]?.text ||
+      data?.text ||
+      data?.response ||
+      '';
+    return txt;
   } catch(e) { console.warn('Diagnostic error:', e); return ''; }
 }
 
@@ -510,9 +531,11 @@ async function analyse() {
     const dl = document.getElementById(`dl-${id}`);
     const dt = document.getElementById(`dt-${id}`);
     if (dl) dl.style.display = 'none';
-    if (dt && diag) {
+    if (dt) {
       dt.style.display = 'block';
-      dt.innerHTML = diag.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+      dt.innerHTML = diag
+        ? diag.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>')
+        : '<span style="color:var(--muted)">Diagnostic non disponible — réponse vide du modèle.</span>';
     }
 
     // ETAPE 2 — Reconstruction (Gemini 3.1 Flash Image)
@@ -563,12 +586,16 @@ function buildCard(id, origSrc, intention) {
 function fillCard(id, imgUrl, diag) {
   const af = document.getElementById(`after-${id}`);
   if (af) af.innerHTML = `<img src="${imgUrl}" alt="reconstruction" style="cursor:pointer;" onclick="dlImg('${id}','${imgUrl}')"><span class="clabel la">RECONSTRUCTION</span><span class="ceng">GEMINI 3.1 FLASH</span>`;
-  const dl = document.getElementById(`dl-${id}`), dt = document.getElementById(`dt-${id}`);
+  // Ne pas réecrire le diagnostic s'il est déjà affiché
+  const dl = document.getElementById(`dl-${id}`);
+  const dt = document.getElementById(`dt-${id}`);
   if (dl) dl.style.display = 'none';
-  if (dt && diag) {
-    dt.style.display = 'block';
-    dt.innerHTML = diag.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/
-/g, '<br>');
+  if (dt && !dt.innerHTML.trim()) {
+    // Seulement si vide, on essaie de remplir
+    if (diag) {
+      dt.style.display = 'block';
+      dt.innerHTML = diag.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+    }
   }
   const meta = document.getElementById(`meta-${id}`); if (meta) meta.style.display = 'flex';
   const bdl = document.getElementById(`bdl-${id}`); if (bdl) bdl.onclick = () => dlImg(id, imgUrl);
@@ -596,8 +623,6 @@ async function resetAll() {
 }
 
 // ── VERTEX AI VIA CLOUDFLARE PROXY ───────────────────────────────────────────
-const PROXY_URL = 'https://studio-perception-proxy.anonymedigital.workers.dev';
-
 async function callVertex(prompt) {
   const apiAR = ar === '4:5' ? '3:4' : ar;
   const parts = [];
