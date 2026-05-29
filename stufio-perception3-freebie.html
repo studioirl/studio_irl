@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STUDIO PERCEPTION</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:ital,wght@0,300;0,400;1,300&family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#080808;--red:#d42020;--red2:#ff3333;--redglow:rgba(212,32,32,0.18);--surf:#0f0f0f;--b1:#1c1c1c;--b2:#252525;--text:#c0c0c0;--muted:#484848;--w:#efefef;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:.4;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");}
+
+/* SPLASH EMAIL */
+#splash{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;overflow-y:auto;text-align:center;}
+.s-eye{width:80px;height:80px;border-radius:50%;border:1px solid var(--red);display:flex;align-items:center;justify-content:center;margin-bottom:32px;box-shadow:0 0 40px var(--redglow);animation:breathe 4s ease-in-out infinite;}
+@keyframes breathe{0%,100%{box-shadow:0 0 30px var(--redglow)}50%{box-shadow:0 0 70px rgba(212,32,32,0.38)}}
+.s-eye svg{width:36px;height:36px;stroke:var(--red);fill:none;stroke-width:1;}
+#splash h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(3.5rem,12vw,7rem);letter-spacing:.12em;color:var(--w);line-height:.9;margin-bottom:8px;}
+#splash h1 em{color:var(--red);font-style:normal;}
+.s-rule{width:240px;height:1px;background:linear-gradient(90deg,transparent,var(--red),transparent);margin:20px auto 28px;}
+.s-phrase{font-size:clamp(.75rem,2vw,.95rem);font-style:italic;color:var(--muted);max-width:420px;line-height:1.8;margin-bottom:44px;}
+.s-phrase strong{color:var(--red);font-style:normal;}
+
+.access-box{width:min(460px,100%);background:var(--surf);border:1px solid var(--b2);border-radius:1.2rem;padding:32px;margin-bottom:24px;}
+.access-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.3em;color:var(--muted);margin-bottom:8px;text-align:left;}
+.access-desc{font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:20px;text-align:left;}
+.access-desc strong{color:var(--text);}
+
+#splash input[type=email]{width:100%;padding:16px 18px;border:1px solid var(--b2);border-radius:.9rem;font-family:'Inter',sans-serif;font-size:14px;color:var(--w);background:var(--bg);outline:none;transition:border-color .2s,box-shadow .2s;margin-bottom:12px;}
+#splash input[type=email]:focus{border-color:var(--red);box-shadow:0 0 16px var(--redglow);}
+#splash input[type=email]::placeholder{color:#2a2a2a;}
+
+.s-enter{width:100%;padding:18px;border:none;border-radius:1rem;background:linear-gradient(135deg,#700,var(--red));color:white;font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:.4em;cursor:pointer;box-shadow:0 16px 40px rgba(212,32,32,.4);transition:transform .15s,box-shadow .15s;}
+.s-enter:hover{transform:scale(1.02);}
+.s-enter:disabled{background:#1a1a1a;color:#333;cursor:not-allowed;box-shadow:none;}
+
+.access-counter{margin-top:16px;padding:12px 16px;background:var(--bg);border:1px solid var(--b2);border-radius:.8rem;display:none;}
+.access-counter.show{display:block;}
+.counter-txt{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);text-align:center;}
+.counter-txt span{color:var(--red);font-weight:700;}
+
+.access-err{margin-top:12px;padding:12px 16px;background:#0f0000;border:1px solid #500;border-radius:.8rem;display:none;}
+.access-err.show{display:block;}
+.access-err p{font-size:11px;color:#ff6666;text-align:center;font-weight:600;}
+
+.access-blocked{text-align:center;padding:24px;display:none;}
+.access-blocked.show{display:block;}
+.access-blocked p{font-size:13px;color:var(--muted);line-height:1.8;}
+.access-blocked strong{color:var(--red);}
+
+/* APP */
+#app{display:none;min-height:100vh;flex-direction:column;}
+#app.on{display:flex;}
+
+header{padding:16px 28px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--b1);position:sticky;top:0;background:rgba(8,8,8,.96);backdrop-filter:blur(20px);z-index:50;}
+.hbrand{display:flex;align-items:center;gap:12px;cursor:pointer;}
+.hlogo{width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,#600,var(--red));display:flex;align-items:center;justify-content:center;}
+.hlogo svg{width:18px;height:18px;stroke:white;fill:none;stroke-width:1.5;}
+.hname{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.3em;color:var(--w);}
+.htags{display:flex;gap:7px;margin-top:2px;}
+.tag{font-size:7px;font-weight:700;padding:2px 7px;border-radius:99px;text-transform:uppercase;letter-spacing:.15em;}
+.tagr{background:var(--red);color:white;}
+.tagd{color:var(--red);border:1px solid #500;}
+.hstatus{display:flex;align-items:center;gap:10px;}
+.hdot{width:8px;height:8px;border-radius:50%;background:var(--red);box-shadow:0 0 8px var(--red);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.hmodel{font-size:8px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.15em;text-align:right;}
+.hmodel span{color:var(--red);display:block;}
+.gen-badge{font-family:'DM Mono',monospace;font-size:10px;color:var(--red);background:var(--redglow);border:1px solid #500;padding:4px 10px;border-radius:6px;}
+
+main{flex:1;}
+#zone-input{max-width:820px;margin:0 auto;padding:48px 24px;}
+.slabel{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.5em;color:var(--red);margin-bottom:18px;display:flex;align-items:center;gap:10px;}
+.slabel::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--b2),transparent);}
+
+.upload-zone{width:100%;min-height:320px;border:1px dashed var(--b2);border-radius:1.2rem;background:var(--surf);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;margin-bottom:28px;}
+.upload-zone:hover{border-color:var(--red);background:#0f0505;}
+.upload-zone.has{border-style:solid;border-color:var(--b2);cursor:default;}
+.upload-zone img.prev{width:100%;object-fit:contain;max-height:540px;display:block;border-radius:1.2rem;}
+.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+.uhint{display:flex;flex-direction:column;align-items:center;gap:10px;pointer-events:none;}
+.uhint svg{width:40px;height:40px;stroke:var(--muted);fill:none;stroke-width:1;}
+.uhint p{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.2em;}
+.uhint small{font-size:9px;color:#2a2a2a;}
+.rm-img{position:absolute;top:14px;right:14px;background:rgba(0,0,0,.8);border:1px solid var(--red);border-radius:50%;width:30px;height:30px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--red);transition:all .2s;z-index:5;}
+.rm-img:hover{background:var(--red);color:white;}
+
+.refs-row{display:flex;gap:10px;margin-bottom:28px;flex-wrap:wrap;}
+.ref-th{width:70px;height:70px;border-radius:.7rem;overflow:hidden;border:1px solid var(--b2);position:relative;flex-shrink:0;}
+.ref-th img{width:100%;height:100%;object-fit:cover;}
+.ref-th .rmref{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.8);border:none;border-radius:50%;width:18px;height:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--red);font-size:10px;}
+.add-ref{width:70px;height:70px;border-radius:.7rem;border:1px dashed var(--b2);background:var(--surf);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;overflow:hidden;flex-shrink:0;transition:all .2s;}
+.add-ref:hover{border-color:var(--red);}
+.add-ref svg{width:20px;height:20px;stroke:var(--muted);fill:none;stroke-width:1.5;}
+.add-ref input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+
+textarea.ctx{width:100%;padding:18px;border:1px solid var(--b2);border-radius:1rem;font-family:'Inter',sans-serif;font-size:13px;color:var(--text);background:var(--surf);resize:none;outline:none;min-height:110px;line-height:1.7;transition:border-color .2s,box-shadow .2s;margin-bottom:24px;}
+textarea.ctx:focus{border-color:var(--red);box-shadow:0 0 20px var(--redglow);}
+textarea.ctx::placeholder{color:#282828;}
+
+.frow{display:flex;gap:10px;margin-bottom:32px;}
+.fbtn{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 6px;border:1px solid var(--b2);border-radius:.8rem;background:var(--surf);cursor:pointer;color:var(--muted);transition:all .2s;}
+.fbtn:hover{border-color:var(--red);color:var(--w);}
+.fbtn.on{background:#1a0000;border-color:var(--red);color:var(--w);}
+.fbtn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.5;}
+.fbtn span{font-size:8px;font-weight:700;letter-spacing:.1em;}
+
+.abtn{width:100%;padding:32px;border:none;border-radius:1.5rem;background:linear-gradient(135deg,#500,#900,var(--red));color:white;cursor:pointer;transition:transform .2s,box-shadow .2s;box-shadow:0 16px 50px rgba(212,32,32,.35);display:flex;flex-direction:column;align-items:center;gap:8px;position:relative;overflow:hidden;}
+.abtn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent,rgba(255,255,255,.04),transparent);}
+.abtn:hover:not(:disabled){transform:scale(1.015);box-shadow:0 24px 60px rgba(212,32,32,.5);}
+.abtn:disabled{background:var(--surf);color:var(--muted);cursor:not-allowed;box-shadow:none;}
+.abtn .bmain{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.5em;display:flex;align-items:center;gap:16px;}
+.abtn .bmain svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.5;}
+.abtn.loading .bmain svg{animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.abtn .bsub{font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,.4);letter-spacing:.1em;}
+
+.errbox{margin-top:16px;padding:16px 20px;background:#0f0000;border:1px solid #500;border-radius:.9rem;display:none;align-items:flex-start;gap:12px;}
+.errbox.on{display:flex;}
+.errbox svg{width:18px;height:18px;stroke:var(--red);fill:none;stroke-width:2;flex-shrink:0;margin-top:1px;}
+.errbox p{font-size:10px;font-weight:600;color:#ff6666;line-height:1.7;text-transform:uppercase;letter-spacing:.05em;}
+
+#zone-results{max-width:1100px;margin:0 auto;padding:0 24px 60px;}
+.cmpwrap{display:grid;grid-template-columns:1fr 1fr;gap:3px;border-radius:1.2rem;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.6);margin-bottom:4px;}
+@media(max-width:600px){.cmpwrap{grid-template-columns:1fr;}}
+.cside{position:relative;background:#000;min-height:260px;}
+.cside img{width:100%;height:100%;object-fit:cover;display:block;}
+.cside .clabel{position:absolute;top:16px;left:16px;padding:5px 12px;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.2em;border-radius:.5rem;}
+.lb{background:rgba(0,0,0,.75);color:#888;border:1px solid #333;}
+.la{background:var(--red);color:white;}
+.cside .ceng{position:absolute;bottom:14px;right:14px;padding:4px 10px;background:rgba(0,0,0,.8);color:var(--muted);font-size:7px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;border-radius:.4rem;border:1px solid var(--b2);}
+.cside.after .ceng{color:var(--red);border-color:#500;}
+.cph{width:100%;height:100%;min-height:300px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#0a0000;}
+.cph svg{animation:spin 2s linear infinite;}
+.cph p{font-size:9px;color:#400;text-transform:uppercase;letter-spacing:.2em;font-family:'DM Mono',monospace;}
+
+.diagpanel{background:var(--surf);border:1px solid var(--b2);border-top:3px solid var(--red);border-radius:0 0 1.2rem 1.2rem;padding:28px;margin-bottom:32px;animation:fadeup .5s ease;}
+@keyframes fadeup{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.diaghdr{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.5em;color:var(--red);margin-bottom:18px;display:flex;align-items:center;gap:10px;}
+.diaghdr::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--b2),transparent);}
+.diagtxt{font-family:'DM Mono',monospace;font-size:12px;line-height:2;color:var(--text);font-style:italic;white-space:pre-wrap;}
+.diagtxt strong{color:var(--red2);font-style:normal;}
+.diagload{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:11px;font-family:'DM Mono',monospace;}
+.diagload svg{animation:spin 1s linear infinite;stroke:var(--red);fill:none;stroke-width:1.5;width:16px;height:16px;}
+
+.rmeta{display:flex;justify-content:space-between;align-items:center;padding:14px 0 0;flex-wrap:wrap;gap:10px;margin-bottom:48px;}
+.minfo{font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);}
+.minfo span{color:var(--red);}
+.bdl{padding:9px 16px;background:var(--surf);border:1px solid var(--b2);color:var(--text);border-radius:.6rem;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.15em;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif;}
+.bdl:hover{background:var(--red);border-color:var(--red);color:white;}
+.rstbtn{display:flex;align-items:center;gap:8px;margin:0 auto 40px;padding:12px 22px;background:transparent;border:1px solid var(--b2);color:var(--muted);border-radius:.7rem;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.2em;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif;}
+.rstbtn:hover{border-color:var(--red);color:var(--red);}
+.rstbtn svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;}
+
+footer{padding:32px;text-align:center;border-top:1px solid var(--b1);}
+footer p{font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:1em;color:#1e1e1e;}
+footer span{color:var(--red);}
+</style>
+</head>
+<body>
+
+<!-- SPLASH ACCES EMAIL -->
+<div id="splash">
+  <div class="s-eye"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>
+  <h1>STUDIO<br><em>PERCEPTION</em></h1>
+  <div class="s-rule"></div>
+  <p class="s-phrase"><span style="color:var(--w);">Studio Perception analyse ce que le</span> <strong>cerveau humain ressent</strong> <span style="color:var(--w);">face a une image et la reconstruit pour renforcer son impact</span> <strong>emotionnel, psychologique et narratif</strong><span style="color:var(--w);">.</span></p>
+
+  <div class="access-box">
+    <p class="access-title" style="color:var(--w);">Acces gratuit</p>
+    <p class="access-desc"><span style="color:var(--w);">Entre ton adresse email pour acceder au studio.</span><br><strong style="color:var(--red);">2 generations offertes</strong><span style="color:var(--w);">, utilisables a tout moment.</span></p>
+
+    <input type="email" id="emailIn" placeholder="ton@email.com" autocomplete="email">
+    <button class="s-enter" id="accessBtn" onclick="accessStudio()">ACCEDER AU STUDIO</button>
+
+    <div class="access-counter" id="accessCounter">
+      <p class="counter-txt">Generations restantes : <span id="genLeft">-</span> / 2</p>
+    </div>
+
+    <div class="access-err" id="accessErr">
+      <p id="accessErrTxt"></p>
+    </div>
+
+    <div class="access-blocked" id="accessBlocked">
+      <p><strong>Acces expire.</strong><br>Tu as utilise tes 2 generations gratuites.<br>Merci d avoir teste Studio Perception.</p>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header>
+    <div class="hbrand" onclick="showSplash()">
+      <div class="hlogo"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>
+      <div><div class="hname">STUDIO PERCEPTION</div><div class="htags"><span class="tag tagr">ANALYSE 4K</span><span class="tag tagd">VERTEX AI</span></div></div>
+    </div>
+    <div class="hstatus">
+      <div class="hmodel">MOTEUR PSYCHOLOGIQUE<span>Gemini 3.1 Flash Image</span></div>
+      <div class="gen-badge" id="genBadge">2 / 2</div>
+      <div style="width:36px;height:36px;border-radius:50%;border:1px solid var(--b2);display:flex;align-items:center;justify-content:center;"><div class="hdot"></div></div>
+    </div>
+  </header>
+
+  <main>
+    <div id="zone-input">
+      <p class="slabel">01 — Image a analyser</p>
+      <div class="upload-zone" id="uzone">
+        <div class="uhint" id="uhint"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><p>Charger une image</p><small>JPG, PNG, WEBP</small></div>
+        <img class="prev" id="mainPrev" src="" alt="" style="display:none;">
+        <button class="rm-img" id="rmMain" style="display:none;" onclick="rmMainImg(event)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        <input type="file" id="mainUp" accept="image/*" onchange="handleMainUp(event)">
+      </div>
+
+      <p class="slabel">02 — References identite (optionnel)</p>
+      <div class="refs-row" id="refsRow"><div class="add-ref"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><input type="file" multiple accept="image/*" onchange="handleRefUp(event)"></div></div>
+
+      <p class="slabel">03 — Intention emotionnelle</p>
+      <textarea class="ctx" id="intentionIn" placeholder="Decris exactement ce que tu voulais faire ressentir a travers cette image. Utilises tes propres mots, sans filtre."></textarea>
+
+      <p class="slabel">04 — Format de reconstruction</p>
+      <div class="frow">
+        <button class="fbtn" data-ar="9:16" onclick="setAR(this,'9:16')"><svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/></svg><span>9:16</span></button>
+        <button class="fbtn" data-ar="16:9" onclick="setAR(this,'16:9')"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="10" rx="2"/></svg><span>16:9</span></button>
+        <button class="fbtn" data-ar="4:5" onclick="setAR(this,'4:5')"><svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/></svg><span>4:5</span></button>
+        <button class="fbtn on" data-ar="1:1" onclick="setAR(this,'1:1')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/></svg><span>1:1</span></button>
+      </div>
+
+      <button class="abtn" id="abtn" onclick="analyse()">
+        <div class="bmain"><svg id="aicon" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span id="albl">ANALYSER &amp; RECONSTRUIRE</span></div>
+        <span class="bsub" id="amsg" style="display:none;"></span>
+      </button>
+
+      <div class="errbox" id="errbox"><svg viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><p id="errtxt"></p></div>
+    </div>
+
+    <div id="zone-results" style="display:none;">
+      <div id="resCont"></div>
+      <button class="rstbtn" onclick="resetAll()"><svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.21"/></svg>Nouvelle analyse</button>
+    </div>
+  </main>
+  <footer><p>STUDIO <span>PERCEPTION</span> — 2025 · Analyse <span>Psychologique</span> Humaine</p></footer>
+</div>
+
+<script>
+// CONFIG SUPABASE
+const SUPA_URL = 'https://tygonygpqrgoarucbfcd.supabase.co';
+const SUPA_KEY = 'sb_publishable_716Slp2LQdU-Nasf7jJ9aw_PGOR3CZS';
+// Cle Vertex cachee dans Cloudflare Worker
+const MAX_GEN = 2;
+
+let userEmail = '';
+let genRestantes = 0;
+let mainImg = null, refImgs = [], ar = '1:1', loading = false;
+const isMob = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+const LMSGS = ['Lecture psychologique...','Analyse des failles emotionnelles...','Reconstruction en cours...','Rendu 4K ultra-realiste...','Nouvelle tentative si serveur sature...'];
+let lIdx = 0, lTmr = null;
+
+// ── SUPABASE ACCESS ──────────────────────────────────────────────────────────
+async function supaFetch(path, method, body) {
+  const res = await fetch(`${SUPA_URL}/rest/v1/${path}`, {
+    method: method || 'GET',
+    headers: {
+      'apikey': SUPA_KEY,
+      'Authorization': `Bearer ${SUPA_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': method === 'POST' ? 'return=representation' : ''
+    },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(err);
+  }
+  const txt = await res.text();
+  return txt ? JSON.parse(txt) : null;
+}
+
+async function accessStudio() {
+  const email = document.getElementById('emailIn').value.trim().toLowerCase();
+  if (!email || email.indexOf('@') === -1 || email.indexOf('.') === -1) {
+    showAccessErr('Entre une adresse email valide.');
+    return;
+  }
+
+  const btn = document.getElementById('accessBtn');
+  btn.disabled = true;
+  btn.textContent = 'VERIFICATION...';
+  hideAccessErr();
+
+  try {
+    // Chercher si l email existe deja
+    const existing = await supaFetch(`acces?email=eq.${encodeURIComponent(email)}&select=*`);
+
+    if (existing && existing.length > 0) {
+      const user = existing[0];
+      const used = user.generations_utilisees || 0;
+
+      if (used >= MAX_GEN) {
+        // Bloque
+        document.getElementById('emailIn').style.display = 'none';
+        btn.style.display = 'none';
+        document.getElementById('accessBlocked').classList.add('show');
+        return;
+      }
+
+      // Acces autorise
+      userEmail = email;
+      genRestantes = MAX_GEN - used;
+      enterApp();
+    } else {
+      // Nouvel utilisateur — creer l entree
+      await supaFetch('acces', 'POST', {
+        email: email,
+        generations_utilisees: 0
+      });
+      userEmail = email;
+      genRestantes = MAX_GEN;
+      enterApp();
+    }
+  } catch(e) {
+    showAccessErr('Erreur de connexion. Reessaie.');
+    console.error(e);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'ACCEDER AU STUDIO';
+  }
+}
+
+function enterApp() {
+  document.getElementById('splash').style.display = 'none';
+  document.getElementById('app').classList.add('on');
+  updateGenBadge();
+}
+
+function showSplash() {
+  document.getElementById('splash').style.display = 'flex';
+  document.getElementById('app').classList.remove('on');
+}
+
+function showAccessErr(msg) {
+  document.getElementById('accessErrTxt').textContent = msg;
+  document.getElementById('accessErr').classList.add('show');
+}
+function hideAccessErr() {
+  document.getElementById('accessErr').classList.remove('show');
+}
+
+function updateGenBadge() {
+  document.getElementById('genBadge').textContent = `${genRestantes} / ${MAX_GEN}`;
+  const btn = document.getElementById('abtn');
+  if (genRestantes <= 0) {
+    btn.disabled = true;
+    document.getElementById('albl').textContent = 'GENERATIONS EPUISEES';
+  }
+}
+
+async function decrementGen() {
+  try {
+    const existing = await supaFetch(`acces?email=eq.${encodeURIComponent(userEmail)}&select=*`);
+    if (existing && existing.length > 0) {
+      const used = existing[0].generations_utilisees || 0;
+      await supaFetch(`acces?email=eq.${encodeURIComponent(userEmail)}`, 'PATCH', {
+        generations_utilisees: used + 1
+      });
+      genRestantes = MAX_GEN - (used + 1);
+      updateGenBadge();
+    }
+  } catch(e) {
+    console.error('Erreur decrement:', e);
+  }
+}
+
+// ── UPLOAD ────────────────────────────────────────────────────────────────────
+function handleMainUp(e) {
+  const f = e.target.files[0]; if (!f) return;
+  const rd = new FileReader();
+  rd.onloadend = async () => {
+    mainImg = await resizeImg(rd.result);
+    document.getElementById('mainPrev').src = mainImg;
+    document.getElementById('mainPrev').style.display = 'block';
+    document.getElementById('uhint').style.display = 'none';
+    document.getElementById('rmMain').style.display = 'flex';
+    document.getElementById('uzone').classList.add('has');
+    document.getElementById('mainUp').style.display = 'none';
+  };
+  rd.readAsDataURL(f);
+}
+function rmMainImg(e) {
+  e.stopPropagation(); mainImg = null;
+  document.getElementById('mainPrev').style.display = 'none';
+  document.getElementById('mainPrev').src = '';
+  document.getElementById('uhint').style.display = 'flex';
+  document.getElementById('rmMain').style.display = 'none';
+  document.getElementById('uzone').classList.remove('has');
+  document.getElementById('mainUp').style.display = 'block';
+}
+function handleRefUp(e) {
+  Array.from(e.target.files).slice(0, 4 - refImgs.length).forEach(f => {
+    const rd = new FileReader();
+    rd.onloadend = async () => { refImgs.push(await resizeImg(rd.result)); renderRefs(); };
+    rd.readAsDataURL(f);
+  });
+}
+function renderRefs() {
+  const row = document.getElementById('refsRow'); row.innerHTML = '';
+  refImgs.forEach((img, i) => {
+    const d = document.createElement('div'); d.className = 'ref-th';
+    d.innerHTML = `<img src="${img}"><button class="rmref" onclick="rmRef(${i})">x</button>`;
+    row.appendChild(d);
+  });
+  if (refImgs.length < 4) {
+    const a = document.createElement('div'); a.className = 'add-ref';
+    a.innerHTML = '<svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><input type="file" multiple accept="image/*" onchange="handleRefUp(event)">';
+    row.appendChild(a);
+  }
+}
+function rmRef(i) { refImgs.splice(i, 1); renderRefs(); }
+function resizeImg(b64) {
+  return new Promise(res => {
+    const img = new Image(); img.src = b64;
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      let w = img.width, h = img.height;
+      if (w > 1024) { h *= 1024/w; w = 1024; } if (h > 1024) { w *= 1024/h; h = 1024; }
+      c.width = w; c.height = h; c.getContext('2d').drawImage(img, 0, 0, w, h);
+      res(c.toDataURL('image/jpeg', .82));
+    };
+  });
+}
+function setAR(btn, a) { ar = a; document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('on')); btn.classList.add('on'); }
+
+// ── DIAGNOSTIC GEMINI 2.0 FLASH (VISION + TEXTE) ────────────────────────────
+async function getDiag(intention) {
+  try {
+    const parts = [];
+    if (mainImg) parts.push({ inlineData: { data: mainImg.split(',')[1], mimeType: 'image/jpeg' } });
+    const prompt = `Tu es Studio Perception. Tu analyses comment le cerveau humain percoit une image psychologiquement. Tu es brutal, direct, sans filtre. Jamais de flatterie.
+
+INTENTION DE LA PERSONNE: "${intention}"
+
+Analyse cette image et reponds exactement dans ce format — sans introduction, sans preamble:
+
+**CE QUE CETTE IMAGE DEGAGE REELLEMENT**
+[Ce que le cerveau humain percoit vraiment — emotion reelle, atmosphere reelle, sensation instinctive. Sois precis et brutal.]
+
+**EST-CE QUE L IMAGE TRANSMET L INTENTION ?**
+[Compare directement ce qui est percu avec ce que la personne voulait faire ressentir. Si ca ne correspond pas, dis-le sans detour et explique pourquoi.]
+
+**CE QUI CASSE OU AFFAIBLIT L EMOTION VOULUE**
+[Elements visuels precis: regard, posture, expression, lumiere, cadrage, couleurs, contexte — ce qui empeche de ressentir l intention voulue.]
+
+**LA RECONSTRUCTION VA CORRIGER**
+[Ce qui sera modifie pour que l image transmette exactement l intention. Concret et precis.]
+
+Maximum 180 mots. Francais. Direct. Brutal.`;
+
+    parts.push({ text: prompt });
+    const body = { contents: [{ role: 'user', parts }] };
+    const proxyBody = { model: 'gemini-2.0-flash', payload: body };
+    const res = await fetch(PROXY_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(proxyBody) });
+    const data = await res.json();
+    return data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  } catch(e) { console.warn('Diagnostic error:', e); return ''; }
+}
+
+// ── PROMPT RECONSTRUCTION ────────────────────────────────────────────────────
+function buildPrompt(intention) {
+  return `STUDIO PERCEPTION — Reconstruction psychologique.
+INTENTION EMOTIONNELLE: "${intention}"
+
+MISSION: Modifier cette image pour que le cerveau humain ressente exactement: "${intention}"
+
+REGLES STRICTES:
+- Ne pas ajouter d objets, personnes ou elements qui n existent pas dans l image originale
+- Modifier uniquement: expression du visage, regard, posture, lumiere, ambiance chromatique, atmosphere
+- Conserver le meme lieu, les memes personnes, les memes vetements
+- Supprimer le sourire si l emotion voulue est negative ou neutre
+- Modifier la lumiere pour servir l emotion
+- Rendre le regard coherent avec l intention emotionnelle
+
+NE JAMAIS:
+- Ajouter des objets (sac, bouteille, telephone, etc.)
+- Changer le lieu ou le decor de facon radicale
+- Ajouter des personnes supplementaires
+- Rendre l image trop lisse ou trop embellie
+
+TECHNIQUE: Photo ultra-realiste 4K. Texture naturelle. Lumiere authentique.`;
+}
+
+// ── ANALYSE PRINCIPALE ───────────────────────────────────────────────────────
+async function analyse() {
+  if (loading) return;
+  if (genRestantes <= 0) { showErr("Plus de generations disponibles."); return; }
+  const intention = document.getElementById('intentionIn').value.trim();
+  if (!intention) { showErr("Decris ce que tu voulais faire ressentir."); return; }
+  hideErr(); setLoad(true);
+
+  const id = Date.now().toString();
+  showRes();
+  const card = buildCard(id, mainImg, intention);
+  document.getElementById('resCont').prepend(card);
+
+  try {
+    // ETAPE 1 — Diagnostic psychologique (Gemini 2.0 Flash Vision)
+    updMsg("Analyse psychologique de l image...");
+    const diag = await getDiag(intention);
+
+    // Afficher le diagnostic immediatement
+    const dl = document.getElementById(`dl-${id}`);
+    const dt = document.getElementById(`dt-${id}`);
+    if (dl) dl.style.display = 'none';
+    if (dt && diag) {
+      dt.style.display = 'block';
+      dt.innerHTML = diag.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+    }
+
+    // ETAPE 2 — Reconstruction (Gemini 3.1 Flash Image)
+    updMsg("Reconstruction en cours...");
+    const imgUrl = await callVertex(buildPrompt(intention));
+    await decrementGen();
+    fillCard(id, imgUrl, diag);
+  } catch(err) {
+    showErr(err.message || "Erreur de generation.");
+    document.getElementById(`card-${id}`)?.remove();
+    if (!document.getElementById('resCont').children.length) document.getElementById('zone-results').style.display = 'none';
+  } finally {
+    setLoad(false);
+  }
+}
+
+function showRes() {
+  const s = document.getElementById('zone-results'); s.style.display = 'block';
+  setTimeout(() => s.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+}
+
+function buildCard(id, origSrc, intention) {
+  const w = document.createElement('div'); w.id = `card-${id}`;
+  w.innerHTML = `
+    <div class="cmpwrap" id="cmp-${id}">
+      <div class="cside">
+        ${origSrc ? `<img src="${origSrc}" alt="original"><span class="clabel lb">ORIGINAL</span><span class="ceng">SOURCE</span>` : `<div class="cph" style="min-height:300px;"><p>Pas d image source</p></div>`}
+      </div>
+      <div class="cside after" id="after-${id}">
+        <div class="cph">
+          <svg viewBox="0 0 24 24" width="40" height="40" stroke="var(--red)" fill="none" stroke-width="1"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+          <p>Reconstruction...</p>
+        </div>
+      </div>
+    </div>
+    <div class="diagpanel" id="diag-${id}">
+      <div class="diaghdr">Diagnostic Perception</div>
+      <div class="diagload" id="dl-${id}"><svg viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg><span>Analyse psychologique...</span></div>
+      <div class="diagtxt" id="dt-${id}" style="display:none;"></div>
+    </div>
+    <div class="rmeta" id="meta-${id}" style="display:none;">
+      <div class="minfo">REF <span>PERC_${id.slice(-8)}</span> · ${new Date().toLocaleTimeString()} · <span>${intention.slice(0,35).toUpperCase()}...</span></div>
+      <button class="bdl" id="bdl-${id}">TELECHARGER LA RECONSTRUCTION</button>
+    </div>`;
+  return w;
+}
+
+function fillCard(id, imgUrl, diag) {
+  const af = document.getElementById(`after-${id}`);
+  if (af) af.innerHTML = `<img src="${imgUrl}" alt="reconstruction" style="cursor:pointer;" onclick="dlImg('${id}','${imgUrl}')"><span class="clabel la">RECONSTRUCTION</span><span class="ceng">GEMINI 3.1 FLASH</span>`;
+  const dl = document.getElementById(`dl-${id}`), dt = document.getElementById(`dt-${id}`);
+  if (dl) dl.style.display = 'none';
+  if (dt && diag) {
+    dt.style.display = 'block';
+    dt.innerHTML = diag.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/
+/g, '<br>');
+  }
+  const meta = document.getElementById(`meta-${id}`); if (meta) meta.style.display = 'flex';
+  const bdl = document.getElementById(`bdl-${id}`); if (bdl) bdl.onclick = () => dlImg(id, imgUrl);
+}
+
+function dlImg(id, dataUrl) {
+  if (isMob && /iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+    try {
+      const b = atob(dataUrl.split(',')[1]), m = dataUrl.split(',')[0].split(':')[1].split(';')[0];
+      const ab = new ArrayBuffer(b.length), ia = new Uint8Array(ab);
+      for (let i = 0; i < b.length; i++) ia[i] = b.charCodeAt(i);
+      const blob = new Blob([ab], { type: m }), url = URL.createObjectURL(blob);
+      window.open(url, '_blank'); setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch(e) { alert("Appuie longuement sur l image."); }
+    return;
+  }
+  const a = document.createElement('a'); a.href = dataUrl; a.download = `perception-${id}.jpg`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+async function resetAll() {
+  document.getElementById('resCont').innerHTML = '';
+  document.getElementById('zone-results').style.display = 'none';
+  document.getElementById('zone-input').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ── VERTEX AI VIA CLOUDFLARE PROXY ───────────────────────────────────────────
+const PROXY_URL = 'https://studio-perception-proxy.anonymedigital.workers.dev';
+
+async function callVertex(prompt) {
+  const apiAR = ar === '4:5' ? '3:4' : ar;
+  const parts = [];
+  [mainImg, ...refImgs].filter(Boolean).slice(0, 3).forEach(img => parts.push({ inlineData: { data: img.split(',')[1], mimeType: 'image/jpeg' } }));
+  parts.push({ text: prompt });
+  const body = {
+    model: 'gemini-3.1-flash-image-preview',
+    payload: {
+      systemInstruction: { parts: [{ text: "Ultra-realistic 4K photography. Natural skin texture. Credible ambient light. No beauty filters. No artificial rendering. Emotionally raw and authentic. STRICT RULE: do not add any objects, people or elements that are not in the original image." }] },
+      contents: [{ role: 'user', parts }],
+      generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: apiAR, imageSize: "4K" } }
+    }
+  };
+  const ep = PROXY_URL;
+  const wt = [5000, 10000, 20000, 40000, 60000]; let le;
+  for (let a = 0; a <= wt.length; a++) {
+    try {
+      updMsg(a === 0 ? "Envoi vers Vertex AI..." : `Tentative ${a+1}/${wt.length+1}...`);
+      const res = await fetch(ep, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      let data = {}; try { data = await res.json(); } catch(_) {}
+      if (!res.ok) {
+        const m = data?.error?.message || `HTTP ${res.status}`;
+        if (res.status === 401) throw new Error("Cle API invalide.");
+        if (res.status === 429) throw new Error(`429: ${m}`);
+        throw new Error(`Erreur ${res.status}: ${m}`);
+      }
+      const cand = data?.candidates?.[0];
+      if (!cand) throw new Error("Aucune reponse.");
+      if (cand.finishReason === 'SAFETY') throw new Error("Bloque par les filtres. Reformule.");
+      for (const p of (cand?.content?.parts || [])) { if (p.inlineData?.data) return `data:image/png;base64,${p.inlineData.data}`; }
+      throw new Error("Image non trouvee dans la reponse.");
+    } catch(err) {
+      le = err;
+      const m = String(err.message || '').toLowerCase();
+      const retry = m.includes('429') || m.includes('resource_exhausted') || m.includes('502') || m.includes('503') || m.includes('504') || m.includes('overloaded');
+      if (retry && a < wt.length) { updMsg(`Vertex sature. Attente ${Math.round(wt[a]/1000)}s...`); await sleep(wt[a]); continue; }
+      throw err;
+    }
+  }
+  throw le;
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function setLoad(v) {
+  loading = v;
+  const btn = document.getElementById('abtn'), icon = document.getElementById('aicon'), lbl = document.getElementById('albl'), msg = document.getElementById('amsg');
+  btn.disabled = v;
+  if (v) {
+    icon.innerHTML = '<path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>';
+    btn.classList.add('loading'); lbl.textContent = 'ANALYSE EN COURS...'; msg.style.display = 'block';
+    clearInterval(lTmr); lIdx = 0; msg.textContent = LMSGS[0];
+    lTmr = setInterval(() => { if (!loading) return; lIdx = (lIdx+1)%LMSGS.length; msg.textContent = LMSGS[lIdx]; }, 3000);
+  } else {
+    btn.classList.remove('loading');
+    icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+    lbl.textContent = 'ANALYSER & RECONSTRUIRE'; msg.style.display = 'none'; clearInterval(lTmr);
+  }
+}
+function updMsg(m) { const e = document.getElementById('amsg'); if (e) { e.style.display = 'block'; e.textContent = m; } }
+function showErr(m) { document.getElementById('errtxt').textContent = m; document.getElementById('errbox').classList.add('on'); }
+function hideErr() { document.getElementById('errbox').classList.remove('on'); }
+
+// INIT
+renderRefs();
+document.getElementById('emailIn').addEventListener('keypress', e => { if (e.key === 'Enter') accessStudio(); });
+</script>
+</body>
+</html>
