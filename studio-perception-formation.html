@@ -195,7 +195,7 @@ footer span{color:var(--red);}
         Vertex AI<small>Cle AQ...</small>
       </button>
       <button class="engine-btn" id="btn-kie" onclick="selectEngine('kie')">
-        kie.ai<small>Nano Banana 2</small>
+        kie.ai<small>Nano Banana Pro</small>
       </button>
     </div>
     <span class="key-label" id="keyLabel">Cle API Vertex AI (Express Mode)</span>
@@ -285,7 +285,7 @@ function enterApp() {
   document.getElementById('splash').style.display = 'none';
   document.getElementById('app').classList.add('on');
   const isKie = selectedEngine === 'kie';
-  document.getElementById('engineLabel').textContent = isKie ? 'kie.ai · Nano Banana 2' : 'Gemini 2.5 Flash + 3.1 Image';
+  document.getElementById('engineLabel').textContent = isKie ? 'kie.ai · Nano Banana Pro' : 'Gemini 2.5 Flash + 3.1 Image';
   document.getElementById('engineLabel').style.color = isKie ? 'var(--green)' : 'var(--red)';
   document.getElementById('engineTag').textContent = isKie ? 'KIE.AI' : 'VERTEX AI';
   document.getElementById('engineTag').style.color = isKie ? 'var(--green)' : 'var(--red)';
@@ -376,7 +376,7 @@ async function kieGenerate(prompt, imageDataUrl) {
   const createRes = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: 'nano-banana-2', input: { prompt, aspect_ratio: ar, resolution: '1K', output_format: 'jpg', image_input: imageUrls } })
+    body: JSON.stringify({ model: 'nano-banana-pro', input: { prompt, aspect_ratio: ar, resolution: '1K', output_format: 'jpg', image_input: imageUrls } })
   });
   const cd = await createRes.json();
   if (!createRes.ok || cd.code !== 200) throw new Error('kie.ai: ' + (cd?.msg || createRes.status));
@@ -592,7 +592,40 @@ async function lancerReconstruction(id, intention, diagText) {
     let imgUrl = '';
 
     if (selectedEngine === 'kie') {
-      const kiePrompt = `Ultra-realistic 4K photography. ${prompt}`;
+      // Pour kie.ai : construire un prompt image court, percutant, optimise pour un modele de generation
+      // On utilise Gemini 2.5 Flash pour condenser le diagnostic en prompt image
+      let kiePrompt = '';
+      try {
+        const condenseParts = [
+          { inlineData: { data: mainImg.split(',')[1], mimeType: 'image/jpeg' } },
+          { text: `Tu es un expert en prompt engineering pour la generation d images.
+
+INTENTION: "${intention}"
+
+DIAGNOSTIC DE L IMAGE:
+${diagText}
+
+Ta mission: Ecris un prompt de generation d image en anglais, en 3-5 phrases maximum, qui decrit precisement la scene reconstruite pour corriger l ecart entre l intention et la perception actuelle. 
+
+Le prompt doit:
+- Decrire la scene finale telle qu elle doit apparaitre (pas les problemes)
+- Inclure l atmosphere, la lumiere, les emotions visibles, la posture du corps, le regard
+- Inclure des elements narratifs suggestifs si necessaires (ombres, silhouettes, details symboliques)
+- Etre optimise pour un modele de generation d image (concret, visuel, descriptif)
+- Commencer par: "Ultra-realistic 4K photography,"
+
+Reponds UNIQUEMENT avec le prompt, sans explication.` }
+        ];
+        const condenseData = await vertexCall('gemini-2.5-flash',
+          [{ role: 'user', parts: condenseParts }],
+          { temperature: 0.7, maxOutputTokens: 300 }
+        );
+        kiePrompt = condenseData?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+        console.log('[kiePrompt condensed]', kiePrompt);
+      } catch(e) {
+        console.warn('[condense] fallback prompt basique', e);
+        kiePrompt = `Ultra-realistic 4K photography. ${intention}. Emotionally raw, authentic light, natural skin texture, no beauty filter.`;
+      }
       imgUrl = await kieGenerate(kiePrompt, mainImg);
     } else {
       const apiAR = ar === '4:5' ? '3:4' : ar;
@@ -601,7 +634,7 @@ async function lancerReconstruction(id, intention, diagText) {
         { text: prompt }
       ];
       const payload = {
-        systemInstruction: { parts: [{ text: "Ultra-realistic 4K photography. Natural skin texture. Authentic light. No beauty filters. Emotionally raw. Do not add objects or people not in the original image." }] },
+        systemInstruction: { parts: [{ text: "Ultra-realistic 4K photography. Natural skin texture. Authentic light. No beauty filters. Emotionally raw. Reconstruct the full scene to match the emotional intention." }] },
         contents: [{ role: 'user', parts }],
         generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: apiAR, imageSize: '4K' } }
       };
