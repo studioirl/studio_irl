@@ -10,7 +10,6 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
 
-
 /* SPLASH */
 #splash{position:fixed;inset:0;z-index:300;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;overflow-y:auto;text-align:center;}
 .s-eye{width:80px;height:80px;border-radius:50%;border:1px solid var(--red);display:flex;align-items:center;justify-content:center;margin-bottom:32px;box-shadow:0 0 40px var(--redglow);animation:breathe 4s ease-in-out infinite;}
@@ -23,7 +22,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .s-phrase strong{color:var(--red);font-style:normal;}
 
 /* ENGINE SELECTOR */
-.engine-box{width:min(480px,100%);background:var(--surf);border:1px solid var(--b2);border-radius:1.2rem;padding:28px;margin-bottom:20px;position:relative;z-index:301;}
+.engine-box{width:min(480px,100%);background:var(--surf);border:1px solid var(--b2);border-radius:1.2rem;padding:28px;margin-bottom:20px;position:relative;}
 .engine-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.3em;color:var(--muted);margin-bottom:16px;text-align:left;}
 .engine-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
 .engine-btn{padding:14px 10px;border:1px solid var(--b2);border-radius:.8rem;background:var(--bg);cursor:pointer;font-family:'Inter',sans-serif;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:5px;}
@@ -38,7 +37,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .key-input::placeholder{color:#2a2a2a;}
 .key-input.kie-mode:focus{border-color:var(--green);box-shadow:0 0 16px var(--greenglow);}
 
-.s-enter{width:100%;padding:18px;border:none;border-radius:1rem;background:linear-gradient(135deg,#700,var(--red));color:white;font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:.4em;cursor:pointer;box-shadow:0 16px 40px rgba(212,32,32,.4);transition:transform .15s,box-shadow .15s;position:relative;z-index:302;}
+.s-enter{width:100%;padding:18px;border:none;border-radius:1rem;background:linear-gradient(135deg,#700,var(--red));color:white;font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:.4em;cursor:pointer;box-shadow:0 16px 40px rgba(212,32,32,.4);transition:transform .15s,box-shadow .15s;}
 .s-enter:hover{transform:scale(1.02);}
 .s-enter:disabled{background:#1a1a1a;color:#333;cursor:not-allowed;box-shadow:none;}
 .splash-err{margin-top:12px;font-size:11px;color:#ff6666;font-weight:600;display:none;}
@@ -201,7 +200,7 @@ footer span{color:var(--red);}
     </div>
     <span class="key-label" id="keyLabel">Cle API Vertex AI (Express Mode)</span>
     <input type="password" class="key-input" id="apiKeyInput" placeholder="AQ..." autocomplete="off">
-    <button class="s-enter" onclick="enterApp()">ACCEDER AU STUDIO</button>
+    <button class="s-enter" id="enterBtn">ACCEDER AU STUDIO</button>
     <p class="splash-err" id="splashErr"></p>
   </div>
 </div>
@@ -285,7 +284,6 @@ function enterApp() {
   err.classList.remove('show');
   document.getElementById('splash').style.display = 'none';
   document.getElementById('app').classList.add('on');
-  // Mettre a jour le header
   const isKie = selectedEngine === 'kie';
   document.getElementById('engineLabel').textContent = isKie ? 'kie.ai · Nano Banana 2' : 'Gemini 2.5 Flash + 3.1 Image';
   document.getElementById('engineLabel').style.color = isKie ? 'var(--green)' : 'var(--red)';
@@ -300,6 +298,8 @@ function showSplash() {
   document.getElementById('app').classList.remove('on');
 }
 
+// Event listeners — pas d'onclick inline pour eviter conflits stacking context
+document.getElementById('enterBtn').addEventListener('click', enterApp);
 document.getElementById('apiKeyInput').addEventListener('keypress', e => { if (e.key === 'Enter') enterApp(); });
 
 // ── UPLOAD ────────────────────────────────────────────────────────────────────
@@ -369,12 +369,10 @@ async function uploadToKie(dataUrl) {
 }
 
 async function kieGenerate(prompt, imageDataUrl) {
-  // Upload image
   let imageUrls = [];
   if (imageDataUrl) {
     try { imageUrls.push(await uploadToKie(imageDataUrl)); } catch(e) { console.warn('Upload kie:', e); }
   }
-  // Creer la tache
   const createRes = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
@@ -384,7 +382,6 @@ async function kieGenerate(prompt, imageDataUrl) {
   if (!createRes.ok || cd.code !== 200) throw new Error('kie.ai: ' + (cd?.msg || createRes.status));
   const taskId = cd?.data?.taskId;
   if (!taskId) throw new Error('Pas de taskId kie.ai.');
-  // Polling
   for (let i = 0; i < 60; i++) {
     await sleep(5000);
     try {
@@ -396,7 +393,6 @@ async function kieGenerate(prompt, imageDataUrl) {
         let imgUrl = null;
         try { const r = JSON.parse(sd.data.resultJson || '{}'); imgUrl = r?.resultUrls?.[0] || r?.images?.[0]?.url || r?.url; } catch(_) {}
         if (!imgUrl) throw new Error('kie.ai success sans URL image.');
-        // Telecharger et convertir en base64
         const blob = await (await fetch(imgUrl)).blob();
         const b64 = await new Promise((res, rej) => { const fr = new FileReader(); fr.onloadend = () => res(fr.result); fr.onerror = rej; fr.readAsDataURL(blob); });
         return b64;
@@ -442,8 +438,6 @@ REGLES: Ne pas ajouter d objets ou personnes absents de l original. Corriger reg
 TECHNIQUE: Photo ultra-realiste 4K. Texture naturelle. Lumiere authentique. Pas de filtre beaute.`;
 }
 
-// ── ANALYSE ───────────────────────────────────────────────────────────────────
-
 // ── DETECTION PROMPT ─────────────────────────────────────────────────────────
 function detecterPrompt(texte) {
   const t = texte.toLowerCase();
@@ -461,18 +455,17 @@ function detecterPrompt(texte) {
     'shot','close-up','closeup','wide shot','medium shot',
     'iso','exposition','obturateur','shutter',
     'maillot de bain','tenue vestimentaire','vêtements décrits','vetements decrits',
-    'sujet principal','personnage principal','composition de l'image',
+    'sujet principal','personnage principal','composition de l\'image',
     'ultra photoréaliste','ultra photorealiste','capture authentique',
     'aucune esthétique','aucune esthetique','aucune pose influenceur'
   ];
-  // Compter combien de mots-cles sont presents
   let score = 0;
   const trouves = [];
   motsCles.forEach(mot => {
     if (t.includes(mot)) { score++; trouves.push(mot); }
   });
   console.log('[antiPrompt] score:', score, '| trouves:', trouves);
-  return score >= 2; // 2 mots-cles suffisent pour bloquer
+  return score >= 2;
 }
 
 async function lancerAnalyse() {
@@ -480,7 +473,6 @@ async function lancerAnalyse() {
   if (!mainImg) { showErr("Charge une image d abord."); return; }
   const intention = document.getElementById('intentionIn').value.trim();
   if (!intention) { showErr("Decris ton intention."); return; }
-  // Anti-prompt : bloquer les prompts de generation d image
   if (detecterPrompt(intention)) {
     showErr("Studio Perception n est pas un generateur d images. Decris simplement ce que tu voulais faire ressentir a travers cette image — en quelques mots, sans directives techniques.");
     return;
@@ -501,7 +493,6 @@ async function lancerAnalyse() {
     ];
 
     let diagText = '';
-    // Diagnostic toujours via Vertex gemini-2.5-flash (vision + texte)
     try {
       const diagData = await vertexCall('gemini-2.5-flash',
         [{ role: 'user', parts }],
@@ -551,11 +542,9 @@ async function lancerReconstruction(id, intention, diagText) {
     let imgUrl = '';
 
     if (selectedEngine === 'kie') {
-      // KIE.AI
       const kiePrompt = `Ultra-realistic 4K photography. ${prompt}`;
       imgUrl = await kieGenerate(kiePrompt, mainImg);
     } else {
-      // VERTEX — gemini-3.1-flash-image-preview avec retry
       const apiAR = ar === '4:5' ? '3:4' : ar;
       const parts = [
         { inlineData: { data: mainImg.split(',')[1], mimeType: 'image/jpeg' } },
@@ -591,7 +580,6 @@ async function lancerReconstruction(id, intention, diagText) {
       }
     }
 
-    // Afficher
     const engLabel = selectedEngine === 'kie' ? 'KIE.AI · NANO BANANA 2' : 'GEMINI 3.1 FLASH';
     const af = document.getElementById(`after-${id}`);
     if (af) af.innerHTML = `<img src="${imgUrl}" alt="reconstruction" style="cursor:pointer;" onclick="dlImg('${id}','${imgUrl}')"><span class="clabel la">RECONSTRUCTION</span><span class="ceng">${engLabel}</span>`;
