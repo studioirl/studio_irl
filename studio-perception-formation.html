@@ -187,7 +187,7 @@ footer span{color:var(--red);}
   <div class="s-eye"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>
   <h1>STUDIO<br><em>PERCEPTION</em></h1>
   <div class="s-rule"></div>
-  <p class="s-phrase"><span style="color:var(--w);">Studio Perception agit comme un</span> <strong>mentaliste visuel</strong><span style="color:var(--w);">. Il analyse ce que le cerveau humain percoit reellement et mesure l ecart avec</span> <strong>ton intention</strong><span style="color:var(--w);">.</span></p>
+  <p class="s-phrase"><span style="color:var(--w);">Studio Perception est le profiler de Studio IRL. Il analyse ce que le cerveau humain perçoit réellement derrière une image et mesure l'écart entre</span> <strong>ce que tu voulais transmettre</strong> <span style="color:var(--w);">et ce que les gens vont réellement</span> <strong>comprendre</strong><span style="color:var(--w);">.</span></p>
 
   <div class="engine-box">
     <p class="engine-title">Moteur de generation</p>
@@ -443,11 +443,48 @@ TECHNIQUE: Photo ultra-realiste 4K. Texture naturelle. Lumiere authentique. Pas 
 }
 
 // ── ANALYSE ───────────────────────────────────────────────────────────────────
+
+// ── DETECTION PROMPT ─────────────────────────────────────────────────────────
+function detecterPrompt(texte) {
+  const t = texte.toLowerCase();
+  const motsCles = [
+    'prise de vue','angle de','cadrage','objectif','focale','grand-angle','grand angle',
+    'pov','point of view','plan large','plan rapproche','plan moyen',
+    'photoréaliste','photorealiste','ultra réaliste','ultra realiste','ultra-réaliste','ultra-realiste',
+    'rendu','rendu final','bokeh','profondeur de champ','depth of field',
+    'lumière naturelle','lumiere naturelle','rayons de lumiere','rayons de lumière',
+    'reflets naturels','particules','contre-jour','contre jour',
+    'résolution','resolution','4k','8k','hdr',
+    'aucun filtre','aucune pose','aucun photographe','aucune caméra','aucune camera',
+    'pas de filtre','pas de photographe','pas de caméra','pas de camera',
+    'gopro','drone','fisheye','fish eye','stabilisateur',
+    'shot','close-up','closeup','wide shot','medium shot',
+    'iso','exposition','obturateur','shutter',
+    'maillot de bain','tenue vestimentaire','vêtements décrits','vetements decrits',
+    'sujet principal','personnage principal','composition de l'image',
+    'ultra photoréaliste','ultra photorealiste','capture authentique',
+    'aucune esthétique','aucune esthetique','aucune pose influenceur'
+  ];
+  // Compter combien de mots-cles sont presents
+  let score = 0;
+  const trouves = [];
+  motsCles.forEach(mot => {
+    if (t.includes(mot)) { score++; trouves.push(mot); }
+  });
+  console.log('[antiPrompt] score:', score, '| trouves:', trouves);
+  return score >= 2; // 2 mots-cles suffisent pour bloquer
+}
+
 async function lancerAnalyse() {
   if (loading) return;
   if (!mainImg) { showErr("Charge une image d abord."); return; }
   const intention = document.getElementById('intentionIn').value.trim();
   if (!intention) { showErr("Decris ton intention."); return; }
+  // Anti-prompt : bloquer les prompts de generation d image
+  if (detecterPrompt(intention)) {
+    showErr("Studio Perception n est pas un generateur d images. Decris simplement ce que tu voulais faire ressentir a travers cette image — en quelques mots, sans directives techniques.");
+    return;
+  }
   hideErr(); setLoad(true, "Lecture de la scene...");
 
   const id = Date.now().toString();
