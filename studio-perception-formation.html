@@ -507,15 +507,31 @@ async function lancerAnalyse() {
     ];
 
     let diagText = '';
-    try {
-      const diagData = await vertexCall('gemini-2.5-flash',
-        [{ role: 'user', parts }],
-        { temperature: 0.7 }
-      );
-      diagText = diagData?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      console.log('[diag] ok, longueur:', diagText.length);
-    } catch(e) {
-      console.warn('[diag] erreur:', e);
+    // Retry x2 sur erreurs reseau transitoires
+    const wt = [0, 8000];
+    let lastErr = null;
+    for (let attempt = 0; attempt < wt.length; attempt++) {
+      if (wt[attempt] > 0) await sleep(wt[attempt]);
+      try {
+        const diagData = await vertexCall('gemini-2.5-flash',
+          [{ role: 'user', parts }],
+          { temperature: 0.7, maxOutputTokens: 4000 }
+        );
+        diagText = diagData?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        console.log('[diag] ok, longueur:', diagText.length);
+        lastErr = null;
+        break;
+      } catch(e) {
+        lastErr = e;
+        const m = String(e.message).toLowerCase();
+        const retry = m.includes('429') || m.includes('500') || m.includes('502') || m.includes('503');
+        console.warn('[diag] erreur tentative', attempt + 1, e.message);
+        if (!retry) break; // erreur definitive (401, 403, cle invalide) -> pas de retry
+      }
+    }
+    // Si erreur definitive et pas de texte -> remonter l erreur visible
+    if (!diagText && lastErr) {
+      throw new Error('Analyse echouee : ' + lastErr.message);
     }
 
     afficherDiag(id, diagText, intention);
