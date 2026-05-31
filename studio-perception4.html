@@ -586,16 +586,16 @@ async function lancerReconstruction(id, intention, diagText) {
 
 INTENTION: "${intention}"
 
-DIAGNOSTIC DE L IMAGE:
+DIAGNOSTIC — CE QUI NE FONCTIONNE PAS:
 ${diagText}
 
-Ta mission: Ecris un prompt de generation d image en anglais, en 3-5 phrases maximum, qui decrit precisement la scene reconstruite pour corriger l ecart entre l intention et la perception actuelle. 
+Ta mission: En te basant sur le diagnostic, ecris un prompt image en anglais de 3-5 phrases qui decrit la MEME scene mais avec l emotion corrigee.
 
-Le prompt doit:
-- Decrire la scene finale telle qu elle doit apparaitre (pas les problemes)
-- Inclure l atmosphere, la lumiere, les emotions visibles, la posture du corps, le regard
-- Inclure des elements narratifs suggestifs si necessaires (ombres, silhouettes, details symboliques)
-- Etre optimise pour un modele de generation d image (concret, visuel, descriptif)
+Regles strictes:
+- Meme scene, meme action, memes personnes, memes vetements, meme lieu
+- Ne pas ajouter d objets ou personnages absents de l image originale
+- Modifier uniquement: lumiere, tons, expression du visage, regard, tension du corps, atmosphere
+- Le prompt doit etre concret et visuel, optimise pour un modele de generation d image
 - Commencer par: "Ultra-realistic 4K photography,"
 
 Reponds UNIQUEMENT avec le prompt, sans explication.` }
@@ -613,12 +613,47 @@ Reponds UNIQUEMENT avec le prompt, sans explication.` }
       imgUrl = await kieGenerate(kiePrompt, mainImg);
     } else {
       const apiAR = ar === '4:5' ? '3:4' : ar;
+
+      // Gemini 2.5 Flash condense le diagnostic en prompt image court et precis
+      let vertexImgPrompt = '';
+      try {
+        const condenseParts = [
+          { inlineData: { data: mainImg.split(',')[1], mimeType: 'image/jpeg' } },
+          { text: `Tu es un expert en prompt engineering pour la generation d images.
+
+INTENTION: "${intention}"
+
+DIAGNOSTIC — CE QUI NE FONCTIONNE PAS:
+${diagText}
+
+Ta mission: En te basant sur le diagnostic, ecris un prompt image en anglais de 3-5 phrases qui decrit la MEME scene mais avec l emotion corrigee.
+
+Regles strictes:
+- Meme scene, meme action, memes personnes, memes vetements, meme lieu
+- Ne pas ajouter d objets ou personnages absents de l image originale
+- Modifier uniquement: lumiere, tons, expression du visage, regard, tension du corps, atmosphere
+- Le prompt doit etre concret et visuel, optimise pour un modele de generation d image
+- Commencer par: "Ultra-realistic 4K photography,"
+
+Reponds UNIQUEMENT avec le prompt, sans explication.` }
+        ];
+        const condenseData = await vertexCall('gemini-2.5-flash',
+          [{ role: 'user', parts: condenseParts }],
+          { temperature: 0.7, maxOutputTokens: 300 }
+        );
+        vertexImgPrompt = condenseData?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+        console.log('[vertexImgPrompt]', vertexImgPrompt);
+      } catch(e) {
+        console.warn('[condense vertex] fallback', e);
+        vertexImgPrompt = `Ultra-realistic 4K photography. ${intention}. Same scene, same action. Emotionally raw, authentic light, natural skin texture, no beauty filter.`;
+      }
+
       const parts = [
         { inlineData: { data: mainImg.split(',')[1], mimeType: 'image/jpeg' } },
-        { text: prompt }
+        { text: vertexImgPrompt }
       ];
       const payload = {
-        systemInstruction: { parts: [{ text: "Ultra-realistic 4K photography. Natural skin texture. Authentic light. No beauty filters. Emotionally raw. Reconstruct the full scene to match the emotional intention." }] },
+        systemInstruction: { parts: [{ text: "Ultra-realistic 4K photography. Natural skin texture. Authentic light. No beauty filters. Same scene, same people, same action. Only modify emotion, light, expression, body tension." }] },
         contents: [{ role: 'user', parts }],
         generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: apiAR, imageSize: '4K' } }
       };
