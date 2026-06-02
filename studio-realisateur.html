@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STUDIO RÉALISATEUR</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --noir: #0a0a0a;
+  --noir2: #111111;
+  --noir3: #1a1a1a;
+  --blanc: #e8e8e8;
+  --vert: #39ff6e;
+  --rouge: #ff4444;
+  --cyan: #00d4ff;
+  --or: #ffd166;
+  --gris: #333;
+  --gris2: #555;
+  --border: rgba(255,255,255,0.08);
+  --mono: 'Share Tech Mono', monospace;
+  --bebas: 'Bebas Neue', sans-serif;
+  --sans: 'DM Sans', sans-serif;
+}
+
+html, body {
+  background: var(--noir);
+  color: var(--blanc);
+  font-family: var(--mono);
+  min-height: 100vh;
+  font-size: 13px;
+  transition: background 0.8s ease;
+}
+
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--gris); }
+
+/* ════════════════════ LOADING SCREEN ════════════════════ */
+.loading-screen {
+  position: fixed; inset: 0;
+  background: #000;
+  z-index: 9999;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 28px;
+  transition: opacity 0.8s ease;
+}
+.loading-screen.fade-out { opacity: 0; pointer-events: none; }
+.loading-screen.hidden { display: none; }
+
+.ls-top {
+  display: flex; align-items: center; gap: 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  padding-bottom: 20px; width: 440px; justify-content: center;
+}
+
+.ls-clap { font-size: 44px; animation: clap 1.6s ease-in-out infinite; }
+@keyframes clap { 0%,100%{transform:rotate(-4deg) scale(1)} 50%{transform:rotate(4deg) scale(1.05)} }
+
+.ls-title { font-family: var(--bebas); font-size: 36px; letter-spacing: 0.3em; }
+
+.ls-scene-counter {
+  font-size: 9px; letter-spacing: 0.3em; color: var(--gris2);
+  text-transform: uppercase;
+  border: 1px solid var(--gris);
+  padding: 4px 14px;
+}
+
+.ls-tape {
+  width: 440px;
+  display: flex; align-items: center; gap: 12px;
+}
+
+.ls-tape-bar {
+  flex: 1; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  position: relative; overflow: hidden;
+}
+.ls-tape-bar::after {
+  content: '';
+  position: absolute; top: 0; left: -100%;
+  width: 60%; height: 100%;
+  background: var(--blanc);
+  animation: tapeScan 2s linear infinite;
+}
+@keyframes tapeScan { to { left: 200%; } }
+
+.ls-tape-label { font-size: 8px; letter-spacing: 0.2em; color: var(--gris2); white-space: nowrap; }
+
+.ls-phrase-wrap { width: 440px; min-height: 54px; position: relative; }
+
+.ls-phrase {
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 300;
+  color: rgba(232,232,232,0.8);
+  text-align: center;
+  line-height: 1.7;
+  position: absolute; width: 100%;
+  transition: opacity 0.4s, transform 0.4s;
+}
+.ls-phrase.hidden-phrase { opacity: 0; transform: translateY(6px); pointer-events: none; }
+
+.ls-atmo {
+  font-size: 9px; letter-spacing: 0.25em;
+  text-transform: uppercase; color: var(--gris2);
+  border: 1px solid rgba(255,255,255,0.1);
+  padding: 5px 18px;
+}
+
+.ls-dots { display: flex; gap: 8px; }
+.ls-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--gris2); animation: ldot 1.4s infinite;
+}
+.ls-dot:nth-child(2) { animation-delay: 0.2s; }
+.ls-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes ldot { 0%,100%{opacity:0.2;transform:scale(1)} 50%{opacity:1;transform:scale(1.3)} }
+
+/* ════════════════════ HEADER ════════════════════ */
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 22px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(10,10,10,0.96);
+  backdrop-filter: blur(10px);
+  position: sticky; top: 0; z-index: 200;
+}
+.header-title { font-family: var(--bebas); font-size: 24px; letter-spacing: 0.2em; line-height: 1; }
+.header-sub { font-size: 8px; letter-spacing: 0.28em; color: var(--gris2); text-transform: uppercase; margin-top: 2px; }
+.header-right { display: flex; align-items: center; gap: 12px; }
+
+.atmo-badge {
+  font-size: 8px; letter-spacing: 0.15em; text-transform: uppercase;
+  padding: 4px 10px; border: 1px solid; transition: all 0.4s;
+}
+
+.status-dot { width: 6px; height: 6px; background: var(--vert); border-radius: 50%; animation: sblink 2s infinite; flex-shrink: 0; }
+@keyframes sblink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+.api-mini { display: flex; align-items: center; gap: 6px; }
+.api-mini input {
+  background: var(--noir3); border: 1px solid var(--border);
+  color: var(--blanc); font-family: var(--mono); font-size: 10px;
+  padding: 5px 9px; outline: none; width: 170px;
+}
+.api-mini input::placeholder { color: var(--gris2); }
+.btn-xs {
+  background: transparent; border: 1px solid var(--vert); color: var(--vert);
+  font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em;
+  padding: 5px 10px; cursor: pointer; text-transform: uppercase; transition: all 0.2s;
+}
+.btn-xs:hover { background: var(--vert); color: var(--noir); }
+
+/* ════════════════════ LAYOUT ════════════════════ */
+.layout {
+  display: grid;
+  grid-template-columns: 300px 1fr 290px;
+  height: calc(100vh - 54px);
+  overflow: hidden;
+}
+.col { display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid var(--border); }
+.col:last-child { border-right: none; }
+.col-header {
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+  background: rgba(17,17,17,0.9); display: flex;
+  align-items: center; justify-content: space-between; flex-shrink: 0;
+}
+.col-title { font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gris2); display: flex; align-items: center; gap: 6px; }
+.col-title span { color: var(--blanc); }
+.col-body { flex: 1; overflow-y: auto; padding: 13px; }
+
+/* ════════════════════ UPLOAD ════════════════════ */
+.upload-zone {
+  border: 1px dashed rgba(255,255,255,0.14); cursor: pointer;
+  overflow: hidden; position: relative; aspect-ratio: 3/4;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--noir3); transition: border-color 0.2s;
+}
+.upload-zone:hover { border-color: rgba(255,255,255,0.28); }
+.upload-zone.has-img { border-style: solid; border-color: var(--gris); }
+.upload-zone img { width:100%; height:100%; object-fit:cover; display:block; filter:grayscale(15%); }
+.upload-ph { text-align:center; padding:18px; }
+.upload-ico { font-size:28px; opacity:0.22; margin-bottom:9px; }
+.upload-lbl { font-size:9px; letter-spacing:0.18em; text-transform:uppercase; color:var(--gris2); line-height:2.2; }
+.upload-fname { position:absolute; bottom:7px; left:7px; background:rgba(0,0,0,0.85); font-size:8px; padding:3px 7px; color:var(--gris2); }
+.btn-retirer { position:absolute; bottom:7px; right:7px; background:var(--rouge); color:var(--blanc); border:none; font-family:var(--mono); font-size:8px; padding:3px 9px; letter-spacing:0.12em; cursor:pointer; text-transform:uppercase; }
+#file-input { display:none; }
+
+/* ════════════════════ SECTION LABEL ════════════════════ */
+.slabel { font-size:8px; letter-spacing:0.22em; text-transform:uppercase; color:var(--gris2); margin:13px 0 7px; display:flex; align-items:center; gap:7px; }
+.slabel::after { content:''; flex:1; height:1px; background:var(--border); }
+
+/* ════════════════════ DURÉE ════════════════════ */
+.duree-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:5px; }
+.duree-btn {
+  background:var(--noir3); border:1px solid var(--border); color:var(--gris2);
+  padding:9px 4px 7px; font-family:var(--bebas); font-size:20px;
+  letter-spacing:0.1em; cursor:pointer; transition:all 0.2s; text-align:center; line-height:1;
+}
+.duree-btn sub { font-family:var(--mono); font-size:7px; letter-spacing:0.12em; display:block; margin-top:3px; }
+.duree-btn:hover { border-color:var(--gris2); color:var(--blanc); }
+.duree-btn.active { background:var(--blanc); color:var(--noir); border-color:var(--blanc); }
+
+/* ════════════════════ MODE ════════════════════ */
+.mode-grid { display:grid; grid-template-columns:1fr 1fr; gap:5px; }
+.mode-btn {
+  background:var(--noir3); border:1px solid var(--border); color:var(--gris2);
+  padding:10px 8px; font-family:var(--mono); font-size:8px; letter-spacing:0.12em;
+  cursor:pointer; transition:all 0.2s; text-align:center; text-transform:uppercase;
+  display:flex; flex-direction:column; align-items:center; gap:4px;
+}
+.mode-btn .mode-icon { font-size:16px; }
+.mode-btn .mode-desc { font-size:7px; color:var(--gris2); line-height:1.4; font-family:var(--sans); }
+.mode-btn:hover { border-color:var(--gris2); color:var(--blanc); }
+.mode-btn.active { border-color:var(--or); color:var(--or); background:rgba(255,209,102,0.05); }
+.mode-btn.active .mode-desc { color:rgba(255,209,102,0.6); }
+
+/* ════════════════════ MODÈLE ════════════════════ */
+.modele-list { display:flex; flex-direction:column; gap:4px; }
+.modele-btn {
+  background:var(--noir3); border:1px solid var(--border); color:var(--gris2);
+  padding:9px 12px; font-family:var(--mono); font-size:8px; letter-spacing:0.1em;
+  cursor:pointer; transition:all 0.2s; text-align:left; text-transform:uppercase;
+  display:flex; align-items:center; gap:9px;
+}
+.modele-btn:hover { border-color:var(--gris2); color:var(--blanc); }
+.modele-btn.active { border-color:var(--cyan); color:var(--cyan); background:rgba(0,212,255,0.05); }
+.modele-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+.modele-info { display:flex; flex-direction:column; gap:1px; }
+.modele-name { font-size:9px; color:var(--blanc); }
+.modele-sub { font-size:7px; color:var(--gris2); font-family:var(--sans); line-height:1.4; }
+
+/* ════════════════════ ATMOSPHÈRES ════════════════════ */
+.atmo-list { display:flex; flex-direction:column; gap:4px; position:relative; }
+.atmo-item { position:relative; }
+.atmo-btn {
+  width:100%; background:var(--noir3); border:1px solid var(--border); color:var(--gris2);
+  padding:9px 11px; font-family:var(--mono); font-size:8px; letter-spacing:0.1em;
+  cursor:pointer; transition:all 0.22s; text-align:left;
+  display:flex; align-items:center; gap:9px;
+}
+.atmo-btn:hover { border-color:rgba(255,255,255,0.22); color:var(--blanc); }
+.atmo-btn.active { color:var(--blanc); }
+.atmo-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; transition:transform 0.2s; }
+.atmo-btn.active .atmo-dot { transform:scale(1.4); }
+.atmo-info { flex:1; display:flex; flex-direction:column; gap:1px; min-width:0; }
+.atmo-name { font-size:9px; text-transform:uppercase; letter-spacing:0.14em; color:var(--blanc); }
+.atmo-desc { font-size:7px; color:var(--gris2); font-family:var(--sans); line-height:1.4; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+/* Tooltip */
+.atmo-tooltip {
+  position:absolute; left:calc(100% + 9px); top:0;
+  width:190px; background:#0d0d0d; border:1px solid rgba(255,255,255,0.1);
+  padding:11px; z-index:100; opacity:0; pointer-events:none;
+  transform:translateX(-5px); transition:opacity 0.2s, transform 0.2s;
+}
+.atmo-item:hover .atmo-tooltip { opacity:1; transform:translateX(0); }
+.tooltip-palette { display:flex; gap:3px; margin-bottom:9px; }
+.pal-sw { flex:1; height:18px; border-radius:1px; }
+.tooltip-films { font-size:8px; letter-spacing:0.08em; color:var(--gris2); line-height:1.9; }
+.tooltip-films strong { display:block; color:rgba(255,255,255,0.5); font-size:7px; letter-spacing:0.2em; margin-bottom:3px; text-transform:uppercase; }
+.tooltip-mood { margin-top:8px; font-family:var(--sans); font-style:italic; font-weight:300; font-size:10px; color:rgba(232,232,232,0.5); line-height:1.5; border-top:1px solid var(--border); padding-top:7px; }
+
+/* ════════════════════ HISTOIRE ════════════════════ */
+.hist-opts { display:flex; flex-direction:column; gap:4px; }
+.hist-opt {
+  background:var(--noir3); border:1px solid var(--border); color:var(--gris2);
+  padding:9px 11px; font-family:var(--mono); font-size:8px; letter-spacing:0.1em;
+  cursor:pointer; transition:all 0.2s; text-align:left; text-transform:uppercase;
+}
+.hist-opt:hover { border-color:var(--gris2); color:var(--blanc); }
+.hist-opt.active { border-color:var(--vert); color:var(--vert); background:rgba(57,255,110,0.04); }
+.hist-ta {
+  width:100%; background:var(--noir3); border:1px solid var(--border);
+  color:var(--blanc); font-family:var(--sans); font-weight:300; font-size:11px;
+  padding:9px 11px; outline:none; resize:none; min-height:70px;
+  line-height:1.7; margin-top:4px; display:none;
+}
+.hist-ta.vis { display:block; }
+
+/* ════════════════════ GENERATE ════════════════════ */
+.gen-wrap { margin-top:13px; padding-top:13px; border-top:1px solid var(--border); }
+.gen-btn {
+  width:100%; background:var(--blanc); color:var(--noir); border:none;
+  padding:13px; font-family:var(--bebas); font-size:17px; letter-spacing:0.25em;
+  cursor:pointer; transition:opacity 0.2s; position:relative; overflow:hidden;
+}
+.gen-btn:hover { opacity:0.85; }
+.gen-btn:disabled { opacity:0.3; cursor:not-allowed; }
+.pbar { position:absolute; bottom:0; left:0; height:3px; background:var(--vert); width:0; transition:width 22s linear; }
+
+/* ════════════════════ STORYBOARD ════════════════════ */
+.stream-bar {
+  display:none; align-items:center; gap:7px;
+  padding:8px 14px; border-bottom:1px solid var(--border);
+  font-size:8px; letter-spacing:0.18em; text-transform:uppercase;
+  color:var(--vert); background:rgba(57,255,110,0.04); flex-shrink:0;
+}
+.stream-bar.vis { display:flex; }
+.tdot { width:4px; height:4px; background:currentColor; border-radius:50%; animation:tdot 1.2s infinite; }
+.tdot:nth-child(2){animation-delay:0.2s} .tdot:nth-child(3){animation-delay:0.4s}
+@keyframes tdot{0%,100%{opacity:0.2}50%{opacity:1}}
+
+.empty-state { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:300px; opacity:0.18; text-align:center; }
+.empty-ico { font-size:36px; margin-bottom:12px; }
+.empty-txt { font-size:9px; letter-spacing:0.2em; text-transform:uppercase; line-height:2.5; }
+
+/* Analyse */
+.analyse-card {
+  background:var(--noir3); border:1px solid var(--border); border-left:3px solid var(--cyan);
+  padding:13px; margin-bottom:13px; display:none;
+}
+.analyse-card.vis { display:block; }
+.an-head { font-size:8px; letter-spacing:0.25em; text-transform:uppercase; color:var(--cyan); margin-bottom:7px; }
+.an-body { font-family:var(--sans); font-weight:300; font-size:12px; line-height:1.85; color:rgba(232,232,232,0.85); font-style:italic; }
+
+/* Plan card */
+.plan-card { border:1px solid var(--border); margin-bottom:9px; opacity:0; animation:slideIn 0.32s ease forwards; }
+@keyframes slideIn{from{opacity:0;transform:translateX(5px)}to{opacity:1;transform:translateX(0)}}
+.plan-top { background:var(--noir3); padding:7px 11px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); }
+.plan-num { font-family:var(--bebas); font-size:13px; letter-spacing:0.2em; }
+.plan-tc { font-size:9px; color:var(--or); letter-spacing:0.12em; background:rgba(255,209,102,0.08); padding:2px 7px; border:1px solid rgba(255,209,102,0.18); }
+.plan-type { font-size:7px; letter-spacing:0.12em; text-transform:uppercase; color:var(--gris2); }
+.plan-body { padding:11px; }
+.plan-row { display:grid; grid-template-columns:72px 1fr; gap:4px 9px; margin-bottom:5px; align-items:start; }
+.pk { font-size:7px; letter-spacing:0.18em; text-transform:uppercase; color:var(--gris2); padding-top:2px; }
+.pv { font-family:var(--sans); font-weight:300; font-size:11px; color:rgba(232,232,232,0.9); line-height:1.6; }
+.plan-emo { margin-top:8px; padding:7px 11px; background:rgba(255,68,68,0.05); border-left:2px solid var(--rouge); font-family:var(--sans); font-size:11px; font-style:italic; color:rgba(232,232,232,0.6); line-height:1.5; }
+.plan-pref { margin-top:5px; padding:5px 9px; background:rgba(255,255,255,0.02); border-top:1px solid var(--border); font-size:9px; color:var(--gris2); line-height:1.5; }
+.plan-pref span { color:var(--gris2); font-size:7px; letter-spacing:0.2em; text-transform:uppercase; display:block; margin-bottom:2px; }
+
+/* PROMPT FINAL */
+.prompt-final-card {
+  margin-top:16px; background:var(--noir3);
+  border:1px solid rgba(57,255,110,0.2); display:none;
+}
+.prompt-final-card.vis { display:block; }
+.pf-header { padding:10px 13px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.pf-title { font-size:9px; letter-spacing:0.22em; text-transform:uppercase; color:var(--vert); }
+.pf-lang-switch { display:flex; gap:4px; }
+.lang-btn {
+  background:transparent; border:1px solid var(--border); color:var(--gris2);
+  font-family:var(--mono); font-size:7px; letter-spacing:0.12em; padding:3px 9px;
+  cursor:pointer; transition:all 0.2s; text-transform:uppercase;
+}
+.lang-btn.active { background:var(--vert); color:var(--noir); border-color:var(--vert); }
+.pf-body { padding:13px; font-family:var(--sans); font-weight:300; font-size:11px; line-height:1.8; color:rgba(232,232,232,0.88); }
+.pf-conseil { margin-top:10px; padding:8px 11px; background:rgba(255,209,102,0.05); border:1px solid rgba(255,209,102,0.15); font-size:9px; color:rgba(255,209,102,0.7); line-height:1.6; font-family:var(--sans); font-weight:300; }
+.pf-targets { margin-top:8px; display:flex; gap:6px; flex-wrap:wrap; }
+.target-tag { font-size:8px; border:1px solid var(--border); padding:3px 9px; letter-spacing:0.1em; color:var(--gris2); cursor:pointer; transition:all 0.2s; }
+.target-tag:hover { border-color:var(--blanc); color:var(--blanc); }
+.copy-pf {
+  width:100%; background:transparent; border:none; border-top:1px solid var(--border);
+  color:var(--vert); font-family:var(--mono); font-size:8px; letter-spacing:0.18em;
+  text-transform:uppercase; padding:10px; cursor:pointer; transition:background 0.2s;
+}
+.copy-pf:hover { background:rgba(57,255,110,0.06); }
+
+/* REFS */
+.refs-sec { margin-top:14px; display:none; }
+.refs-sec.vis { display:block; }
+.refs-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:4px; margin-top:8px; }
+.ref-box { aspect-ratio:2/3; background:var(--noir3); border:1px solid var(--border); display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:6px; letter-spacing:0.08em; color:var(--gris2); text-transform:uppercase; text-align:center; padding:3px; line-height:1.7; }
+
+.copy-sb { width:100%; margin-top:9px; background:transparent; border:1px solid var(--border); color:var(--gris2); padding:9px; font-family:var(--mono); font-size:8px; letter-spacing:0.18em; text-transform:uppercase; cursor:pointer; transition:all 0.2s; display:none; }
+.copy-sb.vis { display:block; }
+.copy-sb:hover { border-color:var(--blanc); color:var(--blanc); }
+
+/* ════════════════════ CHAT ════════════════════ */
+.chat-msgs { flex:1; overflow-y:auto; padding:13px; display:flex; flex-direction:column; gap:11px; }
+.chat-msg { display:flex; flex-direction:column; gap:3px; animation:fadeIn 0.28s ease; }
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.chat-msg.user { align-items:flex-end; }
+.chat-msg.ai { align-items:flex-start; }
+.msg-lbl { font-size:7px; letter-spacing:0.2em; text-transform:uppercase; color:var(--gris2); }
+.msg-bub { max-width:93%; padding:9px 12px; font-family:var(--sans); font-weight:300; font-size:12px; line-height:1.75; }
+.chat-msg.user .msg-bub { background:var(--blanc); color:var(--noir); }
+.chat-msg.ai .msg-bub { background:var(--noir3); border:1px solid var(--border); border-left:2px solid var(--vert); color:rgba(232,232,232,0.9); }
+
+.chat-typing-wrap { padding:0 13px 7px; display:none; }
+.chat-typing-wrap.vis { display:block; }
+.chat-typing { display:inline-flex; align-items:center; gap:5px; padding:7px 12px; background:var(--noir3); border:1px solid var(--border); }
+
+.quick-acts { padding:7px 13px; border-top:1px solid var(--border); display:flex; gap:4px; flex-wrap:wrap; background:var(--noir2); flex-shrink:0; }
+.qbtn { background:transparent; border:1px solid var(--border); color:var(--gris2); font-family:var(--mono); font-size:7px; letter-spacing:0.1em; padding:4px 8px; cursor:pointer; transition:all 0.2s; text-transform:uppercase; white-space:nowrap; }
+.qbtn:hover { border-color:var(--gris2); color:var(--blanc); }
+
+.chat-input-zone { padding:9px 13px; border-top:1px solid var(--border); display:flex; gap:7px; align-items:flex-end; background:var(--noir2); flex-shrink:0; }
+.chat-ta { flex:1; background:var(--noir3); border:1px solid var(--border); color:var(--blanc); font-family:var(--sans); font-weight:300; font-size:12px; padding:7px 11px; outline:none; resize:none; min-height:34px; max-height:85px; line-height:1.5; }
+.chat-ta::placeholder { color:var(--gris2); font-size:11px; }
+.chat-send { background:var(--vert); color:var(--noir); border:none; width:34px; height:34px; cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:opacity 0.2s; }
+.chat-send:hover { opacity:0.8; }
+.chat-send:disabled { opacity:0.3; cursor:not-allowed; }
+
+/* NOTIF */
+.notif { position:fixed; bottom:16px; right:16px; background:var(--blanc); color:var(--noir); padding:7px 16px; font-family:var(--mono); font-size:9px; letter-spacing:0.15em; text-transform:uppercase; opacity:0; transform:translateY(5px); transition:all 0.22s; pointer-events:none; z-index:999; }
+.notif.show { opacity:1; transform:translateY(0); }
+
+@media(max-width:900px){
+  .layout{grid-template-columns:1fr;height:auto;}
+  .col{height:auto;border-right:none;border-bottom:1px solid var(--border);}
+  .atmo-tooltip{display:none;}
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════ LOADING SCREEN ════════════ -->
+<div class="loading-screen" id="ls">
+  <div class="ls-top">
+    <div class="ls-clap">🎬</div>
+    <div class="ls-title">STUDIO RÉALISATEUR</div>
+  </div>
+  <div class="ls-scene-counter" id="ls-scene">SCÈNE 01 — PRISE 01</div>
+  <div class="ls-tape">
+    <div class="ls-tape-label">00:00:00:00</div>
+    <div class="ls-tape-bar"></div>
+    <div class="ls-tape-label" id="ls-tc">ANALYSE</div>
+  </div>
+  <div class="ls-phrase-wrap">
+    <div class="ls-phrase" id="ls-phrase">On règle les lumières. Le directeur photo cale sa focale.</div>
+  </div>
+  <div class="ls-dots">
+    <div class="ls-dot"></div>
+    <div class="ls-dot"></div>
+    <div class="ls-dot"></div>
+  </div>
+  <div class="ls-atmo" id="ls-atmo">ATMOSPHÈRE : CLASSIC NOIR</div>
+</div>
+
+<!-- ════════════ HEADER ════════════ -->
+<div class="header">
+  <div>
+    <div class="header-title">STUDIO RÉALISATEUR</div>
+    <div class="header-sub">Direction cinématographique pilotée par IA</div>
+  </div>
+  <div class="header-right">
+    <div class="atmo-badge" id="atmo-badge">● CLASSIC NOIR</div>
+    <div class="status-dot"></div>
+    <div class="api-mini">
+      <input type="password" id="api-key" placeholder="Clé API Gemini...">
+      <button class="btn-xs" onclick="saveKey()">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ LAYOUT ════════════ -->
+<div class="layout">
+
+  <!-- ══ COL 1 : CASTING ══ -->
+  <div class="col">
+    <div class="col-header">
+      <div class="col-title">📷 <span>Casting & Paramètres</span></div>
+    </div>
+    <div class="col-body">
+
+      <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+        <div class="upload-ph"><div class="upload-ico">◈</div><div class="upload-lbl">Importe ton portrait<br>personnage ici</div></div>
+      </div>
+      <input type="file" id="file-input" accept="image/*" onchange="handleUpload(event)">
+
+      <div class="slabel">Durée vidéo</div>
+      <div class="duree-grid">
+        <button class="duree-btn" onclick="selectDuree(5,this)">5<sub>SEC</sub></button>
+        <button class="duree-btn active" onclick="selectDuree(8,this)">8<sub>SEC</sub></button>
+        <button class="duree-btn" onclick="selectDuree(15,this)">15<sub>SEC</sub></button>
+      </div>
+
+      <div class="slabel">Mode de génération</div>
+      <div class="mode-grid">
+        <button class="mode-btn active" id="mode-classique" onclick="selectMode('classique',this)">
+          <div class="mode-icon">▶</div>
+          <div>CLASSIQUE</div>
+          <div class="mode-desc">1 prompt global direct pour Seedance</div>
+        </button>
+        <button class="mode-btn" id="mode-multishoot" onclick="selectMode('multishoot',this)">
+          <div class="mode-icon">⊞</div>
+          <div>MULTISHOOT</div>
+          <div class="mode-desc">Plans découpés + prompt FR/EN final</div>
+        </button>
+      </div>
+
+      <div class="slabel">Moteur vidéo cible</div>
+      <div class="modele-list">
+        <button class="modele-btn" onclick="selectModele('seedance',this)">
+          <div class="modele-dot" style="background:#ffd166"></div>
+          <div class="modele-info">
+            <div class="modele-name">Seedance</div>
+            <div class="modele-sub">Movements précis, caméra technique</div>
+          </div>
+        </button>
+        <button class="modele-btn active" onclick="selectModele('veo31',this)">
+          <div class="modele-dot" style="background:#00d4ff"></div>
+          <div class="modele-info">
+            <div class="modele-name">Veo 3.1 — Vertex AI</div>
+            <div class="modele-sub">veo-3.1-generate-001 · audio natif · naturaliste</div>
+          </div>
+        </button>
+        <button class="modele-btn" onclick="selectModele('veo31fast',this)">
+          <div class="modele-dot" style="background:#39ff6e"></div>
+          <div class="modele-info">
+            <div class="modele-name">Veo 3.1 Fast</div>
+            <div class="modele-sub">veo-3.1-fast-generate-001 · rapide, production</div>
+          </div>
+        </button>
+      </div>
+
+      <div class="slabel">Atmosphère de référence</div>
+      <div class="atmo-list" id="atmo-list"></div>
+
+      <div class="slabel">Point de départ</div>
+      <div class="hist-opts">
+        <button class="hist-opt active" onclick="selectHistoire('auto',this)">◈ Analyser la photo et créer l'histoire</button>
+        <button class="hist-opt" onclick="selectHistoire('custom',this)">◈ J'ai déjà mon histoire</button>
+      </div>
+      <textarea class="hist-ta" id="hist-ta" placeholder="Raconte ton histoire..."></textarea>
+
+      <div class="gen-wrap">
+        <button class="gen-btn" id="gen-btn" onclick="generate()">
+          ▶ LANCER LA RÉALISATION
+          <div class="pbar" id="pbar"></div>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══ COL 2 : STORYBOARD ══ -->
+  <div class="col">
+    <div class="col-header">
+      <div class="col-title">🎬 <span>Storyboard</span></div>
+      <span id="duree-badge" style="display:none;font-family:var(--bebas);font-size:18px;color:var(--or);letter-spacing:0.1em"></span>
+    </div>
+    <div class="stream-bar" id="stream-bar">
+      <div class="tdot"></div><div class="tdot"></div><div class="tdot"></div>
+      <span id="stream-lbl">Analyse en cours...</span>
+    </div>
+    <div class="col-body" id="sb-body">
+      <div class="empty-state" id="empty-state">
+        <div class="empty-ico">🎬</div>
+        <div class="empty-txt">Silence sur le plateau.<br><br>Importe un portrait<br>et lance la réalisation.</div>
+      </div>
+      <div class="analyse-card" id="analyse-card">
+        <div class="an-head">■ Analyse du personnage</div>
+        <div class="an-body" id="an-body"></div>
+      </div>
+      <div id="plans-container"></div>
+      <div class="prompt-final-card" id="pf-card">
+        <div class="pf-header">
+          <div class="pf-title">✦ Prompt vidéo global final</div>
+          <div class="pf-lang-switch">
+            <button class="lang-btn active" id="lang-fr" onclick="switchLang('fr')">🇫🇷 Français</button>
+            <button class="lang-btn" id="lang-en" onclick="switchLang('en')">🇬🇧 English (conseillé)</button>
+          </div>
+        </div>
+        <div class="pf-body" id="pf-body"></div>
+        <div class="pf-conseil">💡 Les IA vidéo génèrent de bien meilleurs détails en anglais. Copie la version anglaise avant génération.</div>
+        <div class="pf-targets">
+          <div class="target-tag">PRÊT POUR :</div>
+          <div class="target-tag" id="tt-seedance">SEEDANCE</div>
+          <div class="target-tag" id="tt-kling">KLING</div>
+          <div class="target-tag" id="tt-luma">LUMA MACHINE</div>
+          <div class="target-tag" id="tt-runway">RUNWAY GEN-3</div>
+        </div>
+        <button class="copy-pf" onclick="copyPromptFinal()">◈ COPIER LE PROMPT</button>
+      </div>
+      <div class="refs-sec" id="refs-sec">
+        <div class="slabel">5 références à uploader dans Seedance</div>
+        <div class="refs-grid">
+          <div class="ref-box">Face<br>Frontale</div>
+          <div class="ref-box">Profil<br>Gauche</div>
+          <div class="ref-box">Profil<br>Droit</div>
+          <div class="ref-box">Dos<br>Entier</div>
+          <div class="ref-box">Plan<br>Entier</div>
+        </div>
+      </div>
+      <button class="copy-sb" id="copy-sb" onclick="copyStoryboard()">◈ Copier le storyboard complet</button>
+    </div>
+  </div>
+
+  <!-- ══ COL 3 : CHAT ══ -->
+  <div class="col">
+    <div class="col-header">
+      <div class="col-title">💬 <span>Dialogue Réalisateur</span></div>
+      <div style="font-size:8px;background:var(--vert);color:var(--noir);padding:2px 7px;letter-spacing:0.1em">ON AIR</div>
+    </div>
+    <div class="chat-msgs" id="chat-msgs">
+      <div class="chat-msg ai">
+        <div class="msg-lbl">Réalisateur</div>
+        <div class="msg-bub">Silence sur le plateau. 🎬<br><br>Importe ton portrait, choisis ton atmosphère, et on construit quelque chose de vrai ensemble.<br><br>Pas de catalogue. Pas de générique. Des moments volés.</div>
+      </div>
+    </div>
+    <div class="chat-typing-wrap" id="chat-typing">
+      <div class="chat-typing">
+        <div class="tdot" style="color:var(--vert)"></div>
+        <div class="tdot" style="color:var(--vert)"></div>
+        <div class="tdot" style="color:var(--vert)"></div>
+      </div>
+    </div>
+    <div class="quick-acts">
+      <button class="qbtn" onclick="quickMsg('Plus de drame')">+ DRAME</button>
+      <button class="qbtn" onclick="quickMsg('Rends ça plus intime')">INTIME</button>
+      <button class="qbtn" onclick="quickMsg('Change le rythme, accélère')">RYTHME</button>
+      <button class="qbtn" onclick="quickMsg('Retravaille le plan 1')">PLAN 1</button>
+      <button class="qbtn" onclick="quickMsg('Pousse l\'émotion')">ÉMOTION</button>
+      <button class="qbtn" onclick="quickMsg('Version vlog téléphone, plus brut')">VLOG</button>
+    </div>
+    <div class="chat-input-zone">
+      <textarea class="chat-ta" id="chat-ta" placeholder="Parle au réalisateur..." rows="1" onkeydown="handleKey(event)"></textarea>
+      <button class="chat-send" id="chat-send" onclick="sendChat()">➤</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="notif" id="notif"></div>
+
+<script>
+// ════════════════ DATA ════════════════
+const ATMOS = [
+  { id:'noir', name:'Classic Noir', desc:'Ombres tranchées, mystère', palette:['#0a0a0a','#1a1a1a','#c8c8c8','#ffffff','#888888'], films:['Chinatown','Double Indemnity','Blade Runner'], mood:'Le silence entre deux répliques. Ce qu\'on ne dit pas.', tint:'rgba(0,0,0,0)', dot:'#c8c8c8', ic:{c:'#c8c8c8',b:'rgba(200,200,200,0.08)'} },
+  { id:'neon', name:'Néon Cyberpunk', desc:'Futuriste, pluie, Blade Runner', palette:['#0d0221','#ff00ff','#00ffff','#ff6600','#0a0a2e'], films:['Blade Runner 2049','Ghost in the Shell','Akira'], mood:'La ville respire. Elle est une donnée parmi des millions.', tint:'rgba(255,0,255,0.04)', dot:'#ff00ff', ic:{c:'#ff00ff',b:'rgba(255,0,255,0.08)'} },
+  { id:'35mm', name:'Vintage 35mm', desc:'Grain argentique, Nouvelle Vague', palette:['#c8a882','#e8d5b0','#6b4f3a','#f0e6d0','#8b6914'], films:['À bout de souffle','Jules et Jim','Le Mépris'], mood:'Un été qui ne reviendra pas. La chaleur sur la peau.', tint:'rgba(200,168,130,0.04)', dot:'#c8a882', ic:{c:'#c8a882',b:'rgba(200,168,130,0.08)'} },
+  { id:'or', name:'Hollywood Or', desc:'Contre-jours majestueux, épique', palette:['#1a0f00','#ffd166','#ff9500','#c8860a','#fff0c0'], films:['Lawrence d\'Arabie','Gladiator','There Will Be Blood'], mood:'Elle est plus grande que le cadre. L\'histoire la précède.', tint:'rgba(255,209,102,0.04)', dot:'#ffd166', ic:{c:'#ffd166',b:'rgba(255,209,102,0.08)'} },
+  { id:'drame', name:'Drame Sombre', desc:'Froid, clinique, tension max', palette:['#060d14','#0a1628','#1a3050','#4a6080','#c0d0e0'], films:['Requiem for a Dream','Prisoners','Se7en'], mood:'Quelque chose va se briser. On le sait déjà.', tint:'rgba(10,22,40,0.3)', dot:'#4a6080', ic:{c:'#4a6080',b:'rgba(74,96,128,0.08)'} },
+  { id:'wkw', name:'Wong Kar-wai', desc:'Flou de mouvement, désir suspendu', palette:['#2d0a1a','#ff3366','#ffaa00','#1a0d2e','#cc6600'], films:['In the Mood for Love','Chungking Express','2046'], mood:'Le désir retenu. Le moment juste avant.', tint:'rgba(255,51,102,0.04)', dot:'#ff3366', ic:{c:'#ff3366',b:'rgba(255,51,102,0.08)'} },
+  { id:'malick', name:'Terrence Malick', desc:'Lumière dorée, nature, contemplatif', palette:['#1a2e0a','#7ab840','#f0e068','#4a7820','#e8f0c8'], films:['The Tree of Life','Badlands','Days of Heaven'], mood:'Le monde existait avant elle. Il continuera après.', tint:'rgba(122,184,64,0.04)', dot:'#7ab840', ic:{c:'#7ab840',b:'rgba(122,184,64,0.08)'} },
+  { id:'giallo', name:'Giallo Italien', desc:'Couleurs primaires, Argento', palette:['#0a0a0a','#ff0000','#0000ff','#ffff00','#cc0044'], films:['Suspiria','Profondo Rosso','Opera'], mood:'La beauté et la violence sont la même chose.', tint:'rgba(255,0,0,0.04)', dot:'#ff0044', ic:{c:'#ff0044',b:'rgba(255,0,68,0.08)'} },
+  { id:'seoul', name:'Séoul Nocturne', desc:'Pluie fine, mélancolie coréenne', palette:['#0a0d1a','#ff69b4','#6699ff','#0a1428','#cc88ff'], films:['Parasite','Burning','The Handmaiden'], mood:'La ville pleure avec elle. Ou peut-être c\'est elle.', tint:'rgba(102,153,255,0.05)', dot:'#6699ff', ic:{c:'#6699ff',b:'rgba(102,153,255,0.08)'} },
+  { id:'memoire', name:'Mémoire & Nostalgie', desc:'Surexposé, grain fort, souvenir', palette:['#f0e8d8','#e0c8a0','#c8a870','#f8f0e0','#b89050'], films:['Eternal Sunshine','The Virgin Suicides','Carol'], mood:'Elle se souvient de quelque chose qu\'on ne verra jamais.', tint:'rgba(240,232,216,0.04)', dot:'#e0c8a0', ic:{c:'#e0c8a0',b:'rgba(224,200,160,0.08)'} }
+];
+
+const LOADING_PHRASES = [
+  'On règle les lumières. Le directeur photo cale sa focale.',
+  'Le chef opérateur teste la balance des blancs. On y est presque.',
+  'Son ! Le preneur de son tend son micro. Silence dans 30 secondes.',
+  'Le clap est prêt. On attend le signal du réalisateur.',
+  'Tout le monde sur le plateau. La caméra tourne.',
+  'On vérifie le cadrage une dernière fois. L\'actrice est en place.',
+  'Le réalisateur donne ses dernières indications. On est concentré.',
+  'Moteur... Action dans 3... 2... 1...',
+  'La prise est en cours. Ne bougez plus.',
+  'On analyse la photo. L\'histoire se construit dans le silence.',
+  'Le storyboard prend forme. Plan par plan. Émotion par émotion.',
+  'On calibre l\'atmosphère. La lumière obéit.',
+];
+
+// ════════════════ STATE ════════════════
+let apiKey = localStorage.getItem('sr_key') || '';
+let selectedDuree = 8;
+let selectedMode = 'classique';
+let selectedModele = 'veo31';
+let selectedAtmoId = 'noir';
+let selectedHistoire = 'auto';
+let imageBase64 = null, imageMime = null;
+let fullStoryboard = '';
+let promptFR = '', promptEN = '';
+let currentLang = 'fr';
+let chatHistory = [];
+let lsPhraseIdx = 0, lsInterval = null;
+
+if (apiKey) document.getElementById('api-key').value = apiKey;
+
+// ════════════════ BUILD ATMO LIST ════════════════
+function buildAtmoList() {
+  const c = document.getElementById('atmo-list');
+  c.innerHTML = '';
+  ATMOS.forEach(a => {
+    const item = document.createElement('div');
+    item.className = 'atmo-item';
+    const sw = a.palette.map(p => `<div class="pal-sw" style="background:${p}"></div>`).join('');
+    const films = a.films.join('<br>');
+    item.innerHTML = `
+      <button class="atmo-btn${a.id===selectedAtmoId?' active':''}" onclick="selectAtmo('${a.id}',this)">
+        <div class="atmo-dot" style="background:${a.dot}"></div>
+        <div class="atmo-info">
+          <span class="atmo-name">${a.name}</span>
+          <span class="atmo-desc">${a.desc}</span>
+        </div>
+      </button>
+      <div class="atmo-tooltip">
+        <div class="tooltip-palette">${sw}</div>
+        <div class="tooltip-films"><strong>Références</strong>${films}</div>
+        <div class="tooltip-mood">${a.mood}</div>
+      </div>`;
+    c.appendChild(item);
+  });
+}
+buildAtmoList();
+
+// ════════════════ LOADING ════════════════
+function startLoading() {
+  const atmo = ATMOS.find(a => a.id === selectedAtmoId);
+  document.getElementById('ls-atmo').textContent = 'ATMOSPHÈRE : ' + (atmo?.name || '').toUpperCase();
+  updateLsPhrase(0);
+  lsInterval = setInterval(() => {
+    lsPhraseIdx++;
+    const ph = document.getElementById('ls-phrase');
+    ph.classList.add('hidden-phrase');
+    setTimeout(() => {
+      ph.textContent = LOADING_PHRASES[lsPhraseIdx % LOADING_PHRASES.length];
+      ph.classList.remove('hidden-phrase');
+    }, 400);
+    // Update tape timecode
+    const steps = ['ANALYSE','PERSO','STORY','PLANS','PROMPT','FINAL'];
+    document.getElementById('ls-tc').textContent = steps[lsPhraseIdx % steps.length];
+    document.getElementById('ls-scene').textContent = `SCÈNE 0${(lsPhraseIdx%9)+1} — PRISE 0${(lsPhraseIdx%3)+1}`;
+  }, 2800);
+  const ls = document.getElementById('ls');
+  ls.classList.remove('fade-out','hidden');
+  ls.style.opacity = '1';
+}
+
+function updateLsPhrase(i) {
+  const ph = document.getElementById('ls-phrase');
+  ph.textContent = LOADING_PHRASES[i % LOADING_PHRASES.length];
+}
+
+function stopLoading() {
+  clearInterval(lsInterval);
+  const ls = document.getElementById('ls');
+  ls.classList.add('fade-out');
+  setTimeout(() => ls.classList.add('hidden'), 800);
+}
+
+// ════════════════ SÉLECTIONS ════════════════
+function saveKey() {
+  apiKey = document.getElementById('api-key').value.trim();
+  localStorage.setItem('sr_key', apiKey);
+  showNotif('Clé sauvegardée');
+}
+
+function selectDuree(v, btn) {
+  selectedDuree = v;
+  document.querySelectorAll('.duree-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function selectMode(v, btn) {
+  selectedMode = v;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function selectModele(v, btn) {
+  selectedModele = v;
+  document.querySelectorAll('.modele-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function selectAtmo(id, btn) {
+  selectedAtmoId = id;
+  document.querySelectorAll('.atmo-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const a = ATMOS.find(x => x.id === id);
+  if (!a) return;
+  document.body.style.background = `linear-gradient(135deg, ${a.tint} 0%, var(--noir) 60%)`;
+  const badge = document.getElementById('atmo-badge');
+  badge.textContent = '● ' + a.name.toUpperCase();
+  badge.style.color = a.ic.c;
+  badge.style.borderColor = a.ic.c;
+  badge.style.background = a.ic.b;
+}
+
+function selectHistoire(v, btn) {
+  selectedHistoire = v;
+  document.querySelectorAll('.hist-opt').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('hist-ta').classList.toggle('vis', v === 'custom');
+}
+
+function handleUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  imageMime = file.type;
+  const r = new FileReader();
+  r.onload = ev => {
+    imageBase64 = ev.target.result.split(',')[1];
+    const z = document.getElementById('upload-zone');
+    z.classList.add('has-img');
+    z.innerHTML = `<img src="${ev.target.result}" alt=""><div class="upload-fname">${file.name}</div><button class="btn-retirer" onclick="retirerPhoto(event)">RETIRER</button>`;
+  };
+  r.readAsDataURL(file);
+}
+
+function retirerPhoto(e) {
+  e.stopPropagation();
+  imageBase64 = null; imageMime = null;
+  const z = document.getElementById('upload-zone');
+  z.classList.remove('has-img');
+  z.innerHTML = `<div class="upload-ph"><div class="upload-ico">◈</div><div class="upload-lbl">Importe ton portrait<br>personnage ici</div></div>`;
+  document.getElementById('file-input').value = '';
+}
+
+// ════════════════ BUILD SYSTEM PROMPT ════════════════
+function buildSysPrompt() {
+  const atmo = ATMOS.find(a => a.id === selectedAtmoId);
+  const atmoStr = atmo ? `${atmo.name} — ${atmo.desc}. Films de référence : ${atmo.films.join(', ')}.` : '';
+
+  const modeleCtx = selectedModele === 'seedance'
+    ? `MOTEUR VIDÉO CIBLE : Seedance. Les prompts Seedance doivent être très techniques : mouvements de caméra ultra précis (travelling, pan, dolly), positions exactes du personnage, descriptions physiques précises pour la cohérence inter-plans, timecodes stricts.`
+    : selectedModele === 'veo31'
+    ? `MOTEUR VIDÉO CIBLE : Veo 3.1 de Google (modèle veo-3.1-generate-001 sur Vertex AI). Les prompts Veo 3.1 sont naturalistes et descriptifs : décris la scène comme si tu regardais un film, inclus la description sonore et audio ambiant (Veo 3.1 génère l'audio nativement), les émotions visibles, l'énergie du moment. Évite le langage purement technique de caméra — préfère "on voit", "la caméra suit naturellement", "on capte l'instant". Le style vlog authentique est valorisé : téléphone tenu à la main, légèrement instable, organique.`
+    : `MOTEUR VIDÉO CIBLE : Veo 3.1 Fast (modèle veo-3.1-fast-generate-001 sur Vertex AI). Même style que Veo 3.1 mais prompts plus concis et directs pour la génération rapide. Naturaliste, organique, vlog.`;
+
+  const modeCtx = selectedMode === 'multishoot'
+    ? `MODE : MULTISHOOT. Tu dois créer un découpage plan par plan très précis avec timecodes exacts, puis un prompt vidéo global final en français ET en anglais. L'anglais est la version à utiliser dans les interfaces IA vidéo.`
+    : `MODE : CLASSIQUE. Tu crées directement le prompt vidéo global sans découpage plan par plan visible. Un seul prompt fluide et puissant, prêt à coller dans l'interface vidéo.`;
+
+  return `Tu es un réalisateur humain de haut niveau. Tu as regardé des milliers de films. Tu connais Scorsese, Kubrick, Iñárritu, les frères Dardenne, De Palma, Wong Kar-wai. Tu maîtrises autant les codes du cinéma d'auteur que les codes des réseaux sociaux — TikTok, Instagram Reels, YouTube Shorts.
+
+Tu ne génères pas des prompts. Tu réalises. Tu penses en émotion, en énergie, en rythme, en histoire humaine. Quand tu regardes une photo, tu vois une personne réelle avec une histoire réelle. Tu construis autour d'elle. Directement. Précisément. Humainement. Jamais robotique. Jamais générique.
+
+RÈGLE ABSOLUE : tu ne décris JAMAIS une personne comme un catalogue. Pas de liste de caractéristiques physiques. Pas de "traits doux", "symboles de transformation", "archétype de". Tu captes un moment volé. Style vlog, quelqu'un qui filme avec son téléphone, moment pris sur le fait. Émotion brute.
+
+Tu tututoies toujours. Jamais de vouvoiement.
+
+ATMOSPHÈRE : ${atmoStr}
+${modeleCtx}
+${modeCtx}
+
+DURÉE ABSOLUE : exactement ${selectedDuree} secondes. Pas une de plus.
+
+MOUVEMENTS : naturels, humains, vivants. Bannis : lent, lentement, doucement, au ralenti, slow. Seul mot progressif autorisé : progressif.
+
+Jamais de bloc de code ou Plaintext.
+
+Réponds UNIQUEMENT en JSON valide strict, sans markdown ni backticks :
+{
+  "analyse": "3-4 phrases — moment volé, énergie vraie, pas de catalogue physique",
+  "plans": [
+    {
+      "numero": 1,
+      "debut": "0:00",
+      "fin": "0:03",
+      "type_plan": "GROS PLAN",
+      "angle": "...",
+      "mouvement": "...",
+      "dynamique": "...",
+      "lumiere": "...",
+      "action": "moment volé, naturel",
+      "emotion": "ce que le spectateur ressent",
+      "son": "...",
+      "prompt_ref": "prompt visuel court pour ce plan"
+    }
+  ],
+  "prompt_fr": "Le prompt vidéo global complet en français — fluide, cinématique, prêt à l'emploi. Pour mode classique : tout en un seul paragraphe puissant. Pour multishoot : synthèse narrative qui englobe tous les plans.",
+  "prompt_en": "The complete video prompt in English — optimized for ${selectedModele === 'seedance' ? 'Seedance (technical, precise movements)' : 'Veo 3.1 (naturalistic, organic, vlog energy, include ambient sound description)'}. Ready to paste."
+}`;
+}
+
+// ════════════════ GENERATE ════════════════
+async function generate() {
+  if (!apiKey) { showNotif('Clé API manquante'); return; }
+  if (!imageBase64) { showNotif('Importe une photo'); return; }
+
+  const btn = document.getElementById('gen-btn');
+  btn.disabled = true;
+  btn.innerHTML = '⏳ TOURNAGE EN COURS...<div class="pbar" id="pbar"></div>';
+
+  startLoading();
+  setTimeout(() => { const p = document.getElementById('pbar'); if(p) p.style.width='88%'; }, 200);
+
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('stream-bar').classList.add('vis');
+  document.getElementById('stream-lbl').textContent = 'Analyse du personnage...';
+  document.getElementById('duree-badge').style.display = 'block';
+  document.getElementById('duree-badge').textContent = selectedDuree + ' SECONDES';
+  document.getElementById('analyse-card').classList.remove('vis');
+  document.getElementById('plans-container').innerHTML = '';
+  document.getElementById('pf-card').classList.remove('vis');
+  document.getElementById('refs-sec').classList.remove('vis');
+  document.getElementById('copy-sb').classList.remove('vis');
+  fullStoryboard = ''; promptFR = ''; promptEN = '';
+
+  const histCtx = selectedHistoire === 'custom'
+    ? `L'utilisateur a son histoire : "${document.getElementById('hist-ta').value}". Utilise-la telle quelle.`
+    : `Analyse la photo et crée l'histoire la plus vraie pour cette personne.`;
+
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: buildSysPrompt() }] },
+        contents: [{
+          role: 'user',
+          parts: [
+            { inline_data: { mime_type: imageMime, data: imageBase64 } },
+            { text: `${histCtx}\n\nCrée le storyboard — ${selectedDuree} secondes exactement, atmosphère ${ATMOS.find(a=>a.id===selectedAtmoId)?.name}, mode ${selectedMode}, moteur ${selectedModele}.` }
+          ]
+        }],
+        generationConfig: { temperature: 0.93, maxOutputTokens: 8192 }
+      })
+    });
+
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+
+    const raw = data.candidates[0].content.parts[0].text;
+    const clean = raw.replace(/```json|```/g,'').trim();
+    const result = JSON.parse(clean);
+
+    stopLoading();
+    document.getElementById('stream-bar').classList.remove('vis');
+
+    // Analyse
+    document.getElementById('an-body').textContent = result.analyse;
+    document.getElementById('analyse-card').classList.add('vis');
+
+    // Plans (mode multishoot uniquement)
+    const atmo = ATMOS.find(a => a.id === selectedAtmoId);
+    fullStoryboard = `STORYBOARD — ${selectedDuree}S — ${atmo?.name} — ${selectedMode.toUpperCase()}\n\n`;
+
+    if (selectedMode === 'multishoot' && result.plans) {
+      result.plans.forEach((p, i) => {
+        const card = document.createElement('div');
+        card.className = 'plan-card';
+        card.style.animationDelay = (i*0.07)+'s';
+        card.innerHTML = `
+          <div class="plan-top">
+            <div class="plan-num">PLAN ${String(p.numero).padStart(2,'0')}</div>
+            <div class="plan-tc">${p.debut} → ${p.fin}</div>
+            <div class="plan-type">${p.type_plan||''}</div>
+          </div>
+          <div class="plan-body">
+            <div class="plan-row"><span class="pk">Angle</span><span class="pv">${p.angle}</span></div>
+            <div class="plan-row"><span class="pk">Mouvement</span><span class="pv">${p.mouvement}</span></div>
+            <div class="plan-row"><span class="pk">Dynamique</span><span class="pv">${p.dynamique}</span></div>
+            <div class="plan-row"><span class="pk">Lumière</span><span class="pv">${p.lumiere}</span></div>
+            <div class="plan-row"><span class="pk">Action</span><span class="pv">${p.action}</span></div>
+            <div class="plan-row"><span class="pk">Son</span><span class="pv">${p.son}</span></div>
+            <div class="plan-emo">❤ ${p.emotion}</div>
+            ${p.prompt_ref?`<div class="plan-pref"><span>Visual Prompt Ref</span>"${p.prompt_ref}"</div>`:''}
+          </div>`;
+        document.getElementById('plans-container').appendChild(card);
+        fullStoryboard += `Plan ${p.numero} — ${p.debut} à ${p.fin}\nAngle : ${p.angle}\nMouvement : ${p.mouvement}\nAction : ${p.action}\nÉmotion : ${p.emotion}\n\n`;
+      });
+    }
+
+    // Prompt final
+    promptFR = result.prompt_fr || '';
+    promptEN = result.prompt_en || '';
+    currentLang = 'fr';
+    document.getElementById('lang-fr').classList.add('active');
+    document.getElementById('lang-en').classList.remove('active');
+    document.getElementById('pf-body').textContent = promptFR;
+    document.getElementById('pf-card').classList.add('vis');
+
+    document.getElementById('refs-sec').classList.add('vis');
+    document.getElementById('copy-sb').classList.add('vis');
+
+    addChatMsg('ai', `C'est prêt — ${selectedMode === 'multishoot' ? (result.plans?.length||0)+' plans, ' : ''}${selectedDuree} secondes, atmosphère ${atmo?.name}. Le prompt est en bas du storyboard, en FR et EN. Dis-moi si tu veux retoucher quelque chose.`);
+
+  } catch(err) {
+    stopLoading();
+    document.getElementById('stream-bar').classList.remove('vis');
+    document.getElementById('empty-state').style.display = 'flex';
+    document.getElementById('empty-state').querySelector('.empty-txt').textContent = 'Erreur : ' + err.message;
+    showNotif('Erreur');
+    console.error(err);
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '▶ LANCER LA RÉALISATION<div class="pbar" id="pbar"></div>';
+}
+
+// ════════════════ LANG SWITCH ════════════════
+function switchLang(lang) {
+  currentLang = lang;
+  document.getElementById('lang-fr').classList.toggle('active', lang==='fr');
+  document.getElementById('lang-en').classList.toggle('active', lang==='en');
+  document.getElementById('pf-body').textContent = lang === 'fr' ? promptFR : promptEN;
+}
+
+function copyPromptFinal() {
+  const txt = currentLang === 'fr' ? promptFR : promptEN;
+  navigator.clipboard.writeText(txt).then(() => showNotif('Prompt copié'));
+}
+
+function copyStoryboard() {
+  navigator.clipboard.writeText(fullStoryboard + '\n\nFR:\n' + promptFR + '\n\nEN:\n' + promptEN)
+    .then(() => showNotif('Storyboard copié'));
+}
+
+// ════════════════ CHAT ════════════════
+function addChatMsg(role, text) {
+  const w = document.getElementById('chat-msgs');
+  const d = document.createElement('div');
+  d.className = `chat-msg ${role}`;
+  d.innerHTML = `<div class="msg-lbl">${role==='ai'?'Réalisateur':'Toi'}</div><div class="msg-bub">${text.replace(/\n/g,'<br>')}</div>`;
+  w.appendChild(d);
+  w.scrollTop = w.scrollHeight;
+}
+
+async function sendChat() {
+  const ta = document.getElementById('chat-ta');
+  const msg = ta.value.trim();
+  if (!msg || !apiKey) return;
+  ta.value = '';
+  addChatMsg('user', msg);
+  chatHistory.push({ role:'user', content:msg });
+
+  document.getElementById('chat-typing').classList.add('vis');
+  document.getElementById('chat-send').disabled = true;
+
+  const atmo = ATMOS.find(a => a.id === selectedAtmoId);
+  const sys = `Tu es un réalisateur humain de haut niveau. Tu tututoies toujours. Tu penses en émotion, énergie, histoire humaine. Directement, précisément, humainement. Jamais robotique. Jamais de catalogue physique. Tu parles comme un réalisateur sur un plateau — chaleureux, exigeant, passionné. Atmosphère : ${atmo?.name}. Moteur cible : ${selectedModele}.${fullStoryboard?'\n\nStoryboard actuel :\n'+fullStoryboard:''}${promptFR?'\n\nPrompt FR actuel :\n'+promptFR:''}`;
+
+  const msgs = chatHistory.map(h => ({ role: h.role==='user'?'user':'model', parts:[{text:h.content}] }));
+
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        system_instruction:{parts:[{text:sys}]},
+        contents: msgs,
+        generationConfig:{temperature:0.95,maxOutputTokens:2048}
+      })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    const reply = data.candidates[0].content.parts[0].text;
+    chatHistory.push({role:'model',content:reply});
+    document.getElementById('chat-typing').classList.remove('vis');
+    addChatMsg('ai', reply);
+  } catch(err) {
+    document.getElementById('chat-typing').classList.remove('vis');
+    addChatMsg('ai','Erreur : '+err.message);
+  }
+  document.getElementById('chat-send').disabled = false;
+}
+
+function handleKey(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();} }
+function quickMsg(t) { document.getElementById('chat-ta').value=t; sendChat(); }
+
+function showNotif(msg) {
+  const n = document.getElementById('notif');
+  n.textContent = msg; n.classList.add('show');
+  setTimeout(()=>n.classList.remove('show'),2400);
+}
+
+// Init
+selectAtmo('noir', document.querySelector('.atmo-btn.active'));
+</script>
+</body>
+</html>
