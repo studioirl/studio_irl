@@ -410,7 +410,7 @@ html, body {
 <body>
 
 <!-- ════════════ LOADING SCREEN ════════════ -->
-<div class="loading-screen" id="ls">
+<div class="loading-screen hidden" id="ls">
   <div class="ls-top">
     <div class="ls-clap">🎬</div>
     <div class="ls-title">STUDIO RÉALISATEUR</div>
@@ -498,13 +498,6 @@ html, body {
           <div class="modele-info">
             <div class="modele-name">Veo 3.1 — Vertex AI</div>
             <div class="modele-sub">veo-3.1-generate-001 · audio natif · naturaliste</div>
-          </div>
-        </button>
-        <button class="modele-btn" onclick="selectModele('veo31fast',this)">
-          <div class="modele-dot" style="background:#39ff6e"></div>
-          <div class="modele-info">
-            <div class="modele-name">Veo 3.1 Fast</div>
-            <div class="modele-sub">veo-3.1-fast-generate-001 · rapide, production</div>
           </div>
         </button>
       </div>
@@ -802,10 +795,27 @@ function buildSysPrompt() {
   const atmoStr = atmo ? `${atmo.name} — ${atmo.desc}. Films de référence : ${atmo.films.join(', ')}.` : '';
 
   const modeleCtx = selectedModele === 'seedance'
-    ? `MOTEUR VIDÉO CIBLE : Seedance. Les prompts Seedance doivent être très techniques : mouvements de caméra ultra précis (travelling, pan, dolly), positions exactes du personnage, descriptions physiques précises pour la cohérence inter-plans, timecodes stricts.`
-    : selectedModele === 'veo31'
-    ? `MOTEUR VIDÉO CIBLE : Veo 3.1 de Google (modèle veo-3.1-generate-001 sur Vertex AI). Les prompts Veo 3.1 sont naturalistes et descriptifs : décris la scène comme si tu regardais un film, inclus la description sonore et audio ambiant (Veo 3.1 génère l'audio nativement), les émotions visibles, l'énergie du moment. Évite le langage purement technique de caméra — préfère "on voit", "la caméra suit naturellement", "on capte l'instant". Le style vlog authentique est valorisé : téléphone tenu à la main, légèrement instable, organique.`
-    : `MOTEUR VIDÉO CIBLE : Veo 3.1 Fast (modèle veo-3.1-fast-generate-001 sur Vertex AI). Même style que Veo 3.1 mais prompts plus concis et directs pour la génération rapide. Naturaliste, organique, vlog.`;
+    ? `MOTEUR VIDÉO CIBLE : Seedance 2.0.
+
+RÈGLES STRICTES DU FORMAT SEEDANCE — respecte-les à la lettre.
+Seedance suit une logique de langage naturel très précise. La structure obligatoire est : SUJET → ACTION → CAMÉRA → STYLE. Dans cet ordre exact, toujours.
+
+1. SUJET : qui est dans le plan, avec les détails visuels clés (tenue, position, environnement immédiat).
+2. ACTION : un seul verbe fort au présent. Un seul mouvement par plan. Verbes précis : walks, turns, looks up, opens, reaches, smiles, runs. Jamais deux actions dans le même plan.
+3. CAMÉRA : shot size + mouvement. Exemples corrects : "close-up, slow dolly in", "medium shot, tracking left", "wide shot, static", "low angle, slight tilt up", "handheld shoulder cam, slight drift". Seedance comprend ces termes nativement.
+4. STYLE : atmosphère visuelle en 1-2 mots clés : "cinematic moody", "vlog handheld", "film grain warm", "neon contrast", "natural daylight documentary".
+
+RÈGLE CRITIQUE : chaque plan = une phrase courte et dense, max 2-3 lignes. Seedance perd la cohérence sur les prompts trop longs. Un plan = une action = un mouvement de caméra.
+Pour le prompt final : construis une séquence fluide en respectant Sujet→Action→Caméra→Style pour chaque segment temporel.`
+
+    : `MOTEUR VIDÉO CIBLE : Veo 3.1 de Google (veo-3.1-generate-001 sur Vertex AI).
+
+RÈGLES DU FORMAT VEO 3.1 — à l'opposé de Seedance, Veo est naturaliste et narratif :
+1. DESCRIPTION NARRATIVE : décris ce qu'on voit comme un observateur présent. "On voit une femme qui...", "La caméra capte...", "Dans la lumière de fin de journée...".
+2. AUDIO NATIF : Veo 3.1 génère le son automatiquement — décris l'ambiance sonore dans le prompt : sons de rue, respiration, silence, pluie, musique ambiante. Exploite ça.
+3. STYLE VLOG : organique, téléphone tenu à la main, légèrement instable. Décris-le : "handheld phone camera energy", "authentic vlog feel", "slightly unstable frame".
+4. ÉMOTIONS VISIBLES : Veo comprend très bien les émotions. "she looks lost in thought", "a quiet smile crosses her face", "tension in her shoulders".
+5. LONGUEUR : les prompts Veo peuvent être plus longs et narratifs que Seedance. 3-5 phrases par plan.`;
 
   const modeCtx = selectedMode === 'multishoot'
     ? `MODE : MULTISHOOT. Tu dois créer un découpage plan par plan très précis avec timecodes exacts, puis un prompt vidéo global final en français ET en anglais. L'anglais est la version à utiliser dans les interfaces IA vidéo.`
