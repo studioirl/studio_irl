@@ -97,6 +97,25 @@ html, body {
 .welcome-screen.fade-out { opacity: 0; pointer-events: none; }
 .welcome-screen.hidden { display: none; }
 
+/* Apply button in chat */
+.apply-btn {
+  display: none;
+  width: calc(100% - 26px);
+  margin: 0 13px 10px;
+  background: var(--vert);
+  color: var(--noir);
+  border: none;
+  padding: 11px;
+  font-family: var(--bebas);
+  font-size: 16px;
+  letter-spacing: 0.25em;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  text-align: center;
+}
+.apply-btn.visible { display: block; }
+.apply-btn:hover { opacity: 0.85; }
+
 /* 2ème photo Seedance */
 .upload2-zone {
   display: none;
@@ -807,6 +826,9 @@ HOMME EN VESTE NOIRE : Attends c'est toi qui a fait ça" style="min-height:80px;
         <div class="tdot" style="color:var(--vert)"></div>
       </div>
     </div>
+    <button class="apply-btn" id="apply-btn" onclick="applyDirectorNote()">
+      ▶ APPLIQUER LES MODIFICATIONS
+    </button>
     <div class="quick-acts">
       <button class="qbtn" onclick="quickMsg('Plus de drame')">+ DRAME</button>
       <button class="qbtn" onclick="quickMsg('Rends ça plus intime')">INTIME</button>
@@ -873,6 +895,7 @@ let promptFR = '', promptEN = '';
 let currentLang = 'fr';
 let chatHistory = [];
 let lsPhraseIdx = 0, lsInterval = null;
+let lastDirectorNote = '';
 
 if (apiKey) {
   document.getElementById('api-key').value = apiKey;
@@ -1098,7 +1121,17 @@ RÈGLES DU FORMAT VEO 3.1 — à l'opposé de Seedance, Veo est naturaliste et n
 
 Tu ne génères pas des prompts. Tu réalises. Tu penses en émotion, en énergie, en rythme, en histoire humaine. Quand tu regardes une photo, tu vois une personne réelle avec une histoire réelle. Tu construis autour d'elle. Directement. Précisément. Humainement. Jamais robotique. Jamais générique.
 
-RÈGLE ABSOLUE : tu ne décris JAMAIS une personne comme un catalogue. Pas de liste de caractéristiques physiques. Pas de "traits doux", "symboles de transformation", "archétype de". Tu captes un moment volé. Style vlog, quelqu'un qui filme avec son téléphone, moment pris sur le fait. Émotion brute.
+RÈGLE ABSOLUE : tu ne décris JAMAIS une personne comme un catalogue. Pas de liste de caractéristiques physiques. Pas de "traits doux", "symboles de transformation", "archétype de".
+
+LECTURE DE PHOTO — RÈGLE FONDAMENTALE :
+Tu regardes la photo sans filtre et sans projection. Tu ne décides pas à l'avance si c'est un beau moment, un moment complice, un moment joyeux. Tu regardes ce qui EST là — vraiment. La tension dans un corps. Le regard qui fuit ou qui fixe. La distance entre deux personnes. Ce que les mains font. Ce que la bouche ne dit pas.
+
+Tu es capable de lire n'importe quelle émotion : la gêne, le malaise, la surprise désagréable, la colère retenue, l'ennui, la tristesse masquée, la tension entre deux personnes, l'indifférence, la méfiance — autant que la joie, la complicité, l'amour, l'excitation. Tu ne ramènes pas tout à du positif. Tu lis ce qui est là et tu construis autour de la vérité émotionnelle de cette image, même si elle est inconfortable.
+
+Si tu vois de la tension — tu filmes la tension.
+Si tu vois de l'ambiguïté — tu filmes l'ambiguïté.
+Si tu vois de la complicité — tu filmes la complicité.
+Mais tu ne décides jamais avant de regarder.
 
 Tu tututoies toujours. Jamais de vouvoiement.
 
@@ -1182,6 +1215,116 @@ Réponds UNIQUEMENT en JSON valide strict, sans markdown ni backticks :
 }
 
 // ════════════════ GENERATE ════════════════
+async function applyDirectorNote() {
+  if (!apiKey || !imageBase64 || !fullStoryboard) {
+    showNotif('Génère un storyboard d\'abord');
+    return;
+  }
+
+  const btn = document.getElementById('apply-btn');
+  btn.textContent = '⏳ APPLICATION EN COURS...';
+  btn.style.opacity = '0.5';
+  btn.onclick = null;
+
+  document.getElementById('stream-bar').classList.add('vis');
+  document.getElementById('stream-lbl').textContent = 'Application des modifications...';
+  startLoading();
+
+  const applyPrompt = `Tu es un réalisateur. Voici le storyboard actuel :
+${fullStoryboard}
+
+Le réalisateur a dit ceci :
+"${lastDirectorNote}"
+
+Applique exactement ces modifications au storyboard. Regénère le storyboard complet en intégrant toutes les instructions du réalisateur. Garde la même durée totale de ${selectedDuree} secondes et le même nombre de plans.
+
+Réponds UNIQUEMENT en JSON valide : {"analyse":"...","plans":[...],"prompt_fr":"...","prompt_en":"..."}`;
+
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: buildSysPrompt() }] },
+        contents: [{ role: 'user', parts: [
+          { inline_data: { mime_type: imageMime, data: imageBase64 } },
+          { text: applyPrompt }
+        ]}],
+        generationConfig: { temperature: 0.9, maxOutputTokens: 8192 }
+      })
+    });
+
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+
+    const raw = data.candidates[0].content.parts[0].text;
+    const result = JSON.parse(raw.replace(/```json|```/g,'').trim());
+
+    stopLoading();
+    document.getElementById('stream-bar').classList.remove('vis');
+
+    // Update analyse
+    if (result.analyse) {
+      document.getElementById('an-body').textContent = result.analyse;
+      document.getElementById('analyse-card').classList.add('vis');
+    }
+
+    // Rebuild plans
+    fullStoryboard = '';
+    const atmo = ATMOS.find(a => a.id === selectedAtmoId);
+    fullStoryboard = `STORYBOARD — ${selectedDuree}S — ${atmo?.name}\n\n`;
+    const container = document.getElementById('plans-container');
+    container.innerHTML = '';
+
+    if (result.plans) {
+      result.plans.forEach((p, i) => {
+        const card = document.createElement('div');
+        card.className = 'plan-card';
+        card.style.animationDelay = (i * 0.07) + 's';
+        card.innerHTML = `
+          <div class="plan-top">
+            <div class="plan-num">PLAN ${String(p.numero).padStart(2,'0')}</div>
+            <div class="plan-tc">${p.debut} → ${p.fin}</div>
+            <div class="plan-type">${p.type_plan||''}</div>
+          </div>
+          <div class="plan-body">
+            <div class="plan-row"><span class="pk">Angle</span><span class="pv">${p.angle}</span></div>
+            <div class="plan-row"><span class="pk">Mouvement</span><span class="pv">${p.mouvement}</span></div>
+            <div class="plan-row"><span class="pk">Dynamique</span><span class="pv">${p.dynamique}</span></div>
+            <div class="plan-row"><span class="pk">Lumière</span><span class="pv">${p.lumiere}</span></div>
+            <div class="plan-row"><span class="pk">Action</span><span class="pv">${p.action}</span></div>
+            <div class="plan-row"><span class="pk">Son</span><span class="pv">${p.son}</span></div>
+            <div class="plan-emo">❤ ${p.emotion}</div>
+            ${p.prompt_ref?`<div class="plan-pref"><span>Prompt pour ce plan</span>"${p.prompt_ref}"</div>`:''}
+          </div>
+          ${p.prompt_ref?`<button class="copy-plan-btn" onclick="navigator.clipboard.writeText('${p.prompt_ref.replace(/'/g,"\'")}').then(()=>showNotif('Plan copié'))">◈ COPIER LE PROMPT — PLAN ${String(p.numero).padStart(2,'0')}</button>`:''}
+          <button class="regen-plan-btn" onclick="regenPlan(${p.numero})">↻ REGÉNÉRER CE PLAN</button>
+        `;
+        container.appendChild(card);
+        fullStoryboard += `Plan ${p.numero} — ${p.debut} à ${p.fin}\nAngle : ${p.angle}\nMouvement : ${p.mouvement}\nAction : ${p.action}\nÉmotion : ${p.emotion}\n\n`;
+      });
+    }
+
+    // Update prompts
+    if (result.prompt_fr) promptFR = result.prompt_fr;
+    if (result.prompt_en) promptEN = result.prompt_en;
+    document.getElementById('pf-body').textContent = currentLang === 'fr' ? promptFR : promptEN;
+
+    addChatMsg('ai', 'Modifications appliquées. Le storyboard a été mis à jour.');
+    showNotif('Storyboard mis à jour');
+
+  } catch(err) {
+    stopLoading();
+    document.getElementById('stream-bar').classList.remove('vis');
+    showNotif('Erreur : ' + err.message.substring(0,40));
+    console.error(err);
+  }
+
+  btn.textContent = '▶ APPLIQUER LES MODIFICATIONS';
+  btn.style.opacity = '1';
+  btn.onclick = applyDirectorNote;
+  btn.classList.remove('visible');
+}
+
 async function regenPlan(planNum) {
   if (!apiKey) { showNotif('Clé API manquante'); return; }
   if (!imageBase64) { showNotif('Importe une photo'); return; }
@@ -1438,6 +1581,11 @@ async function sendChat() {
     chatHistory.push({role:'model',content:reply});
     document.getElementById('chat-typing').classList.remove('vis');
     addChatMsg('ai', reply);
+    // Show apply button only if storyboard exists
+    if (fullStoryboard) {
+      lastDirectorNote = reply;
+      document.getElementById('apply-btn').classList.add('visible');
+    }
   } catch(err) {
     document.getElementById('chat-typing').classList.remove('vis');
     addChatMsg('ai','Erreur : '+err.message);
