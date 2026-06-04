@@ -1612,9 +1612,19 @@ async function generate() {
     const data = await res.json();
     if (data.error) throw new Error(data.error.message);
 
+    console.log('API response:', JSON.stringify(data).substring(0, 500));
+    if (!data.candidates || !data.candidates[0]) {
+      throw new Error('Pas de réponse de Gemini. ' + JSON.stringify(data).substring(0, 200));
+    }
     const raw = data.candidates[0].content.parts[0].text;
+    console.log('Raw text:', raw.substring(0, 300));
     const clean = raw.replace(/```json|```/g,'').trim();
-    const result = JSON.parse(clean);
+    let result;
+    try {
+      result = JSON.parse(clean);
+    } catch(parseErr) {
+      throw new Error('JSON invalide : ' + clean.substring(0, 150));
+    }
 
     stopLoading();
     document.getElementById('stream-bar').classList.remove('vis');
@@ -1678,21 +1688,44 @@ async function generate() {
 
     addChatMsg('ai', `C'est prêt — ${selectedMode === 'multishoot' ? (result.plans?.length||0)+' plans, ' : ''}${selectedDuree} secondes, atmosphère ${atmo?.name}. Le prompt est en bas du storyboard, en FR et EN. Dis-moi si tu veux retoucher quelque chose.`);
 
+    // Token counter
+    try {
+      const usage = data.usageMetadata || data.usage;
+      if (usage) {
+        document.getElementById('token-in').textContent = (usage.promptTokenCount || usage.input_tokens || '—').toLocaleString();
+        document.getElementById('token-out').textContent = (usage.candidatesTokenCount || usage.output_tokens || '—').toLocaleString();
+        document.getElementById('token-bar').classList.add('visible');
+      }
+    } catch(e) {}
+
+    // Save session
+    try {
+      if (typeof saveSession === 'function') {
+        await saveSession({
+          id: Date.now().toString(),
+          date: new Date().toISOString(),
+          analyse: result.analyse || '',
+          plans: result.plans || [],
+          fullStoryboard,
+          promptFR,
+          promptEN,
+          duree: selectedDuree,
+          mode: selectedMode,
+          modele: selectedModele,
+          atmo: selectedAtmoId,
+          nbPlans: result.plans?.length || 0,
+          nbPhotos: uploadedPhotos.length || 1
+        });
+      }
+    } catch(e) { console.warn('Save session failed:', e); }
+
   } catch(err) {
     stopLoading();
     document.getElementById('stream-bar').classList.remove('vis');
-
-    // Token counter
-    const usage = data.usageMetadata || data.usage;
-    if (usage) {
-      document.getElementById('token-in').textContent = (usage.promptTokenCount || usage.input_tokens || '—').toLocaleString();
-      document.getElementById('token-out').textContent = (usage.candidatesTokenCount || usage.output_tokens || '—').toLocaleString();
-      document.getElementById('token-bar').classList.add('visible');
-    }
     document.getElementById('empty-state').style.display = 'flex';
-    document.getElementById('empty-state').querySelector('.empty-txt').textContent = 'Erreur : ' + err.message;
-    showNotif('Erreur');
-    console.error(err);
+    document.getElementById('empty-state').querySelector('.empty-txt').textContent = 'Erreur : ' + (err.message || String(err));
+    showNotif('Erreur : ' + (err.message || '').substring(0, 80), 8000);
+    console.error('GENERATE ERROR:', err);
   }
 
   btn.disabled = false;
@@ -1933,10 +1966,10 @@ async function loadSession(id) {
   };
 }
 
-function showNotif(msg) {
+function showNotif(msg, duration) {
   const n = document.getElementById('notif');
   n.textContent = msg; n.classList.add('show');
-  setTimeout(()=>n.classList.remove('show'),2400);
+  setTimeout(()=>n.classList.remove('show'), duration || 2400);
 }
 
 // Welcome screen
