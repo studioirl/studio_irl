@@ -532,13 +532,28 @@ html, body {
 }
 .copy-plan-btn:hover { background:rgba(57,255,110,0.06); }
 
-.plan-prompt-card { margin-top:9px; border:1px solid rgba(57,255,110,0.16); background:rgba(57,255,110,0.025); }
-.plan-prompt-head { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:7px 9px; border-bottom:1px solid var(--border); }
-.plan-prompt-title { font-size:7px; letter-spacing:0.18em; text-transform:uppercase; color:var(--vert); }
-.plan-prompt-switch { display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end; }
-.plan-lang-btn { background:transparent; border:1px solid var(--border); color:var(--gris2); font-family:var(--mono); font-size:7px; letter-spacing:0.08em; padding:3px 7px; cursor:pointer; text-transform:uppercase; }
-.plan-lang-btn.active { background:var(--vert); color:var(--noir); border-color:var(--vert); }
-.plan-prompt-text { padding:9px; font-family:var(--sans); font-size:10px; line-height:1.75; color:#fff; white-space:pre-wrap; }
+.plan-prompt-tools {
+  display:flex; align-items:center; gap:6px; padding:7px 9px;
+  border-top:1px solid var(--border); background:rgba(255,255,255,0.015);
+  flex-wrap:wrap;
+}
+.plan-lang-btn {
+  background:transparent; border:1px solid var(--border); color:var(--gris2);
+  font-family:var(--mono); font-size:7px; letter-spacing:0.12em;
+  text-transform:uppercase; padding:4px 8px; cursor:pointer; transition:all 0.2s;
+}
+.plan-lang-btn:hover, .plan-lang-btn.active { border-color:var(--vert); color:var(--vert); background:rgba(57,255,110,0.05); }
+.plan-copy-mini {
+  margin-left:auto; background:transparent; border:1px solid var(--border); color:var(--or);
+  font-family:var(--mono); font-size:7px; letter-spacing:0.12em;
+  text-transform:uppercase; padding:4px 8px; cursor:pointer; transition:all 0.2s;
+}
+.plan-copy-mini:hover { border-color:var(--or); background:rgba(255,209,102,0.06); }
+.plan-prompt-text {
+  padding:8px 10px; border-top:1px solid var(--border); color:var(--blanc);
+  background:rgba(0,0,0,0.16); font-size:9px; line-height:1.55;
+  white-space:pre-wrap; word-break:break-word;
+}
 
 .copy-sb:hover { border-color:var(--blanc); color:var(--blanc); }
 
@@ -1019,127 +1034,6 @@ let imageBase64 = null, imageMime = null; // kept for compatibility
 let uploadedPhotos = []; // [{base64, mime, preview}] up to 10
 let fullStoryboard = '';
 let promptFR = '', promptEN = '';
-
-let planCopyStore = {};
-let planLangStore = {};
-function safePlanValue(value) {
-  return (value === undefined || value === null) ? '' : String(value).trim();
-}
-function escapeHtml(value) {
-  return safePlanValue(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
-function escapeAttr(value) {
-  return safePlanValue(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n').replace(/\r/g, '');
-}
-function buildPlanPromptFR(p) {
-  const n = safePlanValue(p && p.numero) || '?';
-  const direct = safePlanValue(p && (p.prompt_ref_fr || p.prompt_fr));
-  if (direct) return direct;
-  const lines = [];
-  lines.push(`PLAN ${String(n).padStart(2,'0')}`);
-  const debut = safePlanValue(p && p.debut);
-  const fin = safePlanValue(p && p.fin);
-  if (debut || fin) lines.push(`Timecode : ${debut}${debut && fin ? ' → ' : ''}${fin}`);
-  const add = (label, val) => { val = safePlanValue(val); if (val) lines.push(`${label} : ${val}`); };
-  add('Type de plan', p && p.type_plan);
-  add('Angle', p && p.angle);
-  add('Mouvement caméra', p && p.mouvement);
-  add('Dynamique visuelle', p && p.dynamique);
-  add('Lumière', p && p.lumiere);
-  add('Action', p && p.action);
-  add('Son', p && p.son);
-  add('Émotion', p && p.emotion);
-  const ref = safePlanValue(p && p.prompt_ref);
-  if (ref) lines.push(`\nRéférence moteur vidéo : ${ref}`);
-  return lines.join('\n');
-}
-function buildPlanPromptEN(p) {
-  const direct = safePlanValue(p && (p.prompt_ref_en || p.prompt_en || p.prompt_english || p.prompt_ref));
-  if (direct) return direct;
-  const n = safePlanValue(p && p.numero) || '?';
-  const lines = [];
-  lines.push(`SHOT ${String(n).padStart(2,'0')}`);
-  const debut = safePlanValue(p && p.debut);
-  const fin = safePlanValue(p && p.fin);
-  if (debut || fin) lines.push(`Timecode: ${debut}${debut && fin ? ' → ' : ''}${fin}`);
-  const add = (label, val) => { val = safePlanValue(val); if (val) lines.push(`${label}: ${val}`); };
-  add('Shot type', p && p.type_plan);
-  add('Camera angle', p && p.angle);
-  add('Camera movement', p && p.mouvement);
-  add('Visual dynamic', p && p.dynamique);
-  add('Lighting', p && p.lumiere);
-  add('Action', p && p.action);
-  add('Sound', p && p.son);
-  add('Emotion', p && p.emotion);
-  return lines.join('\n');
-}
-function registerPlanPrompt(p) {
-  const num = safePlanValue(p && p.numero) || String(Object.keys(planCopyStore).length + 1);
-  planCopyStore[num] = { fr: buildPlanPromptFR(p || {}), en: buildPlanPromptEN(p || {}) };
-  if (!planLangStore[num]) planLangStore[num] = 'fr';
-  return num;
-}
-function renderPlanPromptPanel(p) {
-  const num = registerPlanPrompt(p || {});
-  const lang = planLangStore[num] || 'fr';
-  const text = (planCopyStore[num] && (planCopyStore[num][lang] || planCopyStore[num].fr || planCopyStore[num].en)) || '';
-  return `<div class="plan-prompt-card" data-plan-prompt-card="${escapeHtml(num)}">
-    <div class="plan-prompt-head">
-      <span class="plan-prompt-title">Prompt pour ce plan</span>
-      <div class="plan-prompt-switch">
-        <button type="button" class="plan-lang-btn ${lang==='fr'?'active':''}" onclick="switchPlanPromptLang('${escapeAttr(num)}','fr')">🇫🇷 Français</button>
-        <button type="button" class="plan-lang-btn ${lang==='en'?'active':''}" onclick="switchPlanPromptLang('${escapeAttr(num)}','en')">🇬🇧 English conseillé</button>
-      </div>
-    </div>
-    <div class="plan-prompt-text" id="planPromptText-${escapeHtml(num)}">${escapeHtml(text)}</div>
-  </div>`;
-}
-function switchPlanPromptLang(num, lang) {
-  num = String(num);
-  planLangStore[num] = lang;
-  const textEl = document.getElementById('planPromptText-' + num);
-  if (textEl && planCopyStore[num]) textEl.textContent = planCopyStore[num][lang] || planCopyStore[num].fr || planCopyStore[num].en || '';
-  const card = document.querySelector(`[data-plan-prompt-card="${CSS.escape(num)}"]`);
-  if (card) {
-    card.querySelectorAll('.plan-lang-btn').forEach(b => b.classList.remove('active'));
-    const btns = card.querySelectorAll('.plan-lang-btn');
-    if (lang === 'fr' && btns[0]) btns[0].classList.add('active');
-    if (lang === 'en' && btns[1]) btns[1].classList.add('active');
-  }
-}
-function copyTextFallback(text) {
-  try {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    ta.setAttribute('readonly', '');
-    ta.style.position = 'fixed';
-    ta.style.left = '-9999px';
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
-    return Promise.resolve();
-  } catch (e) { return Promise.reject(e); }
-}
-function copyPlanPrompt(num) {
-  num = String(num);
-  const lang = planLangStore[num] || 'fr';
-  const text = planCopyStore[num] ? (planCopyStore[num][lang] || planCopyStore[num].fr || planCopyStore[num].en || '') : '';
-  const copier = navigator.clipboard && window.isSecureContext
-    ? navigator.clipboard.writeText(text)
-    : copyTextFallback(text);
-  copier.then(() => showNotif(`Plan ${String(num).padStart(2,'0')} copié`)).catch(() => showNotif('Copie bloquée par le navigateur'));
-}
-function makeCopyPlanButton(p) {
-  const num = registerPlanPrompt(p || {});
-  return `<button type="button" class="copy-plan-btn" onclick="copyPlanPrompt('${escapeAttr(num)}')">◈ COPIER LE PROMPT — PLAN ${String(num).padStart(2,'0')}</button>`;
-}
-
 let currentLang = 'fr';
 let chatHistory = [];
 let lsPhraseIdx = 0, lsInterval = null;
@@ -1532,6 +1426,130 @@ Réponds UNIQUEMENT en JSON valide strict, sans markdown ni backticks :
 }
 
 // ════════════════ GENERATE ════════════════
+
+// ════════════════ PROMPTS PAR PLAN — COPIE + FR/EN ════════════════
+var planPromptStore = {};
+
+function escHTML(v) {
+  return String(v ?? '').replace(/[&<>'"]/g, function(c) {
+    return {'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c];
+  });
+}
+
+function safeField(v) {
+  const txt = String(v ?? '').trim();
+  return txt || 'Non précisé';
+}
+
+function buildPlanPrompt(p, lang) {
+  const frDirect = safeField(p.prompt_ref_fr || p.prompt_ref || '');
+  const enDirect = safeField(p.prompt_ref_en || '');
+
+  if (lang === 'fr') {
+    if (frDirect !== 'Non précisé') return frDirect;
+    return [
+      `Plan ${safeField(p.numero)} — ${safeField(p.debut)} à ${safeField(p.fin)}`,
+      `Angle : ${safeField(p.angle)}`,
+      `Mouvement caméra : ${safeField(p.mouvement)}`,
+      `Dynamique : ${safeField(p.dynamique)}`,
+      `Lumière : ${safeField(p.lumiere)}`,
+      `Action : ${safeField(p.action)}`,
+      `Son : ${safeField(p.son)}`,
+      `Émotion à transmettre : ${safeField(p.emotion)}`,
+      `Rendu : scène cinématographique réaliste, mouvement naturel, continuité visuelle, visage et intention émotionnelle cohérents.`
+    ].join('\n');
+  }
+
+  if (enDirect !== 'Non précisé') return enDirect;
+  return [
+    `Shot ${safeField(p.numero)} — ${safeField(p.debut)} to ${safeField(p.fin)}`,
+    `Camera angle: ${safeField(p.angle)}`,
+    `Camera movement: ${safeField(p.mouvement)}`,
+    `Scene dynamics: ${safeField(p.dynamique)}`,
+    `Lighting: ${safeField(p.lumiere)}`,
+    `Action/performance: ${safeField(p.action)}`,
+    `Sound design: ${safeField(p.son)}`,
+    `Emotional direction: ${safeField(p.emotion)}`,
+    `Recommended video prompt: realistic cinematic scene, natural movement, coherent visual continuity, expressive face, subtle emotion, professional camera language.`
+  ].join('\n');
+}
+
+function planKeyFor(p, i) {
+  return 'plan_' + String(p && p.numero ? p.numero : (i + 1)).replace(/[^0-9a-zA-Z_-]/g, '') + '_' + String(i || 0);
+}
+
+function renderPlanCardInner(p, i, showRegen) {
+  const key = planKeyFor(p, i);
+  const fr = buildPlanPrompt(p, 'fr');
+  const en = buildPlanPrompt(p, 'en');
+  planPromptStore[key] = { fr, en, current:'fr', numero: p.numero || (i + 1) };
+  const num = String(p.numero || (i + 1)).padStart(2,'0');
+  return `
+    <div class="plan-top">
+      <div class="plan-num">PLAN ${num}</div>
+      <div class="plan-tc">${escHTML(p.debut)} → ${escHTML(p.fin)}</div>
+      <div class="plan-type">${escHTML(p.type_plan || '')}</div>
+    </div>
+    <div class="plan-body">
+      <div class="plan-row"><span class="pk">Angle</span><span class="pv">${escHTML(p.angle)}</span></div>
+      <div class="plan-row"><span class="pk">Mouvement</span><span class="pv">${escHTML(p.mouvement)}</span></div>
+      <div class="plan-row"><span class="pk">Dynamique</span><span class="pv">${escHTML(p.dynamique)}</span></div>
+      <div class="plan-row"><span class="pk">Lumière</span><span class="pv">${escHTML(p.lumiere)}</span></div>
+      <div class="plan-row"><span class="pk">Action</span><span class="pv">${escHTML(p.action)}</span></div>
+      <div class="plan-row"><span class="pk">Son</span><span class="pv">${escHTML(p.son)}</span></div>
+      <div class="plan-emo">❤ ${escHTML(p.emotion)}</div>
+    </div>
+    <div class="plan-prompt-tools">
+      <button type="button" class="plan-lang-btn active" id="${key}_fr" onclick="switchPlanPrompt('${key}','fr')">🇫🇷 Français</button>
+      <button type="button" class="plan-lang-btn" id="${key}_en" onclick="switchPlanPrompt('${key}','en')">🇬🇧 English conseillé</button>
+      <button type="button" class="plan-copy-mini" onclick="copyPlanPrompt('${key}')">◈ Copier ce plan</button>
+    </div>
+    <div class="plan-prompt-text" id="${key}_text">${escHTML(fr)}</div>
+    ${showRegen ? `<button class="regen-plan-btn" onclick="regenPlan(${Number(p.numero || (i + 1))})">↻ REGÉNÉRER CE PLAN</button>` : ''}
+  `;
+}
+
+function switchPlanPrompt(key, lang) {
+  const data = planPromptStore[key];
+  if (!data) return;
+  data.current = lang;
+  const textEl = document.getElementById(key + '_text');
+  if (textEl) textEl.textContent = lang === 'en' ? data.en : data.fr;
+  const frBtn = document.getElementById(key + '_fr');
+  const enBtn = document.getElementById(key + '_en');
+  if (frBtn) frBtn.classList.toggle('active', lang === 'fr');
+  if (enBtn) enBtn.classList.toggle('active', lang === 'en');
+}
+
+function copyTextSafe(txt, okMsg) {
+  txt = String(txt || '');
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(txt).then(() => showNotif(okMsg || 'Copié')).catch(() => fallbackCopyText(txt, okMsg));
+  } else {
+    fallbackCopyText(txt, okMsg);
+  }
+}
+
+function fallbackCopyText(txt, okMsg) {
+  const ta = document.createElement('textarea');
+  ta.value = txt;
+  ta.setAttribute('readonly', '');
+  ta.style.position = 'fixed';
+  ta.style.left = '-9999px';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); showNotif(okMsg || 'Copié'); }
+  catch(e) { showNotif('Copie impossible, sélectionne le texte'); }
+  document.body.removeChild(ta);
+}
+
+function copyPlanPrompt(key) {
+  const data = planPromptStore[key];
+  if (!data) return;
+  const txt = data.current === 'en' ? data.en : data.fr;
+  copyTextSafe(txt, 'Plan ' + String(data.numero).padStart(2,'0') + ' copié');
+}
+
 async function applyDirectorNote() {
   if (!apiKey || !imageBase64 || !fullStoryboard) {
     showNotif('Génère un storyboard d\'abord');
@@ -1605,25 +1623,7 @@ Réponds UNIQUEMENT en JSON valide : {"analyse":"...","plans":[...],"prompt_fr":
         const card = document.createElement('div');
         card.className = 'plan-card';
         card.style.animationDelay = (i * 0.07) + 's';
-        card.innerHTML = `
-          <div class="plan-top">
-            <div class="plan-num">PLAN ${String(p.numero).padStart(2,'0')}</div>
-            <div class="plan-tc">${p.debut} → ${p.fin}</div>
-            <div class="plan-type">${p.type_plan||''}</div>
-          </div>
-          <div class="plan-body">
-            <div class="plan-row"><span class="pk">Angle</span><span class="pv">${p.angle}</span></div>
-            <div class="plan-row"><span class="pk">Mouvement</span><span class="pv">${p.mouvement}</span></div>
-            <div class="plan-row"><span class="pk">Dynamique</span><span class="pv">${p.dynamique}</span></div>
-            <div class="plan-row"><span class="pk">Lumière</span><span class="pv">${p.lumiere}</span></div>
-            <div class="plan-row"><span class="pk">Action</span><span class="pv">${p.action}</span></div>
-            <div class="plan-row"><span class="pk">Son</span><span class="pv">${p.son}</span></div>
-            <div class="plan-emo">❤ ${p.emotion}</div>
-            ${renderPlanPromptPanel(p)}
-          </div>
-          ${makeCopyPlanButton(p)}
-          <button class="regen-plan-btn" onclick="regenPlan(${p.numero})">↻ REGÉNÉRER CE PLAN</button>
-        `;
+        card.innerHTML = renderPlanCardInner(p, i, true);
         container.appendChild(card);
         fullStoryboard += `Plan ${p.numero} — ${p.debut} à ${p.fin}\nAngle : ${p.angle}\nMouvement : ${p.mouvement}\nAction : ${p.action}\nÉmotion : ${p.emotion}\n\n`;
       });
@@ -1682,25 +1682,7 @@ Réponds UNIQUEMENT en JSON : {"numero":${planNum},"debut":"...","fin":"...","ty
     const cards = document.querySelectorAll('.plan-card');
     const card = cards[planNum - 1];
     if (card) {
-      card.innerHTML = `
-        <div class="plan-top">
-          <div class="plan-num">PLAN ${String(p.numero).padStart(2,'0')}</div>
-          <div class="plan-tc">${p.debut} → ${p.fin}</div>
-          <div class="plan-type">${p.type_plan||''}</div>
-        </div>
-        <div class="plan-body">
-          <div class="plan-row"><span class="pk">Angle</span><span class="pv">${p.angle}</span></div>
-          <div class="plan-row"><span class="pk">Mouvement</span><span class="pv">${p.mouvement}</span></div>
-          <div class="plan-row"><span class="pk">Dynamique</span><span class="pv">${p.dynamique}</span></div>
-          <div class="plan-row"><span class="pk">Lumière</span><span class="pv">${p.lumiere}</span></div>
-          <div class="plan-row"><span class="pk">Action</span><span class="pv">${p.action}</span></div>
-          <div class="plan-row"><span class="pk">Son</span><span class="pv">${p.son}</span></div>
-          <div class="plan-emo">❤ ${p.emotion}</div>
-          ${p.prompt_ref?`<div class="plan-pref"><span>Prompt pour ce plan</span>"${p.prompt_ref}"</div>`:''}
-        </div>
-        ${p.prompt_ref?`<button class="copy-plan-btn" onclick="navigator.clipboard.writeText('${p.prompt_ref.replace(/'/g,"\'")}').then(()=>showNotif('Plan copié'))">◈ COPIER LE PROMPT — PLAN ${String(p.numero).padStart(2,'0')}</button>`:''}
-        <button class="regen-plan-btn" onclick="regenPlan(${p.numero})">↻ REGÉNÉRER CE PLAN</button>
-      `;
+      card.innerHTML = renderPlanCardInner(p, i, true);
       showNotif('Plan ' + planNum + ' regénéré');
     }
   } catch(err) {
@@ -1730,7 +1712,7 @@ async function generate() {
   document.getElementById('pf-card').classList.remove('vis');
   document.getElementById('refs-sec').classList.remove('vis');
   document.getElementById('copy-sb').classList.remove('vis');
-  fullStoryboard = ''; promptFR = ''; promptEN = ''; planCopyStore = {}; planLangStore = {};
+  fullStoryboard = ''; promptFR = ''; promptEN = '';
 
   const histCtx = selectedHistoire === 'custom'
     ? `L'utilisateur a son histoire : "${document.getElementById('hist-ta').value}". Utilise-la telle quelle.`
@@ -1801,24 +1783,7 @@ async function generate() {
         card.className = 'plan-card';
         card.style.animationDelay = (i*0.07)+'s';
         const planPromptText = p.prompt_ref || '';
-        card.innerHTML = `
-          <div class="plan-top">
-            <div class="plan-num">PLAN ${String(p.numero).padStart(2,'0')}</div>
-            <div class="plan-tc">${p.debut} → ${p.fin}</div>
-            <div class="plan-type">${p.type_plan||''}</div>
-          </div>
-          <div class="plan-body">
-            <div class="plan-row"><span class="pk">Angle</span><span class="pv">${p.angle}</span></div>
-            <div class="plan-row"><span class="pk">Mouvement</span><span class="pv">${p.mouvement}</span></div>
-            <div class="plan-row"><span class="pk">Dynamique</span><span class="pv">${p.dynamique}</span></div>
-            <div class="plan-row"><span class="pk">Lumière</span><span class="pv">${p.lumiere}</span></div>
-            <div class="plan-row"><span class="pk">Action</span><span class="pv">${p.action}</span></div>
-            <div class="plan-row"><span class="pk">Son</span><span class="pv">${p.son}</span></div>
-            <div class="plan-emo">❤ ${p.emotion}</div>
-            ${renderPlanPromptPanel(p)}
-          </div>
-          ${makeCopyPlanButton(p)}
-        `;
+        card.innerHTML = renderPlanCardInner(p, i, false);
         document.getElementById('plans-container').appendChild(card);
         fullStoryboard += `Plan ${p.numero} — ${p.debut} à ${p.fin}\nAngle : ${p.angle}\nMouvement : ${p.mouvement}\nAction : ${p.action}\nÉmotion : ${p.emotion}\n\n`;
       });
@@ -1892,12 +1857,11 @@ function switchLang(lang) {
 
 function copyPromptFinal() {
   const txt = currentLang === 'fr' ? promptFR : promptEN;
-  navigator.clipboard.writeText(txt).then(() => showNotif('Prompt copié'));
+  copyTextSafe(txt, 'Prompt copié');
 }
 
 function copyStoryboard() {
-  navigator.clipboard.writeText(fullStoryboard + '\n\nFR:\n' + promptFR + '\n\nEN:\n' + promptEN)
-    .then(() => showNotif('Storyboard copié'));
+  copyTextSafe(fullStoryboard + '\n\nFR:\n' + promptFR + '\n\nEN:\n' + promptEN, 'Storyboard copié');
 }
 
 // ════════════════ CHAT ════════════════
@@ -2070,25 +2034,7 @@ async function loadSession(id) {
         const card = document.createElement('div');
         card.className = 'plan-card';
         card.style.animationDelay = (i * 0.05) + 's';
-        card.innerHTML = `
-          <div class="plan-top">
-            <div class="plan-num">PLAN ${String(p.numero).padStart(2,'0')}</div>
-            <div class="plan-tc">${p.debut} → ${p.fin}</div>
-            <div class="plan-type">${p.type_plan||''}</div>
-          </div>
-          <div class="plan-body">
-            <div class="plan-row"><span class="pk">Angle</span><span class="pv">${p.angle}</span></div>
-            <div class="plan-row"><span class="pk">Mouvement</span><span class="pv">${p.mouvement}</span></div>
-            <div class="plan-row"><span class="pk">Dynamique</span><span class="pv">${p.dynamique}</span></div>
-            <div class="plan-row"><span class="pk">Lumière</span><span class="pv">${p.lumiere}</span></div>
-            <div class="plan-row"><span class="pk">Action</span><span class="pv">${p.action}</span></div>
-            <div class="plan-row"><span class="pk">Son</span><span class="pv">${p.son}</span></div>
-            <div class="plan-emo">❤ ${p.emotion}</div>
-            ${renderPlanPromptPanel(p)}
-          </div>
-          ${makeCopyPlanButton(p)}
-          <button class="regen-plan-btn" onclick="regenPlan(${p.numero})">↻ REGÉNÉRER CE PLAN</button>
-        `;
+        card.innerHTML = renderPlanCardInner(p, i, true);
         container.appendChild(card);
       });
     }
