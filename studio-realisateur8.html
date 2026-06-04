@@ -1188,28 +1188,65 @@ function selectHistoire(v, btn) {
   document.getElementById('hist-ta').classList.toggle('vis', v === 'custom');
 }
 
-function handleMultiUpload(e) {
-  const files = Array.from(e.target.files);
+async function fileToCompressedDataURL(file, maxSide = 1024, quality = 0.72) {
+  return new Promise((resolve) => {
+    try {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            let w = img.width;
+            let h = img.height;
+            const scale = Math.min(1, maxSide / Math.max(w, h));
+            w = Math.max(1, Math.round(w * scale));
+            h = Math.max(1, Math.round(h * scale));
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            const out = canvas.toDataURL('image/jpeg', quality);
+            resolve({ dataURL: out, mime: 'image/jpeg', wasCompressed: true });
+          } catch (err) {
+            resolve({ dataURL: ev.target.result, mime: file.type || 'image/jpeg', wasCompressed: false });
+          }
+        };
+        img.onerror = () => resolve({ dataURL: ev.target.result, mime: file.type || 'image/jpeg', wasCompressed: false });
+        img.src = ev.target.result;
+      };
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(file);
+    } catch (err) { resolve(null); }
+  });
+}
+
+async function handleMultiUpload(e) {
+  const files = Array.from(e.target.files || []);
   if (!files.length) return;
   
-  const remaining = 8 - uploadedPhotos.length;
+  // Sécurité anti-timeout : au-delà de 6 images, Gemini reçoit trop de données et renvoie souvent DEADLINE_EXPIRED.
+  const remaining = 6 - uploadedPhotos.length;
+  if (remaining <= 0) {
+    showNotif('Maximum 6 images pour garder une analyse stable', 5000);
+    e.target.value = '';
+    return;
+  }
   const toProcess = files.slice(0, remaining);
+  if (files.length > remaining) showNotif('J’ai gardé les 6 premières images pour éviter le timeout', 5000);
   
-  toProcess.forEach(file => {
-    const reader = new FileReader();
-    reader.onload = ev => {
-      const b64 = ev.target.result.split(',')[1];
-      const mime = file.type;
-      uploadedPhotos.push({ base64: b64, mime: mime, preview: ev.target.result });
-      // Also set first photo as main imageBase64 for compatibility
-      if (uploadedPhotos.length === 1) {
-        imageBase64 = b64;
-        imageMime = mime;
-      }
-      renderPhotosGrid();
-    };
-    reader.readAsDataURL(file);
-  });
+  for (const file of toProcess) {
+    const converted = await fileToCompressedDataURL(file, 1024, 0.72);
+    if (!converted) continue;
+    const b64 = converted.dataURL.split(',')[1];
+    const mime = converted.mime;
+    uploadedPhotos.push({ base64: b64, mime: mime, preview: converted.dataURL });
+    if (uploadedPhotos.length === 1) {
+      imageBase64 = b64;
+      imageMime = mime;
+    }
+    renderPhotosGrid();
+  }
   
   e.target.value = '';
 }
@@ -1477,6 +1514,48 @@ function buildNarrativeImageParts() {
     ];
   }
   return [];
+}
+
+async function analysePhotosOneByOneForFilRouge() {
+  if (!uploadedPhotos || uploadedPhotos.length <= 1) return '';
+  const summaries = [];
+  for (let i = 0; i < uploadedPhotos.length; i++) {
+    const photo = uploadedPhotos[i];
+    const label = `Image ${i + 1}/${uploadedPhotos.length}`;
+    try {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            role: 'user',
+            parts: [
+              { text: `${label}. Analyse uniquement cette image comme une étape narrative d'une future vidéo. Réponds en JSON court avec ces champs : image, moment, personnage, décor, action_visible, emotion, détails_visuels, rôle_narratif. Ne crée pas encore de storyboard.` },
+              { inline_data: { mime_type: photo.mime, data: photo.base64 } }
+            ]
+          }],
+          generationConfig: { temperature: 0.35, maxOutputTokens: 900, responseMimeType: 'application/json' }
+        })
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error.message || 'Erreur Gemini');
+      const raw = getGeminiText(data);
+      let parsed;
+      try { parsed = parseGeminiJSON(raw); }
+      catch(e) { parsed = { image: label, moment: raw.substring(0, 900) }; }
+      summaries.push(parsed);
+      document.getElementById('stream-lbl').textContent = `Lecture image ${i + 1}/${uploadedPhotos.length}...`;
+    } catch (err) {
+      summaries.push({ image: label, moment: 'Image reçue mais analyse détaillée indisponible', rôle_narratif: 'Étape narrative à relier aux autres images', erreur: String(err.message || err).substring(0, 160) });
+    }
+  }
+  return `ANALYSE DES IMAGES FOURNIES — utilise ces résumés comme fil rouge narratif. Ne mélange pas les images. Chaque image est une étape de l'histoire.
+
+${summaries.map((x, idx) => `IMAGE ${idx + 1}: ${JSON.stringify(x)}`).join('
+
+')}
+
+Construis maintenant le storyboard à partir de cette progression : image 1 = départ, images intermédiaires = évolution, dernière image = destination.`;
 }
 
 function escHTML(v) {
@@ -1778,6 +1857,16 @@ async function generate() {
     : '';
 
   try {
+    let narrativeSummary = '';
+    if (uploadedPhotos.length > 1) {
+      document.getElementById('stream-lbl').textContent = 'Lecture narrative des images une par une...';
+      narrativeSummary = await analysePhotosOneByOneForFilRouge();
+    }
+
+    const imagePartsForFinal = narrativeSummary
+      ? [{ text: narrativeSummary }]
+      : buildNarrativeImageParts();
+
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1786,12 +1875,16 @@ async function generate() {
         contents: [{
           role: 'user',
           parts: [
-            ...buildNarrativeImageParts(),
+            ...imagePartsForFinal,
             ...(imageBase642 && selectedModele === 'seedance' && uploadedPhotos.length === 0 ? [{ text: 'IMAGE DE FIN OPTIONNELLE — destination visuelle finale du mouvement.' }, { inline_data: { mime_type: imageMime2, data: imageBase642 } }] : []),
-            { text: `${histCtx}${dialogueCtx}\n\n${uploadedPhotos.length > 1 ? `Tu as reçu ${uploadedPhotos.length} photos. Analyse-les TOUTES ensemble pour construire un storyboard narratif cohérent avec un fil conducteur émotionnel qui relie ces moments. Chaque plan doit puiser dans une des photos et l'histoire doit progresser naturellement de l'une à l'autre. Les photos racontent une histoire continue — identifie le lien émotionnel entre elles et construis la narration autour de ça.\n\n` : ''}Crée le storyboard — ${selectedDuree} secondes exactement, atmosphère ${ATMOS.find(a=>a.id===selectedAtmoId)?.name}, mode ${selectedMode}, moteur ${selectedModele}.` }
+            { text: `${histCtx}${dialogueCtx}
+
+${uploadedPhotos.length > 1 ? `Tu as reçu ${uploadedPhotos.length} photos déjà lues une par une. Tu dois construire une continuité narrative claire. Chaque plan indique image_source et role_narratif. Ne redemande pas l'analyse des images, utilise les résumés fournis.
+
+` : ''}Crée le storyboard — ${selectedDuree} secondes exactement, atmosphère ${ATMOS.find(a=>a.id===selectedAtmoId)?.name}, mode ${selectedMode}, moteur ${selectedModele}.` }
           ]
         }],
-        generationConfig: { temperature: 0.93, maxOutputTokens: 16384, responseMimeType: 'application/json' }
+        generationConfig: { temperature: 0.82, maxOutputTokens: 8192, responseMimeType: 'application/json' }
       })
     });
 
@@ -1886,8 +1979,10 @@ async function generate() {
     stopLoading();
     document.getElementById('stream-bar').classList.remove('vis');
     document.getElementById('empty-state').style.display = 'flex';
-    document.getElementById('empty-state').querySelector('.empty-txt').textContent = 'Erreur : ' + (err.message || String(err));
-    showNotif('Erreur : ' + (err.message || '').substring(0, 80), 8000);
+    const errMsg = String(err.message || err);
+    const friendlyErr = errMsg.includes('DEADLINE') ? 'Le serveur a mis trop longtemps à répondre. J’ai réduit les images, relance une fois. Si ça recommence, garde 3 à 4 images max.' : errMsg;
+    document.getElementById('empty-state').querySelector('.empty-txt').textContent = 'Erreur : ' + friendlyErr;
+    showNotif('Erreur : ' + friendlyErr.substring(0, 120), 8000);
     console.error('GENERATE ERROR:', err);
   }
 
