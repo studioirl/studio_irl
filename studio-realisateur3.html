@@ -1006,32 +1006,7 @@ if (apiKey) {
 }
 
 // ════════════════ BUILD ATMO LIST ════════════════
-function buildAtmoList() {
-  const c = document.getElementById('atmo-list');
-  c.innerHTML = '';
-  ATMOS.forEach(a => {
-    const item = document.createElement('div');
-    item.className = 'atmo-item';
-    const sw = a.palette.map(p => `<div class="pal-sw" style="background:${p}"></div>`).join('');
-    const films = a.films.join('<br>');
-    item.innerHTML = `
-      <button class="atmo-btn${a.id===selectedAtmoId?' active':''}" onclick="selectAtmo('${a.id}',this)">
-        <div class="atmo-dot" style="background:${a.dot}"></div>
-        <div class="atmo-info">
-          <span class="atmo-name">${a.name}</span>
-          <span class="atmo-desc">${a.desc}</span>
-        </div>
-      </button>
-      <div class="atmo-tooltip">
-        <div class="tooltip-palette">${sw}</div>
-        <div class="tooltip-films"><strong>Références</strong>${films}</div>
-        <div class="tooltip-mood">${a.mood}</div>
-      </div>`;
-    c.appendChild(item);
-  });
-}
-buildAtmoList();
-
+function 
 // ════════════════ LOADING ════════════════
 function startLoading() {
   const atmo = ATMOS.find(a => a.id === selectedAtmoId);
@@ -1441,6 +1416,14 @@ Réponds UNIQUEMENT en JSON valide : {"analyse":"...","plans":[...],"prompt_fr":
     if (result.analyse) {
       document.getElementById('an-body').textContent = result.analyse;
       document.getElementById('analyse-card').classList.add('vis');
+    }
+
+    // Debug - show what we got
+    console.log('Result keys:', Object.keys(result));
+    console.log('Plans count:', result.plans ? result.plans.length : 'NO PLANS');
+    console.log('prompt_fr:', result.prompt_fr ? 'OK' : 'MISSING');
+    if (!result.plans || result.plans.length === 0) {
+      showNotif('Erreur : Gemini n'a pas généré de plans. Relance.', 6000);
     }
 
     // Rebuild plans
