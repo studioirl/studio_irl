@@ -557,6 +557,52 @@ html, body {
 .chat-send:disabled { opacity:0.3; cursor:not-allowed; }
 
 /* NOTIF */
+/* HISTORIQUE */
+.hist-panel {
+  display: none;
+  position: fixed;
+  top: 0; right: 0; bottom: 0;
+  width: 320px;
+  background: var(--noir2);
+  border-left: 1px solid var(--border);
+  z-index: 300;
+  flex-direction: column;
+  box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+}
+.hist-panel.visible { display: flex; }
+.hist-header {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+}
+.hist-title { font-family: var(--bebas); font-size: 18px; letter-spacing: 0.2em; }
+.hist-close {
+  background: transparent; border: 1px solid var(--border);
+  color: var(--gris2); font-family: var(--mono); font-size: 10px;
+  padding: 4px 10px; cursor: pointer; transition: all 0.2s;
+}
+.hist-close:hover { border-color: var(--blanc); color: var(--blanc); }
+.hist-list { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.hist-item {
+  background: var(--noir3); border: 1px solid var(--border);
+  padding: 12px; cursor: pointer; transition: all 0.2s;
+}
+.hist-item:hover { border-color: rgba(255,255,255,0.25); }
+.hist-item-date { font-size: 8px; letter-spacing: 0.15em; color: var(--gris2); margin-bottom: 5px; }
+.hist-item-title { font-size: 11px; color: var(--blanc); margin-bottom: 4px; font-family: var(--sans); font-weight: 300; }
+.hist-item-meta { font-size: 8px; color: var(--gris2); letter-spacing: 0.1em; }
+.hist-item-del {
+  float: right; background: transparent; border: none;
+  color: var(--rouge); font-size: 10px; cursor: pointer; padding: 0;
+}
+.hist-empty-msg { font-size: 9px; color: var(--gris2); text-align: center; padding: 30px 0; letter-spacing: 0.15em; text-transform: uppercase; }
+.hist-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5); z-index: 299;
+}
+.hist-overlay.visible { display: block; }
+
 .notif { position:fixed; bottom:16px; right:16px; background:var(--blanc); color:var(--noir); padding:7px 16px; font-family:var(--mono); font-size:9px; letter-spacing:0.15em; text-transform:uppercase; opacity:0; transform:translateY(5px); transition:all 0.22s; pointer-events:none; z-index:999; }
 .notif.show { opacity:1; transform:translateY(0); }
 
@@ -654,6 +700,7 @@ html, body {
     <div class="header-sub">Direction cinématographique pilotée par IA</div>
   </div>
   <div class="header-right">
+    <button onclick="openHist()" style="background:transparent;border:1px solid var(--border);color:var(--gris2);font-family:var(--mono);font-size:8px;letter-spacing:0.12em;padding:5px 10px;cursor:pointer;text-transform:uppercase;transition:all 0.2s;white-space:nowrap;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--gris2)'">⟳ HISTORIQUE</button>
     <div class="atmo-badge" id="atmo-badge">● CLASSIC NOIR</div>
     <div class="status-dot"></div>
     <div class="api-mini">
@@ -673,10 +720,13 @@ html, body {
     </div>
     <div class="col-body">
 
-      <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
-        <div class="upload-ph"><div class="upload-ico">◈</div><div class="upload-lbl">Importe ton portrait<br>personnage ici</div></div>
-      </div>
-      <input type="file" id="file-input" accept="image/*" onchange="handleUpload(event)">
+      <div class="slabel" style="margin-top:0">Photos — jusqu'à 8<span class="field-tip" data-tip="Uploade plusieurs photos du même moment ou de moments différents. Studio Réalisateur construira un storyboard narratif cohérent qui relie toutes les images.">?</span></div>
+      <div id="photos-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;"></div>
+      <button onclick="document.getElementById('file-input-multi').click()" style="width:100%;margin-top:6px;background:transparent;border:1px dashed rgba(255,255,255,0.15);color:var(--gris2);font-family:var(--mono);font-size:8px;letter-spacing:0.15em;text-transform:uppercase;padding:10px;cursor:pointer;transition:all 0.2s;" id="add-photo-btn">
+        + AJOUTER UNE PHOTO
+      </button>
+      <input type="file" id="file-input-multi" accept="image/*" multiple onchange="handleMultiUpload(event)" style="display:none">
+      <div style="font-family:var(--sans);font-size:9px;color:var(--gris2);margin-top:5px;line-height:1.6;" id="photos-count">0 photo uploadée</div>
 
       <div class="slabel">Durée vidéo</div>
       <div class="duree-grid">
@@ -758,7 +808,7 @@ html, body {
       </div>
 
       <div class="slabel">Atmosphère de référence<span class="field-tip" data-tip="Style visuel et cinématographique qui influence la lumière, les couleurs et l'ambiance de tous les plans.">?</span></div>
-      <div class="atmo-list" id="atmo-list"></div>
+      <select id="atmo-select" onchange="selectAtmoFromSelect(this.value)" style="width:100%;background:var(--noir3);border:1px solid var(--border);color:#ffffff;font-family:var(--mono);font-size:10px;padding:10px 12px;outline:none;cursor:pointer;letter-spacing:0.05em;appearance:none;-webkit-appearance:none;background-image:url('data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'10\' height=\'6\'><path d=\'M0 0l5 6 5-6z\' fill=\'%23555\'/></svg>');background-repeat:no-repeat;background-position:right 12px center;"></select>
 
       <div class="slabel">Point de départ</div>
       <div class="hist-opts">
@@ -887,6 +937,16 @@ HOMME EN VESTE NOIRE : Attends c'est toi qui a fait ça" style="min-height:80px;
 
 </div>
 
+<!-- HISTORIQUE PANEL -->
+<div class="hist-overlay" id="hist-overlay" onclick="closeHist()"></div>
+<div class="hist-panel" id="hist-panel">
+  <div class="hist-header">
+    <div class="hist-title">HISTORIQUE</div>
+    <button class="hist-close" onclick="closeHist()">✕ FERMER</button>
+  </div>
+  <div class="hist-list" id="hist-list"></div>
+</div>
+
 <div class="notif" id="notif"></div>
 
 <script>
@@ -931,7 +991,8 @@ let imageBase642 = null, imageMime2 = null;
 let selectedModele = 'veo31';
 let selectedAtmoId = 'libre';
 let selectedHistoire = 'auto';
-let imageBase64 = null, imageMime = null;
+let imageBase64 = null, imageMime = null; // kept for compatibility
+let uploadedPhotos = []; // [{base64, mime, preview}] up to 10
 let fullStoryboard = '';
 let promptFR = '', promptEN = '';
 let currentLang = 'fr';
@@ -1091,6 +1152,64 @@ function selectHistoire(v, btn) {
   document.getElementById('hist-ta').classList.toggle('vis', v === 'custom');
 }
 
+function handleMultiUpload(e) {
+  const files = Array.from(e.target.files);
+  if (!files.length) return;
+  
+  const remaining = 8 - uploadedPhotos.length;
+  const toProcess = files.slice(0, remaining);
+  
+  toProcess.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const b64 = ev.target.result.split(',')[1];
+      const mime = file.type;
+      uploadedPhotos.push({ base64: b64, mime: mime, preview: ev.target.result });
+      // Also set first photo as main imageBase64 for compatibility
+      if (uploadedPhotos.length === 1) {
+        imageBase64 = b64;
+        imageMime = mime;
+      }
+      renderPhotosGrid();
+    };
+    reader.readAsDataURL(file);
+  });
+  
+  e.target.value = '';
+}
+
+function renderPhotosGrid() {
+  const grid = document.getElementById('photos-grid');
+  const countEl = document.getElementById('photos-count');
+  const addBtn = document.getElementById('add-photo-btn');
+  
+  grid.innerHTML = uploadedPhotos.map((p, i) => `
+    <div style="position:relative;aspect-ratio:3/4;background:var(--noir3);border:1px solid var(--border);overflow:hidden;">
+      <img src="${p.preview}" style="width:100%;height:100%;object-fit:cover;display:block;">
+      <div style="position:absolute;top:3px;left:3px;background:rgba(0,0,0,0.7);font-family:var(--mono);font-size:7px;padding:2px 5px;color:var(--or);">0${i+1}</div>
+      <button onclick="removePhoto(${i})" style="position:absolute;top:3px;right:3px;background:var(--rouge);color:white;border:none;font-size:8px;width:16px;height:16px;cursor:pointer;line-height:16px;text-align:center;padding:0;">✕</button>
+    </div>
+  `).join('');
+  
+  const n = uploadedPhotos.length;
+  countEl.textContent = n === 0 ? '0 photo uploadée' : n + ' photo' + (n > 1 ? 's uploadées' : ' uploadée') + (n >= 8 ? ' — maximum atteint' : '');
+  addBtn.style.display = n >= 8 ? 'none' : 'block';
+  
+  // Update main imageBase64
+  if (uploadedPhotos.length > 0) {
+    imageBase64 = uploadedPhotos[0].base64;
+    imageMime = uploadedPhotos[0].mime;
+  } else {
+    imageBase64 = null;
+    imageMime = null;
+  }
+}
+
+function removePhoto(index) {
+  uploadedPhotos.splice(index, 1);
+  renderPhotosGrid();
+}
+
 function handleUpload(e) {
   const file = e.target.files[0];
   if (!file) return;
@@ -1197,6 +1316,9 @@ PERSONNAGES : ${selectedPersonnages === 0 ? 'groupe — plans d\'ensemble, mouve
 RYTHME : ${selectedRythme === 'vlog' ? 'VLOG AUTHENTIQUE — cuts naturels et non chorégraphiés, comme si quelqu\'un filmait vraiment. Pas de transition parfaite. L\'énergie d\'un moment capturé, pas d\'une production. Plans courts mais pas frénétiques — juste vivants.' : selectedRythme === 'emotionnel' ? 'ÉMOTIONNEL — le rythme sert l\'émotion, pas l\'inverse. Si l\'émotion demande un plan long qui respire, tu le fais. Si elle demande un cut brutal, tu le fais. La caméra ressent avant de bouger.' : 'CINÉMA DYNAMIQUE — énergie, impact, mouvement. Chaque plan doit avoir de la vie. Les cuts sont des décisions visuelles fortes. Le spectateur doit sentir l\'énergie dès la première seconde.'}
 ${modeleCtx}
 ${modeCtx}
+
+QUAND PLUSIEURS PHOTOS SONT FOURNIES :
+Tu analyses toutes les photos ensemble comme un réalisateur qui regarde les rushes d'une journée de tournage. Tu identifies le fil conducteur émotionnel entre elles — ce qui relie ces moments, l'histoire qui se raconte à travers eux. Tu construis un storyboard narratif où chaque plan s'inspire d'une des photos, et l'histoire progresse naturellement d'un moment à l'autre. Les personnages, le lieu, l'ambiance doivent rester cohérents d'un plan à l'autre même si les photos montrent des moments différents.
 
 DURÉE ABSOLUE : exactement ${selectedDuree} secondes. Pas une de plus.
 
@@ -1380,7 +1502,7 @@ Réponds UNIQUEMENT en JSON valide : {"analyse":"...","plans":[...],"prompt_fr":
 
 async function regenPlan(planNum) {
   if (!apiKey) { showNotif('Clé API manquante'); return; }
-  if (!imageBase64) { showNotif('Importe une photo'); return; }
+  if (uploadedPhotos.length === 0 && !imageBase64) { showNotif('Importe au moins une photo'); return; }
 
   showNotif('Regénération du plan ' + planNum + '...');
   const atmo = ATMOS.find(a => a.id === selectedAtmoId);
@@ -1439,7 +1561,7 @@ Réponds UNIQUEMENT en JSON : {"numero":${planNum},"debut":"...","fin":"...","ty
 
 async function generate() {
   if (!apiKey) { showNotif('Clé API manquante'); return; }
-  if (!imageBase64) { showNotif('Importe une photo'); return; }
+  if (uploadedPhotos.length === 0 && !imageBase64) { showNotif('Importe au moins une photo'); return; }
 
   const btn = document.getElementById('gen-btn');
   btn.disabled = true;
@@ -1478,9 +1600,9 @@ async function generate() {
         contents: [{
           role: 'user',
           parts: [
-            { inline_data: { mime_type: imageMime, data: imageBase64 } },
-            ...(imageBase642 && selectedModele === 'seedance' ? [{ inline_data: { mime_type: imageMime2, data: imageBase642 } }] : []),
-            { text: `${histCtx}${dialogueCtx}\n\nCrée le storyboard — ${selectedDuree} secondes exactement, atmosphère ${ATMOS.find(a=>a.id===selectedAtmoId)?.name}, mode ${selectedMode}, moteur ${selectedModele}.${imageBase642 && selectedModele === 'seedance' ? ' Deux photos de référence ont été fournies — une par personnage.' : ''}` }
+            ...uploadedPhotos.map(p => ({ inline_data: { mime_type: p.mime, data: p.base64 } })),
+            ...(imageBase642 && selectedModele === 'seedance' && uploadedPhotos.length === 0 ? [{ inline_data: { mime_type: imageMime2, data: imageBase642 } }] : []),
+            { text: `${histCtx}${dialogueCtx}\n\n${uploadedPhotos.length > 1 ? `Tu as reçu ${uploadedPhotos.length} photos. Analyse-les TOUTES ensemble pour construire un storyboard narratif cohérent avec un fil conducteur émotionnel qui relie ces moments. Chaque plan doit puiser dans une des photos et l'histoire doit progresser naturellement de l'une à l'autre. Les photos racontent une histoire continue — identifie le lien émotionnel entre elles et construis la narration autour de ça.\n\n` : ''}Crée le storyboard — ${selectedDuree} secondes exactement, atmosphère ${ATMOS.find(a=>a.id===selectedAtmoId)?.name}, mode ${selectedMode}, moteur ${selectedModele}.` }
           ]
         }],
         generationConfig: { temperature: 0.93, maxOutputTokens: 8192 }
@@ -1651,6 +1773,166 @@ async function sendChat() {
 function handleKey(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();} }
 function quickMsg(t) { document.getElementById('chat-ta').value=t; sendChat(); }
 
+// ═══════════════════ HISTORIQUE INDEXEDDB ═══════════════════
+const DB_NAME = 'StudioRealisateur';
+const DB_VERSION = 1;
+const STORE_NAME = 'sessions';
+let db = null;
+
+function initDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = e => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains(STORE_NAME)) {
+        const store = d.createObjectStore(STORE_NAME, { keyPath: 'id' });
+        store.createIndex('date', 'date', { unique: false });
+      }
+    };
+    req.onsuccess = e => { db = e.target.result; resolve(db); };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function saveSession(session) {
+  if (!db) await initDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    tx.objectStore(STORE_NAME).put(session);
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function getAllSessions() {
+  if (!db) await initDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const req = tx.objectStore(STORE_NAME).index('date').getAll();
+    req.onsuccess = () => resolve(req.result.reverse());
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function deleteSession(id) {
+  if (!db) await initDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    tx.objectStore(STORE_NAME).delete(id);
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function openHist() {
+  document.getElementById('hist-panel').classList.add('visible');
+  document.getElementById('hist-overlay').classList.add('visible');
+  await renderHistList();
+}
+
+function closeHist() {
+  document.getElementById('hist-panel').classList.remove('visible');
+  document.getElementById('hist-overlay').classList.remove('visible');
+}
+
+async function renderHistList() {
+  const list = document.getElementById('hist-list');
+  try {
+    const sessions = await getAllSessions();
+    if (!sessions.length) {
+      list.innerHTML = '<div class="hist-empty-msg">Aucune session sauvegardée</div>';
+      return;
+    }
+    list.innerHTML = sessions.map(s => `
+      <div class="hist-item" onclick="loadSession('${s.id}')">
+        <button class="hist-item-del" onclick="event.stopPropagation();deleteSessionUI('${s.id}')">✕</button>
+        <div class="hist-item-date">${new Date(s.date).toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
+        <div class="hist-item-title">${s.analyse ? s.analyse.substring(0, 80) + '...' : 'Session sans analyse'}</div>
+        <div class="hist-item-meta">${s.duree}s · ${s.mode} · ${s.modele} · ${s.nbPlans || 0} plans · ${s.nbPhotos || 1} photo${s.nbPhotos > 1 ? 's' : ''}</div>
+      </div>
+    `).join('');
+  } catch(err) {
+    list.innerHTML = '<div class="hist-empty-msg">Erreur de chargement</div>';
+  }
+}
+
+async function deleteSessionUI(id) {
+  await deleteSession(id);
+  await renderHistList();
+  showNotif('Session supprimée');
+}
+
+async function loadSession(id) {
+  if (!db) await initDB();
+  const tx = db.transaction(STORE_NAME, 'readonly');
+  const req = tx.objectStore(STORE_NAME).get(id);
+  req.onsuccess = () => {
+    const s = req.result;
+    if (!s) return;
+
+    // Restore storyboard
+    fullStoryboard = s.fullStoryboard || '';
+    promptFR = s.promptFR || '';
+    promptEN = s.promptEN || '';
+
+    // Restore analyse
+    document.getElementById('an-body').textContent = s.analyse || '';
+    document.getElementById('analyse-card').classList.toggle('vis', !!s.analyse);
+
+    // Restore plans
+    const container = document.getElementById('plans-container');
+    container.innerHTML = '';
+    if (s.plans && s.plans.length) {
+      s.plans.forEach((p, i) => {
+        const card = document.createElement('div');
+        card.className = 'plan-card';
+        card.style.animationDelay = (i * 0.05) + 's';
+        card.innerHTML = `
+          <div class="plan-top">
+            <div class="plan-num">PLAN ${String(p.numero).padStart(2,'0')}</div>
+            <div class="plan-tc">${p.debut} → ${p.fin}</div>
+            <div class="plan-type">${p.type_plan||''}</div>
+          </div>
+          <div class="plan-body">
+            <div class="plan-row"><span class="pk">Angle</span><span class="pv">${p.angle}</span></div>
+            <div class="plan-row"><span class="pk">Mouvement</span><span class="pv">${p.mouvement}</span></div>
+            <div class="plan-row"><span class="pk">Dynamique</span><span class="pv">${p.dynamique}</span></div>
+            <div class="plan-row"><span class="pk">Lumière</span><span class="pv">${p.lumiere}</span></div>
+            <div class="plan-row"><span class="pk">Action</span><span class="pv">${p.action}</span></div>
+            <div class="plan-row"><span class="pk">Son</span><span class="pv">${p.son}</span></div>
+            <div class="plan-emo">❤ ${p.emotion}</div>
+            ${p.prompt_ref?`<div class="plan-pref"><span>Prompt pour ce plan</span>"${p.prompt_ref}"</div>`:''}
+          </div>
+          ${p.prompt_ref?`<button class="copy-plan-btn" onclick="navigator.clipboard.writeText('${p.prompt_ref.replace(/'/g,"\'")}').then(()=>showNotif('Plan copié'))">◈ COPIER LE PROMPT — PLAN ${String(p.numero).padStart(2,'0')}</button>`:''}
+          <button class="regen-plan-btn" onclick="regenPlan(${p.numero})">↻ REGÉNÉRER CE PLAN</button>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // Restore prompt final
+    if (promptFR || promptEN) {
+      document.getElementById('pf-body').textContent = currentLang === 'fr' ? promptFR : promptEN;
+      document.getElementById('pf-card').classList.add('vis');
+    }
+
+    document.getElementById('refs-sec').classList.add('vis');
+    document.getElementById('copy-sb').classList.add('vis');
+    document.getElementById('duree-badge').style.display = 'block';
+    document.getElementById('duree-badge').textContent = (s.duree || 8) + ' SECONDES';
+    document.getElementById('empty-state').style.display = 'none';
+
+    closeHist();
+    showNotif('Session restaurée');
+
+    // Scroll to storyboard on mobile
+    if (window.innerWidth <= 900) {
+      const storyCol = document.querySelector('.col:nth-child(2)');
+      if (storyCol) storyCol.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+}
+
 function showNotif(msg) {
   const n = document.getElementById('notif');
   n.textContent = msg; n.classList.add('show');
@@ -1671,7 +1953,8 @@ function enterStudio() {
 }
 
 // Init
-selectAtmo('libre', document.querySelector('.atmo-btn.active'));
+selectAtmoFromSelect('libre');
+initDB().catch(e => console.warn('IndexedDB init failed:', e));
 </script>
 </body>
 </html>
