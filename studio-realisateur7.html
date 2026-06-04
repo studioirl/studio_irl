@@ -747,7 +747,7 @@ html, body {
     </div>
     <div class="col-body">
 
-      <div class="slabel" style="margin-top:0">Photos — jusqu'à 8<span class="field-tip" data-tip="Uploade plusieurs photos du même moment ou de moments différents. Studio Réalisateur construira un storyboard narratif cohérent qui relie toutes les images.">?</span></div>
+      <div class="slabel" style="margin-top:0">Photos narratives — jusqu'à 8<span class="field-tip" data-tip="Ajoute les images dans l'ordre de ton histoire. Image 1 = début, image 2 = progression, image 3 = tension ou bascule, dernière image = destination finale. Chaque image sert à la narration.">?</span></div>
       <div id="photos-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;"></div>
       <button onclick="document.getElementById('file-input-multi').click()" style="width:100%;margin-top:6px;background:transparent;border:1px dashed rgba(255,255,255,0.15);color:var(--gris2);font-family:var(--mono);font-size:8px;letter-spacing:0.15em;text-transform:uppercase;padding:10px;cursor:pointer;transition:all 0.2s;" id="add-photo-btn">
         + AJOUTER UNE PHOTO
@@ -1214,6 +1214,27 @@ function handleMultiUpload(e) {
   e.target.value = '';
 }
 
+function getNarrativeStageLabel(i, total) {
+  if (total <= 1) return 'RÉFÉRENCE';
+  if (i === 0) return 'DÉBUT';
+  if (i === total - 1) return 'FIN';
+  if (total >= 4 && i === total - 2) return 'BASCULE';
+  return 'ÉTAPE ' + String(i + 1).padStart(2, '0');
+}
+
+function buildNarrativePhotoBrief() {
+  const total = uploadedPhotos.length;
+  if (total <= 1) return '';
+  return uploadedPhotos.map((p, i) => {
+    const n = i + 1;
+    const stage = getNarrativeStageLabel(i, total);
+    if (i === 0) return `Image ${n} = ${stage}. Point de départ narratif. Elle ouvre l'histoire, l'état émotionnel initial, la position de départ du personnage, le décor et l'énergie de départ.`;
+    if (i === total - 1) return `Image ${n} = ${stage}. Destination finale. La vidéo doit naturellement mener vers cette image, comme une conclusion visuelle logique.`;
+    if (stage === 'BASCULE') return `Image ${n} = ${stage}. Moment de tension, changement ou décision. Elle doit expliquer pourquoi l'histoire évolue vers la fin.`;
+    return `Image ${n} = ${stage}. Progression narrative. Elle montre ce qui change depuis l'image précédente et prépare l'image suivante.`;
+  }).join('\n');
+}
+
 function renderPhotosGrid() {
   const grid = document.getElementById('photos-grid');
   const countEl = document.getElementById('photos-count');
@@ -1222,13 +1243,14 @@ function renderPhotosGrid() {
   grid.innerHTML = uploadedPhotos.map((p, i) => `
     <div style="position:relative;aspect-ratio:3/4;background:var(--noir3);border:1px solid var(--border);overflow:hidden;">
       <img src="${p.preview}" style="width:100%;height:100%;object-fit:cover;display:block;">
-      <div style="position:absolute;top:3px;left:3px;background:rgba(0,0,0,0.7);font-family:var(--mono);font-size:7px;padding:2px 5px;color:var(--or);">0${i+1}</div>
+      <div style="position:absolute;top:3px;left:3px;background:rgba(0,0,0,0.7);font-family:var(--mono);font-size:7px;padding:2px 5px;color:var(--or);">IMAGE ${String(i+1).padStart(2,'0')}</div>
+      <div style="position:absolute;left:3px;right:3px;bottom:3px;background:rgba(0,0,0,0.72);font-family:var(--mono);font-size:6.5px;padding:3px 4px;color:#fff;text-align:center;letter-spacing:0.08em;text-transform:uppercase;">${getNarrativeStageLabel(i, uploadedPhotos.length)}</div>
       <button onclick="removePhoto(${i})" style="position:absolute;top:3px;right:3px;background:var(--rouge);color:white;border:none;font-size:8px;width:16px;height:16px;cursor:pointer;line-height:16px;text-align:center;padding:0;">✕</button>
     </div>
   `).join('');
   
   const n = uploadedPhotos.length;
-  countEl.textContent = n === 0 ? '0 photo uploadée' : n + ' photo' + (n > 1 ? 's uploadées' : ' uploadée') + (n >= 8 ? ' — maximum atteint' : '');
+  countEl.textContent = n === 0 ? '0 photo uploadée' : n + ' photo' + (n > 1 ? 's uploadées' : ' uploadée') + (n >= 8 ? ' — maximum atteint' : '') + (n > 1 ? ' • ordre narratif actif' : '');
   addBtn.style.display = n >= 8 ? 'none' : 'block';
   
   // Update main imageBase64
@@ -1354,7 +1376,17 @@ ${modeleCtx}
 ${modeCtx}
 
 QUAND PLUSIEURS PHOTOS SONT FOURNIES :
-Tu analyses toutes les photos ensemble comme un réalisateur qui regarde les rushes d'une journée de tournage. Tu identifies le fil conducteur émotionnel entre elles — ce qui relie ces moments, l'histoire qui se raconte à travers eux. Tu construis un storyboard narratif où chaque plan s'inspire d'une des photos, et l'histoire progresse naturellement d'un moment à l'autre. Les personnages, le lieu, l'ambiance doivent rester cohérents d'un plan à l'autre même si les photos montrent des moments différents.
+Les images ne sont PAS de simples références visuelles. Elles sont une chronologie narrative. Tu dois les lire dans l'ordre exact d'import. Image 1 = début de l'histoire. Les images du milieu = progression, bascule, tension, décision ou déplacement. La dernière image = destination finale ou conclusion visuelle.
+
+RÈGLE ABSOLUE : chaque image doit servir à la narration. Tu ne mélanges pas les images comme une banque d'inspiration. Tu construis un fil rouge continu entre elles. Chaque plan doit faire avancer l'histoire d'une image vers la suivante.
+
+Pour chaque plan, tu dois préciser dans le JSON :
+- "image_etape" : l'image narrative utilisée, par exemple "Image 01 — début" ou "Image 03 — bascule".
+- "transition" : ce qui change depuis l'image précédente et comment ce plan prépare l'image suivante.
+
+Si le nombre de plans est supérieur au nombre d'images, tu peux créer des plans de transition entre deux images, mais ils doivent toujours relier deux étapes. Si le nombre d'images est supérieur au nombre de plans, regroupe les images proches sans perdre le fil rouge.
+
+Les personnages, le lieu, l'ambiance, les vêtements et l'émotion doivent rester cohérents d'un plan à l'autre. La vidéo doit donner l'impression d'une seule scène qui avance, pas d'une succession de photos séparées.
 
 DURÉE ABSOLUE : exactement ${selectedDuree} secondes. Pas une de plus.
 
@@ -1409,6 +1441,8 @@ Réponds UNIQUEMENT en JSON valide strict, sans markdown ni backticks :
       "numero": 1,
       "debut": "0:00",
       "fin": "0:03",
+      "image_etape": "Image 01 — début / Image 02 — progression / Image finale — conclusion",
+      "transition": "ce qui change depuis l'image précédente et comment ce plan prépare l'image suivante",
       "type_plan": "GROS PLAN",
       "angle": "...",
       "mouvement": "...",
@@ -1449,6 +1483,8 @@ function buildPlanPrompt(p, lang) {
     if (frDirect !== 'Non précisé') return frDirect;
     return [
       `Plan ${safeField(p.numero)} — ${safeField(p.debut)} à ${safeField(p.fin)}`,
+      `Image narrative : ${safeField(p.image_etape || p.photo_source || p.image_source)}`,
+      `Transition : ${safeField(p.transition || p.lien_narratif)}`,
       `Angle : ${safeField(p.angle)}`,
       `Mouvement caméra : ${safeField(p.mouvement)}`,
       `Dynamique : ${safeField(p.dynamique)}`,
@@ -1463,6 +1499,8 @@ function buildPlanPrompt(p, lang) {
   if (enDirect !== 'Non précisé') return enDirect;
   return [
     `Shot ${safeField(p.numero)} — ${safeField(p.debut)} to ${safeField(p.fin)}`,
+    `Narrative image: ${safeField(p.image_etape || p.photo_source || p.image_source)}`,
+    `Transition: ${safeField(p.transition || p.lien_narratif)}`,
     `Camera angle: ${safeField(p.angle)}`,
     `Camera movement: ${safeField(p.mouvement)}`,
     `Scene dynamics: ${safeField(p.dynamique)}`,
@@ -1491,6 +1529,8 @@ function renderPlanCardInner(p, i, showRegen) {
       <div class="plan-type">${escHTML(p.type_plan || '')}</div>
     </div>
     <div class="plan-body">
+      ${(p.image_etape || p.photo_source || p.image_source) ? `<div class="plan-row"><span class="pk">Image</span><span class="pv">${escHTML(p.image_etape || p.photo_source || p.image_source)}</span></div>` : ''}
+      ${(p.transition || p.lien_narratif) ? `<div class="plan-row"><span class="pk">Fil rouge</span><span class="pv">${escHTML(p.transition || p.lien_narratif)}</span></div>` : ''}
       <div class="plan-row"><span class="pk">Angle</span><span class="pv">${escHTML(p.angle)}</span></div>
       <div class="plan-row"><span class="pk">Mouvement</span><span class="pv">${escHTML(p.mouvement)}</span></div>
       <div class="plan-row"><span class="pk">Dynamique</span><span class="pv">${escHTML(p.dynamique)}</span></div>
@@ -1581,8 +1621,8 @@ Réponds UNIQUEMENT en JSON valide : {"analyse":"...","plans":[...],"prompt_fr":
       body: JSON.stringify({
         system_instruction: { parts: [{ text: buildSysPrompt() }] },
         contents: [{ role: 'user', parts: [
-          { inline_data: { mime_type: imageMime, data: imageBase64 } },
-          { text: applyPrompt }
+          ...(uploadedPhotos.length ? uploadedPhotos.map(p => ({ inline_data: { mime_type: p.mime, data: p.base64 } })) : [{ inline_data: { mime_type: imageMime, data: imageBase64 } }]),
+          { text: (uploadedPhotos.length > 1 ? 'Rappel : les images restent une chronologie narrative dans leur ordre d’import. Garde le fil rouge entre elles.\n\n' : '') + applyPrompt }
         ]}],
         generationConfig: { temperature: 0.9, maxOutputTokens: 8192 }
       })
