@@ -1,0 +1,1385 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STUDIO RÉALISATEUR</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --noir: #0a0a0a; --noir2: #111111; --noir3: #1a1a1a;
+  --blanc: #e8e8e8; --vert: #39ff6e; --rouge: #ff4444;
+  --cyan: #00d4ff; --or: #ffd166; --gris: #333; --gris2: #555;
+  --border: rgba(255,255,255,0.08);
+  --mono: 'Share Tech Mono', monospace;
+  --bebas: 'Bebas Neue', sans-serif;
+  --sans: 'DM Sans', sans-serif;
+}
+html, body { background: var(--noir); color: var(--blanc); font-family: var(--mono); min-height: 100vh; font-size: 13px; }
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--gris); }
+
+/* WELCOME */
+.welcome-screen { position: fixed; inset: 0; z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 80px; transition: opacity 0.8s ease; }
+.welcome-bg { position: absolute; inset: 0; background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #0a0a0a 100%); pointer-events: none; }
+.welcome-bg::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at center, rgba(57,255,110,0.04) 0%, transparent 70%); }
+.welcome-content { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 20px; text-align: center; padding: 0 24px; }
+.welcome-overtitle { font-size: 10px; letter-spacing: 0.4em; text-transform: uppercase; color: rgba(255,255,255,0.6); }
+.welcome-title { font-family: var(--bebas); font-size: clamp(40px, 8vw, 72px); letter-spacing: 0.15em; color: #ffffff; line-height: 1; }
+.welcome-sub { font-family: var(--sans); font-weight: 300; font-size: 14px; color: rgba(255,255,255,0.7); letter-spacing: 0.05em; max-width: 400px; line-height: 1.7; }
+.welcome-btn { background: #ffffff; color: #000000; border: none; padding: 16px 48px; font-family: var(--bebas); font-size: 20px; letter-spacing: 0.3em; cursor: pointer; transition: all 0.2s; margin-top: 8px; }
+.welcome-btn:hover { background: var(--vert); }
+.welcome-screen.fade-out { opacity: 0; pointer-events: none; }
+.welcome-screen.hidden { display: none; }
+
+/* LOADING */
+.loading-screen { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px; transition: opacity 0.8s ease; }
+.loading-screen.hidden { display: none !important; }
+.ls-top { display: flex; align-items: center; gap: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 20px; width: 440px; justify-content: center; }
+.ls-clap { font-size: 44px; animation: clap 1.6s ease-in-out infinite; }
+@keyframes clap { 0%,100%{transform:rotate(-4deg) scale(1)} 50%{transform:rotate(4deg) scale(1.05)} }
+.ls-title { font-family: var(--bebas); font-size: 36px; letter-spacing: 0.3em; }
+.ls-scene-counter { font-size: 9px; letter-spacing: 0.3em; color: var(--gris2); text-transform: uppercase; border: 1px solid var(--gris); padding: 4px 14px; }
+.ls-tape { width: 440px; display: flex; align-items: center; gap: 12px; }
+.ls-tape-bar { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent); position: relative; overflow: hidden; }
+.ls-tape-bar::after { content: ''; position: absolute; top: 0; left: -100%; width: 60%; height: 100%; background: var(--blanc); animation: tapeScan 2s linear infinite; }
+@keyframes tapeScan { to { left: 200%; } }
+.ls-tape-label { font-size: 8px; letter-spacing: 0.2em; color: var(--gris2); white-space: nowrap; }
+.ls-phrase-wrap { width: 440px; min-height: 54px; position: relative; }
+.ls-phrase { font-family: var(--sans); font-size: 14px; font-weight: 300; color: rgba(232,232,232,0.8); text-align: center; line-height: 1.7; position: absolute; width: 100%; transition: opacity 0.4s, transform 0.4s; }
+.ls-phrase.hidden-phrase { opacity: 0; transform: translateY(6px); pointer-events: none; }
+.ls-atmo { font-size: 9px; letter-spacing: 0.25em; text-transform: uppercase; color: var(--gris2); border: 1px solid rgba(255,255,255,0.1); padding: 5px 18px; }
+.ls-dots { display: flex; gap: 8px; }
+.ls-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--gris2); animation: ldot 1.4s infinite; }
+.ls-dot:nth-child(2){animation-delay:0.2s} .ls-dot:nth-child(3){animation-delay:0.4s}
+@keyframes ldot { 0%,100%{opacity:0.2;transform:scale(1)} 50%{opacity:1;transform:scale(1.3)} }
+
+/* HEADER */
+.header { display: flex; align-items: center; justify-content: space-between; padding: 13px 22px; border-bottom: 1px solid var(--border); background: rgba(10,10,10,0.96); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 200; }
+.header-title { font-family: var(--bebas); font-size: 24px; letter-spacing: 0.2em; line-height: 1; }
+.header-sub { font-size: 8px; letter-spacing: 0.28em; color: var(--gris2); text-transform: uppercase; margin-top: 2px; }
+.header-right { display: flex; align-items: center; gap: 12px; }
+.atmo-badge { font-size: 8px; letter-spacing: 0.15em; text-transform: uppercase; padding: 4px 10px; border: 1px solid; transition: all 0.4s; }
+.status-dot { width: 6px; height: 6px; background: var(--vert); border-radius: 50%; animation: sblink 2s infinite; flex-shrink: 0; }
+@keyframes sblink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+.api-mini { display: flex; align-items: center; gap: 6px; }
+.api-mini input { background: var(--noir3); border: 1px solid var(--border); color: var(--blanc); font-family: var(--mono); font-size: 10px; padding: 5px 9px; outline: none; width: 170px; }
+.api-mini input::placeholder { color: var(--gris2); }
+.btn-xs { background: transparent; border: 1px solid var(--vert); color: var(--vert); font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em; padding: 5px 10px; cursor: pointer; text-transform: uppercase; transition: all 0.2s; }
+.btn-xs:hover { background: var(--vert); color: var(--noir); }
+
+/* LAYOUT */
+.layout { display: grid; grid-template-columns: 300px 1fr 290px; height: calc(100vh - 54px); overflow: hidden; }
+.col { display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid var(--border); }
+.col:last-child { border-right: none; }
+.col-header { padding: 10px 14px; border-bottom: 1px solid var(--border); background: rgba(17,17,17,0.9); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.col-title { font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gris2); display: flex; align-items: center; gap: 6px; }
+.col-title span { color: var(--blanc); }
+.col-body { flex: 1; overflow-y: auto; padding: 13px; }
+
+/* SLABEL */
+.slabel { font-size: 8px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gris2); margin: 13px 0 7px; display: flex; align-items: center; gap: 7px; }
+.slabel::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* FIELD TIP */
+.field-tip { display: inline-block; width: 13px; height: 13px; border: 1px solid var(--gris2); border-radius: 50%; font-size: 8px; text-align: center; line-height: 13px; color: var(--gris2); cursor: help; position: relative; margin-left: 6px; flex-shrink: 0; }
+.field-tip:hover::after { content: attr(data-tip); position: absolute; left: 18px; top: -4px; background: #1a1a1a; border: 1px solid rgba(255,255,255,0.15); color: #fff; font-size: 9px; letter-spacing: 0.05em; text-transform: none; padding: 7px 10px; width: 180px; line-height: 1.6; z-index: 500; font-family: var(--sans); font-weight: 300; white-space: normal; }
+
+/* DURÉE */
+.duree-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 5px; }
+.duree-btn { background: var(--noir3); border: 1px solid var(--border); color: var(--gris2); padding: 9px 4px 7px; font-family: var(--bebas); font-size: 20px; letter-spacing: 0.1em; cursor: pointer; transition: all 0.2s; text-align: center; line-height: 1; }
+.duree-btn sub { font-family: var(--mono); font-size: 7px; letter-spacing: 0.12em; display: block; margin-top: 3px; }
+.duree-btn:hover { border-color: var(--gris2); color: var(--blanc); }
+.duree-btn.active { background: var(--blanc); color: var(--noir); border-color: var(--blanc); }
+
+/* MODE */
+.mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.mode-btn { background: var(--noir3); border: 1px solid var(--border); color: var(--gris2); padding: 10px 8px; font-family: var(--mono); font-size: 8px; letter-spacing: 0.12em; cursor: pointer; transition: all 0.2s; text-align: center; text-transform: uppercase; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.mode-btn .mode-icon { font-size: 16px; }
+.mode-btn .mode-desc { font-size: 7px; color: #aaa; line-height: 1.4; font-family: var(--sans); }
+.mode-btn:hover { border-color: var(--gris2); color: var(--blanc); }
+.mode-btn.active { border-color: var(--or); color: var(--or); background: rgba(255,209,102,0.05); }
+.mode-btn.active .mode-desc { color: rgba(255,209,102,0.6); }
+
+/* MODÈLE */
+.modele-list { display: flex; flex-direction: column; gap: 4px; }
+.modele-btn { background: var(--noir3); border: 1px solid var(--border); color: var(--gris2); padding: 9px 12px; font-family: var(--mono); font-size: 8px; letter-spacing: 0.1em; cursor: pointer; transition: all 0.2s; text-align: left; text-transform: uppercase; display: flex; align-items: center; gap: 9px; }
+.modele-btn:hover { border-color: var(--gris2); color: var(--blanc); }
+.modele-btn.active { border-color: var(--cyan); color: var(--cyan); background: rgba(0,212,255,0.05); }
+.modele-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.modele-info { display: flex; flex-direction: column; gap: 1px; }
+.modele-name { font-size: 9px; color: var(--blanc); }
+.modele-sub { font-size: 7px; color: #aaa; font-family: var(--sans); line-height: 1.4; }
+
+/* HIST OPTS */
+.hist-opts { display: flex; flex-direction: column; gap: 4px; }
+.hist-opt { background: var(--noir3); border: 1px solid var(--border); color: var(--gris2); padding: 9px 11px; font-family: var(--mono); font-size: 8px; letter-spacing: 0.1em; cursor: pointer; transition: all 0.2s; text-align: left; text-transform: uppercase; }
+.hist-opt:hover { border-color: var(--gris2); color: var(--blanc); }
+.hist-opt.active { border-color: var(--vert); color: var(--vert); background: rgba(57,255,110,0.04); }
+.hist-ta { width: 100%; background: var(--noir3); border: 1px solid var(--border); color: var(--blanc); font-family: var(--sans); font-weight: 300; font-size: 11px; padding: 9px 11px; outline: none; resize: none; min-height: 70px; line-height: 1.7; margin-top: 4px; display: none; }
+.hist-ta.vis { display: block; }
+
+/* GEN */
+.gen-wrap { margin-top: 13px; padding-top: 13px; border-top: 1px solid var(--border); }
+.gen-btn { width: 100%; background: var(--blanc); color: var(--noir); border: none; padding: 13px; font-family: var(--bebas); font-size: 17px; letter-spacing: 0.25em; cursor: pointer; transition: opacity 0.2s; position: relative; overflow: hidden; }
+.gen-btn:hover { opacity: 0.85; }
+.gen-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.pbar { position: absolute; bottom: 0; left: 0; height: 3px; background: var(--vert); width: 0; transition: width 22s linear; }
+
+/* STREAM BAR */
+.stream-bar { display: none; align-items: center; gap: 7px; padding: 8px 14px; border-bottom: 1px solid var(--border); font-size: 8px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--vert); background: rgba(57,255,110,0.04); flex-shrink: 0; }
+.stream-bar.vis { display: flex; }
+.tdot { width: 4px; height: 4px; background: currentColor; border-radius: 50%; animation: tdot 1.2s infinite; }
+.tdot:nth-child(2){animation-delay:0.2s} .tdot:nth-child(3){animation-delay:0.4s}
+@keyframes tdot{0%,100%{opacity:0.2}50%{opacity:1}}
+
+/* TOKEN BAR */
+.token-bar { display: none; padding: 8px 14px; border-top: 1px solid var(--border); background: var(--noir2); flex-shrink: 0; gap: 16px; align-items: center; font-size: 8px; letter-spacing: 0.15em; text-transform: uppercase; color: #888; }
+.token-bar.visible { display: flex; }
+.token-val { color: var(--vert); font-size: 11px; }
+
+/* EMPTY STATE */
+.empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 300px; opacity: 0.18; text-align: center; }
+.empty-ico { font-size: 36px; margin-bottom: 12px; }
+.empty-txt { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; line-height: 2.5; color: #fff; }
+
+/* ANALYSE */
+.analyse-card { background: var(--noir3); border: 1px solid var(--border); border-left: 3px solid var(--cyan); padding: 13px; margin-bottom: 13px; display: none; }
+.analyse-card.vis { display: block; }
+.an-head { font-size: 8px; letter-spacing: 0.25em; text-transform: uppercase; color: var(--cyan); margin-bottom: 7px; }
+.an-body { font-family: var(--sans); font-weight: 300; font-size: 12px; line-height: 1.85; color: #fff; font-style: italic; }
+
+/* PLAN CARD */
+.plan-card { border: 1px solid var(--border); margin-bottom: 9px; opacity: 0; animation: slideIn 0.32s ease forwards; }
+@keyframes slideIn{from{opacity:0;transform:translateX(5px)}to{opacity:1;transform:translateX(0)}}
+.plan-top { background: var(--noir3); padding: 7px 11px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
+.plan-num { font-family: var(--bebas); font-size: 13px; letter-spacing: 0.2em; }
+.plan-tc { font-size: 9px; color: var(--or); letter-spacing: 0.12em; background: rgba(255,209,102,0.08); padding: 2px 7px; border: 1px solid rgba(255,209,102,0.18); }
+.plan-type { font-size: 7px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gris2); }
+.plan-body { padding: 11px; }
+.plan-row { display: grid; grid-template-columns: 72px 1fr; gap: 4px 9px; margin-bottom: 5px; align-items: start; }
+.pk { font-size: 7px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gris2); padding-top: 2px; }
+.pv { font-family: var(--sans); font-weight: 300; font-size: 11px; color: #fff; line-height: 1.6; }
+.plan-emo { margin-top: 8px; padding: 7px 11px; background: rgba(255,68,68,0.05); border-left: 2px solid var(--rouge); font-family: var(--sans); font-size: 11px; font-style: italic; color: rgba(232,232,232,0.6); line-height: 1.5; }
+.plan-pref { margin-top: 5px; padding: 5px 9px; background: rgba(255,255,255,0.02); border-top: 1px solid var(--border); font-size: 9px; color: var(--gris2); line-height: 1.5; }
+.plan-pref span { color: var(--gris2); font-size: 7px; letter-spacing: 0.2em; text-transform: uppercase; display: block; margin-bottom: 2px; }
+
+/* PLAN COPY BUTTONS */
+.plan-copy-row { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--border); }
+.plan-copy-btn { background: transparent; border: none; padding: 8px; font-family: var(--mono); font-size: 7px; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; transition: background 0.2s; text-align: center; }
+.plan-copy-btn:first-child { border-right: 1px solid var(--border); color: var(--blanc); }
+.plan-copy-btn:last-child { color: var(--or); }
+.plan-copy-btn:hover { background: rgba(255,255,255,0.05); }
+.regen-plan-btn { width: 100%; background: transparent; border: none; border-top: 1px solid var(--border); color: var(--or); font-family: var(--mono); font-size: 8px; letter-spacing: 0.15em; text-transform: uppercase; padding: 8px; cursor: pointer; transition: background 0.2s; text-align: left; }
+.regen-plan-btn:hover { background: rgba(255,209,102,0.05); }
+
+/* PROMPT FINAL */
+.prompt-final-card { margin-top: 16px; background: var(--noir3); border: 1px solid rgba(57,255,110,0.2); display: none; }
+.prompt-final-card.vis { display: block; }
+.pf-header { padding: 10px 13px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.pf-title { font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--vert); }
+.pf-lang-switch { display: flex; gap: 4px; }
+.lang-btn { background: transparent; border: 1px solid var(--border); color: var(--gris2); font-family: var(--mono); font-size: 7px; letter-spacing: 0.12em; padding: 3px 9px; cursor: pointer; transition: all 0.2s; text-transform: uppercase; }
+.lang-btn.active { background: var(--vert); color: var(--noir); border-color: var(--vert); }
+.pf-body { padding: 13px; font-family: var(--sans); font-weight: 300; font-size: 11px; line-height: 1.8; color: #fff; }
+.pf-conseil { margin-top: 10px; padding: 8px 11px; background: rgba(255,209,102,0.05); border: 1px solid rgba(255,209,102,0.15); font-size: 9px; color: rgba(255,209,102,0.7); line-height: 1.6; font-family: var(--sans); font-weight: 300; }
+.pf-targets { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; padding: 0 13px; }
+.target-tag { font-size: 8px; border: 1px solid var(--border); padding: 3px 9px; letter-spacing: 0.1em; color: var(--gris2); }
+.copy-pf { width: 100%; background: transparent; border: none; border-top: 1px solid var(--border); color: var(--vert); font-family: var(--mono); font-size: 8px; letter-spacing: 0.18em; text-transform: uppercase; padding: 10px; cursor: pointer; transition: background 0.2s; }
+.copy-pf:hover { background: rgba(57,255,110,0.06); }
+
+/* COPY SB */
+.copy-sb { width: 100%; margin-top: 9px; background: transparent; border: 1px solid var(--border); color: var(--gris2); padding: 9px; font-family: var(--mono); font-size: 8px; letter-spacing: 0.18em; text-transform: uppercase; cursor: pointer; transition: all 0.2s; display: none; }
+.copy-sb.vis { display: block; }
+.copy-sb:hover { border-color: var(--blanc); color: var(--blanc); }
+
+/* APPLY BTN */
+.apply-btn { display: none; width: calc(100% - 26px); margin: 0 13px 10px; background: var(--vert); color: var(--noir); border: none; padding: 11px; font-family: var(--bebas); font-size: 16px; letter-spacing: 0.25em; cursor: pointer; transition: opacity 0.2s; text-align: center; }
+.apply-btn.visible { display: block; }
+.apply-btn:hover { opacity: 0.85; }
+
+/* CHAT */
+.chat-msgs { flex: 1; overflow-y: auto; padding: 13px; display: flex; flex-direction: column; gap: 11px; }
+.chat-msg { display: flex; flex-direction: column; gap: 3px; animation: fadeIn 0.28s ease; }
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.chat-msg.user { align-items: flex-end; }
+.chat-msg.ai { align-items: flex-start; }
+.msg-lbl { font-size: 7px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gris2); }
+.msg-bub { max-width: 93%; padding: 9px 12px; font-family: var(--sans); font-weight: 300; font-size: 12px; line-height: 1.75; color: var(--blanc); }
+.chat-msg.user .msg-bub { background: var(--blanc); color: #000; font-weight: 400; }
+.chat-msg.ai .msg-bub { background: var(--noir3); border: 1px solid var(--border); border-left: 2px solid var(--vert); color: #fff; }
+.chat-typing-wrap { padding: 0 13px 7px; display: none; }
+.chat-typing-wrap.vis { display: block; }
+.chat-typing { display: inline-flex; align-items: center; gap: 5px; padding: 7px 12px; background: var(--noir3); border: 1px solid var(--border); }
+.quick-acts { padding: 7px 13px; border-top: 1px solid var(--border); display: flex; gap: 4px; flex-wrap: wrap; background: var(--noir2); flex-shrink: 0; }
+.qbtn { background: transparent; border: 1px solid var(--border); color: var(--gris2); font-family: var(--mono); font-size: 7px; letter-spacing: 0.1em; padding: 4px 8px; cursor: pointer; transition: all 0.2s; text-transform: uppercase; white-space: nowrap; }
+.qbtn:hover { border-color: var(--gris2); color: var(--blanc); }
+.chat-input-zone { padding: 9px 13px; border-top: 1px solid var(--border); display: flex; gap: 7px; align-items: flex-end; background: var(--noir2); flex-shrink: 0; }
+.chat-ta { flex: 1; background: var(--noir3); border: 1px solid var(--border); color: var(--blanc); font-family: var(--sans); font-weight: 300; font-size: 12px; padding: 7px 11px; outline: none; resize: none; min-height: 34px; max-height: 85px; line-height: 1.5; }
+.chat-ta::placeholder { color: #888; font-size: 11px; }
+.chat-send { background: var(--vert); color: var(--noir); border: none; width: 34px; height: 34px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: opacity 0.2s; }
+.chat-send:hover { opacity: 0.8; }
+.chat-send:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* HIST PANEL */
+.hist-panel { display: none; position: fixed; top: 0; right: 0; bottom: 0; width: 320px; background: var(--noir2); border-left: 1px solid var(--border); z-index: 300; flex-direction: column; box-shadow: -10px 0 30px rgba(0,0,0,0.5); }
+.hist-panel.visible { display: flex; }
+.hist-header { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.hist-title { font-family: var(--bebas); font-size: 18px; letter-spacing: 0.2em; }
+.hist-close { background: transparent; border: 1px solid var(--border); color: var(--gris2); font-family: var(--mono); font-size: 10px; padding: 4px 10px; cursor: pointer; transition: all 0.2s; }
+.hist-close:hover { border-color: var(--blanc); color: var(--blanc); }
+.hist-list { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.hist-item { background: var(--noir3); border: 1px solid var(--border); padding: 12px; cursor: pointer; transition: all 0.2s; }
+.hist-item:hover { border-color: rgba(255,255,255,0.25); }
+.hist-item-date { font-size: 8px; letter-spacing: 0.15em; color: var(--gris2); margin-bottom: 5px; }
+.hist-item-title { font-size: 11px; color: var(--blanc); margin-bottom: 4px; font-family: var(--sans); font-weight: 300; }
+.hist-item-meta { font-size: 8px; color: var(--gris2); letter-spacing: 0.1em; }
+.hist-item-del { float: right; background: transparent; border: none; color: var(--rouge); font-size: 10px; cursor: pointer; padding: 0; }
+.hist-empty-msg { font-size: 9px; color: var(--gris2); text-align: center; padding: 30px 0; letter-spacing: 0.15em; text-transform: uppercase; }
+.hist-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 299; }
+.hist-overlay.visible { display: block; }
+
+/* NOTIF */
+.notif { position: fixed; bottom: 16px; right: 16px; background: var(--blanc); color: var(--noir); padding: 7px 16px; font-family: var(--mono); font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; opacity: 0; transform: translateY(5px); transition: all 0.22s; pointer-events: none; z-index: 999; }
+.notif.show { opacity: 1; transform: translateY(0); }
+
+/* REFS SEC */
+.refs-sec { margin-top: 14px; display: none; }
+.refs-sec.vis { display: block; }
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  .layout { grid-template-columns: 1fr; height: auto; overflow: visible; display: flex; flex-direction: column; }
+  .col { height: auto; min-height: unset; border-right: none; border-bottom: 1px solid var(--border); overflow: visible; }
+  .col-body { overflow: visible; height: auto; }
+  .header-title { font-size: 18px; }
+  .api-mini input { width: 130px; }
+  .chat-msgs { height: 300px; overflow-y: auto; }
+}
+@media(max-width:480px){
+  .header { padding: 10px 12px; }
+  .header-title { font-size: 16px; letter-spacing: 0.15em; }
+  .api-mini input { width: 110px; font-size: 9px; }
+  .col-body { padding: 10px; }
+  .duree-btn { font-size: 18px; }
+  .mode-btn { font-size: 8px; padding: 8px 4px; }
+  .gen-btn { font-size: 15px; padding: 12px; }
+  .msg-bub { font-size: 11px; }
+}
+</style>
+</head>
+<body>
+
+<!-- WELCOME -->
+<div class="welcome-screen" id="welcome-screen">
+  <div class="welcome-bg"></div>
+  <div class="welcome-content">
+    <div class="welcome-overtitle">Studio IRL — Direction cinématographique IA</div>
+    <div class="welcome-title">STUDIO RÉALISATEUR</div>
+    <div class="welcome-sub">Capture le réel — Studio Réalisateur construit le cinéma autour.</div>
+    <div style="display:flex;flex-direction:column;gap:8px;width:320px;margin-top:8px;">
+      <div style="font-size:8px;letter-spacing:0.22em;text-transform:uppercase;color:rgba(255,255,255,0.45);">Clé API Gemini</div>
+      <input type="password" id="api-key-welcome" placeholder="AIza..." style="background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.25);color:#ffffff;font-family:var(--mono);font-size:12px;padding:10px 14px;outline:none;width:100%;letter-spacing:0.05em;">
+    </div>
+    <button class="welcome-btn" onclick="enterStudio()">▶ ENTRER SUR LE PLATEAU</button>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div class="loading-screen hidden" id="ls">
+  <div class="ls-top">
+    <div class="ls-clap">🎬</div>
+    <div class="ls-title">STUDIO RÉALISATEUR</div>
+  </div>
+  <div class="ls-scene-counter" id="ls-scene">SCÈNE 01 — PRISE 01</div>
+  <div class="ls-tape">
+    <div class="ls-tape-label">00:00:00:00</div>
+    <div class="ls-tape-bar"></div>
+    <div class="ls-tape-label" id="ls-tc">ANALYSE</div>
+  </div>
+  <div class="ls-phrase-wrap">
+    <div class="ls-phrase" id="ls-phrase">On règle les lumières. Le directeur photo cale sa focale.</div>
+  </div>
+  <div class="ls-dots">
+    <div class="ls-dot"></div><div class="ls-dot"></div><div class="ls-dot"></div>
+  </div>
+  <div class="ls-atmo" id="ls-atmo">ATMOSPHÈRE : LIBRE</div>
+</div>
+
+<!-- HEADER -->
+<div class="header">
+  <div>
+    <div class="header-title">STUDIO RÉALISATEUR</div>
+    <div class="header-sub">Direction cinématographique pilotée par IA</div>
+  </div>
+  <div class="header-right">
+    <button onclick="openHist()" style="background:transparent;border:1px solid var(--border);color:var(--gris2);font-family:var(--mono);font-size:8px;letter-spacing:0.12em;padding:5px 10px;cursor:pointer;text-transform:uppercase;transition:all 0.2s;white-space:nowrap;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--gris2)'">⟳ HISTORIQUE</button>
+    <div class="atmo-badge" id="atmo-badge">● LIBRE</div>
+    <div class="status-dot"></div>
+    <div class="api-mini">
+      <input type="password" id="api-key" placeholder="Clé API Gemini...">
+      <button class="btn-xs" onclick="saveKey()">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+  <!-- COL 1 : PARAMÈTRES -->
+  <div class="col">
+    <div class="col-header">
+      <div class="col-title">📷 <span>Casting & Paramètres</span></div>
+    </div>
+    <div class="col-body">
+
+      <div class="slabel" style="margin-top:0">Photos — jusqu'à 8<span class="field-tip" data-tip="Uploade plusieurs photos. Studio Réalisateur analysera TOUTES les images ensemble pour créer un storyboard narratif avec une continuité émotionnelle entre les moments.">?</span></div>
+      <div id="photos-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;"></div>
+      <button onclick="document.getElementById('file-input-multi').click()" style="width:100%;margin-top:6px;background:transparent;border:1px dashed rgba(255,255,255,0.15);color:var(--gris2);font-family:var(--mono);font-size:8px;letter-spacing:0.15em;text-transform:uppercase;padding:10px;cursor:pointer;transition:all 0.2s;" id="add-photo-btn">
+        + AJOUTER UNE PHOTO
+      </button>
+      <input type="file" id="file-input-multi" accept="image/*" multiple onchange="handleMultiUpload(event)" style="display:none">
+      <div style="font-family:var(--sans);font-size:9px;color:var(--gris2);margin-top:5px;line-height:1.6;" id="photos-count">0 photo uploadée</div>
+
+      <div class="slabel">Durée vidéo</div>
+      <div class="duree-grid">
+        <button class="duree-btn" onclick="selectDuree(5,this)">5<sub>SEC</sub></button>
+        <button class="duree-btn active" onclick="selectDuree(8,this)">8<sub>SEC</sub></button>
+        <button class="duree-btn" onclick="selectDuree(15,this)">15<sub>SEC</sub></button>
+      </div>
+
+      <div class="slabel">Format cible<span class="field-tip" data-tip="9:16 pour TikTok et Reels. 16:9 pour YouTube et cinéma.">?</span></div>
+      <div class="mode-grid">
+        <button class="mode-btn active" id="fmt-916" onclick="selectFormat('916',this)">
+          <div class="mode-icon">▯</div><div>9:16</div>
+          <div class="mode-desc">Vertical — TikTok, Reels, Shorts</div>
+        </button>
+        <button class="mode-btn" id="fmt-169" onclick="selectFormat('169',this)">
+          <div class="mode-icon">▭</div><div>16:9</div>
+          <div class="mode-desc">Horizontal — YouTube, cinéma</div>
+        </button>
+      </div>
+
+      <div class="slabel">Personnages</div>
+      <div class="duree-grid" id="perso-grid">
+        <button class="duree-btn active" onclick="selectPersonnages(1,this)">1<sub>PERS</sub></button>
+        <button class="duree-btn" onclick="selectPersonnages(2,this)">2<sub>PERS</sub></button>
+        <button class="duree-btn" onclick="selectPersonnages(0,this)">+<sub>GROUPE</sub></button>
+      </div>
+
+      <div class="slabel">Rythme<span class="field-tip" data-tip="Influence la vitesse des coupes et l'énergie des mouvements de caméra.">?</span></div>
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        <button class="mode-btn active" id="rythme-vlog" onclick="selectRythme('vlog',this)">
+          <div class="mode-icon">📱</div><div>VLOG AUTHENTIQUE</div>
+          <div class="mode-desc">Capturé, organique, téléphone</div>
+        </button>
+        <button class="mode-btn" id="rythme-emo" onclick="selectRythme('emotionnel',this)">
+          <div class="mode-icon">❤</div><div>ÉMOTIONNEL</div>
+          <div class="mode-desc">Émotion avant tout, rythme au service du ressenti</div>
+        </button>
+        <button class="mode-btn" id="rythme-dyn" onclick="selectRythme('dynamique',this)">
+          <div class="mode-icon">⚡</div><div>CINÉMA DYNAMIQUE</div>
+          <div class="mode-desc">Énergie, mouvement, impact visuel</div>
+        </button>
+      </div>
+
+      <div class="slabel">Mode de génération<span class="field-tip" data-tip="Classique : un prompt global. Multishoot : chaque plan a son propre prompt à copier.">?</span></div>
+      <div class="mode-grid">
+        <button class="mode-btn active" id="mode-classique" onclick="selectMode('classique',this)">
+          <div class="mode-icon">▶</div><div>CLASSIQUE</div>
+          <div class="mode-desc">1 prompt global</div>
+        </button>
+        <button class="mode-btn" id="mode-multishoot" onclick="selectMode('multishoot',this)">
+          <div class="mode-icon">⊞</div><div>MULTISHOOT</div>
+          <div class="mode-desc">Prompt par plan</div>
+        </button>
+      </div>
+
+      <div class="slabel">Moteur vidéo cible</div>
+      <div class="modele-list">
+        <button class="modele-btn" onclick="selectModele('seedance',this)">
+          <div class="modele-dot" style="background:#ffd166"></div>
+          <div class="modele-info">
+            <div class="modele-name">Seedance</div>
+            <div class="modele-sub">Mouvements précis, caméra technique</div>
+          </div>
+        </button>
+        <button class="modele-btn active" onclick="selectModele('veo31',this)">
+          <div class="modele-dot" style="background:#00d4ff"></div>
+          <div class="modele-info">
+            <div class="modele-name">Veo 3.1 — Vertex AI</div>
+            <div class="modele-sub">Audio natif · naturaliste · organique</div>
+          </div>
+        </button>
+      </div>
+
+      <div class="slabel">Atmosphère de référence<span class="field-tip" data-tip="Style visuel et cinématographique qui influence lumière, couleurs et ambiance.">?</span></div>
+      <select id="atmo-select" onchange="selectAtmoFromSelect(this.value)" style="width:100%;background:var(--noir3);border:1px solid var(--border);color:#fff;font-family:var(--mono);font-size:10px;padding:10px 12px;outline:none;cursor:pointer;letter-spacing:0.05em;appearance:none;-webkit-appearance:none;background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2210%22 height=%226%22><path d=%22M0 0l5 6 5-6z%22 fill=%22%23555%22/></svg>');background-repeat:no-repeat;background-position:right 12px center;"></select>
+
+      <div class="slabel">Point de départ</div>
+      <div class="hist-opts">
+        <button class="hist-opt active" onclick="selectHistoire('auto',this)">◈ Analyser la photo et créer l'histoire</button>
+        <button class="hist-opt" onclick="selectHistoire('custom',this)">◈ J'ai déjà mon histoire</button>
+      </div>
+      <textarea class="hist-ta" id="hist-ta" placeholder="Raconte ton histoire..."></textarea>
+
+      <div class="slabel">Dialogue (optionnel)<span class="field-tip" data-tip="Identifie chaque personnage par sa couleur de tenue. Pas de guillemets ni ponctuation.">?</span></div>
+      <div style="background:rgba(255,68,68,0.06);border:1px solid rgba(255,68,68,0.2);padding:8px 11px;font-size:8px;color:#ff9999;font-family:var(--sans);line-height:1.7;margin-bottom:6px;">
+        ⚠ Pas de guillemets ni ponctuation — ça provoque du charabia en synchro labiale.<br>
+        Identifie chaque personnage par la couleur de sa tenue, pas son prénom.
+      </div>
+      <textarea class="hist-ta vis" id="dialogue-ta" placeholder="Ex:&#10;FEMME EN ROUGE : T'as vu ce que j'ai fait&#10;HOMME EN VESTE NOIRE : Attends c'est toi" style="min-height:80px;"></textarea>
+
+      <div class="gen-wrap">
+        <button class="gen-btn" id="gen-btn" onclick="generate()">
+          ▶ LANCER LA RÉALISATION
+          <div class="pbar" id="pbar"></div>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- COL 2 : STORYBOARD -->
+  <div class="col">
+    <div class="col-header">
+      <div class="col-title">🎬 <span>Storyboard</span></div>
+      <span id="duree-badge" style="display:none;font-family:var(--bebas);font-size:18px;color:var(--or);letter-spacing:0.1em"></span>
+    </div>
+    <div class="token-bar" id="token-bar">
+      <span>Tokens utilisés</span><span class="token-val" id="token-in">—</span>
+      <span>→</span>
+      <span>Tokens générés</span><span class="token-val" id="token-out">—</span>
+      <span style="margin-left:auto;color:#666">Gemini 2.5 Flash</span>
+    </div>
+    <div class="stream-bar" id="stream-bar">
+      <div class="tdot"></div><div class="tdot"></div><div class="tdot"></div>
+      <span id="stream-lbl">Analyse en cours...</span>
+    </div>
+    <div class="col-body" id="sb-body">
+      <div class="empty-state" id="empty-state">
+        <div class="empty-ico">🎬</div>
+        <div class="empty-txt">Silence sur le plateau.<br><br>Importe un portrait<br>et lance la réalisation.</div>
+      </div>
+      <div class="analyse-card" id="analyse-card">
+        <div class="an-head">■ Analyse du personnage</div>
+        <div class="an-body" id="an-body"></div>
+      </div>
+      <div id="plans-container"></div>
+      <div class="prompt-final-card" id="pf-card">
+        <div class="pf-header">
+          <div class="pf-title">✦ Prompt vidéo global final</div>
+          <div class="pf-lang-switch">
+            <button class="lang-btn active" id="lang-fr" onclick="switchLang('fr')">🇫🇷 Français</button>
+            <button class="lang-btn" id="lang-en" onclick="switchLang('en')">🇬🇧 English</button>
+          </div>
+        </div>
+        <div class="pf-body" id="pf-body"></div>
+        <div class="pf-conseil" id="pf-conseil">💡 Les IA vidéo génèrent de bien meilleurs résultats en anglais. Copie la version anglaise avant génération.</div>
+        <div class="pf-targets">
+          <div class="target-tag">PRÊT POUR :</div>
+          <div class="target-tag">SEEDANCE</div>
+          <div class="target-tag">KLING</div>
+          <div class="target-tag">LUMA MACHINE</div>
+          <div class="target-tag">RUNWAY GEN-3</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--border);">
+          <button onclick="copyPromptFinal('fr')" style="background:transparent;border:none;border-right:1px solid var(--border);color:var(--blanc);font-family:var(--mono);font-size:7px;letter-spacing:0.15em;text-transform:uppercase;padding:10px;cursor:pointer;transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">◈ COPIER FR</button>
+          <button onclick="copyPromptFinal('en')" style="background:transparent;border:none;color:var(--or);font-family:var(--mono);font-size:7px;letter-spacing:0.15em;text-transform:uppercase;padding:10px;cursor:pointer;transition:background 0.2s;" onmouseover="this.style.background='rgba(255,209,102,0.05)'" onmouseout="this.style.background='transparent'">◈ COPIER EN 🇬🇧</button>
+        </div>
+      </div>
+      <div class="refs-sec" id="refs-sec">
+        <div class="slabel">Guide Seedance — 5 photos de référence</div>
+        <div style="background:rgba(255,209,102,0.06);border:1px solid rgba(255,209,102,0.2);padding:12px 14px;font-family:var(--sans);font-size:11px;color:#fff;line-height:1.8;">
+          <div style="font-size:8px;letter-spacing:0.2em;text-transform:uppercase;color:var(--or);margin-bottom:8px;">📷 5 angles pour verrouiller le personnage</div>
+          <span style="color:var(--or)">01</span> — Face frontale, regard neutre, lumière douce<br>
+          <span style="color:var(--or)">02</span> — Profil gauche, plan entier<br>
+          <span style="color:var(--or)">03</span> — Profil droit, plan entier<br>
+          <span style="color:var(--or)">04</span> — Dos, plan entier<br>
+          <span style="color:var(--or)">05</span> — Face, plan entier tête aux pieds
+        </div>
+      </div>
+      <button class="copy-sb" id="copy-sb" onclick="copyStoryboard()">◈ Copier le storyboard complet</button>
+    </div>
+  </div>
+
+  <!-- COL 3 : CHAT -->
+  <div class="col">
+    <div class="col-header">
+      <div class="col-title">💬 <span>Dialogue Réalisateur</span></div>
+      <div style="font-size:8px;background:var(--vert);color:var(--noir);padding:2px 7px;letter-spacing:0.1em">ON AIR</div>
+    </div>
+    <div class="chat-msgs" id="chat-msgs">
+      <div class="chat-msg ai">
+        <div class="msg-lbl">Réalisateur</div>
+        <div class="msg-bub">Silence sur le plateau. 🎬<br><br>Importe ta photo dans la colonne de gauche, choisis une atmosphère et une durée, puis clique sur <strong>Lancer la réalisation</strong>.<br><br>Avec plusieurs photos, je crée une continuité narrative entre tous les moments.</div>
+      </div>
+    </div>
+    <div class="chat-typing-wrap" id="chat-typing">
+      <div class="chat-typing">
+        <div class="tdot" style="color:var(--vert)"></div>
+        <div class="tdot" style="color:var(--vert)"></div>
+        <div class="tdot" style="color:var(--vert)"></div>
+      </div>
+    </div>
+    <button class="apply-btn" id="apply-btn" onclick="applyDirectorNote()">▶ APPLIQUER LES MODIFICATIONS</button>
+    <div class="quick-acts">
+      <button class="qbtn" onclick="quickMsg('Plus de drame')">+ DRAME</button>
+      <button class="qbtn" onclick="quickMsg('Rends ça plus intime')">INTIME</button>
+      <button class="qbtn" onclick="quickMsg('Change le rythme, accélère')">RYTHME</button>
+      <button class="qbtn" onclick="quickMsg('Retravaille le plan 1')">PLAN 1</button>
+      <button class="qbtn" onclick="quickMsg('Pousse l\'émotion')">ÉMOTION</button>
+      <button class="qbtn" onclick="quickMsg('Version vlog téléphone, plus brut')">VLOG</button>
+    </div>
+    <div class="chat-input-zone">
+      <textarea class="chat-ta" id="chat-ta" placeholder="Parle au réalisateur..." rows="1" onkeydown="handleKey(event)"></textarea>
+      <button class="chat-send" id="chat-send" onclick="sendChat()">➤</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- HISTORIQUE PANEL -->
+<div class="hist-overlay" id="hist-overlay" onclick="closeHist()"></div>
+<div class="hist-panel" id="hist-panel">
+  <div class="hist-header">
+    <div class="hist-title">HISTORIQUE</div>
+    <button class="hist-close" onclick="closeHist()">✕ FERMER</button>
+  </div>
+  <div class="hist-list" id="hist-list"></div>
+</div>
+
+<div class="notif" id="notif"></div>
+
+<script>
+// ═══════════════ DATA ═══════════════
+const ATMOS = [
+  { id:'libre', name:'Libre', desc:'Aucun style imposé', dot:'#ffffff', ic:{c:'#ffffff',b:'rgba(255,255,255,0.05)'} },
+  { id:'noir', name:'Classic Noir', desc:'Ombres tranchées, mystère', dot:'#c8c8c8', ic:{c:'#c8c8c8',b:'rgba(200,200,200,0.08)'} },
+  { id:'neon', name:'Néon Cyberpunk', desc:'Futuriste, pluie, Blade Runner', dot:'#ff00ff', ic:{c:'#ff00ff',b:'rgba(255,0,255,0.08)'} },
+  { id:'35mm', name:'Vintage 35mm', desc:'Grain argentique, Nouvelle Vague', dot:'#c8a882', ic:{c:'#c8a882',b:'rgba(200,168,130,0.08)'} },
+  { id:'or', name:'Hollywood Or', desc:'Contre-jours majestueux, épique', dot:'#ffd166', ic:{c:'#ffd166',b:'rgba(255,209,102,0.08)'} },
+  { id:'drame', name:'Drame Sombre', desc:'Froid, clinique, tension max', dot:'#4a6080', ic:{c:'#4a6080',b:'rgba(74,96,128,0.08)'} },
+  { id:'wkw', name:'Wong Kar-wai', desc:'Flou de mouvement, désir suspendu', dot:'#ff3366', ic:{c:'#ff3366',b:'rgba(255,51,102,0.08)'} },
+  { id:'malick', name:'Terrence Malick', desc:'Lumière dorée, nature, contemplatif', dot:'#7ab840', ic:{c:'#7ab840',b:'rgba(122,184,64,0.08)'} },
+  { id:'giallo', name:'Giallo Italien', desc:'Couleurs primaires, Argento', dot:'#ff0044', ic:{c:'#ff0044',b:'rgba(255,0,68,0.08)'} },
+  { id:'seoul', name:'Séoul Nocturne', desc:'Pluie fine, mélancolie coréenne', dot:'#6699ff', ic:{c:'#6699ff',b:'rgba(102,153,255,0.08)'} },
+  { id:'memoire', name:'Mémoire & Nostalgie', desc:'Surexposé, grain fort, souvenir', dot:'#e0c8a0', ic:{c:'#e0c8a0',b:'rgba(224,200,160,0.08)'} }
+];
+
+const ATMOS_DETAIL = {
+  libre: { films:[], mood:'Pas de contrainte. La photo parle. Le réalisateur suit.' },
+  noir: { films:['Chinatown','Double Indemnity','Blade Runner'], mood:'Le silence entre deux répliques. Ce qu\'on ne dit pas.' },
+  neon: { films:['Blade Runner 2049','Ghost in the Shell','Akira'], mood:'La ville respire. Elle est une donnée parmi des millions.' },
+  '35mm': { films:['À bout de souffle','Jules et Jim','Le Mépris'], mood:'Un été qui ne reviendra pas. La chaleur sur la peau.' },
+  or: { films:['Lawrence d\'Arabie','Gladiator','There Will Be Blood'], mood:'Elle est plus grande que le cadre. L\'histoire la précède.' },
+  drame: { films:['Requiem for a Dream','Prisoners','Se7en'], mood:'Quelque chose va se briser. On le sait déjà.' },
+  wkw: { films:['In the Mood for Love','Chungking Express','2046'], mood:'Le désir retenu. Le moment juste avant.' },
+  malick: { films:['The Tree of Life','Badlands','Days of Heaven'], mood:'Le monde existait avant elle. Il continuera après.' },
+  giallo: { films:['Suspiria','Profondo Rosso','Opera'], mood:'La beauté et la violence sont la même chose.' },
+  seoul: { films:['Parasite','Burning','The Handmaiden'], mood:'La ville pleure avec elle. Ou peut-être c\'est elle.' },
+  memoire: { films:['Eternal Sunshine','The Virgin Suicides','Carol'], mood:'Elle se souvient de quelque chose qu\'on ne verra jamais.' }
+};
+
+const LOADING_PHRASES = [
+  'On règle les lumières. Le directeur photo cale sa focale.',
+  'Le chef opérateur teste la balance des blancs. On y est presque.',
+  'Son ! Le preneur de son tend son micro. Silence dans 30 secondes.',
+  'Le clap est prêt. On attend le signal du réalisateur.',
+  'Tout le monde sur le plateau. La caméra tourne.',
+  'On vérifie le cadrage une dernière fois. L\'actrice est en place.',
+  'Le réalisateur donne ses dernières indications. On est concentré.',
+  'Moteur... Action dans 3... 2... 1...',
+  'La prise est en cours. Ne bougez plus.',
+  'On analyse toutes les images. L\'histoire se construit dans le silence.',
+  'Le storyboard prend forme. Plan par plan. Émotion par émotion.',
+  'On calibre l\'atmosphère. La lumière obéit.',
+];
+
+// ═══════════════ STATE ═══════════════
+let apiKey = localStorage.getItem('sr_key') || '';
+let selectedDuree = 8;
+let selectedMode = 'classique';
+let selectedFormat = '916';
+let selectedPersonnages = 1;
+let selectedRythme = 'vlog';
+let selectedModele = 'veo31';
+let selectedAtmoId = 'libre';
+let selectedHistoire = 'auto';
+let uploadedPhotos = [];
+let fullStoryboard = '';
+let promptFR = '', promptEN = '';
+let currentLang = 'fr';
+let chatHistory = [];
+let lsPhraseIdx = 0, lsInterval = null;
+let lastDirectorNote = '';
+
+if (apiKey) {
+  document.getElementById('api-key').value = apiKey;
+  document.getElementById('api-key-welcome').value = apiKey;
+}
+
+// ═══════════════ BUILD ATMO SELECT ═══════════════
+function buildAtmoList() {
+  const sel = document.getElementById('atmo-select');
+  ATMOS.forEach(a => {
+    const opt = document.createElement('option');
+    opt.value = a.id;
+    opt.textContent = a.name + ' — ' + a.desc;
+    sel.appendChild(opt);
+  });
+}
+
+function selectAtmoFromSelect(id) {
+  selectedAtmoId = id;
+  const a = ATMOS.find(x => x.id === id);
+  if (!a) return;
+  const badge = document.getElementById('atmo-badge');
+  badge.textContent = '● ' + a.name.toUpperCase();
+  badge.style.color = a.ic.c;
+  badge.style.borderColor = a.ic.c;
+  badge.style.background = a.ic.b;
+}
+
+// ═══════════════ LOADING ═══════════════
+function startLoading() {
+  const a = ATMOS.find(x => x.id === selectedAtmoId);
+  document.getElementById('ls-atmo').textContent = 'ATMOSPHÈRE : ' + (a?.name || 'LIBRE').toUpperCase();
+  lsPhraseIdx = 0;
+  document.getElementById('ls-phrase').textContent = LOADING_PHRASES[0];
+  clearInterval(lsInterval);
+  lsInterval = setInterval(() => {
+    lsPhraseIdx++;
+    const ph = document.getElementById('ls-phrase');
+    if (!ph) return;
+    ph.classList.add('hidden-phrase');
+    setTimeout(() => {
+      ph.textContent = LOADING_PHRASES[lsPhraseIdx % LOADING_PHRASES.length];
+      ph.classList.remove('hidden-phrase');
+    }, 400);
+    const steps = ['ANALYSE','PERSO','STORY','PLANS','PROMPT','FINAL'];
+    const tc = document.getElementById('ls-tc');
+    const sc = document.getElementById('ls-scene');
+    if (tc) tc.textContent = steps[lsPhraseIdx % steps.length];
+    if (sc) sc.textContent = `SCÈNE 0${(lsPhraseIdx%9)+1} — PRISE 0${(lsPhraseIdx%3)+1}`;
+  }, 2800);
+  const ls = document.getElementById('ls');
+  ls.classList.remove('hidden');
+  ls.style.opacity = '1';
+  ls.style.pointerEvents = 'auto';
+}
+
+function stopLoading() {
+  clearInterval(lsInterval);
+  const ls = document.getElementById('ls');
+  if (!ls) return;
+  ls.style.opacity = '0';
+  ls.style.pointerEvents = 'none';
+  setTimeout(() => { ls.classList.add('hidden'); }, 500);
+}
+
+// ═══════════════ SÉLECTIONS ═══════════════
+function selectFormat(v, btn) {
+  selectedFormat = v;
+  document.querySelectorAll('#fmt-916, #fmt-169').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function selectPersonnages(v, btn) {
+  selectedPersonnages = v;
+  document.querySelectorAll('#perso-grid .duree-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function selectRythme(v, btn) {
+  selectedRythme = v;
+  document.querySelectorAll('#rythme-vlog, #rythme-emo, #rythme-dyn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function saveKey() {
+  apiKey = document.getElementById('api-key').value.trim();
+  localStorage.setItem('sr_key', apiKey);
+  showNotif('Clé sauvegardée');
+}
+
+function selectDuree(v, btn) {
+  selectedDuree = v;
+  document.querySelectorAll('.duree-grid .duree-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function selectMode(v, btn) {
+  selectedMode = v;
+  document.querySelectorAll('#mode-classique, #mode-multishoot').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function selectModele(v, btn) {
+  selectedModele = v;
+  document.querySelectorAll('.modele-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function selectHistoire(v, btn) {
+  selectedHistoire = v;
+  document.querySelectorAll('.hist-opt').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('hist-ta').classList.toggle('vis', v === 'custom');
+}
+
+// ═══════════════ UPLOAD MULTI ═══════════════
+function handleMultiUpload(e) {
+  const files = Array.from(e.target.files);
+  if (!files.length) return;
+  const remaining = 8 - uploadedPhotos.length;
+  const toProcess = files.slice(0, remaining);
+  let processed = 0;
+  toProcess.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const b64 = ev.target.result.split(',')[1];
+      uploadedPhotos.push({ base64: b64, mime: file.type, preview: ev.target.result, name: file.name });
+      processed++;
+      if (processed === toProcess.length) renderPhotosGrid();
+    };
+    reader.readAsDataURL(file);
+  });
+  e.target.value = '';
+}
+
+function renderPhotosGrid() {
+  const grid = document.getElementById('photos-grid');
+  const countEl = document.getElementById('photos-count');
+  const addBtn = document.getElementById('add-photo-btn');
+  grid.innerHTML = uploadedPhotos.map((p, i) => `
+    <div style="position:relative;aspect-ratio:3/4;background:var(--noir3);border:1px solid var(--border);overflow:hidden;">
+      <img src="${p.preview}" style="width:100%;height:100%;object-fit:cover;display:block;">
+      <div style="position:absolute;top:3px;left:3px;background:rgba(0,0,0,0.75);font-family:var(--mono);font-size:7px;padding:2px 5px;color:var(--or);">0${i+1}</div>
+      <button onclick="removePhoto(${i})" style="position:absolute;top:3px;right:3px;background:var(--rouge);color:white;border:none;font-size:8px;width:16px;height:16px;cursor:pointer;line-height:16px;text-align:center;padding:0;">✕</button>
+    </div>
+  `).join('');
+  const n = uploadedPhotos.length;
+  countEl.textContent = n === 0 ? '0 photo uploadée' : `${n} photo${n>1?'s':''} uploadée${n>1?'s':''}`+(n>=8?' — maximum atteint':'');
+  addBtn.style.display = n >= 8 ? 'none' : 'block';
+}
+
+function removePhoto(index) {
+  uploadedPhotos.splice(index, 1);
+  renderPhotosGrid();
+}
+
+// ═══════════════ SYSTEM PROMPT ═══════════════
+function buildSysPrompt() {
+  const atmo = ATMOS.find(a => a.id === selectedAtmoId);
+  const atmoDetail = ATMOS_DETAIL[selectedAtmoId] || {};
+
+  const atmoStr = (!atmo || atmo.id === 'libre')
+    ? 'AUCUNE atmosphère imposée. Tu génères librement selon ce que tu vois dans les photos. Ton instinct de réalisateur guide tout.'
+    : `${atmo.name} — ${atmo.desc}.${atmoDetail.films?.length ? ' Films de référence : '+atmoDetail.films.join(', ')+'.' : ''}${atmoDetail.mood ? ' Mood : '+atmoDetail.mood : ''}`;
+
+  const modeleCtx = selectedModele === 'seedance'
+    ? `MOTEUR VIDÉO CIBLE : Seedance 2.0.
+Structure obligatoire : SUJET → ACTION → CAMÉRA → STYLE.
+1. SUJET : qui est dans le plan, tenue, position, environnement.
+2. ACTION : un seul verbe fort au présent. Un seul mouvement par plan.
+3. CAMÉRA : shot size + mouvement. Ex : "close-up, slow dolly in", "medium shot, tracking left", "wide shot, static".
+4. STYLE : "cinematic moody", "vlog handheld", "film grain warm", "neon contrast".
+Chaque plan = une phrase courte, max 2-3 lignes.`
+    : `MOTEUR VIDÉO CIBLE : Veo 3.1 (veo-3.1-generate-001 sur Vertex AI).
+1. DESCRIPTION NARRATIVE : décris ce qu'on voit comme un observateur présent.
+2. AUDIO NATIF : décris l'ambiance sonore dans le prompt — sons de rue, respiration, silence, pluie.
+3. STYLE VLOG : organique, téléphone tenu à la main. "handheld phone camera energy", "authentic vlog feel".
+4. ÉMOTIONS VISIBLES : "she looks lost in thought", "tension in her shoulders".
+5. Prompts plus longs et narratifs que Seedance. 3-5 phrases par plan.`;
+
+  const modeCtx = selectedMode === 'multishoot'
+    ? 'MODE : MULTISHOOT. Crée un découpage plan par plan précis avec timecodes exacts. Pour prompt_ref de chaque plan : écris le prompt complet et autonome pour CE plan uniquement, formaté selon le moteur cible, prêt à copier-coller directement. Puis génère un prompt global final en français ET en anglais.'
+    : 'MODE : CLASSIQUE. Crée le prompt vidéo global directement. Un seul prompt fluide et puissant.';
+
+  const multiPhotoCtx = uploadedPhotos.length > 1
+    ? `IMPORTANT — CONTINUITÉ MULTI-IMAGES :
+Tu reçois ${uploadedPhotos.length} photos. Tu dois les analyser TOUTES ensemble comme un réalisateur qui regarde les rushes d'une journée de tournage.
+
+PROCESSUS OBLIGATOIRE :
+1. Analyse chaque photo individuellement : moment, émotion, personnages, lumière, environnement.
+2. Identifie le fil conducteur émotionnel entre TOUTES les photos — qu'est-ce qui les relie ? Quelle est l'histoire globale ?
+3. Crée une progression narrative : l'histoire ÉVOLUE d'une photo à l'autre. Ce n'est pas une répétition.
+4. Chaque plan du storyboard s'inspire d'UNE des photos en particulier (ou d'une transition entre deux photos).
+5. La continuité : personnages reconnaissables d'un plan à l'autre, cohérence de lieu ou de progression émotionnelle, raccords de regard et de mouvement logiques.
+6. Les photos peuvent montrer des moments différents — tu trouves le lien narratif qui les transforme en une seule histoire cohérente.
+
+Dans l'analyse, mentionne quelle photo correspond à quel(s) plan(s) et comment tu crées la continuité.`
+    : '';
+
+  return `Tu es un réalisateur humain. Tu as regardé des milliers de films. Tu connais Scorsese, les frères Dardenne, Wong Kar-wai, Iñárritu. Tu connais les gens. Tu sais comment une personne bouge quand elle est vraiment en colère. Comment elle rit quand c'est un vrai rire.
+
+TON RÔLE PRINCIPAL :
+Tu injectes l'émotion humaine vraie dans chaque plan. Pas une émotion jouée. Une émotion comme dans la vraie vie — entière, brute, naturelle. Tu traduis l'émotion en comportements physiques précis et observables.
+
+${multiPhotoCtx}
+
+LECTURE DE PHOTO — SANS FILTRE :
+Tu regardes ce qui EST là. La tension dans un corps. Le regard qui fuit ou qui fixe. La distance entre deux personnes. Ce que les mains font. Ce que la bouche ne dit pas. Tu lis l'émotion vraie et tu construis la scène autour de ça.
+
+Tu tututoies toujours. Jamais de vouvoiement.
+
+ATMOSPHÈRE : ${atmoStr}
+
+FORMAT CIBLE : ${selectedFormat === '916' ? '9:16 vertical (TikTok, Reels, Shorts) — composition verticale, valorise le haut du corps, visage, détails proches.' : '16:9 horizontal (YouTube, cinéma) — cadrage large, espace pour les décors.'}
+
+PERSONNAGES : ${selectedPersonnages === 0 ? 'groupe — plans d\'ensemble, mouvements qui embrassent le groupe, gros plans sur des visages dans la masse.' : selectedPersonnages === 2 ? '2 personnages — champ/contre-champ, réactions, regards croisés, plans duo et plans solo.' : '1 personnage seul — toute l\'attention sur lui, chaque plan révèle quelque chose de nouveau.'}
+
+RYTHME : ${selectedRythme === 'vlog' ? 'VLOG AUTHENTIQUE — cuts naturels et non chorégraphiés. L\'énergie d\'un moment capturé, pas d\'une production.' : selectedRythme === 'emotionnel' ? 'ÉMOTIONNEL — le rythme sert l\'émotion. Plans longs si l\'émotion demande de respirer, cut brutal si elle l\'exige.' : 'CINÉMA DYNAMIQUE — énergie, impact, mouvement. Chaque plan doit avoir de la vie.'}
+
+${modeleCtx}
+${modeCtx}
+
+DURÉE ABSOLUE : exactement ${selectedDuree} secondes.
+
+MOUVEMENT DE CAMÉRA — PHILOSOPHIE :
+Tu regardes la photo et tu te demandes : si j'étais là, avec mon téléphone, à cet instant précis — comment est-ce que je bougerais ? La caméra a une intention. Elle cherche le détail qui dit tout.
+
+CRÉATIVITÉ SUR LES ANGLES :
+Tu cherches le point de vue inattendu — celui qui fait que le spectateur voit quelque chose qu'il n'aurait pas vu autrement. L'angle inattendu révèle ce qu'on ressent, pas juste ce qu'on voit.
+
+MOTS BANNIS : lent, lentement, doucement, au ralenti, slow, smooth.
+ÉNERGIE REQUISE : instable, organique, instinctif, brut, vivant, capturé.
+
+Réponds UNIQUEMENT en JSON valide strict, sans markdown ni backticks :
+{
+  "analyse": "3-5 phrases — analyse de toutes les photos, fil narratif entre elles si plusieurs photos, émotion vraie",
+  "plans": [
+    {
+      "numero": 1,
+      "debut": "0:00",
+      "fin": "0:03",
+      "type_plan": "GROS PLAN",
+      "angle": "...",
+      "mouvement": "...",
+      "dynamique": "...",
+      "lumiere": "...",
+      "action": "moment volé, naturel",
+      "emotion": "ce que le spectateur ressent",
+      "son": "...",
+      "photo_source": "Photo 1 / Photo 2 / Transition 1→2 (si plusieurs photos)",
+      "prompt_ref_fr": "Prompt en français pour ce plan seul (mode multishoot) ou prompt visuel de référence court",
+      "prompt_ref_en": "English prompt for this shot — ready to paste in the video AI interface. Full prompt if multishoot mode."
+    }
+  ],
+  "prompt_fr": "Prompt global complet en français",
+  "prompt_en": "Complete global prompt in English — optimized for the target engine, ready to paste."
+}`;
+}
+
+// ═══════════════ GENERATE ═══════════════
+async function generate() {
+  if (!apiKey) { showNotif('Clé API manquante'); return; }
+  if (uploadedPhotos.length === 0) { showNotif('Importe au moins une photo'); return; }
+
+  const btn = document.getElementById('gen-btn');
+  btn.disabled = true;
+  btn.innerHTML = '⏳ TOURNAGE EN COURS...<div class="pbar" id="pbar"></div>';
+
+  startLoading();
+  setTimeout(() => { const p = document.getElementById('pbar'); if(p) p.style.width='88%'; }, 200);
+
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('stream-bar').classList.add('vis');
+  document.getElementById('stream-lbl').textContent = uploadedPhotos.length > 1 ? `Analyse de ${uploadedPhotos.length} photos...` : 'Analyse en cours...';
+  document.getElementById('duree-badge').style.display = 'block';
+  document.getElementById('duree-badge').textContent = selectedDuree + ' SECONDES';
+  document.getElementById('analyse-card').classList.remove('vis');
+  document.getElementById('plans-container').innerHTML = '';
+  document.getElementById('pf-card').classList.remove('vis');
+  document.getElementById('refs-sec').classList.remove('vis');
+  document.getElementById('copy-sb').classList.remove('vis');
+  fullStoryboard = ''; promptFR = ''; promptEN = '';
+
+  const histCtx = selectedHistoire === 'custom'
+    ? `L'utilisateur a son histoire : "${document.getElementById('hist-ta').value}". Utilise-la.`
+    : 'Analyse toutes les photos et crée l\'histoire la plus vraie pour ces personnes et ces moments.';
+
+  const dialogueRaw = document.getElementById('dialogue-ta').value.trim();
+  const dialogueCtx = dialogueRaw
+    ? `\n\nDIALOGUE : ${dialogueRaw}\nRègles : identifie les personnages par leur tenue, jamais de guillemets, jamais de ponctuation dans le dialogue.`
+    : '';
+
+  const atmo = ATMOS.find(a => a.id === selectedAtmoId);
+
+  try {
+    // Build parts — toutes les photos d'abord
+    const parts = [
+      ...uploadedPhotos.map(p => ({ inline_data: { mime_type: p.mime, data: p.base64 } })),
+      { text: `${histCtx}${dialogueCtx}\n\n${uploadedPhotos.length > 1 ? `Tu as reçu ${uploadedPhotos.length} photos. Analyse-les TOUTES ensemble. Crée un storyboard narratif cohérent avec une continuité émotionnelle entre les moments. Chaque plan s'inspire d'une des photos. L'histoire progresse naturellement.\n\n` : ''}Crée le storyboard — ${selectedDuree} secondes exactement — atmosphère ${atmo?.name || 'libre'} — mode ${selectedMode} — moteur ${selectedModele}.` }
+    ];
+
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: buildSysPrompt() }] },
+        contents: [{ role: 'user', parts }],
+        generationConfig: { temperature: 0.93, maxOutputTokens: 8192 }
+      })
+    });
+
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    if (!data.candidates?.[0]) throw new Error('Pas de réponse Gemini');
+
+    const raw = data.candidates[0].content.parts[0].text;
+    const clean = raw.replace(/```json|```/g,'').trim();
+    let result;
+    try { result = JSON.parse(clean); }
+    catch(e) { throw new Error('JSON invalide : ' + clean.substring(0,100)); }
+
+    stopLoading();
+    document.getElementById('stream-bar').classList.remove('vis');
+
+    // Tokens
+    const usage = data.usageMetadata;
+    if (usage) {
+      document.getElementById('token-in').textContent = (usage.promptTokenCount||'—').toLocaleString();
+      document.getElementById('token-out').textContent = (usage.candidatesTokenCount||'—').toLocaleString();
+      document.getElementById('token-bar').classList.add('visible');
+    }
+
+    // Analyse
+    document.getElementById('an-body').textContent = result.analyse || '';
+    document.getElementById('analyse-card').classList.add('vis');
+
+    // Plans
+    fullStoryboard = `STORYBOARD — ${selectedDuree}S — ${atmo?.name || 'Libre'} — ${selectedMode.toUpperCase()}\n\n`;
+    const container = document.getElementById('plans-container');
+    container.innerHTML = '';
+
+    if (result.plans) {
+      result.plans.forEach((p, i) => {
+        renderPlanCard(p, i, container);
+        fullStoryboard += `Plan ${p.numero} — ${p.debut} à ${p.fin}\nAngle : ${p.angle}\nMouvement : ${p.mouvement}\nAction : ${p.action}\nÉmotion : ${p.emotion}\nPrompt FR : ${p.prompt_ref_fr||''}\nPrompt EN : ${p.prompt_ref_en||''}\n\n`;
+      });
+    }
+
+    // Prompt final
+    promptFR = result.prompt_fr || '';
+    promptEN = result.prompt_en || '';
+    currentLang = 'fr';
+    document.getElementById('lang-fr').classList.add('active');
+    document.getElementById('lang-en').classList.remove('active');
+    document.getElementById('pf-body').textContent = promptFR;
+    document.getElementById('pf-card').classList.add('vis');
+
+    if (selectedModele === 'seedance') document.getElementById('refs-sec').classList.add('vis');
+    document.getElementById('copy-sb').classList.add('vis');
+
+    const nbPlans = result.plans?.length || 0;
+    addChatMsg('ai', `C'est prêt — ${uploadedPhotos.length > 1 ? `${uploadedPhotos.length} photos analysées, ` : ''}${nbPlans} plan${nbPlans>1?'s':''}, ${selectedDuree} secondes, atmosphère ${atmo?.name||'libre'}. Chaque plan a son bouton de copie FR et EN. Dis-moi si tu veux retoucher quelque chose.`);
+
+    // Save
+    try { await saveSession({ id: Date.now().toString(), date: new Date().toISOString(), analyse: result.analyse||'', plans: result.plans||[], fullStoryboard, promptFR, promptEN, duree: selectedDuree, mode: selectedMode, modele: selectedModele, atmo: selectedAtmoId, nbPlans, nbPhotos: uploadedPhotos.length }); } catch(e) {}
+
+  } catch(err) {
+    stopLoading();
+    document.getElementById('stream-bar').classList.remove('vis');
+    document.getElementById('empty-state').style.display = 'flex';
+    document.getElementById('empty-state').querySelector('.empty-txt').textContent = 'Erreur : ' + (err.message||'');
+    showNotif('Erreur : ' + (err.message||'').substring(0,60), 8000);
+    console.error(err);
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '▶ LANCER LA RÉALISATION<div class="pbar" id="pbar"></div>';
+}
+
+// ═══════════════ RENDER PLAN CARD ═══════════════
+function renderPlanCard(p, i, container) {
+  const card = document.createElement('div');
+  card.className = 'plan-card';
+  card.style.animationDelay = (i * 0.07) + 's';
+  card.id = 'plan-card-' + p.numero;
+
+  const promptFrText = (p.prompt_ref_fr || '').replace(/'/g, "\'");
+  const promptEnText = (p.prompt_ref_en || '').replace(/'/g, "\'");
+  const hasBothPrompts = p.prompt_ref_fr || p.prompt_ref_en;
+
+  card.innerHTML = `
+    <div class="plan-top">
+      <div class="plan-num">PLAN ${String(p.numero).padStart(2,'0')}</div>
+      <div class="plan-tc">${p.debut} → ${p.fin}</div>
+      <div class="plan-type">${p.type_plan||''}</div>
+    </div>
+    <div class="plan-body">
+      ${p.photo_source ? `<div style="margin-bottom:6px;font-size:7px;letter-spacing:0.15em;text-transform:uppercase;color:var(--or);border:1px solid rgba(255,209,102,0.2);padding:3px 7px;display:inline-block;">📷 ${p.photo_source}</div>` : ''}
+      <div class="plan-row"><span class="pk">Angle</span><span class="pv">${p.angle||''}</span></div>
+      <div class="plan-row"><span class="pk">Mouvement</span><span class="pv">${p.mouvement||''}</span></div>
+      <div class="plan-row"><span class="pk">Dynamique</span><span class="pv">${p.dynamique||''}</span></div>
+      <div class="plan-row"><span class="pk">Lumière</span><span class="pv">${p.lumiere||''}</span></div>
+      <div class="plan-row"><span class="pk">Action</span><span class="pv">${p.action||''}</span></div>
+      <div class="plan-row"><span class="pk">Son</span><span class="pv">${p.son||''}</span></div>
+      <div class="plan-emo">❤ ${p.emotion||''}</div>
+      ${hasBothPrompts ? `
+        <div style="margin-top:8px;background:rgba(255,255,255,0.02);border-top:1px solid var(--border);padding:8px 0 0;">
+          ${p.prompt_ref_fr ? `<div style="font-size:7px;letter-spacing:0.15em;text-transform:uppercase;color:var(--gris2);margin-bottom:4px;">🇫🇷 Prompt FR</div><div style="font-family:var(--sans);font-size:10px;color:#ccc;line-height:1.6;margin-bottom:8px;">${p.prompt_ref_fr}</div>` : ''}
+          ${p.prompt_ref_en ? `<div style="font-size:7px;letter-spacing:0.15em;text-transform:uppercase;color:var(--gris2);margin-bottom:4px;">🇬🇧 Prompt EN</div><div style="font-family:var(--sans);font-size:10px;color:#ccc;line-height:1.6;">${p.prompt_ref_en}</div>` : ''}
+        </div>
+      ` : ''}
+    </div>
+    <div class="plan-copy-row">
+      <button class="plan-copy-btn" onclick="copyPlanPrompt(${p.numero},'fr')">◈ COPIER PROMPT 🇫🇷</button>
+      <button class="plan-copy-btn" onclick="copyPlanPrompt(${p.numero},'en')">◈ COPIER PROMPT 🇬🇧</button>
+    </div>
+    <button class="regen-plan-btn" onclick="regenPlan(${p.numero})">↻ REGÉNÉRER CE PLAN</button>
+  `;
+
+  // Store prompts on the card element for easy retrieval
+  card.dataset.promptFr = p.prompt_ref_fr || '';
+  card.dataset.promptEn = p.prompt_ref_en || '';
+
+  container.appendChild(card);
+}
+
+// ═══════════════ COPY PLAN PROMPT ═══════════════
+function copyPlanPrompt(planNum, lang) {
+  const card = document.getElementById('plan-card-' + planNum);
+  if (!card) { showNotif('Plan introuvable'); return; }
+  const txt = lang === 'en' ? card.dataset.promptEn : card.dataset.promptFr;
+  if (!txt) { showNotif('Prompt vide pour ce plan'); return; }
+  navigator.clipboard.writeText(txt).then(() => {
+    showNotif(`Plan ${planNum} — ${lang === 'en' ? '🇬🇧 English' : '🇫🇷 Français'} copié`);
+  });
+}
+
+// ═══════════════ REGEN PLAN ═══════════════
+async function regenPlan(planNum) {
+  if (!apiKey) { showNotif('Clé API manquante'); return; }
+  if (uploadedPhotos.length === 0) { showNotif('Importe au moins une photo'); return; }
+  showNotif('Regénération du plan ' + planNum + '...');
+  const atmo = ATMOS.find(a => a.id === selectedAtmoId);
+
+  try {
+    const parts = [
+      ...uploadedPhotos.map(p => ({ inline_data: { mime_type: p.mime, data: p.base64 } })),
+      { text: `Regénère UNIQUEMENT le plan ${planNum}. Garde la même durée et le même timecode. Trouve un angle DIFFÉRENT — plus créatif, plus inattendu. Atmosphère : ${atmo?.name}. Moteur : ${selectedModele}. Rythme : ${selectedRythme}. Format : ${selectedFormat}.\n\nRéponds UNIQUEMENT en JSON : {"numero":${planNum},"debut":"...","fin":"...","type_plan":"...","angle":"...","mouvement":"...","dynamique":"...","lumiere":"...","action":"...","emotion":"...","son":"...","prompt_ref_fr":"...","prompt_ref_en":"..."}` }
+    ];
+
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ role: 'user', parts }], generationConfig: { temperature: 0.98, maxOutputTokens: 1024 } })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    const raw = data.candidates[0].content.parts[0].text;
+    const p = JSON.parse(raw.replace(/```json|```/g,'').trim());
+
+    const oldCard = document.getElementById('plan-card-' + planNum);
+    if (oldCard) {
+      const newCard = document.createElement('div');
+      newCard.className = 'plan-card';
+      newCard.id = 'plan-card-' + planNum;
+      renderPlanCard(p, planNum - 1, { appendChild: (el) => oldCard.parentNode.replaceChild(el, oldCard) });
+      showNotif('Plan ' + planNum + ' regénéré');
+    }
+  } catch(err) {
+    showNotif('Erreur : ' + err.message.substring(0,40));
+    console.error(err);
+  }
+}
+
+// ═══════════════ LANG SWITCH PROMPT FINAL ═══════════════
+function switchLang(lang) {
+  currentLang = lang;
+  document.getElementById('lang-fr').classList.toggle('active', lang==='fr');
+  document.getElementById('lang-en').classList.toggle('active', lang==='en');
+  document.getElementById('pf-body').textContent = lang === 'fr' ? promptFR : promptEN;
+}
+
+function copyPromptFinal(lang) {
+  const txt = lang === 'en' ? promptEN : promptFR;
+  if (!txt) { showNotif('Prompt vide'); return; }
+  navigator.clipboard.writeText(txt).then(() => showNotif(`Prompt ${lang === 'en' ? '🇬🇧 English' : '🇫🇷 Français'} copié`));
+}
+
+function copyStoryboard() {
+  navigator.clipboard.writeText(fullStoryboard + '\n\n— PROMPT GLOBAL FR —\n' + promptFR + '\n\n— GLOBAL PROMPT EN —\n' + promptEN)
+    .then(() => showNotif('Storyboard complet copié'));
+}
+
+// ═══════════════ APPLY DIRECTOR NOTE ═══════════════
+async function applyDirectorNote() {
+  if (!apiKey || uploadedPhotos.length === 0 || !fullStoryboard) {
+    showNotif('Génère un storyboard d\'abord');
+    return;
+  }
+
+  const btn = document.getElementById('apply-btn');
+  btn.textContent = '⏳ APPLICATION EN COURS...';
+  btn.style.opacity = '0.5';
+  btn.onclick = null;
+
+  document.getElementById('stream-bar').classList.add('vis');
+  document.getElementById('stream-lbl').textContent = 'Application des modifications...';
+  startLoading();
+
+  try {
+    const parts = [
+      ...uploadedPhotos.map(p => ({ inline_data: { mime_type: p.mime, data: p.base64 } })),
+      { text: `Tu es un réalisateur. Voici le storyboard actuel :\n${fullStoryboard}\n\nLe réalisateur a dit :\n"${lastDirectorNote}"\n\nApplique exactement ces modifications. Regénère le storyboard complet. Garde la même durée totale de ${selectedDuree} secondes.\n\nRéponds UNIQUEMENT en JSON : {"analyse":"...","plans":[...],"prompt_fr":"...","prompt_en":"..."}` }
+    ];
+
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: buildSysPrompt() }] },
+        contents: [{ role: 'user', parts }],
+        generationConfig: { temperature: 0.9, maxOutputTokens: 8192 }
+      })
+    });
+
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    const raw = data.candidates[0].content.parts[0].text;
+    const result = JSON.parse(raw.replace(/```json|```/g,'').trim());
+
+    stopLoading();
+    document.getElementById('stream-bar').classList.remove('vis');
+
+    if (result.analyse) {
+      document.getElementById('an-body').textContent = result.analyse;
+      document.getElementById('analyse-card').classList.add('vis');
+    }
+
+    fullStoryboard = '';
+    const container = document.getElementById('plans-container');
+    container.innerHTML = '';
+
+    if (result.plans) {
+      result.plans.forEach((p, i) => {
+        renderPlanCard(p, i, container);
+        fullStoryboard += `Plan ${p.numero} — ${p.debut} à ${p.fin}\nAction : ${p.action}\nÉmotion : ${p.emotion}\n\n`;
+      });
+    }
+
+    if (result.prompt_fr) promptFR = result.prompt_fr;
+    if (result.prompt_en) promptEN = result.prompt_en;
+    document.getElementById('pf-body').textContent = currentLang === 'fr' ? promptFR : promptEN;
+
+    addChatMsg('ai', 'Modifications appliquées. Le storyboard a été mis à jour.');
+    showNotif('Storyboard mis à jour');
+
+  } catch(err) {
+    stopLoading();
+    document.getElementById('stream-bar').classList.remove('vis');
+    showNotif('Erreur : ' + err.message.substring(0,40));
+    console.error(err);
+  }
+
+  btn.textContent = '▶ APPLIQUER LES MODIFICATIONS';
+  btn.style.opacity = '1';
+  btn.onclick = applyDirectorNote;
+  btn.classList.remove('visible');
+}
+
+// ═══════════════ CHAT ═══════════════
+function addChatMsg(role, text) {
+  const w = document.getElementById('chat-msgs');
+  const d = document.createElement('div');
+  d.className = `chat-msg ${role}`;
+  d.innerHTML = `<div class="msg-lbl">${role==='ai'?'Réalisateur':'Toi'}</div><div class="msg-bub">${text.replace(/\n/g,'<br>')}</div>`;
+  w.appendChild(d);
+  w.scrollTop = w.scrollHeight;
+}
+
+async function sendChat() {
+  const ta = document.getElementById('chat-ta');
+  const msg = ta.value.trim();
+  if (!msg || !apiKey) return;
+  ta.value = '';
+  lastDirectorNote = msg;
+  addChatMsg('user', msg);
+  chatHistory.push({ role:'user', content:msg });
+
+  document.getElementById('chat-typing').classList.add('vis');
+  document.getElementById('chat-send').disabled = true;
+
+  const atmo = ATMOS.find(a => a.id === selectedAtmoId);
+  const sys = `Tu es un assistant réalisateur. Tu parles en français simple et direct. Tu tututoies. Tu aides concrètement. Si un storyboard existe tu peux proposer de le modifier — dis "appuie sur le bouton vert pour appliquer" si tu proposes des modifications. Atmosphère active : ${atmo?.name||'Libre'}. Moteur : ${selectedModele === 'veo31' ? 'Veo 3.1' : 'Seedance'}.${fullStoryboard?'\n\nStoryboard actuel :\n'+fullStoryboard.substring(0,600):''}`;
+
+  const msgs = chatHistory.map(h => ({ role: h.role==='user'?'user':'model', parts:[{text:h.content}] }));
+
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ system_instruction:{parts:[{text:sys}]}, contents:msgs, generationConfig:{temperature:0.95,maxOutputTokens:2048} })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    const reply = data.candidates[0].content.parts[0].text;
+    chatHistory.push({role:'model',content:reply});
+    document.getElementById('chat-typing').classList.remove('vis');
+    addChatMsg('ai', reply);
+    if (fullStoryboard) {
+      document.getElementById('apply-btn').classList.add('visible');
+    }
+  } catch(err) {
+    document.getElementById('chat-typing').classList.remove('vis');
+    addChatMsg('ai','Erreur : '+err.message);
+  }
+  document.getElementById('chat-send').disabled = false;
+}
+
+function handleKey(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();} }
+function quickMsg(t) { document.getElementById('chat-ta').value=t; sendChat(); }
+
+// ═══════════════ INDEXEDDB ═══════════════
+const DB_NAME = 'StudioRealisateur';
+const DB_VERSION = 2;
+const STORE_NAME = 'sessions';
+let db = null;
+
+function initDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = e => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains(STORE_NAME)) {
+        const store = d.createObjectStore(STORE_NAME, { keyPath: 'id' });
+        store.createIndex('date', 'date', { unique: false });
+      }
+    };
+    req.onsuccess = e => { db = e.target.result; resolve(db); };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function saveSession(session) {
+  if (!db) await initDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    tx.objectStore(STORE_NAME).put(session);
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function getAllSessions() {
+  if (!db) await initDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const req = tx.objectStore(STORE_NAME).index('date').getAll();
+    req.onsuccess = () => resolve(req.result.reverse());
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function deleteSession(id) {
+  if (!db) await initDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    tx.objectStore(STORE_NAME).delete(id);
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function openHist() {
+  document.getElementById('hist-panel').classList.add('visible');
+  document.getElementById('hist-overlay').classList.add('visible');
+  await renderHistList();
+}
+
+function closeHist() {
+  document.getElementById('hist-panel').classList.remove('visible');
+  document.getElementById('hist-overlay').classList.remove('visible');
+}
+
+async function renderHistList() {
+  const list = document.getElementById('hist-list');
+  try {
+    const sessions = await getAllSessions();
+    if (!sessions.length) {
+      list.innerHTML = '<div class="hist-empty-msg">Aucune session sauvegardée</div>';
+      return;
+    }
+    list.innerHTML = sessions.map(s => `
+      <div class="hist-item" onclick="loadSession('${s.id}')">
+        <button class="hist-item-del" onclick="event.stopPropagation();deleteSessionUI('${s.id}')">✕</button>
+        <div class="hist-item-date">${new Date(s.date).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
+        <div class="hist-item-title">${s.analyse?s.analyse.substring(0,80)+'...':'Session sans analyse'}</div>
+        <div class="hist-item-meta">${s.duree}s · ${s.mode} · ${s.modele} · ${s.nbPlans||0} plans · ${s.nbPhotos||1} photo${(s.nbPhotos||1)>1?'s':''}</div>
+      </div>
+    `).join('');
+  } catch(err) {
+    list.innerHTML = '<div class="hist-empty-msg">Erreur de chargement</div>';
+  }
+}
+
+async function deleteSessionUI(id) {
+  await deleteSession(id);
+  await renderHistList();
+  showNotif('Session supprimée');
+}
+
+async function loadSession(id) {
+  if (!db) await initDB();
+  const tx = db.transaction(STORE_NAME, 'readonly');
+  const req = tx.objectStore(STORE_NAME).get(id);
+  req.onsuccess = () => {
+    const s = req.result;
+    if (!s) return;
+    fullStoryboard = s.fullStoryboard || '';
+    promptFR = s.promptFR || '';
+    promptEN = s.promptEN || '';
+    document.getElementById('an-body').textContent = s.analyse || '';
+    document.getElementById('analyse-card').classList.toggle('vis', !!s.analyse);
+    const container = document.getElementById('plans-container');
+    container.innerHTML = '';
+    if (s.plans?.length) {
+      s.plans.forEach((p, i) => renderPlanCard(p, i, container));
+    }
+    if (promptFR || promptEN) {
+      document.getElementById('pf-body').textContent = currentLang === 'fr' ? promptFR : promptEN;
+      document.getElementById('pf-card').classList.add('vis');
+    }
+    document.getElementById('refs-sec').classList.add('vis');
+    document.getElementById('copy-sb').classList.add('vis');
+    document.getElementById('duree-badge').style.display = 'block';
+    document.getElementById('duree-badge').textContent = (s.duree||8) + ' SECONDES';
+    document.getElementById('empty-state').style.display = 'none';
+    closeHist();
+    showNotif('Session restaurée');
+    if (window.innerWidth <= 900) {
+      document.querySelector('.col:nth-child(2)')?.scrollIntoView({behavior:'smooth',block:'start'});
+    }
+  };
+}
+
+// ═══════════════ UTILS ═══════════════
+function showNotif(msg, duration) {
+  const n = document.getElementById('notif');
+  n.textContent = msg;
+  n.classList.add('show');
+  setTimeout(() => n.classList.remove('show'), duration || 2400);
+}
+
+function enterStudio() {
+  const welcomeKey = document.getElementById('api-key-welcome').value.trim();
+  if (welcomeKey) {
+    apiKey = welcomeKey;
+    localStorage.setItem('sr_key', apiKey);
+    document.getElementById('api-key').value = apiKey;
+  }
+  const ws = document.getElementById('welcome-screen');
+  ws.classList.add('fade-out');
+  setTimeout(() => ws.classList.add('hidden'), 800);
+}
+
+// ═══════════════ INIT ═══════════════
+buildAtmoList();
+selectAtmoFromSelect('libre');
+initDB().catch(e => console.warn('IndexedDB:', e));
+</script>
+</body>
+</html>
