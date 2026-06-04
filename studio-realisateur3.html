@@ -53,6 +53,7 @@ html, body {
   background-size: cover;
   background-position: center 30%;
   filter: brightness(0.55);
+  pointer-events: none;
 }
 .welcome-content {
   position: relative; z-index: 2;
@@ -92,6 +93,8 @@ html, body {
   cursor: pointer;
   transition: all 0.2s;
   margin-top: 8px;
+  position: relative;
+  z-index: 10;
 }
 .welcome-btn:hover { background: var(--vert); }
 .welcome-screen.fade-out { opacity: 0; pointer-events: none; }
@@ -528,6 +531,15 @@ html, body {
   text-align:left;
 }
 .copy-plan-btn:hover { background:rgba(57,255,110,0.06); }
+
+.plan-prompt-card { margin-top:9px; border:1px solid rgba(57,255,110,0.16); background:rgba(57,255,110,0.025); }
+.plan-prompt-head { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:7px 9px; border-bottom:1px solid var(--border); }
+.plan-prompt-title { font-size:7px; letter-spacing:0.18em; text-transform:uppercase; color:var(--vert); }
+.plan-prompt-switch { display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end; }
+.plan-lang-btn { background:transparent; border:1px solid var(--border); color:var(--gris2); font-family:var(--mono); font-size:7px; letter-spacing:0.08em; padding:3px 7px; cursor:pointer; text-transform:uppercase; }
+.plan-lang-btn.active { background:var(--vert); color:var(--noir); border-color:var(--vert); }
+.plan-prompt-text { padding:9px; font-family:var(--sans); font-size:10px; line-height:1.75; color:#fff; white-space:pre-wrap; }
+
 .copy-sb:hover { border-color:var(--blanc); color:var(--blanc); }
 
 /* ════════════════════ CHAT ════════════════════ */
@@ -950,6 +962,7 @@ HOMME EN VESTE NOIRE : Attends c'est toi qui a fait ça" style="min-height:80px;
 <div class="notif" id="notif"></div>
 
 <script>
+
 // ════════════════ DATA ════════════════
 const ATMOS = [
   { id:'libre', name:'Libre', desc:'Aucun style imposé', palette:['#1a1a1a','#333333','#555555','#888888','#cccccc'], films:['Ton instinct','La photo','Le moment'], mood:'Pas de contrainte. La photo parle. Le réalisateur suit.', tint:'rgba(0,0,0,0)', dot:'#ffffff', ic:{c:'#ffffff',b:'rgba(255,255,255,0.05)'} },
@@ -980,8 +993,19 @@ const LOADING_PHRASES = [
   'On calibre l\'atmosphère. La lumière obéit.',
 ];
 
+// ════════════════ SAFE STORAGE ════════════════
+function safeGet(key) {
+  try { return window.localStorage ? localStorage.getItem(key) : null; }
+  catch (e) { return null; }
+}
+
+function safeSet(key, value) {
+  try { if (window.localStorage) localStorage.setItem(key, value); }
+  catch (e) { /* storage can be blocked on some browsers or local files */ }
+}
+
 // ════════════════ STATE ════════════════
-let apiKey = localStorage.getItem('sr_key') || '';
+let apiKey = safeGet('sr_key') || '';
 let selectedDuree = 8;
 let selectedMode = 'classique';
 let selectedFormat = '916';
@@ -995,18 +1019,161 @@ let imageBase64 = null, imageMime = null; // kept for compatibility
 let uploadedPhotos = []; // [{base64, mime, preview}] up to 10
 let fullStoryboard = '';
 let promptFR = '', promptEN = '';
+
+let planCopyStore = {};
+let planLangStore = {};
+function safePlanValue(value) {
+  return (value === undefined || value === null) ? '' : String(value).trim();
+}
+function escapeHtml(value) {
+  return safePlanValue(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+function escapeAttr(value) {
+  return safePlanValue(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n').replace(/\r/g, '');
+}
+function buildPlanPromptFR(p) {
+  const n = safePlanValue(p && p.numero) || '?';
+  const direct = safePlanValue(p && (p.prompt_ref_fr || p.prompt_fr));
+  if (direct) return direct;
+  const lines = [];
+  lines.push(`PLAN ${String(n).padStart(2,'0')}`);
+  const debut = safePlanValue(p && p.debut);
+  const fin = safePlanValue(p && p.fin);
+  if (debut || fin) lines.push(`Timecode : ${debut}${debut && fin ? ' → ' : ''}${fin}`);
+  const add = (label, val) => { val = safePlanValue(val); if (val) lines.push(`${label} : ${val}`); };
+  add('Type de plan', p && p.type_plan);
+  add('Angle', p && p.angle);
+  add('Mouvement caméra', p && p.mouvement);
+  add('Dynamique visuelle', p && p.dynamique);
+  add('Lumière', p && p.lumiere);
+  add('Action', p && p.action);
+  add('Son', p && p.son);
+  add('Émotion', p && p.emotion);
+  const ref = safePlanValue(p && p.prompt_ref);
+  if (ref) lines.push(`\nRéférence moteur vidéo : ${ref}`);
+  return lines.join('\n');
+}
+function buildPlanPromptEN(p) {
+  const direct = safePlanValue(p && (p.prompt_ref_en || p.prompt_en || p.prompt_english || p.prompt_ref));
+  if (direct) return direct;
+  const n = safePlanValue(p && p.numero) || '?';
+  const lines = [];
+  lines.push(`SHOT ${String(n).padStart(2,'0')}`);
+  const debut = safePlanValue(p && p.debut);
+  const fin = safePlanValue(p && p.fin);
+  if (debut || fin) lines.push(`Timecode: ${debut}${debut && fin ? ' → ' : ''}${fin}`);
+  const add = (label, val) => { val = safePlanValue(val); if (val) lines.push(`${label}: ${val}`); };
+  add('Shot type', p && p.type_plan);
+  add('Camera angle', p && p.angle);
+  add('Camera movement', p && p.mouvement);
+  add('Visual dynamic', p && p.dynamique);
+  add('Lighting', p && p.lumiere);
+  add('Action', p && p.action);
+  add('Sound', p && p.son);
+  add('Emotion', p && p.emotion);
+  return lines.join('\n');
+}
+function registerPlanPrompt(p) {
+  const num = safePlanValue(p && p.numero) || String(Object.keys(planCopyStore).length + 1);
+  planCopyStore[num] = { fr: buildPlanPromptFR(p || {}), en: buildPlanPromptEN(p || {}) };
+  if (!planLangStore[num]) planLangStore[num] = 'fr';
+  return num;
+}
+function renderPlanPromptPanel(p) {
+  const num = registerPlanPrompt(p || {});
+  const lang = planLangStore[num] || 'fr';
+  const text = (planCopyStore[num] && (planCopyStore[num][lang] || planCopyStore[num].fr || planCopyStore[num].en)) || '';
+  return `<div class="plan-prompt-card" data-plan-prompt-card="${escapeHtml(num)}">
+    <div class="plan-prompt-head">
+      <span class="plan-prompt-title">Prompt pour ce plan</span>
+      <div class="plan-prompt-switch">
+        <button type="button" class="plan-lang-btn ${lang==='fr'?'active':''}" onclick="switchPlanPromptLang('${escapeAttr(num)}','fr')">🇫🇷 Français</button>
+        <button type="button" class="plan-lang-btn ${lang==='en'?'active':''}" onclick="switchPlanPromptLang('${escapeAttr(num)}','en')">🇬🇧 English conseillé</button>
+      </div>
+    </div>
+    <div class="plan-prompt-text" id="planPromptText-${escapeHtml(num)}">${escapeHtml(text)}</div>
+  </div>`;
+}
+function switchPlanPromptLang(num, lang) {
+  num = String(num);
+  planLangStore[num] = lang;
+  const textEl = document.getElementById('planPromptText-' + num);
+  if (textEl && planCopyStore[num]) textEl.textContent = planCopyStore[num][lang] || planCopyStore[num].fr || planCopyStore[num].en || '';
+  const card = document.querySelector(`[data-plan-prompt-card="${CSS.escape(num)}"]`);
+  if (card) {
+    card.querySelectorAll('.plan-lang-btn').forEach(b => b.classList.remove('active'));
+    const btns = card.querySelectorAll('.plan-lang-btn');
+    if (lang === 'fr' && btns[0]) btns[0].classList.add('active');
+    if (lang === 'en' && btns[1]) btns[1].classList.add('active');
+  }
+}
+function copyTextFallback(text) {
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    return Promise.resolve();
+  } catch (e) { return Promise.reject(e); }
+}
+function copyPlanPrompt(num) {
+  num = String(num);
+  const lang = planLangStore[num] || 'fr';
+  const text = planCopyStore[num] ? (planCopyStore[num][lang] || planCopyStore[num].fr || planCopyStore[num].en || '') : '';
+  const copier = navigator.clipboard && window.isSecureContext
+    ? navigator.clipboard.writeText(text)
+    : copyTextFallback(text);
+  copier.then(() => showNotif(`Plan ${String(num).padStart(2,'0')} copié`)).catch(() => showNotif('Copie bloquée par le navigateur'));
+}
+function makeCopyPlanButton(p) {
+  const num = registerPlanPrompt(p || {});
+  return `<button type="button" class="copy-plan-btn" onclick="copyPlanPrompt('${escapeAttr(num)}')">◈ COPIER LE PROMPT — PLAN ${String(num).padStart(2,'0')}</button>`;
+}
+
 let currentLang = 'fr';
 let chatHistory = [];
 let lsPhraseIdx = 0, lsInterval = null;
 let lastDirectorNote = '';
 
 if (apiKey) {
-  document.getElementById('api-key').value = apiKey;
-  document.getElementById('api-key-welcome').value = apiKey;
+  const apiInput = document.getElementById('api-key');
+  const welcomeInput = document.getElementById('api-key-welcome');
+  if (apiInput) apiInput.value = apiKey;
+  if (welcomeInput) welcomeInput.value = apiKey;
 }
 
 // ════════════════ BUILD ATMO LIST ════════════════
-function 
+function buildAtmoList() {
+  const select = document.getElementById('atmo-select');
+  if (!select) return;
+  select.innerHTML = ATMOS.map(a => `<option value="${a.id}">${a.name} — ${a.desc}</option>`).join('');
+}
+
+function selectAtmoFromSelect(id) {
+  selectedAtmoId = id;
+  const select = document.getElementById('atmo-select');
+  if (select) select.value = id;
+
+  const a = ATMOS.find(x => x.id === id) || ATMOS[0];
+  const badge = document.getElementById('atmo-badge');
+  if (badge && a) {
+    badge.textContent = '● ' + a.name.toUpperCase();
+    badge.style.color = a.ic.c;
+    badge.style.borderColor = a.ic.c;
+    badge.style.background = a.ic.b;
+  }
+}
+
 // ════════════════ LOADING ════════════════
 function startLoading() {
   const atmo = ATMOS.find(a => a.id === selectedAtmoId);
@@ -1074,7 +1241,7 @@ function selectRythme(v, btn) {
 
 function saveKey() {
   apiKey = document.getElementById('api-key').value.trim();
-  localStorage.setItem('sr_key', apiKey);
+  safeSet('sr_key', apiKey);
   showNotif('Clé sauvegardée');
 }
 
@@ -1423,7 +1590,7 @@ Réponds UNIQUEMENT en JSON valide : {"analyse":"...","plans":[...],"prompt_fr":
     console.log('Plans count:', result.plans ? result.plans.length : 'NO PLANS');
     console.log('prompt_fr:', result.prompt_fr ? 'OK' : 'MISSING');
     if (!result.plans || result.plans.length === 0) {
-      showNotif('Erreur : Gemini n'a pas généré de plans. Relance.', 6000);
+      showNotif("Erreur : Gemini n'a pas généré de plans. Relance.", 6000);
     }
 
     // Rebuild plans
@@ -1452,9 +1619,9 @@ Réponds UNIQUEMENT en JSON valide : {"analyse":"...","plans":[...],"prompt_fr":
             <div class="plan-row"><span class="pk">Action</span><span class="pv">${p.action}</span></div>
             <div class="plan-row"><span class="pk">Son</span><span class="pv">${p.son}</span></div>
             <div class="plan-emo">❤ ${p.emotion}</div>
-            ${p.prompt_ref?`<div class="plan-pref"><span>Prompt pour ce plan</span>"${p.prompt_ref}"</div>`:''}
+            ${renderPlanPromptPanel(p)}
           </div>
-          ${p.prompt_ref?`<button class="copy-plan-btn" onclick="navigator.clipboard.writeText('${p.prompt_ref.replace(/'/g,"\'")}').then(()=>showNotif('Plan copié'))">◈ COPIER LE PROMPT — PLAN ${String(p.numero).padStart(2,'0')}</button>`:''}
+          ${makeCopyPlanButton(p)}
           <button class="regen-plan-btn" onclick="regenPlan(${p.numero})">↻ REGÉNÉRER CE PLAN</button>
         `;
         container.appendChild(card);
@@ -1563,7 +1730,7 @@ async function generate() {
   document.getElementById('pf-card').classList.remove('vis');
   document.getElementById('refs-sec').classList.remove('vis');
   document.getElementById('copy-sb').classList.remove('vis');
-  fullStoryboard = ''; promptFR = ''; promptEN = '';
+  fullStoryboard = ''; promptFR = ''; promptEN = ''; planCopyStore = {}; planLangStore = {};
 
   const histCtx = selectedHistoire === 'custom'
     ? `L'utilisateur a son histoire : "${document.getElementById('hist-ta').value}". Utilise-la telle quelle.`
@@ -1648,9 +1815,9 @@ async function generate() {
             <div class="plan-row"><span class="pk">Action</span><span class="pv">${p.action}</span></div>
             <div class="plan-row"><span class="pk">Son</span><span class="pv">${p.son}</span></div>
             <div class="plan-emo">❤ ${p.emotion}</div>
-            ${p.prompt_ref?`<div class="plan-pref"><span>Prompt pour ce plan</span>"${p.prompt_ref}"</div>`:''}
+            ${renderPlanPromptPanel(p)}
           </div>
-          ${p.prompt_ref ? `<button class="copy-plan-btn" onclick="navigator.clipboard.writeText('${p.prompt_ref.replace(/'/g,"\'")}').then(()=>showNotif('Plan ${p.numero} copié'))">◈ COPIER LE PROMPT — PLAN ${String(p.numero).padStart(2,'0')}</button>` : ''}
+          ${makeCopyPlanButton(p)}
         `;
         document.getElementById('plans-container').appendChild(card);
         fullStoryboard += `Plan ${p.numero} — ${p.debut} à ${p.fin}\nAngle : ${p.angle}\nMouvement : ${p.mouvement}\nAction : ${p.action}\nÉmotion : ${p.emotion}\n\n`;
@@ -1917,9 +2084,9 @@ async function loadSession(id) {
             <div class="plan-row"><span class="pk">Action</span><span class="pv">${p.action}</span></div>
             <div class="plan-row"><span class="pk">Son</span><span class="pv">${p.son}</span></div>
             <div class="plan-emo">❤ ${p.emotion}</div>
-            ${p.prompt_ref?`<div class="plan-pref"><span>Prompt pour ce plan</span>"${p.prompt_ref}"</div>`:''}
+            ${renderPlanPromptPanel(p)}
           </div>
-          ${p.prompt_ref?`<button class="copy-plan-btn" onclick="navigator.clipboard.writeText('${p.prompt_ref.replace(/'/g,"\'")}').then(()=>showNotif('Plan copié'))">◈ COPIER LE PROMPT — PLAN ${String(p.numero).padStart(2,'0')}</button>`:''}
+          ${makeCopyPlanButton(p)}
           <button class="regen-plan-btn" onclick="regenPlan(${p.numero})">↻ REGÉNÉRER CE PLAN</button>
         `;
         container.appendChild(card);
@@ -1957,21 +2124,36 @@ function showNotif(msg, duration) {
 
 // Welcome screen
 function enterStudio() {
-  const welcomeKey = document.getElementById('api-key-welcome').value.trim();
+  const welcomeInput = document.getElementById('api-key-welcome');
+  const mainInput = document.getElementById('api-key');
+  const welcomeKey = welcomeInput ? welcomeInput.value.trim() : '';
+
   if (welcomeKey) {
     apiKey = welcomeKey;
-    localStorage.setItem('sr_key', apiKey);
-    document.getElementById('api-key').value = apiKey;
+    safeSet('sr_key', apiKey);
+    if (mainInput) mainInput.value = apiKey;
   }
+
   const ws = document.getElementById('welcome-screen');
+  if (!ws) return;
   ws.classList.add('fade-out');
-  setTimeout(() => ws.classList.add('hidden'), 800);
+  setTimeout(() => {
+    ws.classList.add('hidden');
+    ws.style.display = 'none';
+  }, 800);
 }
+
+window.enterStudio = enterStudio;
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.querySelector('.welcome-btn');
+  if (btn) btn.addEventListener('click', enterStudio);
+});
 
 // Init
 buildAtmoList();
 selectAtmoFromSelect('libre');
 initDB().catch(e => console.warn('IndexedDB init failed:', e));
+
 </script>
 </body>
 </html>
