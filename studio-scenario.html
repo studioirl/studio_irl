@@ -242,8 +242,8 @@ footer p { font-family: 'DM Mono',monospace; font-size: 8px; text-transform: upp
       </div>
 
       <button class="gen-btn" id="genBtn">
-        <span class="gen-btn-label" id="genLabel">Ecrire les scenarios</span>
-        <span class="gen-btn-sub" id="genSub">3 concepts cinematographiques</span>
+        <span class="gen-btn-label" id="genLabel">Generer 3 histoires cinematographiques</span>
+        <span class="gen-btn-sub" id="genSub">3 histoires - situation, tension, evolution, resolution</span>
         <span class="gen-msg" id="genMsg"></span>
       </button>
 
@@ -440,25 +440,21 @@ function startGeneration() {
     return;
   }
   hideError();
-  setLoading(true, LOADING_MSGS_CONCEPTS, 'Ecriture des scenarios', '3 concepts cinematographiques');
+  setLoading(true, LOADING_MSGS_CONCEPTS, 'Ecriture des scenarios', '3 histoires - situation, tension, evolution, resolution');
 
-  var sys = 'Tu es un scenariste cinematographique professionnel de haut niveau. Tu analyses precisement les images fournies et tu construis des scenarios DIRECTEMENT ancres dans ce que tu vois. Les personnages visibles, leur age, leur expression, leur posture, le lieu, la lumiere, les objets, l\'ambiance presente dans les images sont le point de depart OBLIGATOIRE de chaque scenario. Tu ne dois jamais ecrire une histoire qui n\'a aucun lien avec les images. Tu pars de la realite visuelle observee et tu la transformes en recit cinematographique fort. Situations concretes, emotions vraies, vecu humain authentique. Pas de metaphores vagues. Des scenes filmables. Tu reponds UNIQUEMENT en JSON pur valide.';
+  var sys = 'Tu es un scenariste cinematographique professionnel. Tu regardes des images et tu ecris de vraies histoires. REGLE FONDAMENTALE : le scenario ne raconte JAMAIS ce que l\'image montre deja. L\'image est un point de depart, pas une destination. Tu racontes ce qui se passe AVANT, PENDANT et APRES l\'instant capture. Tu pars de la realite visuelle (personnages, lieu, lumiere, expressions, objets) et tu construis une histoire qui existe au-dela de l\'image. STRUCTURE OBLIGATOIRE de chaque histoire : 1. Une SITUATION. 2. Une TENSION - quelque chose manque, menace, est attendu, doit etre decide, ou va changer. 3. Une EVOLUTION. 4. Une RESOLUTION - positive, negative ou ambigue. Sans ces 4 elements ce n\'est pas une histoire. Tu ecris du vecu humain authentique. Pas de metaphores vagues. Tu reponds UNIQUEMENT en JSON pur valide.';
 
   var intCtx = intention ? ('Direction narrative voulue par le createur : "' + intention + '".\n\n') : '';
-  var imgCtx = uploadedImages.length > 0 ? ('Analyse attentivement les ' + uploadedImages.length + ' image(s) fournie(s). Observe les personnages presents, leur age apparent, leur expression, leur posture, le lieu, l\'ambiance, la lumiere, les details visuels. Ecris 3 concepts de scenarios DIRECTEMENT inspires de ce que tu vois dans ces images. Chaque scenario doit partir de la realite de ces images.\n\n') : 'Ecris 3 concepts de scenarios differents a partir de l\'intention creative.\n\n';
+  var imgCtx = uploadedImages.length > 0 ? ('PIPELINE OBLIGATOIRE avant d\'ecrire : 1. Comprehension emotionnelle des images. 2. Identification des personnages (age, expression, posture). 3. Identification de la situation (lieu, instant). 4. Creation d\'une tension (ce qui manque, menace, ou va changer). 5. Construction d\'une evolution. 6. Construction d\'une resolution.\n\nEcris 3 histoires cinematographiques ancrees dans ces images. RAPPEL : ne decris pas ce que l\'image montre. Raconte ce qui se passe avant, pendant et apres l\'instant capture.\n\n') : 'Ecris 3 histoires cinematographiques differentes a partir de l\'intention creative. Pipeline : situation, tension, evolution, resolution.\n\n';
 
   var user = intCtx + imgCtx +
-    'Chaque concept doit etre un vrai scenario court comme pour un film. Il doit avoir :\n' +
-    '- Un titre cinematographique\n' +
-    '- Un genre (drame, comedie, romance, thriller...)\n' +
-    '- Une emotion principale que le spectateur va ressentir\n' +
-    '- Un synopsis detaille (8-12 lignes minimum) avec un debut, une progression, une fin. Ecris comme si tu decrivais une scene de film reelle avec des actions, des regards, des gestes, des dialogues implicites. Le spectateur doit pouvoir visualiser la scene.\n' +
-    '- La duree estimee de la video (5s, 8s ou 15s)\n\n' +
-    'JSON UNIQUEMENT, structure exacte :\n' +
-    '{"concepts":[{"titre":"string","genre":"string","emotion":"string","synopsis":"string (8-12 lignes minimum, scene concrete et filmable)","duree":"5s|8s|15s"},{"titre":"string","genre":"string","emotion":"string","synopsis":"string","duree":"5s|8s|15s"},{"titre":"string","genre":"string","emotion":"string","synopsis":"string","duree":"5s|8s|15s"}]}';
+    'Chaque histoire doit contenir les 4 elements OBLIGATOIRES : SITUATION (quelqu\'un vit quelque chose de concret), TENSION (quelque chose manque, menace, est attendu ou va changer), EVOLUTION (la situation change), RESOLUTION (positive, negative ou ambigue).\n\n' +
+    'RAPPEL ABSOLU : le synopsis ne decrit pas ce que l\'image montre. Il raconte ce qui se passe avant, pendant et apres l\'instant capture.\n\n' +
+    'JSON UNIQUEMENT :\n' +
+    '{"histoires":[{"titre":"string","genre":"string","emotion_principale":"string","situation":"string (1 phrase)","tension":"string (1 phrase)","synopsis":"string (8 a 15 lignes, histoire complete, filmable, emotionnelle)","resolution":"string","pourquoi_ca_fonctionne":"string (2 lignes)","duree":"5s|8s|15s"},{"titre":"string","genre":"string","emotion_principale":"string","situation":"string","tension":"string","synopsis":"string","resolution":"string","pourquoi_ca_fonctionne":"string","duree":"5s|8s|15s"},{"titre":"string","genre":"string","emotion_principale":"string","situation":"string","tension":"string","synopsis":"string","resolution":"string","pourquoi_ca_fonctionne":"string","duree":"5s|8s|15s"}]}';
 
   callGemini(sys, user, uploadedImages).then(function(data) {
-    conceptsData = data.concepts || [];
+    conceptsData = data.histoires || data.concepts || [];
     selectedConceptIdx = -1;
     scenarioFinal = null;
     currentStep = 1;
@@ -470,109 +466,99 @@ function startGeneration() {
   });
 }
 
-// RENDU ETAPE 1 : les 3 concepts
-function renderStep1(concepts) {
+// RENDU ETAPE 1 : les 3 histoires
+function renderStep1(histoires) {
   var panel = document.getElementById('resultPanel');
   panel.innerHTML = '';
 
   var stepEl = makeStepIndicator(1);
   panel.appendChild(stepEl);
 
-  var card = document.createElement('div');
-  card.className = 'output-card';
-  card.id = 'conceptsCard';
+  histoires.forEach(function(h, i) {
+    var card = document.createElement('div');
+    card.className = 'output-card';
+    card.style.marginBottom = '16px';
 
-  var header = document.createElement('div');
-  header.className = 'output-header';
-  header.innerHTML = '<div><div class="output-title">3 Concepts de Scenario</div><div class="output-meta">Choisissez le scenario que vous voulez developper</div></div>' +
-    '<button class="btn-copy" id="btnCopyConcepts">Copier</button>';
-  card.appendChild(header);
+    var header = document.createElement('div');
+    header.className = 'output-header';
+    header.innerHTML =
+      '<div>' +
+        '<div class="output-title">Histoire ' + (i+1) + ' &mdash; ' + esc(h.titre) + '</div>' +
+        '<div class="output-meta">' + esc(h.genre||'') + ' &nbsp;|&nbsp; ' + esc(h.emotion_principale||'') + ' &nbsp;|&nbsp; ' + esc(h.duree||'') + ' &nbsp;|&nbsp; Resolution : ' + esc(h.resolution||'') + '</div>' +
+      '</div>';
+    card.appendChild(header);
 
-  var body = document.createElement('div');
-  body.className = 'output-body';
+    var body = document.createElement('div');
+    body.className = 'output-body';
 
-  var conceptsDiv = document.createElement('div');
-  conceptsDiv.className = 'concept-cards';
-  conceptsDiv.id = 'conceptsList';
+    // Situation + Tension en 2 blocs courts
+    var stRow = document.createElement('div');
+    stRow.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:12px;';
+    stRow.innerHTML =
+      '<div class="section-block"><div class="section-label">Situation</div><div class="section-content" style="font-size:13px;">' + esc(h.situation||'') + '</div></div>' +
+      '<div class="section-block"><div class="section-label">Tension</div><div class="section-content" style="font-size:13px;">' + esc(h.tension||'') + '</div></div>';
+    body.appendChild(stRow);
 
-  concepts.forEach(function(c, i) {
-    var cc = document.createElement('div');
-    cc.className = 'concept-card';
-    cc.setAttribute('data-idx', i);
-    cc.innerHTML =
-      '<div class="concept-card-header">' +
-        '<span class="concept-num">Concept ' + (i+1) + '</span>' +
-        '<span class="concept-sel-badge">Selectionne</span>' +
-        '<span style="font-family:\'DM Mono\',monospace;font-size:8px;color:var(--or);margin-left:auto;">' + esc(c.duree||'') + '</span>' +
-      '</div>' +
-      '<div class="concept-titre">' + esc(c.titre) + '</div>' +
-      '<div style="padding:0 20px 6px;display:flex;gap:8px;">' +
-        '<span style="font-family:\'DM Mono\',monospace;font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;">' + esc(c.genre||'') + '</span>' +
-        '<span style="color:var(--border-dark);">|</span>' +
-        '<span style="font-family:\'DM Mono\',monospace;font-size:8px;color:var(--indigo-light);text-transform:uppercase;letter-spacing:.1em;">' + esc(c.emotion||'') + '</span>' +
-      '</div>' +
-      '<div class="concept-body">' + esc(c.synopsis) + '</div>';
-    cc.addEventListener('click', function() {
-      document.querySelectorAll('.concept-card').forEach(function(el) { el.classList.remove('selected'); });
-      cc.classList.add('selected');
-      selectedConceptIdx = i;
-      document.getElementById('btnValiderConcept').disabled = false;
+    // Synopsis
+    var sb = document.createElement('div');
+    sb.className = 'section-block';
+    sb.innerHTML = '<div class="section-label">Synopsis</div><div class="section-content">' + esc(h.synopsis||'') + '</div>';
+    body.appendChild(sb);
+
+    // Pourquoi ca fonctionne
+    if (h.pourquoi_ca_fonctionne) {
+      var pb = document.createElement('div');
+      pb.className = 'notes-block';
+      pb.innerHTML = '<span style="font-family:monospace;font-size:8px;text-transform:uppercase;letter-spacing:.3em;color:var(--or);display:block;margin-bottom:6px;">Pourquoi cette histoire fonctionne</span>' + esc(h.pourquoi_ca_fonctionne);
+      body.appendChild(pb);
+    }
+
+    // Zone correction + boutons PAR histoire
+    var corrZone = document.createElement('div');
+    corrZone.className = 'correction-zone';
+    corrZone.innerHTML =
+      '<div class="correction-label">Modifier cette histoire (optionnel)</div>' +
+      '<textarea class="field-textarea" id="corr_' + i + '" rows="2" placeholder="Ex: rends-la plus sombre, ajoute un enfant, change le lieu..."></textarea>';
+    body.appendChild(corrZone);
+
+    var btnRow2 = document.createElement('div');
+    btnRow2.className = 'btn-row';
+
+    var btnChoisir = document.createElement('button');
+    btnChoisir.className = 'btn-action btn-primary';
+    btnChoisir.textContent = 'Choisir cette histoire';
+    btnChoisir.setAttribute('data-idx', i);
+    btnChoisir.addEventListener('click', function() {
+      var idx = parseInt(this.getAttribute('data-idx'));
+      var corr = document.getElementById('corr_' + idx);
+      validateConcept(idx, corr ? corr.value.trim() : '');
     });
-    conceptsDiv.appendChild(cc);
+
+    btnRow2.appendChild(btnChoisir);
+    body.appendChild(btnRow2);
+    card.appendChild(body);
+    panel.appendChild(card);
   });
-
-  body.appendChild(conceptsDiv);
-
-  var correctionZone = document.createElement('div');
-  correctionZone.className = 'correction-zone';
-  correctionZone.id = 'correctionZone';
-  correctionZone.innerHTML =
-    '<div class="correction-label">Modifications souhaitees (optionnel)</div>' +
-    '<textarea class="field-textarea" id="correctionInput" rows="2" placeholder="Ex: rends le plus dramatique, change le lieu, ajoute un enfant..."></textarea>';
-  body.appendChild(correctionZone);
-
-  var btnRow = document.createElement('div');
-  btnRow.className = 'btn-row';
-
-  var btnValider = document.createElement('button');
-  btnValider.className = 'btn-action btn-primary';
-  btnValider.id = 'btnValiderConcept';
-  btnValider.textContent = 'Valider ce concept';
-  btnValider.disabled = true;
-  btnValider.addEventListener('click', function() { validateConcept(); });
 
   var btnReset = document.createElement('button');
   btnReset.className = 'btn-action btn-secondary';
   btnReset.textContent = 'Recommencer';
+  btnReset.style.marginTop = '8px';
   btnReset.addEventListener('click', function() { resetAll(); });
-
-  btnRow.appendChild(btnValider);
-  btnRow.appendChild(btnReset);
-  body.appendChild(btnRow);
-  card.appendChild(body);
-  panel.appendChild(card);
-
-  document.getElementById('btnCopyConcepts').addEventListener('click', function() {
-    var txt = card.innerText || card.textContent;
-    navigator.clipboard.writeText(txt).then(function() {
-      document.getElementById('btnCopyConcepts').textContent = 'Copie!';
-      setTimeout(function() { document.getElementById('btnCopyConcepts').textContent = 'Copier'; }, 2000);
-    });
-  });
+  panel.appendChild(btnReset);
 }
 
 // ETAPE 2 : valider + réécrire avec corrections
-function validateConcept() {
-  if (selectedConceptIdx < 0) return;
-  var correction = document.getElementById('correctionInput').value.trim();
-  var concept = conceptsData[selectedConceptIdx];
+function validateConcept(idx, correction) {
+  var concept = conceptsData[idx] || {};
+  selectedConceptIdx = idx;
 
   hideError();
   setLoading(true, LOADING_MSGS_REWRITE, 'Reecriture du scenario', 'Adaptation a vos corrections');
 
-  var sys = 'Tu es un scenariste cinematographique professionnel. Tu prends un concept de scenario et tu le developpes en un scenario complet et definitif. Le scenario doit etre concret, emotionnel, filmable. Il doit ressembler a un vrai film. Tu reponds UNIQUEMENT en JSON pur valide.';
+  var sys = 'Tu es un scenariste cinematographique professionnel. Tu prends une histoire et tu la developpes en un scenario complet et definitif. RAPPEL : le scenario ne decrit pas ce que l\'image montre. Il raconte ce qui se passe avant, pendant et apres. Structure obligatoire : situation, tension, evolution, resolution. Concret, emotionnel, filmable. Vecu humain authentique. Tu reponds UNIQUEMENT en JSON pur valide.';
 
-  var user = 'Concept selectionne :\nTitre : ' + concept.titre + '\nGenre : ' + concept.genre + '\nEmotion : ' + concept.emotion + '\nSynopsis : ' + concept.synopsis + '\n\n';
+  var user = 'Histoire selectionnee :\nTitre : ' + (concept.titre||'') + '\nGenre : ' + (concept.genre||'') + '\nEmotion : ' + (concept.emotion_principale||'') + '\nSituation : ' + (concept.situation||'') + '\nTension : ' + (concept.tension||'') + '\nSynopsis : ' + (concept.synopsis||'') + '\nResolution : ' + (concept.resolution||'') + '\n\n';
 
   if (correction) {
     user += 'Corrections demandees par le createur : "' + correction + '"\n\n';
@@ -838,7 +824,7 @@ function setLoading(v, msgs, labelText, subText) {
     }, 2500);
   } else {
     btn.classList.remove('loading');
-    label.textContent = 'Ecrire les scenarios';
+    label.textContent = 'Generer 3 histoires cinematographiques';
     sub.style.display = 'block';
     msg.style.display = 'none';
     clearInterval(loadingInterval);
