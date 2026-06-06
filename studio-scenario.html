@@ -511,7 +511,7 @@ var LOADING_MSGS = [
   'Arc emotionnel en cours...'
 ];
 
-// ─── Init evenements ──────────────────────────────────────────────────────────
+// --- Init evenements ----------------------------------------------------------
 document.getElementById('enterBtn').addEventListener('click', function() {
   var k = document.getElementById('apiKeyInput').value.trim();
   if (!k) { alert('Colle ta cle API Google AI Studio (commence par AIza...)'); return; }
@@ -553,7 +553,7 @@ document.querySelectorAll('.dur-btn').forEach(function(btn) {
   });
 });
 
-// ─── Images ──────────────────────────────────────────────────────────────────
+// --- Images ------------------------------------------------------------------
 function handleFiles(files) {
   Array.from(files).forEach(function(f) {
     if (uploadedImages.length >= 8) return;
@@ -596,7 +596,7 @@ function renderImgGrid() {
   document.getElementById('imgCount').textContent = uploadedImages.length;
 }
 
-// ─── Analyse ─────────────────────────────────────────────────────────────────
+// --- Analyse -----------------------------------------------------------------
 function analyzeScenario() {
   if (isLoading) return;
   hideError();
@@ -615,71 +615,113 @@ function analyzeScenario() {
   });
 }
 
+// Redimensionner une image avant envoi (max 768px, jpeg 0.75)
+function resizeImage(dataUrl, maxPx) {
+  return new Promise(function(resolve) {
+    var img = new Image();
+    img.onload = function() {
+      var w = img.width, h = img.height;
+      if (w <= maxPx && h <= maxPx) { resolve(dataUrl); return; }
+      var ratio = Math.min(maxPx / w, maxPx / h);
+      var canvas = document.createElement('canvas');
+      canvas.width = Math.round(w * ratio);
+      canvas.height = Math.round(h * ratio);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL('image/jpeg', 0.75));
+    };
+    img.src = dataUrl;
+  });
+}
+
 function callGemini(intention) {
-  var parts = [];
-  uploadedImages.forEach(function(img) {
-    var b64 = img.dataUrl.split(',')[1];
-    var mime = img.dataUrl.split(';')[0].split(':')[1];
-    parts.push({ inline_data: { mime_type: mime, data: b64 } });
+  var resizePromises = uploadedImages.map(function(img) {
+    return resizeImage(img.dataUrl, 768);
   });
 
-  var moodCtx = selectedMoods.length > 0 ? ('Moments de vie identifies : ' + selectedMoods.join(', ') + '. ') : '';
-  var intCtx = intention ? ('Intention creative : "' + intention + '". ') : '';
-  var durCtx = 'Duree cible : ' + selectedDur + '.';
+  return Promise.all(resizePromises).then(function(resizedUrls) {
+    var parts = [];
+    resizedUrls.forEach(function(dataUrl) {
+      parts.push({ inline_data: { mime_type: 'image/jpeg', data: dataUrl.split(',')[1] } });
+    });
 
-  var systemPrompt = 'Tu es Studio Scenario, un scenariste IA specialise dans la creation d\'histoires emotionnelles a partir d\'images. Tu ne decris pas les images. Tu reveles ce qu\'elles racontent emotionnellement. Tu construis une narration humaine, coherente et puissante.';
+    var moodCtx = selectedMoods.length > 0 ? ('Moments de vie identifies : ' + selectedMoods.join(', ') + '. ') : '';
+    var intCtx = intention ? ('Intention creative : "' + intention + '". ') : '';
+    var durCtx = 'Duree cible : ' + selectedDur + '.';
 
-  var userPrompt = moodCtx + intCtx + durCtx + '\n\n';
-  if (uploadedImages.length > 0) {
-    userPrompt += 'Analyse ces ' + uploadedImages.length + ' image(s) et construis un scenario emotionnel complet.\n\n';
-  } else {
-    userPrompt += 'A partir de l\'intention creative, construis un scenario emotionnel complet.\n\n';
-  }
-  userPrompt += 'Reponds UNIQUEMENT en JSON valide, sans backticks, sans texte avant ou apres. Structure exacte :\n{"emotion_dominante":"string","emotions_secondaires":["string","string"],"niveau_energie":"Bas|Moyen|Eleve|Intense","niveau_intimite":"Prive|Intime|Personnel|Universel","ambiance":"string","moment_de_vie":"string","concepts":[{"titre":"string","description":"string"},{"titre":"string","description":"string"},{"titre":"string","description":"string"}],"concept_retenu_index":0,"resume":"string","intention_emotionnelle":"string","arc_depart":"string","arc_evolution":"string","arc_final":"string","notes_realisateur":"string"}';
+    var systemPrompt = "Tu es Studio Scenario, un scenariste IA specialise dans la creation d'histoires emotionnelles a partir d'images. Tu ne decris pas les images. Tu reveles ce qu'elles racontent emotionnellement. Tu reponds TOUJOURS uniquement en JSON pur valide, sans texte autour, sans backticks, sans markdown.";
 
-  parts.push({ text: userPrompt });
+    var userPrompt = moodCtx + intCtx + durCtx + '\n\n';
+    if (resizedUrls.length > 0) {
+      userPrompt += 'Analyse ces ' + resizedUrls.length + ' image(s) et construis un scenario emotionnel complet.\n\n';
+    } else {
+      userPrompt += 'A partir de l\'intention creative, construis un scenario emotionnel complet.\n\n';
+    }
+    var jsonSchema = '{"emotion_dominante":"string","emotions_secondaires":["string","string"],"niveau_energie":"Bas|Moyen|Eleve|Intense","niveau_intimite":"Prive|Intime|Personnel|Universel","ambiance":"string","moment_de_vie":"string","concepts":[{"titre":"string","description":"string"},{"titre":"string","description":"string"},{"titre":"string","description":"string"}],"concept_retenu_index":0,"resume":"string","intention_emotionnelle":"string","arc_depart":"string","arc_evolution":"string","arc_final":"string","notes_realisateur":"string"}';
+    userPrompt += 'JSON UNIQUEMENT, structure exacte :\n' + jsonSchema;
 
-  var body = {
-    system_instruction: { parts: [{ text: systemPrompt }] },
-    contents: [{ role: 'user', parts: parts }],
-    generationConfig: { temperature: 0.85, maxOutputTokens: 2048 }
-  };
+    parts.push({ text: userPrompt });
 
-  var endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + encodeURIComponent(apiKey);
-
-  return fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  }).then(function(res) {
-    return res.json().then(function(data) {
-      if (!res.ok) {
-        var msg = (data.error && data.error.message) ? data.error.message : ('HTTP ' + res.status);
-        if (res.status === 400) throw new Error('Cle API invalide. Verifie sur aistudio.google.com/apikey');
-        if (res.status === 403) throw new Error('Acces refuse. Verifie que ta cle Google AI Studio est active.');
-        if (res.status === 429) throw new Error('Quota depasse. Attends quelques secondes et reessaie.');
-        throw new Error('Erreur Gemini : ' + msg);
+    var body = {
+      system_instruction: { parts: [{ text: systemPrompt }] },
+      contents: [{ role: 'user', parts: parts }],
+      generationConfig: {
+        temperature: 0.85,
+        maxOutputTokens: 2048,
+        responseMimeType: 'application/json'
       }
-      // Compteur tokens
-      if (data.usageMetadata) {
-        var used = (data.usageMetadata.promptTokenCount || 0) + (data.usageMetadata.candidatesTokenCount || 0);
-        totalTokensUsed += used;
-        callCount += 1;
-        document.getElementById('tokensUsed').textContent = totalTokensUsed.toLocaleString('fr-FR');
-        document.getElementById('callCount').textContent = callCount;
-        document.getElementById('lastTokens').textContent = used.toLocaleString('fr-FR');
-      }
-      var text = '';
-      try { text = data.candidates[0].content.parts[0].text; }
-      catch(e) { throw new Error('Reponse inattendue de Gemini.'); }
-      text = text.replace(/```json/g, '').replace(/```/g, '').trim();
-      try { return JSON.parse(text); }
-      catch(e) { throw new Error('JSON invalide retourne par Gemini. Reessaie.'); }
+    };
+
+    var endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + encodeURIComponent(apiKey);
+
+    return fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    }).then(function(res) {
+      return res.json().then(function(data) {
+        if (!res.ok) {
+          var msg = (data.error && data.error.message) ? data.error.message : ('HTTP ' + res.status);
+          if (res.status === 400) throw new Error('Cle API invalide. Verifie sur aistudio.google.com/apikey');
+          if (res.status === 403) throw new Error('Acces refuse. Verifie que ta cle Google AI Studio est active.');
+          if (res.status === 429) throw new Error('Quota depasse. Attends quelques secondes et reessaie.');
+          throw new Error('Erreur Gemini : ' + msg);
+        }
+        if (data.usageMetadata) {
+          var used = (data.usageMetadata.promptTokenCount || 0) + (data.usageMetadata.candidatesTokenCount || 0);
+          totalTokensUsed += used;
+          callCount += 1;
+          document.getElementById('tokensUsed').textContent = totalTokensUsed.toLocaleString('fr-FR');
+          document.getElementById('callCount').textContent = callCount;
+          document.getElementById('lastTokens').textContent = used.toLocaleString('fr-FR');
+        }
+        // Debug complet de la reponse
+        var rawCandidate = null;
+        try { rawCandidate = data.candidates[0]; } catch(e) {}
+        if (!rawCandidate) {
+          throw new Error('Aucun candidat. FinishReason: ' + JSON.stringify(data).slice(0,300));
+        }
+        var finishReason = rawCandidate.finishReason || '';
+        if (finishReason === 'SAFETY') throw new Error('Bloque par les filtres de securite Gemini.');
+        if (finishReason === 'MAX_TOKENS') throw new Error('Reponse tronquee (MAX_TOKENS). Reduisez le nombre d\'images.');
+
+        var text = '';
+        try { text = rawCandidate.content.parts[0].text; } catch(e) {}
+
+        if (!text) {
+          throw new Error('Reponse vide. FinishReason=' + finishReason + ' | data=' + JSON.stringify(data).slice(0,400));
+        }
+
+        text = text.replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/\s*```$/,'').trim();
+        var jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) text = jsonMatch[0];
+        try { return JSON.parse(text); }
+        catch(e) { throw new Error('JSON invalide. Reponse brute : ' + text.slice(0, 300)); }
+      });
     });
   });
 }
 
-// ─── Rendu scenario ──────────────────────────────────────────────────────────
+// --- Rendu scenario ----------------------------------------------------------
 function renderScenario(d) {
   var panel = document.getElementById('resultPanel');
   document.getElementById('emptyState').style.display = 'none';
@@ -724,7 +766,7 @@ function renderScenario(d) {
       '<div class="section-block">' +
         '<div class="section-label">Lecture emotionnelle</div>' +
         '<div class="emotion-tags"><span class="etag etag-main">' + esc(d.emotion_dominante || '') + '</span>' + emoSecHTML + '</div>' +
-        '<div class="section-content" style="margin-top:10px;"><span style="color:var(--indigo-light);font-size:11px;font-family:\'DM Mono\',monospace;text-transform:uppercase;letter-spacing:.1em;">Energie :</span> ' + esc(d.niveau_energie || '') + '&nbsp;·&nbsp;<span style="color:var(--indigo-light);font-size:11px;font-family:\'DM Mono\',monospace;text-transform:uppercase;letter-spacing:.1em;">Intimite :</span> ' + esc(d.niveau_intimite || '') + '<br><em style="color:rgba(240,242,248,0.45);">' + esc(d.ambiance || '') + '</em></div>' +
+        '<div class="section-content" style="margin-top:10px;"><span style="color:var(--indigo-light);font-size:11px;font-family:\'DM Mono\',monospace;text-transform:uppercase;letter-spacing:.1em;">Energie :</span> ' + esc(d.niveau_energie || '') + '&nbsp;&middot;&nbsp;<span style="color:var(--indigo-light);font-size:11px;font-family:\'DM Mono\',monospace;text-transform:uppercase;letter-spacing:.1em;">Intimite :</span> ' + esc(d.niveau_intimite || '') + '<br><em style="color:rgba(240,242,248,0.45);">' + esc(d.ambiance || '') + '</em></div>' +
       '</div>' +
       '<div class="section-block"><div class="section-label">Moment de vie identifie</div><div class="section-content">' + esc(d.moment_de_vie || '') + '</div></div>' +
       '<div class="section-block"><div class="section-label">Concepts narratifs</div><div class="concepts-grid">' + conceptsHTML + '</div></div>' +
@@ -771,7 +813,7 @@ function resetResult() {
   document.getElementById('emptyState').style.display = 'flex';
 }
 
-// ─── UI helpers ──────────────────────────────────────────────────────────────
+// --- UI helpers --------------------------------------------------------------
 function setLoading(v) {
   isLoading = v;
   var btn = document.getElementById('genBtn');
