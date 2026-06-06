@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STUDIO SCENARIO - Analyse Emotionnelle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600;1,700&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --noir: #06080f;
+  --indigo-deep: #1a1f3a;
+  --indigo: #2d3580;
+  --indigo-mid: #3d4fa8;
+  --indigo-light: #6272d4;
+  --indigo-pale: #dde2f8;
+  --indigo-ultra: #f0f2fd;
+  --or: #c9a84c;
+  --ivoire: #f0f2f8;
+  --ivoire-soft: #d8dcf0;
+  --muted: #7a80a8;
+  --border-dark: rgba(98,114,212,0.22);
+  --border-light: #c8cce8;
+  --white: #f8f9fd;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--noir); color: var(--ivoire); min-height: 100vh; }
+
+/* SPLASH */
+#splash {
+  position: fixed; inset: 0;
+  background: var(--noir);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  z-index: 100; padding: 32px; overflow-y: auto;
+}
+.splash-bg {
+  position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(45,53,128,0.4) 0%, transparent 65%),
+    radial-gradient(ellipse at 80% 80%, rgba(61,79,168,0.18) 0%, transparent 50%);
+}
+.splash-inner {
+  width: min(540px, 100%);
+  display: flex; flex-direction: column;
+  align-items: center; gap: 32px;
+  position: relative; z-index: 2;
+}
+.splash-curtain { display: flex; align-items: center; gap: 16px; }
+.curtain-line { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--indigo-mid), transparent); }
+.curtain-icon { font-size: 26px; }
+.splash-eyebrow {
+  font-family: 'DM Mono', monospace; font-size: 9px;
+  letter-spacing: .55em; text-transform: uppercase;
+  color: var(--indigo-light); text-align: center; margin-bottom: 10px;
+}
+.splash-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(4rem, 13vw, 7rem);
+  font-weight: 300; line-height: .85;
+  color: var(--white); text-align: center;
+}
+.splash-title strong {
+  font-weight: 700; font-style: italic;
+  color: var(--indigo-light); display: block;
+}
+.splash-subtitle {
+  font-size: 13px; font-weight: 300;
+  color: rgba(240,242,248,0.4);
+  text-align: center; line-height: 1.7;
+  max-width: 340px;
+}
+.splash-sep { width: 48px; height: 2px; background: var(--indigo-mid); border-radius: 2px; }
+.api-box {
+  width: 100%;
+  background: rgba(45,53,128,0.12);
+  border: 1px solid var(--border-dark);
+  border-radius: 1.5rem; padding: 28px;
+}
+.api-label {
+  font-family: 'DM Mono', monospace; font-size: 9px;
+  text-transform: uppercase; letter-spacing: .35em;
+  color: var(--indigo-light); margin-bottom: 12px;
+}
+.api-input {
+  width: 100%; padding: 14px 18px;
+  background: rgba(0,0,0,0.45);
+  border: 1px solid rgba(98,114,212,0.3);
+  border-radius: 1rem;
+  font-family: 'DM Mono', monospace; font-size: 13px;
+  color: var(--white); outline: none;
+  transition: border-color .2s; margin-bottom: 8px;
+}
+.api-input::placeholder { color: rgba(240,242,248,0.2); }
+.api-input:focus { border-color: var(--indigo-light); }
+.api-note { font-size: 10px; color: rgba(240,242,248,0.3); font-family: 'DM Mono', monospace; }
+.api-note a { color: var(--or); text-decoration: none; }
+.enter-btn {
+  width: 100%; padding: 22px; margin-top: 16px;
+  background: var(--indigo);
+  border: none; border-radius: 1rem;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 18px; font-weight: 600; font-style: italic;
+  color: var(--white); cursor: pointer;
+  transition: transform .15s, background .2s;
+  box-shadow: 0 16px 48px rgba(45,53,128,0.5);
+}
+.enter-btn:hover { transform: scale(1.02); background: var(--indigo-mid); }
+.enter-btn:active { transform: scale(.98); }
+.splash-features { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; width: 100%; }
+.feat {
+  text-align: center; padding: 16px 8px;
+  border: 1px solid rgba(98,114,212,0.2);
+  border-radius: 1rem; background: rgba(45,53,128,0.08);
+}
+.feat-icon { font-size: 20px; margin-bottom: 8px; }
+.feat-label {
+  font-family: 'DM Mono', monospace; font-size: 8px;
+  text-transform: uppercase; letter-spacing: .2em;
+  color: rgba(240,242,248,0.3); line-height: 1.5;
+}
+
+/* APP */
+#app { display: none; min-height: 100vh; flex-direction: column; }
+#app.visible { display: flex; }
+
+/* HEADER */
+header {
+  background: rgba(6,8,15,0.94);
+  padding: 16px 32px;
+  display: flex; justify-content: space-between; align-items: center;
+  position: sticky; top: 0; z-index: 50;
+  border-bottom: 1px solid var(--border-dark);
+  backdrop-filter: blur(20px);
+  flex-wrap: wrap; gap: 12px;
+}
+.header-brand { display: flex; align-items: center; gap: 14px; cursor: pointer; }
+.header-mono {
+  width: 40px; height: 40px; background: var(--indigo);
+  border-radius: 10px; display: flex; align-items: center; justify-content: center;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px; font-weight: 700; font-style: italic; color: var(--white);
+  box-shadow: 0 4px 20px rgba(45,53,128,0.5);
+}
+.header-name { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 600; font-style: italic; color: var(--white); }
+.header-tag { font-family: 'DM Mono', monospace; font-size: 8px; text-transform: uppercase; letter-spacing: .3em; color: var(--indigo-light); margin-top: 2px; }
+.header-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+/* COMPTEUR TOKENS */
+.token-counter {
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(45,53,128,0.2);
+  border: 1px solid var(--border-dark);
+  border-radius: 999px; padding: 6px 14px;
+}
+.token-counter-item { text-align: center; }
+.token-val {
+  font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500;
+  color: var(--ivoire); display: block; line-height: 1;
+}
+.token-lbl {
+  font-family: 'DM Mono', monospace; font-size: 7px;
+  text-transform: uppercase; letter-spacing: .15em;
+  color: var(--muted); margin-top: 2px; display: block;
+}
+.token-sep { width: 1px; height: 24px; background: var(--border-dark); }
+.token-used .token-val { color: var(--or); }
+
+.model-badge {
+  font-family: 'DM Mono', monospace; font-size: 8px;
+  text-transform: uppercase; letter-spacing: .15em;
+  color: rgba(240,242,248,0.3); padding: 5px 12px;
+  border: 1px solid var(--border-dark); border-radius: 999px;
+}
+.live-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--indigo-light);
+  box-shadow: 0 0 12px var(--indigo-mid);
+  animation: blink 2s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+/* MAIN */
+main {
+  flex: 1; max-width: 1400px; margin: 0 auto; width: 100%;
+  padding: 32px; display: grid; grid-template-columns: 1fr; gap: 24px;
+}
+@media(min-width:1024px) { main { grid-template-columns: 400px 1fr; } }
+
+/* PANELS */
+.panel {
+  background: rgba(240,242,248,0.03);
+  border-radius: 1.75rem; padding: 28px;
+  border: 1px solid var(--border-dark);
+}
+.panel-title {
+  font-family: 'DM Mono', monospace; font-size: 8px;
+  text-transform: uppercase; letter-spacing: .45em;
+  color: var(--indigo-light); margin-bottom: 18px;
+  display: flex; align-items: center; gap: 10px;
+}
+.panel-title::before { content: ''; display: block; width: 18px; height: 1px; background: var(--indigo-mid); }
+
+/* UPLOAD */
+.upload-zone {
+  border: 1px dashed rgba(98,114,212,0.4);
+  border-radius: 1.25rem; padding: 24px 18px;
+  text-align: center; cursor: pointer;
+  transition: all .2s; background: rgba(45,53,128,0.06);
+  position: relative; overflow: hidden; margin-bottom: 12px;
+}
+.upload-zone:hover { border-color: var(--indigo-light); background: rgba(45,53,128,0.14); }
+.upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.upload-icon { font-size: 26px; margin-bottom: 8px; }
+.upload-text { font-family: 'DM Mono', monospace; font-size: 9px; text-transform: uppercase; letter-spacing: .2em; color: var(--muted); }
+.upload-sub { font-size: 11px; color: rgba(240,242,248,0.22); margin-top: 4px; font-weight: 300; }
+.img-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 12px; }
+.img-thumb { aspect-ratio: 1; border-radius: .85rem; overflow: hidden; position: relative; border: 1px solid var(--border-dark); }
+.img-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.img-thumb .remove {
+  position: absolute; top: 4px; right: 4px;
+  background: rgba(0,0,0,0.75); color: white;
+  border: none; border-radius: 50%; width: 22px; height: 22px;
+  cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center;
+}
+.img-thumb .remove:hover { background: var(--indigo); }
+.img-num {
+  position: absolute; bottom: 4px; left: 4px;
+  background: var(--indigo); color: var(--white);
+  font-family: 'DM Mono', monospace; font-size: 7px;
+  padding: 2px 5px; border-radius: 3px;
+  text-transform: uppercase; letter-spacing: .1em;
+}
+
+/* INPUTS */
+.intention-textarea {
+  width: 100%; padding: 14px 16px;
+  border: 1px solid var(--border-dark); border-radius: 1.25rem;
+  font-family: 'Cormorant Garamond', serif; font-size: 15px; font-style: italic;
+  color: var(--ivoire); line-height: 1.7;
+  background: rgba(0,0,0,0.25); resize: none; outline: none;
+  transition: border-color .2s; min-height: 88px;
+}
+.intention-textarea:focus { border-color: var(--indigo-light); }
+.intention-textarea::placeholder { color: rgba(240,242,248,0.18); }
+
+.mood-grid { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 14px; }
+.mood-chip {
+  padding: 7px 13px; border: 1px solid var(--border-dark);
+  border-radius: 999px; font-size: 11px; color: rgba(240,242,248,0.45);
+  cursor: pointer; transition: all .2s; background: transparent;
+}
+.mood-chip:hover { border-color: var(--indigo-light); color: var(--indigo-pale); }
+.mood-chip.active { background: var(--indigo); border-color: var(--indigo); color: var(--white); }
+
+.dur-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+.dur-btn {
+  padding: 14px 6px; border: 1px solid var(--border-dark);
+  border-radius: 1rem; background: transparent;
+  cursor: pointer; text-align: center; transition: all .2s; color: var(--ivoire);
+}
+.dur-btn:hover { border-color: var(--indigo-light); }
+.dur-btn.active { background: var(--indigo); border-color: var(--indigo); }
+.dur-val { font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 700; font-style: italic; display: block; }
+.dur-label { font-family: 'DM Mono', monospace; font-size: 7px; text-transform: uppercase; letter-spacing: .2em; color: rgba(240,242,248,0.35); margin-top: 3px; display: block; }
+.dur-btn.active .dur-label { color: rgba(255,255,255,0.55); }
+
+/* BTN GENERER */
+.gen-btn {
+  width: 100%; padding: 26px;
+  background: var(--indigo-deep);
+  border: 1px solid var(--indigo-mid);
+  border-radius: 1.5rem; cursor: pointer;
+  transition: transform .2s, background .2s;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  position: relative; overflow: hidden;
+  box-shadow: 0 20px 60px rgba(45,53,128,0.4);
+}
+.gen-btn:hover:not(:disabled) { transform: scale(1.02); background: var(--indigo); }
+.gen-btn:active:not(:disabled) { transform: scale(.98); }
+.gen-btn:disabled { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.07); cursor: not-allowed; box-shadow: none; }
+.gen-btn-label { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 600; font-style: italic; color: var(--white); letter-spacing: .06em; }
+.gen-btn.loading .gen-btn-label::after {
+  content: ''; display: inline-block; width: 10px; height: 10px; margin-left: 12px;
+  border: 1.5px solid rgba(255,255,255,0.3); border-top-color: white;
+  border-radius: 50%; animation: spin .8s linear infinite; vertical-align: middle;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.gen-btn-sub { font-family: 'DM Mono', monospace; font-size: 8px; text-transform: uppercase; letter-spacing: .3em; color: var(--or); }
+.gen-msg { font-family: 'DM Mono', monospace; font-size: 8px; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: .2em; display: none; }
+
+.error-box { display: none; margin-top: 12px; padding: 14px 18px; background: rgba(180,40,40,0.12); border: 1px solid rgba(180,40,40,0.35); border-radius: 1rem; gap: 10px; align-items: flex-start; }
+.error-box.show { display: flex; }
+.error-text { font-size: 11px; font-weight: 500; color: #f87171; line-height: 1.5; }
+
+/* EMPTY */
+.empty-state {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; min-height: 520px;
+  border: 1px dashed var(--border-dark); border-radius: 2rem;
+  gap: 14px; text-align: center; padding: 40px;
+}
+.empty-icon { font-size: 52px; opacity: .18; filter: grayscale(1); }
+.empty-title { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 400; font-style: italic; color: rgba(240,242,248,0.28); }
+.empty-sub { font-size: 12px; color: rgba(240,242,248,0.18); font-weight: 300; max-width: 260px; line-height: 1.7; }
+
+/* SCENARIO OUTPUT */
+.scenario-output { background: rgba(240,242,248,0.02); border: 1px solid var(--border-dark); border-radius: 2rem; overflow: hidden; }
+.scenario-header {
+  background: var(--indigo-deep); padding: 26px 32px;
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 12px; border-bottom: 1px solid var(--border-dark);
+}
+.scenario-title { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 600; font-style: italic; color: var(--white); }
+.scenario-meta { font-family: 'DM Mono', monospace; font-size: 8px; text-transform: uppercase; letter-spacing: .2em; color: rgba(240,242,248,0.4); margin-top: 4px; }
+.btn-copy { padding: 8px 16px; background: rgba(240,242,248,0.1); border: 1px solid rgba(240,242,248,0.18); border-radius: .75rem; cursor: pointer; font-family: 'DM Mono', monospace; font-size: 8px; text-transform: uppercase; letter-spacing: .2em; color: var(--ivoire); transition: all .15s; flex-shrink: 0; }
+.btn-copy:hover { background: rgba(240,242,248,0.18); }
+
+.scenario-body { padding: 32px; display: flex; flex-direction: column; gap: 24px; }
+.section-block { border-left: 2px solid var(--indigo-mid); padding-left: 16px; }
+.section-label { font-family: 'DM Mono', monospace; font-size: 8px; text-transform: uppercase; letter-spacing: .4em; color: var(--indigo-light); margin-bottom: 10px; }
+.section-content { font-family: 'DM Sans', sans-serif; font-size: 13px; line-height: 1.8; color: rgba(240,242,248,0.75); font-weight: 300; }
+
+.emotion-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.etag { padding: 5px 13px; border-radius: 999px; font-size: 11px; font-weight: 500; }
+.etag-main { background: var(--indigo-mid); color: var(--white); }
+.etag-sec { background: rgba(240,242,248,0.06); color: rgba(240,242,248,0.55); border: 1px solid var(--border-dark); }
+
+.arc-blocks { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 12px; }
+.arc-block { padding: 14px; border-radius: 1rem; text-align: center; }
+.arc-block.depart { background: rgba(45,53,128,0.2); border: 1px solid rgba(98,114,212,0.25); }
+.arc-block.evolution { background: rgba(201,168,76,0.08); border: 1px solid rgba(201,168,76,0.2); }
+.arc-block.final { background: rgba(45,53,128,0.32); border: 1px solid rgba(98,114,212,0.4); }
+.arc-label { font-family: 'DM Mono', monospace; font-size: 7px; text-transform: uppercase; letter-spacing: .2em; color: rgba(240,242,248,0.3); margin-bottom: 7px; }
+.arc-val { font-family: 'Cormorant Garamond', serif; font-size: 13px; font-weight: 600; font-style: italic; color: var(--ivoire); line-height: 1.4; }
+
+.concepts-grid { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+.concept-card { padding: 14px 18px; border-radius: 1rem; border: 1px solid var(--border-dark); background: rgba(240,242,248,0.02); transition: all .2s; }
+.concept-card.selected { background: rgba(45,53,128,0.28); border-color: var(--indigo-mid); }
+.concept-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.concept-num { font-family: 'DM Mono', monospace; font-size: 8px; text-transform: uppercase; letter-spacing: .2em; color: rgba(240,242,248,0.3); }
+.concept-selected-badge { font-family: 'DM Mono', monospace; font-size: 7px; text-transform: uppercase; letter-spacing: .2em; background: var(--indigo-mid); color: var(--white); padding: 2px 7px; border-radius: 3px; display: none; }
+.concept-card.selected .concept-selected-badge { display: block; }
+.concept-titre { font-family: 'Cormorant Garamond', serif; font-size: 14px; font-weight: 600; font-style: italic; color: var(--ivoire); margin-bottom: 5px; }
+.concept-text { font-size: 12px; line-height: 1.7; color: rgba(240,242,248,0.55); font-weight: 300; }
+.notes-block { font-style: italic; background: rgba(45,53,128,0.15); padding: 14px 18px; border-radius: 1rem; border-left: 3px solid var(--or); margin-top: 10px; color: rgba(240,242,248,0.65); font-size: 13px; line-height: 1.8; }
+
+.btn-new { padding: 11px 22px; background: transparent; border: 1px solid var(--border-dark); border-radius: .85rem; cursor: pointer; font-family: 'DM Mono', monospace; font-size: 8px; text-transform: uppercase; letter-spacing: .2em; color: rgba(240,242,248,0.3); transition: all .2s; align-self: flex-start; margin-top: 4px; }
+.btn-new:hover { border-color: var(--indigo-light); color: var(--indigo-pale); }
+
+footer { padding: 24px; text-align: center; border-top: 1px solid var(--border-dark); }
+footer p { font-family: 'DM Mono', monospace; font-size: 8px; text-transform: uppercase; letter-spacing: .4em; color: rgba(240,242,248,0.18); }
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-bg"></div>
+  <div class="splash-inner">
+    <div>
+      <div class="splash-curtain">
+        <div class="curtain-line"></div>
+        <div class="curtain-icon">🎭</div>
+        <div class="curtain-line"></div>
+      </div>
+      <p class="splash-eyebrow">Intelligence Narrative - Cinema</p>
+      <h1 class="splash-title">Studio<strong>Scenario</strong></h1>
+      <p class="splash-subtitle" style="margin:14px auto 0;">Revelez l'histoire cachee derriere vos images. L'IA lit les emotions, pas les pixels.</p>
+    </div>
+    <div class="splash-sep"></div>
+    <div class="api-box">
+      <p class="api-label">Cle API Google AI Studio</p>
+      <input type="password" class="api-input" id="apiKeyInput" placeholder="AIza..." autocomplete="off">
+      <p class="api-note">Cle gratuite sur <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a> - Gemini 2.5 Flash</p>
+      <button class="enter-btn" id="enterBtn">Entrer dans le studio</button>
+    </div>
+    <div class="splash-features">
+      <div class="feat"><div class="feat-icon">🎭</div><div class="feat-label">Lecture emotionnelle</div></div>
+      <div class="feat"><div class="feat-icon">✍️</div><div class="feat-label">Scenario structure</div></div>
+      <div class="feat"><div class="feat-icon">🎬</div><div class="feat-label">Arc narratif</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header>
+    <div class="header-brand" id="headerBrand">
+      <div class="header-mono">S</div>
+      <div>
+        <div class="header-name">Studio Scenario</div>
+        <div class="header-tag">Intelligence Narrative - Cinema</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="token-counter">
+        <div class="token-counter-item">
+          <span class="token-val" id="tokensUsed">0</span>
+          <span class="token-lbl">Tokens utilises</span>
+        </div>
+        <div class="token-sep"></div>
+        <div class="token-counter-item token-used">
+          <span class="token-val" id="callCount">0</span>
+          <span class="token-lbl">Analyses</span>
+        </div>
+        <div class="token-sep"></div>
+        <div class="token-counter-item">
+          <span class="token-val" id="lastTokens">-</span>
+          <span class="token-lbl">Derniere analyse</span>
+        </div>
+      </div>
+      <span class="model-badge">Gemini 2.5 Flash</span>
+      <div class="live-dot"></div>
+    </div>
+  </header>
+
+  <main>
+    <!-- GAUCHE -->
+    <div style="display:flex;flex-direction:column;gap:18px;">
+
+      <div class="panel">
+        <p class="panel-title">Images sources</p>
+        <div class="img-grid" id="imgGrid"></div>
+        <div class="upload-zone" id="uploadZone">
+          <input type="file" id="fileInput" accept="image/*" multiple>
+          <div class="upload-icon">🎞️</div>
+          <div class="upload-text">Ajouter des images</div>
+          <div class="upload-sub">Cliquez ou glissez - jusqu'a 8 images</div>
+        </div>
+        <div style="font-family:'DM Mono',monospace;font-size:8px;color:rgba(240,242,248,0.22);letter-spacing:.15em;text-transform:uppercase;text-align:center;margin-top:8px;">
+          <span id="imgCount">0</span> image(s) chargee(s)
+        </div>
+      </div>
+
+      <div class="panel">
+        <p class="panel-title">Intention creative</p>
+        <textarea class="intention-textarea" id="intentionInput" rows="3" placeholder="Decrivez l'ambiance, l'emotion, le message... (optionnel)"></textarea>
+      </div>
+
+      <div class="panel">
+        <p class="panel-title">Moment de vie</p>
+        <div class="mood-grid">
+          <div class="mood-chip" data-val="moment familial">Famille</div>
+          <div class="mood-chip" data-val="grossesse">Grossesse</div>
+          <div class="mood-chip" data-val="rencontre">Rencontre</div>
+          <div class="mood-chip" data-val="voyage">Voyage</div>
+          <div class="mood-chip" data-val="celebration">Celebration</div>
+          <div class="mood-chip" data-val="nostalgie">Nostalgie</div>
+          <div class="mood-chip" data-val="accomplissement">Accomplissement</div>
+          <div class="mood-chip" data-val="transformation personnelle">Transformation</div>
+          <div class="mood-chip" data-val="aventure">Aventure</div>
+          <div class="mood-chip" data-val="deuil">Deuil</div>
+          <div class="mood-chip" data-val="amour">Amour</div>
+          <div class="mood-chip" data-val="naissance">Naissance</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <p class="panel-title">Duree cible</p>
+        <div class="dur-grid">
+          <div class="dur-btn" data-dur="5s"><span class="dur-val">5s</span><span class="dur-label">Court</span></div>
+          <div class="dur-btn active" data-dur="8s"><span class="dur-val">8s</span><span class="dur-label">Standard</span></div>
+          <div class="dur-btn" data-dur="15s"><span class="dur-val">15s</span><span class="dur-label">Long</span></div>
+        </div>
+      </div>
+
+      <button class="gen-btn" id="genBtn">
+        <span class="gen-btn-label" id="genLabel">Reveler l'histoire</span>
+        <span class="gen-btn-sub">Analyse emotionnelle - Gemini 2.5 Flash</span>
+        <span class="gen-msg" id="genMsg"></span>
+      </button>
+
+      <div class="error-box" id="errorBox">
+        <span style="font-size:16px;flex-shrink:0;">⚠️</span>
+        <p class="error-text" id="errorText"></p>
+      </div>
+    </div>
+
+    <!-- DROITE -->
+    <div style="display:flex;flex-direction:column;gap:14px;" id="resultPanel">
+      <div class="empty-state" id="emptyState">
+        <div class="empty-icon">🎞️</div>
+        <p class="empty-title">Le rideau n'est pas encore leve</p>
+        <p class="empty-sub">Chargez vos images ou decrivez votre intention, puis laissez l'IA reveler l'histoire cachee.</p>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p>Studio Scenario - Intelligence Narrative - Gemini 2.5 Flash - 2025</p>
+  </footer>
+</div>
+
+<script>
+var apiKey = '';
+var uploadedImages = [];
+var selectedMoods = [];
+var selectedDur = '8s';
+var isLoading = false;
+var loadingInterval = null;
+var totalTokensUsed = 0;
+var callCount = 0;
+
+var LOADING_MSGS = [
+  'Lecture des images en cours...',
+  'Analyse des emotions et des regards...',
+  'Identification du moment de vie...',
+  'Construction des concepts narratifs...',
+  'Ecriture du scenario...',
+  'Arc emotionnel en cours...'
+];
+
+// ─── Init evenements ──────────────────────────────────────────────────────────
+document.getElementById('enterBtn').addEventListener('click', function() {
+  var k = document.getElementById('apiKeyInput').value.trim();
+  if (!k) { alert('Colle ta cle API Google AI Studio (commence par AIza...)'); return; }
+  if (!k.startsWith('AIza')) {
+    if (!confirm('Cette cle ne commence pas par AIza. Continuer quand meme ?')) return;
+  }
+  apiKey = k;
+  document.getElementById('splash').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+});
+
+document.getElementById('headerBrand').addEventListener('click', function() {
+  document.getElementById('splash').style.display = 'flex';
+  document.getElementById('app').classList.remove('visible');
+});
+
+document.getElementById('fileInput').addEventListener('change', function() {
+  handleFiles(this.files);
+});
+
+document.getElementById('genBtn').addEventListener('click', function() {
+  analyzeScenario();
+});
+
+document.querySelectorAll('.mood-chip').forEach(function(chip) {
+  chip.addEventListener('click', function() {
+    var val = this.getAttribute('data-val');
+    var idx = selectedMoods.indexOf(val);
+    if (idx >= 0) { selectedMoods.splice(idx, 1); this.classList.remove('active'); }
+    else { selectedMoods.push(val); this.classList.add('active'); }
+  });
+});
+
+document.querySelectorAll('.dur-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    selectedDur = this.getAttribute('data-dur');
+    document.querySelectorAll('.dur-btn').forEach(function(b) { b.classList.remove('active'); });
+    this.classList.add('active');
+  });
+});
+
+// ─── Images ──────────────────────────────────────────────────────────────────
+function handleFiles(files) {
+  Array.from(files).forEach(function(f) {
+    if (uploadedImages.length >= 8) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      uploadedImages.push({ dataUrl: e.target.result, name: f.name });
+      renderImgGrid();
+    };
+    reader.readAsDataURL(f);
+  });
+}
+
+function removeImg(idx) {
+  uploadedImages.splice(idx, 1);
+  renderImgGrid();
+}
+
+function renderImgGrid() {
+  var grid = document.getElementById('imgGrid');
+  grid.innerHTML = '';
+  uploadedImages.forEach(function(img, i) {
+    var div = document.createElement('div');
+    div.className = 'img-thumb';
+    var imgEl = document.createElement('img');
+    imgEl.src = img.dataUrl;
+    imgEl.alt = 'img';
+    var removeBtn = document.createElement('button');
+    removeBtn.className = 'remove';
+    removeBtn.textContent = 'x';
+    removeBtn.setAttribute('data-idx', i);
+    removeBtn.addEventListener('click', function() { removeImg(parseInt(this.getAttribute('data-idx'))); });
+    var numEl = document.createElement('div');
+    numEl.className = 'img-num';
+    numEl.textContent = 'IMG ' + (i + 1);
+    div.appendChild(imgEl);
+    div.appendChild(removeBtn);
+    div.appendChild(numEl);
+    grid.appendChild(div);
+  });
+  document.getElementById('imgCount').textContent = uploadedImages.length;
+}
+
+// ─── Analyse ─────────────────────────────────────────────────────────────────
+function analyzeScenario() {
+  if (isLoading) return;
+  hideError();
+  var intention = document.getElementById('intentionInput').value.trim();
+  if (uploadedImages.length === 0 && !intention) {
+    showError('Chargez au moins une image ou decrivez votre intention creative.');
+    return;
+  }
+  setLoading(true);
+  callGemini(intention).then(function(result) {
+    renderScenario(result);
+    setLoading(false);
+  }).catch(function(e) {
+    showError(e.message);
+    setLoading(false);
+  });
+}
+
+function callGemini(intention) {
+  var parts = [];
+  uploadedImages.forEach(function(img) {
+    var b64 = img.dataUrl.split(',')[1];
+    var mime = img.dataUrl.split(';')[0].split(':')[1];
+    parts.push({ inline_data: { mime_type: mime, data: b64 } });
+  });
+
+  var moodCtx = selectedMoods.length > 0 ? ('Moments de vie identifies : ' + selectedMoods.join(', ') + '. ') : '';
+  var intCtx = intention ? ('Intention creative : "' + intention + '". ') : '';
+  var durCtx = 'Duree cible : ' + selectedDur + '.';
+
+  var systemPrompt = 'Tu es Studio Scenario, un scenariste IA specialise dans la creation d\'histoires emotionnelles a partir d\'images. Tu ne decris pas les images. Tu reveles ce qu\'elles racontent emotionnellement. Tu construis une narration humaine, coherente et puissante.';
+
+  var userPrompt = moodCtx + intCtx + durCtx + '\n\n';
+  if (uploadedImages.length > 0) {
+    userPrompt += 'Analyse ces ' + uploadedImages.length + ' image(s) et construis un scenario emotionnel complet.\n\n';
+  } else {
+    userPrompt += 'A partir de l\'intention creative, construis un scenario emotionnel complet.\n\n';
+  }
+  userPrompt += 'Reponds UNIQUEMENT en JSON valide, sans backticks, sans texte avant ou apres. Structure exacte :\n{"emotion_dominante":"string","emotions_secondaires":["string","string"],"niveau_energie":"Bas|Moyen|Eleve|Intense","niveau_intimite":"Prive|Intime|Personnel|Universel","ambiance":"string","moment_de_vie":"string","concepts":[{"titre":"string","description":"string"},{"titre":"string","description":"string"},{"titre":"string","description":"string"}],"concept_retenu_index":0,"resume":"string","intention_emotionnelle":"string","arc_depart":"string","arc_evolution":"string","arc_final":"string","notes_realisateur":"string"}';
+
+  parts.push({ text: userPrompt });
+
+  var body = {
+    system_instruction: { parts: [{ text: systemPrompt }] },
+    contents: [{ role: 'user', parts: parts }],
+    generationConfig: { temperature: 0.85, maxOutputTokens: 2048 }
+  };
+
+  var endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=' + encodeURIComponent(apiKey);
+
+  return fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  }).then(function(res) {
+    return res.json().then(function(data) {
+      if (!res.ok) {
+        var msg = (data.error && data.error.message) ? data.error.message : ('HTTP ' + res.status);
+        if (res.status === 400) throw new Error('Cle API invalide. Verifie sur aistudio.google.com/apikey');
+        if (res.status === 403) throw new Error('Acces refuse. Verifie que ta cle Google AI Studio est active.');
+        if (res.status === 429) throw new Error('Quota depasse. Attends quelques secondes et reessaie.');
+        throw new Error('Erreur Gemini : ' + msg);
+      }
+      // Compteur tokens
+      if (data.usageMetadata) {
+        var used = (data.usageMetadata.promptTokenCount || 0) + (data.usageMetadata.candidatesTokenCount || 0);
+        totalTokensUsed += used;
+        callCount += 1;
+        document.getElementById('tokensUsed').textContent = totalTokensUsed.toLocaleString('fr-FR');
+        document.getElementById('callCount').textContent = callCount;
+        document.getElementById('lastTokens').textContent = used.toLocaleString('fr-FR');
+      }
+      var text = '';
+      try { text = data.candidates[0].content.parts[0].text; }
+      catch(e) { throw new Error('Reponse inattendue de Gemini.'); }
+      text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+      try { return JSON.parse(text); }
+      catch(e) { throw new Error('JSON invalide retourne par Gemini. Reessaie.'); }
+    });
+  });
+}
+
+// ─── Rendu scenario ──────────────────────────────────────────────────────────
+function renderScenario(d) {
+  var panel = document.getElementById('resultPanel');
+  document.getElementById('emptyState').style.display = 'none';
+  var retained = d.concept_retenu_index || 0;
+
+  var conceptsHTML = '';
+  if (d.concepts && d.concepts.length) {
+    d.concepts.forEach(function(c, i) {
+      var isSel = i === retained;
+      var card = document.createElement('div');
+      card.className = 'concept-card' + (isSel ? ' selected' : '');
+      card.innerHTML =
+        '<div class="concept-card-header">' +
+          '<span class="concept-num">Concept ' + (i+1) + '</span>' +
+          (isSel ? '<span class="concept-selected-badge">Retenu</span>' : '') +
+        '</div>' +
+        '<div class="concept-titre">' + esc(c.titre) + '</div>' +
+        '<div class="concept-text">' + esc(c.description) + '</div>';
+      conceptsHTML += card.outerHTML;
+    });
+  }
+
+  var emoSecHTML = '';
+  if (d.emotions_secondaires && d.emotions_secondaires.length) {
+    d.emotions_secondaires.forEach(function(e) {
+      emoSecHTML += '<span class="etag etag-sec">' + esc(e) + '</span>';
+    });
+  }
+
+  var wrap = document.createElement('div');
+  wrap.id = 'scenarioOutput';
+  wrap.className = 'scenario-output';
+  wrap.innerHTML =
+    '<div class="scenario-header">' +
+      '<div>' +
+        '<div class="scenario-title">Analyse complete</div>' +
+        '<div class="scenario-meta">Gemini 2.5 Flash - ' + new Date().toLocaleTimeString('fr-FR') + ' - ' + uploadedImages.length + ' image(s)</div>' +
+      '</div>' +
+      '<button class="btn-copy" id="btnCopy">Copier tout</button>' +
+    '</div>' +
+    '<div class="scenario-body">' +
+      '<div class="section-block">' +
+        '<div class="section-label">Lecture emotionnelle</div>' +
+        '<div class="emotion-tags"><span class="etag etag-main">' + esc(d.emotion_dominante || '') + '</span>' + emoSecHTML + '</div>' +
+        '<div class="section-content" style="margin-top:10px;"><span style="color:var(--indigo-light);font-size:11px;font-family:\'DM Mono\',monospace;text-transform:uppercase;letter-spacing:.1em;">Energie :</span> ' + esc(d.niveau_energie || '') + '&nbsp;·&nbsp;<span style="color:var(--indigo-light);font-size:11px;font-family:\'DM Mono\',monospace;text-transform:uppercase;letter-spacing:.1em;">Intimite :</span> ' + esc(d.niveau_intimite || '') + '<br><em style="color:rgba(240,242,248,0.45);">' + esc(d.ambiance || '') + '</em></div>' +
+      '</div>' +
+      '<div class="section-block"><div class="section-label">Moment de vie identifie</div><div class="section-content">' + esc(d.moment_de_vie || '') + '</div></div>' +
+      '<div class="section-block"><div class="section-label">Concepts narratifs</div><div class="concepts-grid">' + conceptsHTML + '</div></div>' +
+      '<div class="section-block"><div class="section-label">Resume du scenario</div><div class="section-content">' + esc(d.resume || '') + '</div></div>' +
+      '<div class="section-block"><div class="section-label">Intention emotionnelle</div><div class="section-content">' + esc(d.intention_emotionnelle || '') + '</div></div>' +
+      '<div class="section-block"><div class="section-label">Arc emotionnel</div>' +
+        '<div class="arc-blocks">' +
+          '<div class="arc-block depart"><div class="arc-label">Depart</div><div class="arc-val">' + esc(d.arc_depart || '') + '</div></div>' +
+          '<div class="arc-block evolution"><div class="arc-label">Evolution</div><div class="arc-val">' + esc(d.arc_evolution || '') + '</div></div>' +
+          '<div class="arc-block final"><div class="arc-label">Final</div><div class="arc-val">' + esc(d.arc_final || '') + '</div></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="section-block"><div class="section-label">Notes pour le realisateur</div><div class="notes-block">' + esc(d.notes_realisateur || '') + '</div></div>' +
+    '</div>';
+
+  var old = document.getElementById('scenarioOutput');
+  if (old) old.parentNode.removeChild(old);
+  var btnOld = panel.querySelector('.btn-new');
+  if (btnOld) btnOld.parentNode.removeChild(btnOld);
+
+  panel.appendChild(wrap);
+
+  document.getElementById('btnCopy').addEventListener('click', function() {
+    var txt = wrap.innerText || wrap.textContent;
+    navigator.clipboard.writeText(txt).then(function() {
+      var btn = document.getElementById('btnCopy');
+      if (btn) { btn.textContent = 'Copie !'; setTimeout(function() { btn.textContent = 'Copier tout'; }, 2000); }
+    });
+  });
+
+  var btnNew = document.createElement('button');
+  btnNew.className = 'btn-new';
+  btnNew.textContent = 'Nouvelle analyse';
+  btnNew.addEventListener('click', resetResult);
+  panel.appendChild(btnNew);
+}
+
+function resetResult() {
+  var panel = document.getElementById('resultPanel');
+  var old = document.getElementById('scenarioOutput');
+  if (old) old.parentNode.removeChild(old);
+  var btn = panel.querySelector('.btn-new');
+  if (btn) btn.parentNode.removeChild(btn);
+  document.getElementById('emptyState').style.display = 'flex';
+}
+
+// ─── UI helpers ──────────────────────────────────────────────────────────────
+function setLoading(v) {
+  isLoading = v;
+  var btn = document.getElementById('genBtn');
+  var label = document.getElementById('genLabel');
+  var msg = document.getElementById('genMsg');
+  btn.disabled = v;
+  if (v) {
+    btn.classList.add('loading');
+    label.textContent = 'Analyse en cours';
+    msg.style.display = 'block';
+    var idx = 0;
+    msg.textContent = LOADING_MSGS[0];
+    clearInterval(loadingInterval);
+    loadingInterval = setInterval(function() {
+      if (!isLoading) return;
+      idx = (idx + 1) % LOADING_MSGS.length;
+      msg.textContent = LOADING_MSGS[idx];
+    }, 2500);
+  } else {
+    btn.classList.remove('loading');
+    label.textContent = "Reveler l'histoire";
+    msg.style.display = 'none';
+    clearInterval(loadingInterval);
+  }
+}
+
+function showError(msg) {
+  document.getElementById('errorText').textContent = msg;
+  document.getElementById('errorBox').classList.add('show');
+}
+function hideError() {
+  document.getElementById('errorBox').classList.remove('show');
+}
+function esc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
