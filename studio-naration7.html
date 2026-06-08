@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studio Scénario 2.0</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
+  :root {
+    --noir: #0d0d0d; --blanc: #f7f5f0; --or: #c8a96e; --or-light: #e8d5aa;
+    --gris: #6b6560; --gris-light: #a09890; --vert: #3a7a5a; --border: rgba(200,169,110,0.2);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--noir); color: var(--blanc); font-family: 'DM Sans', sans-serif; min-height: 100vh; font-size: 15px; }
+
+  .header { padding: 2rem; border-bottom: 1px solid var(--border); display: flex; align-items: baseline; gap: 1rem; }
+  .header-title { font-family: 'DM Serif Display', serif; font-size: 2rem; color: var(--blanc); letter-spacing: -0.02em; }
+  .header-badge { background: var(--or); color: var(--noir); font-size: 10px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; padding: 3px 8px; border-radius: 3px; }
+  .header-sub { margin-left: auto; color: var(--gris); font-size: 12px; }
+
+  .api-zone { padding: 0.75rem 2rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+  .api-label { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gris); white-space: nowrap; }
+  .api-input { flex: 1; min-width: 160px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 4px; padding: 7px 12px; color: var(--blanc); font-family: 'DM Sans', sans-serif; font-size: 13px; outline: none; transition: border-color 0.2s; }
+  .api-input:focus { border-color: var(--or); }
+  .api-status { width: 8px; height: 8px; border-radius: 50%; background: var(--gris); flex-shrink: 0; transition: background 0.3s; }
+  .api-status.ok { background: var(--vert); }
+  .api-divider { width: 1px; height: 28px; background: var(--border); flex-shrink: 0; }
+  .moteur-badge { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; padding: 3px 9px; border-radius: 3px; font-weight: 600; flex-shrink: 0; }
+  .moteur-badge.aiza { background: rgba(200,169,110,0.15); color: var(--or); border: 1px solid rgba(200,169,110,0.3); }
+  .moteur-badge.vertex { background: rgba(42,90,138,0.2); color: #6aabde; border: 1px solid rgba(42,90,138,0.4); }
+
+  .main { display: grid; grid-template-columns: 1fr 1fr; gap: 0; min-height: calc(100vh - 120px); }
+
+  /* LEFT */
+  .panel-left { padding: 2rem; border-right: 1px solid var(--border); display: flex; flex-direction: column; gap: 1.5rem; overflow-y: auto; max-height: calc(100vh - 120px); }
+  .section-label { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--or); margin-bottom: 0.5rem; }
+
+  /* Upload multi */
+  .upload-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .upload-slot { border: 1.5px dashed rgba(200,169,110,0.3); border-radius: 8px; aspect-ratio: 3/4; position: relative; overflow: hidden; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
+  .upload-slot:hover { border-color: var(--or); background: rgba(200,169,110,0.03); }
+  .upload-slot.filled { border-style: solid; border-color: var(--or); }
+  .upload-slot input[type=file] { position: absolute; width: 0; height: 0; opacity: 0; pointer-events: none; }
+  .slot-placeholder { text-align: center; color: var(--gris); font-size: 11px; padding: 8px; }
+  .slot-placeholder span { display: block; font-size: 1.5rem; margin-bottom: 4px; }
+  .slot-img { width: 100%; height: 100%; object-fit: cover; display: none; }
+  .slot-img.show { display: block; }
+  .slot-remove { position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.7); border: none; color: var(--blanc); width: 22px; height: 22px; border-radius: 50%; cursor: pointer; font-size: 12px; display: none; align-items: center; justify-content: center; z-index: 2; }
+  .slot-remove.show { display: flex; }
+  .slot-num { position: absolute; bottom: 4px; left: 6px; font-size: 9px; color: var(--or); letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600; }
+
+  /* Intention */
+  .intention-wrap { position: relative; }
+  .intention-input { width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 8px; padding: 14px; color: var(--blanc); font-family: 'DM Sans', sans-serif; font-size: 14px; outline: none; resize: none; min-height: 120px; line-height: 1.6; transition: border-color 0.2s; }
+  .intention-input:focus { border-color: var(--or); }
+  .intention-input::placeholder { color: var(--gris); }
+  .intention-input.required { border-color: rgba(196,74,58,0.5); }
+  .intention-required { font-size: 11px; color: rgba(196,74,58,0.8); margin-top: 4px; display: none; }
+  .intention-required.show { display: block; }
+
+  /* Bouton */
+  .btn-generate { width: 100%; background: var(--or); color: var(--noir); border: none; border-radius: 6px; padding: 16px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; letter-spacing: 0.05em; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: auto; }
+  .btn-generate:hover { background: var(--or-light); transform: translateY(-1px); }
+  .btn-generate:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  .spinner { width: 16px; height: 16px; border: 2px solid rgba(0,0,0,0.2); border-top-color: var(--noir); border-radius: 50%; animation: spin 0.7s linear infinite; display: none; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* RIGHT */
+  .panel-right { padding: 2rem; overflow-y: auto; max-height: calc(100vh - 120px); display: flex; flex-direction: column; gap: 1.5rem; }
+
+  .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; color: var(--gris); text-align: center; padding: 3rem; }
+  .empty-icon { font-size: 3rem; opacity: 0.3; }
+  .empty-text { font-size: 13px; line-height: 1.6; max-width: 260px; }
+
+  /* Analyse */
+  .analyse-bloc { background: rgba(200,169,110,0.05); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; }
+  .analyse-titre { font-family: 'DM Serif Display', serif; font-size: 0.95rem; color: var(--or); margin-bottom: 1rem; display: flex; align-items: center; gap: 8px; }
+  .analyse-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .analyse-key { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gris); margin-bottom: 4px; }
+  .analyse-val { font-size: 13px; color: var(--blanc); line-height: 1.4; }
+  .tag { display: inline-block; background: rgba(200,169,110,0.15); border: 1px solid rgba(200,169,110,0.3); color: var(--or); font-size: 11px; padding: 2px 8px; border-radius: 3px; margin: 2px 3px 2px 0; }
+  .intensite-bar { height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; margin-top: 6px; overflow: hidden; }
+  .intensite-fill { height: 100%; background: var(--or); border-radius: 2px; }
+
+  /* Scénarios */
+  .scenarios-list { display: flex; flex-direction: column; gap: 1.25rem; }
+  .scenario-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; overflow: hidden; transition: border-color 0.2s; }
+  .scenario-card:hover { border-color: rgba(200,169,110,0.3); }
+  .scenario-header { padding: 1rem 1.25rem; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; align-items: flex-start; gap: 12px; }
+  .scenario-num { font-family: 'DM Serif Display', serif; font-size: 1.5rem; color: rgba(200,169,110,0.4); line-height: 1; flex-shrink: 0; }
+  .scenario-label { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--or); line-height: 1.4; }
+  .scenario-body { padding: 1.25rem; font-size: 14px; line-height: 1.8; color: var(--blanc); }
+
+  /* Loading */
+  .loading-state { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; padding: 4rem 2rem; color: var(--gris); }
+  .loading-spinner-lg { width: 36px; height: 36px; border: 2px solid rgba(200,169,110,0.2); border-top-color: var(--or); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  .loading-text { font-size: 13px; animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
+
+  .error-msg { background: rgba(196,74,58,0.1); border: 1px solid rgba(196,74,58,0.3); color: #e88070; padding: 12px 16px; border-radius: 6px; font-size: 13px; line-height: 1.5; }
+
+  @media (max-width: 900px) {
+    .main { grid-template-columns: 1fr; }
+    .panel-left, .panel-right { max-height: none; }
+    .panel-right { border-top: 1px solid var(--border); }
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <span class="header-title">Studio Scénario</span>
+  <span class="header-badge">2.0</span>
+  <span class="header-sub">Scan · Intention · Narration</span>
+</header>
+
+<div class="api-zone">
+  <span class="api-label">Google AI Studio</span>
+  <input type="password" id="apiKeyAiza" class="api-input" placeholder="AIza..." autocomplete="off" oninput="detectMoteur()">
+  <div id="statusAiza" class="api-status"></div>
+  <div class="api-divider"></div>
+  <span class="api-label">Vertex AI Express</span>
+  <input type="password" id="apiKeyVertex" class="api-input" placeholder="AQ..." autocomplete="off" oninput="detectMoteur()">
+  <div id="statusVertex" class="api-status"></div>
+  <div id="moteurBadge" class="moteur-badge aiza" style="display:none"></div>
+</div>
+
+<div class="main">
+  <div class="panel-left">
+
+    <!-- Upload 3 slots -->
+    <div>
+      <div class="section-label">Images (1 à 3)</div>
+      <div class="upload-grid">
+        <div class="upload-slot" id="slot0" onclick="triggerSlot(0)">
+          <input type="file" id="file0" accept="image/*" onchange="handleSlot(event,0)">
+          <div class="slot-placeholder" id="ph0"><span>📷</span>Principale</div>
+          <img class="slot-img" id="img0" alt="">
+          <button class="slot-remove" id="rem0" onclick="removeSlot(event,0)">✕</button>
+          <span class="slot-num">01</span>
+        </div>
+        <div class="upload-slot" id="slot1" onclick="triggerSlot(1)">
+          <input type="file" id="file1" accept="image/*" onchange="handleSlot(event,1)">
+          <div class="slot-placeholder" id="ph1"><span>＋</span>Optionnelle</div>
+          <img class="slot-img" id="img1" alt="">
+          <button class="slot-remove" id="rem1" onclick="removeSlot(event,1)">✕</button>
+          <span class="slot-num">02</span>
+        </div>
+        <div class="upload-slot" id="slot2" onclick="triggerSlot(2)">
+          <input type="file" id="file2" accept="image/*" onchange="handleSlot(event,2)">
+          <div class="slot-placeholder" id="ph2"><span>＋</span>Optionnelle</div>
+          <img class="slot-img" id="img2" alt="">
+          <button class="slot-remove" id="rem2" onclick="removeSlot(event,2)">✕</button>
+          <span class="slot-num">03</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Intention obligatoire -->
+    <div>
+      <div class="section-label">Ton intention — ce que tu veux raconter <span style="color:rgba(196,74,58,0.8)">*</span></div>
+      <div class="intention-wrap">
+        <textarea id="intention" class="intention-input" placeholder="Décris ce que tu veux raconter à travers cette image. Ex : elles sont en train de prendre un selfie, celle qui fait la bouche en cul de poule dit c'est bon t'as eu la photo ? et l'autre lui répond depuis tout à l'heure je fais une vidéo..." oninput="checkIntention()"></textarea>
+        <div class="intention-required" id="intentionRequired">⚠ Décris ton intention pour continuer</div>
+      </div>
+    </div>
+
+    <button class="btn-generate" id="btnGenerate" onclick="generate()">
+      <div class="spinner" id="spinner"></div>
+      <span id="btnText">✦ Analyser & Scénariser</span>
+    </button>
+
+  </div>
+
+  <div class="panel-right" id="outputPanel">
+    <div class="empty-state">
+      <div class="empty-icon">🎭</div>
+      <div class="empty-text">Importe une image, décris ce que tu veux raconter, et le studio génère 3 versions de ton scénario.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let slots = [null, null, null]; // {b64, mime}
+  let activeMoteur = null;
+
+  function detectMoteur() {
+    const aiza = document.getElementById('apiKeyAiza').value.trim();
+    const vertex = document.getElementById('apiKeyVertex').value.trim();
+    const badge = document.getElementById('moteurBadge');
+    const aizaOk = aiza.startsWith('AIza') && aiza.length > 20;
+    const vertexOk = aiza === '' && vertex.startsWith('AQ') && vertex.length > 10;
+    document.getElementById('statusAiza').className = 'api-status' + (aizaOk ? ' ok' : '');
+    document.getElementById('statusVertex').className = 'api-status' + (vertexOk ? ' ok' : '');
+    if (aizaOk) { activeMoteur = 'aiza'; badge.textContent = '⚡ Google AI Studio'; badge.className = 'moteur-badge aiza'; badge.style.display = ''; }
+    else if (vertexOk) { activeMoteur = 'vertex'; badge.textContent = '◈ Vertex AI Express'; badge.className = 'moteur-badge vertex'; badge.style.display = ''; }
+    else { activeMoteur = null; badge.style.display = 'none'; }
+  }
+
+  function triggerSlot(i) { document.getElementById('file' + i).click(); }
+
+  function handleSlot(e, i) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const data = ev.target.result;
+      slots[i] = { b64: data.split(',')[1], mime: file.type };
+      document.getElementById('img' + i).src = data;
+      document.getElementById('img' + i).classList.add('show');
+      document.getElementById('ph' + i).style.display = 'none';
+      document.getElementById('rem' + i).classList.add('show');
+      document.getElementById('slot' + i).classList.add('filled');
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeSlot(e, i) {
+    e.stopPropagation();
+    slots[i] = null;
+    document.getElementById('img' + i).classList.remove('show');
+    document.getElementById('img' + i).src = '';
+    document.getElementById('ph' + i).style.display = '';
+    document.getElementById('rem' + i).classList.remove('show');
+    document.getElementById('slot' + i).classList.remove('filled');
+    document.getElementById('file' + i).value = '';
+  }
+
+  function checkIntention() {
+    const val = document.getElementById('intention').value.trim();
+    const req = document.getElementById('intentionRequired');
+    const inp = document.getElementById('intention');
+    if (val.length > 0) { inp.classList.remove('required'); req.classList.remove('show'); }
+  }
+
+  async function callAPI(body) {
+    let res, data;
+    if (activeMoteur === 'aiza') {
+      const apiKey = document.getElementById('apiKeyAiza').value.trim();
+      res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+      });
+    } else {
+      const apiKey = document.getElementById('apiKeyVertex').value.trim();
+      res = await fetch('https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-2.5-flash:generateContent?key=' + encodeURIComponent(apiKey), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...body, contents: [{ role: 'user', parts: body.contents[0].parts }] })
+      });
+    }
+    data = await res.json();
+    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+    return data;
+  }
+
+  async function generate() {
+    if (!activeMoteur) { alert('Entre une clé API.'); return; }
+    const hasImage = slots.some(s => s !== null);
+    if (!hasImage) { alert('Importe au moins une image.'); return; }
+    const intention = document.getElementById('intention').value.trim();
+    if (!intention) {
+      document.getElementById('intention').classList.add('required');
+      document.getElementById('intentionRequired').classList.add('show');
+      return;
+    }
+
+    const btn = document.getElementById('btnGenerate');
+    const spinner = document.getElementById('spinner');
+    const btnText = document.getElementById('btnText');
+    btn.disabled = true;
+    spinner.style.display = 'block';
+    btnText.textContent = 'Analyse en cours...';
+
+    const output = document.getElementById('outputPanel');
+    output.innerHTML = '<div class="loading-state"><div class="loading-spinner-lg"></div><div class="loading-text">Scan émotionnel…</div></div>';
+
+    try {
+      // Build image parts
+      const imageParts = slots.filter(s => s !== null).map(s => ({ inline_data: { mime_type: s.mime, data: s.b64 } }));
+
+      // STEP 1 — Analyse
+      const analysePrompt = 'Analyse cette image. Reponds en JSON valide uniquement, sans markdown. Structure: {"personnages":"","relation":"","energie":"","emotion_dominante":"","emotion_secondaire":"","intensite":7,"lieu":"","ambiance":"","contexte_social":"","en_cours":"","potentiel":""}';
+      const analyseBody = { contents: [{ parts: [...imageParts, { text: analysePrompt }] }], generationConfig: { temperature: 0.1, maxOutputTokens: 1024, responseMimeType: "application/json" } };
+      const analyseData = await callAPI(analyseBody);
+      const analyseRaw = analyseData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      let analyse;
+      try { analyse = JSON.parse(analyseRaw.replace(/```json|```/g, '').trim()); }
+      catch(e) { const m = analyseRaw.match(/\{[\s\S]*\}/); if (!m) throw new Error('Analyse illisible, reessaie.'); analyse = JSON.parse(m[0]); }
+
+      // STEP 2 — 3 scénarios
+      output.innerHTML = '<div class="loading-state"><div class="loading-spinner-lg"></div><div class="loading-text">Écriture des scénarios…</div></div>';
+
+      const scenarioPrompt = `Tu es Studio Scénario. Tu reçois une image et l'intention narrative de l'utilisateur.
+
+CONTEXTE DE L'IMAGE :
+${analyse.en_cours}
+Personnages : ${analyse.personnages}
+Lieu : ${analyse.lieu}
+Énergie : ${analyse.energie}
+
+INTENTION DE L'UTILISATEUR :
+"${intention}"
+
+Tu dois écrire 3 scénarios distincts.
+
+PROPOSITION 1 — VERSION NETTOYÉE
+Reprends exactement l'histoire que l'utilisateur a racontée. Ne change pas la logique, ne change pas les personnages, ne change pas le déroulement. Corrige juste la structure, le rythme, les mots pour que ça soit plus clair et plus fluide. C'est son histoire, pas la tienne.
+
+PROPOSITION 2 — VERSION AMÉLIORÉE
+Pars de l'histoire de l'utilisateur et ajoute le détail, la réplique ou le twist qui la rend plus forte. On doit reconnaître son histoire mais elle est meilleure.
+
+PROPOSITION 3 — TON HISTOIRE
+Invente une histoire complètement différente qui part de la même émotion que ce que l'utilisateur voulait raconter. Autre déclencheur, autre déroulement. On ne reconnaît pas du tout l'histoire originale.
+
+RÈGLES POUR LES 3 PROPOSITIONS :
+- Court et concret — 3 à 5 phrases max
+- Ce qui se dit et ce qui se fait — pas ce qu'on ressent
+- Jamais de noms d'émotions
+- Jamais de description romanesque ou littéraire
+- Ça doit ressembler à de la vraie vie filmée
+- Les répliques entre guillemets quand il y en a
+
+Réponds UNIQUEMENT en JSON :
+{
+  "scenarios": [
+    {"numero": 1, "label": "Ta version nettoyée", "scene": "..."},
+    {"numero": 2, "label": "Ta version améliorée", "scene": "..."},
+    {"numero": 3, "label": "Mon histoire", "scene": "..."}
+  ]
+}`;
+
+      const scenarioBody = { contents: [{ parts: [...imageParts, { text: scenarioPrompt }] }], generationConfig: { temperature: 0.9, maxOutputTokens: 2048, responseMimeType: "application/json" } };
+      const scenarioData = await callAPI(scenarioBody);
+      const scenarioRaw = scenarioData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      const parsed = JSON.parse(scenarioRaw.replace(/```json|```/g, '').trim());
+
+      renderOutput(analyse, parsed.scenarios);
+
+    } catch (err) {
+      output.innerHTML = '<div style="padding:2rem"><div class="error-msg">⚠ Erreur : ' + err.message + '</div></div>';
+    } finally {
+      btn.disabled = false;
+      spinner.style.display = 'none';
+      btnText.textContent = '✦ Analyser & Scénariser';
+    }
+  }
+
+  function renderOutput(a, scenarios) {
+    const intensiteW = (a.intensite || 5) * 10;
+    let html = '<div class="analyse-bloc">' +
+      '<div class="analyse-titre">◆ Analyse de l\'image</div>' +
+      '<div class="analyse-grid">' +
+      '<div class="analyse-item"><div class="analyse-key">Personnages & relation</div><div class="analyse-val">' + (a.personnages||'') + ' <span style="color:var(--gris)">·</span> ' + (a.relation||'') + '</div></div>' +
+      '<div class="analyse-item"><div class="analyse-key">Énergie & ambiance</div><div class="analyse-val">' + (a.energie||'') + ' <span style="color:var(--gris)">·</span> ' + (a.ambiance||'') + '</div></div>' +
+      '<div class="analyse-item"><div class="analyse-key">Émotions</div><div class="analyse-val"><span class="tag">' + (a.emotion_dominante||'') + '</span><span class="tag" style="opacity:0.7">' + (a.emotion_secondaire||'') + '</span></div><div class="intensite-bar"><div class="intensite-fill" style="width:' + intensiteW + '%"></div></div></div>' +
+      '<div class="analyse-item"><div class="analyse-key">Contexte</div><div class="analyse-val">' + (a.lieu||'') + ' · ' + (a.contexte_social||'') + '</div></div>' +
+      '<div class="analyse-item" style="grid-column:1/-1"><div class="analyse-key">Ce qui se passe → Potentiel narratif</div><div class="analyse-val">' + (a.en_cours||'') + ' <span style="color:var(--or)">→</span> ' + (a.potentiel||'') + '</div></div>' +
+      '</div></div>';
+
+    html += '<div class="scenarios-list">';
+    (scenarios || []).forEach(s => {
+      html += '<div class="scenario-card">' +
+        '<div class="scenario-header"><div class="scenario-num">0' + s.numero + '</div><div class="scenario-label">' + (s.label||'') + '</div></div>' +
+        '<div class="scenario-body">' + (s.scene||'') + '</div>' +
+        '</div>';
+    });
+    html += '</div>';
+
+    document.getElementById('outputPanel').innerHTML = html;
+  }
+</script>
+</body>
+</html>
