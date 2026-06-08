@@ -581,16 +581,6 @@
       </div>
     </div>
 
-    <!-- Durée -->
-    <div>
-      <div class="section-label">Durée cible</div>
-      <div class="duree-grid">
-        <div class="duree-btn active" data-duree="6s" onclick="selectDuree(this)">6 sec</div>
-        <div class="duree-btn" data-duree="8s" onclick="selectDuree(this)">8 sec</div>
-        <div class="duree-btn" data-duree="15s" onclick="selectDuree(this)">15 sec</div>
-      </div>
-    </div>
-
     <!-- Contexte optionnel -->
     <div>
       <div class="section-label">Contexte (optionnel)</div>
@@ -616,7 +606,6 @@
 
 <script>
   let selectedMode = 'Vlog';
-  let selectedDuree = '6s';
   let imageBase64 = null;
   let imageMime = null;
   let activeMoteur = null; // 'aiza' | 'vertex'
@@ -652,12 +641,6 @@
     document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
     el.classList.add('active');
     selectedMode = el.dataset.mode;
-  }
-
-  function selectDuree(el) {
-    document.querySelectorAll('.duree-btn').forEach(b => b.classList.remove('active'));
-    el.classList.add('active');
-    selectedDuree = el.dataset.duree;
   }
 
   function handleFile(e) {
@@ -712,7 +695,7 @@
     output.innerHTML = `<div class="loading-state"><div class="loading-spinner-lg"></div><div class="loading-text">Analyse de l'image…</div></div>`;
 
     const contexte = document.getElementById('contexte').value.trim();
-    const prompt = buildPrompt(selectedMode, selectedDuree, contexte);
+    const prompt = buildPrompt(selectedMode, contexte);
 
     try {
       let res;
@@ -737,11 +720,11 @@
         renderOutput(parsed);
 
       } else {
-        // Vertex AI Express — x-goog-api-key header
+        // Vertex AI Express — ?key= query param (pattern Studio Scene)
         const apiKey = document.getElementById('apiKeyVertex').value.trim();
-        res = await fetch(`https://aiplatform.googleapis.com/v1beta1/projects/-/locations/global/publishers/google/models/gemini-2.5-flash:generateContent`, {
+        res = await fetch(`https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ role: 'user', parts: [
               { inline_data: { mime_type: imageMime, data: imageBase64 } },
@@ -768,62 +751,56 @@
     }
   }
 
-  function buildPrompt(mode, duree, contexte) {
-    return `Tu es un expert en scénarios pour vidéos courtes UGC/créateur de contenu. Tu analyses des images pour créer des scénarios humains authentiques.
+  function buildPrompt(mode, contexte) {
+    return `Tu es Studio Scénario — expert en situations humaines crédibles pour créateurs de contenu.
+Ta mission : analyser une image et générer des scénarios narratifs. JAMAIS de prompts vidéo, angles caméra, mouvements, durées techniques ou instructions de tournage.
 
-${contexte ? `CONTEXTE FOURNI PAR L'UTILISATEUR : ${contexte}\n` : ''}
-MODE VIDÉO : ${mode}
-DURÉE CIBLE : ${duree}
+${contexte ? `CONTEXTE : ${contexte}\n` : ''}MODE : ${mode}
 
-ÉTAPE 1 - ANALYSE DE L'IMAGE
-Observe uniquement ce qui est visible. Identifie :
-- Personnages présents, relation probable, énergie dégagée
-- Émotion dominante, émotion secondaire, niveau d'intensité (1-10)
+ÉTAPE 1 — ANALYSE DE L'IMAGE
+Observe uniquement ce qui est visible :
+- Qui est présent, relation probable, énergie dégagée
+- Émotion dominante, émotion secondaire, intensité (1-10)
 - Lieu, ambiance, contexte social
-- Ce qui se passe, ce qui pourrait naturellement suivre
+- Ce qui se passe en ce moment, ce qui pourrait naturellement suivre
 
-ÉTAPE 2 - GÉNÈRE 3 SCÉNARIOS
-Règles absolues :
-- Situations humaines crédibles uniquement. Pas hollywoodiennes.
-- Comportements qu'une vraie personne ferait normalement
-- Partir uniquement de ce qui existe dans l'image
-- Micro-émotions : curiosité, amusement, gêne légère, excitation, complicité, soulagement, surprise
-- Jamais : drame extrême, colère excessive, tristesse théâtrale
-- Chaque scénario = UNE seule idée forte
-- Toujours un déclencheur crédible (regard, phrase, blague, erreur, notification, réaction)
-- Chaîne émotionnelle : Observation → Émotion → Déclencheur → Action → Réaction
-- Durée adaptée à ${duree}
+ÉTAPE 2 — 3 SCÉNARIOS DISTINCTS
+Chaque scénario doit appartenir à une catégorie émotionnelle différente parmi : humour, complicité, surprise, curiosité, tension légère, admiration, soulagement, défi, gêne légère, fierté.
 
-RÈGLE FONDAMENTALE SUR LES ÉMOTIONS : 
-Ne jamais NOMMER une émotion. La traduire en comportements physiques observables.
-Mauvais : "Elle est gênée"
-Bon : "Elle regarde ailleurs, se mord la lèvre, repositionne ses mains"
+RÈGLES ABSOLUES :
+1. Crédibilité avant tout — situation qu'une vraie personne vivrait normalement
+2. Partir uniquement de ce qui est observable dans l'image
+3. Chaque scénario = un déclencheur + une action + une réaction = une évolution émotionnelle
+4. Sans déclencheur identifiable → scénario invalide
+5. Émotion identique du début à la fin → scénario faible
+6. Décrire uniquement comportements, réactions, gestes, expressions — jamais pensées ou intentions cachées
+7. Ne jamais NOMMER une émotion — la traduire en comportements physiques
+   Interdit : "Elle est gênée" / Correct : "Elle regarde ailleurs, se mord la lèvre"
+8. Rechercher la viralité humaine : surprise, maladresse, blague, réaction inattendue, tension légère
+9. Les 3 scénarios doivent être distincts — interdiction de variantes d'une même scène
 
-RÉPONDS UNIQUEMENT EN JSON avec cette structure exacte :
+RÉPONDS UNIQUEMENT EN JSON :
 {
   "analyse": {
-    "personnages": "description courte",
+    "personnages": "qui est présent",
     "relation": "relation probable",
     "energie": "énergie perçue",
-    "emotion_dominante": "nom de l'émotion",
-    "emotion_secondaire": "nom de l'émotion",
+    "emotion_dominante": "nom",
+    "emotion_secondaire": "nom",
     "intensite": 7,
     "lieu": "lieu précis",
-    "ambiance": "ambiance ressentie",
-    "contexte_social": "contexte social",
+    "ambiance": "ambiance",
+    "contexte_social": "contexte",
     "en_cours": "ce qui se passe",
-    "potentiel": "ce qui pourrait suivre"
+    "potentiel": "ce qui pourrait suivre naturellement"
   },
   "scenarios": [
     {
       "numero": 1,
-      "type": "Complicité / Surprise / Gêne / etc.",
-      "emotion_cle": "émotion principale",
-      "duree": "${duree}",
-      "chaine": ["Observation", "Émotion", "Déclencheur", "Action", "Réaction"],
-      "scene": "Description de la scène en 2-3 phrases. Comportements physiques uniquement. Aucun nom d'émotion.",
-      "declencheur": "Le déclencheur précis de la scène",
-      "prompt_video": "Prompt prêt à l'emploi pour générer la vidéo, en anglais, style cinématique, comportements physiques uniquement"
+      "categorie": "humour / complicité / surprise / etc.",
+      "evolution": "état initial → état final (ex: hésitation → décision)",
+      "declencheur": "l'élément précis qui déclenche la scène",
+      "scene": "Ce qui se passe, pourquoi, comment les personnages réagissent. Comportements physiques uniquement. 3-4 phrases max. Aucun nom d'émotion. Aucune instruction de tournage."
     }
   ]
 }`;
@@ -832,7 +809,7 @@ RÉPONDS UNIQUEMENT EN JSON avec cette structure exacte :
   function renderOutput(data) {
     const a = data.analyse;
     const intensiteW = (a.intensite || 5) * 10;
-    
+
     let html = `
     <div class="analyse-bloc">
       <div class="analyse-titre">◆ Analyse de l'image</div>
@@ -867,34 +844,21 @@ RÉPONDS UNIQUEMENT EN JSON avec cette structure exacte :
     <div class="scenarios-list">`;
 
     data.scenarios.forEach(s => {
-      const chaineHTML = s.chaine.map((c, i) => 
-        `<span class="chaine-step">${c}</span>${i < s.chaine.length-1 ? '<span class="chaine-arrow">→</span>' : ''}`
-      ).join('');
-
-      const promptId = `prompt-${s.numero}`;
-
       html += `
       <div class="scenario-card">
         <div class="scenario-header">
           <div class="scenario-num">0${s.numero}</div>
           <div class="scenario-meta">
-            <div class="scenario-type">${s.type}</div>
-            <div class="scenario-emotion">${s.emotion_cle}</div>
+            <div class="scenario-type">${s.categorie}</div>
+            <div class="scenario-emotion">${s.evolution}</div>
           </div>
-          <div class="scenario-duree">${s.duree}</div>
         </div>
         <div class="scenario-body">
-          <div class="chaine-emotionnelle">${chaineHTML}</div>
-          <div class="scenario-scene">${s.scene}</div>
           <div class="declencheur-bloc">
             <strong>Déclencheur</strong>
             ${s.declencheur}
           </div>
-          <div class="prompt-video">
-            <div class="prompt-label">Prompt vidéo</div>
-            <button class="btn-copy" onclick="copyText(document.getElementById('${promptId}').textContent, this)">Copier</button>
-            <div id="${promptId}" style="padding-right:60px">${s.prompt_video}</div>
-          </div>
+          <div class="scenario-scene">${s.scene}</div>
         </div>
       </div>`;
     });
