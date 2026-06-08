@@ -145,23 +145,35 @@
 
   /* Upload zone */
   .upload-zone {
-    display: block;
-    cursor: pointer;
     border: 1.5px dashed rgba(200,169,110,0.3);
     border-radius: 8px;
     padding: 2rem;
     text-align: center;
-    cursor: pointer;
     transition: all 0.2s;
     position: relative;
     overflow: hidden;
   }
   .upload-zone:hover { border-color: var(--or); background: rgba(200,169,110,0.03); }
   .upload-zone.has-image { border-style: solid; border-color: var(--or); padding: 0; }
-  .upload-zone input[type=file] { display: none; }
+
+  /* Le vrai input file caché */
+  #fileInput {
+    position: absolute;
+    width: 0; height: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* Le placeholder cliquable */
+  .upload-placeholder {
+    cursor: pointer;
+    display: block;
+    padding: 1rem 0;
+  }
   .upload-icon { font-size: 2rem; color: var(--gris); margin-bottom: 0.5rem; }
   .upload-text { color: var(--gris); font-size: 13px; }
   .upload-text strong { color: var(--or); font-weight: 500; display: block; font-size: 14px; margin-bottom: 4px; }
+
   .preview-img {
     width: 100%;
     max-height: 300px;
@@ -207,25 +219,6 @@
   .mode-btn:hover { border-color: var(--or); color: var(--blanc); }
   .mode-btn.active { border-color: var(--or); background: rgba(200,169,110,0.1); color: var(--or); font-weight: 500; }
   .mode-icon { font-size: 1.2rem; display: block; margin-bottom: 4px; }
-
-  /* Durée */
-  .duree-grid { display: flex; gap: 8px; }
-  .duree-btn {
-    flex: 1;
-    background: rgba(255,255,255,0.03);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 8px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.2s;
-    color: var(--gris-light);
-    font-size: 13px;
-    font-family: 'DM Sans', sans-serif;
-    font-weight: 400;
-  }
-  .duree-btn:hover { border-color: var(--or); color: var(--blanc); }
-  .duree-btn.active { border-color: var(--or); background: rgba(200,169,110,0.1); color: var(--or); font-weight: 500; }
 
   /* Context input */
   .context-input {
@@ -381,44 +374,8 @@
     text-transform: uppercase;
     color: var(--or);
   }
-  .scenario-emotion {
-    font-size: 13px;
-    color: var(--gris-light);
-    margin-top: 2px;
-  }
-  .scenario-duree {
-    font-size: 11px;
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.1);
-    color: var(--gris-light);
-    padding: 3px 8px;
-    border-radius: 3px;
-  }
 
   .scenario-body { padding: 1.25rem; }
-  
-  .chaine-emotionnelle {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-bottom: 1rem;
-    flex-wrap: wrap;
-  }
-  .chaine-step {
-    font-size: 11px;
-    color: var(--gris-light);
-    background: rgba(255,255,255,0.04);
-    padding: 3px 8px;
-    border-radius: 3px;
-  }
-  .chaine-arrow { color: var(--or); font-size: 10px; }
-
-  .scenario-scene {
-    font-size: 14px;
-    line-height: 1.7;
-    color: var(--blanc);
-    margin-bottom: 1rem;
-  }
 
   .declencheur-bloc {
     background: rgba(200,169,110,0.06);
@@ -431,38 +388,11 @@
   }
   .declencheur-bloc strong { color: var(--or); font-weight: 500; display: block; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 3px; }
 
-  .prompt-video {
-    background: rgba(0,0,0,0.4);
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 6px;
-    padding: 12px;
-    font-size: 12px;
-    color: var(--gris-light);
-    font-family: 'DM Sans', sans-serif;
-    line-height: 1.6;
-    position: relative;
+  .scenario-scene {
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--blanc);
   }
-  .prompt-label {
-    font-size: 9px;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: var(--gris);
-    margin-bottom: 6px;
-  }
-  .btn-copy {
-    position: absolute;
-    top: 10px; right: 10px;
-    background: rgba(255,255,255,0.07);
-    border: 1px solid rgba(255,255,255,0.1);
-    color: var(--gris-light);
-    padding: 4px 10px;
-    border-radius: 4px;
-    font-size: 11px;
-    cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
-    transition: all 0.2s;
-  }
-  .btn-copy:hover { background: rgba(200,169,110,0.15); color: var(--or); border-color: var(--or); }
 
   /* Empty state */
   .empty-state {
@@ -544,15 +474,19 @@
     <!-- Upload image -->
     <div>
       <div class="section-label">Image source</div>
-      <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
-        <input type="file" id="fileInput" accept="image/*" onchange="handleFile(event)" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none;">
-        <div id="uploadPlaceholder">
+      <div class="upload-zone" id="uploadZone">
+        <!-- Input file caché, déclenché uniquement via JS -->
+        <input type="file" id="fileInput" accept="image/*" onchange="handleFile(event)">
+
+        <!-- Zone cliquable -->
+        <div class="upload-placeholder" id="uploadPlaceholder" onclick="document.getElementById('fileInput').click()">
           <div class="upload-icon">📷</div>
           <div class="upload-text">
             <strong>Déposer ou cliquer pour importer</strong>
             Photo, screenshot, référence visuelle
           </div>
         </div>
+
         <img id="previewImg" class="preview-img" alt="preview">
         <button class="img-remove" id="imgRemove" onclick="removeImage(event)">✕</button>
       </div>
@@ -674,13 +608,6 @@
     document.getElementById('fileInput').value = '';
   }
 
-  function copyText(text, btn) {
-    navigator.clipboard.writeText(text).then(() => {
-      btn.textContent = '✓ Copié';
-      setTimeout(() => btn.textContent = 'Copier', 1500);
-    });
-  }
-
   async function generate() {
     if (!activeMoteur) { alert('Entre une clé API (Google AI Studio ou Vertex AI Express).'); return; }
     if (!imageBase64) { alert('Importe une image d\'abord.'); return; }
@@ -700,7 +627,8 @@
     const prompt = buildPrompt(selectedMode, contexte);
 
     try {
-      let res;
+      let res, data;
+
       if (activeMoteur === 'aiza') {
         const apiKey = document.getElementById('apiKeyAiza').value.trim();
         res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
@@ -714,15 +642,10 @@
             generationConfig: { temperature: 0.9, maxOutputTokens: 4096, responseMimeType: "application/json" }
           })
         });
-        const data = await res.json();
+        data = await res.json();
         if (data.error) throw new Error(data.error.message);
-        const raw = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!raw) throw new Error('Réponse vide du modèle.');
-        const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
-        renderOutput(parsed);
 
       } else {
-        // Vertex AI Express — ?key= query param (pattern Studio Scene)
         const apiKey = document.getElementById('apiKeyVertex').value.trim();
         res = await fetch(`https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`, {
           method: 'POST',
@@ -735,13 +658,14 @@
             generationConfig: { temperature: 0.9, maxOutputTokens: 4096, responseMimeType: "application/json" }
           })
         });
-        const data = await res.json();
+        data = await res.json();
         if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
-        const raw = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!raw) throw new Error('Réponse vide du modèle.');
-        const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
-        renderOutput(parsed);
       }
+
+      const raw = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!raw) throw new Error('Réponse vide du modèle.');
+      const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
+      renderOutput(parsed);
 
     } catch (err) {
       output.innerHTML = `<div style="padding:2rem"><div class="error-msg">⚠ Erreur : ${err.message}</div></div>`;
@@ -815,7 +739,6 @@ RÉPONDS UNIQUEMENT EN JSON :
     }
   ]
 }`;
-  }
   }
 
   function renderOutput(data) {
