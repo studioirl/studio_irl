@@ -693,7 +693,13 @@ function safeJSON(raw) {
     try { return JSON.parse(fixed); } catch(e3) {}
   }
   // Last resort: extract text content manually for scenarios
-  console.error('Raw response:', raw.substring(0, 500));
+  console.error('Raw response FULL:', raw);
+  // Try one more time: find anything between first { and last }
+  const start = raw.indexOf('{');
+  const end   = raw.lastIndexOf('}');
+  if (start !== -1 && end !== -1 && end > start) {
+    try { return JSON.parse(raw.substring(start, end + 1)); } catch(e4) {}
+  }
   throw new Error('Réponse JSON illisible — essaie de regénérer');
 }
 
@@ -735,7 +741,8 @@ async function generate() {
     };
 
     const analyseData = await callGemini(analyseBody);
-    const analyse     = safeJSON(getText(analyseData));
+    window._lastRaw = getText(analyseData);
+    const analyse     = safeJSON(window._lastRaw);
 
     /* ── STEP 2 : SCENARIOS ── */
     setOutput(`<div class="loading">
@@ -836,12 +843,16 @@ Pour "duree", choisis entre "5s", "8s" ou "15s" selon la richesse narrative de l
     };
 
     const scenarioData  = await callGemini(scenarioBody);
-    const scenarioParsed = safeJSON(getText(scenarioData));
+    window._lastRaw = getText(scenarioData);
+    const scenarioParsed = safeJSON(window._lastRaw);
 
     renderResults(analyse, scenarioParsed.scenarios, emotion);
 
   } catch(err) {
-    setOutput(`<div style="padding:2rem"><div class="error-box">⚠ Erreur : ${err.message}</div></div>`);
+    setOutput(`<div style="padding:2rem">
+      <div class="error-box" style="margin-bottom:1rem">⚠ Erreur : ${err.message}</div>
+      ${window._lastRaw ? `<div class="error-box" style="font-size:11px;font-family:monospace;word-break:break-all;opacity:0.7;max-height:200px;overflow:auto">Réponse brute :<br>${window._lastRaw.substring(0,800).replace(/</g,'&lt;')}</div>` : ''}
+    </div>`);
   } finally {
     btn.disabled = false;
     spin.style.display = 'none';
