@@ -677,13 +677,24 @@ function getText(data) {
 }
 
 function safeJSON(raw) {
-  const clean = raw.replace(/```json|```/g, '').trim();
-  try { return JSON.parse(clean); }
-  catch {
-    const m = clean.match(/\{[\s\S]*\}/);
-    if (!m) throw new Error('Réponse JSON illisible');
-    return JSON.parse(m[0]);
+  if (!raw || !raw.trim()) throw new Error('Réponse vide de l\'API');
+  // Strip markdown fences
+  let clean = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+  // Try direct parse
+  try { return JSON.parse(clean); } catch(e1) {}
+  // Extract first {...} block (greedy)
+  const m1 = clean.match(/\{[\s\S]*\}/);
+  if (m1) { try { return JSON.parse(m1[0]); } catch(e2) {} }
+  // Try to fix trailing commas and parse again
+  if (m1) {
+    const fixed = m1[0]
+      .replace(/,\s*([}\]])/g, '$1')
+      .replace(/([{,]\s*)(\w+)\s*:/g, '$1"$2":');
+    try { return JSON.parse(fixed); } catch(e3) {}
   }
+  // Last resort: extract text content manually for scenarios
+  console.error('Raw response:', raw.substring(0, 500));
+  throw new Error('Réponse JSON illisible — essaie de regénérer');
 }
 
 /* ────────────────────────────────── */
@@ -716,8 +727,7 @@ async function generate() {
       .map(s => ({ inline_data: { mime_type: s.mime, data: s.b64 } }));
 
     /* ── STEP 1 : IMAGE ANALYSIS ── */
-    const analysePrompt = `Analyse cette image avec précision. Réponds en JSON valide uniquement, sans markdown, sans texte avant ou après. Structure exacte :
-{"personnages":"","relation":"","energie":"","emotion_dominante":"","emotion_secondaire":"","intensite":7,"lieu":"","ambiance":"","contexte_social":"","en_cours":"","potentiel_narratif":""}`;
+    const analysePrompt = `Analyse cette image. Réponds UNIQUEMENT avec un objet JSON valide, rien d'autre. Pas de markdown, pas de texte, pas d'explication. JSON pur. Structure exacte : {"personnages":"","relation":"","energie":"","emotion_dominante":"","emotion_secondaire":"","intensite":7,"lieu":"","ambiance":"","contexte_social":"","en_cours":"","potentiel_narratif":""}`;
 
     const analyseBody = {
       contents: [{ parts: [...imgParts, { text: analysePrompt }] }],
@@ -822,7 +832,7 @@ Pour "duree", choisis entre "5s", "8s" ou "15s" selon la richesse narrative de l
 
     const scenarioBody = {
       contents: [{ parts: [...imgParts, { text: scenarioPrompt }] }],
-      generationConfig: { temperature: 0.85, maxOutputTokens: 3000, responseMimeType: 'application/json' }
+      generationConfig: { temperature: 0.7, maxOutputTokens: 3000, responseMimeType: 'application/json' }
     };
 
     const scenarioData  = await callGemini(scenarioBody);
