@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studio Scénariste</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&display=swap');
+
+  :root {
+    --noir: #0e0a10;
+    --surface: #130e16;
+    --surface-2: #1c1424;
+    --blanc: #ede8f2;
+    --or: #b57acd;
+    --or-dim: rgba(181,122,205,0.15);
+    --or-border: rgba(181,122,205,0.28);
+    --gris: #7a6e82;
+    --gris-light: #a898b4;
+    --rouge: #c4442e;
+    --vert: #3a7a5a;
+    --bleu: #9b6acd;
+    --border: rgba(181,122,205,0.1);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--noir);
+    color: var(--blanc);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  .header-logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.6rem;
+    color: var(--blanc);
+    letter-spacing: -0.02em;
+  }
+  .header-badge {
+    background: var(--or);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 3px;
+  }
+  .header-sub {
+    margin-left: auto;
+    color: var(--gris);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* ── API BAR ── */
+  .api-bar {
+    padding: 0.6rem 2rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    background: rgba(255,255,255,0.01);
+  }
+  .api-label {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gris);
+    white-space: nowrap;
+  }
+  .api-input {
+    flex: 1;
+    min-width: 150px;
+    max-width: 260px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 6px 12px;
+    color: var(--blanc);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .api-input:focus { border-color: var(--or); }
+  .api-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.12);
+    flex-shrink: 0;
+    transition: background 0.3s;
+  }
+  .api-dot.ok { background: var(--vert); }
+  .api-sep { width: 1px; height: 24px; background: var(--border); flex-shrink: 0; }
+  .engine-tag {
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 3px;
+    font-weight: 600;
+    flex-shrink: 0;
+    display: none;
+  }
+  .engine-tag.vertex { background: rgba(42,90,138,0.18); color: var(--bleu); border: 1px solid rgba(42,90,138,0.35); }
+
+  /* ── LAYOUT ── */
+  .layout {
+    display: grid;
+    grid-template-columns: 420px 1fr;
+    min-height: calc(100vh - 105px);
+  }
+
+  /* ── LEFT PANEL ── */
+  .panel-left {
+    padding: 2rem;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+    overflow-y: auto;
+    max-height: calc(100vh - 105px);
+  }
+
+  .field-label {
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--or);
+    margin-bottom: 0.6rem;
+  }
+  .field-label span { color: rgba(196,68,46,0.75); }
+
+  /* Image slots */
+  .slots-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .slot {
+    border: 1.5px dashed rgba(200,169,110,0.28);
+    border-radius: 8px;
+    aspect-ratio: 3/4;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .slot:hover { border-color: var(--or); background: var(--or-dim); }
+  .slot.has-img { border-style: solid; border-color: var(--or); }
+  .slot input[type=file] { position: absolute; width:0; height:0; opacity:0; pointer-events:none; }
+  .slot-ph { text-align: center; color: var(--gris); font-size: 11px; pointer-events: none; }
+  .slot-ph .icon { display: block; font-size: 1.4rem; margin-bottom: 4px; opacity: 0.5; }
+  .slot-img { width:100%; height:100%; object-fit:cover; display:none; }
+  .slot-img.vis { display:block; }
+  .slot-del {
+    position: absolute; top: 4px; right: 4px;
+    background: rgba(0,0,0,0.75);
+    border: none; color: var(--blanc);
+    width: 20px; height: 20px;
+    border-radius: 50%; cursor: pointer;
+    font-size: 11px;
+    display: none; align-items: center; justify-content: center;
+    z-index: 2;
+  }
+  .slot-del.vis { display: flex; }
+  .slot-n {
+    position: absolute; bottom: 4px; left: 6px;
+    font-size: 9px; color: var(--or);
+    letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600;
+  }
+
+
+
+  /* Intention */
+  .intention-ta {
+    width: 100%;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    color: var(--blanc);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    outline: none;
+    resize: vertical;
+    min-height: 110px;
+    line-height: 1.65;
+    transition: border-color 0.2s;
+  }
+  .intention-ta:focus { border-color: var(--or); }
+  .intention-ta::placeholder { color: var(--gris); font-style: italic; }
+  .field-note { font-size: 11px; color: var(--gris); margin-top: 5px; }
+  .field-error { font-size: 11px; color: rgba(196,68,46,0.85); margin-top: 4px; display: none; }
+  .field-error.show { display: block; }
+
+  /* CTA */
+  .btn-cta {
+    width: 100%;
+    background: var(--or);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 15px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: auto;
+  }
+  .btn-cta:hover:not(:disabled) { background: #c98fe0; transform: translateY(-1px); }
+  .btn-cta:disabled { opacity: 0.38; cursor: not-allowed; transform: none; }
+  .spin {
+    width: 15px; height: 15px;
+    border: 2px solid rgba(0,0,0,0.18);
+    border-top-color: var(--noir);
+    border-radius: 50%;
+    animation: rot 0.65s linear infinite;
+    display: none;
+  }
+  @keyframes rot { to { transform: rotate(360deg); } }
+
+  /* ── RIGHT PANEL ── */
+  .panel-right {
+    padding: 2rem;
+    overflow-y: auto;
+    max-height: calc(100vh - 105px);
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  /* Empty state */
+  .empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.25rem;
+    padding: 4rem 2rem;
+    color: var(--gris);
+    text-align: center;
+  }
+  .empty-glyph {
+    font-size: 3rem;
+    opacity: 0.2;
+    line-height: 1;
+  }
+  .empty-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.1rem;
+    color: rgba(240,237,232,0.3);
+  }
+  .empty-text { font-size: 12px; line-height: 1.7; max-width: 280px; opacity: 0.7; }
+
+  /* Loading */
+  .loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.25rem;
+    padding: 5rem 2rem;
+    color: var(--gris);
+  }
+  .spin-lg {
+    width: 34px; height: 34px;
+    border: 2px solid var(--or-dim);
+    border-top-color: var(--or);
+    border-radius: 50%;
+    animation: rot 0.8s linear infinite;
+  }
+  .loading-msg {
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    animation: blink 2s ease-in-out infinite;
+  }
+  @keyframes blink { 0%,100% { opacity:0.4; } 50% { opacity:1; } }
+
+  /* Error */
+  .error-box {
+    background: rgba(196,68,46,0.08);
+    border: 1px solid rgba(196,68,46,0.28);
+    color: #e08878;
+    padding: 14px 18px;
+    border-radius: 6px;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  /* Analyse bloc */
+  .analyse-bloc {
+    background: rgba(200,169,110,0.05);
+    border: 1px solid var(--or-border);
+    border-radius: 10px;
+    padding: 1.5rem;
+  }
+  .bloc-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 0.85rem;
+    color: var(--or);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .analyse-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.1rem;
+  }
+  .a-key {
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--gris);
+    margin-bottom: 4px;
+  }
+  .a-val {
+    font-size: 12px;
+    color: var(--blanc);
+    line-height: 1.45;
+  }
+  .tag {
+    display: inline-block;
+    background: var(--or-dim);
+    border: 1px solid var(--or-border);
+    color: var(--or);
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    margin: 2px 3px 2px 0;
+  }
+  .bar { height: 3px; background: rgba(255,255,255,0.08); border-radius: 2px; margin-top: 6px; overflow: hidden; }
+  .bar-fill { height: 100%; background: var(--or); border-radius: 2px; }
+
+  /* Scenario cards */
+  .scenarios { display: flex; flex-direction: column; gap: 1.25rem; }
+
+  .s-card {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: border-color 0.25s;
+  }
+  .s-card:hover { border-color: var(--or-border); }
+
+  .s-head {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .s-num {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2rem;
+    color: rgba(200,169,110,0.25);
+    line-height: 1;
+    flex-shrink: 0;
+    min-width: 36px;
+  }
+  .s-meta { display: flex; flex-direction: column; gap: 2px; }
+  .s-type {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--or);
+    font-weight: 600;
+  }
+  .s-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1rem;
+    color: var(--blanc);
+  }
+  .s-emotion {
+    margin-left: auto;
+    font-size: 10px;
+    color: var(--gris);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    flex-shrink: 0;
+    align-self: center;
+  }
+
+  .s-body { padding: 1.25rem 1.5rem; }
+
+  .s-field { margin-bottom: 1rem; }
+  .s-field:last-child { margin-bottom: 0; }
+  .s-fkey {
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--gris);
+    margin-bottom: 5px;
+  }
+  .s-fval {
+    font-size: 13px;
+    color: var(--blanc);
+    line-height: 1.75;
+  }
+  .s-fval.story { color: rgba(240,237,232,0.9); }
+
+  .s-last {
+    font-size: 12px;
+    color: var(--gris-light);
+    font-style: italic;
+    line-height: 1.6;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(255,255,255,0.04);
+    margin-top: 0.75rem;
+  }
+
+  .s-duration {
+    display: inline-block;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    color: var(--gris-light);
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 3px;
+    margin-top: 0.75rem;
+    letter-spacing: 0.08em;
+  }
+
+  /* Copy button */
+  .s-actions { padding: 0 1.5rem 1rem; }
+  .btn-copy {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--gris);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.18s;
+  }
+  .btn-copy:hover { border-color: var(--or); color: var(--or); }
+  .btn-copy.copied { border-color: var(--vert); color: var(--vert); }
+
+  /* Responsive */
+  @media (max-width: 860px) {
+    .layout { grid-template-columns: 1fr; }
+    .panel-left, .panel-right { max-height: none; }
+    .panel-right { border-top: 1px solid var(--border); }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <span class="header-logo">Studio Scénariste</span>
+  <span class="header-badge">1.0</span>
+  <span class="header-sub">Image → Émotion → Narration</span>
+</header>
+
+<!-- API BAR -->
+<div class="api-bar">
+  <span class="api-label">Vertex AI Express</span>
+  <input type="password" id="keyVertex" class="api-input" placeholder="AQ..." autocomplete="off" oninput="detectEngine()" onpaste="setTimeout(detectEngine,0)" onchange="detectEngine()" onkeyup="detectEngine()" onblur="detectEngine()">
+  <div id="dotVertex" class="api-dot"></div>
+  <div id="engineTag" class="engine-tag"></div>
+</div>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+  <!-- LEFT -->
+  <div class="panel-left">
+
+    <!-- Images -->
+    <div>
+      <div class="field-label">Images <span>*</span> <span style="color:var(--gris);font-style:italic;text-transform:none;letter-spacing:0;font-size:10px">(1 à 3)</span></div>
+      <div class="slots-grid">
+        <div class="slot" id="slot0" onclick="openSlot(0)">
+          <input type="file" id="file0" accept="image/*" onchange="loadSlot(event,0)">
+          <div class="slot-ph" id="ph0"><span class="icon">📷</span>Principale</div>
+          <img class="slot-img" id="img0" alt="">
+          <button class="slot-del" id="del0" onclick="clearSlot(event,0)">✕</button>
+          <span class="slot-n">01</span>
+        </div>
+        <div class="slot" id="slot1" onclick="openSlot(1)">
+          <input type="file" id="file1" accept="image/*" onchange="loadSlot(event,1)">
+          <div class="slot-ph" id="ph1"><span class="icon">＋</span>Option</div>
+          <img class="slot-img" id="img1" alt="">
+          <button class="slot-del" id="del1" onclick="clearSlot(event,1)">✕</button>
+          <span class="slot-n">02</span>
+        </div>
+        <div class="slot" id="slot2" onclick="openSlot(2)">
+          <input type="file" id="file2" accept="image/*" onchange="loadSlot(event,2)">
+          <div class="slot-ph" id="ph2"><span class="icon">＋</span>Option</div>
+          <img class="slot-img" id="img2" alt="">
+          <button class="slot-del" id="del2" onclick="clearSlot(event,2)">✕</button>
+          <span class="slot-n">03</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Émotion -->
+    <div>
+      <div class="field-label">Émotion dominante <span>*</span></div>
+      <input type="text" id="emotion" class="api-input" style="width:100%;max-width:none;font-size:14px;padding:10px 14px;border-radius:6px;"
+        placeholder="Ex : complicité, nostalgie, fierté, soulagement…" autocomplete="off">
+    </div>
+
+    <!-- Idée d'histoire -->
+    <div>
+      <div class="field-label">Ton idée d'histoire <span style="color:var(--gris);text-transform:none;letter-spacing:0;font-style:italic;font-size:10px">(optionnelle)</span></div>
+      <textarea id="intention" class="intention-ta"
+        placeholder="Décris ce que tu veux raconter. Ex : deux amies qui se retrouvent après 6 mois, elles essaient de reproduire un vieux selfie..."></textarea>
+      <div class="field-note">Si tu laisses vide, le studio invente 3 histoires à partir de l'image et de l'émotion.</div>
+    </div>
+
+    <button class="btn-cta" id="btnGo" onclick="generate()">
+      <div class="spin" id="btnSpin"></div>
+      <span id="btnLabel">✦ Scénariser</span>
+    </button>
+
+  </div>
+
+  <!-- RIGHT -->
+  <div class="panel-right" id="output">
+    <div class="empty-state">
+      <div class="empty-glyph">🎭</div>
+      <div class="empty-title">Trois histoires t'attendent</div>
+      <div class="empty-text">Importe une image, choisis une émotion, et le studio génère 3 scénarios filmables à partir de ta photo.</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ────────────────────────────────── */
+/*  STATE                             */
+/* ────────────────────────────────── */
+let slots = [null, null, null];
+let engine = null;
+
+/* ────────────────────────────────── */
+/*  ENGINE DETECTION                  */
+/* ────────────────────────────────── */
+function detectEngine() {
+  const vertex = document.getElementById('keyVertex').value.trim();
+  const tag    = document.getElementById('engineTag');
+
+  const vertexOk = vertex.startsWith('AQ') && vertex.length > 10;
+
+  document.getElementById('dotVertex').className = 'api-dot' + (vertexOk ? ' ok' : '');
+
+  if (vertexOk) {
+    engine = 'vertex';
+    tag.textContent  = '◈ Vertex AI Express';
+    tag.className    = 'engine-tag vertex';
+    tag.style.display = '';
+  } else {
+    engine = null;
+    tag.style.display = 'none';
+  }
+}
+
+/* ────────────────────────────────── */
+/*  IMAGE SLOTS                       */
+/* ────────────────────────────────── */
+function openSlot(i) { document.getElementById('file' + i).click(); }
+
+function loadSlot(e, i) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const data = ev.target.result;
+    slots[i] = { b64: data.split(',')[1], mime: file.type };
+    const img = document.getElementById('img' + i);
+    img.src = data;
+    img.classList.add('vis');
+    document.getElementById('ph' + i).style.display = 'none';
+    document.getElementById('del' + i).classList.add('vis');
+    document.getElementById('slot' + i).classList.add('has-img');
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearSlot(e, i) {
+  e.stopPropagation();
+  slots[i] = null;
+  const img = document.getElementById('img' + i);
+  img.src = '';
+  img.classList.remove('vis');
+  document.getElementById('ph' + i).style.display = '';
+  document.getElementById('del' + i).classList.remove('vis');
+  document.getElementById('slot' + i).classList.remove('has-img');
+  document.getElementById('file' + i).value = '';
+}
+
+/* ────────────────────────────────── */
+/*  API CALL                          */
+/* ────────────────────────────────── */
+async function callGemini(body) {
+  const key = document.getElementById('keyVertex').value.trim();
+  const url = `https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-2.5-pro:generateContent?key=${encodeURIComponent(key)}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      ...body,
+      contents: [{ role: 'user', parts: body.contents[0].parts }]
+    })
+  });
+
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+  return data;
+}
+
+function getText(data) {
+  return data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+}
+
+function safeJSON(raw) {
+  if (!raw || !raw.trim()) throw new Error('Réponse vide de l\'API');
+  // Strip markdown fences
+  let clean = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+  // Try direct parse
+  try { return JSON.parse(clean); } catch(e1) {}
+  // Extract first {...} block (greedy)
+  const m1 = clean.match(/\{[\s\S]*\}/);
+  if (m1) { try { return JSON.parse(m1[0]); } catch(e2) {} }
+  // Try to fix trailing commas and parse again
+  if (m1) {
+    const fixed = m1[0]
+      .replace(/,\s*([}\]])/g, '$1')
+      .replace(/([{,]\s*)(\w+)\s*:/g, '$1"$2":');
+    try { return JSON.parse(fixed); } catch(e3) {}
+  }
+  // Last resort: extract text content manually for scenarios
+  console.error('Raw response FULL:', raw);
+  // Try one more time: find anything between first { and last }
+  const start = raw.indexOf('{');
+  const end   = raw.lastIndexOf('}');
+  if (start !== -1 && end !== -1 && end > start) {
+    try { return JSON.parse(raw.substring(start, end + 1)); } catch(e4) {}
+  }
+  throw new Error('Réponse JSON illisible — essaie de regénérer');
+}
+
+/* ────────────────────────────────── */
+/*  GENERATE                          */
+/* ────────────────────────────────── */
+async function generate() {
+  if (!engine)           { alert('Entre une clé API pour continuer.'); return; }
+  if (!slots.some(s=>s)) { alert('Importe au moins une image.'); return; }
+
+  const emotion   = document.getElementById('emotion').value.trim();
+  const intention = document.getElementById('intention').value.trim();
+  if (!emotion) { alert('Choisis une émotion dominante.'); return; }
+
+  // UI → loading
+  const btn   = document.getElementById('btnGo');
+  const spin  = document.getElementById('btnSpin');
+  const label = document.getElementById('btnLabel');
+  btn.disabled = true;
+  spin.style.display = 'block';
+  label.textContent  = 'Analyse en cours…';
+
+  setOutput(`<div class="loading">
+    <div class="spin-lg"></div>
+    <div class="loading-msg">Scan émotionnel…</div>
+  </div>`);
+
+  try {
+    const imgParts = slots
+      .filter(s => s !== null)
+      .map(s => ({ inline_data: { mime_type: s.mime, data: s.b64 } }));
+
+    /* ── STEP 1 : IMAGE ANALYSIS ── */
+    const analysePrompt = `Analyse cette image. Réponds UNIQUEMENT avec un objet JSON valide, rien d'autre. Pas de markdown, pas de texte, pas d'explication. JSON pur. Chaque champ texte doit faire MAXIMUM 12 mots, sois concis. Structure exacte : {"personnages":"","relation":"","energie":"","emotion_dominante":"","emotion_secondaire":"","intensite":7,"lieu":"","ambiance":"","contexte_social":"","en_cours":"","potentiel_narratif":""}`;
+
+    const analyseBody = {
+      contents: [{ parts: [...imgParts, { text: analysePrompt }] }],
+      generationConfig: { temperature: 0.1, maxOutputTokens: 2048, responseMimeType: 'application/json' }
+    };
+
+    const analyseData = await callGemini(analyseBody);
+    window._lastRaw = getText(analyseData);
+    const analyse     = safeJSON(window._lastRaw);
+
+    /* ── STEP 2 : SCENARIOS ── */
+    setOutput(`<div class="loading">
+      <div class="spin-lg"></div>
+      <div class="loading-msg">Écriture des scénarios…</div>
+    </div>`);
+    label.textContent = 'Écriture…';
+
+    // Build the full agent system prompt as user context
+    const intentionCtx = intention
+      ? `L'IDÉE DE L'UTILISATEUR :\n"${intention}"`
+      : `L'utilisateur n'a pas fourni d'idée. Invente 3 histoires distinctes à partir de l'image et de l'émotion.`;
+
+    const scenarioPrompt = `Tu es Studio Scénariste, spécialisé dans les micro-histoires émotionnelles pour TikTok, Instagram Reels et Seedance.
+
+MISSION : Transformer des images en histoires émotionnelles authentiques, humaines, visuelles et filmables.
+Tu écris uniquement des histoires. Pas des prompts vidéo. Pas des plans. Pas des analyses.
+
+CONTEXTE DE L'IMAGE ANALYSÉE :
+- Personnages : ${analyse.personnages || '—'}
+- Relation : ${analyse.relation || '—'}
+- Énergie : ${analyse.energie || '—'}
+- Ambiance : ${analyse.ambiance || '—'}
+- Lieu : ${analyse.lieu || '—'}
+- Ce qui se passe : ${analyse.en_cours || '—'}
+- Potentiel narratif : ${analyse.potentiel_narratif || '—'}
+
+ÉMOTION DOMINANTE CHOISIE : ${emotion}
+
+${intentionCtx}
+
+RÈGLE ABSOLUE — JAMAIS ÉCRIRE :
+"Elle réalise que…" / "Elle comprend que…" / "Le spectateur ressent…" / "Elle pense que…"
+Tout doit être observable. Chaque phrase doit pouvoir être filmée.
+Jamais de noms d'émotions dans les histoires.
+Jamais parler de caméra, lumière, cadrage, Seedance, prompts.
+
+LOGIQUE DES 3 PROPOSITIONS :
+${intention ? `
+PROPOSITION 1 — VERSION NETTOYÉE
+Reprends exactement l'histoire de l'utilisateur. Respecte sa logique, ses personnages, son déroulement.
+Corrige uniquement la structure, le rythme et les mots pour que ce soit plus clair et fluide. C'est son histoire.
+
+PROPOSITION 2 — VERSION AMÉLIORÉE
+Pars de l'idée de l'utilisateur et ajoute le détail, la réplique ou le retournement qui la rend plus forte.
+On reconnaît son histoire mais elle est meilleure.
+
+PROPOSITION 3 — HISTOIRE INVENTÉE
+Invente une histoire complètement différente qui part de la même émotion dominante (${emotion}).
+Autre déclencheur, autre déroulement. L'histoire originale n'est plus reconnaissable.
+` : `
+PROPOSITION 1, 2 et 3 — trois histoires distinctes explorant 3 façons différentes de raconter l'émotion "${emotion}" à partir des mêmes images.
+Chaque proposition doit explorer un angle narratif vraiment différent : un souvenir, un soutien, un fou rire, une découverte, une décision, une surprise, etc.
+Ne raconte jamais la même histoire avec des mots différents.
+`}
+
+FORMAT DE SORTIE — JSON uniquement, sans markdown :
+{
+  "scenarios": [
+    {
+      "numero": 1,
+      "type": "${intention ? 'Ta version nettoyée' : 'Histoire 1'}",
+      "titre": "Titre court et mémorable",
+      "emotion": "${emotion}",
+      "pourquoi": "Pourquoi ce moment mérite d'être raconté (1 à 2 phrases)",
+      "histoire": "3 à 6 phrases. Actions, interactions, moments observables, progression émotionnelle. Chaque phrase filmable.",
+      "dernier_instant": "Le tout dernier moment visible de l'histoire. Scène précise, pas une morale.",
+      "duree": "5s"
+    },
+    {
+      "numero": 2,
+      "type": "${intention ? 'Ta version améliorée' : 'Histoire 2'}",
+      "titre": "...",
+      "emotion": "${emotion}",
+      "pourquoi": "...",
+      "histoire": "...",
+      "dernier_instant": "...",
+      "duree": "15s"
+    },
+    {
+      "numero": 3,
+      "type": "${intention ? 'Mon histoire' : 'Histoire 3'}",
+      "titre": "...",
+      "emotion": "${emotion}",
+      "pourquoi": "...",
+      "histoire": "...",
+      "dernier_instant": "...",
+      "duree": "8s"
+    }
+  ]
+}
+
+Pour "duree", choisis entre "5s", "8s" ou "15s" selon la richesse narrative de l'histoire.`;
+
+    const scenarioBody = {
+      contents: [{ parts: [...imgParts, { text: scenarioPrompt }] }],
+      generationConfig: { temperature: 0.7, maxOutputTokens: 6000, responseMimeType: 'application/json' }
+    };
+
+    const scenarioData  = await callGemini(scenarioBody);
+    window._lastRaw = getText(scenarioData);
+    const scenarioParsed = safeJSON(window._lastRaw);
+
+    renderResults(analyse, scenarioParsed.scenarios, emotion);
+
+  } catch(err) {
+    setOutput(`<div style="padding:2rem">
+      <div class="error-box" style="margin-bottom:1rem">⚠ Erreur : ${err.message}</div>
+      ${window._lastRaw ? `<div class="error-box" style="font-size:11px;font-family:monospace;word-break:break-all;opacity:0.7;max-height:200px;overflow:auto">Réponse brute :<br>${window._lastRaw.substring(0,800).replace(/</g,'&lt;')}</div>` : ''}
+    </div>`);
+  } finally {
+    btn.disabled = false;
+    spin.style.display = 'none';
+    label.textContent  = '✦ Scénariser';
+  }
+}
+
+/* ────────────────────────────────── */
+/*  RENDER                            */
+/* ────────────────────────────────── */
+function renderResults(a, scenarios, emotion) {
+  const pct = (a.intensite || 5) * 10;
+
+  let html = `<div class="analyse-bloc">
+    <div class="bloc-title">◆ Analyse de l'image</div>
+    <div class="analyse-grid">
+      <div>
+        <div class="a-key">Personnages & relation</div>
+        <div class="a-val">${a.personnages || '—'} · ${a.relation || '—'}</div>
+      </div>
+      <div>
+        <div class="a-key">Lieu & ambiance</div>
+        <div class="a-val">${a.lieu || '—'} · ${a.ambiance || '—'}</div>
+      </div>
+      <div>
+        <div class="a-key">Émotions détectées</div>
+        <div class="a-val">
+          <span class="tag">${a.emotion_dominante || '—'}</span>
+          ${a.emotion_secondaire ? `<span class="tag" style="opacity:0.6">${a.emotion_secondaire}</span>` : ''}
+        </div>
+        <div class="bar"><div class="bar-fill" style="width:${pct}%"></div></div>
+      </div>
+      <div>
+        <div class="a-key">Énergie</div>
+        <div class="a-val">${a.energie || '—'}</div>
+      </div>
+      <div style="grid-column:1/-1">
+        <div class="a-key">Ce qui se passe → Potentiel narratif</div>
+        <div class="a-val">${a.en_cours || '—'} <span style="color:var(--or)">→</span> ${a.potentiel_narratif || '—'}</div>
+      </div>
+    </div>
+  </div>`;
+
+  html += `<div class="scenarios">`;
+
+  (scenarios || []).forEach((s, idx) => {
+    const copyId = `copy${idx}`;
+    const textToCopy = [s.titre, '', s.histoire, '', `Dernier instant : ${s.dernier_instant}`].join('\n');
+
+    html += `<div class="s-card">
+      <div class="s-head">
+        <div class="s-num">0${s.numero}</div>
+        <div class="s-meta">
+          <div class="s-type">${s.type || ''}</div>
+          <div class="s-title">${s.titre || ''}</div>
+        </div>
+        <div class="s-emotion">${s.emotion || emotion}</div>
+      </div>
+      <div class="s-body">
+        <div class="s-field">
+          <div class="s-fkey">Pourquoi ce moment compte</div>
+          <div class="s-fval">${s.pourquoi || ''}</div>
+        </div>
+        <div class="s-field">
+          <div class="s-fkey">Histoire</div>
+          <div class="s-fval story">${(s.histoire || '').replace(/\n/g, '<br>')}</div>
+        </div>
+        <div class="s-last">↳ ${s.dernier_instant || ''}</div>
+        <div class="s-duration">⏱ ${s.duree || '—'}</div>
+      </div>
+      <div class="s-actions">
+        <button class="btn-copy" id="${copyId}" onclick="copyScenario('${copyId}', ${JSON.stringify(textToCopy).replace(/'/g,"\\'")}  )">Copier l'histoire</button>
+      </div>
+    </div>`;
+  });
+
+  html += `</div>`;
+  setOutput(html);
+}
+
+function copyScenario(btnId, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById(btnId);
+    btn.textContent = '✓ Copié';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copier l\'histoire'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+function setOutput(html) {
+  document.getElementById('output').innerHTML = html;
+}
+</script>
+</body>
+</html>
