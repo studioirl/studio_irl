@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studio Réalisateur</title>
+<style>
+  :root{
+    --bg:#0e0e10;
+    --panel:#181820;
+    --panel2:#1f1f29;
+    --accent:#e63946;
+    --accent2:#f1faee;
+    --text:#f1f1f1;
+    --muted:#9a9aa5;
+    --border:#2c2c38;
+    --green:#2a9d8f;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    background:linear-gradient(135deg,#0e0e10 0%,#1a1a22 100%);
+    color:var(--text);
+    min-height:100vh;
+    padding:24px;
+  }
+  .wrap{max-width:880px;margin:0 auto;}
+  header{text-align:center;margin-bottom:32px;}
+  header h1{
+    font-size:2.2rem;margin:0;letter-spacing:2px;text-transform:uppercase;
+    background:linear-gradient(90deg,#e63946,#f1c40f);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  header p{color:var(--muted);margin-top:6px;font-size:0.95rem;}
+  .card{
+    background:var(--panel);border:1px solid var(--border);
+    border-radius:14px;padding:24px;margin-bottom:20px;
+  }
+  .card h2{
+    margin:0 0 16px 0;font-size:1rem;text-transform:uppercase;letter-spacing:1px;
+    color:var(--accent2);border-bottom:1px solid var(--border);padding-bottom:10px;
+  }
+  label{display:block;font-size:0.85rem;color:var(--muted);margin-bottom:6px;margin-top:14px;}
+  label:first-of-type{margin-top:0;}
+  input[type=text], textarea, select, input[type=file]{
+    width:100%;background:var(--panel2);border:1px solid var(--border);
+    border-radius:8px;padding:10px 12px;color:var(--text);font-size:0.95rem;
+    font-family:inherit;resize:vertical;
+  }
+  textarea{min-height:90px;}
+  input:focus, textarea:focus, select:focus{outline:none;border-color:var(--accent);}
+  .row{display:flex;gap:16px;flex-wrap:wrap;}
+  .row > div{flex:1;min-width:160px;}
+  .option-grid{display:flex;gap:10px;margin-top:6px;flex-wrap:wrap;}
+  .option-btn{
+    flex:1;min-width:90px;text-align:center;padding:12px 8px;border:1px solid var(--border);
+    border-radius:8px;background:var(--panel2);cursor:pointer;transition:0.15s;font-weight:600;font-size:0.85rem;
+  }
+  .option-btn.active{border-color:var(--accent);background:rgba(230,57,70,0.15);color:var(--accent2);}
+  .option-btn small{display:block;font-weight:400;color:var(--muted);font-size:0.72rem;margin-top:4px;}
+  .mode-grid .option-btn{min-width:130px;flex-basis:calc(20% - 8px);}
+  @media (max-width:700px){ .mode-grid .option-btn{flex-basis:calc(50% - 8px);} }
+  button.primary{
+    width:100%;margin-top:24px;padding:14px;border:none;border-radius:10px;
+    background:var(--accent);color:#fff;font-size:1rem;font-weight:700;letter-spacing:1px;
+    text-transform:uppercase;cursor:pointer;transition:0.15s;
+  }
+  button.primary:hover{background:#ff4d5a;}
+  button.primary:disabled{background:#5a5a63;cursor:not-allowed;}
+  button.secondary{
+    flex:1;padding:14px;border:1px solid var(--border);border-radius:10px;
+    background:var(--panel2);color:var(--text);font-size:0.95rem;font-weight:700;
+    letter-spacing:0.5px;cursor:pointer;transition:0.15s;
+  }
+  button.secondary.validate{border-color:var(--green);color:var(--green);}
+  button.secondary.validate:hover{background:rgba(42,157,143,0.15);}
+  button.secondary.modify{border-color:#f1c40f;color:#f1c40f;}
+  button.secondary.modify:hover{background:rgba(241,196,15,0.12);}
+  .action-row{display:flex;gap:12px;margin-top:18px;}
+  .small-note{font-size:0.78rem;color:var(--muted);margin-top:6px;}
+  #status, #status2{margin-top:14px;font-size:0.9rem;color:var(--accent2);min-height:20px;}
+  #status.error, #status2.error{color:var(--accent);}
+  .hidden{display:none !important;}
+  #resultOutput{
+    background:#0a0a0d;border:1px solid var(--border);border-radius:8px;padding:16px;
+    white-space:pre-wrap;font-family:'SF Mono','Consolas',monospace;font-size:0.85rem;
+    line-height:1.5;max-height:600px;overflow-y:auto;margin-top:10px;
+  }
+  .dossier-meta{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
+  .dossier-meta span{
+    background:var(--panel2);border:1px solid var(--border);border-radius:20px;
+    padding:6px 14px;font-size:0.8rem;color:var(--accent2);
+  }
+  .section-block{
+    border:1px solid var(--border);border-radius:10px;padding:14px 16px;
+    margin-bottom:12px;background:var(--panel2);
+  }
+  .section-block h3{
+    margin:0 0 8px 0;font-size:0.85rem;text-transform:uppercase;letter-spacing:1px;color:var(--accent);
+  }
+  .section-block .content{white-space:pre-wrap;font-size:0.9rem;line-height:1.5;color:var(--text);}
+  .section-block.prompt-final .content{
+    font-family:'SF Mono','Consolas',monospace;font-size:0.85rem;background:#0a0a0d;
+    border:1px solid var(--border);border-radius:8px;padding:12px;
+  }
+  .copy-btn{
+    margin-top:12px;padding:10px 18px;border:1px solid var(--accent);background:transparent;
+    color:var(--accent2);border-radius:8px;cursor:pointer;font-weight:600;font-size:0.85rem;
+  }
+  .copy-btn:hover{background:rgba(230,57,70,0.15);}
+  .spinner{
+    display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);
+    border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite;
+    vertical-align:middle;margin-right:8px;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .image-previews{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;}
+  .image-previews img{
+    width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid var(--border);
+  }
+  .validated-badge{
+    display:inline-block;background:rgba(42,157,143,0.15);color:var(--green);
+    border:1px solid var(--green);border-radius:20px;padding:6px 14px;font-size:0.8rem;
+    margin-bottom:16px;font-weight:600;
+  }
+  .edit-textarea{min-height:400px;font-family:'SF Mono','Consolas',monospace;font-size:0.85rem;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Studio Réalisateur</h1>
+    <p>De l'histoire au plan de réalisation Seedance</p>
+  </header>
+
+  <div class="card">
+    <h2>1. Scénario</h2>
+
+    <label>Titre</label>
+    <input type="text" id="titre" placeholder="Ex : Le café renversé">
+
+    <label>Émotion dominante</label>
+    <input type="text" id="emotion" placeholder="Ex : Frustration contenue">
+
+    <label>Histoire</label>
+    <textarea id="histoire" placeholder="Décris ce qui se passe, étape par étape..."></textarea>
+
+    <label>Dernier instant</label>
+    <textarea id="dernierInstant" placeholder="Décris l'image / le moment final de la vidéo..."></textarea>
+
+    <label>Durée recommandée</label>
+    <div class="option-grid" id="dureeGrid">
+      <div class="option-btn" data-value="5">5s<small>1 moment</small></div>
+      <div class="option-btn active" data-value="8">8s<small>petite évolution</small></div>
+      <div class="option-btn" data-value="15">15s<small>mini-histoire</small></div>
+    </div>
+
+    <label>Format</label>
+    <div class="option-grid" id="formatGrid">
+      <div class="option-btn active" data-value="9:16">9:16<small>vertical</small></div>
+      <div class="option-btn" data-value="16:9">16:9<small>horizontal</small></div>
+      <div class="option-btn" data-value="1:1">1:1<small>carré</small></div>
+    </div>
+
+    <label>Mode de réalisation</label>
+    <div class="option-grid mode-grid" id="modeGrid">
+      <div class="option-btn active" data-value="Vlog">Vlog<small>documenter sa journée</small></div>
+      <div class="option-btn" data-value="Multi-Shot">Multi-Shot<small>séquence dynamique</small></div>
+      <div class="option-btn" data-value="Immersion">Immersion<small>POV + selfie</small></div>
+      <div class="option-btn" data-value="Story-Life">Story-Life<small>moment de vie</small></div>
+      <div class="option-btn" data-value="Loop">Loop<small>vidéo infinie</small></div>
+    </div>
+
+    <label>Images de référence (1 à 3, obligatoire)</label>
+    <input type="file" id="imageInput" accept="image/*" multiple>
+    <div class="small-note">Ces images servent à verrouiller personnages, vêtements, accessoires et décor. Le réalisateur ne doit jamais inventer d'éléments visibles sur ces images.</div>
+    <div class="image-previews" id="imagePreviews"></div>
+  </div>
+
+  <div class="card">
+    <h2>2. Clé API Vertex AI</h2>
+    <label>Clé API (Vertex AI Express — préfixe AQ...)</label>
+    <input type="text" id="apiKey" placeholder="AQ...">
+    <div class="small-note">Ta clé est utilisée uniquement dans ton navigateur, elle n'est jamais stockée ni envoyée ailleurs qu'à l'API Google.</div>
+    <button class="primary" id="generateDossierBtn">Générer le dossier de réalisation</button>
+    <div id="status"></div>
+  </div>
+
+  <div class="card hidden" id="dossierCard">
+    <h2>Dossier de réalisation</h2>
+    <div id="resultMeta" class="dossier-meta"></div>
+
+    <div id="dossierView">
+      <div id="resultSections"></div>
+      <div class="action-row">
+        <button class="secondary validate" id="validateBtn">✅ Valider le dossier</button>
+        <button class="secondary modify" id="modifyBtn">✏️ Modifier le dossier</button>
+      </div>
+    </div>
+
+    <div id="dossierEdit" class="hidden">
+      <label>Modifie le dossier directement (texte brut, garde les en-têtes === N. TITRE ===)</label>
+      <textarea id="dossierTextarea" class="edit-textarea"></textarea>
+      <div class="action-row">
+        <button class="secondary validate" id="saveEditBtn">💾 Enregistrer et revoir</button>
+        <button class="secondary" id="cancelEditBtn">Annuler</button>
+      </div>
+    </div>
+
+    <div id="validatedBadge" class="hidden validated-badge">✅ Dossier validé</div>
+    <details id="rawDetails" style="margin-top:14px;">
+      <summary style="cursor:pointer;color:var(--muted);font-size:0.8rem;">Voir le texte brut complet</summary>
+      <div id="resultOutput"></div>
+    </details>
+  </div>
+
+  <div class="card hidden" id="promptCard">
+    <h2>3. Prompt Seedance</h2>
+    <button class="primary" id="generatePromptBtn">Générer le prompt Seedance</button>
+    <div id="status2"></div>
+    <div id="promptOutput" class="section-block prompt-final hidden" style="margin-top:16px;">
+      <h3>Prompt Seedance final</h3>
+      <div class="content" id="promptContent"></div>
+      <button class="copy-btn" id="copyPromptBtn">📋 Copier le prompt Seedance</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const VERTEX_ENDPOINT = "https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-2.5-pro:generateContent?key=";
+
+let dureeSelectionnee = "8";
+let formatSelectionne = "9:16";
+let modeSelectionne = "Vlog";
+
+function wireOptionGrid(gridId, setter){
+  document.querySelectorAll("#"+gridId+" .option-btn").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      document.querySelectorAll("#"+gridId+" .option-btn").forEach(b=>b.classList.remove("active"));
+      btn.classList.add("active");
+      setter(btn.dataset.value);
+    });
+  });
+}
+wireOptionGrid("dureeGrid", v=>dureeSelectionnee=v);
+wireOptionGrid("formatGrid", v=>formatSelectionne=v);
+wireOptionGrid("modeGrid", v=>modeSelectionne=v);
+
+let referenceImages = [];
+
+document.getElementById("imageInput").addEventListener("change", async (e)=>{
+  const files = Array.from(e.target.files).slice(0,3);
+  referenceImages = [];
+  const previews = document.getElementById("imagePreviews");
+  previews.innerHTML = "";
+
+  for(const file of files){
+    const dataUrl = await new Promise((res,rej)=>{
+      const r = new FileReader();
+      r.onload = ()=>res(r.result);
+      r.onerror = rej;
+      r.readAsDataURL(file);
+    });
+    const parts = dataUrl.split(",");
+    const meta = parts[0];
+    const base64 = parts[1];
+    const mimeType = meta.match(/data:(.*);base64/)[1];
+    referenceImages.push({mimeType: mimeType, data: base64});
+
+    const img = document.createElement("img");
+    img.src = dataUrl;
+    previews.appendChild(img);
+  }
+});
+
+const MODE_DESCRIPTIONS = {
+"Vlog": "MODE : VLOG — DOCUMENTER SA JOURNÉE\nObjectif : donner l'impression qu'une créatrice de contenu documente un moment réel de sa vie.\nRelation caméra : la caméra existe dans l'univers, le personnage sait qu'il est filmé, peut regarder la caméra et interagir avec elle.\nTypes de plans : selfie, face caméra, caméra posée sur une table, caméra tenue à la main, captures spontanées.\nMouvements caméra : naturels, légers tremblements réalistes, repositionnements spontanés, mouvements organiques.\nRythme : rapide à modéré, énergie authentique.\nÀ éviter : mouvements cinématographiques sophistiqués, travelling complexes, effets de cinéma visibles.",
+
+"Multi-Shot": "MODE : MULTI-SHOT — SÉQUENCE DYNAMIQUE\nObjectif : raconter une histoire à travers plusieurs plans complémentaires.\nRelation caméra : le personnage ignore généralement la caméra.\nTypes de plans : plan large, plan moyen, plan poitrine, gros plan, plans de détails.\nMouvements caméra : push-in léger, travelling léger, recadrages progressifs, changements d'angles.\nRythme : évolutif, chaque plan apporte une nouvelle information.\nÀ éviter : répétition du même cadrage, longues séquences statiques.",
+
+"Immersion": "MODE : IMMERSION — POV + SELFIE\nObjectif : faire vivre la scène de l'intérieur.\nRelation caméra : la caméra devient les yeux du personnage, le spectateur vit directement l'événement.\nTypes de plans : POV, semi-POV, selfie immersif, mains visibles, regard caméra fréquent.\nMouvements caméra : mouvements du corps, respiration visible, légers déséquilibres naturels, déplacements réalistes.\nRythme : très immersif, très proche émotionnellement.\nÀ éviter : plans trop larges, caméra distante, découpage trop cinématographique.",
+
+"Story-Life": "MODE : STORY-LIFE — MOMENT DE VIE\nObjectif : donner l'impression qu'un moment authentique a été capturé.\nRelation caméra : observatrice discrète, le personnage oublie qu'elle existe.\nTypes de plans : observation naturelle, scènes de vie, interactions spontanées, détails du quotidien.\nMouvements caméra : très subtils, presque invisibles, observation douce.\nRythme : lent à modéré, l'émotion naît des actions.\nÀ éviter : mouvements spectaculaires, surdramatisation.",
+
+"Loop": "MODE : LOOP — VIDÉO INFINIE\nObjectif : créer une boucle parfaite entre la fin et le début.\nRelation caméra : variable selon l'histoire.\nTypes de plans : répétables, circulaires, continus.\nMouvements caméra : fluides, cycliques, raccordables.\nRythme : très régulier.\nÀ éviter : ruptures visuelles brutales, changements radicaux de cadrage.\nRÈGLE ABSOLUE : la dernière image doit pouvoir se reconnecter naturellement à la première."
+};
+
+const DUREE_STRUCTURES = {
+"5": "VIDÉO 5 SECONDES — Structure : Situation → Réaction → Dernier instant. Maximum : 1 événement principal, 1 réaction, 1 émotion dominante. Caméra simple. 2-3 temps forts maximum.",
+"8": "VIDÉO 8 SECONDES — Structure : Situation → Événement → Réaction → Conséquence → Dernier instant. Progression émotionnelle visible. Possibilité de plusieurs plans. 3-4 temps forts.",
+"15": "VIDÉO 15 SECONDES — Structure : Situation initiale → Événement perturbateur → Réaction → Développement → Conséquence → Dernier instant. L'histoire doit évoluer, l'émotion doit monter progressivement, exploiter plusieurs temps forts (4-6)."
+};
+
+const DOSSIER_SYSTEM_INSTRUCTION = "AGENT : STUDIO RÉALISATEUR — PHASE 1 : DOSSIER DE RÉALISATION\n\nIDENTITÉ\n\nTu es le Studio Réalisateur, le réalisateur officiel des Studios IA.\nTu reçois une histoire validée par le Studio Scénariste et tu la transformes en plan de réalisation.\nTu ne réécris jamais l'histoire, tu ne crées jamais de nouveaux événements, tu ne modifies jamais les émotions définies.\nTon rôle : comprendre l'histoire, verrouiller l'univers visuel, choisir la meilleure mise en scène, préparer la réalisation.\n\nIMAGES DE RÉFÉRENCE\n\nTu reçois 1 à 3 images de référence. Elles sont OBLIGATOIRES et servent à verrouiller : personnages (apparence, coiffure, vêtements, accessoires, caractéristiques distinctives), lieux, ambiance générale.\nTu ne dois JAMAIS inventer d'éléments visibles sur les images — observe-les attentivement et décris fidèlement ce qu'elles montrent.\n\nPRIORITÉ ABSOLUE — ÉMOTIONS\n\nChaque émotion doit être traduite par des gestes, regards, réactions physiques, micro-expressions, interactions, comportements observables.\nNe jamais écrire \"elle est triste\" — préférer \"son sourire disparaît progressivement\".\nNe jamais écrire \"elle est frustrée\" — préférer \"elle souffle bruyamment et pousse sur ses bras pour se relever\".\n\nTON TRAVAIL : GÉNÉRER LE DOSSIER DE RÉALISATION\n\nLe dossier contient 7 sections obligatoires :\n\n1. VERROUILLAGE VISUEL\nÀ partir des images fournies : personnages, coiffures, vêtements, accessoires, caractéristiques distinctives, éléments à préserver tout au long de la vidéo.\n\n2. VERROUILLAGE DU DÉCOR\nÀ partir des images et de l'histoire : lieu, environnement, architecture, objets importants, heure de la journée, ambiance générale. Doit rester cohérent toute la vidéo.\n\n3. MODE DE RÉALISATION\nLe mode sélectionné a été fourni avec sa fiche technique complète (plans, mouvements caméra, rythme, relation à la caméra, à éviter). Reformule cette fiche en l'appliquant concrètement à cette histoire précise.\n\n4. AMBIANCE\nÉnergie générale, ressenti recherché, tension émotionnelle, évolution émotionnelle — cohérente avec l'émotion dominante et le mode.\n\n5. TEMPS FORTS\nListe numérotée des événements les plus importants, chacun = une action observable. Le nombre doit respecter la structure de durée fournie.\n\n6. MISE EN SCÈNE\nPour chaque temps fort : actions visibles, réactions, interactions, progression émotionnelle. Ne jamais parler de caméra ni de technique ici — uniquement ce qui doit être vu.\n\n7. DERNIER INSTANT\nDescription précise de la dernière image visible : destination émotionnelle, point final du récit, dernière émotion ressentie.\n\nRÈGLE ABSOLUE\n\nTu ne crées jamais une nouvelle histoire. Tu mets en scène l'histoire fournie. Chaque décision visuelle doit servir l'émotion dominante et conduire naturellement vers le dernier instant. N'invente jamais d'éléments visibles sur les images de référence.\n\nFORMAT DE SORTIE OBLIGATOIRE\n\nRéponds UNIQUEMENT avec le contenu structuré exactement ainsi (texte brut, pas de markdown, pas de commentaire avant ou après, respecte exactement ces en-têtes) :\n\nTITRE : [titre]\nDURÉE : [durée]s\nFORMAT : [format]\nMODE : [mode]\nÉMOTION DOMINANTE : [émotion]\n\n=== 1. VERROUILLAGE VISUEL ===\n[description]\n\n=== 2. VERROUILLAGE DU DÉCOR ===\n[description]\n\n=== 3. MODE DE RÉALISATION ===\n[description appliquée à cette histoire]\n\n=== 4. AMBIANCE ===\n[description]\n\n=== 5. TEMPS FORTS ===\n[liste numérotée]\n\n=== 6. MISE EN SCÈNE ===\n[description par temps fort]\n\n=== 7. DERNIER INSTANT ===\n[description]";
+
+const PROMPT_SYSTEM_INSTRUCTION = "AGENT : STUDIO RÉALISATEUR — PHASE 2 : PROMPT SEEDANCE\n\nTu es le Studio Réalisateur. Le dossier de réalisation ci-dessous a été VALIDÉ par l'utilisateur. Tu dois maintenant générer le prompt Seedance final à partir de ce dossier validé, sans le contredire ni le modifier.\n\nLe prompt doit être rédigé comme un réalisateur, jamais comme un scénariste, jamais comme un résumé.\n\nSTRUCTURE OBLIGATOIRE DU PROMPT SEEDANCE (en français, fluide, prêt à coller dans Seedance) :\n\n1. SUJET PRINCIPAL — qui apparaît à l'écran (reprendre le verrouillage visuel).\n2. DÉCOR — où se déroule la scène (reprendre le verrouillage du décor).\n3. AMBIANCE VISUELLE — lumière, atmosphère, énergie.\n4. ACTIONS — ce que font les personnages, plan par plan, en suivant les temps forts et la mise en scène validés.\n5. ÉMOTIONS OBSERVABLES — expressions, réactions, comportements (jamais d'émotions nommées directement).\n6. RÉALISATION — types de plans, angles, mouvements caméra, rythme, conformes au mode de réalisation sélectionné.\n7. DERNIER INSTANT — image finale à atteindre, identique à celle du dossier validé.\n\nRÈGLE FONDAMENTALE SEEDANCE\n\nLe mouvement du personnage et le mouvement de la caméra doivent TOUJOURS être décrits séparément.\nCorrect : \"Elle avance lentement vers la fenêtre.\" / \"Caméra fixe en plan poitrine.\"\nIncorrect : \"La caméra suit la femme qui avance.\"\n\nGESTION DE LA DURÉE\n\nRespecte strictement la structure de durée fournie (situation → événement → réaction → ... → dernier instant selon la durée).\n\nRÈGLE ABSOLUE\n\nNe change jamais l'histoire, ne crée jamais de nouvel événement, n'invente jamais d'élément visuel absent du dossier validé.\n\nFORMAT DE SORTIE\n\nRéponds UNIQUEMENT avec le prompt Seedance final, texte brut, fluide, sans titres de sections visibles, sans markdown, prêt à être copié directement dans Seedance. Pas de commentaire avant ou après.";
+
+function buildImageParts(){
+  return referenceImages.map(function(img){
+    return { inlineData: { mimeType: img.mimeType, data: img.data } };
+  });
+}
+
+function setStatus(el, text, isError){
+  el.textContent = text;
+  if(isError) el.classList.add("error"); else el.classList.remove("error");
+}
+
+let lastDossierText = "";
+
+document.getElementById("generateDossierBtn").addEventListener("click", async ()=>{
+  const apiKey = document.getElementById("apiKey").value.trim();
+  const titre = document.getElementById("titre").value.trim();
+  const emotion = document.getElementById("emotion").value.trim();
+  const histoire = document.getElementById("histoire").value.trim();
+  const dernierInstant = document.getElementById("dernierInstant").value.trim();
+  const statusEl = document.getElementById("status");
+  const btn = document.getElementById("generateDossierBtn");
+
+  if(!apiKey){ setStatus(statusEl, "⚠️ Merci d'entrer ta clé API Vertex AI (AQ...)", true); return; }
+  if(!titre || !emotion || !histoire || !dernierInstant){ setStatus(statusEl, "⚠️ Merci de remplir tous les champs du scénario.", true); return; }
+  if(referenceImages.length === 0){ setStatus(statusEl, "⚠️ Au moins une image de référence est obligatoire.", true); return; }
+
+  btn.disabled = true;
+  document.getElementById("dossierCard").classList.add("hidden");
+  document.getElementById("promptCard").classList.add("hidden");
+  setStatus(statusEl, "");
+  statusEl.innerHTML = '<span class="spinner"></span> Le réalisateur analyse les images et construit le dossier...';
+
+  const userText = "TITRE : " + titre + "\nÉMOTION DOMINANTE : " + emotion + "\nHISTOIRE : " + histoire + "\nDERNIER INSTANT : " + dernierInstant + "\nDURÉE : " + dureeSelectionnee + " secondes\n" + DUREE_STRUCTURES[dureeSelectionnee] + "\nFORMAT : " + formatSelectionne + "\nMODE DE RÉALISATION SÉLECTIONNÉ : " + modeSelectionne + "\n" + MODE_DESCRIPTIONS[modeSelectionne];
+
+  const parts = [{ text: userText }].concat(buildImageParts());
+
+  try{
+    const response = await fetch(VERTEX_ENDPOINT + encodeURIComponent(apiKey), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: parts }],
+        systemInstruction: { parts: [{ text: DOSSIER_SYSTEM_INSTRUCTION }] },
+        generationConfig: { temperature: 0.9, maxOutputTokens: 8192 }
+      })
+    });
+
+    const data = await response.json();
+    if(!response.ok){
+      const errMsg = (data && data.error && data.error.message) ? data.error.message : JSON.stringify(data);
+      throw new Error(errMsg);
+    }
+    const candidate = data.candidates && data.candidates[0];
+    const finishReason = candidate && candidate.finishReason;
+    if(!candidate || !candidate.content || !candidate.content.parts){
+      throw new Error("Réponse vide de l'API. Raison : " + (finishReason || "inconnue"));
+    }
+    const text = candidate.content.parts.map(function(p){ return p.text || ""; }).join("").trim();
+    if(!text){
+      throw new Error("Le modèle n'a renvoyé aucun texte. finishReason : " + (finishReason || "inconnue"));
+    }
+
+    lastDossierText = text;
+    document.getElementById("resultOutput").textContent = text;
+    renderDossier(text);
+    document.getElementById("dossierCard").classList.remove("hidden");
+    document.getElementById("dossierView").classList.remove("hidden");
+    document.getElementById("dossierEdit").classList.add("hidden");
+    document.getElementById("validatedBadge").classList.add("hidden");
+    document.getElementById("promptCard").classList.add("hidden");
+    setStatus(statusEl, "✅ Dossier de réalisation généré. Vérifie-le puis valide ou modifie-le.");
+
+  }catch(err){
+    setStatus(statusEl, "❌ Erreur : " + err.message, true);
+  }finally{
+    btn.disabled = false;
+  }
+});
+
+function renderDossier(text){
+  const metaEl = document.getElementById("resultMeta");
+  const sectionsEl = document.getElementById("resultSections");
+  metaEl.innerHTML = "";
+  sectionsEl.innerHTML = "";
+
+  const headerMatch = text.match(/^([\s\S]*?)(?=={3}\s*1\.)/);
+  if(headerMatch){
+    headerMatch[1].split("\n").map(function(l){return l.trim();}).filter(Boolean).forEach(function(line){
+      const span = document.createElement("span");
+      span.textContent = line;
+      metaEl.appendChild(span);
+    });
+  }
+
+  const sectionRegex = /={3}\s*(\d+)\.\s*([^=]+?)\s*={3}\s*\n?([\s\S]*?)(?=(?:={3}\s*\d+\.)|$)/g;
+  let match; let found = false;
+  while((match = sectionRegex.exec(text)) !== null){
+    found = true;
+    const num = match[1];
+    const title = match[2].trim();
+    const content = match[3].trim();
+
+    const block = document.createElement("div");
+    block.className = "section-block";
+
+    const h3 = document.createElement("h3");
+    h3.textContent = num + ". " + title;
+    block.appendChild(h3);
+
+    const contentEl = document.createElement("div");
+    contentEl.className = "content";
+    contentEl.textContent = content;
+    block.appendChild(contentEl);
+
+    sectionsEl.appendChild(block);
+  }
+
+  if(!found){
+    const fallback = document.createElement("div");
+    fallback.className = "section-block";
+    fallback.innerHTML = '<div class="content"></div>';
+    fallback.querySelector(".content").textContent = text;
+    sectionsEl.appendChild(fallback);
+  }
+}
+
+document.getElementById("validateBtn").addEventListener("click", ()=>{
+  document.getElementById("validatedBadge").classList.remove("hidden");
+  document.getElementById("promptCard").classList.remove("hidden");
+  document.getElementById("promptCard").scrollIntoView({behavior:"smooth", block:"start"});
+});
+
+document.getElementById("modifyBtn").addEventListener("click", ()=>{
+  document.getElementById("dossierTextarea").value = lastDossierText;
+  document.getElementById("dossierView").classList.add("hidden");
+  document.getElementById("dossierEdit").classList.remove("hidden");
+});
+
+document.getElementById("cancelEditBtn").addEventListener("click", ()=>{
+  document.getElementById("dossierEdit").classList.add("hidden");
+  document.getElementById("dossierView").classList.remove("hidden");
+});
+
+document.getElementById("saveEditBtn").addEventListener("click", ()=>{
+  lastDossierText = document.getElementById("dossierTextarea").value;
+  document.getElementById("resultOutput").textContent = lastDossierText;
+  renderDossier(lastDossierText);
+  document.getElementById("dossierEdit").classList.add("hidden");
+  document.getElementById("dossierView").classList.remove("hidden");
+  document.getElementById("validatedBadge").classList.add("hidden");
+  document.getElementById("promptCard").classList.add("hidden");
+});
+
+document.getElementById("generatePromptBtn").addEventListener("click", async ()=>{
+  const apiKey = document.getElementById("apiKey").value.trim();
+  const statusEl = document.getElementById("status2");
+  const btn = document.getElementById("generatePromptBtn");
+  const promptOutput = document.getElementById("promptOutput");
+  const promptContent = document.getElementById("promptContent");
+
+  if(!apiKey){ setStatus(statusEl, "⚠️ Clé API manquante.", true); return; }
+  if(!lastDossierText){ setStatus(statusEl, "⚠️ Génère et valide le dossier avant de continuer.", true); return; }
+
+  btn.disabled = true;
+  promptOutput.classList.add("hidden");
+  setStatus(statusEl, "");
+  statusEl.innerHTML = '<span class="spinner"></span> Génération du prompt Seedance...';
+
+  const userText = "DOSSIER DE RÉALISATION VALIDÉ :\n\n" + lastDossierText + "\n\nDURÉE : " + dureeSelectionnee + " secondes\n" + DUREE_STRUCTURES[dureeSelectionnee] + "\nFORMAT : " + formatSelectionne + "\nMODE DE RÉALISATION : " + modeSelectionne;
+
+  const parts = [{ text: userText }].concat(buildImageParts());
+
+  try{
+    const response = await fetch(VERTEX_ENDPOINT + encodeURIComponent(apiKey), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: parts }],
+        systemInstruction: { parts: [{ text: PROMPT_SYSTEM_INSTRUCTION }] },
+        generationConfig: { temperature: 0.9, maxOutputTokens: 4096 }
+      })
+    });
+
+    const data = await response.json();
+    if(!response.ok){
+      const errMsg = (data && data.error && data.error.message) ? data.error.message : JSON.stringify(data);
+      throw new Error(errMsg);
+    }
+    const candidate = data.candidates && data.candidates[0];
+    const finishReason = candidate && candidate.finishReason;
+    if(!candidate || !candidate.content || !candidate.content.parts){
+      throw new Error("Réponse vide de l'API. Raison : " + (finishReason || "inconnue"));
+    }
+    const text = candidate.content.parts.map(function(p){ return p.text || ""; }).join("").trim();
+    if(!text){
+      throw new Error("Le modèle n'a renvoyé aucun texte. finishReason : " + (finishReason || "inconnue"));
+    }
+
+    promptContent.textContent = text;
+    promptOutput.classList.remove("hidden");
+    setStatus(statusEl, "✅ Prompt Seedance généré avec succès.");
+
+  }catch(err){
+    setStatus(statusEl, "❌ Erreur : " + err.message, true);
+  }finally{
+    btn.disabled = false;
+  }
+});
+
+document.getElementById("copyPromptBtn").addEventListener("click", ()=>{
+  const text = document.getElementById("promptContent").textContent;
+  navigator.clipboard.writeText(text).then(()=>{
+    const btn = document.getElementById("copyPromptBtn");
+    const original = btn.textContent;
+    btn.textContent = "✅ Copié !";
+    setTimeout(()=>{ btn.textContent = original; }, 1500);
+  });
+});
+</script>
+</body>
+</html>
