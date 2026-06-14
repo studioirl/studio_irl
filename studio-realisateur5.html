@@ -140,6 +140,25 @@
   button.continuity-btn:disabled{opacity:0.4;cursor:not-allowed;}
   #statusContinuity{margin-top:10px;font-size:0.88rem;color:var(--accent2);min-height:18px;}
   #statusContinuity.error{color:var(--accent);}
+
+  .img-slots{display:flex;gap:12px;margin-top:8px;flex-wrap:wrap;}
+  .img-slot{position:relative;width:110px;height:110px;flex-shrink:0;}
+  .img-slot-label{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    width:110px;height:110px;border:2px dashed var(--border);border-radius:10px;
+    cursor:pointer;background:var(--panel2);color:var(--muted);transition:0.15s;
+    font-size:1.4rem;gap:4px;
+  }
+  .img-slot-label small{font-size:0.72rem;}
+  .img-slot-label:hover{border-color:var(--accent);color:var(--accent2);}
+  .img-slot-label.hidden{display:none;}
+  .img-slot-preview{position:relative;width:110px;height:110px;}
+  .img-slot-preview img{width:110px;height:110px;object-fit:cover;border-radius:10px;border:1px solid var(--border);display:block;}
+  .img-remove-btn{
+    position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;
+    background:rgba(0,0,0,0.7);border:none;color:#fff;cursor:pointer;font-size:0.75rem;
+    display:flex;align-items:center;justify-content:center;line-height:1;
+  }
 </style>
 </head>
 <body>
@@ -188,9 +207,39 @@
     </div>
 
     <label>Images de référence (1 à 3, obligatoire)</label>
-    <input type="file" id="imageInput" accept="image/*" multiple>
-    <div class="small-note">Ces images servent à verrouiller personnages, vêtements, accessoires et décor. Le réalisateur ne doit jamais inventer d'éléments visibles sur ces images.</div>
-    <div class="image-previews" id="imagePreviews"></div>
+    <div class="small-note" style="margin-bottom:12px;">Ces images servent à verrouiller personnages, vêtements, accessoires et décor. Le réalisateur ne doit jamais inventer d'éléments visibles sur ces images.</div>
+    <div class="img-slots">
+      <div class="img-slot" id="slot0">
+        <div class="img-slot-preview hidden" id="preview0">
+          <img id="previewImg0" src="" alt="Image 1">
+          <button class="img-remove-btn" onclick="removeImage(0)">✕</button>
+        </div>
+        <label class="img-slot-label" id="label0" for="imgInput0">
+          <span>＋</span><small>Image 1</small>
+        </label>
+        <input type="file" id="imgInput0" accept="image/*" style="display:none;">
+      </div>
+      <div class="img-slot" id="slot1">
+        <div class="img-slot-preview hidden" id="preview1">
+          <img id="previewImg1" src="" alt="Image 2">
+          <button class="img-remove-btn" onclick="removeImage(1)">✕</button>
+        </div>
+        <label class="img-slot-label" id="label1" for="imgInput1">
+          <span>＋</span><small>Image 2</small>
+        </label>
+        <input type="file" id="imgInput1" accept="image/*" style="display:none;">
+      </div>
+      <div class="img-slot" id="slot2">
+        <div class="img-slot-preview hidden" id="preview2">
+          <img id="previewImg2" src="" alt="Image 3">
+          <button class="img-remove-btn" onclick="removeImage(2)">✕</button>
+        </div>
+        <label class="img-slot-label" id="label2" for="imgInput2">
+          <span>＋</span><small>Image 3</small>
+        </label>
+        <input type="file" id="imgInput2" accept="image/*" style="display:none;">
+      </div>
+    </div>
   </div>
 
   <div class="card">
@@ -279,29 +328,40 @@ wireOptionGrid("modeGrid", v=>modeSelectionne=v);
 
 let referenceImages = [];
 
-document.getElementById("imageInput").addEventListener("change", async (e)=>{
-  const files = Array.from(e.target.files).slice(0,3);
-  referenceImages = [];
-  const previews = document.getElementById("imagePreviews");
-  previews.innerHTML = "";
+// 3 separate image slots
+referenceImages = [null, null, null];
 
-  for(const file of files){
-    const dataUrl = await new Promise((res,rej)=>{
-      const r = new FileReader();
-      r.onload = ()=>res(r.result);
-      r.onerror = rej;
-      r.readAsDataURL(file);
-    });
-    const parts = dataUrl.split(",");
-    const meta = parts[0];
-    const base64 = parts[1];
-    const mimeType = meta.match(/data:(.*);base64/)[1];
-    referenceImages.push({mimeType: mimeType, data: base64});
+async function loadImageSlot(index, file){
+  const dataUrl = await new Promise((res,rej)=>{
+    const r = new FileReader();
+    r.onload = ()=>res(r.result);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+  const parts = dataUrl.split(",");
+  const meta = parts[0];
+  const base64 = parts[1];
+  const mimeType = meta.match(/data:(.*);base64/)[1];
+  referenceImages[index] = {mimeType: mimeType, data: base64};
+  document.getElementById("previewImg" + index).src = dataUrl;
+  document.getElementById("preview" + index).classList.remove("hidden");
+  document.getElementById("label" + index).classList.add("hidden");
+}
 
-    const img = document.createElement("img");
-    img.src = dataUrl;
-    previews.appendChild(img);
-  }
+function removeImage(index){
+  referenceImages[index] = null;
+  document.getElementById("previewImg" + index).src = "";
+  document.getElementById("preview" + index).classList.add("hidden");
+  document.getElementById("label" + index).classList.remove("hidden");
+  document.getElementById("imgInput" + index).value = "";
+}
+
+[0,1,2].forEach(function(i){
+  document.getElementById("imgInput" + i).addEventListener("change", function(e){
+    if(e.target.files && e.target.files[0]){
+      loadImageSlot(i, e.target.files[0]);
+    }
+  });
 });
 
 const MODE_DESCRIPTIONS = {
@@ -327,7 +387,7 @@ const DOSSIER_SYSTEM_INSTRUCTION = "AGENT : STUDIO RÉALISATEUR — PHASE 1 : DO
 const PROMPT_SYSTEM_INSTRUCTION = "AGENT : STUDIO RÉALISATEUR — PHASE 2 : PROMPT SEEDANCE\n\nTu es le Studio Réalisateur. Le dossier de réalisation ci-dessous a été VALIDÉ par l'utilisateur. Tu dois maintenant générer le prompt Seedance final à partir de ce dossier validé, sans le contredire ni le modifier.\n\nLe prompt doit être rédigé comme un réalisateur, jamais comme un scénariste, jamais comme un résumé.\n\nSTRUCTURE OBLIGATOIRE DU PROMPT SEEDANCE (en français, fluide, prêt à coller dans Seedance) :\n\n1. SUJET PRINCIPAL — qui apparaît à l'écran (reprendre le verrouillage visuel).\n2. DÉCOR — où se déroule la scène (reprendre le verrouillage du décor).\n3. AMBIANCE VISUELLE — lumière, atmosphère, énergie.\n4. ACTIONS — ce que font les personnages, plan par plan, en suivant les temps forts et la mise en scène validés.\n5. ÉMOTIONS OBSERVABLES — expressions, réactions, comportements (jamais d'émotions nommées directement).\n6. RÉALISATION — types de plans, angles, mouvements caméra, rythme, conformes au mode de réalisation sélectionné.\n7. DERNIER INSTANT — image finale à atteindre, identique à celle du dossier validé.\n\nRÈGLE FONDAMENTALE SEEDANCE\n\nLe mouvement du personnage et le mouvement de la caméra doivent TOUJOURS être décrits séparément.\nCorrect : \"Elle avance lentement vers la fenêtre.\" / \"Caméra fixe en plan poitrine.\"\nIncorrect : \"La caméra suit la femme qui avance.\"\n\nGESTION DE LA DURÉE\n\nRespecte strictement la structure de durée fournie (situation → événement → réaction → ... → dernier instant selon la durée).\n\nRÈGLE ABSOLUE\n\nNe change jamais l'histoire, ne crée jamais de nouvel événement, n'invente jamais d'élément visuel absent du dossier validé.\n\nFORMAT DE SORTIE\n\nRéponds UNIQUEMENT avec le prompt Seedance final, texte brut, fluide, sans titres de sections visibles, sans markdown, prêt à être copié directement dans Seedance. Pas de commentaire avant ou après.";
 
 function buildImageParts(){
-  return referenceImages.map(function(img){
+  return referenceImages.filter(function(img){ return img !== null; }).map(function(img){
     return { inlineData: { mimeType: img.mimeType, data: img.data } };
   });
 }
@@ -350,7 +410,7 @@ document.getElementById("generateDossierBtn").addEventListener("click", async ()
 
   if(!apiKey){ setStatus(statusEl, "⚠️ Merci d'entrer ta clé API Vertex AI (AQ...)", true); return; }
   if(!titre || !emotion || !histoire || !dernierInstant){ setStatus(statusEl, "⚠️ Merci de remplir tous les champs du scénario.", true); return; }
-  if(referenceImages.length === 0){ setStatus(statusEl, "⚠️ Au moins une image de référence est obligatoire.", true); return; }
+  if(referenceImages.filter(function(i){return i!==null;}).length === 0){ setStatus(statusEl, "⚠️ Au moins une image de référence est obligatoire.", true); return; }
 
   btn.disabled = true;
   document.getElementById("dossierCard").classList.add("hidden");
