@@ -117,7 +117,6 @@
     flex-shrink: 0;
     display: none;
   }
-  .engine-tag.aiza { background: var(--or-dim); color: var(--or); border: 1px solid var(--or-border); }
   .engine-tag.vertex { background: rgba(42,90,138,0.18); color: var(--bleu); border: 1px solid rgba(42,90,138,0.35); }
 
   /* ── LAYOUT ── */
@@ -491,10 +490,6 @@
 
 <!-- API BAR -->
 <div class="api-bar">
-  <span class="api-label">Google AI Studio</span>
-  <input type="password" id="keyAiza" class="api-input" placeholder="AIza..." autocomplete="off" oninput="detectEngine()" onpaste="setTimeout(detectEngine,0)" onchange="detectEngine()" onkeyup="detectEngine()" onblur="detectEngine()">
-  <div id="dotAiza" class="api-dot"></div>
-  <div class="api-sep"></div>
   <span class="api-label">Vertex AI Express</span>
   <input type="password" id="keyVertex" class="api-input" placeholder="AQ..." autocomplete="off" oninput="detectEngine()" onpaste="setTimeout(detectEngine,0)" onchange="detectEngine()" onkeyup="detectEngine()" onblur="detectEngine()">
   <div id="dotVertex" class="api-dot"></div>
@@ -544,10 +539,10 @@
 
     <!-- Idée d'histoire -->
     <div>
-      <div class="field-label">Ton idée d'histoire <span style="color:var(--gris);text-transform:none;letter-spacing:0;font-style:italic;font-size:10px">(optionnelle)</span></div>
+      <div class="field-label">Ton idée d'histoire <span style="color:rgba(196,68,46,0.8)">*</span></div>
       <textarea id="intention" class="intention-ta"
-        placeholder="Décris ce que tu veux raconter. Ex : deux amies qui se retrouvent après 6 mois, elles essaient de reproduire un vieux selfie..."></textarea>
-      <div class="field-note">Si tu laisses vide, le studio invente 3 histoires à partir de l'image et de l'émotion.</div>
+        placeholder="Décris ce que tu veux raconter — obligatoire. Ex : elle vient de terminer son footing, elle prépare son déjeuner healthy et..."></textarea>
+      <div class="field-error" id="intentionError">⚠ Décris ton idée d'histoire pour continuer</div>
     </div>
 
     <button class="btn-cta" id="btnGo" onclick="generate()">
@@ -579,22 +574,14 @@ let engine = null;
 /*  ENGINE DETECTION                  */
 /* ────────────────────────────────── */
 function detectEngine() {
-  const aiza   = document.getElementById('keyAiza').value.trim();
   const vertex = document.getElementById('keyVertex').value.trim();
   const tag    = document.getElementById('engineTag');
 
-  const aizaOk   = aiza.startsWith('AIza') && aiza.length > 20;
-  const vertexOk = !aizaOk && vertex.startsWith('AQ') && vertex.length > 10;
+  const vertexOk = vertex.startsWith('AQ') && vertex.length > 10;
 
-  document.getElementById('dotAiza').className   = 'api-dot' + (aizaOk ? ' ok' : '');
   document.getElementById('dotVertex').className = 'api-dot' + (vertexOk ? ' ok' : '');
 
-  if (aizaOk) {
-    engine = 'aiza';
-    tag.textContent  = '⚡ Google AI Studio';
-    tag.className    = 'engine-tag aiza';
-    tag.style.display = '';
-  } else if (vertexOk) {
+  if (vertexOk) {
     engine = 'vertex';
     tag.textContent  = '◈ Vertex AI Express';
     tag.className    = 'engine-tag vertex';
@@ -643,29 +630,16 @@ function clearSlot(e, i) {
 /*  API CALL                          */
 /* ────────────────────────────────── */
 async function callGemini(body) {
-  let url, res;
-
-  if (engine === 'aiza') {
-    const key = document.getElementById('keyAiza').value.trim();
-    url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${key}`;
-    res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-  } else {
-    // Vertex AI Express — même format que Studio Scénario
-    const key = document.getElementById('keyVertex').value.trim();
-    url = `https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-2.5-pro:generateContent?key=${encodeURIComponent(key)}`;
-    res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...body,
-        contents: [{ role: 'user', parts: body.contents[0].parts }]
-      })
-    });
-  }
+  const key = document.getElementById('keyVertex').value.trim();
+  const url = `https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-2.5-pro:generateContent?key=${encodeURIComponent(key)}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      ...body,
+      contents: [{ role: 'user', parts: body.contents[0].parts }]
+    })
+  });
 
   const data = await res.json();
   if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
@@ -752,14 +726,26 @@ async function generate() {
     label.textContent = 'Écriture…';
 
     // Build the full agent system prompt as user context
-    const intentionCtx = intention
-      ? `L'IDÉE DE L'UTILISATEUR :\n"${intention}"`
-      : `L'utilisateur n'a pas fourni d'idée. Invente 3 histoires distinctes à partir de l'image et de l'émotion.`;
+    const intentionCtx = `L'IDÉE DE L'UTILISATEUR :\n"${intention}"`;
 
     const scenarioPrompt = `Tu es Studio Scénariste, spécialisé dans les micro-histoires émotionnelles pour TikTok, Instagram Reels et Seedance.
 
 MISSION : Transformer des images en histoires émotionnelles authentiques, humaines, visuelles et filmables.
 Tu écris uniquement des histoires. Pas des prompts vidéo. Pas des plans. Pas des analyses.
+
+⚠ RÔLE FONDAMENTAL — NE JAMAIS OUBLIER :
+Le rôle du Studio Scénariste n'est pas d'inventer une histoire.
+Son rôle est d'identifier et de documenter un moment plausible de la vie réelle qui pourrait être filmé et partagé par un créateur de contenu.
+Chaque récit doit donner l'impression d'un instant réellement vécu, et non d'une fiction écrite par un romancier.
+
+ÉTAPE DE RÉFLEXION INTERNE OBLIGATOIRE :
+Avant de rédiger chaque scénario, réfléchis en interne (cette étape n'apparaît JAMAIS dans la réponse finale) :
+
+— Quelle est l'action principale ou le petit événement qui rend ce moment intéressant à regarder ?
+— Y a-t-il un détail humain observable ? Une hésitation. Une maladresse. Une réaction. Une petite surprise.
+— Comment rendre ça vivant sans tomber dans la fiction romanesque ?
+
+Ce n'est qu'après cette réflexion que tu rédiges l'histoire.
 
 CONTEXTE DE L'IMAGE ANALYSÉE :
 - Personnages : ${analyse.personnages || '—'}
@@ -774,6 +760,30 @@ CONTEXTE DE L'IMAGE ANALYSÉE :
 
 ${intentionCtx}
 
+GESTION DE LA DURÉE DES SCÉNARIOS :
+
+La durée déterminée pour chaque scénario doit dicter la quantité d'actions, d'événements et de progression narrative dans l'histoire. Plus la durée est longue, plus l'histoire doit contenir de battements narratifs observables (chaque battement = une action, une réaction ou un changement de situation filmable).
+
+— 5 SECONDES — micro-moment émotionnel immédiat
+Structure : Situation → Événement → Dernier instant
+Contenu : 1 événement principal, 1 réaction observable, 1 dernier instant fort.
+Reste simple et direct, ne surcharge pas.
+Exemples : une bouchée de travers, un fou rire soudain, une mauvaise nouvelle sur un téléphone, un regard qui change après avoir entendu quelque chose.
+
+— 8 SECONDES — petite progression émotionnelle
+Structure : Situation → Événement → Réaction → Conséquence → Dernier instant
+Contenu : une situation identifiable, un événement qui la modifie, une réaction observable, une conséquence immédiate, un dernier instant marquant.
+
+— 15 SECONDES — véritable mini-histoire
+Structure : Situation initiale → Événement perturbateur → Réaction → Développement → Conséquence → Dernier instant
+Contenu : une situation de départ claire, un élément perturbateur, plusieurs actions observables, une évolution émotionnelle visible, une conséquence concrète, un dernier instant fort.
+
+RÈGLE ABSOLUE SUR LA DURÉE :
+Plus la durée est longue, plus l'histoire doit contenir d'actions observables successives. Une histoire de 15 secondes ne doit JAMAIS ressembler à une histoire de 5 secondes simplement rallongée. Chaque seconde supplémentaire doit apporter de nouvelles actions, réactions ou conséquences visibles.
+
+RÈGLE DE VISUALISATION :
+Chaque phrase doit pouvoir être filmée. Éviter : pensées internes, analyses psychologiques, conclusions abstraites, émotions expliquées. Privilégier : gestes, regards, interactions, découvertes, réactions, changements de comportement. Les émotions doivent être visibles à travers les actions des personnages — ne jamais expliquer une émotion lorsqu'elle peut être montrée.
+
 RÈGLE ABSOLUE — JAMAIS ÉCRIRE :
 "Elle réalise que…" / "Elle comprend que…" / "Le spectateur ressent…" / "Elle pense que…"
 Tout doit être observable. Chaque phrase doit pouvoir être filmée.
@@ -781,7 +791,6 @@ Jamais de noms d'émotions dans les histoires.
 Jamais parler de caméra, lumière, cadrage, Seedance, prompts.
 
 LOGIQUE DES 3 PROPOSITIONS :
-${intention ? `
 PROPOSITION 1 — VERSION NETTOYÉE
 Reprends exactement l'histoire de l'utilisateur. Respecte sa logique, ses personnages, son déroulement.
 Corrige uniquement la structure, le rythme et les mots pour que ce soit plus clair et fluide. C'est son histoire.
@@ -793,49 +802,39 @@ On reconnaît son histoire mais elle est meilleure.
 PROPOSITION 3 — HISTOIRE INVENTÉE
 Invente une histoire complètement différente qui part de la même émotion dominante (${emotion}).
 Autre déclencheur, autre déroulement. L'histoire originale n'est plus reconnaissable.
-` : `
-PROPOSITION 1, 2 et 3 — trois histoires distinctes explorant 3 façons différentes de raconter l'émotion "${emotion}" à partir des mêmes images.
-Chaque proposition doit explorer un angle narratif vraiment différent : un souvenir, un soutien, un fou rire, une découverte, une décision, une surprise, etc.
-Ne raconte jamais la même histoire avec des mots différents.
-`}
 
 FORMAT DE SORTIE — JSON uniquement, sans markdown :
 {
   "scenarios": [
     {
       "numero": 1,
-      "type": "${intention ? 'Ta version nettoyée' : 'Histoire 1'}",
+      "type": "Ta version nettoyée",
       "titre": "Titre court et mémorable",
       "emotion": "${emotion}",
-      "pourquoi": "Pourquoi ce moment mérite d'être raconté (1 à 2 phrases)",
-      "histoire": "3 à 6 phrases. Actions, interactions, moments observables, progression émotionnelle. Chaque phrase filmable.",
+      "histoire": "Histoire construite selon la structure 8 SECONDES (Situation → Événement → Réaction → Conséquence → Dernier instant).",
       "dernier_instant": "Le tout dernier moment visible de l'histoire. Scène précise, pas une morale.",
-      "duree": "5s"
+      "duree": "8s"
     },
     {
       "numero": 2,
-      "type": "${intention ? 'Ta version améliorée' : 'Histoire 2'}",
+      "type": "Ta version améliorée",
       "titre": "...",
       "emotion": "${emotion}",
-      "pourquoi": "...",
-      "histoire": "...",
+      "histoire": "Histoire construite selon la structure 15 SECONDES (Situation initiale → Événement perturbateur → Réaction → Développement → Conséquence → Dernier instant). Plus riche en battements narratifs que les propositions 1 et 3.",
       "dernier_instant": "...",
       "duree": "15s"
     },
     {
       "numero": 3,
-      "type": "${intention ? 'Mon histoire' : 'Histoire 3'}",
+      "type": "Mon histoire",
       "titre": "...",
       "emotion": "${emotion}",
-      "pourquoi": "...",
-      "histoire": "...",
+      "histoire": "Histoire construite selon la structure 5 SECONDES (Situation → Événement → Dernier instant). Simple, directe, un seul battement narratif principal.",
       "dernier_instant": "...",
-      "duree": "8s"
+      "duree": "5s"
     }
   ]
 }
-
-Pour "duree", choisis entre "5s", "8s" ou "15s" selon la richesse narrative de l'histoire.`;
 
     const scenarioBody = {
       contents: [{ parts: [...imgParts, { text: scenarioPrompt }] }],
@@ -912,10 +911,6 @@ function renderResults(a, scenarios, emotion) {
         <div class="s-emotion">${s.emotion || emotion}</div>
       </div>
       <div class="s-body">
-        <div class="s-field">
-          <div class="s-fkey">Pourquoi ce moment compte</div>
-          <div class="s-fval">${s.pourquoi || ''}</div>
-        </div>
         <div class="s-field">
           <div class="s-fkey">Histoire</div>
           <div class="s-fval story">${(s.histoire || '').replace(/\n/g, '<br>')}</div>
