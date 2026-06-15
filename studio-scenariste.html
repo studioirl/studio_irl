@@ -166,7 +166,7 @@
   }
   .slot:hover { border-color: var(--or); background: var(--or-dim); }
   .slot.has-img { border-style: solid; border-color: var(--or); }
-  .slot input[type=file] { position: absolute; width:0; height:0; opacity:0; pointer-events:none; }
+  .slot input[type=file] { position: absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer; z-index:1; }
   .slot-ph { text-align: center; color: var(--gris); font-size: 11px; pointer-events: none; }
   .slot-ph .icon { display: block; font-size: 1.4rem; margin-bottom: 4px; opacity: 0.5; }
   .slot-img { width:100%; height:100%; object-fit:cover; display:none; }
@@ -179,7 +179,7 @@
     border-radius: 50%; cursor: pointer;
     font-size: 11px;
     display: none; align-items: center; justify-content: center;
-    z-index: 2;
+    z-index: 10;
   }
   .slot-del.vis { display: flex; }
   .slot-n {
@@ -506,21 +506,21 @@
     <div>
       <div class="field-label">Images <span>*</span> <span style="color:var(--gris);font-style:italic;text-transform:none;letter-spacing:0;font-size:10px">(1 à 3)</span></div>
       <div class="slots-grid">
-        <div class="slot" id="slot0" onclick="openSlot(0)">
+        <div class="slot" id="slot0">
           <input type="file" id="file0" accept="image/*" onchange="loadSlot(event,0)">
           <div class="slot-ph" id="ph0"><span class="icon">📷</span>Principale</div>
           <img class="slot-img" id="img0" alt="">
           <button class="slot-del" id="del0" onclick="clearSlot(event,0)">✕</button>
           <span class="slot-n">01</span>
         </div>
-        <div class="slot" id="slot1" onclick="openSlot(1)">
+        <div class="slot" id="slot1">
           <input type="file" id="file1" accept="image/*" onchange="loadSlot(event,1)">
           <div class="slot-ph" id="ph1"><span class="icon">＋</span>Option</div>
           <img class="slot-img" id="img1" alt="">
           <button class="slot-del" id="del1" onclick="clearSlot(event,1)">✕</button>
           <span class="slot-n">02</span>
         </div>
-        <div class="slot" id="slot2" onclick="openSlot(2)">
+        <div class="slot" id="slot2">
           <input type="file" id="file2" accept="image/*" onchange="loadSlot(event,2)">
           <div class="slot-ph" id="ph2"><span class="icon">＋</span>Option</div>
           <img class="slot-img" id="img2" alt="">
@@ -595,7 +595,15 @@ function detectEngine() {
 /* ────────────────────────────────── */
 /*  IMAGE SLOTS                       */
 /* ────────────────────────────────── */
-function openSlot(i) { document.getElementById('file' + i).click(); }
+function openSlot(i) {
+  const input = document.getElementById('file' + i);
+  input.removeAttribute('disabled');
+  // Force click via multiple methods for browser compatibility
+  try { input.click(); } catch(e) {
+    const ev = new MouseEvent('click', {bubbles: false, cancelable: true});
+    input.dispatchEvent(ev);
+  }
+}
 
 function loadSlot(e, i) {
   const file = e.target.files[0];
