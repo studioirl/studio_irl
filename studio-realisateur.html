@@ -170,8 +170,6 @@
     <input type="text" id="emotion" placeholder="Ex : Frustration contenue">
     <label>Histoire</label>
     <textarea id="histoire" placeholder="Décris ce qui se passe, étape par étape..."></textarea>
-    <label>Dernier instant</label>
-    <textarea id="dernierInstant" placeholder="Décris l'image / le moment final de la vidéo..."></textarea>
     <label>Durée recommandée</label>
     <div class="option-grid" id="dureeGrid">
       <div class="option-btn" data-value="5">5s<small>1 moment</small></div>
@@ -221,6 +219,15 @@
         <input type="file" id="imgInput2" accept="image/*" style="display:none;">
       </div>
     </div>
+  </div>
+
+  <div class="card" id="preAnalyzedCard">
+    <h2>Données pré-analysées (optionnel)</h2>
+    <p class="small-note" style="margin-bottom:10px;">Si l'analyse des images et la continuité ont déjà été générées par un autre studio (ex. Studio Story), colle-les ici. Le Dossier de réalisation les reprendra telles quelles au lieu de les régénérer.</p>
+    <label>Analyse des images déjà réalisée</label>
+    <textarea id="preAnalyzedImages" placeholder="Ex : Image 1 — personnage : ..., lieu : ..., action : ..., ambiance : ...  (laisser vide si non applicable)"></textarea>
+    <label>Plans / continuité déjà construits</label>
+    <textarea id="preAnalyzedPlans" placeholder="Ex : [AVANT] ... / [PENDANT] ... / [APRÈS] ...  (laisser vide si non applicable)"></textarea>
   </div>
 
   <div class="card">
@@ -365,7 +372,9 @@ var DUREE_STRUCTURES = {
 "15": "VIDÉO 15 SECONDES — Structure : Situation initiale → Événement perturbateur → Réaction → Développement → Conséquence → Dernier instant. L'émotion monte progressivement. 4-6 temps forts."
 };
 
-var DOSSIER_SYSTEM_INSTRUCTION = "AGENT : STUDIO RÉALISATEUR — PHASE 1 : DOSSIER DE RÉALISATION\n\nTu es le Studio Réalisateur. Tu reçois une histoire et des images de référence. Tu construis le dossier de réalisation complet en 7 sections.\n\nIMAGES DE RÉFÉRENCE\nObserve attentivement chaque image. Tu ne dois JAMAIS inventer d'éléments non visibles. Décris fidèlement ce que tu vois.\n\nÉMOTIONS\nJamais nommées. Toujours traduites en comportements observables.\nPas : 'elle est triste'. Oui : 'son sourire disparaît progressivement'.\n\nFORMAT DE SORTIE OBLIGATOIRE (texte brut, pas de markdown) :\n\nTITRE : [titre]\nDURÉE : [durée]s\nFORMAT : [format]\nMODE : [mode]\nÉMOTION DOMINANTE : [émotion]\n\n=== 1. VERROUILLAGE VISUEL ===\nAnalyse précise depuis les images : origine ethnique apparente, teint, âge apparent, type et couleur de cheveux, coiffure exacte, vêtements (couleur, matière, coupe, détails), accessoires, caractéristiques physiques distinctives (taches de rousseur, tatouages...), état (maquillée, en sueur...). Tout ce qui doit être conservé tout au long de la vidéo.\n\n=== 2. VERROUILLAGE DU DÉCOR ===\nLieu, environnement, objets importants, heure, ambiance — lus depuis les images et l'histoire.\n\n=== 3. MODE DE RÉALISATION ===\nApplique concrètement le mode sélectionné à cette histoire précise.\n\n=== 4. AMBIANCE ===\nÉnergie, ressenti, tension émotionnelle, évolution — cohérente avec l'émotion dominante.\n\n=== 5. TEMPS FORTS ===\nListe numérotée. Chaque temps fort = une action observable. Nombre adapté à la durée.\n\n=== 6. MISE EN SCÈNE ===\nPour chaque temps fort : actions visibles, réactions, progression émotionnelle. Pas de technique ici.\n\n=== 7. DERNIER INSTANT ===\nDescription précise de la dernière image visible.";
+var DOSSIER_SYSTEM_INSTRUCTION = "AGENT : STUDIO RÉALISATEUR — PHASE 1 : DOSSIER DE RÉALISATION\n\nTu es le Studio Réalisateur. Tu reçois une histoire et des images de référence. Tu construis le dossier de réalisation complet en 7 sections.\n\nIMAGES DE RÉFÉRENCE\nObserve attentivement chaque image. Tu ne dois JAMAIS inventer d'éléments non visibles. Décris fidèlement ce que tu vois.\n\nÉMOTIONS\nJamais nommées. Toujours traduites en comportements observables.\nPas : 'elle est triste'. Oui : 'son sourire disparaît progressivement'.\n\nFORMAT DE SORTIE OBLIGATOIRE (texte brut, pas de markdown) :\n\nTITRE : [titre]\nDURÉE : [durée]s\nFORMAT : [format]\nMODE : [mode]\nÉMOTION DOMINANTE : [émotion]\n\n=== 1. VERROUILLAGE VISUEL ===\nAnalyse précise depuis les images : origine ethnique apparente, teint, âge apparent, type et couleur de cheveux, coiffure exacte, vêtements (couleur, matière, coupe, détails), accessoires, caractéristiques physiques distinctives (taches de rousseur, tatouages...), état (maquillée, en sueur...). Tout ce qui doit être conservé tout au long de la vidéo.\n\n=== 2. VERROUILLAGE DU DÉCOR ===\nLieu, environnement, objets importants, heure, ambiance — lus depuis les images et l'histoire.\n\n=== 3. MODE DE RÉALISATION ===\nApplique concrètement le mode sélectionné à cette histoire précise.\n\n=== 4. AMBIANCE ===\nÉnergie, ressenti, tension émotionnelle, évolution — cohérente avec l'émotion dominante.\n\n=== 5. TEMPS FORTS ===\nListe numérotée. Chaque temps fort = une action observable. Nombre adapté à la durée.\n\n=== 6. MISE EN SCÈNE ===\nPour chaque temps fort : actions visibles, réactions, progression émotionnelle. Pas de technique ici.\n\n=== 7. DERNIER INSTANT ===\nDéduis et décris précisément la dernière image visible de la vidéo à partir de la fin de l'histoire racontée. Aucun champ séparé ne te sera fourni pour cela — c'est à toi d'identifier où l'histoire se termine naturellement.";
+
+var DOSSIER_PREANALYZED_ADDENDUM = "\n\nRÈGLE SUPPLÉMENTAIRE — DONNÉES PRÉ-ANALYSÉES\n\nDes données pré-analysées sont fournies (analyse d'images et/ou plans de continuité déjà construits par un autre studio).\nTu ne dois PAS régénérer ou réinterpréter cette analyse depuis zéro.\n\nPour la section 1 (VERROUILLAGE VISUEL) et 2 (VERROUILLAGE DU DÉCOR) : reprends fidèlement l'analyse des images déjà fournie, reformule-la proprement dans le format attendu sans changer les faits observés.\n\nPour la section 5 (TEMPS FORTS) : si des plans de continuité sont déjà fournis (AVANT/PENDANT/APRÈS), reprends-les dans l'ordre comme base des temps forts. Ne les réinvente pas, ne change pas leur séquence, adapte uniquement leur formulation si nécessaire pour respecter le nombre de temps forts attendu selon la durée.\n\nTu restes libre de construire normalement les sections 3 (MODE DE RÉALISATION), 4 (AMBIANCE), 6 (MISE EN SCÈNE) et 7 (DERNIER INSTANT) à partir de cette base.";
 
 var PROMPT_SYSTEM_INSTRUCTION = `AGENT : STUDIO RÉALISATEUR — PHASE 2 : PROMPT SEEDANCE
 
@@ -495,12 +504,11 @@ document.getElementById("generateDossierBtn").addEventListener("click", async fu
   var titre = document.getElementById("titre").value.trim();
   var emotion = document.getElementById("emotion").value.trim();
   var histoire = document.getElementById("histoire").value.trim();
-  var dernierInstant = document.getElementById("dernierInstant").value.trim();
   var statusEl = document.getElementById("status");
   var btn = document.getElementById("generateDossierBtn");
 
   if(!apiKey){ setStatus(statusEl,"⚠️ Merci d'entrer ta clé API Vertex AI (AQ...)",true); return; }
-  if(!titre||!emotion||!histoire||!dernierInstant){ setStatus(statusEl,"⚠️ Merci de remplir tous les champs du scénario.",true); return; }
+  if(!titre||!emotion||!histoire){ setStatus(statusEl,"⚠️ Merci de remplir tous les champs du scénario.",true); return; }
   if(referenceImages.filter(function(i){return i!==null;}).length===0){ setStatus(statusEl,"⚠️ Au moins une image de référence est obligatoire.",true); return; }
 
   btn.disabled=true;
@@ -509,13 +517,23 @@ document.getElementById("generateDossierBtn").addEventListener("click", async fu
   setStatus(statusEl,"");
   statusEl.innerHTML='<span class="spinner"></span> Le réalisateur analyse les images et construit le dossier...';
 
-  var userText="TITRE : "+titre+"\nÉMOTION DOMINANTE : "+emotion+"\nHISTOIRE : "+histoire+"\nDERNIER INSTANT : "+dernierInstant+"\nDURÉE : "+dureeSelectionnee+" secondes\n"+DUREE_STRUCTURES[dureeSelectionnee]+"\nFORMAT : "+formatSelectionne+"\nMODE : "+modeSelectionne+"\n"+MODE_DESCRIPTIONS[modeSelectionne];
+  var preAnalyzedImages = document.getElementById("preAnalyzedImages").value.trim();
+  var preAnalyzedPlans = document.getElementById("preAnalyzedPlans").value.trim();
+  var hasPreAnalyzed = preAnalyzedImages.length > 0 || preAnalyzedPlans.length > 0;
+
+  var userText="TITRE : "+titre+"\nÉMOTION DOMINANTE : "+emotion+"\nHISTOIRE : "+histoire+"\nDURÉE : "+dureeSelectionnee+" secondes\n"+DUREE_STRUCTURES[dureeSelectionnee]+"\nFORMAT : "+formatSelectionne+"\nMODE : "+modeSelectionne+"\n"+MODE_DESCRIPTIONS[modeSelectionne];
+
+  if(hasPreAnalyzed){
+    userText += "\n\n--- DONNÉES PRÉ-ANALYSÉES (ne pas régénérer, reprendre telles quelles) ---";
+    if(preAnalyzedImages) userText += "\nANALYSE DES IMAGES DÉJÀ FAITE :\n"+preAnalyzedImages;
+    if(preAnalyzedPlans) userText += "\nPLANS / CONTINUITÉ DÉJÀ CONSTRUITS :\n"+preAnalyzedPlans;
+  }
   var parts=[{text:userText}].concat(buildImageParts());
 
   try{
     var response=await fetch(VERTEX_ENDPOINT+encodeURIComponent(apiKey),{
       method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({contents:[{role:"user",parts:parts}],systemInstruction:{parts:[{text:DOSSIER_SYSTEM_INSTRUCTION}]},generationConfig:{temperature:0.9,maxOutputTokens:8192}})
+      body:JSON.stringify({contents:[{role:"user",parts:parts}],systemInstruction:{parts:[{text: hasPreAnalyzed ? (DOSSIER_SYSTEM_INSTRUCTION + DOSSIER_PREANALYZED_ADDENDUM) : DOSSIER_SYSTEM_INSTRUCTION}]},generationConfig:{temperature:0.9,maxOutputTokens:8192}})
     });
     var data=await response.json();
     if(!response.ok) throw new Error((data&&data.error&&data.error.message)?data.error.message:JSON.stringify(data));
