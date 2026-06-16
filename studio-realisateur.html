@@ -174,8 +174,8 @@
     <input type="text" id="titre" placeholder="Ex : Le café renversé">
     <label>Émotion dominante</label>
     <input type="text" id="emotion" placeholder="Ex : Frustration contenue">
-    <label>Histoire</label>
-    <textarea id="histoire" placeholder="Décris ce qui se passe, étape par étape..."></textarea>
+    <label>Histoire <span style="color:var(--muted);font-weight:400;">(facultatif si des plans de continuité sont collés plus bas)</span></label>
+    <textarea id="histoire" placeholder="Décris ce qui se passe, étape par étape... (laisser vide si tu colles des plans de continuité déjà construits ci-dessous)"></textarea>
     <label>Durée recommandée</label>
     <div class="option-grid" id="dureeGrid">
       <div class="option-btn" data-value="5">5s<small>1 moment</small></div>
@@ -245,6 +245,7 @@
     <label>Analyse des images déjà réalisée</label>
     <textarea id="preAnalyzedImages" placeholder="Ex : Image 1 — personnage : ..., lieu : ..., action : ..., ambiance : ...  (laisser vide si non applicable)"></textarea>
     <label>Plans / continuité déjà construits</label>
+    <p class="small-note" style="margin-top:0;">Si tu remplis ce champ, le champ Histoire ci-dessus devient inutile — ne remplis qu'un des deux.</p>
     <textarea id="preAnalyzedPlans" placeholder="Ex : [AVANT] ... / [PENDANT] ... / [APRÈS] ...  (laisser vide si non applicable)"></textarea>
   </div>
 
@@ -536,11 +537,15 @@ document.getElementById("generateDossierBtn").addEventListener("click", async fu
   var titre = document.getElementById("titre").value.trim();
   var emotion = document.getElementById("emotion").value.trim();
   var histoire = document.getElementById("histoire").value.trim();
+  var preAnalyzedImages = document.getElementById("preAnalyzedImages").value.trim();
+  var preAnalyzedPlans = document.getElementById("preAnalyzedPlans").value.trim();
+  var hasPreAnalyzedPlans = preAnalyzedPlans.length > 0;
   var statusEl = document.getElementById("status");
   var btn = document.getElementById("generateDossierBtn");
 
   if(!apiKey){ setStatus(statusEl,"⚠️ Merci d'entrer ta clé API Vertex AI (AQ...)",true); return; }
-  if(!titre||!histoire){ setStatus(statusEl,"⚠️ Merci de remplir au moins le titre et l'histoire.",true); return; }
+  if(!titre){ setStatus(statusEl,"⚠️ Merci de remplir au moins le titre.",true); return; }
+  if(!hasPreAnalyzedPlans && !histoire){ setStatus(statusEl,"⚠️ Merci de remplir l'histoire, ou de coller des plans de continuité déjà construits.",true); return; }
   if(referenceImages.filter(function(i){return i!==null;}).length===0){ setStatus(statusEl,"⚠️ Au moins une image de référence est obligatoire.",true); return; }
 
   btn.disabled=true;
@@ -549,21 +554,24 @@ document.getElementById("generateDossierBtn").addEventListener("click", async fu
   setStatus(statusEl,"");
   statusEl.innerHTML='<span class="spinner"></span> Le réalisateur analyse les images et construit le dossier...';
 
-  var preAnalyzedImages = document.getElementById("preAnalyzedImages").value.trim();
-  var preAnalyzedPlans = document.getElementById("preAnalyzedPlans").value.trim();
-  var hasPreAnalyzed = preAnalyzedImages.length > 0 || preAnalyzedPlans.length > 0;
-
   var imageEmotionsText = buildImageEmotionsText();
-  var userText="TITRE : "+titre+"\nÉMOTION DOMINANTE : "+(emotion || "(non précisée — déduire depuis les émotions par image si présentes, sinon depuis l'histoire)")+"\nHISTOIRE : "+histoire+"\nDURÉE : "+dureeSelectionnee+" secondes\n"+DUREE_STRUCTURES[dureeSelectionnee]+"\nFORMAT : "+formatSelectionne+"\nMODE : "+modeSelectionne+"\n"+MODE_DESCRIPTIONS[modeSelectionne];
+  var userText="TITRE : "+titre+"\nÉMOTION DOMINANTE : "+(emotion || "(non précisée — déduire depuis les émotions par image si présentes, sinon depuis l'histoire ou les plans fournis)")+"\nDURÉE : "+dureeSelectionnee+" secondes\n"+DUREE_STRUCTURES[dureeSelectionnee]+"\nFORMAT : "+formatSelectionne+"\nMODE : "+modeSelectionne+"\n"+MODE_DESCRIPTIONS[modeSelectionne];
+
+  if(hasPreAnalyzedPlans){
+    userText += "\n\nPLANS / CONTINUITÉ DÉJÀ CONSTRUITS (base de l'histoire, à reprendre dans l'ordre, ne pas réinventer) :\n" + preAnalyzedPlans;
+  } else {
+    userText += "\nHISTOIRE : " + histoire;
+  }
+
   if(imageEmotionsText){
     userText += "\n\nÉMOTIONS PAR IMAGE (à traduire individuellement en actions observables) :\n" + imageEmotionsText;
   }
 
-  if(hasPreAnalyzed){
-    userText += "\n\n--- DONNÉES PRÉ-ANALYSÉES (ne pas régénérer, reprendre telles quelles) ---";
-    if(preAnalyzedImages) userText += "\nANALYSE DES IMAGES DÉJÀ FAITE :\n"+preAnalyzedImages;
-    if(preAnalyzedPlans) userText += "\nPLANS / CONTINUITÉ DÉJÀ CONSTRUITS :\n"+preAnalyzedPlans;
+  if(preAnalyzedImages){
+    userText += "\n\nANALYSE DES IMAGES DÉJÀ FAITE (ne pas régénérer, reprendre telle quelle) :\n" + preAnalyzedImages;
   }
+
+  var hasPreAnalyzed = preAnalyzedImages.length > 0 || hasPreAnalyzedPlans;
   var parts=[{text:userText}].concat(buildImageParts());
 
   try{
