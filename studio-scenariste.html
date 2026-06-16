@@ -393,7 +393,7 @@
 <header class="header">
   <span class="header-logo">Studio Scénariste</span>
   <span class="header-badge">1.0</span>
-  <span class="header-sub">Image → Émotion → Narration</span>
+  <span class="header-sub">Images → Contexte → Intentions → Récit</span>
 </header>
 
 <div class="api-bar">
@@ -435,15 +435,31 @@
     </div>
 
     <div>
-      <div class="field-label">Émotion dominante <span>*</span></div>
-      <input type="text" id="emotion" class="api-input" style="width:100%;max-width:none;font-size:14px;padding:10px 14px;border-radius:6px;"
-        placeholder="Ex : complicité, nostalgie, fierté, soulagement…" autocomplete="off">
+      <div class="field-label">Contexte <span style="color:rgba(196,68,46,0.8)">*</span> <span style="color:var(--gris);font-style:italic;text-transform:none;letter-spacing:0;font-size:10px">— que se passe-t-il ?</span></div>
+      <textarea id="contexte" class="intention-ta" style="min-height:70px"
+        placeholder="Ex : elle termine son footing matinal et rentre préparer son repas post-entraînement."></textarea>
     </div>
 
-    <div>
-      <div class="field-label">Ton idée d'histoire <span style="color:rgba(196,68,46,0.8)">*</span></div>
-      <textarea id="intention" class="intention-ta"
-        placeholder="Décris ce que tu veux raconter — obligatoire. Ex : elle vient de terminer son footing, elle prépare son déjeuner healthy et..."></textarea>
+    <div id="emotionsParImage">
+      <div class="field-label">Intentions émotionnelles <span style="color:rgba(196,68,46,0.8)">*</span> <span style="color:var(--gris);font-style:italic;text-transform:none;letter-spacing:0;font-size:10px">— par image</span></div>
+      <div id="emoFieldsContainer" style="display:flex;flex-direction:column;gap:10px">
+        <div class="emo-field" id="emoField0" style="display:none">
+          <div style="font-size:10px;color:var(--gris-light);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px">Image 01</div>
+          <input type="text" id="emo0" class="api-input" style="width:100%;max-width:none;font-size:13px;padding:9px 12px;border-radius:6px;"
+            placeholder="Ex : détermination, dernier effort, énergie…" autocomplete="off">
+        </div>
+        <div class="emo-field" id="emoField1" style="display:none">
+          <div style="font-size:10px;color:var(--gris-light);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px">Image 02</div>
+          <input type="text" id="emo1" class="api-input" style="width:100%;max-width:none;font-size:13px;padding:9px 12px;border-radius:6px;"
+            placeholder="Ex : soulagement, retour au calme…" autocomplete="off">
+        </div>
+        <div class="emo-field" id="emoField2" style="display:none">
+          <div style="font-size:10px;color:var(--gris-light);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px">Image 03</div>
+          <input type="text" id="emo2" class="api-input" style="width:100%;max-width:none;font-size:13px;padding:9px 12px;border-radius:6px;"
+            placeholder="Ex : récompense, bien-être, satisfaction…" autocomplete="off">
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--gris);margin-top:6px;font-style:italic">Importe une image pour faire apparaître son champ d'intention.</div>
     </div>
 
     <button class="btn-cta" id="btnGo" onclick="generate()">
@@ -457,7 +473,7 @@
     <div class="empty-state">
       <div class="empty-glyph">🎭</div>
       <div class="empty-title">Trois histoires t'attendent</div>
-      <div class="empty-text">Importe une image, choisis une émotion, et le studio génère 3 scénarios filmables à partir de ta photo.</div>
+      <div class="empty-text">Importe tes images dans l'ordre chronologique, décris le contexte, précise l'intention émotionnelle de chaque image, et le studio construit le fil narratif.</div>
     </div>
   </div>
 
@@ -501,6 +517,7 @@ function loadSlot(e, i) {
     document.getElementById('ph' + i).style.display = 'none';
     document.getElementById('del' + i).classList.add('vis');
     document.getElementById('slot' + i).classList.add('has-img');
+    document.getElementById('emoField' + i).style.display = 'block';
   };
   reader.readAsDataURL(file);
 }
@@ -515,6 +532,8 @@ function clearSlot(e, i) {
   document.getElementById('del' + i).classList.remove('vis');
   document.getElementById('slot' + i).classList.remove('has-img');
   document.getElementById('file' + i).value = '';
+  document.getElementById('emoField' + i).style.display = 'none';
+  document.getElementById('emo' + i).value = '';
 }
 
 async function callGemini(body) {
@@ -557,12 +576,21 @@ function safeJSON(raw) {
 
 async function generate() {
   if (!engine) { alert('Entre une clé API pour continuer.'); return; }
-  if (!slots.some(function(s) { return s !== null; })) { alert('Importe au moins une image.'); return; }
+  var activeIndexes = [];
+  slots.forEach(function(s, i) { if (s !== null) activeIndexes.push(i); });
+  if (activeIndexes.length === 0) { alert('Importe au moins une image.'); return; }
 
-  var emotion = document.getElementById('emotion').value.trim();
-  var intention = document.getElementById('intention').value.trim();
-  if (!emotion) { alert('Choisis une émotion dominante.'); return; }
-  if (!intention) { alert('Décris ton idée d\'histoire pour continuer.'); return; }
+  var contexte = document.getElementById('contexte').value.trim();
+  if (!contexte) { alert('Décris le contexte — que se passe-t-il ?'); return; }
+
+  var emotionsParImage = [];
+  var missing = false;
+  activeIndexes.forEach(function(i) {
+    var val = document.getElementById('emo' + i).value.trim();
+    if (!val) missing = true;
+    emotionsParImage.push({ index: i, numero: emotionsParImage.length + 1, emotion: val });
+  });
+  if (missing) { alert('Décris l\'intention émotionnelle pour chaque image importée.'); return; }
 
   var btn = document.getElementById('btnGo');
   var spin = document.getElementById('btnSpin');
@@ -571,15 +599,18 @@ async function generate() {
   spin.style.display = 'block';
   label.textContent = 'Analyse en cours…';
 
-  setOutput('<div class="loading"><div class="spin-lg"></div><div class="loading-msg">Scan émotionnel…</div></div>');
+  setOutput('<div class="loading"><div class="spin-lg"></div><div class="loading-msg">Lecture visuelle…</div></div>');
 
   try {
-    var imgParts = slots.filter(function(s) { return s !== null; }).map(function(s) {
-      return { inline_data: { mime_type: s.mime, data: s.b64 } };
+    var imgParts = activeIndexes.map(function(i) {
+      return { inline_data: { mime_type: slots[i].mime, data: slots[i].b64 } };
     });
 
-    // STEP 1 : IMAGE ANALYSIS
-    var analysePrompt = 'Analyse cette image. Réponds UNIQUEMENT avec un objet JSON valide, rien d\'autre. Pas de markdown, pas de texte, pas d\'explication. JSON pur. Chaque champ texte doit faire MAXIMUM 12 mots, sois concis. Structure exacte : {"personnages":"","relation":"","energie":"","emotion_dominante":"","emotion_secondaire":"","intensite":7,"lieu":"","ambiance":"","contexte_social":"","en_cours":"","potentiel_narratif":""}';
+    // PHASE 1 — LECTURE VISUELLE (analyse de chaque image, dans l'ordre)
+    var analysePrompt = 'Tu vas recevoir ' + imgParts.length + ' image(s) dans l\'ordre chronologique du récit (image 1 = premier moment, dernière image = dernier moment). ' +
+      'Pour CHAQUE image, analyse : le personnage, l\'environnement, l\'action, les éléments importants, l\'énergie de la scène, les indices émotionnels visibles. ' +
+      'Réponds UNIQUEMENT avec un objet JSON valide, rien d\'autre. Pas de markdown, pas de texte, pas d\'explication. JSON pur. Chaque champ texte MAXIMUM 12 mots. ' +
+      'Structure exacte : {"images":[{"numero":1,"personnage":"","environnement":"","action":"","elements_importants":"","energie":"","indices_emotionnels":""}' + (imgParts.length > 1 ? ',{"numero":2,...}' : '') + (imgParts.length > 2 ? ',{"numero":3,...}' : '') + ']}';
 
     var analyseData = await callGemini({
       parts: imgParts.concat([{ text: analysePrompt }]),
@@ -588,53 +619,76 @@ async function generate() {
 
     _lastRaw = getText(analyseData);
     var analyse = safeJSON(_lastRaw);
+    var images = analyse.images || [];
 
-    // STEP 2 : SCENARIOS
-    setOutput('<div class="loading"><div class="spin-lg"></div><div class="loading-msg">Écriture des scénarios…</div></div>');
+    // PHASE 2-5 — TRADUCTION ÉMOTIONNELLE, FIL NARRATIF, CONSTRUCTION, AMPLIFICATION
+    setOutput('<div class="loading"><div class="spin-lg"></div><div class="loading-msg">Construction du récit…</div></div>');
     label.textContent = 'Écriture…';
 
+    var imagesBlock = images.map(function(img, idx) {
+      var emo = emotionsParImage[idx] ? emotionsParImage[idx].emotion : '';
+      return 'Image ' + (idx + 1) + ' :\n' +
+        '- Personnage : ' + (img.personnage || '—') + '\n' +
+        '- Environnement : ' + (img.environnement || '—') + '\n' +
+        '- Action : ' + (img.action || '—') + '\n' +
+        '- Éléments importants : ' + (img.elements_importants || '—') + '\n' +
+        '- Énergie : ' + (img.energie || '—') + '\n' +
+        '- Indices émotionnels visibles : ' + (img.indices_emotionnels || '—') + '\n' +
+        '- Intention émotionnelle voulue par l\'utilisateur pour cette image : "' + emo + '"';
+    }).join('\n\n');
+
     var scenarioPrompt = [
-      'Tu es Studio Scénariste, spécialisé dans les micro-histoires émotionnelles pour TikTok, Instagram Reels et Seedance.',
+      'Tu es un storyteller expert en contenu TikTok, Instagram Reels et UGC.',
+      'À partir des images (analysées ci-dessous), d\'un contexte et des émotions que le créateur souhaite transmettre, tu construis une narration courte, immersive et émotionnelle.',
       '',
-      'MISSION : Transformer des images en histoires émotionnelles authentiques, humaines, visuelles et filmables.',
-      'Tu écris uniquement des histoires. Pas des prompts vidéo. Pas des plans. Pas des analyses.',
+      'Tu ne décris pas les images. Tu identifies le fil narratif qui relie les moments entre eux et tu racontes l\'histoire de manière à faire ressentir les émotions souhaitées au spectateur.',
+      'Chaque phrase doit faire avancer l\'histoire. Chaque image doit avoir une fonction émotionnelle dans le récit.',
+      'Ton objectif est de créer une connexion immédiate entre le spectateur et le personnage.',
       '',
-      'RÔLE FONDAMENTAL :',
-      'Le rôle du Studio Scénariste est d\'identifier et documenter un moment plausible de la vie réelle qui pourrait être filmé.',
-      'Chaque récit doit donner l\'impression d\'un instant réellement vécu, et non d\'une fiction écrite par un romancier.',
+      'PRINCIPE FONDAMENTAL :',
+      'Les émotions ne sont jamais racontées. Elles sont montrées.',
+      'Ton rôle n\'est pas d\'écrire ce que ressent le personnage. Ton rôle est de trouver les moments visuels qui permettront au spectateur de ressentir ces émotions.',
+      'Tu n\'es pas un écrivain. Tu n\'es pas un psychologue. Tu es un storyteller visuel pour créateurs de contenu.',
       '',
-      'CONTEXTE DE L\'IMAGE :',
-      '- Personnages : ' + (analyse.personnages || '—'),
-      '- Relation : ' + (analyse.relation || '—'),
-      '- Énergie : ' + (analyse.energie || '—'),
-      '- Ambiance : ' + (analyse.ambiance || '—'),
-      '- Lieu : ' + (analyse.lieu || '—'),
-      '- Ce qui se passe : ' + (analyse.en_cours || '—'),
-      '- Potentiel narratif : ' + (analyse.potentiel_narratif || '—'),
+      'CONTEXTE FOURNI PAR L\'UTILISATEUR :',
+      '"' + contexte + '"',
       '',
-      'ÉMOTION DOMINANTE CHOISIE : ' + emotion,
+      'IMAGES DANS L\'ORDRE CHRONOLOGIQUE DU RÉCIT (image 1 = premier moment, dernière = dernier moment) :',
+      imagesBlock,
       '',
-      'L\'IDÉE DE L\'UTILISATEUR :',
-      '"' + intention + '"',
+      'TRADUCTION ÉMOTIONNELLE EN MOMENTS VISUELS — exemples de méthode (ne pas copier, juste comprendre la logique) :',
+      'Fatigue → souffle court, ralentissement, mains sur les hanches.',
+      'Soulagement → ouverture de porte, relâchement des épaules, sourire discret.',
+      'Récompense → repas servi, premier coup de fourchette, regard satisfait.',
+      'Ne conserve JAMAIS une émotion sous forme abstraite : transforme-la systématiquement en action observable.',
       '',
-      'DURÉES :',
-      '5s = micro-moment : Situation → Événement → Dernier instant. Simple, 1 battement.',
+      'FIL NARRATIF — pose-toi une seule question : quel est le parcours vécu entre la première image et la dernière ? Cherche ce que veut le personnage, ce qu\'il doit faire pour l\'obtenir, et comment chaque image fait avancer cette progression.',
+      '',
+      'AMPLIFICATION DU MOMENT FORT : identifie le moment le plus satisfaisant à regarder dans cette histoire, puis construis toute la progression pour le rendre plus puissant (ex : la première gorgée, l\'arrivée à destination, la transformation, la dégustation, la découverte, le résultat final).',
+      '',
+      'STRUCTURE NARRATIVE OBLIGATOIRE pour chaque proposition :',
+      '1. Situation — où sommes-nous, que se passe-t-il ?',
+      '2. Objectif — qu\'est-ce que le personnage cherche à obtenir ?',
+      '3. Progression visuelle — quels moments font avancer naturellement l\'histoire ?',
+      '4. Point culminant — quel est le moment le plus satisfaisant à voir ?',
+      '5. Résolution — quelle image finale laisse une émotion forte au spectateur ? (= LE DERNIER INSTANT, à préciser de façon très visuelle et précise)',
+      '',
+      'INTERDIT : décrire une émotion, décrire une pensée, utiliser des concepts abstraits, écrire "elle ressent...", "elle réalise...", "le spectateur comprend...". Jamais parler de caméra, lumière, cadrage, Seedance, prompts.',
+      'AUTORISÉ UNIQUEMENT : actions, gestes, réactions, interactions, moments de vie. Chaque phrase doit pouvoir être transformée en plan vidéo.',
+      '',
+      'GESTION DE LA DURÉE :',
+      '5s = micro-moment : Situation → Événement → Dernier instant. Simple, 1 battement. Ne pas surcharger.',
       '8s = petite progression : Situation → Événement → Réaction → Conséquence → Dernier instant.',
-      '15s = mini-histoire : Situation → Événement perturbateur → Réaction → Développement → Conséquence → Dernier instant. Plusieurs actions observables.',
-      '',
-      'RÈGLES ABSOLUES :',
-      '- Chaque phrase doit pouvoir être filmée. Pas de pensées internes, pas d\'émotions nommées.',
-      '- Jamais : "Elle réalise que..." / "Elle comprend que..." / "Le spectateur ressent..."',
-      '- Les émotions doivent être visibles à travers les actions uniquement.',
-      '- Jamais parler de caméra, lumière, cadrage, Seedance, prompts.',
+      '15s = mini-histoire complète suivant la structure narrative en 5 étapes ci-dessus, avec plusieurs actions observables.',
+      'RÈGLE : plus la durée est longue, plus l\'histoire doit contenir d\'actions observables successives. Une histoire de 15s ne doit JAMAIS ressembler à une histoire de 5s rallongée.',
       '',
       'LOGIQUE DES 3 PROPOSITIONS :',
-      'PROPOSITION 1 — VERSION NETTOYÉE : reprend exactement l\'histoire de l\'utilisateur, corrigée et fluidifiée. Structure 8s.',
-      'PROPOSITION 2 — VERSION AMÉLIORÉE : part de l\'idée et ajoute le détail ou retournement qui la rend plus forte. Structure 15s.',
-      'PROPOSITION 3 — HISTOIRE INVENTÉE : invente une histoire complètement différente avec la même émotion. Structure 5s.',
+      'PROPOSITION 1 — VERSION NETTOYÉE : reprend exactement le contexte et les intentions de l\'utilisateur, structurés et fluidifiés. Structure 8s.',
+      'PROPOSITION 2 — VERSION AMÉLIORÉE : part du même contexte et ajoute le détail, la réaction ou le moment qui amplifie le point culminant. Structure 15s, en suivant la structure narrative complète en 5 étapes.',
+      'PROPOSITION 3 — HISTOIRE INVENTÉE : autre fil narratif possible à partir des mêmes images et des mêmes intentions émotionnelles par image, mais un déclencheur et un déroulement différents. Structure 5s.',
       '',
       'FORMAT DE SORTIE — JSON uniquement, sans markdown :',
-      '{"scenarios":[{"numero":1,"type":"Ta version nettoyée","titre":"Titre court","emotion":"' + emotion + '","histoire":"Histoire 8s ici.","dernier_instant":"Dernier moment visible.","duree":"8s"},{"numero":2,"type":"Ta version améliorée","titre":"Titre court","emotion":"' + emotion + '","histoire":"Histoire 15s ici.","dernier_instant":"Dernier moment visible.","duree":"15s"},{"numero":3,"type":"Mon histoire","titre":"Titre court","emotion":"' + emotion + '","histoire":"Histoire 5s ici.","dernier_instant":"Dernier moment visible.","duree":"5s"}]}'
+      '{"scenarios":[{"numero":1,"type":"Ta version nettoyée","titre":"Titre court","histoire":"Histoire 8s ici.","dernier_instant":"Résolution précise et visuelle.","duree":"8s"},{"numero":2,"type":"Ta version amplifiée","titre":"Titre court","histoire":"Histoire 15s ici, suivant Situation/Objectif/Progression/Point culminant/Résolution.","dernier_instant":"Résolution précise et visuelle.","duree":"15s"},{"numero":3,"type":"Autre fil narratif","titre":"Titre court","histoire":"Histoire 5s ici.","dernier_instant":"Résolution précise et visuelle.","duree":"5s"}]}'
     ].join('\n');
 
     var scenarioData = await callGemini({
@@ -645,7 +699,7 @@ async function generate() {
     _lastRaw = getText(scenarioData);
     var scenarioParsed = safeJSON(_lastRaw);
 
-    renderResults(analyse, scenarioParsed.scenarios, emotion);
+    renderResults(images, scenarioParsed.scenarios, emotionsParImage);
 
   } catch(err) {
     setOutput(
@@ -661,18 +715,21 @@ async function generate() {
   }
 }
 
-function renderResults(a, scenarios, emotion) {
-  var pct = (a.intensite || 5) * 10;
-
+function renderResults(images, scenarios, emotionsParImage) {
   var html = '<div class="analyse-bloc">' +
-    '<div class="bloc-title">◆ Analyse de l\'image</div>' +
-    '<div class="analyse-grid">' +
-    '<div><div class="a-key">Personnages & relation</div><div class="a-val">' + (a.personnages || '—') + ' · ' + (a.relation || '—') + '</div></div>' +
-    '<div><div class="a-key">Lieu & ambiance</div><div class="a-val">' + (a.lieu || '—') + ' · ' + (a.ambiance || '—') + '</div></div>' +
-    '<div><div class="a-key">Émotions détectées</div><div class="a-val"><span class="tag">' + (a.emotion_dominante || '—') + '</span>' + (a.emotion_secondaire ? '<span class="tag" style="opacity:0.6">' + a.emotion_secondaire + '</span>' : '') + '</div><div class="bar"><div class="bar-fill" style="width:' + pct + '%"></div></div></div>' +
-    '<div><div class="a-key">Énergie</div><div class="a-val">' + (a.energie || '—') + '</div></div>' +
-    '<div style="grid-column:1/-1"><div class="a-key">Ce qui se passe → Potentiel narratif</div><div class="a-val">' + (a.en_cours || '—') + ' <span style="color:var(--or)">→</span> ' + (a.potentiel_narratif || '—') + '</div></div>' +
-    '</div></div>';
+    '<div class="bloc-title">◆ Lecture visuelle</div>' +
+    '<div class="analyse-grid">';
+
+  (images || []).forEach(function(img, idx) {
+    var emo = emotionsParImage[idx] ? emotionsParImage[idx].emotion : '—';
+    html += '<div style="grid-column:1/-1' + (idx > 0 ? ';border-top:1px solid rgba(255,255,255,0.05);padding-top:0.75rem' : '') + '">' +
+      '<div class="a-key">Image 0' + (idx + 1) + ' — ' + (img.personnage || '—') + ' · ' + (img.environnement || '—') + '</div>' +
+      '<div class="a-val">' + (img.action || '—') + '. ' + (img.indices_emotionnels || '') + '</div>' +
+      '<div style="margin-top:4px"><span class="tag">' + emo + '</span></div>' +
+      '</div>';
+  });
+
+  html += '</div></div>';
 
   html += '<div class="scenarios">';
 
@@ -682,7 +739,6 @@ function renderResults(a, scenarios, emotion) {
       '<div class="s-head">' +
       '<div class="s-num">0' + s.numero + '</div>' +
       '<div class="s-meta"><div class="s-type">' + (s.type || '') + '</div><div class="s-title">' + (s.titre || '') + '</div></div>' +
-      '<div class="s-emotion">' + (s.emotion || emotion) + '</div>' +
       '</div>' +
       '<div class="s-body">' +
       '<div class="s-field"><div class="s-fkey">Histoire</div><div class="s-fval story">' + (s.histoire || '').replace(/\n/g, '<br>') + '</div></div>' +
@@ -695,7 +751,6 @@ function renderResults(a, scenarios, emotion) {
 
   html += '</div>';
   setOutput(html);
-
   window._scenarios = scenarios;
 }
 
