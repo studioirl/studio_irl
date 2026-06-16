@@ -136,23 +136,29 @@
   #statusContinuity{margin-top:10px;font-size:0.88rem;color:var(--accent2);min-height:18px;}
   #statusContinuity.error{color:var(--accent);}
   .img-slots{display:flex;gap:12px;margin-top:8px;flex-wrap:wrap;}
-  .img-slot{position:relative;width:110px;height:110px;flex-shrink:0;}
+  .img-slot{position:relative;width:130px;flex-shrink:0;}
   .img-slot-label{
     display:flex;flex-direction:column;align-items:center;justify-content:center;
-    width:110px;height:110px;border:2px dashed var(--border);border-radius:10px;
+    width:130px;height:110px;border:2px dashed var(--border);border-radius:10px;
     cursor:pointer;background:var(--panel2);color:var(--muted);transition:0.15s;
     font-size:1.4rem;gap:4px;
   }
   .img-slot-label small{font-size:0.72rem;}
   .img-slot-label:hover{border-color:var(--accent);color:var(--accent2);}
   .img-slot-label.hidden{display:none;}
-  .img-slot-preview{position:relative;width:110px;height:110px;}
-  .img-slot-preview img{width:110px;height:110px;object-fit:cover;border-radius:10px;border:1px solid var(--border);display:block;}
+  .img-slot-preview{position:relative;width:130px;height:110px;}
+  .img-slot-preview img{width:130px;height:110px;object-fit:cover;border-radius:10px;border:1px solid var(--border);display:block;}
   .img-remove-btn{
     position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;
     background:rgba(0,0,0,0.7);border:none;color:#fff;cursor:pointer;font-size:0.75rem;
     display:flex;align-items:center;justify-content:center;line-height:1;
   }
+  .img-emotion-input{
+    width:130px;margin-top:6px;background:var(--panel2);border:1px solid var(--border);
+    border-radius:6px;padding:6px 8px;color:var(--text);font-size:0.72rem;font-family:inherit;
+  }
+  .img-emotion-input::placeholder{color:var(--muted);}
+  .img-emotion-input:focus{outline:none;border-color:var(--accent);}
 </style>
 </head>
 <body>
@@ -191,7 +197,7 @@
       <div class="option-btn" data-value="Loop">Loop<small>boucle invisible</small></div>
       <div class="option-btn" data-value="Food ASMR">Food ASMR<small>textures & gestes</small></div>
     </div>
-    <label>Images de référence (1 à 3, obligatoire)</label>
+    <label>Images de référence (1 à 4, obligatoire)</label>
     <div class="small-note" style="margin-bottom:12px;">Ces images servent à verrouiller personnages, vêtements, accessoires et décor.</div>
     <div class="img-slots">
       <div class="img-slot" id="slot0">
@@ -201,6 +207,7 @@
         </div>
         <label class="img-slot-label" id="label0" for="imgInput0"><span>＋</span><small>Image 1</small></label>
         <input type="file" id="imgInput0" accept="image/*" style="display:none;">
+        <input type="text" class="img-emotion-input" id="emotionInput0" placeholder="Émotion à ce moment (optionnel)">
       </div>
       <div class="img-slot" id="slot1">
         <div class="img-slot-preview hidden" id="preview1">
@@ -209,6 +216,7 @@
         </div>
         <label class="img-slot-label" id="label1" for="imgInput1"><span>＋</span><small>Image 2</small></label>
         <input type="file" id="imgInput1" accept="image/*" style="display:none;">
+        <input type="text" class="img-emotion-input" id="emotionInput1" placeholder="Émotion à ce moment (optionnel)">
       </div>
       <div class="img-slot" id="slot2">
         <div class="img-slot-preview hidden" id="preview2">
@@ -217,6 +225,16 @@
         </div>
         <label class="img-slot-label" id="label2" for="imgInput2"><span>＋</span><small>Image 3</small></label>
         <input type="file" id="imgInput2" accept="image/*" style="display:none;">
+        <input type="text" class="img-emotion-input" id="emotionInput2" placeholder="Émotion à ce moment (optionnel)">
+      </div>
+      <div class="img-slot" id="slot3">
+        <div class="img-slot-preview hidden" id="preview3">
+          <img id="previewImg3" src="" alt="Image 4">
+          <button class="img-remove-btn" onclick="removeImage(3)">✕</button>
+        </div>
+        <label class="img-slot-label" id="label3" for="imgInput3"><span>＋</span><small>Image 4</small></label>
+        <input type="file" id="imgInput3" accept="image/*" style="display:none;">
+        <input type="text" class="img-emotion-input" id="emotionInput3" placeholder="Émotion à ce moment (optionnel)">
       </div>
     </div>
   </div>
@@ -310,7 +328,7 @@ wireOptionGrid("dureeGrid", function(v){ dureeSelectionnee=v; });
 wireOptionGrid("formatGrid", function(v){ formatSelectionne=v; });
 wireOptionGrid("modeGrid", function(v){ modeSelectionne=v; });
 
-var referenceImages = [null, null, null];
+var referenceImages = [null, null, null, null];
 
 async function loadImageSlot(index, file){
   var dataUrl = await new Promise(function(res,rej){
@@ -335,7 +353,7 @@ function removeImage(index){
   document.getElementById("imgInput"+index).value = "";
 }
 
-[0,1,2].forEach(function(i){
+[0,1,2,3].forEach(function(i){
   document.getElementById("imgInput"+i).addEventListener("change", function(e){
     if(e.target.files && e.target.files[0]) loadImageSlot(i, e.target.files[0]);
   });
@@ -345,6 +363,20 @@ function buildImageParts(){
   return referenceImages.filter(function(img){ return img!==null; }).map(function(img){
     return { inlineData: { mimeType: img.mimeType, data: img.data } };
   });
+}
+
+function buildImageEmotionsText(){
+  var lines = [];
+  for(var i=0;i<referenceImages.length;i++){
+    if(referenceImages[i] !== null){
+      var emoInput = document.getElementById("emotionInput"+i);
+      var emo = emoInput ? emoInput.value.trim() : "";
+      if(emo){
+        lines.push("Image " + (i+1) + " — émotion à ce moment : " + emo);
+      }
+    }
+  }
+  return lines.length > 0 ? lines.join("\n") : "";
 }
 
 function setStatus(el, text, isError){
@@ -372,7 +404,7 @@ var DUREE_STRUCTURES = {
 "15": "VIDÉO 15 SECONDES — Structure : Situation initiale → Événement perturbateur → Réaction → Développement → Conséquence → Dernier instant. L'émotion monte progressivement. 4-6 temps forts."
 };
 
-var DOSSIER_SYSTEM_INSTRUCTION = "AGENT : STUDIO RÉALISATEUR — PHASE 1 : DOSSIER DE RÉALISATION\n\nTu es le Studio Réalisateur. Tu reçois une histoire et des images de référence. Tu construis le dossier de réalisation complet en 7 sections.\n\nIMAGES DE RÉFÉRENCE\nObserve attentivement chaque image. Tu ne dois JAMAIS inventer d'éléments non visibles. Décris fidèlement ce que tu vois.\n\nÉMOTIONS\nJamais nommées. Toujours traduites en comportements observables.\nPas : 'elle est triste'. Oui : 'son sourire disparaît progressivement'.\n\nFORMAT DE SORTIE OBLIGATOIRE (texte brut, pas de markdown) :\n\nTITRE : [titre]\nDURÉE : [durée]s\nFORMAT : [format]\nMODE : [mode]\nÉMOTION DOMINANTE : [émotion]\n\n=== 1. VERROUILLAGE VISUEL ===\nAnalyse précise depuis les images : origine ethnique apparente, teint, âge apparent, type et couleur de cheveux, coiffure exacte, vêtements (couleur, matière, coupe, détails), accessoires, caractéristiques physiques distinctives (taches de rousseur, tatouages...), état (maquillée, en sueur...). Tout ce qui doit être conservé tout au long de la vidéo.\n\n=== 2. VERROUILLAGE DU DÉCOR ===\nLieu, environnement, objets importants, heure, ambiance — lus depuis les images et l'histoire.\n\n=== 3. MODE DE RÉALISATION ===\nApplique concrètement le mode sélectionné à cette histoire précise.\n\n=== 4. AMBIANCE ===\nÉnergie, ressenti, tension émotionnelle, évolution — cohérente avec l'émotion dominante.\n\n=== 5. TEMPS FORTS ===\nListe numérotée. Chaque temps fort = une action observable. Nombre adapté à la durée.\n\n=== 6. MISE EN SCÈNE ===\nPour chaque temps fort : actions visibles, réactions, progression émotionnelle. Pas de technique ici.\n\n=== 7. DERNIER INSTANT ===\nDéduis et décris précisément la dernière image visible de la vidéo à partir de la fin de l'histoire racontée. Aucun champ séparé ne te sera fourni pour cela — c'est à toi d'identifier où l'histoire se termine naturellement.";
+var DOSSIER_SYSTEM_INSTRUCTION = "AGENT : STUDIO RÉALISATEUR — PHASE 1 : DOSSIER DE RÉALISATION\n\nTu es le Studio Réalisateur. Tu reçois une histoire et des images de référence. Tu construis le dossier de réalisation complet en 7 sections.\n\nIMAGES DE RÉFÉRENCE\nObserve attentivement chaque image. Tu ne dois JAMAIS inventer d'éléments non visibles. Décris fidèlement ce que tu vois.\n\nÉMOTIONS — DEUX NIVEAUX POSSIBLES\nUne émotion dominante globale peut être fournie pour toute la vidéo. Optionnellement, une émotion différente peut aussi être fournie pour chaque image — dans ce cas, traduis CHAQUE émotion par image individuellement en actions observables propres à cette image, puis construis la progression émotionnelle globale de l'histoire comme un enchaînement de ces émotions par image plutôt que comme une émotion unique imposée de force. Si seule l'émotion dominante est fournie, fonctionne comme avant. Si aucune des deux n'est fournie, déduis l'émotion depuis l'histoire elle-même.\nJamais une émotion n'est nommée directement dans le texte produit. Toujours traduite en comportements observables.\nPas : 'elle est triste'. Oui : 'son sourire disparaît progressivement'.\n\nFORMAT DE SORTIE OBLIGATOIRE (texte brut, pas de markdown) :\n\nTITRE : [titre]\nDURÉE : [durée]s\nFORMAT : [format]\nMODE : [mode]\nÉMOTION DOMINANTE : [émotion]\n\n=== 1. VERROUILLAGE VISUEL ===\nAnalyse précise depuis les images : origine ethnique apparente, teint, âge apparent, type et couleur de cheveux, coiffure exacte, vêtements (couleur, matière, coupe, détails), accessoires, caractéristiques physiques distinctives (taches de rousseur, tatouages...), état (maquillée, en sueur...). Tout ce qui doit être conservé tout au long de la vidéo.\n\n=== 2. VERROUILLAGE DU DÉCOR ===\nLieu, environnement, objets importants, heure, ambiance — lus depuis les images et l'histoire.\n\n=== 3. MODE DE RÉALISATION ===\nApplique concrètement le mode sélectionné à cette histoire précise.\n\n=== 4. AMBIANCE ===\nÉnergie, ressenti, tension émotionnelle, évolution — cohérente avec l'émotion dominante et/ou la progression des émotions par image.\n\n=== 5. TEMPS FORTS ===\nListe numérotée. Chaque temps fort = une action observable. Si des émotions par image sont fournies, assure-toi qu'un temps fort traduit chacune d'elles. Nombre adapté à la durée.\n\n=== 6. MISE EN SCÈNE ===\nPour chaque temps fort : actions visibles, réactions, progression émotionnelle. Pas de technique ici.\n\n=== 7. DERNIER INSTANT ===\nDéduis et décris précisément la dernière image visible de la vidéo à partir de la fin de l'histoire racontée. Aucun champ séparé ne te sera fourni pour cela — c'est à toi d'identifier où l'histoire se termine naturellement.";
 
 var DOSSIER_PREANALYZED_ADDENDUM = "\n\nRÈGLE SUPPLÉMENTAIRE — DONNÉES PRÉ-ANALYSÉES\n\nDes données pré-analysées sont fournies (analyse d'images et/ou plans de continuité déjà construits par un autre studio).\nTu ne dois PAS régénérer ou réinterpréter cette analyse depuis zéro.\n\nPour la section 1 (VERROUILLAGE VISUEL) et 2 (VERROUILLAGE DU DÉCOR) : reprends fidèlement l'analyse des images déjà fournie, reformule-la proprement dans le format attendu sans changer les faits observés.\n\nPour la section 5 (TEMPS FORTS) : si des plans de continuité sont déjà fournis (AVANT/PENDANT/APRÈS), reprends-les dans l'ordre comme base des temps forts. Ne les réinvente pas, ne change pas leur séquence, adapte uniquement leur formulation si nécessaire pour respecter le nombre de temps forts attendu selon la durée.\n\nTu restes libre de construire normalement les sections 3 (MODE DE RÉALISATION), 4 (AMBIANCE), 6 (MISE EN SCÈNE) et 7 (DERNIER INSTANT) à partir de cette base.";
 
@@ -508,7 +540,7 @@ document.getElementById("generateDossierBtn").addEventListener("click", async fu
   var btn = document.getElementById("generateDossierBtn");
 
   if(!apiKey){ setStatus(statusEl,"⚠️ Merci d'entrer ta clé API Vertex AI (AQ...)",true); return; }
-  if(!titre||!emotion||!histoire){ setStatus(statusEl,"⚠️ Merci de remplir tous les champs du scénario.",true); return; }
+  if(!titre||!histoire){ setStatus(statusEl,"⚠️ Merci de remplir au moins le titre et l'histoire.",true); return; }
   if(referenceImages.filter(function(i){return i!==null;}).length===0){ setStatus(statusEl,"⚠️ Au moins une image de référence est obligatoire.",true); return; }
 
   btn.disabled=true;
@@ -521,7 +553,11 @@ document.getElementById("generateDossierBtn").addEventListener("click", async fu
   var preAnalyzedPlans = document.getElementById("preAnalyzedPlans").value.trim();
   var hasPreAnalyzed = preAnalyzedImages.length > 0 || preAnalyzedPlans.length > 0;
 
-  var userText="TITRE : "+titre+"\nÉMOTION DOMINANTE : "+emotion+"\nHISTOIRE : "+histoire+"\nDURÉE : "+dureeSelectionnee+" secondes\n"+DUREE_STRUCTURES[dureeSelectionnee]+"\nFORMAT : "+formatSelectionne+"\nMODE : "+modeSelectionne+"\n"+MODE_DESCRIPTIONS[modeSelectionne];
+  var imageEmotionsText = buildImageEmotionsText();
+  var userText="TITRE : "+titre+"\nÉMOTION DOMINANTE : "+(emotion || "(non précisée — déduire depuis les émotions par image si présentes, sinon depuis l'histoire)")+"\nHISTOIRE : "+histoire+"\nDURÉE : "+dureeSelectionnee+" secondes\n"+DUREE_STRUCTURES[dureeSelectionnee]+"\nFORMAT : "+formatSelectionne+"\nMODE : "+modeSelectionne+"\n"+MODE_DESCRIPTIONS[modeSelectionne];
+  if(imageEmotionsText){
+    userText += "\n\nÉMOTIONS PAR IMAGE (à traduire individuellement en actions observables) :\n" + imageEmotionsText;
+  }
 
   if(hasPreAnalyzed){
     userText += "\n\n--- DONNÉES PRÉ-ANALYSÉES (ne pas régénérer, reprendre telles quelles) ---";
