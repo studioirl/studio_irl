@@ -263,6 +263,38 @@
   .footer-note{ text-align:center; margin-top:46px; color: var(--ink-faint); font-size:11.5px; }
   .footer-note .brand{ color: var(--ink-muted); font-family:'Space Mono',monospace; }
 
+  /* ---------- ANALYSIS BLOCK ---------- */
+  .analysis-block{
+    border:1px solid var(--surface-line); border-radius: var(--radius-sm); background: var(--void-2);
+    margin-bottom:20px; overflow:hidden;
+  }
+  .analysis-block summary{
+    cursor:pointer; padding:12px 16px; font-family:'Space Mono', monospace; font-size:11px; letter-spacing:.06em;
+    color:var(--amber); list-style:none; display:flex; align-items:center; justify-content:space-between;
+    text-transform:uppercase; user-select:none;
+  }
+  .analysis-block summary::-webkit-details-marker{ display:none; }
+  .analysis-block summary .chevron{ font-family:'Inter',sans-serif; color:var(--ink-faint); transition: transform .15s; }
+  .analysis-block[open] summary .chevron{ transform: rotate(90deg); }
+  .analysis-body{ padding:2px 16px 16px; }
+  .moment-de-vie{
+    font-family:'Fraunces', serif; font-style:italic; color:var(--lilac); font-size:14px; line-height:1.55;
+    padding:11px 13px; background: rgba(157,92,255,0.08); border-left:2px solid var(--violet); border-radius:0 8px 8px 0;
+    margin:0 0 14px;
+  }
+  .analysis-grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(190px,1fr)); gap:10px; margin-bottom:14px; }
+  .analysis-card{ background: var(--surface-soft); border:1px solid var(--surface-line); border-radius:8px; padding:11px 13px; }
+  .analysis-card .ac-tag{ font-family:'Space Mono', monospace; font-size:10px; color:var(--amber); margin:0 0 7px; }
+  .analysis-card dl{ margin:0; }
+  .analysis-card dt{ font-size:10px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.04em; margin-top:7px; }
+  .analysis-card dt:first-child{ margin-top:0; }
+  .analysis-card dd{ margin:2px 0 0; font-size:12.5px; color:var(--ink); line-height:1.45; }
+  .emotion-grid{ display:flex; flex-direction:column; gap:8px; }
+  .emotion-row{ background: var(--surface-soft); border:1px solid var(--surface-line); border-radius:8px; padding:10px 13px; }
+  .emotion-row .e-label{ font-size:11.5px; color:var(--violet-bright); font-weight:600; margin:0 0 6px; }
+  .emotion-row ul{ margin:0; padding-left:17px; }
+  .emotion-row li{ font-size:12px; color:var(--ink-muted); line-height:1.55; }
+
 </style>
 </head>
 <body>
@@ -279,7 +311,7 @@
       </svg>
       <div>
         <h1>STUDIO <em>STORY</em></h1>
-        <p class="tagline">Transforme une image figée en continuité de vie filmable — pas un scénario, une suite naturelle d'instants.</p>
+        <p class="tagline">Transforme une image figée en continuité de vie filmable. Pas un scénario, une suite naturelle d'instants vécus.</p>
       </div>
     </div>
     <div class="hero-right">
@@ -300,7 +332,7 @@
 
         <div class="step">
           <div class="step-label"><span class="num">1</span><h3>Importer les images</h3></div>
-          <p class="step-hint">Jusqu'à 4 images. Sous chaque image, décris l'émotion que tu veux faire ressentir à partir de ce moment précis.</p>
+          <p class="step-hint">Jusqu'à 4 images. Sous chaque image, tu peux décrire l'émotion que tu veux faire ressentir à partir de ce moment précis — ce champ est optionnel.</p>
           <div class="image-grid" id="imageGrid"></div>
         </div>
 
@@ -354,7 +386,7 @@
 
   </main>
 
-  <p class="footer-note"><span class="brand">STUDIO IRL</span> — Studio Story ne raconte pas une histoire, il prolonge un instant.</p>
+  <p class="footer-note"><span class="brand">STUDIO IRL</span> — Studio Story ne raconte pas une histoire, il prolonge un instant figé en suite de moments vécus.</p>
 
 </div>
 
@@ -456,7 +488,7 @@ function renderImageGrid(){
           <img src="${img.dataUrl}" alt="image ${i+1}">
           <button class="remove-btn" type="button" data-i="${i}">×</button>
         </div>
-        <textarea data-i="${i}" placeholder="Émotion pour cette image (ex. satisfaction, liberté, calme…)">${img.emotion || ''}</textarea>
+        <textarea data-i="${i}" placeholder="Émotion à transmettre (optionnel) — ex. satisfaction, liberté, calme…">${img.emotion || ''}</textarea>
       `;
       slot.querySelector('.remove-btn').addEventListener('click', (e)=>{
         e.stopPropagation();
@@ -607,6 +639,8 @@ Phase 2 — Compréhension du moment : détermine quel moment de vie global est 
 Phase 3 — Continuité naturelle : imagine ce qui vient juste avant, ce qui vient juste après, et les moments intermédiaires qui donnent du sens à l'expérience. Écris déjà ces moments comme des actions concrètes et filmables (pas des intentions, pas des pensées).
 Phase 4 — Traduction émotionnelle : pour chaque émotion mentionnée par l'utilisateur (une par image), traduis-la en 3 actions physiques observables — jamais le mot de l'émotion lui-même.
 
+Le champ "index" de chaque entrée de images_analyse doit correspondre exactement au numéro de l'image tel qu'indiqué dans le message (Image 1, Image 2, etc.).
+
 CONTEXTE DU MOMENT FOURNI PAR L'UTILISATEUR :
 "${contextText}"
 
@@ -662,9 +696,10 @@ function setLoading(label){
     </div>`;
 }
 
-function setError(message){
+function setError(message, analysis){
   phaseTag.textContent = 'ERREUR';
-  storyboardContent.innerHTML = `
+  const analysisHtml = analysis ? renderAnalysisBlock(analysis, true) : '';
+  storyboardContent.innerHTML = analysisHtml + `
     <div class="error-state">
       <svg class="err-icon" width="30" height="30" viewBox="0 0 30 30" fill="none"><circle cx="15" cy="15" r="12.5" stroke="currentColor" stroke-width="1.5"/><path d="M15 9V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="15" cy="20.2" r="1.1" fill="currentColor"/></svg>
       <h4>Le moment n'a pas pu être prolongé</h4>
@@ -674,7 +709,40 @@ function setError(message){
 
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
-function renderStoryboard(story, styleTitle){
+function renderAnalysisBlock(analysis, openByDefault){
+  const imgCards = (analysis.images_analyse||[]).map(img => `
+    <div class="analysis-card">
+      <p class="ac-tag">IMAGE ${img.index}</p>
+      <dl>
+        <dt>Personnage</dt><dd>${escapeHtml(img.personnage||'—')}</dd>
+        <dt>Lieu</dt><dd>${escapeHtml(img.lieu||'—')}</dd>
+        <dt>Action</dt><dd>${escapeHtml(img.action||'—')}</dd>
+        <dt>Ambiance</dt><dd>${escapeHtml(img.ambiance||'—')}</dd>
+        ${img.indices_contexte ? `<dt>Indices de contexte</dt><dd>${escapeHtml(img.indices_contexte)}</dd>` : ''}
+      </dl>
+    </div>
+  `).join('');
+
+  const emotionRows = (analysis.traduction_emotionnelle||[]).map(e => `
+    <div class="emotion-row">
+      <p class="e-label">${escapeHtml(e.emotion)}</p>
+      <ul>${(e.actions_filmables||[]).map(a=>`<li>${escapeHtml(a)}</li>`).join('')}</ul>
+    </div>
+  `).join('');
+
+  return `
+    <details class="analysis-block" ${openByDefault ? 'open' : ''}>
+      <summary>Analyse du moment <span class="chevron">›</span></summary>
+      <div class="analysis-body">
+        ${analysis.moment_de_vie ? `<p class="moment-de-vie">« ${escapeHtml(analysis.moment_de_vie)} »</p>` : ''}
+        ${imgCards ? `<div class="analysis-grid">${imgCards}</div>` : ''}
+        ${emotionRows ? `<div class="emotion-grid">${emotionRows}</div>` : ''}
+      </div>
+    </details>
+  `;
+}
+
+function renderStoryboard(story, styleTitle, analysis){
   phaseTag.textContent = 'TERMINÉ';
   const labMap = { AVANT:'AVANT', PENDANT:'PENDANT', APRES:'APRÈS' };
   const planRows = story.plans.map((p, idx)=>`
@@ -687,7 +755,10 @@ function renderStoryboard(story, styleTitle){
     </div>
   `).join('');
 
+  const analysisHtml = analysis ? renderAnalysisBlock(analysis, false) : '';
+
   storyboardContent.innerHTML = `
+    ${analysisHtml}
     <div class="sb-header">
       <div>
         <p class="sb-eyebrow">${styleTitle} · ${story.plans.length} plans</p>
@@ -729,17 +800,26 @@ generateBtn.addEventListener('click', async ()=>{
   if(!apiKey || !contextText || !style) return;
 
   localStorage.setItem('studio_story_api_key', apiKey);
+  analysisResult = null;
 
   try{
     setLoading('Analyse du moment (phases 1 à 4)…');
     analysisResult = await runAnalysis(apiKey, contextText);
 
-    setLoading(`Construction de la story — ${style.title}…`);
+    // L'analyse est affichée immédiatement, pendant que la phase 5 tourne en dessous.
+    phaseTag.textContent = 'EN COURS';
+    generateBtnLabel.innerHTML = `<span class="spinner"></span> Construction de la story — ${style.title}…`;
+    storyboardContent.innerHTML = renderAnalysisBlock(analysisResult, true) + `
+      <div class="loading-state" style="min-height:160px;">
+        <div class="spinner"></div>
+        <p>CONSTRUCTION DE LA STORY — ${style.title.toUpperCase()}…</p>
+      </div>`;
+
     const story = await runConstruction(apiKey, contextText, analysisResult, style);
 
-    renderStoryboard(story, style.title);
+    renderStoryboard(story, style.title, analysisResult);
   }catch(err){
-    setError(err.message || String(err));
+    setError(err.message || String(err), analysisResult);
   }finally{
     generateBtnLabel.textContent = 'Générer la continuité';
     validateForm();
