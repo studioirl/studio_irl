@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studio Story</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+
+  :root{
+    --void: #140A22;
+    --void-2: #190E29;
+    --surface: #1E1432;
+    --surface-soft: #281A41;
+    --surface-line: rgba(157,92,255,0.22);
+    --violet: #9D5CFF;
+    --violet-deep: #6D28D9;
+    --violet-bright: #B07CFF;
+    --lilac: #D9C7FF;
+    --amber: #FFB870;
+    --amber-soft: rgba(255,184,112,0.16);
+    --ink: #F4EFFB;
+    --ink-muted: #AE9DCB;
+    --ink-faint: #786A93;
+    --danger: #FF8C7A;
+    --danger-bg: rgba(255,140,122,0.1);
+    --ok: #8DE3B0;
+    --radius: 14px;
+    --radius-sm: 9px;
+    --shadow-deep: 0 24px 60px -20px rgba(0,0,0,0.55);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: radial-gradient(120% 140% at 12% -10%, #251339 0%, var(--void) 45%, var(--void-2) 100%);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{ background: var(--violet-deep); color:#fff; }
+
+  a{color:var(--violet-bright);}
+
+  .page{ max-width:1320px; margin:0 auto; padding: 40px 28px 80px; }
+
+  /* ---------- HEADER ---------- */
+  .hero{
+    display:flex; align-items:flex-end; justify-content:space-between; gap:24px;
+    margin-bottom:36px; flex-wrap:wrap;
+    border-bottom: 1px solid var(--surface-line);
+    padding-bottom:28px;
+  }
+  .hero-mark{ display:flex; align-items:center; gap:16px; }
+  .hero-mark svg{ flex-shrink:0; }
+  .hero h1{
+    font-family:'Fraunces', serif; font-weight:600; font-size: clamp(28px,4vw,42px);
+    letter-spacing:-0.01em; margin:0; line-height:1;
+    color: var(--ink);
+  }
+  .hero h1 em{ color: var(--violet-bright); font-style:italic; font-weight:500; }
+  .hero p.tagline{
+    margin:6px 0 0; color: var(--ink-muted); font-size:14.5px; max-width:520px; line-height:1.5;
+  }
+  .hero-right{ text-align:right; }
+  .eyebrow{
+    font-family:'Space Mono', monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase;
+    color: var(--amber); margin:0 0 6px;
+  }
+  .hero-question{
+    font-family:'Fraunces', serif; font-style:italic; font-weight:500; font-size:16px; color:var(--lilac);
+    max-width:380px; line-height:1.4;
+  }
+
+  /* ---------- WORKSPACE GRID ---------- */
+  .workspace{ display:grid; grid-template-columns: 1fr 1.05fr; gap:26px; align-items:start; }
+  @media (max-width: 980px){ .workspace{ grid-template-columns: 1fr; } }
+
+  .panel{
+    background: linear-gradient(180deg, var(--surface), var(--surface) 60%, var(--void-2));
+    border:1px solid var(--surface-line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-deep);
+    overflow:hidden;
+  }
+
+  .panel-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 22px; border-bottom:1px solid var(--surface-line);
+  }
+  .panel-head h2{
+    font-family:'Fraunces', serif; font-weight:600; font-size:17px; margin:0; letter-spacing:-0.01em;
+  }
+  .panel-head .step-no{
+    font-family:'Space Mono', monospace; font-size:11px; color:var(--amber);
+  }
+  .panel-body{ padding:22px; }
+
+  .step{ margin-bottom:30px; }
+  .step:last-child{ margin-bottom:0; }
+  .step-label{
+    display:flex; align-items:baseline; gap:10px; margin-bottom:12px;
+  }
+  .step-label .num{
+    font-family:'Space Mono', monospace; font-size:12px; color:var(--amber);
+    border:1px solid var(--amber-soft); background:var(--amber-soft);
+    width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  }
+  .step-label h3{ font-size:14.5px; font-weight:600; margin:0; color:var(--ink); }
+  .step-hint{ font-size:12.5px; color:var(--ink-faint); margin: 2px 0 0 32px; line-height:1.4; }
+
+  /* image slots */
+  .image-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:14px; }
+  .image-slot{
+    border:1.5px dashed var(--surface-line); border-radius: var(--radius-sm);
+    background: var(--surface-soft); min-height:128px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    cursor:pointer; position:relative; transition: border-color .15s, background .15s;
+    padding:10px;
+  }
+  .image-slot:hover{ border-color: var(--violet); }
+  .image-slot.filled{ cursor:default; padding:0; border-style:solid; border-color:var(--surface-line); align-items:stretch; }
+  .image-slot input[type=file]{ display:none; }
+  .image-slot .placeholder{ text-align:center; color: var(--ink-faint); }
+  .image-slot .placeholder svg{ opacity:.55; margin-bottom:6px; }
+  .image-slot .placeholder span{ display:block; font-size:11.5px; }
+  .image-slot .thumb-wrap{ position:relative; }
+  .image-slot img{ width:100%; height:84px; object-fit:cover; display:block; border-radius: var(--radius-sm) var(--radius-sm) 0 0; }
+  .image-slot .remove-btn{
+    position:absolute; top:6px; right:6px; width:22px; height:22px; border-radius:50%;
+    background:rgba(20,10,34,0.75); border:1px solid var(--surface-line); color:#fff;
+    font-size:13px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  }
+  .image-slot textarea{
+    width:100%; border:none; border-top:1px solid var(--surface-line); background:transparent;
+    color:var(--ink); font-family:'Inter',sans-serif; font-size:12px; padding:8px 9px;
+    resize:none; min-height:42px; outline:none;
+  }
+  .image-slot textarea::placeholder{ color: var(--ink-faint); }
+  .image-slot .index-tag{
+    position:absolute; top:6px; left:6px; font-family:'Space Mono',monospace; font-size:10px;
+    background:rgba(20,10,34,0.75); color:var(--amber); padding:2px 6px; border-radius:4px;
+  }
+
+  textarea.field, input.field{
+    width:100%; background: var(--surface-soft); border:1px solid var(--surface-line);
+    border-radius: var(--radius-sm); color:var(--ink); font-family:'Inter',sans-serif;
+    font-size:13.5px; padding:11px 13px; outline:none; transition:border-color .15s;
+  }
+  textarea.field{ min-height:72px; resize:vertical; line-height:1.45; margin-top:14px;}
+  textarea.field::placeholder, input.field::placeholder{ color: var(--ink-faint); }
+  textarea.field:focus, input.field:focus{ border-color: var(--violet); }
+
+  /* style cards */
+  .style-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:14px; }
+  @media (max-width:560px){ .style-grid{ grid-template-columns:1fr; } }
+  .style-card{
+    border:1.5px solid var(--surface-line); border-radius: var(--radius-sm); padding:13px 14px;
+    cursor:pointer; background:var(--surface-soft); transition: border-color .15s, background .15s;
+  }
+  .style-card:hover{ border-color: var(--violet-bright); }
+  .style-card.active{ border-color: var(--violet); background: linear-gradient(160deg, rgba(157,92,255,0.18), rgba(157,92,255,0.04)); }
+  .style-card .s-title{ font-weight:600; font-size:13.5px; margin:0 0 6px; display:flex; align-items:center; gap:7px;}
+  .style-card .s-title .dot{ width:7px; height:7px; border-radius:50%; background:var(--surface-line); flex-shrink:0;}
+  .style-card.active .s-title .dot{ background: var(--amber); }
+  .style-card .s-short{ font-size:11.5px; color:var(--ink-muted); line-height:1.45; margin:0; }
+
+  /* config (api key) */
+  .config-box{
+    margin-top:28px; padding:14px 16px; border-radius: var(--radius-sm); background: var(--void-2);
+    border:1px solid var(--surface-line);
+  }
+  .config-box label{ font-size:12px; color:var(--ink-muted); display:block; margin-bottom:7px; }
+  .config-row{ display:flex; gap:8px; }
+  .config-row input{ flex:1; font-family:'Space Mono',monospace; font-size:12.5px; }
+  .config-note{ font-size:11px; color:var(--ink-faint); margin-top:8px; line-height:1.5; }
+
+  .btn{
+    font-family:'Inter',sans-serif; font-weight:600; font-size:14px; border:none; border-radius: var(--radius-sm);
+    padding:13px 20px; cursor:pointer; transition: transform .12s, box-shadow .12s, opacity .12s;
+  }
+  .btn:active{ transform: translateY(1px); }
+  .btn-primary{
+    width:100%; margin-top:24px; background: linear-gradient(135deg, var(--violet), var(--violet-deep));
+    color:#fff; box-shadow: 0 14px 30px -10px rgba(157,92,255,0.55);
+    display:flex; align-items:center; justify-content:center; gap:10px;
+  }
+  .btn-primary:disabled{ opacity:.4; cursor:not-allowed; box-shadow:none; }
+  .btn-ghost{ background:transparent; border:1px solid var(--surface-line); color:var(--ink-muted); }
+  .btn-ghost:hover{ border-color: var(--violet); color:var(--ink); }
+  .btn-small{ padding:9px 14px; font-size:12.5px; }
+
+  .spinner{ width:15px; height:15px; border-radius:50%; border:2px solid rgba(255,255,255,0.35); border-top-color:#fff; animation: spin .7s linear infinite; }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+
+  /* ---------- OUTPUT PANEL ---------- */
+  .panel-output .panel-body{ padding:0; }
+  .storyboard-frame{ display:flex; min-height:480px; }
+  .sprocket{
+    width:22px; flex-shrink:0; background: repeating-linear-gradient(
+      to bottom, var(--void-2) 0px, var(--void-2) 14px, transparent 14px, transparent 26px
+    );
+    background-color: var(--void-2);
+    position:relative;
+  }
+  .sprocket::before, .sprocket::after{ content:''; }
+  .sprocket-holes{
+    position:absolute; inset:0; display:flex; flex-direction:column; align-items:center;
+    padding-top:18px; gap:14px;
+  }
+  .sprocket-holes div{ width:8px; height:8px; border-radius:2px; background: var(--surface); }
+
+  .storyboard-content{ flex:1; padding:22px; min-width:0; }
+
+  .empty-state, .error-state, .loading-state{
+    height:100%; min-height:436px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; padding:30px;
+  }
+  .empty-state svg{ opacity:.35; margin-bottom:16px; }
+  .empty-state p{ color: var(--ink-faint); font-size:13.5px; max-width:280px; line-height:1.6; margin:0;}
+  .empty-state .q{ font-family:'Fraunces',serif; font-style:italic; color:var(--ink-muted); font-size:15px; margin-bottom:10px; max-width:320px;}
+
+  .loading-state p{ color:var(--ink-muted); font-size:13.5px; margin-top:16px; font-family:'Space Mono',monospace; }
+  .loading-state .spinner{ width:26px; height:26px; border-width:3px; border-color: rgba(157,92,255,0.25); border-top-color: var(--violet); }
+
+  .error-state .err-icon{ color:var(--danger); margin-bottom:14px; }
+  .error-state h4{ font-size:14.5px; margin:0 0 8px; color:var(--ink); }
+  .error-state pre{
+    background: var(--danger-bg); border:1px solid rgba(255,140,122,0.3); color:var(--danger);
+    font-family:'Space Mono',monospace; font-size:11.5px; padding:12px 14px; border-radius:8px;
+    text-align:left; max-width:100%; white-space:pre-wrap; word-break:break-word; max-height:180px; overflow:auto;
+  }
+
+  .sb-header{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px; gap:12px; flex-wrap:wrap;}
+  .sb-header .sb-eyebrow{ font-family:'Space Mono',monospace; font-size:10.5px; letter-spacing:.1em; color:var(--amber); text-transform:uppercase; margin:0 0 4px;}
+  .sb-header h3{ font-family:'Fraunces',serif; font-weight:600; font-size:18px; margin:0; }
+  .sb-actions{ display:flex; gap:8px; }
+
+  .plan-card{
+    border:1px solid var(--surface-line); border-radius: var(--radius-sm); padding:16px 16px 16px 0;
+    margin-bottom:12px; display:flex; gap:14px; background: var(--surface-soft);
+    position:relative; overflow:hidden;
+  }
+  .plan-card .plan-index{
+    flex-shrink:0; width:58px; display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+    padding-top:2px; border-right:1px dashed var(--surface-line); margin-left:16px;
+  }
+  .plan-card .plan-index .num{ font-family:'Space Mono',monospace; font-size:18px; color:var(--violet-bright); font-weight:700; }
+  .plan-card .plan-index .lab{
+    margin-top:6px; font-family:'Space Mono',monospace; font-size:9px; letter-spacing:.06em;
+    padding:2px 6px; border-radius:4px; text-align:center;
+  }
+  .lab-AVANT{ background:rgba(255,184,112,0.15); color:var(--amber); }
+  .lab-PENDANT{ background:rgba(157,92,255,0.2); color:var(--violet-bright); }
+  .lab-APRES{ background:rgba(141,227,176,0.15); color:var(--ok); }
+  .plan-card p{ margin:0; font-size:14px; line-height:1.6; color: var(--ink); padding-right:6px; }
+  .plan-card .plan-dialogue{
+    margin:9px 0 0; font-family:'Fraunces',serif; font-style:italic; color:var(--lilac); font-size:13px;
+    line-height:1.55; padding-left:11px; border-left:2px solid var(--violet); padding-right:6px;
+  }
+
+  .footer-note{ text-align:center; margin-top:46px; color: var(--ink-faint); font-size:11.5px; }
+  .footer-note .brand{ color: var(--ink-muted); font-family:'Space Mono',monospace; }
+
+  /* ---------- ANALYSIS BLOCK ---------- */
+  .analysis-block{
+    border:1px solid var(--surface-line); border-radius: var(--radius-sm); background: var(--void-2);
+    margin-bottom:20px; overflow:hidden;
+  }
+  .analysis-block summary{
+    cursor:pointer; padding:12px 16px; font-family:'Space Mono', monospace; font-size:11px; letter-spacing:.06em;
+    color:var(--amber); list-style:none; display:flex; align-items:center; justify-content:space-between;
+    text-transform:uppercase; user-select:none;
+  }
+  .analysis-block summary::-webkit-details-marker{ display:none; }
+  .analysis-block summary .chevron{ font-family:'Inter',sans-serif; color:var(--ink-faint); transition: transform .15s; }
+  .analysis-block[open] summary .chevron{ transform: rotate(90deg); }
+  .analysis-body{ padding:2px 16px 16px; }
+  .moment-de-vie{
+    font-family:'Fraunces', serif; font-style:italic; color:var(--lilac); font-size:14px; line-height:1.55;
+    padding:11px 13px; background: rgba(157,92,255,0.08); border-left:2px solid var(--violet); border-radius:0 8px 8px 0;
+    margin:0 0 14px;
+  }
+  .analysis-grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(190px,1fr)); gap:10px; margin-bottom:14px; }
+  .analysis-card{ background: var(--surface-soft); border:1px solid var(--surface-line); border-radius:8px; padding:11px 13px; }
+  .analysis-card .ac-tag{ font-family:'Space Mono', monospace; font-size:10px; color:var(--amber); margin:0 0 7px; }
+  .analysis-card dl{ margin:0; }
+  .analysis-card dt{ font-size:10px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.04em; margin-top:7px; }
+  .analysis-card dt:first-child{ margin-top:0; }
+  .analysis-card dd{ margin:2px 0 0; font-size:12.5px; color:var(--ink); line-height:1.45; }
+  .emotion-grid{ display:flex; flex-direction:column; gap:8px; }
+  .emotion-row{ background: var(--surface-soft); border:1px solid var(--surface-line); border-radius:8px; padding:10px 13px; }
+  .emotion-row .e-label{ font-size:11.5px; color:var(--violet-bright); font-weight:600; margin:0 0 6px; }
+  .emotion-row ul{ margin:0; padding-left:17px; }
+  .emotion-row li{ font-size:12px; color:var(--ink-muted); line-height:1.55; }
+
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <header class="hero">
+    <div class="hero-mark">
+      <svg width="46" height="46" viewBox="0 0 46 46" fill="none">
+        <rect x="1" y="1" width="44" height="44" rx="11" stroke="#9D5CFF" stroke-opacity="0.45" stroke-width="1.5"/>
+        <circle cx="23" cy="23" r="9.5" stroke="#FFB870" stroke-width="1.5"/>
+        <circle cx="23" cy="23" r="3" fill="#9D5CFF"/>
+        <path d="M14 14L17.5 17.5M32 14L28.5 17.5M14 32L17.5 28.5M32 32L28.5 28.5" stroke="#D9C7FF" stroke-width="1.2" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <h1>STUDIO <em>STORY</em></h1>
+        <p class="tagline">Transforme une image figée en continuité de vie filmable. Pas un scénario, une suite naturelle d'instants vécus.</p>
+      </div>
+    </div>
+    <div class="hero-right">
+      <p class="eyebrow">Question centrale</p>
+      <p class="hero-question">« Si cette personne filmait sa journée, qu'aurait-elle montré ensuite ? »</p>
+    </div>
+  </header>
+
+  <main class="workspace">
+
+    <!-- INPUT PANEL -->
+    <section class="panel panel-input">
+      <div class="panel-head">
+        <h2>Entrée</h2>
+        <span class="step-no">3 ÉTAPES</span>
+      </div>
+      <div class="panel-body">
+
+        <div class="step">
+          <div class="step-label"><span class="num">1</span><h3>Importer les images</h3></div>
+          <p class="step-hint">Jusqu'à 4 images. Sous chaque image, tu peux décrire l'émotion que tu veux faire ressentir à partir de ce moment précis. Ce champ est optionnel.</p>
+          <div class="image-grid" id="imageGrid"></div>
+        </div>
+
+        <div class="step">
+          <div class="step-label"><span class="num">2</span><h3>Contexte du moment</h3></div>
+          <p class="step-hint">Ex. fin d'un footing matinal, préparation d'un dîner, journée de travail à distance, départ en vacances…</p>
+          <textarea class="field" id="contextInput" placeholder="Décris ce qui se passe dans ce moment de vie…"></textarea>
+        </div>
+
+        <div class="step">
+          <div class="step-label"><span class="num">3</span><h3>Style de contenu</h3></div>
+          <p class="step-hint">Le style choisi change la façon dont le moment est raconté. Ce n'est pas la même histoire racontée différemment, c'est une autre manière de regarder et de construire la séquence.</p>
+          <div class="style-grid" id="styleGrid"></div>
+        </div>
+
+        <div class="step" id="dialogueStep" style="display:none;">
+          <div class="step-label"><span class="num">+</span><h3>Dialogue à intégrer</h3></div>
+          <p class="step-hint">Les paroles que la personne dit à ce moment, à ajouter si tu le souhaites. En Storytelling, des phrases peuvent accompagner les actions et Studio Story les intégrera naturellement dans le récit.</p>
+          <textarea class="field" id="dialogueInput" placeholder="Ex. « Je n'arrive pas à croire qu'on est enfin arrivés. »"></textarea>
+        </div>
+
+        <div class="config-box">
+          <label>Clé API Vertex AI (Express Mode)</label>
+          <div class="config-row">
+            <input class="field" id="apiKeyInput" type="password" placeholder="AQ... ou AIza...">
+            <button class="btn btn-ghost btn-small" id="toggleKeyBtn" type="button">Afficher</button>
+          </div>
+          <p class="config-note">La clé est utilisée uniquement dans ton navigateur pour appeler l'API Gemini (modèle gemini-2.5-pro) et n'est jamais envoyée ailleurs. Elle est mémorisée localement sur cet appareil.</p>
+        </div>
+
+        <button class="btn btn-primary" id="generateBtn" disabled>
+          <span id="generateBtnLabel">Générer la continuité</span>
+        </button>
+
+      </div>
+    </section>
+
+    <!-- OUTPUT PANEL -->
+    <section class="panel panel-output">
+      <div class="panel-head">
+        <h2>Storyboard</h2>
+        <span class="step-no" id="phaseTag">EN ATTENTE</span>
+      </div>
+      <div class="panel-body">
+        <div class="storyboard-frame">
+          <div class="sprocket"><div class="sprocket-holes" id="sprocketHoles"></div></div>
+          <div class="storyboard-content" id="storyboardContent">
+            <div class="empty-state">
+              <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><rect x="3" y="8" width="34" height="24" rx="3" stroke="#786A93" stroke-width="1.4"/><path d="M3 14H37" stroke="#786A93" stroke-width="1.4"/><circle cx="8" cy="11" r="0.9" fill="#786A93"/><circle cx="12" cy="11" r="0.9" fill="#786A93"/></svg>
+              <p class="q">« Quel moment de vie est en train d'être vécu ? »</p>
+              <p>Importe une image, décris le contexte, choisis un style. La continuité avant, pendant et après apparaîtra ici, plan par plan.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <p class="footer-note"><span class="brand">STUDIO IRL</span>. Studio Story ne raconte pas une histoire, il prolonge un instant figé en suite de moments vécus.</p>
+
+</div>
+
+<script>
+/* ===================== DATA ===================== */
+
+const STYLES = [
+  { id:'instagram', title:'Story Instagram', emoji:'📱',
+    short:'Tu racontes le moment à travers plusieurs fragments courts. Tu ne montres pas tout, le spectateur reconstitue naturellement ce qui se passe entre les images.',
+    question:'Quels sont les quelques moments que j’aurais partagés dans mes stories ?',
+    structure:['Moment 1','Moment 2','Moment 3','Moment 4'],
+    guidance:'3 à 4 scènes courtes et sélectives — ne montre pas tout, seulement quelques instants importants. Écriture concise. Chaque scène doit ressembler à une story qu’une personne publierait spontanément, avec des transitions rapides entre les fragments.',
+    hasDialogue:false },
+  { id:'vlog', title:'Vlog', emoji:'🎥',
+    short:'Tu documentes une expérience. Le spectateur a l’impression de passer ce moment avec toi, du début à la fin.',
+    question:'Si je vloguais ce moment, que filmerais-je ensuite ?',
+    structure:['Départ','Progression','Moment fort','Conclusion'],
+    guidance:'6 à 8 scènes en progression logique (avant, pendant, après). Chaque scène doit donner l’impression d’accompagner la personne dans son expérience, avec des enchaînements naturels.',
+    hasDialogue:false },
+  { id:'tiktok', title:'TikTok', emoji:'📲',
+    short:'Tu partages un moment sur le vif, brut, spontané, immédiat. On ne cherche pas la perfection, on cherche l’authenticité.',
+    question:'Si j’avais sorti mon téléphone maintenant pour poster sur TikTok, qu’aurais-je filmé ?',
+    structure:['Moment intéressant','Réaction','Action','Fin rapide'],
+    guidance:'4 à 6 scènes courtes, actions directes, transitions naturelles. L’écriture doit ressembler à quelqu’un qui a sorti son téléphone parce qu’il se passait quelque chose à cet instant précis.',
+    hasDialogue:false },
+  { id:'storytelling', title:'Storytelling', emoji:'📖',
+    short:'Tu racontes une histoire. Le moment devient un récit avec une progression narrative, la personne peut parler.',
+    question:'Comment raconter ce qui s’est passé ?',
+    structure:['Situation','Déclencheur','Progression','Résolution'],
+    guidance:'4 à 6 scènes qui font avancer l’histoire — l’objectif n’est pas seulement de montrer, il est de raconter. Des dialogues et des phrases peuvent accompagner les actions : intègre naturellement, dans le champ "dialogue" du plan concerné, les paroles fournies par l’utilisateur (complète-les si besoin pour faire avancer le récit, sans en abuser).',
+    hasDialogue:true },
+];
+
+const MAX_IMAGES = 4;
+const MODEL = 'gemini-2.5-pro';
+
+const ANALYSIS_SCHEMA = {
+  type:'OBJECT',
+  properties:{
+    moment_de_vie:{ type:'STRING' },
+    images_analyse:{ type:'ARRAY', items:{ type:'OBJECT', properties:{
+      index:{ type:'NUMBER' }, personnage:{ type:'STRING' }, lieu:{ type:'STRING' },
+      action:{ type:'STRING' }, ambiance:{ type:'STRING' }, indices_contexte:{ type:'STRING' }
+    }, required:['index','personnage','lieu','action','ambiance'] } },
+    continuite:{ type:'OBJECT', properties:{
+      avant:{ type:'ARRAY', items:{ type:'STRING' } },
+      pendant:{ type:'ARRAY', items:{ type:'STRING' } },
+      apres:{ type:'ARRAY', items:{ type:'STRING' } }
+    }, required:['avant','pendant','apres'] },
+    traduction_emotionnelle:{ type:'ARRAY', items:{ type:'OBJECT', properties:{
+      emotion:{ type:'STRING' }, actions_filmables:{ type:'ARRAY', items:{ type:'STRING' } }
+    }, required:['emotion','actions_filmables'] } }
+  },
+  required:['moment_de_vie','images_analyse','continuite','traduction_emotionnelle']
+};
+
+const STORY_SCHEMA = {
+  type:'OBJECT',
+  properties:{
+    titre_interne:{ type:'STRING' },
+    plans:{ type:'ARRAY', items:{ type:'OBJECT', properties:{
+      moment:{ type:'STRING', enum:['AVANT','PENDANT','APRES'] },
+      texte:{ type:'STRING' },
+      dialogue:{ type:'STRING' }
+    }, required:['moment','texte'] } }
+  },
+  required:['titre_interne','plans']
+};
+
+const SYSTEM_CORE = `Tu es Studio Story, un outil pensé comme une créatrice de contenu, pas comme un scénariste.
+
+MISSION
+Studio Story transforme une ou plusieurs images en une continuité de vie authentique. Il ne crée pas des scénarios, pas de fiction, pas d'intrigues. Il aide à imaginer ce que la personne aurait naturellement filmé avant, pendant et après le moment capturé.
+
+CE QUE STUDIO STORY N'EST PAS
+Pas un scénariste, pas un auteur de fiction. Aucun rebondissement artificiel, aucune intrigue de cinéma. Studio Story ne raconte pas des pensées et ne décrit pas des émotions.
+
+PRINCIPE FONDAMENTAL
+Les émotions ne sont JAMAIS expliquées ou nommées directement (interdit d'écrire des mots comme "fatigue", "joie", "soulagement" dans le texte final). Chaque émotion doit être traduite en actions, gestes, choix, réactions, moments filmables observables.
+
+QUESTION CENTRALE
+Ne jamais se demander "quelle histoire raconte cette image ?". Toujours se demander : "si cette personne filmait sa journée, qu'aurait-elle montré ensuite ?"
+
+RÈGLE ABSOLUE
+Chaque phrase produite doit pouvoir être filmée comme un plan vidéo concret. Si une phrase ne peut pas devenir un plan, elle doit être réécrite en action observable.`;
+
+/* ===================== STATE ===================== */
+
+let images = Array(MAX_IMAGES).fill(null); // {dataUrl, mimeType, base64, emotion}
+let selectedStyle = null;
+let analysisResult = null;
+
+/* ===================== UI: IMAGE SLOTS ===================== */
+
+function renderImageGrid(){
+  const grid = document.getElementById('imageGrid');
+  grid.innerHTML = '';
+  for(let i=0;i<MAX_IMAGES;i++){
+    const slot = document.createElement('div');
+    const img = images[i];
+    slot.className = 'image-slot' + (img ? ' filled' : '');
+    if(img){
+      slot.innerHTML = `
+        <div class="thumb-wrap">
+          <span class="index-tag">IMG ${i+1}</span>
+          <img src="${img.dataUrl}" alt="image ${i+1}">
+          <button class="remove-btn" type="button" data-i="${i}">×</button>
+        </div>
+        <textarea data-i="${i}" placeholder="Émotion à transmettre, optionnel (ex. satisfaction, liberté, calme…)">${img.emotion || ''}</textarea>
+      `;
+      slot.querySelector('.remove-btn').addEventListener('click', (e)=>{
+        e.stopPropagation();
+        images[i] = null;
+        renderImageGrid();
+        validateForm();
+      });
+      slot.querySelector('textarea').addEventListener('input', (e)=>{
+        images[i].emotion = e.target.value;
+        validateForm();
+      });
+    } else {
+      slot.innerHTML = `
+        <input type="file" accept="image/*" data-i="${i}">
+        <div class="placeholder">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="1.5" y="4" width="19" height="14" rx="2" stroke="#786A93" stroke-width="1.3"/><circle cx="7" cy="9" r="1.4" stroke="#786A93" stroke-width="1.1"/><path d="M2 16L7.5 11.5L11 14.5L15 10L20 15" stroke="#786A93" stroke-width="1.1"/></svg>
+          <span>Ajouter image ${i+1}</span>
+        </div>
+      `;
+      const fileInput = slot.querySelector('input[type=file]');
+      slot.addEventListener('click', ()=> fileInput.click());
+      fileInput.addEventListener('change', (e)=> handleFile(e.target.files[0], i));
+    }
+    grid.appendChild(slot);
+  }
+}
+
+function handleFile(file, i){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    const tmp = new Image();
+    tmp.onload = ()=>{
+      const maxSide = 1280;
+      let { width, height } = tmp;
+      if(width > maxSide || height > maxSide){
+        const scale = maxSide / Math.max(width, height);
+        width = Math.round(width*scale); height = Math.round(height*scale);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      canvas.getContext('2d').drawImage(tmp, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+      images[i] = { dataUrl, mimeType:'image/jpeg', base64: dataUrl.split(',')[1], emotion:'' };
+      renderImageGrid();
+      validateForm();
+    };
+    tmp.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+/* ===================== UI: STYLE GRID ===================== */
+
+function renderStyleGrid(){
+  const grid = document.getElementById('styleGrid');
+  grid.innerHTML = '';
+  STYLES.forEach(s=>{
+    const card = document.createElement('div');
+    card.className = 'style-card' + (selectedStyle===s.id ? ' active' : '');
+    card.innerHTML = `
+      <p class="s-title"><span class="dot"></span>${s.emoji} ${s.title}</p>
+      <p class="s-short">${s.short}</p>
+    `;
+    card.addEventListener('click', ()=>{ selectedStyle = s.id; renderStyleGrid(); updateDialogueVisibility(); validateForm(); });
+    grid.appendChild(card);
+  });
+}
+
+function updateDialogueVisibility(){
+  const style = STYLES.find(s=>s.id===selectedStyle);
+  document.getElementById('dialogueStep').style.display = (style && style.hasDialogue) ? 'block' : 'none';
+}
+
+/* ===================== FORM VALIDATION ===================== */
+
+function validateForm(){
+  const hasImage = images.some(i=>i!==null);
+  const hasContext = document.getElementById('contextInput').value.trim().length > 0;
+  const hasKey = document.getElementById('apiKeyInput').value.trim().length > 0;
+  const ok = hasImage && hasContext && selectedStyle && hasKey;
+  document.getElementById('generateBtn').disabled = !ok;
+}
+
+document.getElementById('contextInput').addEventListener('input', validateForm);
+document.getElementById('apiKeyInput').addEventListener('input', validateForm);
+document.getElementById('toggleKeyBtn').addEventListener('click', ()=>{
+  const inp = document.getElementById('apiKeyInput');
+  const btn = document.getElementById('toggleKeyBtn');
+  if(inp.type === 'password'){ inp.type='text'; btn.textContent='Masquer'; }
+  else { inp.type='password'; btn.textContent='Afficher'; }
+});
+
+/* ===================== SPROCKET DECOR ===================== */
+function renderSprocket(){
+  const holder = document.getElementById('sprocketHoles');
+  holder.innerHTML = '';
+  for(let i=0;i<14;i++){ const d=document.createElement('div'); holder.appendChild(d); }
+}
+
+/* ===================== API CALL ===================== */
+
+function buildEndpoint(apiKey){
+  return `https://aiplatform.googleapis.com/v1/publishers/google/models/${MODEL}:generateContent?key=${apiKey}`;
+}
+
+function extractApiError(data){
+  if(data && data.error){
+    return `${data.error.status || 'ERREUR'} : ${data.error.message || 'Erreur inconnue.'}`;
+  }
+  if(data && data.promptFeedback && data.promptFeedback.blockReason){
+    const ratings = (data.promptFeedback.safetyRatings||[]).map(r=>`${r.category}: ${r.probability}`).join(', ');
+    return `Contenu bloqué par les filtres de sécurité Google.\nblockReason: ${data.promptFeedback.blockReason}${ratings ? '\n'+ratings : ''}`;
+  }
+  const candidate = data && data.candidates && data.candidates[0];
+  if(candidate && candidate.finishReason && candidate.finishReason !== 'STOP'){
+    const ratings = (candidate.safetyRatings||[]).filter(r=>r.blocked || r.probability!=='NEGLIGIBLE').map(r=>`${r.category}: ${r.probability}`).join(', ');
+    const raiReasons = candidate.raiMediaFilteredReasons ? '\n'+candidate.raiMediaFilteredReasons.join('\n') : '';
+    return `Réponse interrompue par le modèle.\nfinishReason: ${candidate.finishReason}${ratings ? '\n'+ratings : ''}${raiReasons}`;
+  }
+  return 'Erreur inconnue lors de l’appel à l’API. Vérifie ta clé et ta configuration de facturation Vertex AI Express.';
+}
+
+async function callGemini(apiKey, parts, schema, temperature){
+  const res = await fetch(buildEndpoint(apiKey), {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json' },
+    body: JSON.stringify({
+      contents:[{ role:'user', parts }],
+      generationConfig:{ responseMimeType:'application/json', responseSchema: schema, temperature }
+    })
+  });
+  const data = await res.json();
+  if(!res.ok){ throw new Error(extractApiError(data)); }
+  const candidate = data.candidates && data.candidates[0];
+  if(!candidate || !candidate.content || !candidate.content.parts){
+    throw new Error(extractApiError(data));
+  }
+  const text = candidate.content.parts.map(p=>p.text||'').join('');
+  try{ return JSON.parse(text); }
+  catch(e){ throw new Error('Réponse du modèle illisible (JSON invalide).\n\n'+text.slice(0,400)); }
+}
+
+/* PHASE 1+2+3+4 : analyse */
+async function runAnalysis(apiKey, contextText){
+  const parts = [{ text: `${SYSTEM_CORE}
+
+TÂCHE — PHASES 1 à 4 (analyse uniquement, ne construis pas encore la story)
+
+Phase 1 — Analyse : pour chaque image, identifie le personnage, le lieu, l'action, l'ambiance, les indices de contexte.
+Phase 2 — Compréhension du moment : détermine quel moment de vie global est en train d'être vécu (pas "quelle histoire", mais "quelle expérience").
+Phase 3 — Continuité naturelle : imagine ce qui vient juste avant, ce qui vient juste après, et les moments intermédiaires qui donnent du sens à l'expérience. Écris déjà ces moments comme des actions concrètes et filmables (pas des intentions, pas des pensées).
+Phase 4 — Traduction émotionnelle : pour chaque émotion mentionnée par l'utilisateur (une par image), traduis-la en 3 actions physiques observables — jamais le mot de l'émotion lui-même.
+
+Le champ "index" de chaque entrée de images_analyse doit correspondre exactement au numéro de l'image tel qu'indiqué dans le message (Image 1, Image 2, etc.).
+
+CONTEXTE DU MOMENT FOURNI PAR L'UTILISATEUR :
+"${contextText}"
+
+Réponds uniquement selon le schéma JSON demandé.` }];
+
+  images.forEach((img, i)=>{
+    if(!img) return;
+    parts.push({ text: `Image ${i+1} — émotion ciblée par l'utilisateur pour cette image : "${img.emotion || 'non précisée'}"` });
+    parts.push({ inlineData:{ mimeType: img.mimeType, data: img.base64 } });
+  });
+
+  return callGemini(apiKey, parts, ANALYSIS_SCHEMA, 0.8);
+}
+
+/* PHASE 5 : construction selon le style */
+async function runConstruction(apiKey, contextText, analysis, style, dialogueText){
+  const dialogueInstruction = style.hasDialogue
+    ? `Dialogue fourni par l'utilisateur à intégrer dans le récit : "${dialogueText || 'non fourni — propose une réplique courte si cela renforce une scène clé, sans en abuser'}"
+Place cette réplique (ou une réplique cohérente que tu génères) dans le champ "dialogue" du plan le plus approprié. Laisse "dialogue" en chaîne vide ("") pour tous les autres plans.`
+    : `Ce style n'utilise pas de dialogue : laisse le champ "dialogue" en chaîne vide ("") pour tous les plans.`;
+
+  const parts = [{ text: `${SYSTEM_CORE}
+
+TÂCHE — PHASE 5 : construction de la story
+
+Style demandé : ${style.title}
+Logique du style : ${style.short}
+Question à se poser pour ce style : "${style.question}"
+Structure de référence pour ce style : ${style.structure.join(' → ')}
+Indication de longueur et de ton : ${style.guidance}
+
+Important : un style n'est pas la même histoire racontée différemment, c'est une autre manière de regarder le moment et de construire la séquence — change ce que tu sélectionnes et comment tu l'enchaînes, pas juste le vocabulaire.
+
+${dialogueInstruction}
+
+Voici l'analyse du moment (phases 1 à 4), à utiliser comme matière première — n'invente pas un nouveau moment, prolonge celui-ci :
+${JSON.stringify(analysis)}
+
+Contexte original donné par l'utilisateur : "${contextText}"
+
+Construis la séquence finale de plans filmables (champ "moment" = AVANT, PENDANT ou APRES selon la place du plan dans la continuité). Rappel de la règle absolue : chaque "texte" doit pouvoir être filmé comme un plan vidéo concret, sans jamais nommer une émotion. Réponds uniquement selon le schéma JSON demandé.` }];
+
+  return callGemini(apiKey, parts, STORY_SCHEMA, 1.0);
+}
+
+/* ===================== ORCHESTRATION ===================== */
+
+const generateBtn = document.getElementById('generateBtn');
+const generateBtnLabel = document.getElementById('generateBtnLabel');
+const storyboardContent = document.getElementById('storyboardContent');
+const phaseTag = document.getElementById('phaseTag');
+
+function setLoading(label){
+  phaseTag.textContent = 'EN COURS';
+  generateBtn.disabled = true;
+  generateBtnLabel.innerHTML = `<span class="spinner"></span> ${label}`;
+  storyboardContent.innerHTML = `
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>${label.toUpperCase()}</p>
+    </div>`;
+}
+
+function setError(message, analysis){
+  phaseTag.textContent = 'ERREUR';
+  const analysisHtml = analysis ? renderAnalysisBlock(analysis, true) : '';
+  storyboardContent.innerHTML = analysisHtml + `
+    <div class="error-state">
+      <svg class="err-icon" width="30" height="30" viewBox="0 0 30 30" fill="none"><circle cx="15" cy="15" r="12.5" stroke="currentColor" stroke-width="1.5"/><path d="M15 9V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="15" cy="20.2" r="1.1" fill="currentColor"/></svg>
+      <h4>Le moment n'a pas pu être prolongé</h4>
+      <pre>${escapeHtml(message)}</pre>
+    </div>`;
+}
+
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function renderAnalysisBlock(analysis, openByDefault){
+  const imgCards = (analysis.images_analyse||[]).map(img => `
+    <div class="analysis-card">
+      <p class="ac-tag">IMAGE ${img.index}</p>
+      <dl>
+        <dt>Personnage</dt><dd>${escapeHtml(img.personnage||'non précisé')}</dd>
+        <dt>Lieu</dt><dd>${escapeHtml(img.lieu||'non précisé')}</dd>
+        <dt>Action</dt><dd>${escapeHtml(img.action||'non précisée')}</dd>
+        <dt>Ambiance</dt><dd>${escapeHtml(img.ambiance||'non précisée')}</dd>
+        ${img.indices_contexte ? `<dt>Indices de contexte</dt><dd>${escapeHtml(img.indices_contexte)}</dd>` : ''}
+      </dl>
+    </div>
+  `).join('');
+
+  const emotionRows = (analysis.traduction_emotionnelle||[]).map(e => `
+    <div class="emotion-row">
+      <p class="e-label">${escapeHtml(e.emotion)}</p>
+      <ul>${(e.actions_filmables||[]).map(a=>`<li>${escapeHtml(a)}</li>`).join('')}</ul>
+    </div>
+  `).join('');
+
+  return `
+    <details class="analysis-block" ${openByDefault ? 'open' : ''}>
+      <summary>Analyse du moment <span class="chevron">›</span></summary>
+      <div class="analysis-body">
+        ${analysis.moment_de_vie ? `<p class="moment-de-vie">« ${escapeHtml(analysis.moment_de_vie)} »</p>` : ''}
+        ${imgCards ? `<div class="analysis-grid">${imgCards}</div>` : ''}
+        ${emotionRows ? `<div class="emotion-grid">${emotionRows}</div>` : ''}
+      </div>
+    </details>
+  `;
+}
+
+function renderStoryboard(story, styleTitle, analysis){
+  phaseTag.textContent = 'TERMINÉ';
+  const labMap = { AVANT:'AVANT', PENDANT:'PENDANT', APRES:'APRÈS' };
+  const planRows = story.plans.map((p, idx)=>`
+    <div class="plan-card">
+      <div class="plan-index">
+        <span class="num">${String(idx+1).padStart(2,'0')}</span>
+        <span class="lab lab-${p.moment}">${labMap[p.moment] || p.moment}</span>
+      </div>
+      <p>${escapeHtml(p.texte)}</p>
+      ${p.dialogue ? `<p class="plan-dialogue">« ${escapeHtml(p.dialogue)} »</p>` : ''}
+    </div>
+  `).join('');
+
+  const analysisHtml = analysis ? renderAnalysisBlock(analysis, false) : '';
+
+  storyboardContent.innerHTML = `
+    ${analysisHtml}
+    <div class="sb-header">
+      <div>
+        <p class="sb-eyebrow">${styleTitle} · ${story.plans.length} plans</p>
+        <h3>Continuité de vie</h3>
+      </div>
+      <div class="sb-actions">
+        <button class="btn btn-ghost btn-small" id="copyBtn" type="button">Copier</button>
+        <button class="btn btn-ghost btn-small" id="downloadBtn" type="button">Télécharger .txt</button>
+      </div>
+    </div>
+    ${planRows}
+  `;
+
+  const plainText = story.plans.map((p,idx)=>`[${labMap[p.moment]||p.moment}] Plan ${idx+1}\n${p.texte}${p.dialogue ? `\n« ${p.dialogue} »` : ''}`).join('\n\n');
+
+  document.getElementById('copyBtn').addEventListener('click', async ()=>{
+    try{
+      await navigator.clipboard.writeText(plainText);
+      const btn = document.getElementById('copyBtn');
+      const old = btn.textContent; btn.textContent='Copié ✓';
+      setTimeout(()=>btn.textContent=old, 1500);
+    }catch(e){ alert('Impossible de copier automatiquement, sélectionne le texte manuellement.'); }
+  });
+
+  document.getElementById('downloadBtn').addEventListener('click', ()=>{
+    const blob = new Blob([plainText], { type:'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'studio-story.txt';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url), 500);
+  });
+}
+
+generateBtn.addEventListener('click', async ()=>{
+  const apiKey = document.getElementById('apiKeyInput').value.trim();
+  const contextText = document.getElementById('contextInput').value.trim();
+  const dialogueText = document.getElementById('dialogueInput').value.trim();
+  const style = STYLES.find(s=>s.id===selectedStyle);
+  if(!apiKey || !contextText || !style) return;
+
+  localStorage.setItem('studio_story_api_key', apiKey);
+  analysisResult = null;
+
+  try{
+    setLoading('Analyse du moment (phases 1 à 4)…');
+    analysisResult = await runAnalysis(apiKey, contextText);
+
+    // L'analyse est affichée immédiatement, pendant que la phase 5 tourne en dessous.
+    phaseTag.textContent = 'EN COURS';
+    generateBtnLabel.innerHTML = `<span class="spinner"></span> Construction de la story : ${style.title}…`;
+    storyboardContent.innerHTML = renderAnalysisBlock(analysisResult, true) + `
+      <div class="loading-state" style="min-height:160px;">
+        <div class="spinner"></div>
+        <p>CONSTRUCTION DE LA STORY : ${style.title.toUpperCase()}…</p>
+      </div>`;
+
+    const story = await runConstruction(apiKey, contextText, analysisResult, style, dialogueText);
+
+    renderStoryboard(story, style.title, analysisResult);
+  }catch(err){
+    setError(err.message || String(err), analysisResult);
+  }finally{
+    generateBtnLabel.textContent = 'Générer la continuité';
+    validateForm();
+  }
+});
+
+/* ===================== INIT ===================== */
+(function init(){
+  renderImageGrid();
+  renderStyleGrid();
+  renderSprocket();
+  const savedKey = localStorage.getItem('studio_story_api_key');
+  if(savedKey){ document.getElementById('apiKeyInput').value = savedKey; }
+  validateForm();
+})();
+</script>
+</body>
+</html>
