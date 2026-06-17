@@ -431,14 +431,33 @@ async function kieTextCall(parts) {
   var res = await fetch('https://api.kie.ai/gemini-2.5-flash/v1/chat/completions', {
     method: 'POST',
     headers: { 'Authorization': 'Bearer ' + API_KEY_KIE, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages: [{ role: 'user', content: content }], reasoning_effort: 'none', max_tokens: 4096 })
+    body: JSON.stringify({ messages: [{ role: 'user', content: content }], stream: false, reasoning_effort: 'none', max_tokens: 4096 })
   });
-  var d = {}; try { d = await res.json(); } catch(e) {}
+  var rawBody = await res.text();
+  var d = {};
+  try {
+    d = JSON.parse(rawBody);
+  } catch(e) {
+    // Reponse non-JSON (peut-etre du SSE malgre stream:false) - on extrait les morceaux "data: {...}"
+    var pieces = rawBody.split('\n').filter(function(l) { return l.indexOf('data:') === 0; });
+    var assembled = '';
+    for (var j = 0; j < pieces.length; j++) {
+      var jsonPart = pieces[j].replace(/^data:\s*/, '').trim();
+      if (jsonPart === '[DONE]' || !jsonPart) continue;
+      try {
+        var chunk = JSON.parse(jsonPart);
+        var delta = chunk.choices && chunk.choices[0] && (chunk.choices[0].delta || chunk.choices[0].message);
+        if (delta && delta.content) assembled += delta.content;
+      } catch(e2) {}
+    }
+    if (assembled) return assembled;
+    throw new Error('Reponse kie.ai illisible: ' + rawBody.slice(0, 300));
+  }
   if (!res.ok) throw new Error((d.error && d.error.message) || d.msg || ('HTTP ' + res.status));
   var text = d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
   if (!text) {
     var finishReason = d.choices && d.choices[0] && d.choices[0].finish_reason;
-    throw new Error('Reponse texte kie.ai vide (finish_reason: ' + (finishReason || 'inconnu') + ').');
+    throw new Error('Reponse texte kie.ai vide (finish_reason: ' + (finishReason || 'inconnu') + '). Brut: ' + rawBody.slice(0, 300));
   }
   return text;
 }
