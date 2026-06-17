@@ -431,12 +431,15 @@ async function kieTextCall(parts) {
   var res = await fetch('https://api.kie.ai/gemini-2.5-flash/v1/chat/completions', {
     method: 'POST',
     headers: { 'Authorization': 'Bearer ' + API_KEY_KIE, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages: [{ role: 'user', content: content }] })
+    body: JSON.stringify({ messages: [{ role: 'user', content: content }], reasoning_effort: 'none', max_tokens: 4096 })
   });
   var d = {}; try { d = await res.json(); } catch(e) {}
   if (!res.ok) throw new Error((d.error && d.error.message) || d.msg || ('HTTP ' + res.status));
   var text = d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
-  if (!text) throw new Error('Reponse texte kie.ai vide.');
+  if (!text) {
+    var finishReason = d.choices && d.choices[0] && d.choices[0].finish_reason;
+    throw new Error('Reponse texte kie.ai vide (finish_reason: ' + (finishReason || 'inconnu') + ').');
+  }
   return text;
 }
 
