@@ -257,10 +257,11 @@
   .lab-PENDANT{ background:rgba(157,92,255,0.2); color:var(--violet-bright); }
   .lab-APRES{ background:rgba(141,227,176,0.15); color:var(--ok); }
   .lab-AUTRE{ background:rgba(217,199,255,0.15); color:var(--lilac); }
+  .plan-card .plan-body{ flex:1; min-width:0; }
   .plan-card p{ margin:0; font-size:14px; line-height:1.6; color: var(--ink); padding-right:6px; }
-  .plan-card .plan-dialogue{
-    margin:9px 0 0; font-family:'Fraunces',serif; font-style:italic; color:var(--lilac); font-size:13px;
-    line-height:1.55; padding-left:11px; border-left:2px solid var(--violet); padding-right:6px;
+  .plan-card .plan-quote{ font-size:14.5px; font-weight:500; }
+  .plan-card .plan-stage{
+    margin-top:8px; font-style:italic; font-size:12.5px; color: var(--ink-muted); font-weight:400;
   }
 
   .footer-note{ text-align:center; margin-top:46px; color: var(--ink-faint); font-size:11.5px; }
@@ -352,9 +353,9 @@
         </div>
 
         <div class="step" id="dialogueStep" style="display:none;">
-          <div class="step-label"><span class="num">+</span><h3>Dialogue à intégrer</h3></div>
-          <p class="step-hint">Les paroles que la personne dit à ce moment, à ajouter si tu le souhaites. En Storytelling, des phrases peuvent accompagner les actions et Studio Story les intégrera naturellement dans le récit.</p>
-          <textarea class="field" id="dialogueInput" placeholder="Ex. « Je n'arrive pas à croire qu'on est enfin arrivés. »"></textarea>
+          <div class="step-label"><span class="num">+</span><h3>Amorce de dialogue</h3></div>
+          <p class="step-hint">Une ou deux répliques pour amorcer la conversation, à ajouter si tu le souhaites. Studio Story construira l'échange complet entre les personnages à partir de ça.</p>
+          <textarea class="field" id="dialogueInput" placeholder="Ex. Femme : « J'ai pratiquement pas dormi cette nuit. »"></textarea>
         </div>
 
         <div class="config-box">
@@ -422,15 +423,14 @@ const STYLES = [
     guidance:'4 à 6 scènes courtes, actions directes, transitions naturelles. L’écriture doit ressembler à quelqu’un qui a sorti son téléphone parce qu’il se passait quelque chose à cet instant précis.',
     hasDialogue:false },
   { id:'storytelling', title:'Storytelling', emoji:'📖',
-    short:'Tu racontes une histoire. L’image devient le point de départ d’un récit qui donne du sens au moment montré, pas une suite d’actions chronologiques.',
-    question:'Qu’est-ce qui se joue vraiment derrière cette image ?',
-    structure:['Situation','Enjeu','Révélation','Transformation'],
-    isNarrative:true,
-    guidance:`L'image n'est pas la finalité du récit, elle en est le point de départ. L'objectif est de donner du sens au moment montré, pas de décrire uniquement ce que la personne fait. Le récit peut révéler un contexte, une situation, un souvenir, une découverte, un conflit ou un événement important, et doit créer de la curiosité, de l'émotion ou de l'attachement : le spectateur doit avoir l'impression que ce moment fait partie d'un récit plus grand que ce qu'il voit à l'écran.
+    short:'Tu racontes une histoire face caméra, portée par les dialogues et les émotions des personnages plutôt que par une suite d’actions.',
+    question:'Quelle émotion se cache derrière chaque phrase ?',
+    isDialogueDriven:true,
+    guidance:`Le récit est porté principalement par les dialogues et les émotions des personnages, pas par une suite d'actions. Ne décris pas une succession d'actions : rends le dialogue vivant, humain et émotionnel.
 
-Ne construis jamais le storytelling comme une succession d'actions ni comme une continuité chronologique. Ne remplis pas les vides avec des gestes du quotidien sans importance. Construis plutôt chaque plan autour d'une situation, d'un enjeu, d'une émotion, d'une révélation, d'un conflit, d'un objectif ou d'une transformation : cherche ce qui rend ce moment important, ce qui est en train de changer, ce qui est en train d'être découvert ou vécu, ce qui est en jeu.
+Pour chaque réplique, analyse ce qui est dit et cherche l'émotion cachée derrière la phrase, puis traduis-la en expressions, réactions, regards, silences et micro-gestes naturels et cohérents, sans jamais nommer l'émotion directement. Le dialogue ne doit jamais être seul : chaque réplique doit être accompagnée d'une réaction émotionnelle physique cohérente. Par exemple, la fatigue se traduit par bâiller, se frotter les yeux, soupirer ; la gêne par détourner le regard, sourire nerveusement, jouer avec ses mains ; la joie par rire, avoir les yeux qui brillent, sourire naturellement ; la tristesse par une voix qui tremble, des yeux baissés, des larmes retenues ; la taquinerie par un sourire, un léger coup d'épaule, un regard complice. Les émotions doivent guider les réactions : ne crée pas une action pour faire avancer l'histoire, crée une réaction qui renforce ce que le personnage ressent.
 
-4 à 6 plans qui créent de la curiosité, de l'attachement, de la tension et de l'intérêt pour la suite. Des dialogues et des phrases peuvent accompagner les plans : intègre naturellement, dans le champ "dialogue" du plan concerné, les paroles fournies par l'utilisateur (complète-les si besoin pour servir le récit, sans en abuser).`,
+Indique toujours clairement qui parle dans le champ "moment" (par exemple "Femme", "Homme", un prénom si l'analyse en donne un, ou une courte désignation comme "Elle"). Construis 4 à 6 répliques qui s'enchaînent comme une vraie conversation : le spectateur doit avoir l'impression d'assister à un échange réel entre de vraies personnes, spontané, naturel et authentique.`,
     hasDialogue:true },
 ];
 
@@ -682,13 +682,15 @@ Réponds uniquement selon le schéma JSON demandé.` }];
 
 /* PHASE 5 : construction selon le style */
 async function runConstruction(apiKey, contextText, analysis, style, dialogueText){
-  const dialogueInstruction = style.hasDialogue
+  const dialogueInstruction = style.isDialogueDriven
+    ? `Échange fourni par l'utilisateur à partir duquel construire la conversation (optionnel) : "${dialogueText || 'non fourni, invente un échange cohérent avec le contexte et les personnages identifiés dans l’analyse'}". Construis une conversation complète de plusieurs répliques qui s'enchaînent naturellement, en t'appuyant sur cet échange s'il est présent. Le champ "dialogue" doit être rempli pour chaque plan : c'est la phrase prononcée. Le champ "texte" doit décrire uniquement la réaction émotionnelle physique qui accompagne cette réplique (expression, regard, geste, silence), jamais une action qui ferait avancer une intrigue.`
+    : style.hasDialogue
     ? `Dialogue fourni par l'utilisateur à intégrer dans le récit : "${dialogueText || 'non fourni — propose une réplique courte si cela renforce une scène clé, sans en abuser'}"
 Place cette réplique (ou une réplique cohérente que tu génères) dans le champ "dialogue" du plan le plus approprié. Laisse "dialogue" en chaîne vide ("") pour tous les autres plans.`
     : `Ce style n'utilise pas de dialogue : laisse le champ "dialogue" en chaîne vide ("") pour tous les plans.`;
 
-  const momentInstruction = style.isNarrative
-    ? `Le champ "moment" de chaque plan doit reprendre l'un de ces temps du récit, dans l'ordre qui sert le mieux l'histoire : ${style.structure.join(', ')}. N'utilise jamais une simple continuité chronologique avant/pendant/après pour ce style.`
+  const momentInstruction = style.isDialogueDriven
+    ? `Le champ "moment" de chaque plan doit indiquer qui parle à cette réplique (par exemple "Femme", "Homme", un prénom, ou une courte désignation du personnage identifié dans l'analyse). N'utilise jamais AVANT/PENDANT/APRES pour ce style.`
     : `Le champ "moment" de chaque plan doit valoir AVANT, PENDANT ou APRES selon la place du plan dans la continuité.`;
 
   const parts = [{ text: `${SYSTEM_CORE}
@@ -781,16 +783,20 @@ function renderAnalysisBlock(analysis, openByDefault){
 function renderStoryboard(story, styleTitle, analysis){
   phaseTag.textContent = 'TERMINÉ';
   const knownLabels = { AVANT:'AVANT', PENDANT:'PENDANT', APRES:'APRÈS' };
-  const planRows = story.plans.map((p, idx)=>`
+  const planRows = story.plans.map((p, idx)=>{
+    const bodyHtml = p.dialogue
+      ? `<p class="plan-quote">« ${escapeHtml(p.dialogue)} »</p><p class="plan-stage">${escapeHtml(p.texte)}</p>`
+      : `<p>${escapeHtml(p.texte)}</p>`;
+    return `
     <div class="plan-card">
       <div class="plan-index">
         <span class="num">${String(idx+1).padStart(2,'0')}</span>
         <span class="lab lab-${knownLabels[p.moment] ? p.moment : 'AUTRE'}">${escapeHtml(knownLabels[p.moment] || p.moment)}</span>
       </div>
-      <p>${escapeHtml(p.texte)}</p>
-      ${p.dialogue ? `<p class="plan-dialogue">« ${escapeHtml(p.dialogue)} »</p>` : ''}
+      <div class="plan-body">${bodyHtml}</div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 
   const analysisHtml = analysis ? renderAnalysisBlock(analysis, false) : '';
 
@@ -809,7 +815,13 @@ function renderStoryboard(story, styleTitle, analysis){
     ${planRows}
   `;
 
-  const plainText = story.plans.map((p,idx)=>`[${knownLabels[p.moment]||p.moment}] Plan ${idx+1}\n${p.texte}${p.dialogue ? `\n« ${p.dialogue} »` : ''}`).join('\n\n');
+  const plainText = story.plans.map((p,idx)=>{
+    const label = knownLabels[p.moment] || p.moment;
+    if(p.dialogue){
+      return `${label} : « ${p.dialogue} »\n(${p.texte})`;
+    }
+    return `[${label}] Plan ${idx+1}\n${p.texte}`;
+  }).join('\n\n');
 
   document.getElementById('copyBtn').addEventListener('click', async ()=>{
     try{
