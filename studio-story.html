@@ -264,7 +264,9 @@
     margin-top:8px; font-style:italic; font-size:12.5px; color: var(--ink-muted); font-weight:400;
   }
 
-  .footer-note{ text-align:center; margin-top:46px; color: var(--ink-faint); font-size:11.5px; }
+  .step-label-toggle{ justify-content:flex-start; gap:10px; align-items:center; flex-wrap:wrap; }
+  .toggle-dialogue{ margin-left:auto; font-size:11.5px; padding:5px 12px; border-radius:20px; }
+  .toggle-dialogue.active{ background: rgba(157,92,255,0.18); border-color: var(--violet); color:var(--violet-bright); }
   .footer-note .brand{ color: var(--ink-muted); font-family:'Space Mono',monospace; }
 
   /* ---------- ANALYSIS BLOCK ---------- */
@@ -352,10 +354,16 @@
           <div class="style-grid" id="styleGrid"></div>
         </div>
 
-        <div class="step" id="dialogueStep" style="display:none;">
-          <div class="step-label"><span class="num">+</span><h3>Amorce de dialogue</h3></div>
-          <p class="step-hint">Une ou deux répliques pour amorcer la conversation, à ajouter si tu le souhaites. Studio Story construira l'échange complet entre les personnages à partir de ça.</p>
-          <textarea class="field" id="dialogueInput" placeholder="Ex. Femme : « J'ai pratiquement pas dormi cette nuit. »"></textarea>
+        <div class="step">
+          <div class="step-label step-label-toggle">
+            <span class="num">+</span>
+            <h3>Amorce de dialogue</h3>
+            <button class="toggle-dialogue btn btn-ghost btn-small" id="dialogueToggle" type="button">Activer</button>
+          </div>
+          <p class="step-hint">Optionnel pour tous les modes. Ajoute une ou deux répliques pour orienter les dialogues générés.</p>
+          <div id="dialogueStep" style="display:none;margin-top:10px;">
+            <textarea class="field" id="dialogueInput" placeholder="Ex. Femme : « J’ai pratiquement pas dormi cette nuit. »"></textarea>
+          </div>
         </div>
 
         <div class="config-box">
@@ -405,33 +413,57 @@
 
 const STYLES = [
   { id:'instagram', title:'Story Instagram', emoji:'📱',
-    short:'Tu racontes le moment à travers plusieurs fragments courts. Tu ne montres pas tout, le spectateur reconstitue naturellement ce qui se passe entre les images.',
-    question:'Quels sont les quelques moments que j’aurais partagés dans mes stories ?',
-    structure:['Moment 1','Moment 2','Moment 3','Moment 4'],
-    guidance:'3 à 4 scènes courtes et sélectives — ne montre pas tout, seulement quelques instants importants. Écriture concise. Chaque scène doit ressembler à une story qu’une personne publierait spontanément, avec des transitions rapides entre les fragments.',
-    hasDialogue:false },
+    short:'Tu partages un moment de vie à travers une succession de courtes stories reliées entre elles, publiées en temps réel.',
+    guidance:`Tu partages un moment de vie à travers une succession de courtes stories reliées entre elles. Chaque plan représente un instant que tu aurais naturellement envie de publier sur Instagram au fur et à mesure que tu le vis. Le spectateur doit avoir l’impression de suivre le moment avec toi, story après story.
+
+Style de tournage : téléphone à la main, plans très courts, captation spontanée, cadrages naturels, mouvements rapides, sensation de contenu publié en temps réel.
+
+Chaque story doit être la suite logique de la précédente et montrer l’évolution naturelle d’un moment, d’une sortie, d’un voyage ou d’une journée. Les émotions doivent être immédiates et spontanées. Pas de longues émotions complexes, pas de grande introspection.
+
+Les dialogues sont possibles, courts et naturels. Le champ "dialogue" doit être rempli si un personnage dit quelque chose ; sinon laisse-le vide. Construis 4 à 6 plans.
+
+À éviter : histoire scénarisée, longues conversations, narration développée, explications détaillées, scènes trop travaillées.` },
+
   { id:'vlog', title:'Vlog', emoji:'🎥',
-    short:'Tu documentes une expérience. Le spectateur a l’impression de passer ce moment avec toi, du début à la fin.',
-    question:'Si je vloguais ce moment, que filmerais-je ensuite ?',
-    structure:['Départ','Progression','Moment fort','Conclusion'],
-    guidance:'6 à 8 scènes en progression logique (avant, pendant, après). Chaque scène doit donner l’impression d’accompagner la personne dans son expérience, avec des enchaînements naturels.',
-    hasDialogue:false },
+    short:'Tu documentes une expérience vécue en temps réel. Les personnages filment ce qu’ils font, ce qu’ils voient et ce qu’ils vivent.',
+    guidance:`Le mode Vlog documente une expérience vécue en temps réel. Les personnages filment ce qu’ils font, ce qu’ils voient et ce qu’ils vivent. Les dialogues sont naturels, improvisés et spontanés. L’émotion provient des réactions observables et des interactions authentiques, jamais d’une histoire inventée ou d’une psychologie supposée. Le spectateur doit avoir l’impression d’accompagner les personnages pendant l’événement, pas de regarder un scénario écrit à l’avance.
+
+Ne cherche pas seulement les actions. Cherche les réactions. Cherche les petits moments humains. Le vlog doit montrer ce que la personne ressent pendant qu’elle vit l’expérience.
+
+Règle dialogues : les dialogues doivent ressembler à de vraies phrases qu’une personne prononcerait en filmant sa journée. Privilégier les remarques spontanées, les blagues, les taquineries, les réactions immédiates, les commentaires sur ce qui se passe. Éviter les grandes déclarations émotionnelles, les monologues explicatifs, la psychologie profonde, la narration scénarisée. Le champ "dialogue" doit être rempli pour les plans où un personnage parle naturellement ; laisse-le vide sinon.
+
+Construis 6 à 8 plans qui suivent naturellement le déroulement de l’expérience. Chaque étape doit contenir de la vie et des émotions. Privilégie les micro-moments : un rire, un regard, une réaction, un soupir, un geste spontané, une surprise, une hésitation, une blague, un moment de fatigue.
+
+À la fin, le spectateur doit avoir l’impression : "J’ai vécu ce moment avec eux."` },
+
   { id:'tiktok', title:'TikTok', emoji:'📲',
-    short:'Tu partages un moment sur le vif, brut, spontané, immédiat. On ne cherche pas la perfection, on cherche l’authenticité.',
-    question:'Si j’avais sorti mon téléphone maintenant pour poster sur TikTok, qu’aurais-je filmé ?',
-    structure:['Moment intéressant','Réaction','Action','Fin rapide'],
-    guidance:'4 à 6 scènes courtes, actions directes, transitions naturelles. L’écriture doit ressembler à quelqu’un qui a sorti son téléphone parce qu’il se passait quelque chose à cet instant précis.',
-    hasDialogue:false },
+    short:'Filmé à l’arrache, vécu sur le moment, raconté comme à un ami.',
+    guidance:`Tu partages un moment de manière spontanée et authentique. Le contenu doit donner l’impression d’avoir été filmé sur le moment, sans préparation excessive. Le spectateur doit avoir l’impression que tu lui parles directement.
+
+Règle d’observation du moment : le mode TikTok doit privilégier les réactions spontanées, les remarques du moment, les petites conversations, les blagues, les imprévus, les émotions immédiates, plutôt que des explications longues ou un récit structuré. Le personnage réagit à ce qu’il vit maintenant. Il ne raconte pas une histoire complète. Il partage un moment. Les dialogues doivent donner l’impression d’avoir été improvisés naturellement pendant que la scène se déroule.
+
+Règle de partage communautaire : le ou les personnages ont conscience qu’ils s’adressent à une audience. Le spectateur doit avoir l’impression d’être un ami ou un abonné à qui le personnage partage son expérience en direct. Les dialogues peuvent être adressés à la caméra, à la communauté, à une personne hors champ ou à un autre personnage présent. Le personnage peut utiliser naturellement des formulations comme : "Bon, petit update.", "Attendez, regardez ça.", "Je vais vous montrer.", "Vous voyez ce que je veux dire ?", "Là, franchement...", "On est arrivés.", "Je vous jure...", "Regardez-moi ça." Ces formulations doivent rester naturelles et adaptées à la personnalité du personnage, jamais forcées ou caricaturales.
+
+Style de tournage : téléphone à la main, face caméra fréquente, cadrage parfois approximatif, mouvements naturels, transitions simples.
+
+Pour les plans avec parole : remplis le champ "dialogue" avec ce qui est dit et décris dans "texte" la réaction ou le contexte visuel. Pour les plans sans parole, laisse "dialogue" vide. Construis 4 à 6 plans.
+
+À éviter : mise en scène trop parfaite, narration trop écrite, scénario structuré, dialogues trop littéraires, ton d’influenceur forcé.` },
+
   { id:'storytelling', title:'Storytelling', emoji:'📖',
-    short:'Tu racontes une histoire face caméra, portée par les dialogues et les émotions des personnages plutôt que par une suite d’actions.',
-    question:'Quelle émotion se cache derrière chaque phrase ?',
+    short:'Tu racontes un moment à travers les personnages, leurs dialogues, leurs réactions et leurs émotions.',
     isDialogueDriven:true,
-    guidance:`Le récit est porté principalement par les dialogues et les émotions des personnages, pas par une suite d'actions. Ne décris pas une succession d'actions : rends le dialogue vivant, humain et émotionnel.
+    guidance:`Le mode Storytelling est utilisé lorsqu’une personne a quelque chose à raconter. L’objectif n’est pas de documenter un moment comme dans un vlog, ni de partager une réaction spontanée comme dans un TikTok. L’objectif est de transmettre une histoire, une anecdote, un souvenir, une expérience personnelle ou une émotion vécue. Le récit peut être drôle, touchant, émouvant, nostalgique, inspirant, gênant, surprenant, léger ou profond.
 
-Pour chaque réplique, analyse ce qui est dit et cherche l'émotion cachée derrière la phrase, puis traduis-la en expressions, réactions, regards, silences et micro-gestes naturels et cohérents, sans jamais nommer l'émotion directement. Le dialogue ne doit jamais être seul : chaque réplique doit être accompagnée d'une réaction émotionnelle physique cohérente. Par exemple, la fatigue se traduit par bâiller, se frotter les yeux, soupirer ; la gêne par détourner le regard, sourire nerveusement, jouer avec ses mains ; la joie par rire, avoir les yeux qui brillent, sourire naturellement ; la tristesse par une voix qui tremble, des yeux baissés, des larmes retenues ; la taquinerie par un sourire, un léger coup d'épaule, un regard complice. Les émotions doivent guider les réactions : ne crée pas une action pour faire avancer l'histoire, crée une réaction qui renforce ce que le personnage ressent.
+Le Storytelling privilégie les dialogues significatifs, les souvenirs, les confidences, les anecdotes, les réflexions personnelles et les émotions ressenties. L’histoire racontée doit rester cohérente avec l’image, le contexte fourni et les personnages observés. Les émotions ne doivent jamais être imposées artificiellement : elles doivent émerger naturellement du contexte, des dialogues, de la situation observée et des expressions visibles.
 
-Indique toujours clairement qui parle dans le champ "moment" (par exemple "Femme", "Homme", un prénom si l'analyse en donne un, ou une courte désignation comme "Elle"). Construis 4 à 6 répliques qui s'enchaînent comme une vraie conversation : le spectateur doit avoir l'impression d'assister à un échange réel entre de vraies personnes, spontané, naturel et authentique.`,
-    hasDialogue:true },
+Priorité absolue : le dialogue est l’élément principal. Les actions servent uniquement à enrichir ce qui est dit. L’émotion doit être portée par les personnages, pas par la narration.
+
+Le champ "moment" doit indiquer qui parle (prénom si identifié dans l’analyse, sinon "Femme", "Homme", "Elle", "Lui"). Le champ "dialogue" doit contenir la réplique prononcée. Le champ "texte" doit décrire uniquement la réaction émotionnelle physique cohérente : sourire, rire, regard complice, haussement de sourcil, soupir, gêne, hésitation, excitation, tendresse. Jamais une action qui ferait avancer une intrigue.
+
+Ajouter des micro-comportements humains qui renforcent la spontanéité : elle baisse les yeux, il éclate de rire, elle se mord la lèvre, il regarde ailleurs quelques secondes, il hausse les épaules, elle roule des yeux en plaisantant. Ces détails doivent découler naturellement du dialogue. Les personnages peuvent rire, hésiter, chercher leurs mots, se couper ou rebondir. Éviter les dialogues trop parfaits ou trop écrits.
+
+Construis 4 à 6 répliques. Ne jamais construire en avant/pendant/après. À la lecture, on doit avoir l’impression de regarder une conversation réelle entre des personnes vivantes.` },
 ];
 
 const MAX_IMAGES = 4;
@@ -440,21 +472,25 @@ const MODEL = 'gemini-2.5-pro';
 const ANALYSIS_SCHEMA = {
   type:'OBJECT',
   properties:{
-    moment_de_vie:{ type:'STRING' },
     images_analyse:{ type:'ARRAY', items:{ type:'OBJECT', properties:{
-      index:{ type:'NUMBER' }, personnage:{ type:'STRING' }, lieu:{ type:'STRING' },
-      action:{ type:'STRING' }, ambiance:{ type:'STRING' }, indices_contexte:{ type:'STRING' }
-    }, required:['index','personnage','lieu','action','ambiance'] } },
-    continuite:{ type:'OBJECT', properties:{
-      avant:{ type:'ARRAY', items:{ type:'STRING' } },
-      pendant:{ type:'ARRAY', items:{ type:'STRING' } },
-      apres:{ type:'ARRAY', items:{ type:'STRING' } }
-    }, required:['avant','pendant','apres'] },
-    traduction_emotionnelle:{ type:'ARRAY', items:{ type:'OBJECT', properties:{
-      emotion:{ type:'STRING' }, actions_filmables:{ type:'ARRAY', items:{ type:'STRING' } }
-    }, required:['emotion','actions_filmables'] } }
+      index:{ type:'NUMBER' },
+      personnages:{ type:'STRING' },
+      lieu:{ type:'STRING' },
+      moment_observe:{ type:'STRING' },
+      emotion_dominante:{ type:'STRING' },
+      dynamique_relationnelle:{ type:'STRING' },
+      intention_du_moment:{ type:'STRING' },
+      enjeu_emotionnel:{ type:'STRING' },
+      indices_de_contexte:{ type:'STRING' },
+      pistes_de_continuite:{ type:'ARRAY', items:{ type:'STRING' } }
+    }, required:['index','personnages','lieu','moment_observe','emotion_dominante'] } },
+    emotion_ciblee:{ type:'ARRAY', items:{ type:'OBJECT', properties:{
+      index:{ type:'NUMBER' },
+      emotion:{ type:'STRING' },
+      actions_filmables:{ type:'ARRAY', items:{ type:'STRING' } }
+    }, required:['index','emotion','actions_filmables'] } }
   },
-  required:['moment_de_vie','images_analyse','continuite','traduction_emotionnelle']
+  required:['images_analyse']
 };
 
 const STORY_SCHEMA = {
@@ -470,22 +506,19 @@ const STORY_SCHEMA = {
   required:['titre_interne','plans']
 };
 
-const SYSTEM_CORE = `Tu es Studio Story, un outil pensé comme une créatrice de contenu, pas comme un scénariste.
+const SYSTEM_CORE = `Tu es Studio Story, un outil pensé comme une créatrice de contenu.
 
 MISSION
-Studio Story transforme une ou plusieurs images en une continuité de vie authentique. Il ne crée pas des scénarios, pas de fiction, pas d'intrigues. Il aide à imaginer ce que la personne aurait naturellement filmé avant, pendant et après le moment capturé.
-
-CE QUE STUDIO STORY N'EST PAS
-Pas un scénariste, pas un auteur de fiction. Aucun rebondissement artificiel, aucune intrigue de cinéma. Studio Story ne raconte pas des pensées et ne décrit pas des émotions.
+Studio Story transforme une ou plusieurs images en une continuité de vie authentique. Il ne crée pas des scénarios, pas de fiction, pas d’intrigues. Il aide à imaginer ce que la personne aurait naturellement filmé avant, pendant et après le moment capturé.
 
 PRINCIPE FONDAMENTAL
-Les émotions ne sont JAMAIS expliquées ou nommées directement (interdit d'écrire des mots comme "fatigue", "joie", "soulagement" dans le texte final). Chaque émotion doit être traduite en actions, gestes, choix, réactions, moments filmables observables.
+Les émotions ne sont JAMAIS expliquées ou nommées directement dans le texte final. Chaque émotion doit être traduite en actions, gestes, réactions ou moments filmables et observables.
 
 QUESTION CENTRALE
-Ne jamais se demander "quelle histoire raconte cette image ?". Toujours se demander : "si cette personne filmait sa journée, qu'aurait-elle montré ensuite ?"
+Toujours se demander : "Si cette personne filmait sa journée, qu’aurait-elle montré ensuite ?"
 
 RÈGLE ABSOLUE
-Chaque phrase produite doit pouvoir être filmée comme un plan vidéo concret. Si une phrase ne peut pas devenir un plan, elle doit être réécrite en action observable.`;
+Chaque plan produit doit pouvoir être filmé ou représenté visuellement. Si une phrase ne peut pas devenir un plan, elle doit être réécrite.`;
 
 /* ===================== STATE ===================== */
 
@@ -574,15 +607,22 @@ function renderStyleGrid(){
       <p class="s-title"><span class="dot"></span>${s.emoji} ${s.title}</p>
       <p class="s-short">${s.short}</p>
     `;
-    card.addEventListener('click', ()=>{ selectedStyle = s.id; renderStyleGrid(); updateDialogueVisibility(); validateForm(); });
+    card.addEventListener('click', ()=>{ selectedStyle = s.id; renderStyleGrid(); validateForm(); });
     grid.appendChild(card);
   });
 }
 
-function updateDialogueVisibility(){
-  const style = STYLES.find(s=>s.id===selectedStyle);
-  document.getElementById('dialogueStep').style.display = (style && style.hasDialogue) ? 'block' : 'none';
-}
+/* ===================== DIALOGUE TOGGLE ===================== */
+let dialogueEnabled = false;
+document.getElementById('dialogueToggle').addEventListener('click', ()=>{
+  dialogueEnabled = !dialogueEnabled;
+  const btn = document.getElementById('dialogueToggle');
+  const panel = document.getElementById('dialogueStep');
+  btn.textContent = dialogueEnabled ? 'Désactiver' : 'Activer';
+  btn.classList.toggle('active', dialogueEnabled);
+  panel.style.display = dialogueEnabled ? 'block' : 'none';
+  if(!dialogueEnabled) document.getElementById('dialogueInput').value = '';
+});
 
 /* ===================== FORM VALIDATION ===================== */
 
@@ -653,18 +693,30 @@ async function callGemini(apiKey, parts, schema, temperature){
   catch(e){ throw new Error('Réponse du modèle illisible (JSON invalide).\n\n'+text.slice(0,400)); }
 }
 
-/* PHASE 1+2+3+4 : analyse */
+/* PHASE 1 : analyse */
 async function runAnalysis(apiKey, contextText){
   const parts = [{ text: `${SYSTEM_CORE}
 
-TÂCHE — PHASES 1 à 4 (analyse uniquement, ne construis pas encore la story)
+TÂCHE — ANALYSE DU MOMENT (ne construis pas encore la story)
 
-Phase 1 — Analyse : pour chaque image, identifie le personnage, le lieu, l'action, l'ambiance, les indices de contexte.
-Phase 2 — Compréhension du moment : détermine quel moment de vie global est en train d'être vécu (pas "quelle histoire", mais "quelle expérience").
-Phase 3 — Continuité naturelle : imagine ce qui vient juste avant, ce qui vient juste après, et les moments intermédiaires qui donnent du sens à l'expérience. Écris déjà ces moments comme des actions concrètes et filmables (pas des intentions, pas des pensées).
-Phase 4 — Traduction émotionnelle : pour chaque émotion mentionnée par l'utilisateur (une par image), traduis-la en 3 actions physiques observables — jamais le mot de l'émotion lui-même.
+L'objectif n'est pas de décrire l'image. L'objectif est de comprendre le moment de vie qu'elle représente pour pouvoir imaginer ce qui s'est passé avant, pendant et après.
 
-Le champ "index" de chaque entrée de images_analyse doit correspondre exactement au numéro de l'image tel qu'indiqué dans le message (Image 1, Image 2, etc.).
+Pour chaque image, identifie et renseigne :
+- personnages : nombre de personnes, âge approximatif, relation apparente, rôle de chacun
+- lieu : environnement, contexte, moment de la journée si identifiable
+- moment_observe : ce qui se passe dans l'image, en une phrase maximum
+- emotion_dominante : une seule émotion principale qui ressort du moment
+- dynamique_relationnelle : comment les personnages interagissent (couple complice, amitié spontanée, etc.)
+- intention_du_moment : pourquoi cette image existe, quel souvenir la personne cherche à capturer
+- enjeu_emotionnel : ce qui rend ce moment important pour les personnages (laisser vide si non identifiable)
+- indices_de_contexte : uniquement les éléments qui peuvent aider à imaginer la suite
+- pistes_de_continuite : 3 idées maximum de ce qui peut se passer immédiatement avant ou après
+
+Si l'utilisateur a précisé une émotion pour une image, renseigne emotion_ciblee avec les actions filmables correspondantes (jamais nommer l'émotion directement dans ces actions).
+
+Le champ "index" de chaque entrée doit correspondre exactement au numéro de l'image (Image 1, Image 2, etc.).
+
+L'analyse doit comprendre le sens du moment, jamais se limiter à décrire ce qui est visible.
 
 CONTEXTE DU MOMENT FOURNI PAR L'UTILISATEUR :
 "${contextText}"
@@ -683,11 +735,10 @@ Réponds uniquement selon le schéma JSON demandé.` }];
 /* PHASE 5 : construction selon le style */
 async function runConstruction(apiKey, contextText, analysis, style, dialogueText){
   const dialogueInstruction = style.isDialogueDriven
-    ? `Échange fourni par l'utilisateur à partir duquel construire la conversation (optionnel) : "${dialogueText || 'non fourni, invente un échange cohérent avec le contexte et les personnages identifiés dans l’analyse'}". Construis une conversation complète de plusieurs répliques qui s'enchaînent naturellement, en t'appuyant sur cet échange s'il est présent. Le champ "dialogue" doit être rempli pour chaque plan : c'est la phrase prononcée. Le champ "texte" doit décrire uniquement la réaction émotionnelle physique qui accompagne cette réplique (expression, regard, geste, silence), jamais une action qui ferait avancer une intrigue.`
-    : style.hasDialogue
-    ? `Dialogue fourni par l'utilisateur à intégrer dans le récit : "${dialogueText || 'non fourni — propose une réplique courte si cela renforce une scène clé, sans en abuser'}"
-Place cette réplique (ou une réplique cohérente que tu génères) dans le champ "dialogue" du plan le plus approprié. Laisse "dialogue" en chaîne vide ("") pour tous les autres plans.`
-    : `Ce style n'utilise pas de dialogue : laisse le champ "dialogue" en chaîne vide ("") pour tous les plans.`;
+    ? `Priorité absolue de ce mode : les dialogues sont l’élément central. Construis une conversation complète de plusieurs répliques qui s’enchaînent naturellement. Amorce fournie par l’utilisateur (optionnel) : "${dialogueText || 'non fourni, invente un échange cohérent avec les personnages identifiés dans l’analyse'}". Le champ "dialogue" doit contenir la réplique prononcée. Le champ "texte" doit décrire uniquement la réaction émotionnelle physique, jamais une action qui ferait avancer une intrigue.`
+    : dialogueText
+    ? `L’utilisateur a fourni une amorce de dialogue à intégrer naturellement : "${dialogueText}". Utilise-la pour orienter les dialogues du mode. Remplis le champ "dialogue" quand un personnage parle naturellement ; laisse-le vide pour les plans sans parole.`
+    : `Dialogues pour ce mode : si un personnage parle naturellement dans la scène, remplis le champ "dialogue" avec ce qui est dit. Laisse "dialogue" en chaîne vide ("") pour les plans sans parole.`;
 
   const momentInstruction = style.isDialogueDriven
     ? `Le champ "moment" de chaque plan doit indiquer qui parle à cette réplique (par exemple "Femme", "Homme", un prénom, ou une courte désignation du personnage identifié dans l'analyse). N'utilise jamais AVANT/PENDANT/APRES pour ce style.`
@@ -748,22 +799,30 @@ function setError(message, analysis){
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 function renderAnalysisBlock(analysis, openByDefault){
-  const imgCards = (analysis.images_analyse||[]).map(img => `
+  const imgCards = (analysis.images_analyse||[]).map(img => {
+    const rows = [
+      ['Personnages', img.personnages],
+      ['Lieu', img.lieu],
+      ['Moment observé', img.moment_observe],
+      ['Émotion dominante', img.emotion_dominante],
+      ['Dynamique', img.dynamique_relationnelle],
+      ['Intention', img.intention_du_moment],
+      ['Enjeu émotionnel', img.enjeu_emotionnel],
+      ['Indices de contexte', img.indices_de_contexte],
+    ].filter(([,v])=>v).map(([k,v])=>`<dt>${k}</dt><dd>${escapeHtml(v)}</dd>`).join('');
+
+    const pistes = (img.pistes_de_continuite||[]).map(p=>`<li>${escapeHtml(p)}</li>`).join('');
+
+    return `
     <div class="analysis-card">
       <p class="ac-tag">IMAGE ${img.index}</p>
-      <dl>
-        <dt>Personnage</dt><dd>${escapeHtml(img.personnage||'non précisé')}</dd>
-        <dt>Lieu</dt><dd>${escapeHtml(img.lieu||'non précisé')}</dd>
-        <dt>Action</dt><dd>${escapeHtml(img.action||'non précisée')}</dd>
-        <dt>Ambiance</dt><dd>${escapeHtml(img.ambiance||'non précisée')}</dd>
-        ${img.indices_contexte ? `<dt>Indices de contexte</dt><dd>${escapeHtml(img.indices_contexte)}</dd>` : ''}
-      </dl>
-    </div>
-  `).join('');
+      <dl>${rows}${pistes ? `<dt>Pistes de continuité</dt><dd><ul style="margin:3px 0 0;padding-left:15px;">${pistes}</ul></dd>` : ''}</dl>
+    </div>`;
+  }).join('');
 
-  const emotionRows = (analysis.traduction_emotionnelle||[]).map(e => `
+  const emotionRows = (analysis.emotion_ciblee||[]).map(e => `
     <div class="emotion-row">
-      <p class="e-label">${escapeHtml(e.emotion)}</p>
+      <p class="e-label">Image ${e.index} — ${escapeHtml(e.emotion)}</p>
       <ul>${(e.actions_filmables||[]).map(a=>`<li>${escapeHtml(a)}</li>`).join('')}</ul>
     </div>
   `).join('');
@@ -772,7 +831,6 @@ function renderAnalysisBlock(analysis, openByDefault){
     <details class="analysis-block" ${openByDefault ? 'open' : ''}>
       <summary>Analyse du moment <span class="chevron">›</span></summary>
       <div class="analysis-body">
-        ${analysis.moment_de_vie ? `<p class="moment-de-vie">« ${escapeHtml(analysis.moment_de_vie)} »</p>` : ''}
         ${imgCards ? `<div class="analysis-grid">${imgCards}</div>` : ''}
         ${emotionRows ? `<div class="emotion-grid">${emotionRows}</div>` : ''}
       </div>
