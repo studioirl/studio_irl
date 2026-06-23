@@ -1177,6 +1177,7 @@ let images = Array(MAX_IMAGES).fill(null);
 let selectedStyle = null;
 let analysisResult = null;
 let lastStoryResult = null;
+let dialogueEnabled = false;
 
 /* ===================== UI: IMAGE SLOTS ===================== */
 
@@ -1524,7 +1525,6 @@ generateBtn.addEventListener('click', async ()=>{
   renderStyleGrid();
   renderSprocket();
 
-  let dialogueEnabled = false;
   document.getElementById('dialogueToggle').addEventListener('click', ()=>{
     dialogueEnabled = !dialogueEnabled;
     const btn = document.getElementById('dialogueToggle');
@@ -1637,7 +1637,7 @@ var DUREE_STRUCTURES = {
 "15": "VIDÉO 15 SECONDES — Structure : Situation initiale → Événement perturbateur → Réaction → Développement → Conséquence → Dernier instant. L'émotion monte progressivement. 4-6 temps forts."
 };
 
-var DOSSIER_SYSTEM_INSTRUCTION = "AGENT : STUDIO RÉALISATEUR — PHASE 1 : DOSSIER DE RÉALISATION\n\nTu es le Studio Réalisateur. Tu reçois une histoire et des images de référence. Tu construis le dossier de réalisation complet en 7 sections.\n\nIMAGES DE RÉFÉRENCE\nObserve attentivement chaque image. Tu ne dois JAMAIS inventer d'éléments non visibles. Décris fidèlement ce que tu vois.\n\nÉMOTIONS — DEUX NIVEAUX POSSIBLES\nUne émotion dominante globale peut être fournie pour toute la vidéo. Optionnellement, une émotion différente peut aussi être fournie pour chaque image — dans ce cas, traduis CHAQUE émotion par image individuellement en actions observables propres à cette image, puis construis la progression émotionnelle globale de l'histoire comme un enchaînement de ces émotions par image plutôt que comme une émotion unique imposée de force. Si seule l'émotion dominante est fournie, fonctionne comme avant. Si aucune des deux n'est fournie, déduis l'émotion depuis l'histoire elle-même.\nJamais une émotion n'est nommée directement dans le texte produit. Toujours traduite en comportements observables.\nPas : 'elle est triste'. Oui : 'son sourire disparaît progressivement'.\n\nFORMAT DE SORTIE OBLIGATOIRE (texte brut, pas de markdown) :\n\nTITRE : [titre]\nDURÉE : [durée]s\nFORMAT : [format]\nMODE : [mode]\nÉMOTION DOMINANTE : [émotion]\n\n=== 1. VERROUILLAGE VISUEL ===\nAnalyse précise depuis les images : origine ethnique apparente, teint, âge apparent, type et couleur de cheveux, coiffure exacte, vêtements (couleur, matière, coupe, détails), accessoires, caractéristiques physiques distinctives (taches de rousseur, tatouages...), état (maquillée, en sueur...). Tout ce qui doit être conservé tout au long de la vidéo.\n\n=== 2. VERROUILLAGE DU DÉCOR ===\nLieu, environnement, objets importants, heure, ambiance — lus depuis les images et l'histoire.\n\n=== 3. MODE DE RÉALISATION ===\nApplique concrètement le mode sélectionné à cette histoire précise.\n\n=== 4. AMBIANCE ===\nÉnergie, ressenti, tension émotionnelle, évolution — cohérente avec l'émotion dominante et/ou la progression des émotions par image.\n\n=== 5. TEMPS FORTS ===\nListe numérotée. Chaque temps fort = une action observable. Si des émotions par image sont fournies, assure-toi qu'un temps fort traduit chacune d'elles. Nombre adapté à la durée.\n\n=== 6. MISE EN SCÈNE ===\nPour chaque temps fort : actions visibles, réactions, progression émotionnelle. Pas de technique ici.\n\n=== 7. DERNIER INSTANT ===\nDéduis et décris précisément la dernière image visible de la vidéo à partir de la fin de l'histoire racontée. Aucun champ séparé ne te sera fourni pour cela — c'est à toi d'identifier où l'histoire se termine naturellement.";
+var DOSSIER_SYSTEM_INSTRUCTION = "AGENT : STUDIO RÉALISATEUR — PHASE 1 : DOSSIER DE RÉALISATION\n\nTu es le Studio Réalisateur. Tu reçois une histoire et des images de référence. Tu construis le dossier de réalisation complet en 7 sections.\n\nIMAGES DE RÉFÉRENCE\nObserve attentivement chaque image. Tu ne dois JAMAIS inventer d'éléments non visibles. Décris fidèlement ce que tu vois.\n\nÉMOTIONS — DEUX NIVEAUX POSSIBLES\nUne émotion dominante globale peut être fournie pour toute la vidéo. Optionnellement, une émotion différente peut aussi être fournie pour chaque image — dans ce cas, traduis CHAQUE émotion par image individuellement en actions observables propres à cette image, puis construis la progression émotionnelle globale de l'histoire comme un enchaînement de ces émotions par image plutôt que comme une émotion unique imposée de force. Si seule l'émotion dominante est fournie, fonctionne comme avant. Si aucune des deux n'est fournie, déduis l'émotion depuis l'histoire elle-même.\nJamais une émotion n'est nommée directement dans le texte produit. Toujours traduite en comportements observables.\nPas : 'elle est triste'. Oui : 'son sourire disparaît progressivement'.\n\nFORMAT DE SORTIE OBLIGATOIRE (texte brut, pas de markdown) :\n\nTITRE : [titre]\nDURÉE : [durée]s\nFORMAT : [format]\nMODE : [mode]\nÉMOTION DOMINANTE : [émotion]\n\n=== 1. VERROUILLAGE VISUEL ===\nAnalyse précise depuis les images : origine ethnique apparente, teint, âge apparent, type et couleur de cheveux, coiffure exacte, vêtements (couleur, matière, coupe, détails), accessoires, caractéristiques physiques distinctives (taches de rousseur, tatouages...), état (maquillée, en sueur...). Tout ce qui doit être conservé tout au long de la vidéo.\n\n=== 2. VERROUILLAGE DU DÉCOR ===\nLieu, environnement, objets importants, heure, ambiance — lus depuis les images et l'histoire.\n\n=== 3. MODE DE RÉALISATION ===\nApplique concrètement le mode sélectionné à cette histoire précise.\n\n=== 4. AMBIANCE ===\nÉnergie, ressenti, tension émotionnelle, évolution — cohérente avec l'émotion dominante et/ou la progression des émotions par image.\n\n=== 5. TEMPS FORTS ===\nListe numérotée. Chaque temps fort = une action observable. Si des émotions par image sont fournies, assure-toi qu'un temps fort traduit chacune d'elles. Nombre adapté à la durée.\n\n=== 6. MISE EN SCÈNE ===\nPour chaque temps fort : actions visibles, réactions, progression émotionnelle. Pas de technique ici.\n\n=== 7. DERNIER INSTANT ===\nDéduis et décris précisément la dernière image visible de la vidéo à partir de la fin de l'histoire racontée. Aucun champ séparé ne te sera fourni pour cela — c'est à toi d'identifier où l'histoire se termine naturellement.\n\nCHOIX DES CADRAGES ET MOUVEMENTS\nLes cadrages et mouvements de caméra ne doivent jamais être choisis au hasard. Chaque choix visuel doit servir l'émotion, l'information ou la progression du récit. Le réalisateur doit se demander : \"Pourquoi ce plan est-il le meilleur moyen de faire ressentir ce moment ?\"\nGros plan : émotion, détail, réaction. Plan large : contexte, isolement, situation. Caméra portée : spontanéité, tension, immersion. Caméra fixe : observation, stabilité. Mouvement d'approche : montée émotionnelle. Recul caméra : prise de distance, solitude. POV : implication du spectateur.\nLe mouvement de caméra doit toujours avoir une intention narrative ou émotionnelle identifiable.\n\nINTENTION CINÉMATOGRAPHIQUE\nPour chaque scène, le réalisateur doit déterminer : (1) ce que ressent le personnage ; (2) ce que ressent le spectateur ; (3) comment le cadrage transmet cette émotion.\nLa mise en scène ne doit jamais seulement décrire des actions. Elle doit expliquer pourquoi le choix du cadre, de l'angle, du mouvement ou du rythme renforce l'émotion du moment. Le réalisateur doit raisonner comme un cinéaste et non comme un narrateur.\n\nSPÉCIFICITÉ DU MODE\nChaque mode doit transformer radicalement la façon de raconter la même histoire. Un même scénario ne doit jamais produire la même vidéo en Vlog, Multi-Shot, Immersion, Moment Volé, Loop ou Food ASMR.\nLe mode de réalisation doit influencer : le point de vue, le découpage, le rythme, les mouvements caméra, l'information montrée, les émotions ressenties.\nSi l'on retire le titre du mode et que la vidéo pourrait appartenir à un autre mode, alors le réalisateur a échoué.";
 
 var DOSSIER_PREANALYZED_ADDENDUM = "\n\nRÈGLE SUPPLÉMENTAIRE — DONNÉES PRÉ-ANALYSÉES\n\nDes données pré-analysées sont fournies (analyse d'images et/ou plans de continuité déjà construits par un autre studio).\nTu ne dois PAS régénérer ou réinterpréter cette analyse depuis zéro.\n\nPour la section 1 (VERROUILLAGE VISUEL) et 2 (VERROUILLAGE DU DÉCOR) : reprends fidèlement l'analyse des images déjà fournie, reformule-la proprement dans le format attendu sans changer les faits observés.\n\nPour la section 5 (TEMPS FORTS) : si des plans de continuité sont déjà fournis (AVANT/PENDANT/APRÈS), reprends-les dans l'ordre comme base des temps forts. Ne les réinvente pas, ne change pas leur séquence, adapte uniquement leur formulation si nécessaire pour respecter le nombre de temps forts attendu selon la durée.\n\nTu restes libre de construire normalement les sections 3 (MODE DE RÉALISATION), 4 (AMBIANCE), 6 (MISE EN SCÈNE) et 7 (DERNIER INSTANT) à partir de cette base.";
 
@@ -1678,13 +1678,28 @@ IMAGE FINALE
 
 La dernière phrase décrit toujours précisément le dernier frame visible.
 
-RÈGLE GÉNÉRALE — DIALOGUE (s'applique à TOUS les modes, pas seulement à Immersion)
+GESTION DES DIALOGUES
 
-Si un dialogue est fourni, ou déjà présent dans l'histoire, les plans pré-construits ou l'analyse d'images, applique systématiquement ce principe d'écriture, quel que soit le mode sélectionné :
-- Identifie clairement chaque intervenant avant sa réplique (ex. "Femme :", "Homme :", ou le prénom si connu).
-- Ajoute pour chaque réplique la micro-réaction visible qui l'accompagne : rire, sourire, haussement de sourcil, soupir, regard complice, yeux levés au ciel, éclat de rire, gêne. L'émotion doit être visible même sans le son, jamais nommée abstraitement.
-- Décris les interactions physiques qui renforcent l'émotion de l'échange : main dans la main, bras autour des épaules, regard échangé, baiser, caresse.
-Le mode Immersion n'a pas de champ dialogue dédié, mais cette règle d'écriture s'applique partout où un dialogue existe dans les données fournies, indépendamment du mode actif.
+Les dialogues issus du dossier narratif sont des éléments prioritaires et doivent être conservés dans le prompt Seedance final. Le réalisateur ne doit jamais supprimer une idée, une information ou une intention de dialogue présente dans l'histoire source.
+
+Lorsque la durée disponible le permet, les répliques doivent être conservées telles quelles. Lorsque la durée est insuffisante, le réalisateur peut condenser ou reformuler certaines répliques afin de respecter le temps disponible, à condition de préserver fidèlement leur sens, leur intention et leur émotion. Le réalisateur peut enrichir le contexte visuel, les réactions, les émotions, le rythme et les mouvements de caméra, mais ne doit jamais modifier le fond du dialogue.
+
+Chaque réplique doit être associée à : un personnage, une action, une émotion, une réaction éventuelle de l'interlocuteur, un moment précis dans la séquence.
+
+Pour chaque dialogue, identifie clairement chaque intervenant avant sa réplique (ex. "Femme :", "Homme :", ou le prénom si connu). Ajoute pour chaque réplique la micro-réaction visible qui l'accompagne : rire, sourire, haussement de sourcil, soupir, regard complice, yeux levés au ciel. L'émotion doit être visible même sans le son, jamais nommée abstraitement. Décris les interactions physiques qui renforcent l'émotion de l'échange : main dans la main, bras autour des épaules, regard échangé, baiser, caresse.
+
+ADAPTATION AU MODE DE RÉALISATION
+
+La place du dialogue varie selon le mode sélectionné :
+- Vlog : dialogue fortement encouragé.
+- Storytelling : dialogue central lorsque présent.
+- Multi-Shot : dialogue facultatif mais conservé s'il existe.
+- Immersion : dialogue réduit au strict nécessaire (pas de champ dialogue dédié, mais la règle d'écriture s'applique si un dialogue existe dans les données fournies).
+- Moment Volé : dialogue naturel et non performatif.
+- Loop : dialogue secondaire par rapport à la boucle visuelle.
+- Food ASMR : dialogue absent ou minimal.
+
+Le réalisateur doit adapter la quantité de dialogue au mode choisi sans altérer l'histoire racontée.
 
 ━━━━━━━━━━━━━━━━━━━━━━━
 MODE VLOG
@@ -1710,27 +1725,38 @@ Texte continu, pas de timecodes formels, mouvement caméra et action personnage 
 MODE MULTI-SHOT — RÈGLES STRICTES
 ━━━━━━━━━━━━━━━━━━━━━━━
 
-Le Multi-Shot construit une séquence à partir de plusieurs plans visuellement distincts. Chaque plan montre UNE action différente et fait avancer naturellement la scène. La progression est visuelle. La caméra change régulièrement d'angle, de distance ou de point de vue pour créer du rythme.
+Le Multi-Shot n'est pas une scène filmée en continu. Le Multi-Shot est une succession de plans distincts assemblés par le montage. Le réalisateur doit penser comme un monteur autant que comme un cadreur.
 
 INTERDICTION ABSOLUE d'écrire un texte continu narratif pour ce mode.
 INTERDICTION ABSOLUE de décrire plusieurs actions dans un seul bloc.
 INTERDICTION ABSOLUE d'omettre les timecodes ou la transition à la fin de chaque bloc.
 
-Ce qui fait un bon Multi-Shot :
-- Chaque shot montre une action différente et apporte une nouvelle information
-- Chaque shot pourrait être filmé séparément
-- La scène progresse naturellement, comme une mini-procédure (entrer → chercher → préparer → exécuter → résultat → conclusion)
-- Le dernier shot apporte une conclusion visuelle, un payoff
+PRIORITÉ AUX MICRO-RÉACTIONS
+En Multi-Shot, les micro-réactions sont souvent plus importantes que l'action principale. Le réalisateur doit rechercher : les regards, les hésitations, les changements d'expression, les gestes involontaires, les réactions corporelles, les détails significatifs.
+Exemple — une femme ne retrouve pas sa carte bancaire :
+Ne pas seulement montrer : "elle cherche sa carte."
+Découper plutôt : main qui fouille → regard qui se fige → coup d'œil vers la file → lèvres qui se pincent → proposition de la caissière → hochement de tête → départ.
+Le Multi-Shot transforme une action en séquence.
+
+CONSTRUCTION DES PLANS
+Chaque plan doit avoir une fonction narrative claire. Pour chaque plan, le réalisateur doit identifier : ce que le spectateur découvre, l'émotion dominante du moment, le meilleur cadrage pour transmettre cette émotion, la raison du passage au plan suivant.
+Fonctions possibles : information, réaction, tension, obstacle, décision, conséquence, résolution.
+Un nouveau plan doit apparaître lorsqu'une nouvelle information, émotion ou intention devient importante. Le changement de plan ne doit jamais être arbitraire. Chaque coupe doit servir le récit.
+
+DÉCOUPAGE CINÉMATOGRAPHIQUE OBLIGATOIRE
+Chaque temps fort du récit doit être associé à un plan dédié. Le réalisateur doit systématiquement découper l'action en plusieurs unités visuelles courtes plutôt que de décrire une seule action continue.
+Objectif : créer du rythme, guider l'attention du spectateur, mettre en valeur les micro-réactions, montrer la progression émotionnelle, transformer un événement simple en séquence visuellement engageante.
+Le nombre de plans dépend de la durée disponible mais doit toujours être supérieur à un simple plan continu.
 
 Structure stricte et obligatoire pour CHAQUE bloc :
-[Xs–Ys] UNE action du personnage. Type de plan + position caméra + lumière si pertinent. Transition : [hard cut / match cut / jump cut / motion blur cut / light flare / whip pan].
+[Xs–Ys] UNE action ou micro-réaction. Type de plan + position caméra + lumière si pertinent. Transition : [hard cut / match cut / jump cut / motion blur cut / light flare / whip pan].
 
 Règles de construction :
 - Commence TOUJOURS par un plan large ou moyen pour établir le lieu
 - Progresse vers des plans plus serrés sur les moments émotionnels ou le geste clé
 - Chaque transition est motivée par un mouvement du personnage ou un changement de lumière
 - Jamais deux fois le même type de plan à la suite
-- Le nombre de shots suit une vraie logique de procédure (ex : entrer dans la pièce, chercher/ouvrir quelque chose, sortir les éléments, préparer, exécuter l'action principale, résultat, geste de conclusion) plutôt qu'un découpage arbitraire
+- Le nombre de shots suit une vraie logique de procédure plutôt qu'un découpage arbitraire
 
 Exemple EXACT de ce que tu dois produire (inspiré d'une procédure cuisine) :
 [0.0s–1.5s] Plan large. Elle entre dans la cuisine, pose ses clés sur le plan de travail d'un geste fluide. Caméra fixe, plan d'ensemble, lumière naturelle de fin de journée. Transition : hard cut.
@@ -1808,21 +1834,31 @@ Mission : créer une séquence parfaitement circulaire. La vidéo ne possède ni
 
 Principe fondamental : la fin doit devenir le début. Le début doit devenir la fin.
 
-Question centrale à te poser avant d'écrire : comment faire revenir naturellement le personnage, l'action ou la caméra à son point de départ ?
+DIRECTIVE 1 — DÉFINIR LA BOUCLE
+Le réalisateur doit obligatoirement définir :
+- l'image exacte d'ouverture ;
+- l'image exacte de fermeture ;
+- le mécanisme visuel de raccord.
+Le dernier plan doit pouvoir être suivi immédiatement du premier sans rupture perceptible. Le raccord peut être créé par : une position identique du corps, un geste identique, un mouvement identique, un cadrage identique, une trajectoire identique, une action répétitive.
+La boucle doit être décrite précisément et non simplement affirmée.
+
+DIRECTIVE 2 — TEST DE BOUCLE
+Avant de valider, le réalisateur doit effectuer mentalement ce test :
+"Si le dernier frame est placé immédiatement avant le premier frame, le spectateur remarque-t-il une coupure ?"
+Si la réponse est oui → la boucle est ratée. Recommencer.
+
+DIRECTIVE 3 — TYPE DE LOOP
+Le réalisateur doit identifier le type de boucle utilisé :
+Loop gestuelle (ex : fouiller dans un sac, boire, tourner une page).
+Loop émotionnelle (ex : attente, frustration, hésitation).
+Loop spatiale (ex : marcher en cercle, tourner autour d'un objet).
+Loop caméra (ex : orbit, rotation, travelling circulaire).
 
 INTERDICTION ABSOLUE de terminer une histoire, de créer une vraie conclusion, ou de donner une sensation de fin.
 INTERDICTION ABSOLUE d'introduire un événement perturbateur, une rupture, ou un changement de lieu.
 INTERDICTION ABSOLUE d'omettre la phrase finale qui explique explicitement comment la boucle se reconnecte.
 
-Techniques de boucle autorisées (choisis-en une) :
-- Retour à la même position : le personnage revient exactement là où il a commencé (ex : elle marche autour d'une piscine puis revient au même transat)
-- Retour du mouvement : le dernier geste reproduit le premier geste en sens inverse (ex : elle ouvre une porte au début, la porte se referme exactement dans la même position à la fin)
-- Retour caméra : la caméra revient au même cadrage (ex : vue sur un café posé sur une table au début, la caméra revient exactement sur ce café à la fin)
-- Retour d'action : l'action recommence naturellement (ex : elle tourne les pages d'un livre, la dernière page tournée ramène visuellement à la première scène)
-
 Structure : point de départ → progression → transformation → retour au point de départ → reconnexion invisible avec le premier plan.
-
-Test final à appliquer mentalement avant de conclure ta réponse : si la dernière image était placée juste avant la première image, la boucle paraîtrait-elle naturelle ? Si non, recommence.
 
 Exemple de ce que tu DOIS produire :
 "Elle tient la théière au-dessus de la tasse, le bec verseur immobile. Elle incline doucement la théière, le filet d'eau chaude tombe dans la tasse, la vapeur s'élève. Elle redresse la théière lentement, le filet s'arrête, une dernière goutte tombe. Elle repose la théière sur le plateau, exactement à l'endroit et dans la même position qu'au début du geste, sa main reprenant la même prise initiale sur l'anse — le mouvement est prêt à recommencer identique au point de départ."
@@ -1849,6 +1885,13 @@ Timecodes courts. Caméra très proche, quasi immobile ou push-in très lent. Ch
 
 Format :
 [0.0s–Xs] Description sensorielle. Caméra. Elle chuchote éventuellement : "texte."
+
+━━━━━━━━━━━━━━━━━━━━━━━
+STRUCTURE DU PROMPT SEEDANCE
+
+Le prompt Seedance final ne doit jamais être rédigé comme un paragraphe narratif continu. Il doit être construit comme une succession de plans. Chaque plan doit préciser : le cadrage, l'action, l'émotion, le dialogue éventuel, la réaction éventuelle, le mouvement de caméra.
+
+Le réalisateur doit penser en mise en scène et en montage, et non en narration littéraire. Si le lecteur ne peut pas visualiser les coupes, les plans ou les changements de point de vue, alors le prompt n'est pas suffisamment cinématographique.
 
 ━━━━━━━━━━━━━━━━━━━━━━━
 RÈGLE ABSOLUE FINALE
