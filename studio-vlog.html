@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STUDIO VLOG — Vertex AI / kie.ai</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #17130f;
+    --panel: #1f1a14;
+    --panel2: #241e17;
+    --paper: #ece4d6;
+    --paper-dim: #a89c87;
+    --accent: #e8450c;
+    --accent-dim: #7a2c0f;
+    --moss: #8a9463;
+    --moss-dim: #4f5738;
+    --line: #3a3226;
+    --line-soft: #2b251c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--paper); min-height: 100vh; }
+  ::selection { background: var(--accent); color: var(--bg); }
+
+  .stamp { font-family:'Space Mono',monospace; letter-spacing:.05em; }
+  .display { font-family:'Bebas Neue',sans-serif; letter-spacing:.04em; }
+
+  /* ─── Film strip divider ─────────────────────────────────────────────── */
+  .filmstrip { display:flex; gap:6px; padding:10px 0; overflow:hidden; }
+  .filmstrip span { width:10px; height:14px; background:var(--line); flex-shrink:0; }
+
+  /* ─── Splash ──────────────────────────────────────────────────────────── */
+  #splash {
+    position: fixed; inset: 0; background: var(--bg);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 100; padding: 24px; text-align: center; overflow-y: auto;
+  }
+  #splash .hero-img {
+    width: min(420px, 88vw); aspect-ratio: 9/14;
+    overflow: hidden; position: relative; margin-bottom: 8px;
+    border: 1px solid var(--line);
+  }
+  #splash .hero-img img { width:100%; height:100%; object-fit:cover; filter: saturate(.92) contrast(1.05); }
+  #splash .hero-img::after {
+    content:''; position:absolute; inset:0;
+    background: linear-gradient(to top, rgba(23,19,15,.85) 0%, transparent 38%);
+  }
+  #splash .datestamp {
+    position:absolute; bottom:14px; right:16px; z-index:2;
+    font-family:'Space Mono',monospace; color:var(--accent); font-size:13px; font-weight:700;
+    letter-spacing:.08em; text-shadow: 0 0 8px rgba(232,69,12,.5);
+  }
+  #splash .rec { position:absolute; top:14px; left:16px; z-index:2; display:flex; align-items:center; gap:7px; }
+  #splash .rec-dot { width:8px; height:8px; border-radius:50%; background:var(--accent); animation: blink 1.4s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.25} }
+  #splash .rec-label { font-family:'Space Mono',monospace; color:var(--paper); font-size:10px; font-weight:700; letter-spacing:.2em; }
+
+  #splash h1 {
+    font-family:'Bebas Neue',sans-serif; font-size: clamp(3.2rem, 11vw, 6.5rem);
+    letter-spacing:.03em; color: var(--paper); line-height:.95; margin: 22px 0 4px;
+  }
+  #splash .tagline {
+    font-size: 13px; font-weight: 500; color: var(--paper-dim); font-style: italic;
+    margin-bottom: 32px; letter-spacing:.01em;
+  }
+  #splash .api-box {
+    width: min(440px, 100%); background: var(--panel); padding: 26px;
+    border: 1px solid var(--line); margin-bottom: 20px; text-align:left;
+  }
+  #splash .api-label {
+    font-family:'Space Mono',monospace; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.15em;
+    color:var(--paper-dim); margin-bottom:12px;
+  }
+
+  .engine-selector { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:18px; }
+  .engine-btn {
+    padding:14px 10px; border:1px solid var(--line); background:var(--panel2); cursor:pointer;
+    font-family:'Inter',sans-serif; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.08em;
+    color:var(--paper-dim); transition:all .15s; display:flex; flex-direction:column; align-items:center; gap:5px;
+  }
+  .engine-btn:hover { border-color:var(--paper-dim); }
+  .engine-btn.active-vertex { background:var(--accent); border-color:var(--accent); color:var(--bg); }
+  .engine-btn.active-kie { background:var(--moss); border-color:var(--moss); color:var(--bg); }
+  .engine-btn .engine-price { font-family:'Space Mono',monospace; font-size:8px; opacity:.75; font-weight:700; }
+
+  #splash input[type="password"] {
+    width:100%; padding:13px 14px; border:1px solid var(--line); background: var(--bg);
+    font-family: 'Space Mono', monospace; font-size:13px; color:var(--paper); outline:none; transition:border-color .15s;
+  }
+  #splash input[type="password"]:focus { border-color: var(--accent); }
+  #splash .enter-btn {
+    margin-top:10px; width:100%; padding:16px; border:1px solid var(--accent);
+    background: var(--accent); color:var(--bg); font-family:'Inter',sans-serif; font-weight:800;
+    font-size:12px; text-transform:uppercase; letter-spacing:.25em; cursor:pointer; transition:opacity .15s;
+  }
+  #splash .enter-btn:hover { opacity:.85; }
+  #splash .enter-btn:active { opacity:.7; }
+  #splash .billing-link {
+    display:flex; align-items:center; gap:6px; color:var(--paper-dim); font-size:10px;
+    font-weight:700; text-transform:uppercase; letter-spacing:.1em; text-decoration:none; transition:color .15s;
+  }
+  #splash .billing-link:hover { color: var(--accent); }
+
+  /* ─── App shell ───────────────────────────────────────────────────────── */
+  #app { display:none; min-height:100vh; flex-direction:column; }
+  #app.visible { display:flex; }
+
+  header {
+    border-bottom: 1px solid var(--line); padding:18px 32px;
+    display:flex; justify-content:space-between; align-items:center;
+    position:sticky; top:0; background:var(--bg); z-index:50; gap:16px; flex-wrap:wrap;
+  }
+  .header-left { display:flex; align-items:center; gap:14px; cursor:pointer; }
+  .header-logo {
+    width:40px; height:40px; background:var(--panel); border:1px solid var(--line);
+    display:flex; align-items:center; justify-content:center; transition:border-color .15s;
+  }
+  .header-logo:hover { border-color:var(--accent); }
+  .header-logo svg { width:20px; height:20px; stroke:var(--accent); fill:none; stroke-width:1.5; }
+  .header-title h1 { font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:.08em; color:var(--paper); }
+  .header-badges { display:flex; gap:8px; margin-top:5px; }
+  .badge { font-family:'Space Mono',monospace; font-size:9px; font-weight:700; padding:3px 8px; text-transform:uppercase; letter-spacing:.1em; border:1px solid var(--line); }
+  .badge-accent { background:var(--accent); color:var(--bg); border-color:var(--accent); }
+  .badge-moss { background:var(--moss); color:var(--bg); border-color:var(--moss); }
+  .rec-indicator { display:flex; align-items:center; gap:8px; }
+  .rec-indicator .dot { width:9px; height:9px; border-radius:50%; background:var(--accent); animation:blink 1.4s infinite; }
+
+  .mobile-warn {
+    margin:16px 24px 0; padding:14px 18px; background:var(--panel2);
+    border:1px solid var(--accent-dim); display:none; gap:12px; align-items:flex-start;
+  }
+  .mobile-warn.show { display:flex; }
+  .mobile-warn svg { flex-shrink:0; width:18px; height:18px; stroke:var(--accent); fill:none; stroke-width:2; }
+  .mobile-warn p { font-size:11.5px; font-weight:600; color:var(--paper-dim); line-height:1.5; }
+
+  main { flex:1; max-width:1600px; margin:0 auto; width:100%; padding:32px; display:grid; grid-template-columns:1fr; gap:28px; }
+  @media(min-width:1024px) { main { grid-template-columns:5fr 7fr; } }
+
+  .card { background:var(--panel); padding:32px; border:1px solid var(--line); }
+  .card-title {
+    font-family:'Space Mono',monospace; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.2em;
+    margin-bottom:6px; display:flex; align-items:center; gap:10px; color:var(--accent);
+  }
+  .card-title.moss { color:var(--moss); }
+  .card-title svg { width:16px; height:16px; fill:none; stroke-width:1.8; }
+  .card-sub { font-size:11px; font-weight:500; color:var(--paper-dim); margin:0 0 20px; }
+
+  .upload-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-bottom:4px; }
+  .upload-grid.small { grid-template-columns:repeat(4,1fr); }
+  .upload-thumb { aspect-ratio:1; overflow:hidden; border:1px solid var(--line); position:relative; background:var(--bg); }
+  .upload-thumb img { width:100%; height:100%; object-fit:cover; filter:saturate(.9); }
+  .upload-thumb .remove-btn {
+    position:absolute; top:4px; right:4px; background:rgba(23,19,15,.85); border:1px solid var(--line);
+    width:22px; height:22px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    color:var(--accent); transition:background .15s;
+  }
+  .upload-thumb .remove-btn:hover { background:var(--bg); }
+  .upload-thumb .ref-badge {
+    position:absolute; bottom:0; left:0; right:0; background:rgba(23,19,15,.85); color:var(--accent);
+    font-family:'Space Mono',monospace; font-size:7px; font-weight:700; padding:3px 4px; text-transform:uppercase; letter-spacing:.08em; text-align:center;
+  }
+  .upload-thumb .ref-badge.loc { color:var(--moss); }
+  .upload-add {
+    aspect-ratio:1; border:1px dashed var(--line); display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:5px; cursor:pointer; background:var(--panel2); transition:border-color .15s; position:relative; overflow:hidden;
+  }
+  .upload-add:hover { border-color:var(--accent); }
+  .upload-add svg { width:18px; height:18px; stroke:var(--paper-dim); fill:none; stroke-width:1.5; }
+  .upload-add span { font-family:'Space Mono',monospace; font-size:7px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--paper-dim); text-align:center; padding:0 4px; }
+  .upload-add input { position:absolute; inset:0; opacity:0; cursor:pointer; }
+
+  textarea {
+    width:100%; padding:18px; border:1px solid var(--line); background:var(--bg);
+    font-family:'Inter',sans-serif; font-size:13.5px; color:var(--paper); resize:none; outline:none;
+    transition:border-color .15s; min-height:110px; line-height:1.6;
+  }
+  textarea:focus { border-color:var(--accent); }
+  textarea::placeholder { color:#5c5344; }
+  textarea.directive { min-height:96px; background:#1a140f; border-color:var(--accent-dim); font-family:'Space Mono',monospace; font-size:12px; color:#f2b48a; }
+  textarea.directive::placeholder { color:#6b4a35; }
+  textarea.directive:focus { border-color:var(--accent); }
+
+  .format-lock {
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    padding:16px 20px; background:var(--bg); border:1px solid var(--line);
+  }
+  .format-lock .fl-left { display:flex; align-items:center; gap:14px; }
+  .format-lock svg { width:22px; height:22px; stroke:var(--paper-dim); fill:none; stroke-width:1.5; }
+  .format-lock h4 { font-family:'Space Mono',monospace; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.12em; color:var(--paper); }
+  .format-lock p { font-size:10px; font-weight:500; color:var(--paper-dim); margin-top:2px; }
+  .format-lock .fl-tag { background:var(--accent); color:var(--bg); padding:6px 12px; font-family:'Space Mono',monospace; font-size:10px; font-weight:700; letter-spacing:.1em; }
+
+  .gen-btn {
+    width:100%; padding:28px; border:1px solid var(--accent); background: var(--accent);
+    color:var(--bg); font-family:'Inter',sans-serif; font-weight:800; font-size:13px;
+    text-transform:uppercase; letter-spacing:.3em; cursor:pointer; transition:opacity .15s;
+    display:flex; flex-direction:column; align-items:center; gap:10px;
+  }
+  .gen-btn:hover:not(:disabled) { opacity:.88; }
+  .gen-btn:active:not(:disabled) { opacity:.75; }
+  .gen-btn:disabled { background:var(--panel2); border-color:var(--line); color:var(--paper-dim); cursor:not-allowed; }
+  .gen-btn .btn-row { display:flex; align-items:center; gap:16px; }
+  .gen-btn svg { width:26px; height:26px; }
+  .gen-btn.loading svg { animation:spin 1s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .gen-loading-msg { font-family:'Space Mono',monospace; font-size:9px; font-weight:700; letter-spacing:.15em; color:rgba(23,19,15,.7); }
+
+  .error-box { padding:16px 18px; border:1px solid var(--accent); background:#241109; display:none; gap:14px; align-items:flex-start; margin-top:14px; }
+  .error-box.show { display:flex; }
+  .error-box svg { width:20px; height:20px; stroke:var(--accent); fill:none; stroke-width:2; flex-shrink:0; }
+  .error-box p { font-family:'Space Mono',monospace; font-size:10.5px; font-weight:700; color:#f2b48a; letter-spacing:.03em; line-height:1.6; text-transform:uppercase; }
+
+  .results-header { display:flex; justify-content:space-between; align-items:flex-end; border-bottom:1px solid var(--line); padding-bottom:20px; margin-bottom:32px; flex-wrap:wrap; gap:16px; }
+  .results-title h2 { font-family:'Bebas Neue',sans-serif; font-size:26px; letter-spacing:.12em; color:var(--paper); }
+  .results-status { display:flex; align-items:center; gap:8px; margin-top:6px; }
+  .live-dot { width:7px; height:7px; border-radius:50%; background:var(--accent); animation:blink .9s infinite; }
+  .results-status .rlabel { font-family:'Space Mono',monospace; font-size:10px; font-weight:700; color:var(--accent); letter-spacing:.15em; }
+  .results-status .rcount { font-size:12px; font-family:'Space Mono',monospace; color:var(--paper-dim); font-weight:700; margin-left:14px; }
+  .results-actions { display:flex; gap:8px; }
+  .btn-reset { display:flex; align-items:center; gap:7px; padding:11px 16px; background:transparent; color:var(--accent); border:1px solid var(--accent-dim); font-family:'Inter',sans-serif; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.12em; cursor:pointer; transition:all .15s; }
+  .btn-reset:hover { background:var(--accent); color:var(--bg); }
+  .btn-reset svg { width:13px; height:13px; fill:none; stroke:currentColor; stroke-width:2; }
+  .btn-dl-all { display:flex; align-items:center; gap:7px; padding:11px 16px; background:var(--paper); color:var(--bg); border:1px solid var(--paper); font-family:'Inter',sans-serif; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.12em; cursor:pointer; transition:opacity .15s; }
+  .btn-dl-all:hover { opacity:.8; }
+  .btn-dl-all svg { width:13px; height:13px; fill:none; stroke:currentColor; stroke-width:2; }
+
+  .empty-state { height:560px; display:flex; flex-direction:column; align-items:center; justify-content:center; border:1px dashed var(--line); gap:26px; background:var(--panel); }
+  .empty-icon { width:120px; height:120px; border:1px solid var(--line); display:flex; align-items:center; justify-content:center; }
+  .empty-icon svg { width:56px; height:56px; stroke:var(--line); fill:none; stroke-width:.6; }
+  .empty-text { text-align:center; }
+  .empty-text p:first-child { font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:.3em; color:#4a4234; }
+  .empty-text p:last-child { font-size:12px; color:var(--paper-dim); font-weight:500; font-style:italic; margin-top:8px; }
+
+  .img-card { background:var(--panel); overflow:hidden; border:1px solid var(--line); margin-bottom:36px; max-width:400px; margin-left:auto; margin-right:auto; }
+  .img-thumb { position:relative; cursor:pointer; overflow:hidden; }
+  .img-thumb img { width:100%; height:100%; object-fit:cover; display:block; filter:saturate(.94) contrast(1.03); }
+  .img-thumb .ar-9-16 { aspect-ratio:9/16; }
+  .img-overlay { position:absolute; inset:0; background:rgba(23,19,15,.35); opacity:0; transition:opacity .25s; display:flex; align-items:center; justify-content:center; }
+  .img-card:hover .img-overlay { opacity:1; }
+  .dl-circle { background:var(--accent); padding:22px; box-shadow:0 8px 24px rgba(0,0,0,.4); }
+  .dl-circle svg { width:32px; height:32px; stroke:var(--bg); fill:none; stroke-width:2; }
+  .img-badges { position:absolute; top:16px; left:16px; display:flex; flex-direction:column; gap:6px; }
+  .img-badge { padding:5px 12px; font-family:'Space Mono',monospace; font-size:9px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; }
+  .img-badge-paper { background:rgba(236,228,214,.95); color:var(--bg); }
+  .img-badge-accent { background:var(--accent); color:var(--bg); }
+  .img-badge-moss { background:var(--moss); color:var(--bg); }
+  .img-datestamp {
+    position:absolute; bottom:14px; right:16px; font-family:'Space Mono',monospace; color:var(--accent);
+    font-size:12px; font-weight:700; letter-spacing:.06em; text-shadow:0 0 6px rgba(232,69,12,.6);
+  }
+  .img-info { padding:24px 28px; }
+  .img-meta { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
+  .img-meta-txt { display:flex; flex-direction:column; gap:4px; }
+  .img-meta-txt span { font-family:'Space Mono',monospace; font-size:10px; font-weight:700; color:var(--paper-dim); text-transform:uppercase; letter-spacing:.08em; }
+  .btn-dl { padding:11px 16px; background:var(--accent); color:var(--bg); border:none; font-family:'Inter',sans-serif; font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:.1em; cursor:pointer; transition:opacity .15s; }
+  .btn-dl:hover { opacity:.85; }
+  .mobile-hint { font-family:'Space Mono',monospace; font-size:8.5px; font-weight:700; color:#5c5344; text-transform:uppercase; letter-spacing:.08em; margin-top:5px; }
+
+  .divider { height:1px; background:var(--line); margin:20px 0; }
+  .section-label { font-family:'Space Mono',monospace; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.15em; color:var(--paper-dim); margin-bottom:10px; }
+
+  footer { padding:40px; text-align:center; border-top:1px solid var(--line); }
+  footer p { font-family:'Space Mono',monospace; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5em; color:#4a4234; }
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <div class="hero-img">
+    <img src="https://images.unsplash.com/photo-1495521821757-a1efb6729352?auto=format&fit=crop&q=80&w=1200" alt="Vlog">
+    <div class="rec"><div class="rec-dot"></div><span class="rec-label">REC ● BRUT</span></div>
+    <div class="datestamp" id="splashDate">11 07 2026</div>
+  </div>
+  <div class="filmstrip">
+    <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+  </div>
+  <h1>STUDIO VLOG</h1>
+  <p class="tagline">« Le vrai ne se met jamais en scène. »</p>
+
+  <div class="api-box">
+    <p class="api-label">⚡ Choisis ton moteur de génération</p>
+
+    <div class="engine-selector">
+      <button class="engine-btn active-vertex" id="btn-vertex" onclick="selectEngine('vertex')">
+        <span>VERTEX AI</span>
+        <span class="engine-price">Clé AQ... · Gemini 3.1 Flash Image</span>
+      </button>
+      <button class="engine-btn" id="btn-kie" onclick="selectEngine('kie')">
+        <span>KIE.AI</span>
+        <span class="engine-price">Clé kie_... · Nano Banana 2</span>
+      </button>
+    </div>
+
+    <p class="api-label" id="keyLabel">🔑 Clé API Vertex AI Express Mode</p>
+    <input type="password" id="apiKeyInput" placeholder="AQ..." autocomplete="off">
+    <button class="enter-btn" onclick="enterStudio()">ENTRER DANS LE STUDIO</button>
+  </div>
+
+  <a href="#" id="helpLink" target="_blank" class="billing-link">
+    <span id="helpText">Obtenir une clé Vertex AI Express Mode</span> →
+  </a>
+</div>
+
+<div id="app">
+  <header>
+    <div class="header-left" onclick="showSplash()">
+      <div class="header-logo">
+        <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="14" rx="1"/><circle cx="12" cy="13" r="3.5"/><rect x="7" y="3" width="6" height="3"/></svg>
+      </div>
+      <div class="header-title">
+        <h1>STUDIO VLOG</h1>
+        <div class="header-badges">
+          <span class="badge badge-accent">BRUT 9:16</span>
+          <span class="badge" id="engineBadge">V2026</span>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:16px;">
+      <div style="text-align:right;">
+        <p class="stamp" style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.15em;color:var(--paper-dim);">Réalisme Vlog</p>
+        <p class="stamp" style="font-size:9px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;" id="modelLabel">Gemini 3.1 Flash Image</p>
+      </div>
+      <div class="rec-indicator"><div class="dot"></div></div>
+    </div>
+  </header>
+
+  <div id="mobileWarn" class="mobile-warn">
+    <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+    <p>MODE MOBILE DÉTECTÉ — la génération peut prendre plus longtemps. Le système tente plusieurs relances automatiques si le serveur est saturé.</p>
+  </div>
+
+  <main>
+    <div style="display:flex;flex-direction:column;gap:22px;">
+
+      <div class="card">
+        <p class="card-title">
+          <svg viewBox="0 0 24 24" style="stroke:var(--accent)"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v2"/></svg>
+          01 — VISAGES DE RÉFÉRENCE
+        </p>
+        <p class="card-sub">Jusqu'à 10 images · morphologie et traits exacts conservés</p>
+        <div id="uploadGridPerson" class="upload-grid"></div>
+      </div>
+
+      <div class="card">
+        <p class="card-title moss">
+          <svg viewBox="0 0 24 24" style="stroke:var(--moss)"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
+          02 — LIEU / DÉCOR DE RÉFÉRENCE
+        </p>
+        <p class="card-sub">Jusqu'à 4 images · l'environnement exact est reproduit</p>
+        <div id="uploadGridLocation" class="upload-grid small"></div>
+      </div>
+
+      <div class="card">
+        <p class="card-title">
+          <svg viewBox="0 0 24 24" style="stroke:var(--accent)"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+          03 — SCÈNE
+        </p>
+        <textarea id="subjectInput" placeholder="Décris la scène de vlog : où, quoi, quelle ambiance, quel moment de la journée..."></textarea>
+      </div>
+
+      <div class="card">
+        <p class="card-title">
+          <svg viewBox="0 0 24 24" style="stroke:var(--accent)"><path d="M4 17h16M4 12h16M4 7h16"/></svg>
+          04 — PROMPT DIRECTIF
+        </p>
+        <p class="card-sub">Instructions brutes, injectées telles quelles, priorité maximale</p>
+        <textarea id="directiveInput" class="directive" placeholder="Ex : lumière du matin, caméra tenue à bout de bras, léger flou de mouvement, regard vers l'objectif, pas de sourire forcé..."></textarea>
+      </div>
+
+      <div class="card">
+        <p class="card-title">
+          <svg viewBox="0 0 24 24" style="stroke:var(--accent)"><rect x="7" y="2" width="10" height="20" rx="2"/></svg>
+          05 — FORMAT
+        </p>
+        <div class="format-lock">
+          <div class="fl-left">
+            <svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/></svg>
+            <div>
+              <h4>Format vertical fixe</h4>
+              <p>Story / Reels / TikTok</p>
+            </div>
+          </div>
+          <span class="fl-tag">9:16</span>
+        </div>
+      </div>
+
+      <button class="gen-btn" id="genBtn" onclick="generate()">
+        <div class="btn-row">
+          <svg id="genIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          <span id="genLabel">DÉCLENCHER CAPTURE BRUTE</span>
+        </div>
+        <span class="gen-loading-msg" id="genMsg" style="display:none;"></span>
+      </button>
+
+      <div class="error-box" id="errorBox">
+        <svg viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <p id="errorText"></p>
+      </div>
+    </div>
+
+    <div>
+      <div class="results-header">
+        <div class="results-title">
+          <h2>ARCHIVES VLOG</h2>
+          <div class="results-status">
+            <div class="live-dot"></div>
+            <span class="rlabel">LIVE RENDER</span>
+            <span class="rcount" id="captureCount">0 CAPTURES</span>
+          </div>
+        </div>
+        <div class="results-actions" id="resultsActions" style="display:none;">
+          <button class="btn-reset" onclick="resetAll()">
+            <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.21"/></svg>
+            Réinitialiser
+          </button>
+          <button class="btn-dl-all" id="dlAllBtn" onclick="downloadAll()" style="display:none;">
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Télécharger tout
+          </button>
+        </div>
+      </div>
+
+      <div id="emptyState" class="empty-state">
+        <div class="empty-icon">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <div class="empty-text">
+          <p>INITIER LE SIGNAL</p>
+          <p>Le studio est prêt. Charge tes visages et ton lieu pour capturer la scène.</p>
+        </div>
+      </div>
+
+      <div id="resultsContainer"></div>
+    </div>
+  </main>
+
+  <footer>
+    <p id="footerText">STUDIO VLOG — 2026 · Powered by Vertex AI</p>
+  </footer>
+</div>
+
+<script>
+let apiKey = '';
+let selectedEngine = 'vertex';
+let personImages = [];
+let locationImages = [];
+let results = [];
+let loading = false;
+const aspectRatio = '9:16';
+
+const STORAGE_KEYS = {
+  results: 'studio-vlog-v1-results',
+  prompts: 'studio-vlog-v1-prompts'
+};
+
+const LOADING_MSGS_VERTEX = [
+  "Initialisation de la capture brute...",
+  "Analyse des visages de référence...",
+  "Analyse du lieu de référence...",
+  "Vertex traite la génération...",
+  "Serveur occupé, nouvelle tentative possible..."
+];
+
+const LOADING_MSGS_KIE = [
+  "Envoi vers Nano Banana 2...",
+  "Analyse des visages et du lieu...",
+  "Nano Banana 2 génère la scène...",
+  "Rendu brut haute fidélité en cours...",
+  "Presque terminé..."
+];
+
+let loadingMsgIdx = 0;
+let loadingInterval = null;
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+// ─── Sélection du moteur ──────────────────────────────────────────────────────
+function selectEngine(engine) {
+  selectedEngine = engine;
+  const btnVertex = document.getElementById('btn-vertex');
+  const btnKie = document.getElementById('btn-kie');
+  const keyLabel = document.getElementById('keyLabel');
+  const keyInput = document.getElementById('apiKeyInput');
+  const helpLink = document.getElementById('helpLink');
+  const helpText = document.getElementById('helpText');
+
+  if (engine === 'vertex') {
+    btnVertex.className = 'engine-btn active-vertex';
+    btnKie.className = 'engine-btn';
+    keyLabel.textContent = '🔑 Clé API Vertex AI Express Mode';
+    keyInput.placeholder = 'AQ...';
+    helpLink.href = 'https://cloud.google.com/vertex-ai/generative-ai/docs/start/express-mode/overview';
+    helpText.textContent = 'Obtenir une clé Vertex AI Express Mode';
+  } else {
+    btnVertex.className = 'engine-btn';
+    btnKie.className = 'engine-btn active-kie';
+    keyLabel.textContent = '🔑 Clé API kie.ai';
+    keyInput.placeholder = 'Colle ta clé kie.ai ici...';
+    helpLink.href = 'https://kie.ai/api-key';
+    helpText.textContent = 'Créer un compte et obtenir une clé kie.ai';
+  }
+}
+
+// ─── Entrée dans le studio ────────────────────────────────────────────────────
+async function enterStudio() {
+  const k = document.getElementById('apiKeyInput').value.trim();
+  if (!k) {
+    alert(selectedEngine === 'vertex'
+      ? 'Colle ta clé API Vertex AI Express Mode (commence par AQ...).'
+      : 'Colle ta clé API kie.ai.');
+    return;
+  }
+
+  if (selectedEngine === 'vertex' && !k.startsWith('AQ')) {
+    if (!confirm('⚠️ Cette clé ne commence pas par "AQ". Les clés Vertex AI Express Mode commencent par AQ. Continuer quand même ?')) return;
+  }
+
+  apiKey = k;
+  document.getElementById('splash').style.display = 'none';
+  const app = document.getElementById('app');
+  app.classList.add('visible');
+  if (isMobile) document.getElementById('mobileWarn').classList.add('show');
+
+  const engineBadge = document.getElementById('engineBadge');
+  const modelLabel = document.getElementById('modelLabel');
+  const footerText = document.getElementById('footerText');
+
+  if (selectedEngine === 'kie') {
+    engineBadge.textContent = 'KIE.AI';
+    engineBadge.className = 'badge badge-green';
+    modelLabel.textContent = 'Nano Banana 2 · kie.ai';
+    footerText.textContent = 'STUDIO VLOG — 2026 · Powered by kie.ai Nano Banana 2';
+  } else {
+    engineBadge.textContent = 'VERTEX AI';
+    engineBadge.className = 'badge badge-violet';
+    modelLabel.textContent = 'Gemini 3.1 Flash Image';
+    footerText.textContent = 'STUDIO VLOG — 2026 · Powered by Vertex AI';
+  }
+
+  await loadState();
+  renderUploadGrids();
+  renderResults();
+}
+
+function showSplash() {
+  document.getElementById('splash').style.display = 'flex';
+  document.getElementById('app').classList.remove('visible');
+}
+
+// ─── IndexedDB ────────────────────────────────────────────────────────────────
+const DB_NAME = 'studio-vlog-db';
+const DB_VERSION = 1;
+let db = null;
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    if (db) { resolve(db); return; }
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = (e) => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains('images')) d.createObjectStore('images', { keyPath: 'key' });
+      if (!d.objectStoreNames.contains('persons')) d.createObjectStore('persons', { keyPath: 'key' });
+      if (!d.objectStoreNames.contains('locations')) d.createObjectStore('locations', { keyPath: 'key' });
+    };
+    req.onsuccess = (e) => { db = e.target.result; resolve(db); };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function idbSet(store, key, value) {
+  const d = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = d.transaction(store, 'readwrite');
+    tx.objectStore(store).put({ key, value });
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function idbGet(store, key) {
+  const d = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = d.transaction(store, 'readonly');
+    const req = tx.objectStore(store).get(key);
+    req.onsuccess = () => resolve(req.result?.value ?? null);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function idbGetAll(store) {
+  const d = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = d.transaction(store, 'readonly');
+    const req = tx.objectStore(store).getAll();
+    req.onsuccess = () => resolve(req.result.map(r => r.value));
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function idbDelete(store, key) {
+  const d = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = d.transaction(store, 'readwrite');
+    tx.objectStore(store).delete(key);
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function idbClear(store) {
+  const d = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = d.transaction(store, 'readwrite');
+    tx.objectStore(store).clear();
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+// ─── Persistance ──────────────────────────────────────────────────────────────
+function saveSettings() {
+  try {
+    localStorage.setItem(STORAGE_KEYS.prompts, JSON.stringify({
+      subject: document.getElementById('subjectInput').value || '',
+      directive: document.getElementById('directiveInput').value || ''
+    }));
+  } catch(e) { console.warn('Erreur sauvegarde settings:', e); }
+}
+
+async function saveState() {
+  saveSettings();
+  try {
+    await idbClear('persons');
+    for (let i = 0; i < personImages.length; i++) await idbSet('persons', `person_${i}`, personImages[i]);
+    await idbClear('locations');
+    for (let i = 0; i < locationImages.length; i++) await idbSet('locations', `location_${i}`, locationImages[i]);
+  } catch(e) { console.warn('Erreur sauvegarde refs IDB:', e); }
+  try {
+    const meta = results.map(r => ({ id: r.id, engine: r.engine, timestamp: r.timestamp }));
+    localStorage.setItem(STORAGE_KEYS.results, JSON.stringify(meta));
+  } catch(e) { console.warn('Erreur sauvegarde meta résultats:', e); }
+}
+
+async function loadState() {
+  try {
+    const p = JSON.parse(localStorage.getItem(STORAGE_KEYS.prompts) || '{}');
+    document.getElementById('subjectInput').value = p.subject || '';
+    document.getElementById('directiveInput').value = p.directive || '';
+  } catch(e) { console.warn('Erreur chargement settings:', e); }
+
+  try {
+    await openDB();
+    personImages = (await idbGetAll('persons')).filter(Boolean);
+    locationImages = (await idbGetAll('locations')).filter(Boolean);
+  } catch(e) { console.warn('Erreur chargement refs IDB:', e); personImages = []; locationImages = []; }
+
+  try {
+    const meta = JSON.parse(localStorage.getItem(STORAGE_KEYS.results) || '[]');
+    const loaded = [];
+    for (const m of meta) {
+      const dataUrl = await idbGet('images', `result_${m.id}`);
+      if (dataUrl) loaded.push({ ...m, dataUrl });
+    }
+    results = loaded;
+  } catch(e) { console.warn('Erreur chargement résultats IDB:', e); results = []; }
+}
+
+// ─── Upload références ────────────────────────────────────────────────────────
+function renderUploadGrids() {
+  renderGrid('uploadGridPerson', personImages, 10, 'REF', '', removePerson, handleUploadPerson, 'Charger un visage');
+  renderGrid('uploadGridLocation', locationImages, 4, 'LIEU', 'loc', removeLocation, handleUploadLocation, 'Charger le lieu');
+}
+
+function renderGrid(gridId, arr, max, badgeLabel, badgeClass, removeFn, uploadFn, addLabel) {
+  const grid = document.getElementById(gridId);
+  grid.innerHTML = '';
+  arr.forEach((img, i) => {
+    const div = document.createElement('div');
+    div.className = 'upload-thumb';
+    div.innerHTML = `<img src="${img}" alt="ref ${i+1}"><button class="remove-btn" onclick="${removeFn.name}(${i})"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button><span class="ref-badge ${badgeClass}">${badgeLabel} ${i+1}</span>`;
+    grid.appendChild(div);
+  });
+  if (arr.length < max) {
+    const add = document.createElement('div');
+    add.className = 'upload-add';
+    add.innerHTML = `<svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span>${arr.length === 0 ? addLabel : `Ajouter (${arr.length}/${max})`}</span><input type="file" multiple accept="image/*" onchange="${uploadFn.name}(event)">`;
+    grid.appendChild(add);
+  }
+}
+
+function handleUploadPerson(e) {
+  const files = Array.from(e.target.files).slice(0, 10 - personImages.length);
+  files.forEach(f => {
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const resized = await resizeImage(reader.result);
+      personImages.push(resized);
+      renderUploadGrids();
+      saveState();
+    };
+    reader.readAsDataURL(f);
+  });
+}
+
+function handleUploadLocation(e) {
+  const files = Array.from(e.target.files).slice(0, 4 - locationImages.length);
+  files.forEach(f => {
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const resized = await resizeImage(reader.result);
+      locationImages.push(resized);
+      renderUploadGrids();
+      saveState();
+    };
+    reader.readAsDataURL(f);
+  });
+}
+
+function removePerson(i) { personImages.splice(i, 1); renderUploadGrids(); saveState(); }
+function removeLocation(i) { locationImages.splice(i, 1); renderUploadGrids(); saveState(); }
+
+function resizeImage(b64) {
+  return new Promise(res => {
+    const img = new Image();
+    img.src = b64;
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let w = img.width, h = img.height;
+      if (w > 1024) { h *= 1024 / w; w = 1024; }
+      if (h > 1024) { w *= 1024 / h; h = 1024; }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      res(canvas.toDataURL('image/jpeg', 0.82));
+    };
+  });
+}
+
+// ─── Génération ───────────────────────────────────────────────────────────────
+async function generate() {
+  if (loading) return;
+  const subject = document.getElementById('subjectInput').value.trim();
+  if (!subject) { showError("Décris la scène avant de lancer la capture."); return; }
+  if (!apiKey) { showError("Ajoute d'abord ta clé API."); return; }
+
+  hideError();
+  setLoading(true);
+  saveSettings();
+
+  try {
+    const imgDataUrl = selectedEngine === 'kie'
+      ? await callKieAPI(subject)
+      : await callVertexAPI(subject);
+
+    const id = Date.now().toString();
+    await idbSet('images', `result_${id}`, imgDataUrl);
+
+    const r = { id, dataUrl: imgDataUrl, engine: selectedEngine, timestamp: Date.now() };
+    results.unshift(r);
+    if (results.length > 5) {
+      const removed = results.pop();
+      try { await idbDelete('images', `result_${removed.id}`); } catch(_) {}
+    }
+    renderResults();
+    await saveState();
+  } catch(err) {
+    showError(err.message || "Erreur de génération.");
+  } finally {
+    setLoading(false);
+  }
+}
+
+function buildSystemText() {
+  const personBlock = personImages.length > 0 ? `
+    PRÉSERVATION D'IDENTITÉ — RÈGLE ABSOLUE PRIORITAIRE :
+    - Les images de référence "VISAGE" montrent la ou les personnes EXACTES à reproduire.
+    - Reproduire exactement : morphologie faciale, traits, carnation, structure osseuse, coiffure, corpulence.
+    - INTERDICTION de modifier, embellir, rajeunir ou altérer les traits de ces personnes.
+    - Si plusieurs visages sont fournis, chacun doit correspondre exactement à sa propre référence, sans les mélanger.
+    - Priorité absolue sur tout autre paramètre esthétique.
+  ` : '';
+
+  const locationBlock = locationImages.length > 0 ? `
+    PRÉSERVATION DU LIEU — RÈGLE ABSOLUE :
+    - Les images de référence "LIEU" montrent le décor et l'environnement EXACT à reproduire.
+    - Conserver l'architecture, les matériaux, la disposition, la lumière ambiante et les objets caractéristiques du lieu.
+    - Ne pas inventer un lieu différent : la scène doit se dérouler dans CET environnement précis.
+  ` : '';
+
+  return `
+    TU ES STUDIO VLOG. TU GÉNÈRES UNE PHOTOGRAPHIE ULTRA-RÉALISTE DE TYPE VLOG SMARTPHONE, IMPOSSIBLE À DISTINGUER D'UNE VRAIE CAPTURE PRISE SUR IPHONE RÉCENT.
+
+    ${personBlock}
+    ${locationBlock}
+
+    PHILOSOPHIE — RÉALISME AVANT ESTHÉTIQUE :
+    - Le réalisme est toujours prioritaire sur la beauté de l'image.
+    - Une photo légèrement imparfaite est toujours plus crédible qu'une image parfaite.
+    - Le sujet doit sembler VIVRE le moment, jamais poser pour un shooting.
+    - Aucun sourire figé, aucune pose catalogue, aucune esthétique influenceur artificielle.
+
+    PEAU HUMAINE — RÈGLES ABSOLUES :
+    - Pores visibles, micro-relief naturel, petites imperfections, grains de beauté, cernes légères.
+    - Cheveux réalistes avec mèches irrégulières. Vêtements naturellement froissés.
+    - ZERO lissage numérique. ZERO filtre beauté. ZERO peau plastique.
+    - Asymétrie naturelle du visage — aucun visage parfaitement symétrique.
+
+    CADRAGE VLOG :
+    - Cadrage smartphone typique (selfie bras tendu ou téléphone tenu à la main), jamais un trépied ou une mise en scène pro.
+    - Cadrage imparfait autorisé : sujet légèrement décentré, horizon légèrement incliné, objets coupés en bord de cadre.
+    - Gestes interrompus, regard parfois distrait ou amusé, jamais un regard figé caméra.
+
+    LUMIÈRE ET OPTIQUE :
+    - Lumière uniquement plausible (fenêtre, soleil, lampe, rue, néons) — jamais de lumière studio.
+    - Exposition naturelle, autofocus légèrement imparfait, profondeur de champ smartphone.
+    - Grain numérique discret, léger motion blur si scène dynamique, reflets de lentille occasionnels.
+
+    IMPERFECTIONS AUTORISÉES :
+    - Léger bruit numérique, surexposition légère par endroits, ombres un peu bruitées, légère compression JPEG typique d'un partage smartphone.
+    - Photo qui semble prise sur le vif, sans préparation, sans retouche.
+
+    DÉCOR :
+    - Le lieu doit sembler réellement habité : objets personnels, câbles, tasses, vêtements, éléments du quotidien.
+
+    INTERDICTIONS STRICTES :
+    ❌ Rendu cinéma, rendu publicitaire, HDR agressif, color grading cinéma
+    ❌ Peau parfaite, peau plastique, beauté irréaliste, mannequin
+    ❌ Pose catalogue, influenceur artificiel, esthétique Pinterest
+    ❌ Image trop propre ou "look IA"
+
+    RÈGLE D'OR : chaque image doit donner l'impression d'avoir réellement été prise avec un iPhone puis retrouvée dans la galerie de son propriétaire quelques jours plus tard.
+  `;
+}
+
+function buildUserPromptText(subject) {
+  const directive = document.getElementById('directiveInput').value.trim();
+  const directiveBlock = directive ? `\n\nPROMPT DIRECTIF (priorité maximale, à respecter à la lettre) : ${directive}` : '';
+  const personRef = personImages.length > 0 ? ` Visage(s) identique(s) aux images de référence fournies — même identité exacte, aucun changement des traits.` : '';
+  const locationRef = locationImages.length > 0 ? ` Lieu identique à l'image de référence fournie — même décor exact.` : '';
+
+  return `PHOTOGRAPHIE BRUTE STYLE VLOG SMARTPHONE, FORMAT VERTICAL 9:16. Scène : ${subject}. Shot on iPhone récent, lumière naturelle, léger grain, aucune retouche, aucun filtre.${personRef}${locationRef}${directiveBlock}`;
+}
+
+// ─── Appel Vertex AI ──────────────────────────────────────────────────────────
+async function callVertexAPI(subject) {
+  const systemText = buildSystemText();
+  const promptText = buildUserPromptText(subject);
+
+  // Texte en premier, puis images lieu, puis images visages (les refs en fin de contexte = priorité de cohérence)
+  const parts = [{ text: promptText }];
+  locationImages.slice(0, 4).forEach(img => {
+    parts.push({ inlineData: { data: img.split(',')[1], mimeType: 'image/jpeg' } });
+  });
+  personImages.slice(0, 10).forEach(img => {
+    parts.push({ inlineData: { data: img.split(',')[1], mimeType: 'image/jpeg' } });
+  });
+
+  const body = {
+    systemInstruction: { parts: [{ text: systemText }] },
+    contents: [{ role: 'user', parts }],
+    generationConfig: {
+      responseModalities: ['IMAGE'],
+      imageConfig: { aspectRatio: aspectRatio, imageSize: '4K' }
+    }
+  };
+
+  const endpoint = `https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-3-pro-image-preview:generateContent?key=${encodeURIComponent(apiKey)}`;
+
+  const waitTimes = [3000, 8000, 20000];
+  let lastErr;
+
+  for (let attempt = 0; attempt <= waitTimes.length; attempt++) {
+    try {
+      updateLoadingMessage(attempt === 0 ? "Envoi vers Vertex AI..." : `Nouvelle tentative ${attempt + 1}/${waitTimes.length + 1}...`);
+      const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      let data = {};
+      try { data = await res.json(); } catch (_) {}
+
+      if (!res.ok) {
+        const msg = data?.error?.message || `Erreur HTTP ${res.status}`;
+        if (res.status === 401) throw new Error("Clé API invalide. Vérifie ta clé Vertex AI (commence par AQ...).");
+        if (res.status === 403) throw new Error("Accès refusé. Vérifie que ta clé Vertex AI Express Mode est active.");
+        if (res.status === 404) throw new Error(`Erreur 404: modèle introuvable. ${msg}`);
+        if (res.status === 429) throw new Error(`429 RESOURCE_EXHAUSTED: ${msg}`);
+        throw new Error(`Erreur ${res.status}: ${msg}`);
+      }
+
+      const candidate = data?.candidates?.[0];
+      if (!candidate) throw new Error("Aucune réponse du modèle.");
+      if (candidate.finishReason === 'SAFETY') throw new Error("Génération bloquée par les filtres de sécurité. Reformule ta demande.");
+
+      for (const p of (candidate?.content?.parts || [])) {
+        if (p.inlineData?.data) return `data:image/png;base64,${p.inlineData.data}`;
+      }
+      throw new Error("Image non trouvée dans la réponse Vertex.");
+    } catch (err) {
+      lastErr = err;
+      const msg = String(err.message || '').toLowerCase();
+      const retryable = msg.includes('429') || msg.includes('resource_exhausted') || msg.includes('502') || msg.includes('503') || msg.includes('504') || msg.includes('overloaded');
+      if (retryable && attempt < waitTimes.length) {
+        updateLoadingMessage(`Vertex saturé. Attente ${Math.round(waitTimes[attempt] / 1000)}s...`);
+        await sleep(waitTimes[attempt]);
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw lastErr || new Error("La génération Vertex a échoué.");
+}
+
+// ─── Upload image vers kie.ai ─────────────────────────────────────────────────
+async function uploadImageToKie(base64DataUri) {
+  const res = await fetch('https://kieai.redpandaai.co/api/file-base64-upload', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      base64Data: base64DataUri,
+      uploadPath: 'images/studio-vlog'
+    })
+  });
+  let data = {};
+  try { data = await res.json(); } catch(_) {}
+  if (!res.ok || !data.data?.downloadUrl) {
+    throw new Error(`Erreur upload image kie.ai: ${data.msg || res.status}`);
+  }
+  return data.data.downloadUrl;
+}
+
+// ─── Appel kie.ai — Nano Banana 2 ────────────────────────────────────────────
+async function callKieAPI(subject) {
+  const systemText = buildSystemText();
+  const basePrompt = buildUserPromptText(subject);
+
+  let imageUrls = [];
+  if (locationImages.length > 0 || personImages.length > 0) {
+    updateLoadingMessage("Upload des images de référence...");
+    for (const img of locationImages.slice(0, 4)) {
+      try { imageUrls.push(await uploadImageToKie(img)); } catch(e) { console.warn('Upload lieu échoué:', e.message); }
+    }
+    for (const img of personImages.slice(0, 10)) {
+      try { imageUrls.push(await uploadImageToKie(img)); } catch(e) { console.warn('Upload visage échoué:', e.message); }
+    }
+  }
+
+  const prompt = imageUrls.length > 0
+    ? `${systemText}\n${basePrompt}`
+    : `${systemText}\n${basePrompt}`;
+
+  updateLoadingMessage("Envoi vers kie.ai / Nano Banana 2...");
+
+  const taskBody = {
+    model: imageUrls.length > 0 ? 'nano-banana-2-image-to-image' : 'nano-banana-2-text-to-image',
+    input: {
+      prompt,
+      aspect_ratio: aspectRatio,
+      resolution: '4K',
+      output_format: 'png',
+      ...(imageUrls.length > 0 && { image_input: imageUrls })
+    }
+  };
+
+  const createRes = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(taskBody)
+  });
+
+  let createData = {};
+  try { createData = await createRes.json(); } catch(_) {}
+
+  if (!createRes.ok || createData.code !== 200) {
+    const msg = createData?.msg || createData?.message || `Erreur HTTP ${createRes.status}`;
+    if (createRes.status === 401 || createData.code === 401) throw new Error('Clé kie.ai invalide. Vérifiez votre clé sur kie.ai/api-key');
+    if (createRes.status === 403 || createData.code === 403) throw new Error('Accès refusé kie.ai. Vérifiez vos crédits.');
+    if (createRes.status === 429 || createData.code === 429) throw new Error('Trop de requêtes kie.ai. Attendez quelques secondes.');
+    throw new Error(`Erreur kie.ai: ${msg}`);
+  }
+
+  const taskId = createData?.data?.taskId;
+  if (!taskId) throw new Error(`Aucun taskId retourné par kie.ai. Réponse: ${JSON.stringify(createData)}`);
+
+  updateLoadingMessage('Nano Banana 2 génère votre image...');
+  let lastStatusData = {};
+  const POLL_INTERVAL = 3000;
+  const MAX_POLLS = 40;
+
+  for (let i = 0; i < MAX_POLLS; i++) {
+    await sleep(POLL_INTERVAL);
+    const elapsed = Math.round(((i + 1) * POLL_INTERVAL) / 1000);
+    updateLoadingMessage(`Nano Banana 2 en cours... (${elapsed}s)`);
+
+    let statusData = {};
+    try {
+      const statusRes = await fetch(`https://api.kie.ai/api/v1/jobs/recordInfo?taskId=${taskId}`, {
+        headers: { 'Authorization': `Bearer ${apiKey}` }
+      });
+      statusData = await statusRes.json();
+    } catch(e) {
+      lastStatusData = { fetchError: e.message };
+      continue;
+    }
+    lastStatusData = statusData;
+
+    const state = statusData?.data?.state;
+    if (state === 'fail') throw new Error(`Fail: ${statusData?.data?.failMsg}`);
+
+    if (state === 'success') {
+      let imageUrl = null;
+      try {
+        const r = JSON.parse(statusData?.data?.resultJson || '{}');
+        imageUrl = r?.resultUrls?.[0] || r?.images?.[0]?.url || r?.url;
+      } catch(_) {}
+      if (!imageUrl) throw new Error(`Success mais pas d'URL. resultJson: ${statusData?.data?.resultJson}`);
+      updateLoadingMessage("Récupération de l'image...");
+      const imgRes = await fetch(imageUrl);
+      const blob = await imgRes.blob();
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    }
+  }
+  throw new Error(`Timeout kie.ai (2 min). Dernière réponse: ${JSON.stringify(lastStatusData).slice(0, 500)}`);
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ─── UI loading / erreur ──────────────────────────────────────────────────────
+function setLoading(v) {
+  loading = v;
+  const btn = document.getElementById('genBtn');
+  const icon = document.getElementById('genIcon');
+  const label = document.getElementById('genLabel');
+  const msg = document.getElementById('genMsg');
+  const msgs = selectedEngine === 'kie' ? LOADING_MSGS_KIE : LOADING_MSGS_VERTEX;
+
+  btn.disabled = v;
+  if (v) {
+    icon.innerHTML = '<path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>';
+    btn.classList.add('loading');
+    label.textContent = 'CALCUL EN COURS...';
+    msg.style.display = 'block';
+    clearInterval(loadingInterval);
+    loadingMsgIdx = 0;
+    msg.textContent = msgs[0];
+    loadingInterval = setInterval(() => {
+      if (!loading) return;
+      loadingMsgIdx = (loadingMsgIdx + 1) % msgs.length;
+      msg.textContent = msgs[loadingMsgIdx];
+    }, 3000);
+  } else {
+    btn.classList.remove('loading');
+    icon.innerHTML = '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>';
+    label.textContent = 'DÉCLENCHER CAPTURE BRUTE';
+    msg.style.display = 'none';
+    clearInterval(loadingInterval);
+  }
+}
+
+function updateLoadingMessage(customMsg) {
+  const msg = document.getElementById('genMsg');
+  if (msg) { msg.style.display = 'block'; msg.textContent = customMsg; }
+}
+
+function showError(msg) {
+  document.getElementById('errorText').textContent = msg;
+  document.getElementById('errorBox').classList.add('show');
+}
+function hideError() {
+  document.getElementById('errorBox').classList.remove('show');
+}
+
+// ─── Rendu des résultats ──────────────────────────────────────────────────────
+function renderResults() {
+  const container = document.getElementById('resultsContainer');
+  const empty = document.getElementById('emptyState');
+  const actions = document.getElementById('resultsActions');
+  const dlAll = document.getElementById('dlAllBtn');
+  const count = document.getElementById('captureCount');
+
+  count.textContent = results.length + ' CAPTURE' + (results.length !== 1 ? 'S' : '');
+
+  if (results.length === 0) {
+    empty.style.display = 'flex';
+    actions.style.display = 'none';
+    container.innerHTML = '';
+    return;
+  }
+
+  empty.style.display = 'none';
+  actions.style.display = 'flex';
+  dlAll.style.display = results.length > 1 ? 'flex' : 'none';
+
+  container.innerHTML = '';
+  results.forEach((r, idx) => {
+    const engineLabel = r.engine === 'kie' ? 'NANO BANANA 2 · KIE.AI' : 'GEMINI 3.1 FLASH IMAGE';
+    const badgeClass = r.engine === 'kie' ? 'img-badge img-badge-moss' : 'img-badge img-badge-accent';
+    const d = new Date(r.timestamp);
+    const dd = String(d.getDate()).padStart(2,'0');
+    const mm = String(d.getMonth()+1).padStart(2,'0');
+    const yy = String(d.getFullYear()).slice(-2);
+    const frameNo = String(results.length - idx).padStart(3,'0');
+
+    const card = document.createElement('div');
+    card.className = 'img-card';
+    card.innerHTML = `
+      <div class="img-thumb" onclick="downloadImage('${r.dataUrl}', '${r.id}')">
+        <div class="ar-9-16"><img src="${r.dataUrl}" alt="capture" loading="lazy"></div>
+        <div class="img-overlay"><div class="dl-circle"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div></div>
+        <div class="img-badges">
+          <span class="img-badge img-badge-paper">9:16</span>
+          <span class="${badgeClass}">${engineLabel}</span>
+        </div>
+        <div class="img-datestamp">${dd} ${mm} ${yy} · N°${frameNo}</div>
+      </div>
+      <div class="img-info">
+        <div class="img-meta">
+          <div class="img-meta-txt">
+            <span>CAPTURED_AT: ${new Date(r.timestamp).toLocaleTimeString()}</span>
+            <span>UUID: TR_${r.id.slice(-8)}</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+            <button class="btn-dl" onclick="downloadImage('${r.dataUrl}', '${r.id}')">TÉLÉCHARGER L'IMAGE</button>
+            <p class="mobile-hint">APPUI LONG POUR ENREGISTRER SUR MOBILE</p>
+          </div>
+        </div>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function downloadImage(dataUrl, id) {
+  if (isMobile && /iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+    try {
+      const byteStr = atob(dataUrl.split(',')[1]);
+      const mime = dataUrl.split(',')[0].split(':')[1].split(';')[0];
+      const ab = new ArrayBuffer(byteStr.length);
+      const ia = new Uint8Array(ab);
+      for (let i = 0; i < byteStr.length; i++) ia[i] = byteStr.charCodeAt(i);
+      const blob = new Blob([ab], { type: mime });
+      const blobUrl = URL.createObjectURL(blob);
+      const w = window.open(blobUrl, '_blank');
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+      if (!w) alert("Appuie longuement sur l'image dans le nouvel onglet, puis choisis « Enregistrer l'image ».");
+    } catch(e) {
+      alert("Appuie longuement sur l'image pour l'enregistrer.");
+    }
+    return;
+  }
+  const a = document.createElement('a');
+  a.href = dataUrl;
+  a.download = `studio-vlog-capture-${id}.png`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+function downloadAll() {
+  results.forEach((r, i) => setTimeout(() => downloadImage(r.dataUrl, `action_${i + 1}`), i * 300));
+}
+
+async function resetAll() {
+  if (!confirm("Voulez-vous vraiment supprimer toutes les captures, les références et réinitialiser les réglages ?")) return;
+  results = [];
+  personImages = [];
+  locationImages = [];
+  try {
+    Object.values(STORAGE_KEYS).forEach(k => localStorage.removeItem(k));
+    await idbClear('images');
+    await idbClear('persons');
+    await idbClear('locations');
+  } catch(e) {}
+  document.getElementById('subjectInput').value = '';
+  document.getElementById('directiveInput').value = '';
+  renderUploadGrids();
+  renderResults();
+}
+
+// Init
+renderUploadGrids();
+renderResults();
+</script>
+</body>
+</html>
