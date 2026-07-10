@@ -119,8 +119,8 @@
   }
 
   .method-selector {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 8px;
     margin-bottom: 20px;
   }
@@ -128,18 +128,33 @@
   .method-chip {
     background: var(--surface2);
     border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 7px 14px;
-    font-size: 12.5px;
-    font-weight: 500;
-    color: var(--text-muted);
+    border-radius: 12px;
+    padding: 10px 12px;
     cursor: pointer;
     transition: all 0.2s;
     user-select: none;
   }
 
-  .method-chip:hover { border-color: var(--magenta); color: var(--text); }
-  .method-chip.selected { background: var(--magenta); border-color: var(--magenta); color: white; }
+  .method-chip-name {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 3px;
+  }
+
+  .method-chip-desc {
+    font-size: 10.5px;
+    color: var(--text-dim);
+    line-height: 1.35;
+  }
+
+  .method-chip:hover { border-color: var(--magenta); }
+  .method-chip:hover .method-chip-name { color: var(--text); }
+
+  .method-chip.selected { background: var(--magenta); border-color: var(--magenta); }
+  .method-chip.selected .method-chip-name { color: white; }
+  .method-chip.selected .method-chip-desc { color: rgba(255,255,255,0.75); }
+
   .method-chip.all.selected {
     background: linear-gradient(135deg, var(--magenta), var(--pink));
     border-color: transparent;
@@ -318,7 +333,10 @@
 
     <div class="method-label">Méthode à appliquer</div>
     <div class="method-selector" id="methodSelector">
-      <div class="method-chip all selected" data-value="all" onclick="toggleMethod(this)">⚡ Toutes</div>
+      <div class="method-chip all selected" data-value="all" onclick="toggleMethod(this)">
+        <div class="method-chip-name">⚡ Toutes</div>
+        <div class="method-chip-desc">Applique l'esprit des 9 méthodes</div>
+      </div>
     </div>
 
     <button class="generate-btn" id="generateBtn" onclick="generate()">Transformer</button>
@@ -361,6 +379,7 @@ const METHODS = [
   {
     id: 'bang',
     name: 'Start With a Bang',
+    desc: "Commencer DANS l'action, pas en intro",
     block: `MÉTHODE — START WITH A BANG
 Règle: Toujours commencer DANS l'action, jamais par une intro ("aujourd'hui j'aimerais te parler de...").
 Exemple: "Aujourd'hui j'aimerais te parler de copywriting" -> "Ce post à lui seul m'a rapporté 3 clients."
@@ -369,6 +388,7 @@ Exemple: "Pourquoi il faut réduire le sucre ?" -> "Mon médecin m'a dit : 'Si t
   {
     id: 'carte_bleue',
     name: 'La Carte Bleue',
+    desc: 'Vise l\'émotion, pas la raison',
     block: `MÉTHODE — LA CARTE BLEUE
 Règle: Les gens achètent avec leurs émotions, pas leur raison. Vise une scène vécue, pas un argument logique.
 Exemple: "Je t'accompagne dans l'achat de ton premier investissement locatif" -> "Le premier loyer tombe. Et tu réalises que quelqu'un rembourse ton crédit à ta place."
@@ -377,6 +397,7 @@ Exemple: "Tu apprendras à mieux équilibrer tes repas" -> "Tu ouvres ton frigo�
   {
     id: 'sms',
     name: 'Le SMS à une Amie',
+    desc: 'Écris comme tu parles, jamais corporate',
     block: `MÉTHODE — LE SMS À UNE AMIE
 Règle: Écris comme tu parles. Zéro vocabulaire corporate, zéro formule administrative.
 Exemple: "Il est nécessaire de ne plus manger trop de chips au risque de prendre du gras" -> "Tu sais ton paquet de chips qui traîne dans ton placard à gâteau (oui oui je le vois) 👀 C'est lui qui…."
@@ -385,6 +406,7 @@ Exemple: "Je vous accompagne dans le développement stratégique de votre activi
   {
     id: 'transformation',
     name: 'Vends la Transformation',
+    desc: 'Vends le résultat vécu, pas le processus',
     block: `MÉTHODE — VENDS LA TRANSFORMATION, PAS LE PROCESSUS
 Règle: On ne vend pas les caractéristiques du produit, on vend le résultat vécu après.
 Exemple: "Un programme de sport complet avec 10 vidéos pour faire les séances chez soi" -> "Tu veux arrêter d'être essoufflée quand tu montes les marches de ton immeuble ? Alors oui, ce programme peut t'aider."
@@ -393,6 +415,7 @@ Exemple: "Une Masterclass d'1h avec toutes mes techniques de maquillage pour les
   {
     id: 'rythme',
     name: 'Le Rythme',
+    desc: 'Phrases courtes, ça respire',
     block: `MÉTHODE — LE RYTHME
 Règle: Fais respirer ton texte. Phrases courtes. Retours à la ligne fréquents. Jamais de pavé.
 Exemple sans copy (pavé): "Le Pilates est une méthode douce mais redoutablement efficace pour renforcer le corps en profondeur. Il améliore la posture, affine la silhouette et développe des muscles longs et harmonieux sans créer de volume excessif."
@@ -401,6 +424,7 @@ Exemple avec copy (aéré): "Le Pilates est une méthode douce\\n\\nMais redouta
   {
     id: 'analogies',
     name: 'Les Analogies',
+    desc: 'Compare avec une image concrète',
     block: `MÉTHODE — LES ANALOGIES
 Règle: Traduis une idée abstraite en comparaison concrète et imagée.
 Exemple: "Sans stratégie tu t'épuises parce que tu postes dans le vide" -> "Sans stratégie, ton contenu c'est comme jeter des bouteilles à la mer en espérant qu'un jour peut-être l'une d'elle tombe dans les mains de quelqu'un"
@@ -409,6 +433,7 @@ Exemple: "S'entraîner 1x/semaine est stupide pour vouloir atteindre des résult
   {
     id: 'roi',
     name: 'Le ROI',
+    desc: 'Chiffre le bénéfice concrètement',
     block: `MÉTHODE — LE ROI
 Règle: Accroche sur le retour sur investissement. Chiffre le bénéfice quand c'est possible.
 Exemple: "Tu vas améliorer ta stratégie de contenu." -> "Un seul post optimisé peut te rapporter l'équivalent d'une semaine de salaire"
@@ -417,6 +442,7 @@ Exemple: "Je crée des images qui mettent en valeur ton activité" -> "Une photo
   {
     id: 'infini',
     name: "Vers l'Infini",
+    desc: 'Chaque phrase donne envie de la suivante',
     block: `MÉTHODE — VERS L'INFINI...
 Règle: Chaque phrase doit donner envie de lire la suivante. Crée un fil, pas un bloc.
 Exemple: "J'ai changé ma stratégie de contenu et ça a mieux fonctionné" -> "J'ai changé un seul truc dans ma stratégie. Et mes ventes ont doublé. Le plus fou ? Ce n'était même pas mon offre"
@@ -425,6 +451,7 @@ Exemple: "J'ai commencé à faire du sport régulièrement et j'ai vu des résul
   {
     id: 'cta',
     name: 'Le CTA Unique',
+    desc: 'Un seul appel à l\'action, jamais trois',
     block: `MÉTHODE — LE CTA UNIQUE
 Règle: Un seul call-to-action par texte, jamais trois options qui diluent la décision.
 Exemple: "Regarde la vidéo, télécharge le guide ou réserve un appel" -> "Envoie-moi GO en DM et je commence le diagnostic avec toi"
@@ -440,7 +467,7 @@ METHODS.forEach(m => {
   const chip = document.createElement('div');
   chip.className = 'method-chip';
   chip.dataset.value = m.id;
-  chip.textContent = m.name;
+  chip.innerHTML = `<div class="method-chip-name">${m.name}</div><div class="method-chip-desc">${m.desc}</div>`;
   chip.onclick = () => toggleMethod(chip);
   methodSelectorEl.appendChild(chip);
 });
@@ -519,7 +546,7 @@ ${missionLine} Garde le fond du message intact, change uniquement la forme. Le t
 TEXTE BRUT:
 "${subject}"
 
-Réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks:
+Réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks. À l'intérieur de la valeur "apres", tous les retours à la ligne doivent être écrits comme la séquence \\n (backslash n), jamais comme un vrai saut de ligne, pour que le JSON reste valide sur une seule ligne:
 {
   "apres": "le texte réécrit avec copy"
 }`;
@@ -533,7 +560,7 @@ Réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks:
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         generationConfig: {
           temperature: 0.9,
-          maxOutputTokens: 1024,
+          maxOutputTokens: 2048,
           responseMimeType: 'application/json'
         }
       })
@@ -549,7 +576,7 @@ Réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks:
     if (!raw) throw new Error('Réponse vide');
 
     const clean = raw.replace(/```json|```/g, '').trim();
-    const parsed = JSON.parse(clean);
+    const parsed = parseModelJson(clean);
     renderResult(parsed.apres);
 
   } catch (err) {
@@ -558,6 +585,34 @@ Réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks:
   } finally {
     document.getElementById('loading').classList.remove('active');
     document.getElementById('generateBtn').disabled = false;
+  }
+}
+
+function parseModelJson(clean) {
+  try {
+    return JSON.parse(clean);
+  } catch (e) {
+    // Filet de sécurité: le modèle a parfois renvoyé des retours à la ligne bruts
+    // à l'intérieur de la valeur "apres", ce qui casse le JSON. On répare en
+    // extrayant le contenu entre les guillemets de "apres" et en échappant
+    // manuellement les sauts de ligne et guillemets internes.
+    const match = clean.match(/"apres"\s*:\s*"([\s\S]*)"\s*}\s*$/);
+    if (match) {
+      const fixedValue = match[1]
+        .replace(/\\/g, '\\\\')
+        .replace(/\n/g, '\\n')
+        .replace(/\r/g, '')
+        .replace(/(?<!\\)"/g, '\\"')
+        .replace(/\\\\n/g, '\\n')
+        .replace(/\\\\"/g, '\\"');
+      try {
+        return JSON.parse(`{"apres":"${fixedValue}"}`);
+      } catch (e2) {
+        // Dernier recours: on prend le texte brut tel quel entre les guillemets
+        return { apres: match[1].replace(/\\"/g, '"') };
+      }
+    }
+    throw e;
   }
 }
 
