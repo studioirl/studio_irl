@@ -233,7 +233,16 @@
   .empty-text p:first-child { font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:.3em; color:#4a4234; }
   .empty-text p:last-child { font-size:12px; color:var(--paper-dim); font-weight:500; font-style:italic; margin-top:8px; }
 
-  .img-card { background:var(--panel); overflow:hidden; border:1px solid var(--line); margin-bottom:36px; max-width:400px; margin-left:auto; margin-right:auto; }
+  .img-card { background:var(--panel); overflow:hidden; border:1px solid var(--line); flex:0 0 240px; }
+  .series-block { margin-bottom:44px; }
+  .series-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:14px; flex-wrap:wrap; }
+  .series-title { font-family:'Space Mono',monospace; font-size:11px; font-weight:700; letter-spacing:.1em; color:var(--accent); text-transform:uppercase; }
+  .series-subject { font-size:12px; color:var(--paper-dim); margin-top:4px; max-width:520px; line-height:1.4; }
+  .series-badges { display:flex; gap:6px; flex-shrink:0; }
+  .series-strip { display:flex; gap:14px; overflow-x:auto; padding-bottom:10px; scroll-snap-type:x proximity; }
+  .series-strip .img-card { scroll-snap-align:start; }
+  .plan-role { font-family:'Space Mono',monospace; font-size:10px; font-weight:700; color:var(--paper); text-transform:uppercase; letter-spacing:.06em; }
+  .plan-move { font-size:11px; color:var(--paper-dim); margin-top:8px; line-height:1.4; }
   .img-thumb { position:relative; cursor:pointer; overflow:hidden; }
   .img-thumb img { width:100%; height:100%; object-fit:cover; display:block; filter:saturate(.94) contrast(1.03); }
   .img-thumb .ar-9-16 { aspect-ratio:9/16; }
@@ -355,18 +364,25 @@
       <div class="card">
         <p class="card-title">
           <svg viewBox="0 0 24 24" style="stroke:var(--accent)"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-          03 — SCÈNE
+          03 — PROMPT
         </p>
-        <textarea id="subjectInput" placeholder="Décris la scène de vlog : où, quoi, quelle ambiance, quel moment de la journée..."></textarea>
+        <p class="card-sub">Décris la scène et donne tes directives dans le même champ — tout est injecté tel quel, priorité maximale</p>
+        <textarea id="subjectInput" class="directive" placeholder="Ex : au réveil, dans la chambre, lumière du matin par la fenêtre, caméra tenue à bout de bras, léger flou de mouvement, regard vers l'objectif, pas de sourire forcé, air fatigué et naturel..."></textarea>
       </div>
 
       <div class="card">
         <p class="card-title">
-          <svg viewBox="0 0 24 24" style="stroke:var(--accent)"><path d="M4 17h16M4 12h16M4 7h16"/></svg>
-          04 — PROMPT DIRECTIF
+          <svg viewBox="0 0 24 24" style="stroke:var(--accent)"><rect x="1" y="7" width="6" height="10"/><rect x="9" y="4" width="6" height="16"/><rect x="17" y="7" width="6" height="10"/></svg>
+          04 — SÉQUENCE
         </p>
-        <p class="card-sub">Instructions brutes, injectées telles quelles, priorité maximale</p>
-        <textarea id="directiveInput" class="directive" placeholder="Ex : lumière du matin, caméra tenue à bout de bras, léger flou de mouvement, regard vers l'objectif, pas de sourire forcé..."></textarea>
+        <p class="card-sub">Nombre de plans chronologiques générés à partir du même prompt</p>
+        <div class="chips" id="planChips">
+          <button class="chip" data-n="1" onclick="setPlanCount(1)">1</button>
+          <button class="chip" data-n="3" onclick="setPlanCount(3)">3</button>
+          <button class="chip active" data-n="6" onclick="setPlanCount(6)">6</button>
+          <button class="chip" data-n="8" onclick="setPlanCount(8)">8</button>
+          <button class="chip" data-n="10" onclick="setPlanCount(10)">10</button>
+        </div>
       </div>
 
       <div class="card">
@@ -389,7 +405,7 @@
       <button class="gen-btn" id="genBtn" onclick="generate()">
         <div class="btn-row">
           <svg id="genIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-          <span id="genLabel">DÉCLENCHER CAPTURE BRUTE</span>
+          <span id="genLabel">LANCER LA SÉQUENCE (6 PLANS)</span>
         </div>
         <span class="gen-loading-msg" id="genMsg" style="display:none;"></span>
       </button>
@@ -448,12 +464,44 @@ let personImages = [];
 let locationImages = [];
 let results = [];
 let loading = false;
+let planCount = 6;
 const aspectRatio = '9:16';
 
 const STORAGE_KEYS = {
-  results: 'studio-vlog-v1-results',
+  results: 'studio-vlog-v2-results',
   prompts: 'studio-vlog-v1-prompts'
 };
+
+// 10 plans de référence, dans l'ordre chronologique — on en prélève N répartis
+// uniformément (le premier reste toujours l'ouverture, le dernier la conclusion).
+const BEATS = [
+  { role: "Plan d'ouverture", shot: "plan large, cadrage qui présente le lieu ou le tout début de l'action", angle: "ultra grand-angle 0,5× ou 24mm, téléphone tenu à bout de bras ou posé", gaze: "regard vers l'environnement, pas vers l'objectif", move: "légère avancée du téléphone vers la scène" },
+  { role: "Plan de préparation", shot: "plan taille, geste de préparation avant l'action principale", angle: "24mm, cadrage légèrement décentré", gaze: "regard concentré sur le geste", move: "petit mouvement du poignet, main qui attrape un objet" },
+  { role: "Plan de transition", shot: "plan en pied ou plan large, déplacement ou arrivée dans la scène", angle: "24mm ou ultra grand-angle, téléphone tenu à bout de bras", gaze: "regard vers l'avant, en mouvement", move: "marche naturelle, légère rotation vers le décor" },
+  { role: "Plan principal", shot: "plan poitrine ou plan taille, activité centrale de la scène", angle: "24mm, caméra frontale ou tenue par une tierce personne", gaze: "regard vers l'activité ou vers l'objectif de façon spontanée", move: "geste principal de l'action en cours" },
+  { role: "Plan d'interaction", shot: "plan taille, interaction avec l'environnement ou une autre personne", angle: "24mm, angle légèrement de biais", gaze: "regard vers l'interlocuteur ou l'objet", move: "léger mouvement du visage, respiration naturelle" },
+  { role: "Plan rapproché", shot: "gros plan du visage, expression naturelle pendant l'action", angle: "caméra frontale ou téléobjectif 2×", gaze: "regard direct ou légèrement distrait vers la caméra", move: "cheveux légèrement déplacés, micro-mouvement du visage" },
+  { role: "Plan détail", shot: "plan détail sur les mains, un objet, un accessoire ou un élément important de la scène", angle: "téléobjectif 2×, mise au point rapprochée", gaze: "sans visage nécessairement visible", move: "main qui tient ou repose l'objet" },
+  { role: "Plan de réaction", shot: "plan poitrine, réaction naturelle à ce qui vient de se passer", angle: "24mm, cadrage légèrement imparfait", gaze: "expression spontanée, sourire naturel ou air pensif", move: "léger mouvement de tête, regard qui passe de la caméra à l'environnement" },
+  { role: "Plan d'ambiance", shot: "plan large ou plan d'environnement, respiration dans la séquence", angle: "ultra grand-angle 0,5×", gaze: "personnage visible à distance ou de dos", move: "sujet qui s'assoit ou pose le téléphone sur une surface" },
+  { role: "Plan final", shot: "plan taille ou plan large, conclusion naturelle du moment", angle: "24mm, cadrage spontané", gaze: "regard vers l'objectif ou vers l'environnement, sans pose figée", move: "respiration et micro-mouvements de fin de scène" }
+];
+
+function pickBeats(n) {
+  if (n >= 10) return BEATS;
+  if (n === 1) return [BEATS[3]];
+  const idxs = [];
+  for (let i = 0; i < n; i++) idxs.push(Math.round(i * (BEATS.length - 1) / (n - 1)));
+  const uniq = [...new Set(idxs)];
+  return uniq.map(i => BEATS[i]);
+}
+
+function setPlanCount(n) {
+  planCount = n;
+  document.querySelectorAll('#planChips .chip').forEach(c => c.classList.toggle('active', parseInt(c.dataset.n, 10) === n));
+  const label = document.getElementById('genLabel');
+  if (label && !loading) label.textContent = n === 1 ? 'DÉCLENCHER CAPTURE BRUTE' : `LANCER LA SÉQUENCE (${n} PLANS)`;
+}
 
 const LOADING_MSGS_VERTEX = [
   "Initialisation de la capture brute...",
@@ -622,8 +670,7 @@ async function idbClear(store) {
 function saveSettings() {
   try {
     localStorage.setItem(STORAGE_KEYS.prompts, JSON.stringify({
-      subject: document.getElementById('subjectInput').value || '',
-      directive: document.getElementById('directiveInput').value || ''
+      subject: document.getElementById('subjectInput').value || ''
     }));
   } catch(e) { console.warn('Erreur sauvegarde settings:', e); }
 }
@@ -637,7 +684,10 @@ async function saveState() {
     for (let i = 0; i < locationImages.length; i++) await idbSet('locations', `location_${i}`, locationImages[i]);
   } catch(e) { console.warn('Erreur sauvegarde refs IDB:', e); }
   try {
-    const meta = results.map(r => ({ id: r.id, engine: r.engine, timestamp: r.timestamp }));
+    const meta = results.map(r => ({
+      id: r.id, engine: r.engine, timestamp: r.timestamp, subject: r.subject, partial: !!r.partial,
+      images: r.images.map(im => ({ imgId: im.imgId, role: im.role, move: im.move }))
+    }));
     localStorage.setItem(STORAGE_KEYS.results, JSON.stringify(meta));
   } catch(e) { console.warn('Erreur sauvegarde meta résultats:', e); }
 }
@@ -646,7 +696,6 @@ async function loadState() {
   try {
     const p = JSON.parse(localStorage.getItem(STORAGE_KEYS.prompts) || '{}');
     document.getElementById('subjectInput').value = p.subject || '';
-    document.getElementById('directiveInput').value = p.directive || '';
   } catch(e) { console.warn('Erreur chargement settings:', e); }
 
   try {
@@ -659,8 +708,12 @@ async function loadState() {
     const meta = JSON.parse(localStorage.getItem(STORAGE_KEYS.results) || '[]');
     const loaded = [];
     for (const m of meta) {
-      const dataUrl = await idbGet('images', `result_${m.id}`);
-      if (dataUrl) loaded.push({ ...m, dataUrl });
+      const images = [];
+      for (const im of m.images) {
+        const dataUrl = await idbGet('images', `result_${im.imgId}`);
+        if (dataUrl) images.push({ ...im, dataUrl });
+      }
+      if (images.length > 0) loaded.push({ ...m, images });
     }
     results = loaded;
   } catch(e) { console.warn('Erreur chargement résultats IDB:', e); results = []; }
@@ -740,43 +793,66 @@ function resizeImage(b64) {
 async function generate() {
   if (loading) return;
   const subject = document.getElementById('subjectInput').value.trim();
-  if (!subject) { showError("Décris la scène avant de lancer la capture."); return; }
+  if (!subject) { showError("Décris la scène avant de lancer la séquence."); return; }
   if (!apiKey) { showError("Ajoute d'abord ta clé API."); return; }
 
   hideError();
   setLoading(true);
   saveSettings();
 
+  const beats = pickBeats(planCount);
+  const total = beats.length;
+  const seriesId = Date.now().toString();
+  const seriesImages = [];
+
   try {
-    const imgDataUrl = selectedEngine === 'kie'
-      ? await callKieAPI(subject)
-      : await callVertexAPI(subject);
+    let kieRefUrls = null;
+    if (selectedEngine === 'kie') kieRefUrls = await uploadAllRefsToKie();
 
-    const id = Date.now().toString();
-    await idbSet('images', `result_${id}`, imgDataUrl);
+    for (let i = 0; i < total; i++) {
+      const beat = beats[i];
+      const planLabel = `Plan ${i + 1}/${total} — ${beat.role}`;
+      updateLoadingMessage(`${planLabel}...`);
 
-    const r = { id, dataUrl: imgDataUrl, engine: selectedEngine, timestamp: Date.now() };
-    results.unshift(r);
-    if (results.length > 5) {
+      const promptText = buildUserPromptText(subject, beat, i, total);
+      const imgDataUrl = selectedEngine === 'kie'
+        ? await callKieAPI(promptText, total, planLabel, kieRefUrls)
+        : await callVertexAPI(promptText, total, planLabel);
+
+      const imgId = `${seriesId}_${i}`;
+      await idbSet('images', `result_${imgId}`, imgDataUrl);
+      seriesImages.push({ imgId, dataUrl: imgDataUrl, role: beat.role, move: beat.move });
+    }
+
+    const series = { id: seriesId, engine: selectedEngine, timestamp: Date.now(), subject, images: seriesImages };
+    results.unshift(series);
+    if (results.length > 4) {
       const removed = results.pop();
-      try { await idbDelete('images', `result_${removed.id}`); } catch(_) {}
+      for (const im of removed.images) { try { await idbDelete('images', `result_${im.imgId}`); } catch(_) {} }
     }
     renderResults();
     await saveState();
   } catch(err) {
+    // Conserver les plans déjà générés même en cas d'échec en cours de séquence
+    if (seriesImages.length > 0) {
+      const series = { id: seriesId, engine: selectedEngine, timestamp: Date.now(), subject, images: seriesImages, partial: true };
+      results.unshift(series);
+      renderResults();
+      await saveState();
+    }
     showError(err.message || "Erreur de génération.");
   } finally {
     setLoading(false);
   }
 }
 
-function buildSystemText() {
+function buildSystemText(total) {
   const personBlock = personImages.length > 0 ? `
     PRÉSERVATION D'IDENTITÉ — RÈGLE ABSOLUE PRIORITAIRE :
     - Les images de référence "VISAGE" montrent la ou les personnes EXACTES à reproduire.
     - Reproduire exactement : morphologie faciale, traits, carnation, structure osseuse, coiffure, corpulence.
     - INTERDICTION de modifier, embellir, rajeunir ou altérer les traits de ces personnes.
-    - Si plusieurs visages sont fournis, chacun doit correspondre exactement à sa propre référence, sans les mélanger.
+    - Si plusieurs visages sont fournis, chacun doit correspondre exactement à sa propre référence, sans les mélanger, sans fusionner leurs traits, sans échanger leurs vêtements.
     - Priorité absolue sur tout autre paramètre esthétique.
   ` : '';
 
@@ -787,11 +863,19 @@ function buildSystemText() {
     - Ne pas inventer un lieu différent : la scène doit se dérouler dans CET environnement précis.
   ` : '';
 
+  const continuityBlock = total > 1 ? `
+    CONTINUITÉ DE SÉQUENCE — CETTE IMAGE FAIT PARTIE D'UNE SÉRIE DE ${total} PHOTOS DU MÊME MOMENT :
+    - Même personne(s), même tenue, même coiffure, même maquillage, mêmes accessoires que dans toutes les autres images de la série.
+    - Même lieu, même météo, même moment de la journée, même lumière que dans le reste de la série.
+    - Ce plan doit représenter un instant différent des autres plans de la série (angle, distance, action), jamais une répétition de la même pose.
+  ` : '';
+
   return `
     TU ES STUDIO VLOG. TU GÉNÈRES UNE PHOTOGRAPHIE ULTRA-RÉALISTE DE TYPE VLOG SMARTPHONE, IMPOSSIBLE À DISTINGUER D'UNE VRAIE CAPTURE PRISE SUR IPHONE RÉCENT.
 
     ${personBlock}
     ${locationBlock}
+    ${continuityBlock}
 
     PHILOSOPHIE — RÉALISME AVANT ESTHÉTIQUE :
     - Le réalisme est toujours prioritaire sur la beauté de l'image.
@@ -832,19 +916,23 @@ function buildSystemText() {
   `;
 }
 
-function buildUserPromptText(subject) {
-  const directive = document.getElementById('directiveInput').value.trim();
-  const directiveBlock = directive ? `\n\nPROMPT DIRECTIF (priorité maximale, à respecter à la lettre) : ${directive}` : '';
+function buildUserPromptText(subject, beat, index, total) {
   const personRef = personImages.length > 0 ? ` Visage(s) identique(s) aux images de référence fournies — même identité exacte, aucun changement des traits.` : '';
   const locationRef = locationImages.length > 0 ? ` Lieu identique à l'image de référence fournie — même décor exact.` : '';
+  const beatBlock = beat ? `
 
-  return `PHOTOGRAPHIE BRUTE STYLE VLOG SMARTPHONE, FORMAT VERTICAL 9:16. Scène : ${subject}. Shot on iPhone récent, lumière naturelle, léger grain, aucune retouche, aucun filtre.${personRef}${locationRef}${directiveBlock}`;
+    PLAN ${index + 1}/${total} — ${beat.role.toUpperCase()} (prompt autonome et complet, ne fait référence à aucune autre image) :
+    - Cadrage : ${beat.shot}
+    - Objectif / angle : ${beat.angle}
+    - Regard : ${beat.gaze}
+    - Ce plan doit rester cohérent avec le reste de la séquence : même personne(s), même tenue, même lieu, même lumière, mais un instant et un cadrage différents des autres plans.` : '';
+
+  return `PHOTOGRAPHIE BRUTE STYLE VLOG SMARTPHONE, FORMAT VERTICAL 9:16. Shot on iPhone récent, lumière naturelle, léger grain, aucune retouche, aucun filtre.${personRef}${locationRef}${beatBlock}\n\nSCÈNE ET DIRECTIVES GÉNÉRALES (priorité maximale, à respecter à la lettre) : ${subject}`;
 }
 
 // ─── Appel Vertex AI ──────────────────────────────────────────────────────────
-async function callVertexAPI(subject) {
-  const systemText = buildSystemText();
-  const promptText = buildUserPromptText(subject);
+async function callVertexAPI(promptText, total, planLabel) {
+  const systemText = buildSystemText(total);
 
   // Texte en premier, puis images lieu, puis images visages (les refs en fin de contexte = priorité de cohérence)
   const parts = [{ text: promptText }];
@@ -871,7 +959,7 @@ async function callVertexAPI(subject) {
 
   for (let attempt = 0; attempt <= waitTimes.length; attempt++) {
     try {
-      updateLoadingMessage(attempt === 0 ? "Envoi vers Vertex AI..." : `Nouvelle tentative ${attempt + 1}/${waitTimes.length + 1}...`);
+      updateLoadingMessage(attempt === 0 ? `${planLabel} — envoi vers Vertex AI...` : `${planLabel} — nouvelle tentative ${attempt + 1}/${waitTimes.length + 1}...`);
       const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       let data = {};
       try { data = await res.json(); } catch (_) {}
@@ -898,7 +986,7 @@ async function callVertexAPI(subject) {
       const msg = String(err.message || '').toLowerCase();
       const retryable = msg.includes('429') || msg.includes('resource_exhausted') || msg.includes('502') || msg.includes('503') || msg.includes('504') || msg.includes('overloaded');
       if (retryable && attempt < waitTimes.length) {
-        updateLoadingMessage(`Vertex saturé. Attente ${Math.round(waitTimes[attempt] / 1000)}s...`);
+        updateLoadingMessage(`${planLabel} — Vertex saturé. Attente ${Math.round(waitTimes[attempt] / 1000)}s...`);
         await sleep(waitTimes[attempt]);
         continue;
       }
@@ -906,6 +994,21 @@ async function callVertexAPI(subject) {
     }
   }
   throw lastErr || new Error("La génération Vertex a échoué.");
+}
+
+// ─── Upload des références vers kie.ai (une seule fois par séquence) ─────────
+async function uploadAllRefsToKie() {
+  let imageUrls = [];
+  if (locationImages.length > 0 || personImages.length > 0) {
+    updateLoadingMessage("Upload des images de référence...");
+    for (const img of locationImages.slice(0, 4)) {
+      try { imageUrls.push(await uploadImageToKie(img)); } catch(e) { console.warn('Upload lieu échoué:', e.message); }
+    }
+    for (const img of personImages.slice(0, 10)) {
+      try { imageUrls.push(await uploadImageToKie(img)); } catch(e) { console.warn('Upload visage échoué:', e.message); }
+    }
+  }
+  return imageUrls;
 }
 
 // ─── Upload image vers kie.ai ─────────────────────────────────────────────────
@@ -930,26 +1033,11 @@ async function uploadImageToKie(base64DataUri) {
 }
 
 // ─── Appel kie.ai — Nano Banana 2 ────────────────────────────────────────────
-async function callKieAPI(subject) {
-  const systemText = buildSystemText();
-  const basePrompt = buildUserPromptText(subject);
+async function callKieAPI(promptText, total, planLabel, imageUrls) {
+  const systemText = buildSystemText(total);
+  const prompt = `${systemText}\n${promptText}`;
 
-  let imageUrls = [];
-  if (locationImages.length > 0 || personImages.length > 0) {
-    updateLoadingMessage("Upload des images de référence...");
-    for (const img of locationImages.slice(0, 4)) {
-      try { imageUrls.push(await uploadImageToKie(img)); } catch(e) { console.warn('Upload lieu échoué:', e.message); }
-    }
-    for (const img of personImages.slice(0, 10)) {
-      try { imageUrls.push(await uploadImageToKie(img)); } catch(e) { console.warn('Upload visage échoué:', e.message); }
-    }
-  }
-
-  const prompt = imageUrls.length > 0
-    ? `${systemText}\n${basePrompt}`
-    : `${systemText}\n${basePrompt}`;
-
-  updateLoadingMessage("Envoi vers kie.ai / Nano Banana 2...");
+  updateLoadingMessage(`${planLabel} — envoi vers kie.ai / Nano Banana 2...`);
 
   const taskBody = {
     model: imageUrls.length > 0 ? 'nano-banana-2-image-to-image' : 'nano-banana-2-text-to-image',
@@ -985,7 +1073,7 @@ async function callKieAPI(subject) {
   const taskId = createData?.data?.taskId;
   if (!taskId) throw new Error(`Aucun taskId retourné par kie.ai. Réponse: ${JSON.stringify(createData)}`);
 
-  updateLoadingMessage('Nano Banana 2 génère votre image...');
+  updateLoadingMessage(`${planLabel} — Nano Banana 2 génère votre image...`);
   let lastStatusData = {};
   const POLL_INTERVAL = 3000;
   const MAX_POLLS = 40;
@@ -993,7 +1081,7 @@ async function callKieAPI(subject) {
   for (let i = 0; i < MAX_POLLS; i++) {
     await sleep(POLL_INTERVAL);
     const elapsed = Math.round(((i + 1) * POLL_INTERVAL) / 1000);
-    updateLoadingMessage(`Nano Banana 2 en cours... (${elapsed}s)`);
+    updateLoadingMessage(`${planLabel} — en cours... (${elapsed}s)`);
 
     let statusData = {};
     try {
@@ -1040,28 +1128,19 @@ function setLoading(v) {
   const icon = document.getElementById('genIcon');
   const label = document.getElementById('genLabel');
   const msg = document.getElementById('genMsg');
-  const msgs = selectedEngine === 'kie' ? LOADING_MSGS_KIE : LOADING_MSGS_VERTEX;
 
   btn.disabled = v;
   if (v) {
     icon.innerHTML = '<path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>';
     btn.classList.add('loading');
-    label.textContent = 'CALCUL EN COURS...';
+    label.textContent = planCount === 1 ? 'CAPTURE EN COURS...' : `SÉQUENCE EN COURS...`;
     msg.style.display = 'block';
-    clearInterval(loadingInterval);
-    loadingMsgIdx = 0;
-    msg.textContent = msgs[0];
-    loadingInterval = setInterval(() => {
-      if (!loading) return;
-      loadingMsgIdx = (loadingMsgIdx + 1) % msgs.length;
-      msg.textContent = msgs[loadingMsgIdx];
-    }, 3000);
+    msg.textContent = 'Initialisation...';
   } else {
     btn.classList.remove('loading');
     icon.innerHTML = '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>';
-    label.textContent = 'DÉCLENCHER CAPTURE BRUTE';
+    label.textContent = planCount === 1 ? 'DÉCLENCHER CAPTURE BRUTE' : `LANCER LA SÉQUENCE (${planCount} PLANS)`;
     msg.style.display = 'none';
-    clearInterval(loadingInterval);
   }
 }
 
@@ -1086,7 +1165,8 @@ function renderResults() {
   const dlAll = document.getElementById('dlAllBtn');
   const count = document.getElementById('captureCount');
 
-  count.textContent = results.length + ' CAPTURE' + (results.length !== 1 ? 'S' : '');
+  const totalImgs = results.reduce((n, r) => n + r.images.length, 0);
+  count.textContent = results.length + ' SÉQUENCE' + (results.length !== 1 ? 'S' : '') + ' · ' + totalImgs + ' PLANS';
 
   if (results.length === 0) {
     empty.style.display = 'flex';
@@ -1097,45 +1177,56 @@ function renderResults() {
 
   empty.style.display = 'none';
   actions.style.display = 'flex';
-  dlAll.style.display = results.length > 1 ? 'flex' : 'none';
+  dlAll.style.display = totalImgs > 1 ? 'flex' : 'none';
 
   container.innerHTML = '';
-  results.forEach((r, idx) => {
+  results.forEach((r) => {
     const engineLabel = r.engine === 'kie' ? 'NANO BANANA 2 · KIE.AI' : 'GEMINI 3.1 FLASH IMAGE';
     const badgeClass = r.engine === 'kie' ? 'img-badge img-badge-moss' : 'img-badge img-badge-accent';
     const d = new Date(r.timestamp);
     const dd = String(d.getDate()).padStart(2,'0');
     const mm = String(d.getMonth()+1).padStart(2,'0');
     const yy = String(d.getFullYear()).slice(-2);
-    const frameNo = String(results.length - idx).padStart(3,'0');
 
-    const card = document.createElement('div');
-    card.className = 'img-card';
-    card.innerHTML = `
-      <div class="img-thumb" onclick="downloadImage('${r.dataUrl}', '${r.id}')">
-        <div class="ar-9-16"><img src="${r.dataUrl}" alt="capture" loading="lazy"></div>
-        <div class="img-overlay"><div class="dl-circle"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div></div>
-        <div class="img-badges">
-          <span class="img-badge img-badge-paper">9:16</span>
+    const series = document.createElement('div');
+    series.className = 'series-block';
+    series.innerHTML = `
+      <div class="series-head">
+        <div>
+          <p class="series-title">SÉQUENCE · ${r.images.length} PLAN${r.images.length > 1 ? 'S' : ''}${r.partial ? ' · INCOMPLÈTE' : ''}</p>
+          <p class="series-subject">${escapeHtml(r.subject || '')}</p>
+        </div>
+        <div class="series-badges">
+          <span class="img-badge img-badge-paper">${dd} ${mm} ${yy}</span>
           <span class="${badgeClass}">${engineLabel}</span>
         </div>
-        <div class="img-datestamp">${dd} ${mm} ${yy} · N°${frameNo}</div>
       </div>
-      <div class="img-info">
-        <div class="img-meta">
-          <div class="img-meta-txt">
-            <span>CAPTURED_AT: ${new Date(r.timestamp).toLocaleTimeString()}</span>
-            <span>UUID: TR_${r.id.slice(-8)}</span>
+      <div class="series-strip">
+        ${r.images.map((im, i) => `
+          <div class="img-card">
+            <div class="img-thumb" onclick="downloadImage('${im.dataUrl}', '${im.imgId}')">
+              <div class="ar-9-16"><img src="${im.dataUrl}" alt="${im.role}" loading="lazy"></div>
+              <div class="img-overlay"><div class="dl-circle"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div></div>
+              <div class="img-badges"><span class="img-badge img-badge-paper">PLAN ${i + 1}</span></div>
+              <div class="img-datestamp">N°${String(i + 1).padStart(3,'0')}</div>
+            </div>
+            <div class="img-info">
+              <p class="plan-role">${escapeHtml(im.role)}</p>
+              <p class="plan-move">MOUVEMENT : ${escapeHtml(im.move)}</p>
+              <button class="btn-dl" style="margin-top:10px;width:100%;" onclick="downloadImage('${im.dataUrl}', '${im.imgId}')">TÉLÉCHARGER</button>
+            </div>
           </div>
-          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
-            <button class="btn-dl" onclick="downloadImage('${r.dataUrl}', '${r.id}')">TÉLÉCHARGER L'IMAGE</button>
-            <p class="mobile-hint">APPUI LONG POUR ENREGISTRER SUR MOBILE</p>
-          </div>
-        </div>
+        `).join('')}
       </div>
     `;
-    container.appendChild(card);
+    container.appendChild(series);
   });
+}
+
+function escapeHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
 }
 
 function downloadImage(dataUrl, id) {
@@ -1158,18 +1249,24 @@ function downloadImage(dataUrl, id) {
   }
   const a = document.createElement('a');
   a.href = dataUrl;
-  a.download = `studio-vlog-capture-${id}.png`;
+  a.download = `studio-vlog-${id}.png`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
 }
 
 function downloadAll() {
-  results.forEach((r, i) => setTimeout(() => downloadImage(r.dataUrl, `action_${i + 1}`), i * 300));
+  let i = 0;
+  results.forEach((r) => {
+    r.images.forEach((im) => {
+      setTimeout(() => downloadImage(im.dataUrl, im.imgId), i * 300);
+      i++;
+    });
+  });
 }
 
 async function resetAll() {
-  if (!confirm("Voulez-vous vraiment supprimer toutes les captures, les références et réinitialiser les réglages ?")) return;
+  if (!confirm("Voulez-vous vraiment supprimer toutes les séquences, les références et réinitialiser les réglages ?")) return;
   results = [];
   personImages = [];
   locationImages = [];
@@ -1180,7 +1277,6 @@ async function resetAll() {
     await idbClear('locations');
   } catch(e) {}
   document.getElementById('subjectInput').value = '';
-  document.getElementById('directiveInput').value = '';
   renderUploadGrids();
   renderResults();
 }
