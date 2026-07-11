@@ -973,14 +973,23 @@ async function callVertexAPI(promptText, total, planLabel) {
         throw new Error(`Erreur ${res.status}: ${msg}`);
       }
 
-      const candidate = data?.candidates?.[0];
-      if (!candidate) throw new Error("Aucune réponse du modèle.");
-      if (candidate.finishReason === 'SAFETY') throw new Error("Génération bloquée par les filtres de sécurité. Reformule ta demande.");
+      const blockReason = data?.promptFeedback?.blockReason;
+      if (blockReason) throw new Error(`Bloqué par Vertex avant génération (${blockReason}). Réduis le nombre de références ou reformule le prompt.`);
 
+      const candidate = data?.candidates?.[0];
+      if (!candidate) throw new Error(`Aucune réponse du modèle. Réponse brute : ${JSON.stringify(data).slice(0, 400)}`);
+      if (candidate.finishReason === 'SAFETY' || candidate.finishReason === 'IMAGE_SAFETY' || candidate.finishReason === 'PROHIBITED_CONTENT') {
+        throw new Error(`Génération bloquée par les filtres de sécurité (${candidate.finishReason}). Réduis le nombre de références, simplifie le prompt ou reformule.`);
+      }
+
+      const textParts = [];
       for (const p of (candidate?.content?.parts || [])) {
         if (p.inlineData?.data) return `data:image/png;base64,${p.inlineData.data}`;
+        if (p.text) textParts.push(p.text);
       }
-      throw new Error("Image non trouvée dans la réponse Vertex.");
+      const reason = candidate.finishReason ? ` (finishReason: ${candidate.finishReason})` : '';
+      const modelText = textParts.length > 0 ? ` Réponse du modèle : "${textParts.join(' ').slice(0, 300)}"` : ' Aucun texte explicatif retourné.';
+      throw new Error(`Image non trouvée dans la réponse Vertex${reason}.${modelText}`);
     } catch (err) {
       lastErr = err;
       const msg = String(err.message || '').toLowerCase();
