@@ -1,0 +1,1947 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>STUDIO LIFE — Vertex Edition</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+  body { background:#000; }
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-thumb { background:#b45309; border-radius:4px; }
+</style>
+</head>
+<body class="bg-zinc-900 text-white font-sans min-h-screen">
+<div id="root"></div>
+
+<script>
+"use strict";
+
+/* =========================================================================
+   STUDIO LIFE — VERTEX EDITION (application HTML autonome, fichier unique)
+   - Clé API : Vertex AI Express Mode (préfixe "AQ.")
+   - Texte / JSON structuré : gemini-2.5-flash
+   - Génération d'image      : gemini-3.1-flash-image-preview
+   ========================================================================= */
+
+const VERTEX_BASE_URL = 'https://aiplatform.googleapis.com/v1/publishers/google/models';
+const TEXT_MODEL = 'gemini-2.5-flash';
+const IMAGE_MODEL = 'gemini-3.1-flash-image-preview';
+
+/* ---------------------------- DONNÉES ---------------------------------- */
+
+const VIBES = [
+    { id: 'rich-boss', label: 'Rich Boss', emoji: '💼', description: 'Cinematic, high-contrast lighting, slow-motion shots, powerful poses. Think luxury car commercials or a CEO profile.' },
+    { id: 'soft-luxury', label: 'Soft Luxury', emoji: '🕊️', description: 'Soft, diffused lighting, dreamy focus, elegant movements. Inspired by high-fashion perfume ads and Parisian aesthetics.' },
+    { id: 'street-glam', label: 'Street Glam', emoji: '💎', description: 'Dynamic, edgy lighting with lens flares, confident street-style poses. Think music video B-roll or a streetwear campaign.' },
+    { id: 'vacation-muse', label: 'Vacation Muse', emoji: '🌴', description: "Bright, sun-drenched lighting, relaxed and candid moments. Captures the essence of a lavish getaway, like a travel influencer's feed." },
+    { id: 'editorial-dream', label: 'Editorial Dream', emoji: '📸', description: 'Artistic, unconventional angles, dramatic shadows, and a high-fashion, magazine-spread feel.' },
+    { id: 'romantic-luxe', label: 'Romantic Luxe', emoji: '🌹', description: 'Warm, glowing light, intimate moments, and a focus on connection and emotion. Perfect for date nights and couple scenes.' },
+];
+
+const TIMES_OF_DAY = [
+    { id: 'sunrise', label: 'Sunrise', emoji: '🌅', description: 'Soft, warm, golden light from a low angle. Creates long shadows and a fresh, hopeful mood.' },
+    { id: 'golden-hour', label: 'Golden Hour', emoji: '🌇', description: 'Rich, golden, diffused light just before sunset. Highly flattering and creates a magical, cinematic glow.' },
+    { id: 'night', label: 'Night', emoji: '🌃', description: 'Dramatic, high-contrast lighting from city lights, neon signs, or car headlights. Creates a moody, sophisticated atmosphere.' },
+    { id: 'midnight-neon', label: 'Midnight Neon', emoji: '🔮', description: 'Vibrant, colorful light from neon signs. Creates a futuristic, edgy, and energetic vibe perfect for street scenes.' },
+    { id: 'overcast', label: 'Overcast', emoji: '☁️', description: 'Soft, even, diffused light. Excellent for capturing true colors and textures without harsh shadows, giving a chic, editorial feel.' },
+];
+
+const SEASONS = [
+    { id: 'none', label: 'None', emoji: '🎬', description: 'The original cinematic version of the scene.' },
+    { id: 'spring', label: 'Spring', emoji: '🌸', description: 'Incorporate a Spring aesthetic with soft colors, blooming flowers, and bright, gentle sunlight. Outfits should be light and elegant.' },
+    { id: 'summer', label: 'Summer', emoji: '☀️', description: 'Evoke a Summer vibe with warm, golden lighting, potentially hinting at travel or beach settings. Outfits should be bright, chic, and suitable for warm weather.' },
+    { id: 'fall', label: 'Fall', emoji: '🍂', description: 'Create a Fall atmosphere with cozy amber tones, soft glam makeup, and stylish sweaters or layered outfits. The mood is warm and inviting.' },
+    { id: 'winter', label: 'Winter', emoji: '❄️', description: 'Set a Winter scene with luxurious elements like snow, elegant coats, or a cozy fireplace. The color palette can include champagne tones and sparkles.' },
+];
+
+const HOLIDAYS = [
+    { id: 'none', label: 'None', emoji: '🗓️', description: 'No specific holiday theme.' },
+    { id: 'christmas', label: 'Christmas', emoji: '🎄', description: 'Transform the scene with a Christmas theme. Include elements like tree lights, gifts, gold and red décor, and a cozy, festive, luxury energy.' },
+    { id: 'valentines', label: "Valentine's Day", emoji: '❤️', description: "Infuse the scene with a romantic Valentine's Day energy. Think roses, champagne, candles, and outfits in shades of red or pink." },
+    { id: 'new-years', label: "New Year's Eve", emoji: '🎉', description: "Give the scene a New Year's Eve celebration vibe. Incorporate confetti, fireworks, sparkly outfits, and champagne glasses." },
+    { id: 'thanksgiving', label: 'Thanksgiving', emoji: '🦃', description: 'Create a Thanksgiving atmosphere with warm lighting, elegant dinner settings, candles, and a feeling of gratitude and abundance.' },
+];
+
+const FEMME_BODY_TYPES = [
+    { id: 'default', label: 'As Per Photo', emoji: '👤', description: 'Use the body proportions naturally shown in the uploaded reference photo. Do not apply any body modifiers.' },
+    { id: 'petite-slim', label: 'Petite & Slim', emoji: '✨', description: 'Small frame, narrow waist, delicate proportions, smaller bust and hips. Body appears lightweight, feminine, and naturally slim.' },
+    { id: 'thick-curvy', label: 'Thick & Curvy', emoji: '⏳', description: 'Realistic curves with full hips, full thighs, soft stomach, and a naturally rounded butt. This is NOT a BBL body—curves should look natural and unenhanced.' },
+    { id: 'bbl-body', label: 'BBL Body', emoji: '🍑', description: 'Snatched waist, medium-to-full bust, full rounded hips, lifted butt, thick thighs that match the hips. Classic Instagram-model BBL hourglass shape.' },
+    { id: 'enhanced-bbl', label: 'Enhanced BBL Body', emoji: '💉', description: 'Ultra-snatched waist, large perky breasts, extremely full and projected hips and glutes. Very thick thighs; dramatic hourglass silhouette; clearly enhanced appearance.' },
+    { id: 'athletic', label: 'Athletic Body', emoji: '💪', description: 'Toned, fit physique with visible 4-pack or 6-pack abs. Defined arms, sculpted legs, firm muscular glutes shaped by training. Low-to-moderate body fat with a natural athletic curve.' },
+    { id: 'natural-mommy', label: 'Natural / Mommy Body', emoji: '💖', description: 'Soft, realistic everyday curves with natural waist, natural chest shape, gentle tummy softness, and authentic proportions. No enhancements, no dramatic hourglass.' }
+];
+
+const MASC_BODY_TYPES = [
+    { id: 'default', label: 'As Per Photo', emoji: '👤', description: 'Use the natural body type from the uploaded base image.' },
+    { id: 'muscular-defined', label: 'Muscular/Defined', emoji: '💪', description: 'A built, toned, and masculine frame. Ideal for suits, fitted shirts, or open-collar looks that radiate CEO or protector energy.' },
+    { id: 'husky-broad', label: 'Husky/Broad', emoji: '🐻', description: 'A thick, strong build with a powerful presence. Looks great in casual luxury outfits like polos, sweaters, or high-end streetwear.' },
+    { id: 'plus-fat', label: 'Plus/Fat Man', emoji: '👑', description: 'A fuller frame with confident posture. Wears clean-fit luxury outfits that look custom-tailored, always maintaining boss energy.' },
+    { id: 'slim-lean', label: 'Slim/Lean', emoji: '🚶‍♂️', description: 'A tall or slim build that is stylish and refined. Perfect for fashion-forward pieces or designer streetwear that match a soft-life or creative energy.' }
+];
+
+const MALE_PARTNER_ARCHETYPES = [
+    { id: 1, name: 'The CEO', description: 'a handsome CEO-type man: clean-cut with a groomed beard, wearing a tailored suit or upscale casual attire. He exudes a masculine, elegant, and powerful energy.' },
+    { id: 2, name: 'The Rapper', description: 'a rapper-type man: styled with iced-out Cuban link chains, a diamond Rolex, and luxury designer streetwear. He has a confident, rich hip-hop energy, with grills as an optional detail.' },
+    { id: 3, name: 'The Hood-Sexy Man', description: 'a hood-sexy man: an attractive, edgy man with tattoos and either dreads or 360 waves. He wears luxury streetwear and might have grills, radiating a masculine and confident vibe.' }
+];
+
+const FEMALE_PARTNER_ARCHETYPES = [
+    { id: 1, name: 'The Bottle-Girl Baddie', description: 'a stripper/bottle-girl type baddie: stunning with full glam makeup, long dramatic lashes, and long hair bundles. She has a curvy, body-ody silhouette and wears a sexy, luxurious outfit.' },
+    { id: 2, name: 'The IG Model', description: 'a classic baddie/IG model type woman: featuring a sculpted BBL-coded silhouette (optional), perfectly laid hair, and a soft glam makeup look. Her outfit is pure luxury and on-trend.' },
+    { id: 3, name: 'The Soft-Life Wife', description: 'a wife/mom soft-life woman: embodying classy, feminine energy with a clean, luxurious style. Her outfits are cozy yet chic, paired with a natural glam makeup look.' }
+];
+
+const CATEGORIZED_SCENES = [
+    {
+        title: 'Luxury Travel & Vacations',
+        scenes: [
+            { id: 1, title: 'Private Jet Boarding', prompt: `1️⃣ Intro — The vlog opens with a cinematic low-angle shot of a sleek private jet on the tarmac. The sun is setting, casting a warm golden glow over the fuselage. The engines hum with power.
+2️⃣ Action 1 — The main character steps out of a black SUV. The camera tracks her powerful stride as she walks toward the jet stairs, her hair blowing slightly in the wind, exuding pure "Main Character" energy.
+3️⃣ Action 2 — She pauses at the bottom of the stairs, adjusting her sunglasses and looking up at the aircraft with a confident, knowing smile. She's ready for takeoff.
+4️⃣ Action 3 — A mid-shot as she begins to ascend the stairs, her hand lightly trailing on the railing. She turns back to wave at the camera (POV style), inviting the viewer along.
+5️⃣ POV 1 — A first-person POV shot looking down at her designer heels stepping onto the metal stairs, capturing the texture of the outfit and the height of the climb.
+6️⃣ POV 2 — A cinematic close-up of her hand holding a customized passport holder and boarding pass, with the blurred jet engine in the background.
+7️⃣ Ending — She reaches the top of the stairs, turns for one final, glamorous over-the-shoulder look, and disappears into the cabin. Fade to black.` },
+            { id: 2, title: 'First-Class Flight', prompt: `1️⃣ Intro — The camera pans smoothly across a spacious, ultra-luxury First Class cabin. Soft ambient lighting creates a cozy, exclusive atmosphere. A glass of champagne sits waiting on the console.
+2️⃣ Action 1 — The main character is settled in her wide leather seat. She picks up the champagne flute, swirling it gently, looking relaxed and unbothered.
+3️⃣ Action 2 — She gazes out the window at the sea of clouds below, her reflection softly visible in the glass. It's a moment of quiet reflection and gratitude.
+4️⃣ Action 3 — A flight attendant places a gourmet meal on her tray table. She smiles warmly, adjusts her napkin, and prepares to dine at 30,000 feet.
+5️⃣ POV 1 — A POV shot from her perspective, looking at the in-flight entertainment screen showing a map of the flight path, with her legs stretched out in comfort.
+6️⃣ POV 2 — A macro close-up of the bubbles fizzing in the champagne glass, capturing the golden light refracting through the liquid.
+7️⃣ Ending — She reclines the seat fully into a bed, pulls a plush duvet up to her chin, and smiles sleepily at the camera. The vlog ends as she drifts off to sleep.` },
+            { id: 3, title: 'Helicopter Skyline Views', prompt: `1️⃣ Intro — A high-energy aerial shot establishing the helicopter in flight over a glowing city skyline at night. The city lights twinkle like diamonds below.
+2️⃣ Action 1 — Inside the cockpit, the couple is wearing headsets. The man points out a landmark below, and she leans in to see, her face illuminated by the dashboard lights.
+3️⃣ Action 2 — She laughs, a genuine, joyful reaction to the thrill of the flight. She grabs his hand, squeezing it in excitement.
+4️⃣ Action 3 — They both look at each other, locking eyes in a moment of shared adrenaline and romance, ignoring the spectacular view for a second.
+5️⃣ POV 1 — A POV shot from her seat, looking down through the glass floor at the skyscrapers rushing by underneath. It's dizzying and beautiful.
+6️⃣ POV 2 — A close-up of their intertwined hands resting on his thigh, emphasizing their connection amidst the adventure.
+7️⃣ Ending — The helicopter begins its descent. She looks at the camera and gives a thumbs-up, hair windswept and messy, buzzing with energy. Fade out.`, isCoupleScene: true },
+            { id: 4, title: 'Yacht Breakfast', prompt: `1️⃣ Intro — A peaceful, sunny morning on the deck of a superyacht. The ocean is calm and turquoise. A table is lavishly set with fresh tropical fruit, pastries, and coffee.
+2️⃣ Action 1 — She walks into the frame wearing a silk robe over her swimsuit, stretching her arms overhead and inhaling the salty sea air.
+3️⃣ Action 2 — She sits at the table and pours coffee from a silver pot. Steam rises in the sunlight. She looks completely at peace.
+4️⃣ Action 3 — She picks up a piece of fruit, takes a bite, and looks out at the horizon, contemplating the beautiful day ahead.
+5️⃣ POV 1 — A POV shot looking down at her plate of colorful fruit and the coffee cup, with the sparkling ocean water visible just beyond the railing.
+6️⃣ POV 2 — A close-up on her sunglasses sitting on the table, reflecting the ocean view and the yacht's deck in the lenses.
+7️⃣ Ending — She raises her coffee cup to the camera in a "cheers" motion, smiling broadly. The camera pans out to the endless blue sea.` },
+            { id: 5, title: 'Costa Rica Villa Morning', prompt: `1️⃣ Intro — A wide shot of a stunning jungle villa. Lush green leaves frame an infinity pool that drops off into a view of the ocean. The sounds of nature are immersive.
+2️⃣ Action 1 — She slides open the glass doors of her bedroom and steps out onto the wooden deck, barefoot, feeling the warmth of the morning sun.
+3️⃣ Action 2 — She walks to the edge of the infinity pool and dips her toes in the water, watching the ripples spread.
+4️⃣ Action 3 — She finds a comfortable lounge chair, sits down, and opens a journal, starting her day with intention and quiet thoughts.
+5️⃣ POV 1 — A POV shot of her hand writing in the journal, with the jungle canopy and ocean view serving as a breathtaking backdrop.
+6️⃣ POV 2 — A macro close-up of a dew drop on a large tropical leaf near her, capturing the freshness of the morning.
+7️⃣ Ending — She closes the journal, takes a deep breath, and looks directly at the lens with a calm, grounded expression. The screen fades to white.` },
+            { id: 6, title: 'Dubai Desert Ride', prompt: `1️⃣ Intro — A sweeping panoramic shot of endless, rolling orange sand dunes in Dubai at sunset. The wind creates patterns in the sand.
+2️⃣ Action 1 — The couple comes into view, riding camels side-by-side. They are dressed in flowing, light fabrics that billow in the wind.
+3️⃣ Action 2 — They stop the camels at the top of a high dune. He helps her down, and they stand together, looking out at the vast emptiness.
+4️⃣ Action 3 — He wraps his arm around her waist, and she leans her head on his shoulder. The sun sets directly behind them, creating a silhouette.
+5️⃣ POV 1 — A POV shot from her perspective, looking at her feet sinking into the warm, fine sand, with the long shadow of the camel stretching out.
+6️⃣ POV 2 — A close-up of their hands holding each other, silhouetted against the fiery orange sun.
+7️⃣ Ending — They turn to walk away from the camera, hand in hand, leaving footprints in the pristine sand as the sky turns purple. Fade to black.`, isCoupleScene: true },
+            { id: 7, title: 'Paris Picnic', prompt: `1️⃣ Intro — A dreamy, soft-focus shot of the Eiffel Tower looming in the background. In the foreground, a chic picnic blanket is spread on the grass.
+2️⃣ Action 1 — She is arranging a baguette, cheese, and grapes on a wooden board, making it look aesthetically perfect. She's wearing a beret and a cute dress.
+3️⃣ Action 2 — She pours rosé into two glasses. She laughs as a breeze nearly blows her napkin away, catching it just in time.
+4️⃣ Action 3 — She lies back on the blanket, holding a grape, and looks up at the clouds drifting past the tower.
+5️⃣ POV 1 — A POV shot lying down, looking up at the Eiffel Tower through the leaves of a tree, with her hand reaching up towards it.
+6️⃣ POV 2 — A close-up of the wine glass and the baguette, capturing the texture of the crust and the condensation on the glass.
+7️⃣ Ending — She sits up, looks at the camera, and blows a playful kiss. The camera pulls back to reveal the full iconic Parisian setting.` },
+            { id: 9, title: 'Maldives Villa Sunrise', prompt: `1️⃣ Intro — A low-flying drone shot skimming over turquoise water, approaching a water villa. The sky is a soft pastel pink and blue as the sun rises.
+2️⃣ Action 1 — She is standing on the deck of the water villa, wrapped in a white sheet, looking out at the horizon. It's quiet and private.
+3️⃣ Action 2 — She drops the sheet to reveal her swimsuit and slowly walks down the steps of the ladder directly into the ocean.
+4️⃣ Action 3 — She starts swimming gracefully, her body cutting through the crystal-clear water. She floats on her back, looking at the sky.
+5️⃣ POV 1 — A POV shot from the water level, looking back at the stunning villa on stilts, capturing the exclusivity of the location.
+6️⃣ POV 2 — A close-up of her wet hair slicked back and water droplets on her skin, glistening in the early morning light.
+7️⃣ Ending — She climbs back up the ladder, dripping wet, and wraps herself in a towel, shivering slightly but smiling with pure invigoration.` },
+            { id: 10, title: 'Santorini Balcony View', prompt: `1️⃣ Intro — A postcard-perfect shot of Oia, Santorini. White buildings with blue domes cascade down the cliffside. The Aegean Sea sparkles below.
+2️⃣ Action 1 — She steps onto a private balcony wearing a flowing, vibrant dress that contrasts beautifully with the white architecture.
+3️⃣ Action 2 — She leans on the white railing, the wind catching her dress and hair. She looks like a Greek goddess.
+4️⃣ Action 3 — She turns to face the camera, leaning back against the wall, laughing as she tries to tame her windblown hair.
+5️⃣ POV 1 — A POV shot looking over the railing at the steep drop and the deep blue sea, inducing a sense of awe and height.
+6️⃣ POV 2 — A close-up of a bright pink bougainvillea flower growing on the balcony, with the blue dome blurred in the background.
+7️⃣ Ending — She raises a glass of white wine to the sunset, the golden light illuminating her face. A slow, cinematic fade.` },
+            { id: 12, title: 'Cruise Dinner', prompt: `1️⃣ Intro — The elegant dining room of a luxury cruise ship. Chandeliers sway slightly with the ship's movement. Ocean is visible through large portholes.
+2️⃣ Action 1 — The couple is seated at a romantic table by the window. They are dressed formally—him in a suit, her in an evening gown.
+3️⃣ Action 2 — They are engaged in deep conversation, ignoring the food for a moment. He reaches across and tucks a strand of hair behind her ear.
+4️⃣ Action 3 — The waiter arrives to pour wine. They pause to thank him, then clink glasses, looking deeply in love.
+5️⃣ POV 1 — A POV shot from her seat, looking at him across the candlelit table, with the dark ocean outside the window.
+6️⃣ POV 2 — A close-up of the fine dining dish—a perfectly plated lobster tail or steak—highlighting the culinary luxury.
+7️⃣ Ending — They stand up to leave, he offers her his arm, and they walk out of the frame together, ready to explore the ship's night life.`, isCoupleScene: true },
+            { id: 106, title: 'Miami Sunroof Turn-Up', prompt: `1️⃣ Intro — A high-octane shot looking down at a convertible driving down Ocean Drive. Neon lights blur past. The energy is electric.
+2️⃣ Action 1 — She stands up through the sunroof, arms wide open, screaming with joy. The wind whips her hair wildly.
+3️⃣ Action 2 — She starts dancing to the music, uninhibited and free. Passersby on the street cheer her on.
+4️⃣ Action 3 — She grabs her friend's hand who is driving, and they sing the lyrics of the song at the top of their lungs together.
+5️⃣ POV 1 — A POV shot from the back seat, looking up at her silhouette against the passing streetlights and palm trees.
+6️⃣ POV 2 — A close-up of her hand in the air, jewelry sparkling, capturing the motion blur of the city lights.
+7️⃣ Ending — She drops back down into the seat, laughing breathlessly, fixing her hair. The car speeds off into the night.` },
+            { id: 128, title: 'Baecation Rooftop Pool Kiss', prompt: `1️⃣ Intro — A stunning rooftop infinity pool at twilight. The city skyline is beginning to light up in the background. The water is still as glass.
+2️⃣ Action 1 — The couple wades into the center of the pool. The water is waist-deep. The atmosphere is intimate and sexy.
+3️⃣ Action 2 — He pulls her close by the waist. She wraps her arms around his neck, looking into his eyes with intensity.
+4️⃣ Action 3 — They share a slow, passionate kiss. The camera circles them slowly, capturing the romance from every angle.
+5️⃣ POV 1 — A POV shot from her perspective, looking at his wet face and eyelashes close up, with the city lights bokeh behind him.
+6️⃣ POV 2 — A close-up of their bodies pressing together underwater, creating ripples that distort the pool lights.
+7️⃣ Ending — They break the kiss but stay in the embrace, resting their foreheads together. The camera pulls back to a wide shot of the lonely rooftop.`, isCoupleScene: true },
+            { id: 132, title: 'Girls Trip Pool Party', prompt: `1️⃣ Intro — A vibrant, colorful shot of a villa pool party. Inflatables float in the water. Hip-hop music is implied. The vibe is hype.
+2️⃣ Action 1 — The squad is dancing by the poolside, choreographed and in sync. They look amazing in coordinating swimwear.
+3️⃣ Action 2 — One friend pushes another into the pool. A massive splash! Everyone erupts in laughter and cheers.
+4️⃣ Action 3 — They all jump in after her, splashing and playing games, fully embracing the fun and chaos.
+5️⃣ POV 1 — A waterproof camera POV shot going underwater, seeing legs kicking and bubbles, then surfacing to laughing faces.
+6️⃣ POV 2 — A close-up of a tray of colorful shots being passed around, lime wedges flying, capturing the party energy.
+7️⃣ Ending — They gather for a group selfie in the water, squeezing together and making duck faces. The frame freezes on the selfie.`, isGirlsTripScene: true },
+        ]
+    },
+    {
+        title: 'Romance & Couples',
+        scenes: [
+            { id: 201, title: 'Rooftop Surprise Dinner (Blindfold Reveal)', prompt: `1️⃣ Intro — The scene opens in a dimly lit hallway. Soft music plays. He is guiding her, his hands gently covering her eyes. She is smiling nervously.
+2️⃣ Action 1 — He stops her, whispering "Ready?". He slowly removes his hands. Her eyes flutter open, adjusting to the light.
+3️⃣ Action 2 — Reveal shot: A rooftop table set for two, surrounded by hundreds of candles and rose petals. The city lights are the backdrop.
+4️⃣ Action 3 — She gasps, hands covering her mouth. She turns to him, eyes wide with emotion. He is beaming, looking proud.
+5️⃣ POV 1 — A POV shot from her perspective as the blindfold is lifted, the scene going from black to the sparkling candlelight.
+6️⃣ POV 2 — A close-up of a single candle flickering in the wind, with rose petals scattered around its base.
+7️⃣ Ending — She throws her arms around his neck, hugging him tight. He spins her around slightly. A truly magical moment.`, isCoupleScene: true },
+            { id: 202, title: 'Living Room Romantic Dinner', prompt: `1️⃣ Intro — A cozy living room transformed. The lights are off, fire is crackling. A low table is set with takeout containers plated nicely and wine.
+2️⃣ Action 1 — They are sitting on the floor on cushions. He is pouring wine. It feels intimate and private.
+3️⃣ Action 2 — They eat, talking quietly. She laughs at something he says, leaning in to touch his knee.
+4️⃣ Action 3 — He feeds her a bite of food. It's playful and sweet. She chews, smiling at him.
+5️⃣ POV 1 — A POV shot from his perspective, looking at her face illuminated by the firelight, looking beautiful.
+6️⃣ POV 2 — A close-up of their shadows dancing on the wall, created by the fireplace.
+7️⃣ Ending — They clink glasses and take a sip, staring into each other's eyes. The camera pulls back to reveal the cozy room.`, isCoupleScene: true },
+            { id: 220, title: 'Proposal Scene', prompt: `1️⃣ Intro — A hike to a scenic viewpoint. They are out of breath but happy. The view is incredible.
+2️⃣ Action 1 — He asks her to take a photo of the view. While she turns away, he gets down on one knee.
+3️⃣ Action 2 — She turns back around and freezes. He holds up the ring. He is speaking, but we can't hear.
+4️⃣ Action 3 — She nods frantically, dropping her phone. She jumps into his arms.
+5️⃣ POV 1 — A POV shot from his perspective on one knee, looking up at her shocked face.
+6️⃣ POV 2 — A close-up of the ring box opening, the diamond catching the sun.
+7️⃣ Ending — He puts the ring on her finger. They kiss. People nearby clap. Fade to white.`, isCoupleScene: true },
+        ]
+    },
+    {
+        title: 'Beauty & Baddie Maintenance',
+        scenes: [
+            { id: 301, title: 'Luxury Makeup Vanity Session', prompt: `1️⃣ Intro — A cinematic pan of a marble vanity counter covered in high-end makeup (Chanel, Dior, Charlotte Tilbury). The lighting is bright and crisp.
+2️⃣ Action 1 — She sits in a plush chair, wearing a silk robe. She applies primer to her face, massaging it in slowly.
+3️⃣ Action 2 — She uses a beauty blender to bounce foundation onto her skin. The blend is flawless.
+4️⃣ Action 3 — She applies a sharp winged liner with steady precision, looking intensely into the mirror.
+5️⃣ POV 1 — A POV shot looking into the mirror at herself doing the makeup, making eye contact with the reflection.
+6️⃣ POV 2 — A macro close-up of a lipstick bullet being twisted up, pristine and unused.
+7️⃣ Ending — The full beat is done. She applies setting spray, fans her face, and winks at the camera. Transformation complete.` },
+            { id: 319, title: 'Silk Press "Before & After" Transformation', prompt: `1️⃣ Intro — Sitting in the salon chair. Hair is natural, curly, and big. "Before" shot.
+2️⃣ Action 1 — The wash. Scrubbing the scalp. It looks heavenly.
+3️⃣ Action 2 — The blow dry. Hair is stretched. Steam rises.
+4️⃣ Action 3 — The flat iron. The stylist does the chase method. Hair becomes glass.
+5️⃣ POV 1 — A POV shot looking in the mirror as the hair gets straighter and straighter.
+6️⃣ POV 2 — A close-up of the flat iron clamping down on a section of hair.
+7️⃣ Ending — She stands up and shakes her head. The hair has movement and shine. "After" shot.` },
+        ]
+    },
+    {
+        title: 'Luxury Lifestyle & Soft Life',
+        scenes: [
+            { id: 401, title: 'Luxury Steak Dinner Cooking Ritual', prompt: `1️⃣ Intro — A moody kitchen at night. Jazz playing. Ingredients laid out: Wagyu steak, rosemary, garlic.
+2️⃣ Action 1 — She seasons the steak. Salt rains down from high up.
+3️⃣ Action 2 — She sears the steak. A cloud of smoke. The sound of sizzling is loud.
+4️⃣ Action 3 — She bastes it with butter. Spooning it over and over.
+5️⃣ POV 1 — A POV shot holding the tongs, flipping the steak.
+6️⃣ POV 2 — A close-up of the butter foaming in the cast iron pan.
+7️⃣ Ending — She slices the steak. It's perfectly medium rare. She takes a bite right off the board.` },
+            { id: 403, title: 'GRWM: Closet to Mirror Transformation', prompt: `1️⃣ Intro — Standing in her closet in a robe. Rows of clothes behind her.
+2️⃣ Action 1 — She picks out a dress. Holding it up to her body in the mirror.
+3️⃣ Action 2 — Transition: She jumps, and suddenly she is wearing the dress.
+4️⃣ Action 3 — She puts on shoes, jewelry, perfume. The finishing touches.
+5️⃣ POV 1 — A POV shot looking down at her feet as she steps into heels.
+6️⃣ POV 2 — A close-up of an earring being put in.
+7️⃣ Ending — She checks herself out in the full-length mirror. She looks snatched. She blows a kiss.` },
+        ]
+    },
+    {
+        title: 'Celebrity, Rapper & Spotlight Moments',
+        scenes: [
+            { id: 501, title: 'BET Awards Red Carpet Entrance', prompt: `1️⃣ Intro — A black SUV pulls up. Screaming fans. Flashing lights.
+2️⃣ Action 1 — The door opens. She steps out. The crowd goes wild.
+3️⃣ Action 2 — She walks the carpet. Posing for photographers. "Over here! Over here!"
+4️⃣ Action 3 — She gives an interview. Holding a microphone. Smiling and charming.
+5️⃣ POV 1 — A POV shot from behind the photographers, looking at her through the flashes.
+6️⃣ POV 2 — A close-up of her shoes walking on the red carpet.
+7️⃣ Ending — She waves one last time and walks into the venue. The doors close.` },
+            { id: 511, title: 'Rapper Bae Studio Date', prompt: `1️⃣ Intro — A recording studio. Dark. Smoke in the air. Mixing board lights.
+2️⃣ Action 1 — He is in the booth rapping. She is on the couch watching.
+3️⃣ Action 2 — He comes out and plays the track. She bobs her head.
+4️⃣ Action 3 — She gives him feedback. He listens intently.
+5️⃣ POV 1 — A POV shot looking at him through the studio glass.
+6️⃣ POV 2 — A close-up of the sound waves on the computer screen.
+7️⃣ Ending — They order food. Late night studio vibes.` },
+        ]
+    },
+    {
+        title: 'Spiritual & Healing',
+        scenes: [
+            { id: 601, title: 'Sunrise Meditation on Balcony', prompt: `1️⃣ Intro — It's 5 AM. The city is silent. The sky is dark blue turning purple.
+2️⃣ Action 1 — She sits on a cushion. Legs crossed. Eyes closed.
+3️⃣ Action 2 — She breathes in deep. Shoulders rise. Breathes out. Shoulders fall.
+4️⃣ Action 3 — The sun peeks over the horizon. Light hits her face.
+5️⃣ POV 1 — A POV shot looking at the sunrise through eyelashes.
+6️⃣ POV 2 — A close-up of her hands in a mudra position on her knees.
+7️⃣ Ending — She opens her eyes. She smiles. The day begins.` },
+            { id: 607, title: 'Yoga Stretch Flow', prompt: `1️⃣ Intro — A yoga mat in a living room. Soft music.
+2️⃣ Action 1 — Downward dog. Stretching the hamstrings.
+3️⃣ Action 2 — Cobra pose. Opening the heart. Looking up.
+4️⃣ Action 3 — Child's pose. Resting. Forehead on mat.
+5️⃣ POV 1 — A POV shot looking at hands pressing into the mat.
+6️⃣ POV 2 — A close-up of sweat dripping on the mat.
+7️⃣ Ending — Rolling up the mat. Namaste.` },
+        ]
+    },
+    {
+        title: 'Errands & Everyday Luxury',
+        scenes: [
+            { id: 701, title: 'Target Run With Iced Coffee', prompt: `1️⃣ Intro — Walking into Target through the sliding doors. Red balls outside.
+2️⃣ Action 1 — Grabbing a cart. Putting purse in the child seat. Sipping iced coffee.
+3️⃣ Action 2 — Looking at candles. Smelling them through the mask.
+4️⃣ Action 3 — Walking down the home decor aisle. Touching pillows.
+5️⃣ POV 1 — A POV shot pushing the cart down the aisle.
+6️⃣ POV 2 — A close-up of the Starbucks cup in hand.
+7️⃣ Ending — At self-checkout. Scanning items. Beep. Beep.` },
+            { id: 702, title: 'Starbucks Drive-Thru Vibes', prompt: `1️⃣ Intro — Sitting in car. Line of cars ahead. Menu board.
+2️⃣ Action 1 — Rolling down window. Ordering. "Venti iced brown sugar oatmilk shaken espresso."
+3️⃣ Action 2 — Pulling up to the window. Paying with phone.
+4️⃣ Action 3 — Getting the drink. First sip. Heaven.
+5️⃣ POV 1 — A POV shot of the barista handing the drink through the window.
+6️⃣ POV 2 — A close-up of the straw going into the lid.
+7️⃣ Ending — Driving away. Singing to radio.` },
+        ]
+    },
+    {
+        title: 'Fitness & Glow-Up',
+        scenes: [
+            { id: 801, title: 'Pilates Princess Morning Session', prompt: `1️⃣ Intro — A Reformer Pilates studio. Clean lines. Beige aesthetic.
+2️⃣ Action 1 — Getting on the reformer. Adjusting springs.
+3️⃣ Action 2 — Doing leg circles. Legs in straps. Graceful.
+4️⃣ Action 3 — The plank. Shaking. Holding it.
+5️⃣ POV 1 — A POV shot looking at feet in grippy socks.
+6️⃣ POV 2 — A close-up of the springs stretching.
+7️⃣ Ending — Stretching out. Child's pose on reformer. Done.` },
+            { id: 810, title: 'Outdoor Jog With Headphones', prompt: `1️⃣ Intro — Park trail. Trees. Sun.
+2️⃣ Action 1 — Running. Feet hitting pavement. Rhythm.
+3️⃣ Action 2 — Passing other runners. Nodding.
+4️⃣ Action 3 — Stopping at a view. Catching breath. Hands on knees.
+5️⃣ POV 1 — A POV shot of the path moving under feet.
+6️⃣ POV 2 — A close-up of sweat dripping off chin.
+7️⃣ Ending — Walking home. Stretching calves on curb.` },
+        ]
+    },
+    {
+        title: '💰 Rich Energy & Flex Scenes',
+        scenes: [
+            { id: 1001, title: 'Bank Deposit Walk-In', prompt: `1️⃣ Intro — A cinematic shot of a luxury car pulling up to a bank. The door opens, and a pair of designer heels steps onto the pavement.
+2️⃣ Action 1 — She walks towards the bank entrance, holding a leather envelope. She is wearing sunglasses and looks purposeful.
+3️⃣ Action 2 — She enters the bank. It is quiet and cool. She walks to the teller counter.
+4️⃣ Action 3 — She hands over the envelope. The teller smiles and nods respectfully.
+5️⃣ POV 1 — A POV shot from her perspective, sliding the envelope under the glass partition to the teller.
+6️⃣ POV 2 — A close-up of her hand on the counter, rings sparkling under the bank lights.
+7️⃣ Ending — She receives a receipt, tucks it into her bag, and walks out with a confident stride. Mission accomplished.` },
+            { id: 1004, title: 'Designer Shopping Spree', prompt: `1️⃣ Intro — Walking down a high-end shopping street. Rodeo Drive or Fifth Ave. Storefronts gleam.
+2️⃣ Action 1 — She walks out of a store with big bags. She struggles to carry them all.
+3️⃣ Action 2 — She goes into another store. Looking at shoes. Picking a pair.
+4️⃣ Action 3 — She pays. Handing over a black card. The machine beeps.
+5️⃣ POV 1 — A POV shot looking at her arm laden with shopping bags from different brands.
+6️⃣ POV 2 — A close-up of the credit card chip being inserted into the reader.
+7️⃣ Ending — She gets into a taxi, filling the back seat with her purchases. She looks exhausted but happy.` },
+        ]
+    },
+    {
+        title: '👨‍👩‍👧 Family, Milestones & Life Moments',
+        scenes: [
+            { id: 1105, title: 'New House Celebration', prompt: `1️⃣ Intro — An empty house. Echoey. Boxes everywhere.
+2️⃣ Action 1 — Standing in the living room. Spinning around.
+3️⃣ Action 2 — Popping a bottle of champagne (or sparkling cider).
+4️⃣ Action 3 — Toasting to the new home. Clinking plastic cups.
+5️⃣ POV 1 — A POV shot looking at the keys to the house in hand.
+6️⃣ POV 2 — A close-up of the "Sold" sign out front.
+7️⃣ Ending — Sitting on the floor eating pizza. Happy.`, isCoupleScene: true },
+            { id: 1111, title: 'Wedding Ceremony Walk-In', prompt: `1️⃣ Intro — Church doors closed. Music starts. Nervous breath.
+2️⃣ Action 1 — Doors open. Walking down the aisle. Everyone looking.
+3️⃣ Action 2 — Seeing partner at the altar. Crying.
+4️⃣ Action 3 — Reaching the front. Hand off.
+5️⃣ POV 1 — A POV shot walking down the aisle towards the groom.
+6️⃣ POV 2 — A close-up of feet stepping in wedding shoes.
+7️⃣ Ending — Standing together. Ceremony begins.`, isCoupleScene: true },
+        ]
+    },
+    {
+        title: '🚘 Luxury Cars & Drives',
+        scenes: [
+            { id: 1201, title: 'G-Wagon Morning Drive', prompt: `1️⃣ Intro — Walking out to the driveway. Sun rising. G-Wagon parked.
+2️⃣ Action 1 — Unlocking car. Lights flash. Door click.
+3️⃣ Action 2 — Getting in. High step up. Closing door (thud).
+4️⃣ Action 3 — Starting engine. Rumble. Putting on sunglasses.
+5️⃣ POV 1 — A POV shot holding the steering wheel.
+6️⃣ POV 2 — A close-up of the Mercedes star logo.
+7️⃣ Ending — Backing out. Driving down the street.` },
+            { id: 1203, title: 'Convertible Sunset Cruise', prompt: `1️⃣ Intro — Driving along the coast. Top down. Wind.
+2️⃣ Action 1 — Driving fast. Hair blowing. Smiling.
+3️⃣ Action 2 — Singing to music. Hands in the air.
+4️⃣ Action 3 — Watching the sun set over the ocean.
+5️⃣ POV 1 — A POV shot looking over the hood of the car.
+6️⃣ POV 2 — A close-up of the side mirror reflection.
+7️⃣ Ending — Pulling over to watch the sunset.` },
+        ]
+    },
+    {
+        title: 'Surgery & Recovery Vlogs',
+        scenes: [
+            { id: 1301, title: 'BBL Pre-Op Luxury Suite', prompt: `1️⃣ Intro — A wide shot of a pristine, high-end clinic room. It looks more like a hotel. A bag is on the bed.
+2️⃣ Action 1 — She is sitting in a chair, wearing a fluffy robe. She looks nervous but ready.
+3️⃣ Action 2 — She fills out paperwork on a clipboard. Signing her name.
+4️⃣ Action 3 — She drinks water from a fancy bottle. Staying hydrated.
+5️⃣ POV 1 — A POV shot looking at the consent forms.
+6️⃣ POV 2 — A close-up of the hospital wristband with her name.
+7️⃣ Ending — The nurse comes in. Time to go. She takes a deep breath.` },
+            { id: 1304, title: 'Post-Op Recovery Suite', prompt: `1️⃣ Intro — Waking up in recovery. Groggy. Beeping monitors.
+2️⃣ Action 1 — Looking around. Feeling the compression garment (faja). Tight.
+3️⃣ Action 2 — Nurse checking vitals. Giving ice chips.
+4️⃣ Action 3 — Trying to sit up. Helping hand. Dizzy.
+5️⃣ POV 1 — A POV shot of the room spinning slightly.
+6️⃣ POV 2 — A close-up of the compression socks.
+7️⃣ Ending — Lying back down. Resting.` },
+        ]
+    }
+];
+
+/* ------------------------- SERVICE VERTEX AI ---------------------------- */
+
+function getApiKey() {
+  const key = localStorage.getItem('userApiKey');
+  if (!key) throw new Error("Clé API Vertex AI introuvable.");
+  return key;
+}
+
+function wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+const DEFAULT_SAFETY_SETTINGS = [
+  { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
+  { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
+  { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
+  { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
+];
+
+async function callVertexGenerateContent(model, parts, generationConfig, safetySettings) {
+  const apiKey = getApiKey();
+  const url = `${VERTEX_BASE_URL}/${model}:generateContent?key=${apiKey}`;
+  const body = { contents: [{ role: 'user', parts }] };
+  if (generationConfig) body.generationConfig = generationConfig;
+  if (safetySettings) body.safetySettings = safetySettings;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    const error = new Error(`Vertex AI error (${response.status}): ${errorText}`);
+    error.status = response.status;
+    throw error;
+  }
+  return response.json();
+}
+
+async function generateWithRetry(apiCall, maxRetries = 5, baseDelay = 3000) {
+  let lastError;
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await apiCall();
+    } catch (error) {
+      lastError = error;
+      const isRetryable = error.status === 429 || error.status === 503 ||
+        (error.message && (error.message.includes('429') || error.message.includes('quota') ||
+         error.message.includes('RESOURCE_EXHAUSTED') || error.message.includes('Too Many Requests') ||
+         error.message.includes('503')));
+      if (!isRetryable) throw error;
+      if (i < maxRetries - 1) {
+        const delay = baseDelay * Math.pow(2, i) + (Math.random() * 1000);
+        await wait(delay);
+      }
+    }
+  }
+  throw lastError;
+}
+
+function extractText(response) {
+  const text = response?.candidates?.[0]?.content?.parts?.find(p => typeof p.text === 'string')?.text;
+  if (typeof text !== 'string') throw new Error("Réponse Vertex AI invalide : aucun texte trouvé.");
+  return text.trim();
+}
+
+function extractImage(response) {
+  const part = response?.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+  if (part && part.inlineData) return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+  return null;
+}
+
+function getThematicContextPrompt(season, holiday) {
+  let context = '';
+  if (season.id !== 'none') context += `\n- **Season:** ${season.label}. This should influence the scene with the following aesthetic: "${season.description}"`;
+  if (holiday.id !== 'none') context += `\n- **Holiday:** ${holiday.label}. This should transform the scene with a theme of: "${holiday.description}"`;
+  if (context) return `\n        **Thematic Context (Merge these styles naturally and cinematically):** ${context}\n        `;
+  return '';
+}
+
+async function generateOutfits(scene, vibe, timeOfDay, genderMode, season, holiday, bodyType) {
+  return generateWithRetry(async () => {
+    const femmePrompt = `
+    **Task:** Generate 4 unique outfit options for a cinematic vlog scene.
+    **CRITICAL PRIORITY: SCENE REALISM & CONTEXT**
+    You MUST prioritize the specific activity in the scene description over general fashion trends.
+    **MANDATORY SCENE-SPECIFIC RULES:**
+    1. **SURGERY / BBL / RECOVERY SCENES:** You MUST suggest Medical Compression Faja, Post-Op Foam Boards, Compression Socks, or Luxury Recovery Robes. DO NOT suggest jeans, tight dresses, or high heels.
+    2. **HOSPITAL / BIRTH SCENES:** Hospital Gown, Birthing Robe, or Comfortable Button-Down Pajamas.
+    3. **GYM / WORKOUT SCENES:** high-end activewear.
+    4. **SWIMMING / POOL / BEACH SCENES:** swimwear or beach cover-ups.
+    5. **SLEEPING / MORNING ROUTINE:** bonnets, silk pajamas, or robes.
+    **Style Guide (Only for General Lifestyle/Glamour Scenes):** 'Rich Girl Baddie' aesthetic — luxury instagram influencer, high-end streetwear, fitted and body-conscious silhouettes.
+    **Cohesion:** The color palette must harmonize with the scene's lighting.`;
+    const mascPrompt = `
+    **Task:** Generate 4 unique outfit options for a cinematic vlog scene.
+    **CRITICAL PRIORITY: SCENE REALISM**
+    1. Medical/Hospital: Hospital Gown, recovery sweats, or robe.
+    2. Gym/Workout: performance activewear.
+    3. Swimming: designer swim trunks.
+    4. Sleeping: boxers, silk pajamas, or robe.
+    **Style Guide (General Lifestyle):** Boss-man energy, high-end designer textures, luxury watches, chains, impeccable powerful fit.`;
+
+    const thematicContext = getThematicContextPrompt(season, holiday);
+    const bodyTypeContext = bodyType.id !== 'default' ? `\n- **Body Type:** ${bodyType.label} - ${bodyType.description}` : '';
+    const prompt = `${genderMode === 'femme' ? femmePrompt : mascPrompt}
+    **Scene Context:**
+    - **Setting:** ${scene.title} - ${scene.prompt}
+    - **Vibe:** ${vibe.label} - ${vibe.description}
+    - **Time of Day & Lighting:** ${timeOfDay.label} - ${timeOfDay.description}
+    ${bodyTypeContext}
+    ${thematicContext}
+    Generate fresh, on-brand, cinematic outfit choices based on all the context provided.`;
+
+    const responseSchema = {
+      type: 'ARRAY',
+      items: {
+        type: 'OBJECT',
+        properties: {
+          name: { type: 'STRING' },
+          description: { type: 'STRING' },
+          accessories: { type: 'STRING' }
+        },
+        required: ["name", "description", "accessories"]
+      }
+    };
+
+    const response = await callVertexGenerateContent(TEXT_MODEL, [{ text: prompt }], { responseMimeType: 'application/json', responseSchema });
+    const outfits = JSON.parse(extractText(response));
+    if (!Array.isArray(outfits) || outfits.length === 0) throw new Error("L'IA n'a pas renvoyé de tenues valides.");
+    return outfits;
+  });
+}
+
+async function generateHairstyles(vibe, timeOfDay, genderMode, season, holiday, bodyType) {
+  return generateWithRetry(async () => {
+    const catalog = `
+    **APPROVED HAIRSTYLE CATALOG (Select from these ONLY):**
+    1. BOBS: Sleek middle-part blunt bob, Sleek side-part bob, Chin-length layered bob, Shoulder-length bob, Wavy voluminous bob, Silk-press bob.
+    2. STRAIGHT: 30–40 inch bust-down middle part, Deep side part, Layered silky straight, Jet-black silk press, Sleek high ponytail, Half-up half-down straight.
+    3. BODY WAVE + BIG CURLS: Deep body wave, Hollywood big curls, Fluffy layered curls, Chocolate brown loose wave, Honey blonde highlighted curls.
+    4. BRAIDS: Small knotless braids, Long knotless braids curly ends, Jumbo knotless braids, Feed-in cornrows, Boho knotless braids.
+    5. HALF UP/DOWN, PONYTAILS, COLOR variants, UPDOS + NATURAL curly/afro/twist-out.`;
+    const femmePrompt = `
+    **Task:** Generate 4 unique, cinematic, ultra-high-end 'Rich Girl Baddie' hairstyle options for a Black woman.
+    **STRICT CONSTRAINT:** ONLY select styles from the Approved Hairstyle Catalog below.
+    ${catalog}
+    **Rules:** Select 4 distinct options from different categories. Every description MUST mention "perfectly laid edges," "sculpted baby hairs," or "HD lace/melted hairline." Match the vibe: '${vibe.label}'.`;
+    const mascPrompt = `
+    **Task:** Generate 4 unique, sharp, luxurious hairstyle options for a Black man.
+    Every hairstyle must feature a sharp, clean lineup or fade; mention 'flawless lineup', 'crisp fade', or 'perfectly defined waves'. Hairline must be immaculate.`;
+    const thematicContext = getThematicContextPrompt(season, holiday);
+    const bodyTypeContext = bodyType.id !== 'default' ? `\n- **Subject's Body Type:** ${bodyType.label}.` : '';
+    const prompt = `${genderMode === 'femme' ? femmePrompt : mascPrompt}
+    **Context:**
+    - **Time of Day & Lighting:** ${timeOfDay.label}.
+    ${bodyTypeContext}
+    ${thematicContext}
+    Generate 4 high-budget, cinematic hairstyle choices.`;
+
+    const responseSchema = {
+      type: 'ARRAY',
+      items: { type: 'OBJECT', properties: { name: { type: 'STRING' }, description: { type: 'STRING' } }, required: ["name", "description"] }
+    };
+    const response = await callVertexGenerateContent(TEXT_MODEL, [{ text: prompt }], { responseMimeType: 'application/json', responseSchema });
+    const hairstyles = JSON.parse(extractText(response));
+    if (!Array.isArray(hairstyles) || hairstyles.length === 0) throw new Error("L'IA n'a pas renvoyé de coiffures valides.");
+    return hairstyles;
+  });
+}
+
+async function generateAccessoryCombinations(scene, vibe, outfit, timeOfDay, genderMode, season, holiday, bodyType) {
+  return generateWithRetry(async () => {
+    const femmePrompt = `
+    **Task:** Generate 4 unique accessory combinations for a vlog scene.
+    **CRITICAL INSTRUCTION: SCENE LOGIC** — the accessories MUST be strictly logical for the scene's activity (surgery/hospital = fuzzy slippers, no heels; pool/beach = slides, beach tote; gym = sneakers, gym bag; general glam = heels, luxury bags, heavy jewelry).
+    **Combination Structure (Generate 4):** Nails, Footwear, Luxury Bag, Jewelry.`;
+    const mascPrompt = `
+    **Task:** Generate 4 unique accessory combinations for a vlog scene.
+    **CRITICAL INSTRUCTION: SCENE LOGIC** — hospital/home = barefoot/slides; gym = sneakers; business = dress shoes.
+    **Combination Structure (Generate 4):** Watch & Grooming, Footwear, Luxury Bag, Jewelry.`;
+    const femmeSchema = { type: 'OBJECT', properties: { name: { type: 'STRING' }, nails: { type: 'STRING' }, footwear: { type: 'STRING' }, bag: { type: 'STRING' }, jewelry: { type: 'STRING' } }, required: ["name", "nails", "footwear", "bag", "jewelry"] };
+    const mascSchema = { type: 'OBJECT', properties: { name: { type: 'STRING' }, watchAndGrooming: { type: 'STRING' }, footwear: { type: 'STRING' }, bag: { type: 'STRING' }, jewelry: { type: 'STRING' } }, required: ["name", "watchAndGrooming", "footwear", "bag", "jewelry"] };
+    const thematicContext = getThematicContextPrompt(season, holiday);
+    const bodyTypeContext = bodyType.id !== 'default' ? `\n- **Body Type:** ${bodyType.label} - ${bodyType.description}` : '';
+    const prompt = `${genderMode === 'femme' ? femmePrompt : mascPrompt}
+    **Style Guide:** Rich and cinematic. Accessories must match the outfit and scene.
+    **Creative Context:**
+    - **Scene:** ${scene.title} - ${scene.prompt}
+    - **Vibe:** ${vibe.label} - ${vibe.description}
+    - **Outfit:** ${outfit.name} - ${outfit.description}.
+    - **Time of Day & Lighting:** ${timeOfDay.label} - ${timeOfDay.description}
+    ${bodyTypeContext}
+    ${thematicContext}`;
+    const responseSchema = { type: 'ARRAY', items: genderMode === 'femme' ? femmeSchema : mascSchema };
+    const response = await callVertexGenerateContent(TEXT_MODEL, [{ text: prompt }], { responseMimeType: 'application/json', responseSchema });
+    const accessories = JSON.parse(extractText(response));
+    if (!Array.isArray(accessories) || accessories.length === 0) throw new Error("L'IA n'a pas renvoyé d'accessoires valides.");
+    return accessories;
+  });
+}
+
+async function generatePartnerStyle(scene, vibe, timeOfDay, partnerArchetype, season, holiday) {
+  return generateWithRetry(async () => {
+    const thematicContext = getThematicContextPrompt(season, holiday);
+    const isMalePartner = partnerArchetype.toLowerCase().includes(' man');
+    const genderedTask = isMalePartner ? 'a male partner character' : 'a female partner character';
+    const prompt = `
+    **Task:** Create a "VISUAL ANCHOR SHEET" for ${genderedTask} in a cinematic vlog, specific enough to look identical across 7 images.
+    **Instructions:**
+    1. Archetype: ${partnerArchetype}
+    2. Physical anchors: specific skin tone, exact build, one immutable visual hook.
+    3. Outfit lock: ONE specific outfit in detail, worn in every frame.
+    4. Hair lock: exact hairstyle.
+    **Scene Context:** ${scene.title} — Vibe: ${vibe.label}
+    ${thematicContext}
+    **Output:** A single dense paragraph starting with "The partner is...". Be visual, avoid vague words.`;
+    const response = await callVertexGenerateContent(TEXT_MODEL, [{ text: prompt }]);
+    const description = extractText(response);
+    if (!description) throw new Error("L'IA n'a pas généré de description du partenaire.");
+    return description;
+  });
+}
+
+async function generateFriendStyles(scene, vibe, timeOfDay, mainCharacterOutfit, season, holiday) {
+  return generateWithRetry(async () => {
+    const thematicContext = getThematicContextPrompt(season, holiday);
+    const prompt = `
+    **Task:** Create a "VISUAL ANCHOR SHEET" for 2 friends accompanying the main character, visually distinct from each other and consistent across 7 images.
+    **Instructions:**
+    1. Friend A: distinctive feature, specific skin tone/body type, distinct outfit color.
+    2. Friend B: different distinctive feature, specific skin tone/body type, distinct outfit color.
+    3. Cohesion: "Baddie" friend group but visually distinct.
+    4. Main character wears ${mainCharacterOutfit.name} — DO NOT reuse this color/style for the friends.
+    **Scene Context:** ${scene.title} — Vibe: ${vibe.label}
+    ${thematicContext}
+    **Output:** A detailed paragraph describing Friend A and Friend B.`;
+    const response = await callVertexGenerateContent(TEXT_MODEL, [{ text: prompt }]);
+    const description = extractText(response);
+    if (!description) throw new Error("L'IA n'a pas généré de description des amies.");
+    return description;
+  });
+}
+
+function extractActionForScene(fullPrompt, sceneNum) {
+  const emojis = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣'];
+  const sceneEmoji = emojis[sceneNum - 1] || `${sceneNum}`;
+  const lines = fullPrompt.split('\n');
+  const line = lines.find(l => l.trim().startsWith(sceneEmoji));
+  if (line) return line.replace(/^[1-7]️⃣\s*.*?—\s*/, '').trim();
+  return "Create a cinematic moment from the story.";
+}
+
+function extractIntroSetting(fullPrompt, sceneTitle) {
+  const lines = fullPrompt.split('\n');
+  const introLine = lines.find(l => l.trim().startsWith('1️⃣'));
+  if (introLine) return introLine.replace(/^[1-7]️⃣\s*.*?—\s*/, '').trim();
+  return sceneTitle + " setting.";
+}
+
+async function generateVlogImage(baseImage, scene, sceneNumber, outfit, hairstyle, accessories, vibe, timeOfDay, genderMode, partnerStyle, friendStyles, season, holiday, bodyType) {
+  let attempts = 0;
+  const maxAttempts = 3;
+  while (attempts < maxAttempts) {
+    try {
+      const imagePart = { inlineData: { data: baseImage.data, mimeType: baseImage.mimeType } };
+      const specificAction = extractActionForScene(scene.prompt, sceneNumber);
+      const anchorSetting = extractIntroSetting(scene.prompt, scene.title);
+
+      let bodyTypeInstruction = "";
+      if (bodyType.id === 'default') {
+        bodyTypeInstruction = `
+        **MANDATORY MAIN CHARACTER BODY MORPH: AS PER PHOTO**
+        - Strictly adhere to the body proportions visible in the reference image. No filters, slimming, BBL effects, or muscle enhancements.`;
+      } else {
+        bodyTypeInstruction = `
+        **MANDATORY MAIN CHARACTER BODY MORPH: ${bodyType.label.toUpperCase()}**
+        - Description: "${bodyType.description}"
+        - Ensure the silhouette matches this description exactly.`;
+      }
+
+      let companionInstruction = "**COMPANION LOCK:** The subject is solo in this frame.";
+      if (partnerStyle) {
+        companionInstruction = `
+        **COMPANION LOCK (PARTNER):** The subject is with their partner. The partner is a SEPARATE ENTITY — do NOT apply the main character's body/outfit/features to them. Partner MUST look exactly as: "${partnerStyle}" in every frame.`;
+      } else if (friendStyles) {
+        companionInstruction = `
+        **COMPANION LOCK (FRIENDS):** The subject is with 2 friends, SEPARATE ENTITIES. Friends MUST look exactly as: "${friendStyles}" in every frame.`;
+      }
+
+      const accessoryNails = accessories.nails ? `- **Nails:** ${accessories.nails}. (Must be visible)` : '';
+      const accessoryWatch = accessories.watchAndGrooming ? `- **Watch:** ${accessories.watchAndGrooming}.` : '';
+      const accessoryFootwear = accessories.footwear ? `- **Footwear:** ${accessories.footwear}.` : '';
+      const thematicContext = getThematicContextPrompt(season, holiday);
+
+      const textPart = { text: `
+      **CINEMATIC VLOG GENERATION - FRAME ${sceneNumber}/7**
+      **1. DIGITAL WARDROBE LOCK (MAIN CHARACTER):**
+      - Outfit: ${outfit.name} - "${outfit.description}"
+      - Hair: ${hairstyle.name} - "${hairstyle.description}"
+      - Must be identical to description in every frame.
+      **2. ${bodyTypeInstruction}**
+      **3. ${companionInstruction}**
+      **4. SCENE ACTION & VIBE:**
+      - Setting Anchor: "${anchorSetting}" (keep background consistent).
+      - Action: "${specificAction}" (dynamic — motion blur, laughter, movement).
+      - Vibe: ${vibe.label} (${vibe.description}).
+      - Lighting: ${timeOfDay.label} (${timeOfDay.description}).
+      ${thematicContext}
+      **5. ACCESSORIES:**
+      ${accessoryNails}
+      ${accessoryWatch}
+      ${accessoryFootwear}
+      - Bag: ${accessories.bag}
+      **6. TECHNICAL SPECS (iPhone 17-style candid realism):**
+      - 9:16 Vertical Aspect Ratio.
+      - Photorealistic smartphone photo quality — no AI sheen, no plastic skin, natural micro-imperfections.
+      - Natural dynamic range, true-to-life color science.
+      - Dynamic camera angle (low angle for power, selfie angle for intimacy).
+      ` };
+
+      const response = await callVertexGenerateContent(
+        IMAGE_MODEL,
+        [imagePart, textPart],
+        { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: '9:16' } },
+        DEFAULT_SAFETY_SETTINGS
+      );
+      const imageUrl = extractImage(response);
+      if (imageUrl) return imageUrl;
+      throw new Error("Génération d'image sans données (probablement filtrée).");
+    } catch (error) {
+      console.error(`Tentative ${attempts + 1} échouée pour la scène ${sceneNumber}:`, error);
+      attempts++;
+      if (attempts >= maxAttempts) return null;
+      await wait(3000 * Math.pow(2, attempts - 1));
+    }
+  }
+  return null;
+}
+
+/**
+ * Mode Normal — génère une image "brute", façon moment volé au téléphone, zéro luxe.
+ * Prend jusqu'à 4 images de référence de lieu + jusqu'à 10 avatars de référence de personnes,
+ * une consigne libre (direction), et produit une photo candide et imparfaite parmi une série de N.
+ */
+async function generateNormalImage(locationImages, avatarImages, direction, frameNumber, totalFrames) {
+  let attempts = 0;
+  const maxAttempts = 3;
+  while (attempts < maxAttempts) {
+    try {
+      const parts = [];
+
+      locationImages.forEach(img => parts.push({ inlineData: { data: img.data, mimeType: img.mimeType } }));
+      avatarImages.forEach(img => parts.push({ inlineData: { data: img.data, mimeType: img.mimeType } }));
+
+      const referenceLegend = `
+      **REFERENCE IMAGES PROVIDED (in order):**
+      ${locationImages.length > 0 ? `- Images 1 to ${locationImages.length}: LOCATION reference photos. The generated scene's setting, architecture, decor, and lighting environment MUST be based on these real places — do not invent a different location.` : '- No location reference photos provided: use a plausible, ordinary, realistic everyday setting consistent with the direction below.'}
+      ${avatarImages.length > 0 ? `- Images ${locationImages.length + 1} to ${locationImages.length + avatarImages.length}: PERSON/AVATAR reference photos, representing ${avatarImages.length} distinct real ${avatarImages.length > 1 ? 'individuals' : 'individual'}. Each person's face, skin tone, hair, and body type MUST be preserved with high fidelity and stay IDENTICAL and recognizable across every generated frame. Do not blend, merge, or swap identities between people.` : '- No person reference photos provided: do not invent named characters; keep any incidental people anonymous and secondary.'}
+      `;
+
+      const textPart = { text: `
+      **STUDIO LIFE — MODE NORMAL — FRAME ${frameNumber}/${totalFrames}**
+
+      ${referenceLegend}
+
+      **DIRECTION (what the user wants to see):**
+      "${direction}"
+
+      **CRITICAL AESTHETIC RULES — ZERO LUXURY, RAW CANDID REALISM:**
+      - This is the OPPOSITE of a polished luxury shoot. NO glam styling, NO cinematic color grading, NO dramatic lighting, NO staged poses, NO "influencer" composition.
+      - The image must look like an authentic, unplanned "stolen moment" (moment volé) captured spontaneously on an ordinary smartphone — think a real photo pulled from someone's camera roll, not content made for an audience.
+      - Natural, imperfect, everyday framing: slightly off-center composition, ordinary ambient lighting (whatever light would realistically be in that place at that moment), true-to-life colors with no artificial warmth or saturation boost.
+      - Real-life imperfections are welcome and expected: natural skin texture, casual unposed body language, candid facial expressions (mid-blink, mid-laugh, looking away), slightly imperfect focus is acceptable.
+      - Absolutely avoid: designer outfits presented as styling, jewelry as a focal point, glossy skin, professional studio lighting, symmetric "hero" poses, luxury props, or anything that reads as an advertisement.
+      - Vary the framing and moment naturally across the ${totalFrames} frames of this series (frame ${frameNumber} of ${totalFrames}) while keeping the same people and the same place completely consistent and recognizable.
+
+      **TECHNICAL SPECS:**
+      - 9:16 vertical aspect ratio, like a phone photo.
+      - Photorealistic smartphone photo quality — natural dynamic range, realistic noise/grain in low light if relevant, no AI sheen, no plastic skin.
+      ` };
+
+      parts.push(textPart);
+
+      const response = await callVertexGenerateContent(
+        IMAGE_MODEL,
+        parts,
+        { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: '9:16' } },
+        DEFAULT_SAFETY_SETTINGS
+      );
+      const imageUrl = extractImage(response);
+      if (imageUrl) return imageUrl;
+      throw new Error("Génération d'image sans données (probablement filtrée).");
+    } catch (error) {
+      console.error(`Tentative ${attempts + 1} échouée pour la frame ${frameNumber}:`, error);
+      attempts++;
+      if (attempts >= maxAttempts) return null;
+      await wait(3000 * Math.pow(2, attempts - 1));
+    }
+  }
+  return null;
+}
+
+/* ------------------------------- ÉTAT ----------------------------------- */
+
+const state = {
+  view: 'apikey', // apikey | mode-select | categories | scenes | generator | display | normal-setup | normal-display
+  selectedCategoryIndex: null,
+  selectedScene: null,
+  genderMode: null,
+  vibeId: 'rich-boss',
+  timeOfDayId: 'golden-hour',
+  seasonId: 'none',
+  holidayId: 'none',
+  bodyTypeId: 'default',
+  outfits: [], selectedOutfit: null, loadingOutfits: false, outfitError: null,
+  hairstyles: [], selectedHairstyle: null, loadingHairstyles: false, hairstyleError: null,
+  accessories: [], selectedAccessory: null, loadingAccessories: false, accessoryError: null,
+  imageFile: null, imageDataUrl: null,
+  isGenerating: false,
+  generatedImages: [],
+  currentSlide: 0,
+  isPlaying: true,
+  lastGenParams: null,
+  regenModalOpen: false,
+
+  // --- Mode Normal ---
+  normalLocationImages: [], // [{file, dataUrl}], max 4
+  normalAvatarImages: [],   // [{file, dataUrl}], max 10
+  normalDirection: '',
+  normalImageCount: 8, // 5 | 8 | 10
+  normalGeneratedImages: [],
+  normalIsGenerating: false,
+  normalCurrentSlide: 0,
+  normalIsPlaying: true,
+};
+
+const MAX_LOCATION_REFS = 4;
+const MAX_AVATAR_REFS = 10;
+const NORMAL_IMAGE_COUNT_OPTIONS = [5, 8, 10];
+
+
+function getVibe() { return VIBES.find(v => v.id === state.vibeId); }
+function getTimeOfDay() { return TIMES_OF_DAY.find(t => t.id === state.timeOfDayId); }
+function getSeason() { return SEASONS.find(s => s.id === state.seasonId); }
+function getHoliday() { return HOLIDAYS.find(h => h.id === state.holidayId); }
+function getBodyTypeOptions() { return state.genderMode === 'masc' ? MASC_BODY_TYPES : FEMME_BODY_TYPES; }
+function getBodyType() {
+  const opts = getBodyTypeOptions();
+  return opts.find(b => b.id === state.bodyTypeId) || opts[0];
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      const result = reader.result;
+      const mimeType = result.split(',')[0].split(':')[1].split(';')[0];
+      const data = result.split(',')[1];
+      resolve({ data, mimeType });
+    };
+    reader.onerror = reject;
+  });
+}
+
+/* ------------------------------- RENDU ---------------------------------- */
+
+const root = document.getElementById('root');
+
+function render() {
+  root.innerHTML = '';
+  if (state.view === 'apikey') root.appendChild(renderApiKeyGate());
+  else if (state.view === 'mode-select') root.appendChild(renderModeSelect());
+  else if (state.view === 'categories') root.appendChild(renderCategories());
+  else if (state.view === 'scenes') root.appendChild(renderScenes());
+  else if (state.view === 'generator') root.appendChild(renderGenerator());
+  else if (state.view === 'display') root.appendChild(renderDisplay());
+  else if (state.view === 'normal-setup') root.appendChild(renderNormalSetup());
+  else if (state.view === 'normal-display') root.appendChild(renderNormalDisplay());
+}
+
+function el(html) {
+  const div = document.createElement('div');
+  div.innerHTML = html.trim();
+  return div.firstElementChild;
+}
+
+/* --- Écran 1 : clé API Vertex --- */
+function renderApiKeyGate() {
+  const wrap = el(`
+    <div class="min-h-screen flex items-center justify-center px-4 animate-fade-in">
+      <div class="w-full max-w-md bg-black border border-amber-500 rounded-lg p-8">
+        <h1 class="text-3xl font-extrabold text-white mb-2">Studio <span class="text-amber-400">Life</span></h1>
+        <p class="text-gray-400 mb-6 text-sm">
+          Connecte ta clé API <span class="text-amber-400 font-semibold">Vertex AI (Express Mode)</span> pour démarrer.
+          Format attendu : une clé commençant par <code class="text-amber-400">AQ.</code>
+        </p>
+        <div class="space-y-4">
+          <input id="apikey-input" type="password" placeholder="AQ...." autocomplete="off"
+            class="w-full bg-zinc-900 border border-amber-500/50 rounded-md px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-amber-400" />
+          <p id="apikey-error" class="text-red-400 text-sm hidden"></p>
+          <button id="apikey-submit" class="w-full bg-amber-500 hover:bg-amber-600 text-black font-bold py-3 px-4 rounded-lg transition-all duration-300">Valider la clé</button>
+        </div>
+        <p class="text-gray-600 text-xs mt-6">Ta clé est stockée uniquement dans ton navigateur (localStorage) et n'est jamais envoyée à un serveur tiers.</p>
+      </div>
+    </div>
+  `);
+  const input = wrap.querySelector('#apikey-input');
+  const errorEl = wrap.querySelector('#apikey-error');
+  const submit = () => {
+    const trimmed = input.value.trim();
+    if (!trimmed) { errorEl.textContent = 'Merci de coller votre clé API Vertex AI.'; errorEl.classList.remove('hidden'); return; }
+    if (!trimmed.startsWith('AQ.')) { errorEl.textContent = 'Cette clé ne ressemble pas à une clé Vertex AI Express Mode (elle doit commencer par "AQ.").'; errorEl.classList.remove('hidden'); return; }
+    localStorage.setItem('userApiKey', trimmed);
+    state.view = 'mode-select';
+    render();
+  };
+  wrap.querySelector('#apikey-submit').addEventListener('click', submit);
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+  setTimeout(() => input.focus(), 0);
+  return wrap;
+}
+
+/* --- Écran 2 : catégories --- */
+/* --- Écran : choix du mode (Luxe vs Normal) --- */
+function renderModeSelect() {
+  const wrap = el(`
+    <div class="bg-zinc-900 text-white min-h-screen font-sans">
+      <header class="py-6 px-4 sm:px-6 lg:px-8">
+        <div class="text-center">
+          <h1 class="text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl">Studio <span class="text-amber-400">Life</span></h1>
+          <p class="mt-4 max-w-2xl mx-auto text-xl text-gray-400">Choisis ton mode de création</p>
+          <div class="mt-2 text-right max-w-7xl mx-auto px-4">
+            <button id="change-key" class="text-xs text-amber-500 hover:text-amber-400 underline">Changer de clé API</button>
+          </div>
+        </div>
+      </header>
+      <main class="pb-16">
+        <div class="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-fade-in grid grid-cols-1 md:grid-cols-2 gap-8">
+          <button id="mode-luxe" class="text-left bg-black border border-amber-500 rounded-lg p-8 hover:bg-amber-950/40 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-amber-400">
+            <div class="text-4xl mb-4">💎</div>
+            <h3 class="text-2xl font-bold text-amber-400 mb-2">Mode Luxe</h3>
+            <p class="text-gray-300 text-sm">Vlogs cinématographiques par scènes prédéfinies : jet privé, yacht, soft life, glam... Direction artistique complète (tenue, coiffure, accessoires) générée par IA.</p>
+          </button>
+          <button id="mode-normal" class="text-left bg-black border border-gray-700 rounded-lg p-8 hover:border-amber-500 hover:bg-amber-950/20 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-amber-400">
+            <div class="text-4xl mb-4">📸</div>
+            <h3 class="text-2xl font-bold text-white mb-2">Mode Normal</h3>
+            <p class="text-gray-300 text-sm">Photos brutes façon "moment volé" avec un téléphone. Jusqu'à 4 photos de lieu et 10 avatars de référence, une consigne libre, zéro luxe, zéro mise en scène.</p>
+          </button>
+        </div>
+      </main>
+    </div>
+  `);
+  wrap.querySelector('#change-key').addEventListener('click', () => {
+    localStorage.removeItem('userApiKey');
+    state.view = 'apikey';
+    render();
+  });
+  wrap.querySelector('#mode-luxe').addEventListener('click', () => { state.view = 'categories'; render(); });
+  wrap.querySelector('#mode-normal').addEventListener('click', () => { state.view = 'normal-setup'; render(); });
+  return wrap;
+}
+
+function renderCategories() {
+  const wrap = el(`
+    <div class="bg-zinc-900 text-white min-h-screen font-sans">
+      <header class="py-6 px-4 sm:px-6 lg:px-8">
+        <div class="text-center">
+          <h1 class="text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl">Studio <span class="text-amber-400">Life</span></h1>
+          <p class="mt-4 max-w-2xl mx-auto text-xl text-gray-400">Ta réalisatrice IA personnelle pour du contenu vlog luxe — Propulsé par Vertex AI</p>
+          <div class="mt-2 text-right max-w-7xl mx-auto px-4 flex justify-end gap-4">
+            <button id="back-mode" class="text-xs text-amber-500 hover:text-amber-400 underline">Changer de mode</button>
+            <button id="change-key" class="text-xs text-amber-500 hover:text-amber-400 underline">Changer de clé API</button>
+          </div>
+        </div>
+      </header>
+      <main class="pb-16">
+        <div class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-fade-in">
+          <div class="text-center mb-12">
+            <h2 class="text-4xl font-extrabold text-white sm:text-5xl">Choisis ta catégorie</h2>
+            <p class="mt-4 text-xl text-gray-400">Sélectionne une catégorie pour explorer les scénarios de vlog luxe.</p>
+          </div>
+          <div id="cat-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+        </div>
+      </main>
+    </div>
+  `);
+  wrap.querySelector('#change-key').addEventListener('click', () => {
+    localStorage.removeItem('userApiKey');
+    state.view = 'apikey';
+    render();
+  });
+  wrap.querySelector('#back-mode').addEventListener('click', () => { state.view = 'mode-select'; render(); });
+  const grid = wrap.querySelector('#cat-grid');
+  CATEGORIZED_SCENES.forEach((cat, idx) => {
+    const card = el(`
+      <button class="group aspect-square rounded-lg p-6 flex items-center justify-center text-center bg-black border border-amber-500 hover:bg-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-black transition-all duration-300">
+        <h3 class="text-2xl font-bold text-amber-400 group-hover:text-black transition-colors duration-300">${cat.title}</h3>
+      </button>
+    `);
+    card.addEventListener('click', () => { state.selectedCategoryIndex = idx; state.view = 'scenes'; render(); });
+    grid.appendChild(card);
+  });
+  return wrap;
+}
+
+/* --- Écran 3 : scènes d'une catégorie --- */
+function renderScenes() {
+  const category = CATEGORIZED_SCENES[state.selectedCategoryIndex];
+  const wrap = el(`
+    <div class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-fade-in">
+      <button id="back-cat" class="mb-8 text-amber-400 hover:text-amber-300 transition-colors duration-200 flex items-center group">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 transform group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        Retour aux catégories
+      </button>
+      <h2 class="text-4xl font-extrabold text-white sm:text-5xl">${category.title}</h2>
+      <p class="mt-4 text-xl text-gray-400 mb-10">Sélectionne une scène pour commencer.</p>
+      <div id="scene-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+    </div>
+  `);
+  wrap.querySelector('#back-cat').addEventListener('click', () => { state.view = 'categories'; render(); });
+  const grid = wrap.querySelector('#scene-grid');
+  category.scenes.forEach(scene => {
+    const card = el(`
+      <button class="group aspect-square rounded-lg p-6 flex items-center justify-center text-center bg-zinc-900 border border-gray-700 hover:bg-amber-500 hover:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-black transition-all duration-300">
+        <h3 class="text-xl font-bold text-gray-300 group-hover:text-black transition-colors duration-300">${scene.title}</h3>
+      </button>
+    `);
+    card.addEventListener('click', () => {
+      state.selectedScene = scene;
+      state.genderMode = null;
+      state.vibeId = 'rich-boss'; state.timeOfDayId = 'golden-hour'; state.seasonId = 'none'; state.holidayId = 'none'; state.bodyTypeId = 'default';
+      state.outfits = []; state.selectedOutfit = null; state.outfitError = null;
+      state.hairstyles = []; state.selectedHairstyle = null; state.hairstyleError = null;
+      state.accessories = []; state.selectedAccessory = null; state.accessoryError = null;
+      state.imageFile = null; state.imageDataUrl = null;
+      state.view = 'generator';
+      render();
+    });
+    grid.appendChild(card);
+  });
+  return wrap;
+}
+
+/* --- Écran 4 : générateur (mode, vibe, outfits, hair, accessoires, upload) --- */
+
+function customSelectorHtml(id, label, options, selectedId) {
+  const selected = options.find(o => o.id === selectedId) || options[0];
+  return `
+    <div class="w-full">
+      <label class="block text-sm font-medium text-amber-400 mb-2">${label}</label>
+      <div class="relative" data-selector="${id}">
+        <button type="button" data-toggle="${id}" class="relative w-full bg-black border border-amber-500 rounded-md shadow-sm pl-4 pr-10 py-3 text-left cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-400">
+          <span class="flex items-center">
+            <span class="mr-3 text-xl">${selected.emoji}</span>
+            <span class="block truncate font-semibold text-amber-400">${selected.label}</span>
+          </span>
+          <span class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+            <svg class="h-5 w-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+          </span>
+        </button>
+        <ul data-list="${id}" class="hidden absolute z-10 mt-1 w-full bg-black border border-amber-500 shadow-lg rounded-md py-1 text-base overflow-auto max-h-64 focus:outline-none sm:text-sm">
+          ${options.map(o => `
+            <li data-option="${id}" data-value="${o.id}" class="text-white cursor-pointer select-none relative py-3 pl-4 pr-9 hover:bg-gray-900/70 hover:text-amber-400 transition-all duration-200">
+              <div class="flex items-center"><span class="mr-3 text-xl">${o.emoji}</span><span class="font-normal block truncate ${o.id === selectedId ? 'font-semibold' : ''}">${o.label}</span></div>
+            </li>`).join('')}
+        </ul>
+      </div>
+    </div>
+  `;
+}
+
+function wireCustomSelector(container, id, onChange) {
+  const toggle = container.querySelector(`[data-toggle="${id}"]`);
+  const list = container.querySelector(`[data-list="${id}"]`);
+  toggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    document.querySelectorAll('ul[data-list]').forEach(l => { if (l !== list) l.classList.add('hidden'); });
+    list.classList.toggle('hidden');
+  });
+  container.querySelectorAll(`[data-option="${id}"]`).forEach(opt => {
+    opt.addEventListener('click', () => {
+      onChange(opt.getAttribute('data-value'));
+      list.classList.add('hidden');
+    });
+  });
+}
+
+document.addEventListener('click', () => {
+  document.querySelectorAll('ul[data-list]').forEach(l => l.classList.add('hidden'));
+});
+
+function renderGenerator() {
+  const scene = state.selectedScene;
+  const wrap = el(`
+    <div class="bg-zinc-900 text-white min-h-screen font-sans">
+      <main class="pb-16">
+        <div class="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <button id="back-scenes" class="mb-8 text-amber-400 hover:text-amber-300 transition-colors duration-200 flex items-center group">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 transform group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Retour aux scènes
+          </button>
+          <div class="bg-black border border-amber-500 rounded-lg p-8">
+            <h2 class="text-3xl font-extrabold text-amber-400">${scene.title}</h2>
+
+            <div class="mt-6 border-t border-gray-800 pt-6">
+              <h3 class="text-lg font-medium text-white mb-4 text-center">Choisis le mode Genre / Style</h3>
+              <div class="flex flex-col sm:flex-row justify-center items-center gap-4">
+                <button id="gender-femme" class="flex items-center justify-center gap-3 w-full sm:w-auto text-lg font-bold p-4 rounded-lg border-2 transition-all duration-300 ${state.genderMode === 'femme' ? 'border-amber-400 bg-amber-900/50 shadow-lg shadow-amber-500/20' : 'border-gray-700 bg-gray-900/50 hover:border-amber-500'}">👠 👑 MODE FEMME</button>
+                <button id="gender-masc" class="flex items-center justify-center gap-3 w-full sm:w-auto text-lg font-bold p-4 rounded-lg border-2 transition-all duration-300 ${state.genderMode === 'masc' ? 'border-amber-400 bg-amber-900/50 shadow-lg shadow-amber-500/20' : 'border-gray-700 bg-gray-900/50 hover:border-amber-500'}">🤵🏽 💼 MODE MASC</button>
+              </div>
+            </div>
+
+            <div id="generator-body" class="transition-opacity duration-700 ease-in-out ${state.genderMode ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}"></div>
+          </div>
+        </div>
+      </main>
+    </div>
+  `);
+
+  wrap.querySelector('#back-scenes').addEventListener('click', () => { state.view = 'scenes'; render(); });
+  wrap.querySelector('#gender-femme').addEventListener('click', () => { state.genderMode = 'femme'; state.bodyTypeId = 'default'; onGenderChosen(); });
+  wrap.querySelector('#gender-masc').addEventListener('click', () => { state.genderMode = 'masc'; state.bodyTypeId = 'default'; onGenderChosen(); });
+
+  if (state.genderMode) {
+    fillGeneratorBody(wrap.querySelector('#generator-body'));
+  }
+
+  return wrap;
+}
+
+function onGenderChosen() {
+  render();
+  refreshOutfitsAndHair();
+}
+
+function fillGeneratorBody(container) {
+  container.innerHTML = `
+    <div class="mt-6 border-t border-gray-800 pt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div id="sel-vibe"></div>
+      <div id="sel-time"></div>
+      <div class="md:col-span-2" id="sel-body"></div>
+      <div id="sel-season"></div>
+      <div id="sel-holiday"></div>
+    </div>
+    <div class="mt-8 border-t border-gray-800 pt-6">
+      <h3 class="text-lg font-medium text-white mb-4">Générateur de tenues IA</h3>
+      <div id="outfits-zone"></div>
+    </div>
+    <div class="mt-8 border-t border-gray-800 pt-6">
+      <h3 class="text-lg font-medium text-white mb-4">Sélecteur de coiffure IA</h3>
+      <div id="hair-zone"></div>
+    </div>
+    <div id="accessory-section" class="mt-8 border-t border-gray-800 pt-6 hidden">
+      <h3 class="text-lg font-medium text-white mb-4">Sélecteur d'accessoires IA</h3>
+      <div id="accessory-zone"></div>
+    </div>
+    <div class="mt-8 border-t border-gray-800 pt-6">
+      <label class="block text-lg font-medium text-white mb-2">Téléverse ta photo de base</label>
+      <p class="text-sm text-gray-500 mb-4">Téléverse une photo de ton jumeau IA. Cette image sera utilisée comme personnage dans ton vlog.</p>
+      <div id="upload-zone" class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-600 border-dashed rounded-md transition-colors"></div>
+    </div>
+    <div class="mt-8">
+      <button id="generate-btn" class="w-full flex justify-center items-center gap-2 bg-amber-500 hover:bg-amber-600 disabled:bg-gray-700 disabled:cursor-not-allowed text-black font-bold py-3 px-4 rounded-lg transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-black">Générer le vlog</button>
+    </div>
+  `;
+
+  const vibeZone = container.querySelector('#sel-vibe');
+  vibeZone.innerHTML = customSelectorHtml('vibe', "Choisis l'ambiance", VIBES, state.vibeId);
+  wireCustomSelector(vibeZone, 'vibe', (val) => { state.vibeId = val; render(); refreshOutfitsAndHair(); });
+
+  const timeZone = container.querySelector('#sel-time');
+  timeZone.innerHTML = customSelectorHtml('time', 'Choisis le moment de la journée', TIMES_OF_DAY, state.timeOfDayId);
+  wireCustomSelector(timeZone, 'time', (val) => { state.timeOfDayId = val; render(); refreshOutfitsAndHair(); });
+
+  const bodyZone = container.querySelector('#sel-body');
+  bodyZone.innerHTML = customSelectorHtml('body', 'Choisis la morphologie (optionnel)', getBodyTypeOptions(), state.bodyTypeId);
+  wireCustomSelector(bodyZone, 'body', (val) => { state.bodyTypeId = val; render(); refreshOutfitsAndHair(); });
+
+  const seasonZone = container.querySelector('#sel-season');
+  seasonZone.innerHTML = customSelectorHtml('season', 'Choisis la saison (optionnel)', SEASONS, state.seasonId);
+  wireCustomSelector(seasonZone, 'season', (val) => { state.seasonId = val; render(); refreshOutfitsAndHair(); });
+
+  const holidayZone = container.querySelector('#sel-holiday');
+  holidayZone.innerHTML = customSelectorHtml('holiday', 'Choisis la fête (optionnel)', HOLIDAYS, state.holidayId);
+  wireCustomSelector(holidayZone, 'holiday', (val) => { state.holidayId = val; render(); refreshOutfitsAndHair(); });
+
+  renderOutfitsZone(container.querySelector('#outfits-zone'));
+  renderHairZone(container.querySelector('#hair-zone'));
+  const accSection = container.querySelector('#accessory-section');
+  if (state.selectedOutfit && state.selectedHairstyle) {
+    accSection.classList.remove('hidden');
+    renderAccessoryZone(container.querySelector('#accessory-zone'));
+  }
+
+  renderUploadZone(container.querySelector('#upload-zone'));
+
+  const genBtn = container.querySelector('#generate-btn');
+  genBtn.disabled = !(state.genderMode && state.imageFile && state.selectedOutfit && state.selectedHairstyle && state.selectedAccessory && !state.isGenerating && !state.loadingOutfits && !state.loadingHairstyles && !state.loadingAccessories);
+  genBtn.textContent = state.isGenerating ? 'Génération de ton vlog...' : 'Générer le vlog';
+  genBtn.addEventListener('click', () => { startGeneration(false); });
+}
+
+function renderOutfitsZone(zone) {
+  if (state.loadingOutfits) { zone.innerHTML = `<div class="flex items-center gap-2 text-gray-400"><svg class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><p>Génération de tenues cinématographiques...</p></div>`; return; }
+  if (state.outfitError) { zone.innerHTML = `<div class="p-4 bg-red-900/50 border border-red-500 text-red-300 rounded-lg"><p>${state.outfitError}</p></div>`; return; }
+  if (!state.outfits.length) { zone.innerHTML = ''; return; }
+  zone.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">${state.outfits.map((o, i) => `
+    <div data-outfit-idx="${i}" class="p-4 rounded-lg border bg-black cursor-pointer transition-all duration-300 ${state.selectedOutfit && state.selectedOutfit.name === o.name ? 'border-amber-400 shadow-lg shadow-amber-500/20' : 'border-gray-700 hover:border-amber-500 hover:shadow-amber-500/10'}">
+      <h4 class="font-bold text-amber-400 text-md">${o.name}</h4>
+      <p class="text-white text-sm mt-2 mb-3">${o.description}</p>
+      <ul class="space-y-1 list-disc list-inside">${o.accessories.split(',').map(a => `<li class="text-amber-400/90 italic text-sm">${a.trim()}</li>`).join('')}</ul>
+    </div>`).join('')}</div>`;
+  zone.querySelectorAll('[data-outfit-idx]').forEach(cardEl => {
+    cardEl.addEventListener('click', () => {
+      state.selectedOutfit = state.outfits[parseInt(cardEl.getAttribute('data-outfit-idx'))];
+      state.accessories = []; state.selectedAccessory = null;
+      render();
+      refreshAccessories();
+    });
+  });
+}
+
+function renderHairZone(zone) {
+  if (state.loadingHairstyles) { zone.innerHTML = `<div class="flex items-center gap-2 text-gray-400"><svg class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><p>Stylisation de la coiffure...</p></div>`; return; }
+  if (state.hairstyleError) { zone.innerHTML = `<div class="p-4 bg-red-900/50 border border-red-500 text-red-300 rounded-lg"><p>${state.hairstyleError}</p></div>`; return; }
+  if (!state.hairstyles.length) { zone.innerHTML = ''; return; }
+  zone.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">${state.hairstyles.map((h, i) => `
+    <div data-hair-idx="${i}" class="p-4 rounded-lg border bg-black cursor-pointer transition-all duration-300 ${state.selectedHairstyle && state.selectedHairstyle.name === h.name ? 'border-amber-400 shadow-lg shadow-amber-500/20' : 'border-gray-700 hover:border-amber-500 hover:shadow-amber-500/10'}">
+      <h4 class="font-bold text-amber-400 text-md">${h.name}</h4>
+      <p class="text-white text-sm mt-2">${h.description}</p>
+    </div>`).join('')}</div>`;
+  zone.querySelectorAll('[data-hair-idx]').forEach(cardEl => {
+    cardEl.addEventListener('click', () => {
+      state.selectedHairstyle = state.hairstyles[parseInt(cardEl.getAttribute('data-hair-idx'))];
+      render();
+      if (state.selectedOutfit) refreshAccessories();
+    });
+  });
+}
+
+function renderAccessoryZone(zone) {
+  if (state.loadingAccessories) { zone.innerHTML = `<div class="flex items-center gap-2 text-gray-400"><svg class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><p>Sélection des touches finales...</p></div>`; return; }
+  if (state.accessoryError) { zone.innerHTML = `<div class="p-4 bg-red-900/50 border border-red-500 text-red-300 rounded-lg"><p>${state.accessoryError}</p></div>`; return; }
+  if (!state.accessories.length) { zone.innerHTML = ''; return; }
+  zone.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">${state.accessories.map((c, i) => `
+    <div data-acc-idx="${i}" class="p-4 rounded-lg border bg-zinc-900/50 cursor-pointer transition-all duration-300 ${state.selectedAccessory && state.selectedAccessory.name === c.name ? 'border-amber-400 shadow-lg shadow-amber-500/20' : 'border-gray-700 hover:border-amber-500 hover:shadow-amber-500/10'}">
+      <h4 class="font-bold text-amber-400 text-md">${c.name}</h4>
+      <div class="mt-3 space-y-3">
+        ${c.nails ? `<div><p class="text-sm font-semibold text-amber-400/80">💅🏽 Ongles</p><p class="text-white text-sm">${c.nails}</p></div>` : ''}
+        ${c.watchAndGrooming ? `<div><p class="text-sm font-semibold text-amber-400/80">⌚️ Montre & Grooming</p><p class="text-white text-sm">${c.watchAndGrooming}</p></div>` : ''}
+        ${c.footwear ? `<div><p class="text-sm font-semibold text-amber-400/80">👟 Chaussures</p><p class="text-white text-sm">${c.footwear}</p></div>` : ''}
+        <div><p class="text-sm font-semibold text-amber-400/80">👜 Sac de luxe</p><p class="text-white text-sm">${c.bag}</p></div>
+        <div><p class="text-sm font-semibold text-amber-400/80">💎 Bijoux & Extras</p><p class="text-white text-sm">${c.jewelry}</p></div>
+      </div>
+    </div>`).join('')}</div>`;
+  zone.querySelectorAll('[data-acc-idx]').forEach(cardEl => {
+    cardEl.addEventListener('click', () => {
+      state.selectedAccessory = state.accessories[parseInt(cardEl.getAttribute('data-acc-idx'))];
+      render();
+    });
+  });
+}
+
+function renderUploadZone(zone) {
+  if (state.imageDataUrl) {
+    zone.innerHTML = `
+      <div class="relative group">
+        <img src="${state.imageDataUrl}" alt="Aperçu" class="max-h-60 rounded-lg" />
+        <div id="change-image" class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+          <p class="text-white font-semibold">Changer l'image</p>
+        </div>
+      </div>`;
+    zone.querySelector('#change-image').addEventListener('click', () => { state.imageFile = null; state.imageDataUrl = null; render(); });
+  } else {
+    zone.innerHTML = `
+      <div class="space-y-3 text-center w-full">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-500 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+        <div>
+          <button type="button" id="browse-btn" class="bg-amber-500 hover:bg-amber-600 text-black font-semibold rounded-md px-4 py-2 transition-colors">Choisir un fichier</button>
+          <p class="text-sm text-gray-400 mt-2">ou glisse-dépose une image ici</p>
+        </div>
+        <input id="file-upload" type="file" class="hidden" accept="image/png, image/jpeg" />
+        <p class="text-xs text-gray-500">PNG, JPG jusqu'à 10 Mo</p>
+      </div>`;
+    const input = zone.querySelector('#file-upload');
+    const browseBtn = zone.querySelector('#browse-btn');
+    browseBtn.addEventListener('click', () => input.click());
+    input.addEventListener('change', (e) => handleFileSelect(e.target.files));
+    zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('border-amber-500', 'bg-gray-800'); });
+    zone.addEventListener('dragleave', (e) => { e.preventDefault(); zone.classList.remove('border-amber-500', 'bg-gray-800'); });
+    zone.addEventListener('drop', (e) => { e.preventDefault(); zone.classList.remove('border-amber-500', 'bg-gray-800'); handleFileSelect(e.dataTransfer.files); });
+  }
+}
+
+function handleFileSelect(files) {
+  if (files && files[0]) {
+    state.imageFile = files[0];
+    const reader = new FileReader();
+    reader.onloadend = () => { state.imageDataUrl = reader.result; render(); };
+    reader.readAsDataURL(files[0]);
+  }
+}
+
+async function refreshOutfitsAndHair() {
+  if (!state.genderMode) return;
+  const scene = state.selectedScene, vibe = getVibe(), timeOfDay = getTimeOfDay(), season = getSeason(), holiday = getHoliday(), bodyType = getBodyType();
+
+  state.loadingOutfits = true; state.outfitError = null; state.outfits = []; state.selectedOutfit = null;
+  state.loadingHairstyles = true; state.hairstyleError = null; state.hairstyles = []; state.selectedHairstyle = null;
+  state.accessories = []; state.selectedAccessory = null;
+  render();
+
+  try {
+    state.outfits = await generateOutfits(scene, vibe, timeOfDay, state.genderMode, season, holiday, bodyType);
+    state.selectedOutfit = state.outfits[0] || null;
+  } catch (err) { state.outfitError = err.message; }
+  state.loadingOutfits = false;
+  render();
+
+  try {
+    state.hairstyles = await generateHairstyles(vibe, timeOfDay, state.genderMode, season, holiday, bodyType);
+    state.selectedHairstyle = state.hairstyles[0] || null;
+  } catch (err) { state.hairstyleError = err.message; }
+  state.loadingHairstyles = false;
+  render();
+
+  if (state.selectedOutfit) refreshAccessories();
+}
+
+async function refreshAccessories() {
+  if (!state.selectedOutfit || !state.genderMode) return;
+  const scene = state.selectedScene, vibe = getVibe(), timeOfDay = getTimeOfDay(), season = getSeason(), holiday = getHoliday(), bodyType = getBodyType();
+  state.loadingAccessories = true; state.accessoryError = null; state.accessories = []; state.selectedAccessory = null;
+  render();
+  try {
+    state.accessories = await generateAccessoryCombinations(scene, vibe, state.selectedOutfit, timeOfDay, state.genderMode, season, holiday, bodyType);
+    state.selectedAccessory = state.accessories[0] || null;
+  } catch (err) { state.accessoryError = err.message; }
+  state.loadingAccessories = false;
+  render();
+}
+
+/* --------------------- PIPELINE DE GÉNÉRATION DU VLOG -------------------- */
+
+async function startGeneration(sameOptions) {
+  if (!state.selectedScene) return;
+  let params = state.lastGenParams;
+  if (!sameOptions || !params) {
+    if (!state.imageFile || !state.genderMode || !state.selectedOutfit || !state.selectedHairstyle || !state.selectedAccessory) return;
+    params = {
+      imageFile: state.imageFile,
+      genderMode: state.genderMode,
+      bodyType: getBodyType(),
+      outfit: state.selectedOutfit,
+      hairstyle: state.selectedHairstyle,
+      accessory: state.selectedAccessory,
+      vibe: getVibe(),
+      timeOfDay: getTimeOfDay(),
+      season: getSeason(),
+      holiday: getHoliday(),
+    };
+    state.lastGenParams = params;
+  }
+
+  state.isGenerating = true;
+  state.generatedImages = [];
+  render();
+
+  try {
+    const baseImage = await fileToBase64(params.imageFile);
+    const scene = state.selectedScene;
+
+    let detailedPartnerStyle, detailedFriendStyles;
+    if (scene.isCoupleScene) {
+      const archetypes = params.genderMode === 'femme' ? MALE_PARTNER_ARCHETYPES : FEMALE_PARTNER_ARCHETYPES;
+      const partnerArchetype = archetypes[Math.floor(Math.random() * archetypes.length)].description;
+      detailedPartnerStyle = await generatePartnerStyle(scene, params.vibe, params.timeOfDay, partnerArchetype, params.season, params.holiday);
+    } else if (scene.isGirlsTripScene) {
+      detailedFriendStyles = await generateFriendStyles(scene, params.vibe, params.timeOfDay, params.outfit, params.season, params.holiday);
+    }
+
+    const results = [];
+    for (let i = 0; i < 7; i++) {
+      if (i > 0) await wait(5000);
+      const imageUrl = await generateVlogImage(
+        baseImage, scene, i + 1, params.outfit, params.hairstyle, params.accessory,
+        params.vibe, params.timeOfDay, params.genderMode, detailedPartnerStyle, detailedFriendStyles,
+        params.season, params.holiday, params.bodyType
+      );
+      results.push(imageUrl);
+    }
+
+    const validImages = results.filter(Boolean);
+    if (validImages.length === 0) {
+      throw new Error("L'IA n'a réussi à générer aucune image. Réessaie dans un instant ou change les options de style.");
+    }
+    if (validImages.length < 7) {
+      alert(`${validImages.length} images générées sur 7. Certaines scènes ont échoué (limite IA temporaire). Tu peux régénérer le vlog.`);
+    }
+
+    state.generatedImages = validImages;
+    state.currentSlide = 0;
+    state.view = 'display';
+  } catch (err) {
+    alert(err.message);
+  } finally {
+    state.isGenerating = false;
+    render();
+  }
+}
+
+/* --------------------------- Écran 5 : affichage -------------------------- */
+
+let slideInterval = null, progressInterval = null;
+
+function clearSlideTimers() {
+  if (slideInterval) clearInterval(slideInterval);
+  if (progressInterval) clearInterval(progressInterval);
+  slideInterval = null; progressInterval = null;
+}
+
+function renderDisplay() {
+  if (state.isGenerating) {
+    return el(`
+      <div class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32 flex flex-col items-center justify-center min-h-[50vh] animate-fade-in">
+        <div class="relative mb-8">
+          <div class="absolute inset-0 bg-amber-500 blur-xl opacity-20 rounded-full"></div>
+          <svg class="animate-spin h-20 w-20 text-amber-400 relative z-10" viewBox="0 0 24 24" fill="none">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+        </div>
+        <h2 class="text-3xl font-extrabold text-white tracking-tight">Régénération de ton vlog...</h2>
+        <p class="text-gray-400 mt-4 text-lg text-center max-w-md">La réalisatrice IA retourne tes scènes pour garantir un maximum de luxe et de cohérence. Merci de patienter...</p>
+      </div>
+    `);
+  }
+
+  const images = state.generatedImages;
+  const scene = state.selectedScene;
+  if (!images.length) return el(`<div></div>`);
+
+  const wrap = el(`
+    <div class="bg-zinc-900 text-white min-h-screen font-sans">
+      <main class="pb-16">
+        <div class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div class="text-center mb-8">
+            <h2 class="text-4xl font-extrabold text-white sm:text-5xl">Ton vlog <span class="text-amber-400">${scene.title}</span></h2>
+            <p class="mt-4 text-xl text-gray-400">Ton histoire est prête. Regarde le vlog généré ci-dessous.</p>
+          </div>
+
+          <div class="flex justify-center mb-12">
+            <div class="relative w-full max-w-md bg-black rounded-2xl border-2 border-amber-500/50 shadow-2xl overflow-hidden aspect-[9/16]">
+              <div id="progress-bars" class="absolute top-2 left-2 right-2 flex gap-1 z-20"></div>
+              <div id="slides" class="relative w-full h-full"></div>
+            </div>
+          </div>
+
+          <div class="border-t border-gray-800 pt-12">
+            <h3 class="text-2xl font-bold text-white mb-6 text-center">Détail des scènes & téléchargements</h3>
+            <div id="scene-grid-thumbs" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4"></div>
+          </div>
+
+          <div class="mt-16 text-center flex flex-col sm:flex-row justify-center items-center gap-4">
+            <button id="regen-open" class="bg-gray-800 hover:bg-gray-700 text-amber-400 font-bold py-3 px-8 rounded-lg transition-all duration-300 transform hover:scale-105">Régénérer ce vlog</button>
+            <button id="reset-btn" class="bg-amber-500 hover:bg-amber-600 text-black font-bold py-3 px-8 rounded-lg transition-all duration-300 transform hover:scale-105">Créer un nouveau vlog</button>
+          </div>
+        </div>
+      </main>
+      <div id="regen-modal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 hidden">
+        <div class="bg-black border border-amber-500 rounded-lg shadow-xl p-8 max-w-md w-full mx-4 relative">
+          <button id="regen-close" class="absolute top-3 right-3 text-gray-400 hover:text-white transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+          <h3 class="text-2xl font-bold text-amber-400 mb-4">Régénérer ton vlog</h3>
+          <p class="text-gray-300 mb-6">Veux-tu régénérer le vlog avec les mêmes styles, ou changer de look ?</p>
+          <div class="flex flex-col gap-4">
+            <button id="regen-same" class="w-full bg-amber-500 hover:bg-amber-600 text-black font-bold py-3 px-4 rounded-lg transition-all duration-300 transform hover:scale-105">Réessayer le même style</button>
+            <button id="regen-new" class="w-full bg-gray-800 hover:bg-gray-700 text-amber-400 font-bold py-3 px-4 rounded-lg transition-all duration-300">Changer de style et réessayer</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `);
+
+  const progressBars = wrap.querySelector('#progress-bars');
+  images.forEach((_, idx) => {
+    progressBars.appendChild(el(`<div class="h-1 flex-1 bg-gray-600 rounded-full overflow-hidden"><div data-bar="${idx}" class="h-full bg-white transition-all duration-100 ease-linear" style="width:${idx < state.currentSlide ? '100' : '0'}%"></div></div>`));
+  });
+
+  const slidesZone = wrap.querySelector('#slides');
+  images.forEach((src, idx) => {
+    slidesZone.appendChild(el(`<img src="${src}" alt="Scene ${idx+1}" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${idx === state.currentSlide ? 'opacity-100' : 'opacity-0'}" />`));
+  });
+  slidesZone.appendChild(el(`<div class="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/60 pointer-events-none"></div>`));
+  const controls = el(`
+    <div class="absolute bottom-0 left-0 right-0 p-6 z-20">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-amber-400 font-bold text-sm tracking-wider uppercase">${scene.title} • Scène ${state.currentSlide + 1}/${images.length}</span>
+        <button id="play-pause" class="text-white hover:text-amber-400 transition-colors focus:outline-none"></button>
+      </div>
+      <p class="text-white text-xs opacity-80">Généré avec Studio Life</p>
+    </div>`);
+  slidesZone.appendChild(controls);
+  const playBtn = controls.querySelector('#play-pause');
+  playBtn.innerHTML = state.isPlaying
+    ? `<svg class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>`
+    : `<svg class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg>`;
+  playBtn.addEventListener('click', () => { state.isPlaying = !state.isPlaying; restartSlideTimers(); render(); });
+
+  const navLeft = el(`<div class="absolute inset-0 flex z-10"><div class="w-1/2 h-full cursor-pointer"></div><div class="w-1/2 h-full cursor-pointer"></div></div>`);
+  navLeft.children[0].addEventListener('click', () => { state.currentSlide = (state.currentSlide - 1 + images.length) % images.length; render(); });
+  navLeft.children[1].addEventListener('click', () => { state.currentSlide = (state.currentSlide + 1) % images.length; render(); });
+  slidesZone.appendChild(navLeft);
+
+  const thumbGrid = wrap.querySelector('#scene-grid-thumbs');
+  images.forEach((src, idx) => {
+    const thumb = el(`
+      <div class="group bg-black rounded-lg overflow-hidden border relative cursor-pointer transition-all duration-300 ${idx === state.currentSlide ? 'border-amber-400 ring-2 ring-amber-400/50' : 'border-gray-700 hover:border-amber-500'}">
+        <img src="${src}" alt="Scene ${idx+1}" class="w-full h-auto object-cover aspect-[9/16]" />
+        <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 flex items-center justify-center transition-all duration-300">
+          <button data-dl="${idx}" class="opacity-0 group-hover:opacity-100 bg-amber-500 text-black p-2 rounded-full hover:bg-amber-400 transform scale-90 group-hover:scale-100 transition-all" title="Télécharger l'image">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+          </button>
+        </div>
+        <div class="absolute bottom-0 left-0 right-0 bg-black/70 p-1 text-center"><span class="text-xs text-gray-300">#${idx+1}</span></div>
+      </div>`);
+    thumb.addEventListener('click', () => { state.currentSlide = idx; render(); });
+    thumb.querySelector(`[data-dl="${idx}"]`).addEventListener('click', (e) => {
+      e.stopPropagation();
+      const link = document.createElement('a');
+      link.href = src;
+      const sanitizedTitle = scene.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      link.download = `studio_life_${sanitizedTitle}_scene_${idx + 1}.png`;
+      document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    });
+    thumbGrid.appendChild(thumb);
+  });
+
+  wrap.querySelector('#reset-btn').addEventListener('click', () => {
+    clearSlideTimers();
+    state.view = 'categories'; state.selectedScene = null; state.generatedImages = [];
+    render();
+  });
+  wrap.querySelector('#regen-open').addEventListener('click', () => { wrap.querySelector('#regen-modal').classList.remove('hidden'); });
+  wrap.querySelector('#regen-close').addEventListener('click', () => { wrap.querySelector('#regen-modal').classList.add('hidden'); });
+  wrap.querySelector('#regen-same').addEventListener('click', () => { wrap.querySelector('#regen-modal').classList.add('hidden'); startGeneration(true); });
+  wrap.querySelector('#regen-new').addEventListener('click', () => {
+    clearSlideTimers();
+    state.view = 'generator'; state.generatedImages = [];
+    render();
+  });
+
+  restartSlideTimers();
+  return wrap;
+}
+
+function restartSlideTimers() {
+  clearSlideTimers();
+  const SLIDE_DURATION = 3000;
+  if (state.isPlaying && state.generatedImages.length > 0) {
+    slideInterval = setInterval(() => {
+      state.currentSlide = (state.currentSlide + 1) % state.generatedImages.length;
+      render();
+    }, SLIDE_DURATION);
+  }
+}
+
+/* ============================================================
+   MODE NORMAL — moments volés, zéro luxe
+   ============================================================ */
+
+function fileToRefObject(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      const result = reader.result;
+      const mimeType = result.split(',')[0].split(':')[1].split(';')[0];
+      const data = result.split(',')[1];
+      resolve({ file, dataUrl: result, data, mimeType });
+    };
+    reader.onerror = reject;
+  });
+}
+
+function renderNormalSetup() {
+  const wrap = el(`
+    <div class="bg-zinc-900 text-white min-h-screen font-sans">
+      <header class="py-6 px-4 sm:px-6 lg:px-8">
+        <div class="text-center">
+          <h1 class="text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl">Studio <span class="text-amber-400">Life</span></h1>
+          <p class="mt-4 max-w-2xl mx-auto text-xl text-gray-400">Mode Normal — moments volés, zéro luxe</p>
+          <div class="mt-2 text-right max-w-7xl mx-auto px-4">
+            <button id="back-mode" class="text-xs text-amber-500 hover:text-amber-400 underline">Changer de mode</button>
+          </div>
+        </div>
+      </header>
+      <main class="pb-16">
+        <div class="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-fade-in">
+          <div class="bg-black border border-gray-700 rounded-lg p-8 space-y-8">
+
+            <div>
+              <h3 class="text-lg font-medium text-white mb-2">📍 Photos de lieu (référence)</h3>
+              <p class="text-sm text-gray-500 mb-4">Jusqu'à ${MAX_LOCATION_REFS} photos du lieu où doit se dérouler la scène. Optionnel mais recommandé pour un rendu fidèle.</p>
+              <div id="location-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
+            </div>
+
+            <div class="border-t border-gray-800 pt-8">
+              <h3 class="text-lg font-medium text-white mb-2">🧑‍🤝‍🧑 Avatars / personnes (référence)</h3>
+              <p class="text-sm text-gray-500 mb-4">Jusqu'à ${MAX_AVATAR_REFS} photos de visages/personnes à faire apparaître dans les images, de façon reconnaissable et cohérente.</p>
+              <div id="avatar-grid" class="grid grid-cols-3 sm:grid-cols-5 gap-3"></div>
+            </div>
+
+            <div class="border-t border-gray-800 pt-8">
+              <h3 class="text-lg font-medium text-white mb-2">✍️ Consigne libre</h3>
+              <p class="text-sm text-gray-500 mb-4">Décris ce que tu veux voir : l'action, le moment, l'ambiance. En texte libre, comme tu veux.</p>
+              <textarea id="direction-input" rows="4" placeholder="Ex : Un dimanche matin tranquille dans la cuisine, café à la main, lumière naturelle, personne qui ne pose pas..."
+                class="w-full bg-zinc-900 border border-gray-700 rounded-md px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-amber-400">${state.normalDirection}</textarea>
+            </div>
+
+            <div class="border-t border-gray-800 pt-8">
+              <h3 class="text-lg font-medium text-white mb-4">🔢 Nombre de photos à générer</h3>
+              <div id="count-buttons" class="flex gap-4"></div>
+            </div>
+
+            <div class="border-t border-gray-800 pt-8">
+              <button id="normal-generate-btn" class="w-full flex justify-center items-center gap-2 bg-amber-500 hover:bg-amber-600 disabled:bg-gray-700 disabled:cursor-not-allowed text-black font-bold py-3 px-4 rounded-lg transition-all duration-300 transform hover:scale-105">Générer les photos</button>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  `);
+
+  wrap.querySelector('#back-mode').addEventListener('click', () => { state.view = 'mode-select'; render(); });
+
+  // Zone photos de lieu
+  const locationGrid = wrap.querySelector('#location-grid');
+  function renderLocationGrid() {
+    locationGrid.innerHTML = '';
+    state.normalLocationImages.forEach((img, idx) => {
+      const thumb = el(`
+        <div class="relative aspect-square rounded-lg overflow-hidden border border-amber-500/50">
+          <img src="${img.dataUrl}" class="w-full h-full object-cover" />
+          <button data-remove-loc="${idx}" class="absolute top-1 right-1 bg-black/70 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600">✕</button>
+        </div>`);
+      thumb.querySelector(`[data-remove-loc="${idx}"]`).addEventListener('click', () => {
+        state.normalLocationImages.splice(idx, 1);
+        renderLocationGrid();
+        updateGenerateButton();
+      });
+      locationGrid.appendChild(thumb);
+    });
+    if (state.normalLocationImages.length < MAX_LOCATION_REFS) {
+      const addBtn = el(`
+        <label class="aspect-square rounded-lg border-2 border-dashed border-gray-600 flex flex-col items-center justify-center cursor-pointer hover:border-amber-500 transition-colors">
+          <span class="text-3xl text-gray-500">+</span>
+          <span class="text-xs text-gray-500 mt-1">${state.normalLocationImages.length}/${MAX_LOCATION_REFS}</span>
+          <input type="file" accept="image/png, image/jpeg" class="hidden" data-add-loc />
+        </label>`);
+      addBtn.querySelector('[data-add-loc]').addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (state.normalLocationImages.length >= MAX_LOCATION_REFS) return;
+        const ref = await fileToRefObject(file);
+        state.normalLocationImages.push(ref);
+        renderLocationGrid();
+        updateGenerateButton();
+      });
+      locationGrid.appendChild(addBtn);
+    }
+  }
+
+  // Zone avatars
+  const avatarGrid = wrap.querySelector('#avatar-grid');
+  function renderAvatarGrid() {
+    avatarGrid.innerHTML = '';
+    state.normalAvatarImages.forEach((img, idx) => {
+      const thumb = el(`
+        <div class="relative aspect-square rounded-lg overflow-hidden border border-amber-500/50">
+          <img src="${img.dataUrl}" class="w-full h-full object-cover" />
+          <button data-remove-av="${idx}" class="absolute top-1 right-1 bg-black/70 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600">✕</button>
+        </div>`);
+      thumb.querySelector(`[data-remove-av="${idx}"]`).addEventListener('click', () => {
+        state.normalAvatarImages.splice(idx, 1);
+        renderAvatarGrid();
+        updateGenerateButton();
+      });
+      avatarGrid.appendChild(thumb);
+    });
+    if (state.normalAvatarImages.length < MAX_AVATAR_REFS) {
+      const addBtn = el(`
+        <label class="aspect-square rounded-lg border-2 border-dashed border-gray-600 flex flex-col items-center justify-center cursor-pointer hover:border-amber-500 transition-colors">
+          <span class="text-3xl text-gray-500">+</span>
+          <span class="text-xs text-gray-500 mt-1">${state.normalAvatarImages.length}/${MAX_AVATAR_REFS}</span>
+          <input type="file" accept="image/png, image/jpeg" class="hidden" data-add-av />
+        </label>`);
+      addBtn.querySelector('[data-add-av]').addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (state.normalAvatarImages.length >= MAX_AVATAR_REFS) return;
+        const ref = await fileToRefObject(file);
+        state.normalAvatarImages.push(ref);
+        renderAvatarGrid();
+        updateGenerateButton();
+      });
+      avatarGrid.appendChild(addBtn);
+    }
+  }
+
+  renderLocationGrid();
+  renderAvatarGrid();
+
+  // Direction texte
+  const directionInput = wrap.querySelector('#direction-input');
+  directionInput.addEventListener('input', () => { state.normalDirection = directionInput.value; updateGenerateButton(); });
+
+  // Nombre de photos
+  const countButtons = wrap.querySelector('#count-buttons');
+  function renderCountButtons() {
+    countButtons.innerHTML = '';
+    NORMAL_IMAGE_COUNT_OPTIONS.forEach(n => {
+      const btn = el(`<button class="flex-1 py-3 rounded-lg border-2 font-bold transition-all duration-300 ${state.normalImageCount === n ? 'border-amber-400 bg-amber-900/50 text-amber-400' : 'border-gray-700 bg-gray-900/50 text-white hover:border-amber-500'}">${n} photos</button>`);
+      btn.addEventListener('click', () => { state.normalImageCount = n; renderCountButtons(); });
+      countButtons.appendChild(btn);
+    });
+  }
+  renderCountButtons();
+
+  // Bouton générer
+  const generateBtn = wrap.querySelector('#normal-generate-btn');
+  function updateGenerateButton() {
+    generateBtn.disabled = state.normalDirection.trim().length === 0 || state.normalIsGenerating;
+  }
+  updateGenerateButton();
+  generateBtn.addEventListener('click', () => { startNormalGeneration(); });
+
+  return wrap;
+}
+
+async function startNormalGeneration() {
+  if (state.normalDirection.trim().length === 0) return;
+
+  state.normalIsGenerating = true;
+  state.normalGeneratedImages = [];
+  state.view = 'normal-display';
+  render();
+
+  try {
+    const total = state.normalImageCount;
+    const results = [];
+    for (let i = 0; i < total; i++) {
+      if (i > 0) await wait(5000);
+      const imageUrl = await generateNormalImage(
+        state.normalLocationImages,
+        state.normalAvatarImages,
+        state.normalDirection.trim(),
+        i + 1,
+        total
+      );
+      results.push(imageUrl);
+      state.normalGeneratedImages = results.filter(Boolean);
+      render(); // affichage progressif
+    }
+
+    const validImages = results.filter(Boolean);
+    if (validImages.length === 0) {
+      throw new Error("L'IA n'a réussi à générer aucune image. Réessaie dans un instant.");
+    }
+    if (validImages.length < total) {
+      alert(`${validImages.length} photos générées sur ${total}. Certaines ont échoué (limite IA temporaire). Tu peux régénérer.`);
+    }
+    state.normalGeneratedImages = validImages;
+    state.normalCurrentSlide = 0;
+  } catch (err) {
+    alert(err.message);
+    state.view = 'normal-setup';
+  } finally {
+    state.normalIsGenerating = false;
+    render();
+  }
+}
+
+let normalSlideInterval = null;
+function clearNormalSlideTimer() {
+  if (normalSlideInterval) clearInterval(normalSlideInterval);
+  normalSlideInterval = null;
+}
+function restartNormalSlideTimer() {
+  clearNormalSlideTimer();
+  if (state.normalIsPlaying && state.normalGeneratedImages.length > 0) {
+    normalSlideInterval = setInterval(() => {
+      state.normalCurrentSlide = (state.normalCurrentSlide + 1) % state.normalGeneratedImages.length;
+      render();
+    }, 3000);
+  }
+}
+
+function renderNormalDisplay() {
+  const images = state.normalGeneratedImages;
+
+  if (state.normalIsGenerating && images.length === 0) {
+    return el(`
+      <div class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32 flex flex-col items-center justify-center min-h-[50vh] animate-fade-in">
+        <div class="relative mb-8">
+          <div class="absolute inset-0 bg-amber-500 blur-xl opacity-20 rounded-full"></div>
+          <svg class="animate-spin h-20 w-20 text-amber-400 relative z-10" viewBox="0 0 24 24" fill="none">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+        </div>
+        <h2 class="text-3xl font-extrabold text-white tracking-tight">Génération de tes photos...</h2>
+        <p class="text-gray-400 mt-4 text-lg text-center max-w-md">Studio Life capture tes moments volés. Merci de patienter...</p>
+      </div>
+    `);
+  }
+
+  if (!images.length) return el(`<div></div>`);
+
+  const wrap = el(`
+    <div class="bg-zinc-900 text-white min-h-screen font-sans">
+      <main class="pb-16">
+        <div class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div class="text-center mb-8">
+            <h2 class="text-4xl font-extrabold text-white sm:text-5xl">Tes photos <span class="text-amber-400">Studio Life</span></h2>
+            <p class="mt-4 text-xl text-gray-400">${state.normalIsGenerating ? `Génération en cours... (${images.length}/${state.normalImageCount})` : 'Tes moments volés sont prêts.'}</p>
+          </div>
+
+          <div class="flex justify-center mb-12">
+            <div class="relative w-full max-w-md bg-black rounded-2xl border-2 border-amber-500/50 shadow-2xl overflow-hidden aspect-[9/16]">
+              <div id="n-progress-bars" class="absolute top-2 left-2 right-2 flex gap-1 z-20"></div>
+              <div id="n-slides" class="relative w-full h-full"></div>
+            </div>
+          </div>
+
+          <div class="border-t border-gray-800 pt-12">
+            <h3 class="text-2xl font-bold text-white mb-6 text-center">Photos & téléchargements</h3>
+            <div id="n-grid-thumbs" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"></div>
+          </div>
+
+          <div class="mt-16 text-center flex flex-col sm:flex-row justify-center items-center gap-4">
+            <button id="n-regen-btn" class="bg-gray-800 hover:bg-gray-700 text-amber-400 font-bold py-3 px-8 rounded-lg transition-all duration-300 transform hover:scale-105" ${state.normalIsGenerating ? 'disabled' : ''}>Régénérer avec les mêmes réglages</button>
+            <button id="n-new-btn" class="bg-amber-500 hover:bg-amber-600 text-black font-bold py-3 px-8 rounded-lg transition-all duration-300 transform hover:scale-105" ${state.normalIsGenerating ? 'disabled' : ''}>Nouvelle série</button>
+          </div>
+        </div>
+      </main>
+    </div>
+  `);
+
+  const progressBars = wrap.querySelector('#n-progress-bars');
+  images.forEach((_, idx) => {
+    progressBars.appendChild(el(`<div class="h-1 flex-1 bg-gray-600 rounded-full overflow-hidden"><div class="h-full bg-white transition-all duration-100 ease-linear" style="width:${idx <= state.normalCurrentSlide ? '100' : '0'}%"></div></div>`));
+  });
+
+  const slidesZone = wrap.querySelector('#n-slides');
+  images.forEach((src, idx) => {
+    slidesZone.appendChild(el(`<img src="${src}" alt="Photo ${idx+1}" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${idx === state.normalCurrentSlide ? 'opacity-100' : 'opacity-0'}" />`));
+  });
+  slidesZone.appendChild(el(`<div class="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/60 pointer-events-none"></div>`));
+  const controls = el(`
+    <div class="absolute bottom-0 left-0 right-0 p-6 z-20">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-amber-400 font-bold text-sm tracking-wider uppercase">Photo ${state.normalCurrentSlide + 1}/${images.length}</span>
+        <button id="n-play-pause" class="text-white hover:text-amber-400 transition-colors focus:outline-none"></button>
+      </div>
+      <p class="text-white text-xs opacity-80">Généré avec Studio Life — Mode Normal</p>
+    </div>`);
+  slidesZone.appendChild(controls);
+  const playBtn = controls.querySelector('#n-play-pause');
+  playBtn.innerHTML = state.normalIsPlaying
+    ? `<svg class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>`
+    : `<svg class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg>`;
+  playBtn.addEventListener('click', () => { state.normalIsPlaying = !state.normalIsPlaying; restartNormalSlideTimer(); render(); });
+
+  const navZone = el(`<div class="absolute inset-0 flex z-10"><div class="w-1/2 h-full cursor-pointer"></div><div class="w-1/2 h-full cursor-pointer"></div></div>`);
+  navZone.children[0].addEventListener('click', () => { state.normalCurrentSlide = (state.normalCurrentSlide - 1 + images.length) % images.length; render(); });
+  navZone.children[1].addEventListener('click', () => { state.normalCurrentSlide = (state.normalCurrentSlide + 1) % images.length; render(); });
+  slidesZone.appendChild(navZone);
+
+  const thumbGrid = wrap.querySelector('#n-grid-thumbs');
+  images.forEach((src, idx) => {
+    const thumb = el(`
+      <div class="group bg-black rounded-lg overflow-hidden border relative cursor-pointer transition-all duration-300 ${idx === state.normalCurrentSlide ? 'border-amber-400 ring-2 ring-amber-400/50' : 'border-gray-700 hover:border-amber-500'}">
+        <img src="${src}" alt="Photo ${idx+1}" class="w-full h-auto object-cover aspect-[9/16]" />
+        <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 flex items-center justify-center transition-all duration-300">
+          <button data-ndl="${idx}" class="opacity-0 group-hover:opacity-100 bg-amber-500 text-black p-2 rounded-full hover:bg-amber-400 transform scale-90 group-hover:scale-100 transition-all" title="Télécharger la photo">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+          </button>
+        </div>
+        <div class="absolute bottom-0 left-0 right-0 bg-black/70 p-1 text-center"><span class="text-xs text-gray-300">#${idx+1}</span></div>
+      </div>`);
+    thumb.addEventListener('click', () => { state.normalCurrentSlide = idx; render(); });
+    thumb.querySelector(`[data-ndl="${idx}"]`).addEventListener('click', (e) => {
+      e.stopPropagation();
+      const link = document.createElement('a');
+      link.href = src;
+      link.download = `studio_life_normal_${idx + 1}.png`;
+      document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    });
+    thumbGrid.appendChild(thumb);
+  });
+
+  const regenBtn = wrap.querySelector('#n-regen-btn');
+  if (regenBtn) regenBtn.addEventListener('click', () => { startNormalGeneration(); });
+  const newBtn = wrap.querySelector('#n-new-btn');
+  if (newBtn) newBtn.addEventListener('click', () => {
+    clearNormalSlideTimer();
+    state.normalGeneratedImages = [];
+    state.view = 'normal-setup';
+    render();
+  });
+
+  restartNormalSlideTimer();
+  return wrap;
+}
+
+/* --------------------------------- INIT ---------------------------------- */
+
+function init() {
+  const existingKey = localStorage.getItem('userApiKey');
+  state.view = existingKey ? 'mode-select' : 'apikey';
+  render();
+}
+
+init();
+</script>
+</body>
+</html>
