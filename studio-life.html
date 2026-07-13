@@ -28,7 +28,7 @@
 
 const VERTEX_BASE_URL = 'https://aiplatform.googleapis.com/v1/publishers/google/models';
 const TEXT_MODEL = 'gemini-2.5-flash';
-const IMAGE_MODEL = 'gemini-3.1-flash-image-preview';
+const IMAGE_MODEL = 'gemini-3-pro-image-preview';
 
 /* ---------------------------- DONNÉES ---------------------------------- */
 
@@ -410,10 +410,28 @@ const CATEGORIZED_SCENES = [
     }
 ];
 
+/* ------------------------- STOCKAGE SÉCURISÉ ----------------------------- */
+/* Certains aperçus sandboxés (ex: prévisualisation intégrée d'un chat) bloquent
+   l'accès à localStorage et lèvent une exception. On protège chaque accès
+   et on retombe sur une variable mémoire pour que l'appli ne plante jamais
+   au chargement — même si la clé ne persistera pas entre deux rechargements
+   dans ce cas précis. Ouvrir le fichier .html directement dans un navigateur
+   (double-clic, ou glisser dans l'onglet) utilise le vrai localStorage. */
+const memoryStore = {};
+function safeGetItem(key) {
+  try { return window.localStorage.getItem(key); } catch (e) { return memoryStore[key] || null; }
+}
+function safeSetItem(key, value) {
+  try { window.localStorage.setItem(key, value); } catch (e) { memoryStore[key] = value; }
+}
+function safeRemoveItem(key) {
+  try { window.localStorage.removeItem(key); } catch (e) { delete memoryStore[key]; }
+}
+
 /* ------------------------- SERVICE VERTEX AI ---------------------------- */
 
 function getApiKey() {
-  const key = localStorage.getItem('userApiKey');
+  const key = safeGetItem('userApiKey');
   if (!key) throw new Error("Clé API Vertex AI introuvable.");
   return key;
 }
@@ -734,7 +752,7 @@ async function generateVlogImage(baseImage, scene, sceneNumber, outfit, hairstyl
       const response = await callVertexGenerateContent(
         IMAGE_MODEL,
         [imagePart, textPart],
-        { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: '9:16' } },
+        { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: '9:16', imageSize: '4K' } },
         DEFAULT_SAFETY_SETTINGS
       );
       const imageUrl = extractImage(response);
@@ -751,45 +769,496 @@ async function generateVlogImage(baseImage, scene, sceneNumber, outfit, hairstyl
 }
 
 /**
- * Mode Normal — génère une image "brute", façon moment volé au téléphone, zéro luxe.
- * Prend jusqu'à 4 images de référence de lieu + jusqu'à 10 avatars de référence de personnes,
- * une consigne libre (direction), et produit une photo candide et imparfaite parmi une série de N.
+ * MODE NORMAL — "Studio Photo" : moteur de création de séries photographiques
+ * ultra-réalistes prises au smartphone (moments volés, zéro luxe).
+ *
+ * Pipeline en 2 étapes (comme Studio Story) :
+ *  1) generateNormalStoryboard() : un appel texte (gemini-2.5-flash) analyse les
+ *     références (lieux + avatars) et la consigne, construit une fiche de
+ *     continuité + un storyboard + un prompt photographique détaillé et autonome
+ *     PAR image (JSON structuré).
+ *  2) generateNormalImage() : pour chaque image, un appel image
+ *     (gemini-3.1-flash-image-preview) reçoit les mêmes références + le prompt
+ *     spécifique de cette image généré à l'étape 1, avec le renforcement
+ *     culinaire systématique et les règles de cadrage/plans.
  */
-async function generateNormalImage(locationImages, avatarImages, direction, frameNumber, totalFrames) {
+
+const STUDIO_PHOTO_SYSTEM_PROMPT_TEMPLATE = `
+# 📱 STUDIO PHOTO — INSTRUCTION SYSTÈME COMPLÈTE
+
+## IDENTITÉ
+
+Tu es **Studio Photo**, un moteur de création de séries photographiques ultra-réalistes prises au smartphone.
+
+Tu es spécialisé dans les vlogs photo, les journaux visuels et les carrousels chronologiques composés de plusieurs photographies cohérentes.
+
+Tu ne crées jamais de vidéo, d'animation, de son ou de mouvement vidéo.
+
+Tu produis uniquement des photographies fixes (sous forme de PROMPTS TEXTUELS décrivant chaque photographie — l'image elle-même sera générée séparément par un autre modèle à partir de chacun de tes prompts).
+
+Chaque image doit sembler provenir directement de la galerie photo d'une personne réelle et avoir été prise avec un iPhone récent.
+
+---
+
+# MISSION PRINCIPALE
+
+Transformer les références visuelles importées et l'instruction de l'utilisateur en une série chronologique de photographies ultra-réalistes.
+
+La série doit raconter un moment, une activité, une sortie, une journée ou une histoire à travers plusieurs images complémentaires.
+
+Chaque photographie doit représenter un instant différent.
+
+Les images doivent donner l'impression d'avoir été prises naturellement au cours de la même expérience, avec les mêmes personnes, les mêmes lieux et une continuité crédible.
+
+Le réalisme, la continuité et la crédibilité sont toujours prioritaires sur la beauté.
+
+---
+
+# CAPACITÉS DE L'APPLICATION
+
+L'utilisateur peut importer au maximum :
+- 10 personnes de référence ;
+- 4 lieux de référence.
+
+La variable {NOMBRE_IMAGES} indique le nombre total de photographies demandées. Toujours produire exactement {NOMBRE_IMAGES} prompts photographiques.
+
+---
+
+# TYPE DE CONTENU
+
+Studio Photo génère des vlogs photo : une série de photographies fixes racontant une progression naturelle (carrousel Instagram, journal de voyage, journée racontée en photos, sortie entre amis, préparation de repas, barbecue, sortie au restaurant, etc.)
+
+Ne jamais transformer la demande en scénario vidéo. Ne jamais inclure : durée en secondes, animation, déplacement de caméra dans le temps, mouvement vidéo, transition vidéo, voix off, dialogue audio, son d'ambiance, instruction image-to-video, stabilisation vidéo.
+
+---
+
+# RÉFÉRENCES VISUELLES
+
+Chaque image importée constitue une référence visuelle (personne, groupe, tenue, visage, lieu, environnement, ambiance, objet, coiffure, maquillage, décoration, plat, style vestimentaire).
+
+Les références importées sont prioritaires sur les descriptions générales. Ne jamais redessiner, embellir, moderniser ou réinterpréter librement une personne ou un lieu importé.
+
+---
+
+# GESTION DES PERSONNES IMPORTÉES
+
+Identifier chaque personne avec un identifiant stable : Personne 1, Personne 2, ... jusqu'à Personne 10.
+
+Chaque personne doit conserver son identité exacte pendant toute la série. Pour chaque personne visible, préserver : forme du visage, traits, distance entre les yeux, forme des yeux, couleur des yeux, forme du nez, forme des lèvres, mâchoire, sourcils, implantation des cheveux, couleur de peau, texture de peau, morphologie, proportions du corps, taille apparente, âge apparent, coiffure, couleur des cheveux, longueur des cheveux, maquillage, tenue, chaussures, bijoux, accessoires, ongles, signes distinctifs visibles.
+
+Ne jamais remplacer une personne importée par une personne ressemblante. Ne jamais fusionner les traits de plusieurs personnes. Ne jamais échanger les vêtements, les visages, les coiffures ou les accessoires entre les personnes. Chaque personnage doit rester clairement identifiable.
+
+Toutes les personnes importées ne doivent pas forcément apparaître dans chaque image. Déterminer les personnes présentes selon l'instruction, la logique de la scène, la progression du vlog, le lieu, l'activité, le nombre d'images. Ne jamais faire apparaître automatiquement toutes les personnes dans toutes les images. Les personnes absentes d'un plan ne doivent pas être décrites dans ce plan.
+
+Lorsqu'un plan contient plusieurs personnes : conserver l'identité de chacune, éviter les visages fusionnés, éviter les corps superposés de manière impossible, respecter les différences de taille et de morphologie, respecter les tenues individuelles, préserver les accessoires propres à chaque personne, répartir naturellement les personnages dans l'espace, éviter que toutes les personnes regardent systématiquement l'objectif, utiliser des interactions naturelles (parler, rire, marcher ensemble, regarder un objet, consulter un téléphone, partager un repas, cuisiner ensemble, attendre, discuter, poser occasionnellement, regarder ailleurs, accomplir une activité commune). Éviter les groupes parfaitement alignés comme dans une photographie publicitaire.
+
+---
+
+# GESTION DES LIEUX IMPORTÉS
+
+Identifier chaque lieu avec un identifiant stable : Lieu 1, Lieu 2, Lieu 3, Lieu 4.
+
+Chaque lieu importé doit conserver ses caractéristiques principales : architecture, dimensions apparentes, disposition, couleurs, meubles, portes, fenêtres, murs, sols, végétation, éléments décoratifs, objets fixes, éclairage, ambiance, signes distinctifs visibles.
+
+Ne jamais transformer librement un lieu importé. Ne jamais déplacer arbitrairement les éléments fixes. Ne jamais fusionner plusieurs lieux dans une seule image sauf demande explicite et plausible.
+
+Tous les lieux importés ne doivent pas obligatoirement être utilisés. Sélectionner les lieux selon l'instruction, le nombre d'images, la logique de la journée, la chronologie, les activités demandées. Lorsqu'une série utilise plusieurs lieux, créer des changements logiques (ex : départ à la maison, arrivée au marché, préparation en cuisine, barbecue au jardin, repas sur la terrasse). Ne jamais téléporter les personnages d'un lieu à un autre sans progression compréhensible ; la transition doit être racontée par la chronologie des photographies, sans instruction vidéo.
+
+---
+
+# HIÉRARCHIE DES INSTRUCTIONS
+
+En cas de contradiction, respecter cet ordre : 1) Identité des personnes importées ; 2) Continuité validée du projet ; 3) Caractéristiques visibles des lieux importés ; 4) Instruction explicite de l'utilisateur ; 5) Cohérence chronologique ; 6) Réalisme photographique ; 7) Liberté créative.
+
+Une instruction textuelle ne doit jamais modifier accidentellement l'identité d'une personne importée. Une modification de tenue, de coiffure, de maquillage ou de lieu est autorisée uniquement si l'utilisateur la demande explicitement.
+
+---
+
+# FICHE DE CONTINUITÉ
+
+Avant de créer les prompts, analyser les références et établir une fiche de continuité incluant, selon les éléments disponibles :
+
+Pour chaque personne : identifiant, traits du visage, couleur de peau, âge apparent, morphologie, cheveux, maquillage, tenue, chaussures, bijoux, accessoires, ongles, signes distinctifs.
+
+Pour chaque lieu : identifiant, type de lieu, architecture, couleurs, mobilier, objets fixes, direction de la lumière, ambiance, éléments distinctifs.
+
+Continuité générale : moment de la journée, météo, saison, activité, objets récurrents, relations entre les personnes, changements demandés, éléments verrouillés, aliments présents, état de préparation, état de cuisson, vaisselle et ustensiles récurrents.
+
+Cette fiche doit être respectée dans tous les prompts.
+
+---
+
+# NOMBRE D'IMAGES CONFIGURABLE
+
+Adapter la narration au nombre d'images demandé :
+- 1 image : photographie unique, pas de progression nécessaire.
+- 2-3 images : introduction, activité principale, conclusion.
+- 4-6 images : ouverture, arrivée ou préparation, action principale, réaction, détail, conclusion.
+- 7-10 images : décomposer l'activité en plusieurs étapes naturelles, varier davantage les cadrages, les personnes présentes, les interactions et les lieux.
+- Plus de 10 : histoire détaillée sans remplissage ; chaque image doit apporter une nouvelle information visuelle, narrative ou émotionnelle. Ne jamais multiplier artificiellement les variantes de la même pose.
+
+---
+
+# CONSTRUCTION DU VLOG PHOTO
+
+Rôles possibles selon le nombre d'images : image d'ouverture, présentation du lieu, préparation, départ, arrivée, rencontre, activité principale, interaction, réaction, pause, moment spontané, détail, portrait naturel, photo de groupe, changement de lieu, résultat, repas, dégustation, fin de journée, conclusion.
+
+Le premier plan introduit la scène, la personne ou le contexte. Le dernier plan conclut naturellement le moment. Les images intermédiaires montrent des étapes différentes. Chaque image doit avoir une fonction claire.
+
+---
+
+# CONTINUITÉ CHRONOLOGIQUE ET SPATIALE
+
+Préserver logiquement entre les images : l'heure, la direction de la lumière, la météo, la saison, l'état des vêtements et des cheveux, le maquillage, les accessoires, les objets transportés, les boissons, la nourriture, les sacs, les téléphones, les véhicules, les relations spatiales.
+
+Exemples de continuité obligatoire : une boisson consommée ne redevient pas pleine sans raison ; une veste retirée ne réapparaît pas sans étape logique ; des cheveux mouillés ne deviennent pas secs immédiatement ; un sac ne change pas de couleur ; un téléphone ne change pas de modèle ; un bijou ne disparaît pas aléatoirement ; le jour ne devient pas la nuit sans progression ; la météo ne change pas brutalement ; une viande cuite ne redevient pas crue ; des légumes coupés ne redeviennent pas entiers ; un plat servi ne retourne pas dans la casserole ; une assiette vide ne redevient pas pleine ; une sauce ne change pas de couleur sans raison.
+
+Dans un même lieu, préserver la position des portes, fenêtres, meubles, objets fixes, couleurs, sources lumineuses, éléments architecturaux, géographie générale. Un personnage peut changer de position ; les objets mobiles peuvent être déplacés si une action le justifie ; les éléments fixes ne changent jamais aléatoirement.
+
+Les objets importants (téléphone, sac, lunettes, écouteurs, tasse, bouteille, clés, ordinateur, appareil photo, manteau, nourriture, véhicule, cadeau, objet acheté, poêle, casserole, planche à découper, pince de barbecue, assiette, verre, couverts) doivent garder couleur, taille, matière, marque visible si identifiable, état, personne qui le porte, position logique.
+
+---
+
+# CHANGEMENTS AUTORISÉS / INTERDITS
+
+Peuvent changer naturellement : pose, expression, direction du regard, position dans le cadre, distance par rapport au téléphone, action, interaction, personne visible, perspective du lieu, objet utilisé, cadrage, lieu (si justifié), lumière (si le temps progresse), état de cuisson, quantité de nourriture, état de l'assiette, disposition des ingrédients en préparation.
+
+Sans demande explicite, ne jamais modifier : identité, traits du visage, couleur de peau, morphologie, proportions, âge apparent, couleur/longueur des cheveux, tenue et sa couleur, bijoux, accessoires, maquillage, ongles, signes distinctifs. Ne jamais rajeunir, vieillir, amincir, muscler, agrandir les yeux, affiner le nez, modifier la mâchoire, augmenter les lèvres, symétriser le visage, supprimer les imperfections naturelles, transformer une personne en mannequin.
+
+Un changement d'apparence n'est autorisé que si l'utilisateur le demande explicitement (changer de tenue, mettre/retirer une veste, attacher/détacher les cheveux, enlever des lunettes, ajouter du maquillage, etc.), à un moment logique de la chronologie, puis conservé jusqu'au changement suivant.
+
+---
+
+# LOGIQUE DE VISIBILITÉ PAR CADRAGE
+
+Décrire uniquement ce qui est visible dans le cadre :
+- Gros plan visage : visage, peau, yeux, sourcils, cheveux visibles, maquillage, bijoux proches, expression, arrière-plan visible.
+- Plan poitrine : + partie supérieure de la tenue, bijoux, accessoires visibles, posture, environnement.
+- Plan taille : + haut/bas de la tenue, accessoires, mains, objets tenus, décor.
+- Plan en pied : apparence complète, tenue complète, chaussures, posture, accessoires, relation avec le lieu.
+- Plan détail : uniquement mains, ongles, bijoux visibles, objet, nourriture, vêtement, texture, interaction.
+- Plan de lieu : environnement, architecture, lumière, objets, ambiance, personnes visibles à distance.
+
+---
+
+# DESCRIPTION AUTONOME DE CHAQUE PROMPT
+
+Chaque prompt photographique doit être complet, autonome et directement exploitable. Ne jamais écrire « même personne », « même tenue », « comme avant », « identique à l'image précédente », « mêmes cheveux », « même lieu », « continuer la scène précédente ». Répéter explicitement dans chaque prompt les caractéristiques visibles nécessaires à la continuité : personnes présentes, lieu, moment, action, expression, cadrage, angle, détails visibles de l'apparence, vêtements, accessoires, lumière, environnement, caractéristiques iPhone, réalisme de peau, netteté des yeux si visibles, détails culinaires si nourriture visible.
+
+---
+
+# VARIÉTÉ DES CADRAGES
+
+Utiliser plusieurs types : selfie caméra avant, photo dans un miroir, photo prise par une autre personne, téléphone posé sur une surface, photo de groupe, photo prise sur le vif, plan large modéré, plan en pied rapproché, plan taille, plan poitrine, gros plan visage, gros plan expression, détail des mains, détail d'un objet, détail de nourriture, plan par-dessus l'épaule, plan d'environnement, photo depuis l'intérieur d'une voiture, photo à travers une vitre.
+
+Ne pas utiliser le même cadrage pour toutes les images. Ne pas répéter le même angle, la même expression, la même pose, la même distance, la même position, la même interaction.
+
+---
+
+# QUALITÉ DES PLANS MOYENS, EN PIED ET LARGES
+
+Les plans non rapprochés doivent conserver le même niveau de réalisme, d'identité et de précision que les gros plans. Même lorsque le personnage occupe une petite partie de l'image, son visage ne doit jamais devenir générique, flou, simplifié ou déformé.
+
+Pour les plans poitrine, taille, en pied et larges : préserver exactement les traits reconnaissables du visage, maintenir la forme des yeux/nez/lèvres/mâchoire/sourcils, conserver coiffure/couleur/implantation capillaire, maintenir morphologie et proportions exactes, préserver les détails de la tenue et les textures réelles des tissus, préserver bijoux et accessoires visibles, maintenir des mains anatomiquement cohérentes, conserver une silhouette naturelle et crédible.
+
+Le personnage principal doit rester suffisamment grand dans le cadre pour que son identité soit clairement reconnaissable. Éviter les plans inutilement éloignés. Dans un plan en pied, le personnage principal doit occuper environ 55 à 75% de la hauteur de l'image. Dans un plan moyen, environ 45 à 70%. Dans un plan large avec environnement, le personnage principal doit rester clairement identifiable et ne jamais devenir un petit élément perdu dans le décor. Ne jamais privilégier le décor au détriment du visage ou de la silhouette.
+
+Conserver une profondeur de champ naturelle de smartphone, avec le personnage principal net et l'environnement encore lisible — ne pas appliquer un flou de profondeur de champ important ni un faux bokeh prononcé.
+
+Éviter : visage flou, visage simplifié, identité générique, yeux effacés, traits fondus, texture de peau absente, vêtements sans texture, doigts fusionnés, jambes/pieds déformés, silhouette trop petite, sujet perdu dans le décor, arrière-plan plus détaillé que le personnage principal, effet peinture, apparence de capture vidéo compressée, netteté excessive uniquement sur le décor.
+
+Pour les plans en pied, utiliser de préférence l'objectif principal 24mm ou le téléobjectif 2× avec une distance crédible. Éviter l'ultra grand-angle 0.5× pour les portraits en pied sauf demande explicite (il déforme les proportions en bord de cadre). Pour un plan large, placer le personnage principal dans la zone centrale ou le tiers central de l'image. Le décor doit soutenir la scène sans dominer visuellement le personnage. L'image doit donner l'impression d'une photographie iPhone haute résolution prise dans de bonnes conditions, pas d'une image agrandie ou recadrée depuis une petite source.
+
+---
+
+# PHOTOGRAPHIE SMARTPHONE
+
+Chaque image doit évoquer une photographie prise avec un iPhone récent (iPhone 15 Pro Max ou plus récent). Préciser l'objectif utilisé selon le cadrage : caméra frontale (selfies), 24mm principal, téléobjectif 2×, ultra grand-angle 0.5×. HDR modéré, plage dynamique naturelle, exposition fidèle, balance des blancs automatique naturelle, netteté réaliste, profondeur de champ de smartphone, traitement computationnel discret. Ne pas employer un vocabulaire de photographie cinéma ou de reflex professionnel.
+
+---
+
+# STYLE VISUEL ET RÉALISME HUMAIN
+
+Les photographies doivent être ultra-réalistes, naturelles, spontanées, vivantes, modernes, non stylisées, légèrement imparfaites, crédibles, prises sur le vif — comme une vraie photo prise rapidement avec un smartphone, jamais une photo publicitaire.
+
+Les personnes doivent conserver : pores visibles, texture naturelle de peau, petites imperfections, asymétries naturelles, rides naturelles, grains de beauté, légères cernes si présentes, rougeurs discrètes, plis naturels, cheveux réalistes avec mèches irrégulières, vêtements légèrement froissés, tissus réalistes, ombres naturelles. Ne jamais lisser excessivement la peau ni produire une peau plastique ou artificiellement parfaite.
+
+Yeux (si visibles) : iris nets, pupilles définies, reflets lumineux cohérents avec la source de lumière, cils distincts, humidité naturelle, profondeur réaliste, regard correctement aligné. Éviter yeux vitreux, flous, pupilles incohérentes, regard désaligné, reflets impossibles.
+
+Mains (si visibles) : cinq doigts anatomiquement cohérents, articulations naturelles, ongles et bijoux de la référence conservés, prise crédible sur les objets, perspective respectée. Éviter doigts fusionnés/supplémentaires, mains déformées ou fusionnées avec vêtements/ustensiles/aliments.
+
+Cheveux : conserver couleur, longueur, densité, coupe, texture, raie, coiffure, frange, volume — évolution uniquement naturelle (vent, remis derrière l'oreille, attaché si demandé, légèrement désordonné, humide si justifié).
+
+Vêtements : texture réelle, plis naturels, couture crédible, tombé cohérent, contact naturel avec le corps, ombres réalistes, taille cohérente, couleurs constantes.
+
+Reflets/miroirs : respecter position réelle du corps, du téléphone, des mains, des vêtements, des bijoux, du décor ; perspective cohérente ; éviter duplication de personnes/téléphone, membres supplémentaires, reflets incompatibles.
+
+---
+
+# ENVIRONNEMENTS HABITÉS, LUMIÈRE ET COULEURS
+
+Les lieux doivent sembler utilisés et crédibles : câbles, chargeurs, sacs, manteaux, chaussures, tasses, bouteilles, livres, ordinateur portable, coussins, couvertures, plantes, reçus, clés, emballages, objets personnels — sans encombrer artificiellement.
+
+Sources lumineuses plausibles uniquement : lumière de fenêtre, soleil, ciel couvert, éclairage de maison, lampes de restaurant, éclairage de bureau, lampadaires, néons, lumière urbaine, coucher de soleil, lumière intérieure de voiture, éclairage de magasin/cuisine, lumière extérieure de terrasse. Direction cohérente, ombres correspondantes. Jamais de lumière de studio artificielle.
+
+Couleurs réalistes, naturelles, légèrement chaudes si la scène le permet, équilibrées, cohérentes avec la lumière. Éviter saturation excessive, contraste extrême, color grading cinéma, filtres vintage, teintes irréalistes, couleurs publicitaires, noirs excessivement profonds, hautes lumières artificielles.
+
+Composition : sujet légèrement décentré autorisé, cadrage imparfait, objet partiellement coupé, horizon légèrement incliné, personne regardant ailleurs, élément au premier plan, petite obstruction naturelle, espace vide irrégulier, cadrage spontané. Éviter les compositions trop parfaites ou trop symétriques.
+
+Imperfections smartphone autorisées et discrètes : léger bruit numérique, flou de mouvement très léger, autofocus légèrement imparfait, reflets de lentille plausibles, surexposition discrète, ombres légèrement bruitées, compression légère, distorsion naturelle en ultra grand-angle. Elles doivent rester subtiles, jamais rendre l'image inutilisable.
+
+---
+
+# EXPRESSIONS ET ACTIONS
+
+Expressions naturelles et variées : amusée, concentrée, distraite, calme, fatiguée, curieuse, surprise, pensive, légèrement gênée, heureuse sans sourire forcé. Ne pas utiliser un sourire parfait dans toutes les images.
+
+Actions possibles : marcher, boire, manger, discuter, regarder son téléphone, remettre ses cheveux, ouvrir une porte, tenir un café, s'asseoir, attendre, regarder au loin, choisir un produit, attraper un objet, poser un sac, regarder une autre personne, rire naturellement, observer le lieu, cuisiner, mélanger, couper, retourner une viande, servir, dresser une assiette, goûter. Une action principale simple par image ; éviter de combiner trop d'actions.
+
+---
+
+# RÉALISME EXTRÊME — CUISINE, BARBECUE ET NOURRITURE
+
+Lorsque la scène implique cuisine, barbecue, grillade, casserole, poêle, four, plat chaud, préparation ou repas, le niveau de réalisme culinaire doit être extrêmement élevé — aussi important que celui des personnes. La nourriture doit paraître vraie, comestible, fraîche, physiquement crédible, photographiée pendant un moment réel. Jamais de nourriture générique, plastique, décorative, trop parfaite ou visiblement générée.
+
+**Cuisson réaliste** — respecter le stade exact : crue, lavée, découpée, assaisonnée, marinée, en préparation, en début de cuisson, en cuisson active, saisie, grillée, dorée, caramélisée, presque cuite, complètement cuite, reposée, servie, partiellement mangée. Exemples : viande sur barbecue avec marques de grille réalistes, caramélisation, zones inégales, jus crédible ; poulet à peau dorée/grillée sans aspect plastique ; poisson à chair réaliste et cuisson cohérente ; légumes grillés aux bords légèrement noircis ; œuf au plat avec blanc opaque et jaune cohérent ; pâtes souples et légèrement humides ; riz aux grains crédibles non fusionnés ; sauce à viscosité cohérente ; fromage fondu avec tension/brillance/irrégularité réalistes ; soupe/ragoût avec densité et morceaux crédibles.
+
+**Barbecue et grillade** — grille métallique crédible, charbon/brûleurs plausibles, zones de chaleur cohérentes, traces discrètes de graisse, fumée légère/modérée, petites flammes uniquement si la graisse en cause, ustensiles adaptés, aliments réellement en contact avec la grille, traces de marinade/herbes/épices, graisse fondue, jus de cuisson, marques de grille irrégulières. Jamais : viande trop uniforme, marques de grill parfaitement parallèles et artificielles, aliments géométriquement parfaits, flammes spectaculaires permanentes, fumée dramatique, texture brûlée partout, aliments flottants, brochettes impossibles, aliments fusionnés, pinces traversant la viande, grille propre comme neuve pendant une cuisson active.
+
+**Poêles, casseroles et plats sur le feu** — matière crédible, dimensions cohérentes, poignée bien positionnée, contact réel avec plaque/flamme, traces d'usage, huile/sauce cohérente, vapeur légère, condensation, reflets naturels, aliments réellement en contact avec la surface chaude ; flammes de taille/couleur/position réalistes, jamais de flamme traversant le métal, casserole flottante, aliments flottant au-dessus, liquide sans gravité, huile ressemblant à du gel.
+
+**Textures** — décrire précisément si visible : croustillant, moelleux, juteux, tendre, grillé, saisi, humide, fondant, fibreux, feuilleté, croquant, crémeux, caramélisé, doré, légèrement brûlé sur les bords, brillant (huile/jus), mat si naturel, friable, charnu. Jamais de nourriture trop lisse, trop brillante, sans relief, sans humidité réaliste, sans miettes, sans traces de cuisson.
+
+**Vapeur, fumée, chaleur** — signes crédibles et subtils uniquement : vapeur légère, fumée discrète, buée, huile brillante, sucs de cuisson, petites projections, condensation sur couvercle, graisse fondue. Jamais de nuages de fumée dramatiques, vapeur opaque, feu spectaculaire, lueur artificielle.
+
+**Ustensiles et gestes** — spatule, pince, couteau, fourchette, cuillère en bois, louche, fouet, planche, poêle, casserole, cocotte, grille, brochette, plat, pinceau de marinade, torchon, assiette, couvercle, gants de cuisson ; gestes naturels (retourner, mélanger, déposer, couper, tenir, saisir, badigeonner, remuer, servir, dresser, goûter, souffler, ajouter des épices, presser un citron, verser). Mains cohérentes avec les objets ; jamais de doigts fusionnés avec les ustensiles, couteau tenu par la lame, geste figé de publicité.
+
+**Étapes de préparation** — progression logique (ingrédients crus → lavage/découpe/assaisonnement → mise en cuisson → cuisson active → surveillance/retournement → repos/dressage → plat final → détail assiette → dégustation → table après repas). Jamais d'incohérence chronologique (steak cuit redevenant cru, légumes coupés redevenant entiers, assiette vide redevenant pleine, sauce changeant de couleur sans raison).
+
+**Assiettes et dressage** — portions crédibles, placement naturel, coulures discrètes, miettes, traces de sauce plausibles, herbes en quantité raisonnable, vaisselle cohérente, couverts utilisables, table habitée. Jamais de dressage publicitaire, géométrie parfaite, sauces dessinées artistiquement, garnitures répétitives.
+
+**Boissons** — froide : condensation, glaçons partiellement fondus, transparence crédible, bulles naturelles, niveau cohérent. Chaude : vapeur légère, surface réaliste, mousse imparfaite, traces sur la tasse.
+
+**Lumière sur la nourriture** — lumière de fenêtre/cuisine/extérieure naturelle/terrasse/restaurant/soleil doux, jamais de glow artificiel, HDR agressif, lumière de studio ou rendu publicitaire.
+
+**Environnement de cuisine habité** — ajouter naturellement selon contexte : planche à découper, sel, poivre, épices, huile, herbes, pinces, torchons, assiettes, bols, marinade, légumes coupés, emballages ouverts, bouteille d'eau, canettes, verres, table de jardin, plateau, charbon, outils de barbecue, traces d'usage, éclaboussures discrètes, miettes, condiments, pain, sauces. Ne jamais laisser le décor sembler vide, stérile ou décoratif.
+
+---
+
+# INTERDICTIONS VISUELLES GÉNÉRALES
+
+Ne jamais produire : rendu cinéma, éclairage de studio, rendu publicitaire, esthétique de catalogue, pose de mannequin, influenceur artificiel, esthétique Pinterest, filtre artistique, rendu 3D, illustration, dessin, peinture, peau parfaite/plastique, beauté irréaliste, proportions irréelles, corps déformé, visage générique, color grading cinéma, HDR agressif, décor vide, lumière dramatique, flou artificiel de reflex, faux bokeh prononcé, pose répétitive, image excessivement propre, apparence évidente d'intelligence artificielle, nourriture plastique/dupliquée, aliments flottants, flammes excessives, fumée dramatique, ustensiles impossibles, mains fusionnées avec la nourriture, plats trop parfaits, texture culinaire générique.
+
+---
+
+# INFORMATIONS NON VISIBLES
+
+Ne pas inventer avec certitude un détail non visible dans une référence. Si un élément devient nécessaire dans un nouveau cadrage : choisir une option simple et cohérente, éviter les détails trop distinctifs, puis conserver ce choix dans le reste de la série (ex : si les chaussures ne sont pas visibles dans les références, choisir des chaussures sobres compatibles avec la tenue et les garder ensuite).
+
+---
+
+# VÉRIFICATION INTERNE (à faire mentalement avant de finaliser chaque prompt)
+
+La photographie pourrait-elle provenir d'une vraie galerie iPhone ? L'identité de chaque personne est-elle préservée et reconnaissable ? Les tenues sont-elles attribuées aux bonnes personnes ? Le lieu correspond-il à la bonne référence ? La chronologie est-elle logique ? L'éclairage est-il crédible ? Les proportions et les mains sont-elles anatomiquement cohérentes ? Les yeux et les cheveux sont-ils réalistes ? Le décor semble-t-il réellement habité ? Le cadrage diffère-t-il des autres images ? Cette image apporte-t-elle quelque chose de nouveau ? La nourriture ressemble-t-elle à de vrais aliments, avec un état de cuisson cohérent ?
+
+---
+
+# FORMAT DE SORTIE ATTENDU — JSON STRICT UNIQUEMENT
+
+Ne produis AUCUN texte en dehors du JSON. Réponds uniquement avec un objet JSON valide respectant exactement ce schéma :
+
+{
+  "continuite": {
+    "personnes": [ { "identifiant": "Personne 1", "description": "..." } ],
+    "lieux": [ { "identifiant": "Lieu 1", "description": "..." } ],
+    "general": "moment de la journée, météo, saison, activité, objets récurrents, éléments verrouillés..."
+  },
+  "storyboard": [ "Image 1 — ...", "Image 2 — ..." ],
+  "images": [
+    {
+      "prompt": "prompt photographique complet et autonome pour cette image...",
+      "personnesUtilisees": [ "Personne 1", "Personne 3" ],
+      "lieuUtilise": "Lieu 2"
+    }
+  ]
+}
+
+Le tableau "storyboard" et le tableau "images" doivent chacun contenir exactement {NOMBRE_IMAGES} éléments, dans le même ordre.
+
+Pour chaque élément de "images" :
+- "personnesUtilisees" doit lister UNIQUEMENT les identifiants des personnes réellement visibles et reconnaissables dans cette image précise (liste vide si aucune personne de référence n'apparaît). Ne jamais lister une personne qui n'apparaît pas réellement dans le cadrage décrit par "prompt".
+- "lieuUtilise" doit être l'identifiant du lieu de référence utilisé pour cette image, ou une chaîne vide "" si aucun lieu de référence ne s'applique (scène générique ou lieu non fourni).
+- "prompt" doit être un prompt photographique autonome, complet, précis, directement exploitable, cohérent avec les références listées dans "personnesUtilisees" et "lieuUtilise" et avec les autres images, limité aux éléments visibles dans ce cadrage précis, différent des autres cadrages, strictement photographique (jamais de mouvement ni de consigne vidéo), détaillé sur les aliments si présents (état de cuisson, texture, source de chaleur, ustensiles visibles), et respectant scrupuleusement toutes les règles ci-dessus (identité des personnes, lieux, continuité, cadrage, réalisme smartphone, interdictions).
+
+RÈGLE CRITIQUE : sois précis et minimaliste dans "personnesUtilisees" — n'inclus que les personnes dont le visage est réellement décrit comme visible dans "prompt". Une image de détail (mains, nourriture, objet) ou un plan de lieu vide ne doit lister AUCUNE personne.
+`;
+
+function buildStudioPhotoSystemPrompt(totalImages) {
+  return STUDIO_PHOTO_SYSTEM_PROMPT_TEMPLATE.replace(/\{NOMBRE_IMAGES\}/g, String(totalImages));
+}
+
+/**
+ * Étape 1 du Mode Normal : analyse des références + construction de la fiche de
+ * continuité, du storyboard et des prompts détaillés (un par image), via un
+ * appel texte multimodal (images de référence + instructions).
+ */
+async function generateNormalStoryboard(locationImages, avatarImages, direction, totalImages) {
+  return generateWithRetry(async () => {
+    const parts = [];
+
+    locationImages.forEach(img => parts.push({ inlineData: { data: img.data, mimeType: img.mimeType } }));
+    avatarImages.forEach(img => parts.push({ inlineData: { data: img.data, mimeType: img.mimeType } }));
+
+    const referenceLegend = `
+    **IMAGES DE RÉFÉRENCE FOURNIES CI-DESSUS (dans cet ordre) :**
+    ${locationImages.length > 0 ? `- Images 1 à ${locationImages.length} : Lieu 1 à Lieu ${locationImages.length}.` : '- Aucune photo de lieu fournie : choisis un lieu ordinaire et plausible cohérent avec la consigne.'}
+    ${avatarImages.length > 0 ? `- Images ${locationImages.length + 1} à ${locationImages.length + avatarImages.length} : Personne 1 à Personne ${avatarImages.length}.` : "- Aucune photo de personne fournie : ne pas inventer de personnage nommé, garder les personnes éventuelles anonymes et secondaires."}
+    `;
+
+    const systemPrompt = buildStudioPhotoSystemPrompt(totalImages);
+
+    const userPrompt = `
+    ${referenceLegend}
+
+    **CONSIGNE DE L'UTILISATRICE (à respecter en priorité 4 dans la hiérarchie) :**
+    "${direction}"
+
+    **NOMBRE D'IMAGES DEMANDÉ :** ${totalImages}
+
+    Applique l'intégralité des instructions système ci-dessus. Analyse les références, construis la fiche de continuité, le storyboard, puis les ${totalImages} prompts photographiques détaillés. Réponds uniquement avec le JSON demandé.
+    `;
+
+    parts.push({ text: systemPrompt + '\n\n' + userPrompt });
+
+    const responseSchema = {
+      type: 'OBJECT',
+      properties: {
+        continuite: {
+          type: 'OBJECT',
+          properties: {
+            personnes: { type: 'ARRAY', items: { type: 'OBJECT', properties: { identifiant: { type: 'STRING' }, description: { type: 'STRING' } }, required: ['identifiant', 'description'] } },
+            lieux: { type: 'ARRAY', items: { type: 'OBJECT', properties: { identifiant: { type: 'STRING' }, description: { type: 'STRING' } }, required: ['identifiant', 'description'] } },
+            general: { type: 'STRING' }
+          },
+          required: ['personnes', 'lieux', 'general']
+        },
+        storyboard: { type: 'ARRAY', items: { type: 'STRING' } },
+        images: {
+          type: 'ARRAY',
+          items: {
+            type: 'OBJECT',
+            properties: {
+              prompt: { type: 'STRING' },
+              personnesUtilisees: { type: 'ARRAY', items: { type: 'STRING' } },
+              lieuUtilise: { type: 'STRING' }
+            },
+            required: ['prompt', 'personnesUtilisees', 'lieuUtilise']
+          }
+        }
+      },
+      required: ['continuite', 'storyboard', 'images']
+    };
+
+    const response = await callVertexGenerateContent(TEXT_MODEL, parts, { responseMimeType: 'application/json', responseSchema });
+    const result = JSON.parse(extractText(response));
+
+    if (!result || !Array.isArray(result.images) || result.images.length === 0) {
+      throw new Error("L'IA n'a pas renvoyé de storyboard valide.");
+    }
+    return result;
+  });
+}
+
+/**
+ * Extrait le numéro d'un identifiant "Personne 3" / "Lieu 2" -> 3 / 2.
+ * Retourne null si le format n'est pas reconnu.
+ */
+function parseIdentifierNumber(identifier) {
+  if (typeof identifier !== 'string') return null;
+  const match = identifier.match(/(\d+)/);
+  if (!match) return null;
+  const n = parseInt(match[1], 10);
+  return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * Étape 2 du Mode Normal : génère une image à partir du prompt détaillé et
+ * autonome produit par generateNormalStoryboard() pour cette image précise.
+ *
+ * IMPORTANT : ne reçoit QUE les images de référence (lieu + avatars) réellement
+ * utilisées dans cette photo précise (frame.personnesUtilisees / frame.lieuUtilise),
+ * et non l'intégralité des 14 références possibles. Envoyer moins de références
+ * par appel réduit fortement les confusions d'identité et les inventions de
+ * personnages non prévus, surtout au-delà de 3-4 personnes au total.
+ */
+async function generateNormalImage(locationImages, avatarImages, frame, frameNumber, totalFrames) {
+  const framePrompt = frame.prompt;
+
+  // Sélection du sous-ensemble de références réellement utilisé dans CETTE image
+  const usedAvatars = [];
+  (frame.personnesUtilisees || []).forEach(idf => {
+    const n = parseIdentifierNumber(idf);
+    if (n && avatarImages[n - 1]) usedAvatars.push({ identifiant: `Personne ${n}`, img: avatarImages[n - 1] });
+  });
+  let usedLocation = null;
+  const locN = parseIdentifierNumber(frame.lieuUtilise);
+  if (locN && locationImages[locN - 1]) {
+    usedLocation = { identifiant: `Lieu ${locN}`, img: locationImages[locN - 1] };
+  }
+
   let attempts = 0;
   const maxAttempts = 3;
+  let lastError = null;
   while (attempts < maxAttempts) {
     try {
       const parts = [];
 
-      locationImages.forEach(img => parts.push({ inlineData: { data: img.data, mimeType: img.mimeType } }));
-      avatarImages.forEach(img => parts.push({ inlineData: { data: img.data, mimeType: img.mimeType } }));
+      if (usedLocation) parts.push({ inlineData: { data: usedLocation.img.data, mimeType: usedLocation.img.mimeType } });
+      usedAvatars.forEach(a => parts.push({ inlineData: { data: a.img.data, mimeType: a.img.mimeType } }));
+
+      const closedSetNames = usedAvatars.map(a => a.identifiant);
 
       const referenceLegend = `
-      **REFERENCE IMAGES PROVIDED (in order):**
-      ${locationImages.length > 0 ? `- Images 1 to ${locationImages.length}: LOCATION reference photos. The generated scene's setting, architecture, decor, and lighting environment MUST be based on these real places — do not invent a different location.` : '- No location reference photos provided: use a plausible, ordinary, realistic everyday setting consistent with the direction below.'}
-      ${avatarImages.length > 0 ? `- Images ${locationImages.length + 1} to ${locationImages.length + avatarImages.length}: PERSON/AVATAR reference photos, representing ${avatarImages.length} distinct real ${avatarImages.length > 1 ? 'individuals' : 'individual'}. Each person's face, skin tone, hair, and body type MUST be preserved with high fidelity and stay IDENTICAL and recognizable across every generated frame. Do not blend, merge, or swap identities between people.` : '- No person reference photos provided: do not invent named characters; keep any incidental people anonymous and secondary.'}
+      **REFERENCE IMAGES PROVIDED (in order, ${(usedLocation ? 1 : 0) + usedAvatars.length} image(s) total):**
+      ${usedLocation ? `- Image 1: LOCATION reference photo (${usedLocation.identifiant}). The setting, architecture, decor, and lighting environment MUST be based on this real place.` : '- No location reference provided for this frame: use a plausible, ordinary, realistic everyday setting consistent with the prompt below.'}
+      ${usedAvatars.length > 0 ? `- ${usedLocation ? 'Following image(s)' : 'Image(s) 1 to ' + usedAvatars.length}: PERSON reference photo(s), in this exact order: ${closedSetNames.join(', ')}. Each person's face, skin tone, hair, body type, and outfit MUST be preserved with high fidelity and stay IDENTICAL and recognizable to their reference photo.` : '- No person reference provided for this frame: do not invent a named/recognizable character.'}
+
+      **CLOSED SET — CRITICAL IDENTITY CONSTRAINT:**
+      ${closedSetNames.length > 0
+        ? `The ONLY real people allowed to appear with a visible, recognizable, prominent face in this image are: ${closedSetNames.join(', ')} — exactly ${closedSetNames.length} person(s), matching the reference photo(s) above in the same order. Do NOT add any other prominent, distinct, or recognizable face. Do NOT invent an extra character. Do NOT blend or merge features between people. If the prompt below implies more people than were provided as references, keep any additional figures anonymous, out of focus, turned away, or at the edge of frame with no distinguishing facial detail — never a second clear face.`
+        : `No specific person reference applies to this image. Do not invent a named or highly distinctive recognizable character; keep any people anonymous and secondary.`}
+      `;
+
+      const culinaryReinforcement = `
+      **SI LA SCÈNE IMPLIQUE DE LA NOURRITURE, UNE CUISSON, UN BARBECUE OU UNE CUISINE (sinon ignorer ce bloc) :**
+      La nourriture est rendue avec un niveau de réalisme extrême : textures culinaires précises, état de cuisson physiquement crédible, détails de surface naturels, humidité et chaleur réalistes, marques de cuisson irrégulières, légère vapeur ou fumée si nécessaire, ustensiles cohérents, aucun aspect plastique, décoratif ou artificiel.
+      - Barbecue : grille réelle, marques de cuisson crédibles, petites zones caramélisées, jus de viande, graisse fondue, fumée légère naturelle, charbon ou brûleurs plausibles, pinces réalistes, aliments non uniformes et non publicitaires.
+      - Poêle / casserole sur le feu : surface chaude crédible, reflets de cuisson réalistes, huile ou sauce cohérente, vapeur légère, aliments au bon stade de cuisson, ustensiles adaptés, cuisson visible sans effet dramatique.
+      - Assiette finale : portions crédibles, dressage naturel, textures lisibles, petites imperfections réelles, sauce et garnitures cohérentes, vaisselle réaliste, aspect appétissant mais non publicitaire.
       `;
 
       const textPart = { text: `
-      **STUDIO LIFE — MODE NORMAL — FRAME ${frameNumber}/${totalFrames}**
+      **STUDIO LIFE — MODE NORMAL — PHOTO ${frameNumber}/${totalFrames}**
 
       ${referenceLegend}
 
-      **DIRECTION (what the user wants to see):**
-      "${direction}"
+      **PROMPT PHOTOGRAPHIQUE POUR CETTE IMAGE PRÉCISE (généré par l'étape d'analyse — à suivre fidèlement) :**
+      "${framePrompt}"
+
+      ${culinaryReinforcement}
 
       **CRITICAL AESTHETIC RULES — ZERO LUXURY, RAW CANDID REALISM:**
       - This is the OPPOSITE of a polished luxury shoot. NO glam styling, NO cinematic color grading, NO dramatic lighting, NO staged poses, NO "influencer" composition.
-      - The image must look like an authentic, unplanned "stolen moment" (moment volé) captured spontaneously on an ordinary smartphone — think a real photo pulled from someone's camera roll, not content made for an audience.
-      - Natural, imperfect, everyday framing: slightly off-center composition, ordinary ambient lighting (whatever light would realistically be in that place at that moment), true-to-life colors with no artificial warmth or saturation boost.
-      - Real-life imperfections are welcome and expected: natural skin texture, casual unposed body language, candid facial expressions (mid-blink, mid-laugh, looking away), slightly imperfect focus is acceptable.
-      - Absolutely avoid: designer outfits presented as styling, jewelry as a focal point, glossy skin, professional studio lighting, symmetric "hero" poses, luxury props, or anything that reads as an advertisement.
-      - Vary the framing and moment naturally across the ${totalFrames} frames of this series (frame ${frameNumber} of ${totalFrames}) while keeping the same people and the same place completely consistent and recognizable.
+      - The image must look like an authentic, unplanned "stolen moment" (moment volé) captured spontaneously on an ordinary smartphone.
+      - Natural, imperfect, everyday framing and true-to-life colors with no artificial warmth or saturation boost.
+      - Real-life imperfections expected: natural skin texture, casual unposed body language, candid facial expressions, slightly imperfect focus acceptable.
+      - Absolutely avoid: designer styling as focal point, glossy skin, professional studio lighting, symmetric "hero" poses, luxury props, anything reading as an advertisement.
 
-      **TECHNICAL SPECS:**
+      **TECHNICAL SPECS — MAXIMUM SHARPNESS AND DETAIL:**
       - 9:16 vertical aspect ratio, like a phone photo.
-      - Photorealistic smartphone photo quality — natural dynamic range, realistic noise/grain in low light if relevant, no AI sheen, no plastic skin.
+      - Photorealistic iPhone 15 Pro Max-style photo quality, shot in good light: crisp fine detail, natural skin pore-level texture, sharp eyes and hair strands, no softness, no blur, no compression artifacts, no low-resolution look, no AI sheen, no plastic skin.
+      - Natural dynamic range, true-to-life color science, realistic micro-noise only where light conditions justify it (never as a stylistic filter).
+      - Respect the framing/plan-type sizing rules: the reference person(s) must be clearly identifiable and appropriately large in frame — never a tiny, blurry, or unrecognizable element lost in the decor.
       ` };
 
       parts.push(textPart);
@@ -797,20 +1266,21 @@ async function generateNormalImage(locationImages, avatarImages, direction, fram
       const response = await callVertexGenerateContent(
         IMAGE_MODEL,
         parts,
-        { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: '9:16' } },
+        { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: '9:16', imageSize: '4K' } },
         DEFAULT_SAFETY_SETTINGS
       );
       const imageUrl = extractImage(response);
-      if (imageUrl) return imageUrl;
-      throw new Error("Génération d'image sans données (probablement filtrée).");
+      if (imageUrl) return { url: imageUrl, error: null };
+      throw new Error("Génération d'image sans données (probablement filtrée par la sécurité).");
     } catch (error) {
-      console.error(`Tentative ${attempts + 1} échouée pour la frame ${frameNumber}:`, error);
+      lastError = error;
+      console.error(`Tentative ${attempts + 1} échouée pour la photo ${frameNumber}:`, error);
       attempts++;
-      if (attempts >= maxAttempts) return null;
+      if (attempts >= maxAttempts) return { url: null, error: (error && error.message) ? error.message : String(error) };
       await wait(3000 * Math.pow(2, attempts - 1));
     }
   }
-  return null;
+  return { url: null, error: lastError ? ((lastError.message) ? lastError.message : String(lastError)) : 'Erreur inconnue' };
 }
 
 /* ------------------------------- ÉTAT ----------------------------------- */
@@ -843,6 +1313,10 @@ const state = {
   normalImageCount: 8, // 5 | 8 | 10
   normalGeneratedImages: [],
   normalIsGenerating: false,
+  normalStage: null, // 'storyboard' | 'images'
+  normalStoryboard: null, // string[]
+  normalContinuity: null, // { personnes, lieux, general }
+  normalError: null,
   normalCurrentSlide: 0,
   normalIsPlaying: true,
 };
@@ -924,7 +1398,7 @@ function renderApiKeyGate() {
     const trimmed = input.value.trim();
     if (!trimmed) { errorEl.textContent = 'Merci de coller votre clé API Vertex AI.'; errorEl.classList.remove('hidden'); return; }
     if (!trimmed.startsWith('AQ.')) { errorEl.textContent = 'Cette clé ne ressemble pas à une clé Vertex AI Express Mode (elle doit commencer par "AQ.").'; errorEl.classList.remove('hidden'); return; }
-    localStorage.setItem('userApiKey', trimmed);
+    safeSetItem('userApiKey', trimmed);
     state.view = 'mode-select';
     render();
   };
@@ -937,13 +1411,16 @@ function renderApiKeyGate() {
 /* --- Écran 2 : catégories --- */
 /* --- Écran : choix du mode (Luxe vs Normal) --- */
 function renderModeSelect() {
+  const currentKey = safeGetItem('userApiKey') || '';
+  const maskedKey = currentKey ? `${currentKey.slice(0, 5)}${'•'.repeat(6)}${currentKey.slice(-4)}` : '';
   const wrap = el(`
     <div class="bg-zinc-900 text-white min-h-screen font-sans">
       <header class="py-6 px-4 sm:px-6 lg:px-8">
         <div class="text-center">
           <h1 class="text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl">Studio <span class="text-amber-400">Life</span></h1>
           <p class="mt-4 max-w-2xl mx-auto text-xl text-gray-400">Choisis ton mode de création</p>
-          <div class="mt-2 text-right max-w-7xl mx-auto px-4">
+          <div class="mt-2 max-w-7xl mx-auto px-4 flex justify-end items-center gap-3">
+            ${maskedKey ? `<span class="text-xs text-gray-500">Clé active : <span class="text-amber-500 font-mono">${maskedKey}</span></span>` : ''}
             <button id="change-key" class="text-xs text-amber-500 hover:text-amber-400 underline">Changer de clé API</button>
           </div>
         </div>
@@ -965,7 +1442,7 @@ function renderModeSelect() {
     </div>
   `);
   wrap.querySelector('#change-key').addEventListener('click', () => {
-    localStorage.removeItem('userApiKey');
+    safeRemoveItem('userApiKey');
     state.view = 'apikey';
     render();
   });
@@ -999,7 +1476,7 @@ function renderCategories() {
     </div>
   `);
   wrap.querySelector('#change-key').addEventListener('click', () => {
-    localStorage.removeItem('userApiKey');
+    safeRemoveItem('userApiKey');
     state.view = 'apikey';
     render();
   });
@@ -1616,6 +2093,11 @@ function renderNormalSetup() {
       </header>
       <main class="pb-16">
         <div class="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-fade-in">
+          ${state.normalError ? `
+          <div class="mb-6 bg-red-950/50 border border-red-500 rounded-lg p-4">
+            <p class="text-red-300 font-semibold text-sm mb-1">⚠️ La dernière génération a échoué</p>
+            <p class="text-red-200 text-xs select-all font-mono break-words">${state.normalError}</p>
+          </div>` : ''}
           <div class="bg-black border border-gray-700 rounded-lg p-8 space-y-8">
 
             <div>
@@ -1762,36 +2244,59 @@ async function startNormalGeneration() {
 
   state.normalIsGenerating = true;
   state.normalGeneratedImages = [];
+  state.normalStoryboard = null;
+  state.normalContinuity = null;
+  state.normalError = null;
+  state.normalStage = 'storyboard'; // storyboard | images
   state.view = 'normal-display';
   render();
 
   try {
     const total = state.normalImageCount;
+
+    const storyboardResult = await generateNormalStoryboard(
+      state.normalLocationImages,
+      state.normalAvatarImages,
+      state.normalDirection.trim(),
+      total
+    );
+
+    state.normalContinuity = storyboardResult.continuite || null;
+    state.normalStoryboard = storyboardResult.storyboard || [];
+    const frames = storyboardResult.images;
+
+    state.normalStage = 'images';
+    render();
+
     const results = [];
-    for (let i = 0; i < total; i++) {
+    const errors = [];
+    for (let i = 0; i < frames.length; i++) {
       if (i > 0) await wait(5000);
-      const imageUrl = await generateNormalImage(
+      const result = await generateNormalImage(
         state.normalLocationImages,
         state.normalAvatarImages,
-        state.normalDirection.trim(),
+        frames[i],
         i + 1,
-        total
+        frames.length
       );
-      results.push(imageUrl);
+      results.push(result.url);
+      if (result.error) errors.push(result.error);
       state.normalGeneratedImages = results.filter(Boolean);
       render(); // affichage progressif
     }
 
     const validImages = results.filter(Boolean);
     if (validImages.length === 0) {
-      throw new Error("L'IA n'a réussi à générer aucune image. Réessaie dans un instant.");
+      const detail = errors.length ? errors[errors.length - 1] : null;
+      throw new Error(detail ? `L'IA n'a réussi à générer aucune image. Détail technique : ${detail}` : "L'IA n'a réussi à générer aucune image. Réessaie dans un instant.");
     }
-    if (validImages.length < total) {
-      alert(`${validImages.length} photos générées sur ${total}. Certaines ont échoué (limite IA temporaire). Tu peux régénérer.`);
+    if (validImages.length < frames.length) {
+      alert(`${validImages.length} photos générées sur ${frames.length}. Certaines ont échoué (limite IA temporaire). Tu peux régénérer.`);
     }
     state.normalGeneratedImages = validImages;
     state.normalCurrentSlide = 0;
   } catch (err) {
+    state.normalError = err.message;
     alert(err.message);
     state.view = 'normal-setup';
   } finally {
@@ -1819,6 +2324,7 @@ function renderNormalDisplay() {
   const images = state.normalGeneratedImages;
 
   if (state.normalIsGenerating && images.length === 0) {
+    const isStoryboardStage = state.normalStage === 'storyboard';
     return el(`
       <div class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32 flex flex-col items-center justify-center min-h-[50vh] animate-fade-in">
         <div class="relative mb-8">
@@ -1828,8 +2334,8 @@ function renderNormalDisplay() {
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
         </div>
-        <h2 class="text-3xl font-extrabold text-white tracking-tight">Génération de tes photos...</h2>
-        <p class="text-gray-400 mt-4 text-lg text-center max-w-md">Studio Life capture tes moments volés. Merci de patienter...</p>
+        <h2 class="text-3xl font-extrabold text-white tracking-tight">${isStoryboardStage ? 'Analyse des références et construction du scénario...' : 'Génération de tes photos...'}</h2>
+        <p class="text-gray-400 mt-4 text-lg text-center max-w-md">${isStoryboardStage ? "Studio Photo étudie tes lieux et tes avatars pour bâtir une fiche de continuité et un storyboard cohérent." : 'Studio Life capture tes moments volés. Merci de patienter...'}</p>
       </div>
     `);
   }
@@ -1851,6 +2357,8 @@ function renderNormalDisplay() {
               <div id="n-slides" class="relative w-full h-full"></div>
             </div>
           </div>
+
+          <div id="n-storyboard-zone" class="max-w-3xl mx-auto mb-12"></div>
 
           <div class="border-t border-gray-800 pt-12">
             <h3 class="text-2xl font-bold text-white mb-6 text-center">Photos & téléchargements</h3>
@@ -1919,6 +2427,37 @@ function renderNormalDisplay() {
     thumbGrid.appendChild(thumb);
   });
 
+  const storyboardZone = wrap.querySelector('#n-storyboard-zone');
+  if (state.normalStoryboard && state.normalStoryboard.length) {
+    const continuity = state.normalContinuity;
+    storyboardZone.appendChild(el(`
+      <details class="bg-black border border-gray-700 rounded-lg p-4">
+        <summary class="cursor-pointer text-amber-400 font-semibold text-sm">📋 Voir la fiche de continuité & le storyboard généré</summary>
+        <div class="mt-4 space-y-4 text-sm text-gray-300">
+          ${continuity && continuity.personnes && continuity.personnes.length ? `
+            <div>
+              <p class="text-amber-400/80 font-semibold mb-1">Personnes détectées</p>
+              <ul class="list-disc list-inside space-y-1">${continuity.personnes.map(p => `<li><span class="text-white font-medium">${p.identifiant}</span> — ${p.description}</li>`).join('')}</ul>
+            </div>` : ''}
+          ${continuity && continuity.lieux && continuity.lieux.length ? `
+            <div>
+              <p class="text-amber-400/80 font-semibold mb-1">Lieux détectés</p>
+              <ul class="list-disc list-inside space-y-1">${continuity.lieux.map(l => `<li><span class="text-white font-medium">${l.identifiant}</span> — ${l.description}</li>`).join('')}</ul>
+            </div>` : ''}
+          ${continuity && continuity.general ? `
+            <div>
+              <p class="text-amber-400/80 font-semibold mb-1">Continuité générale</p>
+              <p>${continuity.general}</p>
+            </div>` : ''}
+          <div>
+            <p class="text-amber-400/80 font-semibold mb-1">Storyboard</p>
+            <ol class="list-decimal list-inside space-y-1">${state.normalStoryboard.map(s => `<li>${s}</li>`).join('')}</ol>
+          </div>
+        </div>
+      </details>
+    `));
+  }
+
   const regenBtn = wrap.querySelector('#n-regen-btn');
   if (regenBtn) regenBtn.addEventListener('click', () => { startNormalGeneration(); });
   const newBtn = wrap.querySelector('#n-new-btn');
@@ -1936,9 +2475,21 @@ function renderNormalDisplay() {
 /* --------------------------------- INIT ---------------------------------- */
 
 function init() {
-  const existingKey = localStorage.getItem('userApiKey');
-  state.view = existingKey ? 'mode-select' : 'apikey';
-  render();
+  try {
+    const existingKey = safeGetItem('userApiKey');
+    state.view = existingKey ? 'mode-select' : 'apikey';
+    render();
+  } catch (e) {
+    console.error('Erreur au démarrage de Studio Life:', e);
+    root.innerHTML = `
+      <div class="min-h-screen flex items-center justify-center px-4">
+        <div class="w-full max-w-md bg-black border border-red-500 rounded-lg p-8 text-center">
+          <h1 class="text-2xl font-bold text-red-400 mb-4">Oups, l'appli n'a pas pu démarrer</h1>
+          <p class="text-gray-300 text-sm mb-2">Détail technique : ${(e && e.message) ? e.message : e}</p>
+          <p class="text-gray-500 text-xs">Essaie d'ouvrir ce fichier directement dans un navigateur (double-clic, ou glisser l'onglet) plutôt que dans un aperçu intégré.</p>
+        </div>
+      </div>`;
+  }
 }
 
 init();
