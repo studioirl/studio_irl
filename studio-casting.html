@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Studio Casting — Fiches de personnages IA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0F1013;
+    --surface:#191A1F;
+    --surface-2:#212228;
+    --line:#2C2D33;
+    --bone:#EDEAE2;
+    --muted:#8B8D94;
+    --brass:#A6905F;
+    --brass-dim:#6E5F3F;
+    --moss:#5B6B5B;
+    --danger:#B85C4A;
+    --radius:2px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--ink);color:var(--bone);font-family:'IBM Plex Sans',sans-serif;-webkit-font-smoothing:antialiased;}
+  ::selection{background:var(--brass);color:#111;}
+  ::-webkit-scrollbar{width:8px;}
+  ::-webkit-scrollbar-track{background:var(--ink);}
+  ::-webkit-scrollbar-thumb{background:var(--line);}
+
+  .disclaimer-gate{
+    position:fixed;inset:0;z-index:100;background:var(--ink);
+    display:flex;align-items:center;justify-content:center;padding:24px;
+  }
+  .disclaimer-card{
+    max-width:560px;border:1px solid var(--line);padding:40px;background:var(--surface);
+  }
+  .disclaimer-card h2{font-family:'Fraunces',serif;font-weight:500;font-size:22px;margin:0 0 16px;letter-spacing:.01em;}
+  .disclaimer-card p{color:var(--muted);font-size:13.5px;line-height:1.7;margin:0 0 14px;}
+  .disclaimer-card ul{color:var(--muted);font-size:13.5px;line-height:1.8;margin:0 0 20px;padding-left:18px;}
+  .disclaimer-card label{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--bone);margin-bottom:20px;cursor:pointer;}
+  .disclaimer-card input[type=checkbox]{margin-top:3px;accent-color:var(--brass);}
+  .gate-btn{
+    width:100%;padding:14px;background:var(--brass);color:#14150f;border:none;font-weight:600;
+    font-family:'IBM Plex Sans';letter-spacing:.04em;text-transform:uppercase;font-size:12px;cursor:pointer;
+  }
+  .gate-btn:disabled{background:var(--line);color:var(--muted);cursor:not-allowed;}
+
+  header{
+    border-bottom:1px solid var(--line);padding:28px 40px;display:flex;align-items:baseline;justify-content:space-between;
+  }
+  header .mark{display:flex;align-items:baseline;gap:14px;}
+  header h1{font-family:'Fraunces',serif;font-weight:500;font-size:20px;letter-spacing:.02em;margin:0;}
+  header .tag{font-family:'IBM Plex Mono';font-size:10.5px;color:var(--brass);letter-spacing:.08em;text-transform:uppercase;}
+  header .sub{font-family:'IBM Plex Mono';font-size:11px;color:var(--muted);}
+
+  .layout{display:grid;grid-template-columns:380px 1fr;min-height:calc(100vh - 77px);}
+  .dossier{border-right:1px solid var(--line);padding:32px;overflow-y:auto;max-height:calc(100vh - 77px);}
+  .stage{padding:32px 40px;}
+
+  .field-group{margin-bottom:26px;}
+  .field-group + .field-group{border-top:1px solid var(--line);padding-top:26px;}
+  .eyebrow{font-family:'IBM Plex Mono';font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--brass);margin-bottom:12px;display:block;}
+  label.f{display:block;font-size:11px;color:var(--muted);margin:14px 0 6px;text-transform:uppercase;letter-spacing:.04em;}
+  label.f:first-of-type{margin-top:0;}
+  input[type=text], textarea, select{
+    width:100%;background:var(--surface-2);border:1px solid var(--line);color:var(--bone);
+    padding:10px 12px;font-family:'IBM Plex Sans';font-size:13px;border-radius:var(--radius);
+  }
+  textarea{resize:vertical;min-height:64px;line-height:1.5;}
+  input[type=text]:focus, textarea:focus, select:focus{outline:none;border-color:var(--brass-dim);}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+  .chip-set{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+  .chip{
+    border:1px solid var(--line);padding:6px 10px;font-size:11px;color:var(--muted);cursor:pointer;
+    background:transparent;border-radius:var(--radius);
+  }
+  .chip.active{border-color:var(--brass);color:var(--brass);background:rgba(166,144,95,.08);}
+
+  .engine-toggle{display:flex;border:1px solid var(--line);}
+  .engine-toggle button{
+    flex:1;padding:11px;background:var(--surface-2);border:none;color:var(--muted);font-size:11px;
+    text-transform:uppercase;letter-spacing:.06em;font-family:'IBM Plex Mono';cursor:pointer;border-right:1px solid var(--line);
+  }
+  .engine-toggle button:last-child{border-right:none;}
+  .engine-toggle button.active{background:var(--brass);color:#14150f;font-weight:600;}
+
+  .key-row{display:flex;gap:6px;margin-top:8px;}
+  .key-row input{flex:1;font-family:'IBM Plex Mono';font-size:11px;}
+  .key-status{width:8px;height:8px;border-radius:50%;background:var(--line);align-self:center;flex-shrink:0;}
+  .key-status.ok{background:#7C9885;}
+
+  .generate-btn{
+    width:100%;padding:16px;background:var(--bone);color:#111;border:none;font-weight:600;
+    font-family:'IBM Plex Sans';letter-spacing:.04em;text-transform:uppercase;font-size:12.5px;cursor:pointer;
+    margin-top:28px;
+  }
+  .generate-btn:disabled{background:var(--line);color:var(--muted);cursor:not-allowed;}
+  .generate-btn:hover:not(:disabled){background:var(--brass);}
+
+  .stage-head{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:24px;}
+  .stage-head h2{font-family:'Fraunces',serif;font-weight:500;font-size:17px;margin:0;letter-spacing:.01em;}
+  .stage-head .count{font-family:'IBM Plex Mono';font-size:11px;color:var(--muted);}
+
+  .contact-sheet{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:2px;background:var(--line);}
+  .frame{background:var(--surface);position:relative;}
+  .frame .neg-number{
+    position:absolute;top:8px;left:8px;font-family:'IBM Plex Mono';font-size:10px;color:var(--brass);
+    background:rgba(15,16,19,.7);padding:2px 6px;letter-spacing:.05em;z-index:2;
+  }
+  .frame img{width:100%;aspect-ratio:3/4;object-fit:cover;display:block;}
+  .frame .frame-foot{
+    padding:10px 12px;font-family:'IBM Plex Mono';font-size:10px;color:var(--muted);
+    display:flex;justify-content:space-between;align-items:center;
+  }
+  .frame .dl{color:var(--brass);text-decoration:none;text-transform:uppercase;letter-spacing:.05em;}
+  .frame .placeholder{aspect-ratio:3/4;display:flex;align-items:center;justify-content:center;color:var(--muted);font-family:'IBM Plex Mono';font-size:10px;}
+  .frame.pending .placeholder{color:var(--brass);}
+
+  .empty-stage{
+    border:1px dashed var(--line);padding:100px 20px;text-align:center;color:var(--muted);
+    font-family:'IBM Plex Mono';font-size:12px;letter-spacing:.04em;text-transform:uppercase;
+  }
+  .empty-stage .rule{width:40px;height:1px;background:var(--line);margin:16px auto;}
+
+  .error-banner{
+    margin-top:16px;padding:12px 14px;border:1px solid var(--danger);color:var(--danger);
+    font-size:12px;background:rgba(184,92,74,.08);
+  }
+
+  .spin{
+    width:22px;height:22px;border:2px solid var(--line);border-top-color:var(--brass);border-radius:50%;
+    animation:spin .8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  @media (max-width: 860px){
+    .layout{grid-template-columns:1fr;}
+    .dossier{border-right:none;border-bottom:1px solid var(--line);max-height:none;}
+  }
+</style>
+</head>
+<body>
+
+<div class="disclaimer-gate" id="gate">
+  <div class="disclaimer-card">
+    <span class="eyebrow">Avant d'entrer</span>
+    <h2>Studio Casting — personnages entièrement fictifs</h2>
+    <p>Cet outil génère des personnages IA imaginaires à partir d'une description textuelle — il ne prend jamais de photo réelle en entrée et ne verrouille aucune identité existante.</p>
+    <ul>
+      <li>Aucun upload de visage réel. Aucune tentative de reproduire une personne existante, identifiable ou publique.</li>
+      <li>Les personnages générés sont des adultes fictifs (18 ans et plus).</li>
+      <li>Vous restez responsable de l'usage des visuels produits et du respect des CGU de Vertex AI / kie.ai.</li>
+    </ul>
+    <label><input type="checkbox" id="ack"> Je confirme que je vais utiliser cet outil uniquement pour générer des personnages fictifs, non basés sur une personne réelle.</label>
+    <button class="gate-btn" id="gate-btn" disabled>Entrer dans le studio</button>
+  </div>
+</div>
+
+<header>
+  <div class="mark">
+    <h1>Studio Casting</h1>
+    <span class="tag">Fiches de personnage</span>
+  </div>
+  <span class="sub">Dual-engine · Vertex AI + kie.ai</span>
+</header>
+
+<div class="layout">
+  <aside class="dossier">
+
+    <div class="field-group">
+      <span class="eyebrow">01 — Dossier du personnage</span>
+      <label class="f">Nom du personnage (fictif)</label>
+      <input type="text" id="charName" placeholder="ex. Lina Voss">
+
+      <label class="f">Description physique</label>
+      <textarea id="charDesc" placeholder="ex. Femme adulte fictive, la trentaine, silhouette athlétique, cheveux châtains mi-longs, traits doux, style éditorial naturel."></textarea>
+
+      <label class="f">Ambiance / style</label>
+      <div class="chip-set" id="styleChips">
+        <button class="chip active" data-v="éditorial mode">Éditorial mode</button>
+        <button class="chip" data-v="lifestyle naturel">Lifestyle naturel</button>
+        <button class="chip" data-v="portrait studio">Portrait studio</button>
+        <button class="chip" data-v="voyage golden hour">Voyage — golden hour</button>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <span class="eyebrow">02 — Cadrage</span>
+      <label class="f">Type de plan</label>
+      <div class="chip-set" id="shotChips">
+        <button class="chip active" data-v="portrait rapproché">Portrait rapproché</button>
+        <button class="chip" data-v="plan buste">Plan buste</button>
+        <button class="chip" data-v="pied entier">Pied entier</button>
+        <button class="chip" data-v="plan large environnement">Plan large / environnement</button>
+      </div>
+      <label class="f">Décor</label>
+      <input type="text" id="setting" placeholder="ex. loft lumineux, terrasse en ville, studio minimaliste">
+    </div>
+
+    <div class="field-group">
+      <span class="eyebrow">03 — Moteur de génération</span>
+      <div class="engine-toggle">
+        <button id="engineVertex" class="active">Vertex AI</button>
+        <button id="engineKie">kie.ai</button>
+      </div>
+
+      <div id="vertexKeyBlock">
+        <label class="f">Clé API Vertex (Gemini)</label>
+        <div class="key-row">
+          <input type="text" id="vertexKey" placeholder="AQ...">
+          <div class="key-status" id="vertexStatus"></div>
+        </div>
+      </div>
+      <div id="kieKeyBlock" style="display:none;">
+        <label class="f">Clé API kie.ai</label>
+        <div class="key-row">
+          <input type="text" id="kieKey" placeholder="clé kie.ai">
+          <div class="key-status" id="kieStatus"></div>
+        </div>
+      </div>
+
+      <label class="f">Nombre de plans</label>
+      <select id="shotCount">
+        <option value="1">1 plan</option>
+        <option value="3" selected>3 plans</option>
+        <option value="6">6 plans (planche contact)</option>
+      </select>
+    </div>
+
+    <button class="generate-btn" id="generateBtn">Lancer le casting</button>
+    <div id="errorBanner" style="display:none;" class="error-banner"></div>
+  </aside>
+
+  <main class="stage">
+    <div class="stage-head">
+      <h2>Planche contact</h2>
+      <span class="count" id="frameCount">0 négatif</span>
+    </div>
+    <div id="stageBody">
+      <div class="empty-stage">
+        Aucun personnage généré
+        <div class="rule"></div>
+        Renseignez le dossier à gauche puis lancez le casting
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+(function(){
+  // ---- Gate ----
+  const ack = document.getElementById('ack');
+  const gateBtn = document.getElementById('gate-btn');
+  const gate = document.getElementById('gate');
+  ack.addEventListener('change', ()=> gateBtn.disabled = !ack.checked);
+  gateBtn.addEventListener('click', ()=> gate.style.display = 'none');
+
+  // ---- Chip groups ----
+  function wireChips(id){
+    const wrap = document.getElementById(id);
+    let val = wrap.querySelector('.chip.active').dataset.v;
+    wrap.addEventListener('click', e=>{
+      const btn = e.target.closest('.chip');
+      if(!btn) return;
+      wrap.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+      btn.classList.add('active');
+      val = btn.dataset.v;
+    });
+    return { get: ()=>val };
+  }
+  const styleSel = wireChips('styleChips');
+  const shotSel = wireChips('shotChips');
+
+  // ---- Engine toggle ----
+  let engine = 'vertex';
+  const engineVertexBtn = document.getElementById('engineVertex');
+  const engineKieBtn = document.getElementById('engineKie');
+  const vertexBlock = document.getElementById('vertexKeyBlock');
+  const kieBlock = document.getElementById('kieKeyBlock');
+  engineVertexBtn.addEventListener('click', ()=>{
+    engine = 'vertex';
+    engineVertexBtn.classList.add('active'); engineKieBtn.classList.remove('active');
+    vertexBlock.style.display=''; kieBlock.style.display='none';
+  });
+  engineKieBtn.addEventListener('click', ()=>{
+    engine = 'kie';
+    engineKieBtn.classList.add('active'); engineVertexBtn.classList.remove('active');
+    kieBlock.style.display=''; vertexBlock.style.display='none';
+  });
+
+  const vertexKeyInput = document.getElementById('vertexKey');
+  const kieKeyInput = document.getElementById('kieKey');
+  const vertexStatus = document.getElementById('vertexStatus');
+  const kieStatus = document.getElementById('kieStatus');
+  vertexKeyInput.addEventListener('input', ()=> vertexStatus.classList.toggle('ok', vertexKeyInput.value.trim().length > 8));
+  kieKeyInput.addEventListener('input', ()=> kieStatus.classList.toggle('ok', kieKeyInput.value.trim().length > 8));
+
+  // ---- Helpers ----
+  const errorBanner = document.getElementById('errorBanner');
+  function showError(msg){
+    errorBanner.textContent = msg;
+    errorBanner.style.display = 'block';
+  }
+  function clearError(){ errorBanner.style.display = 'none'; }
+
+  function buildPrompt(){
+    const name = document.getElementById('charName').value.trim() || 'personnage fictif';
+    const desc = document.getElementById('charDesc').value.trim();
+    const style = styleSel.get();
+    const shot = shotSel.get();
+    const setting = document.getElementById('setting').value.trim() || 'décor neutre et soigné';
+
+    return [
+      `Photographie ${style}, ${shot}.`,
+      `Personnage entièrement fictif nommé ${name}, adulte (18 ans ou plus). Ce personnage n'est basé sur aucune personne réelle, existante ou publique — invente une apparence cohérente et plausible.`,
+      desc ? `Apparence : ${desc}.` : '',
+      `Décor : ${setting}.`,
+      `Tenue vestimentaire correcte et adaptée au contexte éditorial demandé, sans exagération anatomique. Lumière naturelle ou studio soignée, rendu photoréaliste haute qualité, cohérence du visage du personnage à travers les différents plans générés dans cette série.`
+    ].filter(Boolean).join(' ');
+  }
+
+  // ---- Engines ----
+  // Vertex AI (Gemini) — client calls Google GenAI REST directly with the user's own key.
+  async function generateWithVertex(prompt, apiKey){
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent?key=${encodeURIComponent(apiKey)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { imageConfig: { aspectRatio: "3:4", imageSize: "2K" } }
+      })
+    });
+    if(!res.ok){
+      const t = await res.text().catch(()=> '');
+      throw new Error(`Vertex/Gemini a répondu ${res.status}. ${t.slice(0,200)}`);
+    }
+    const data = await res.json();
+    const parts = data?.candidates?.[0]?.content?.parts || [];
+    const imgPart = parts.find(p => p.inlineData && p.inlineData.data);
+    if(!imgPart) throw new Error('Aucune image renvoyée par Vertex AI (filtre de sécurité ou prompt refusé).');
+    return `data:image/png;base64,${imgPart.inlineData.data}`;
+  }
+
+  // kie.ai — canonical pattern: createTask -> poll recordInfo on `state`.
+  async function generateWithKie(prompt, apiKey){
+    const createRes = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: 'nano-banana-2',
+        input: { prompt, aspect_ratio: '3:4' }
+      })
+    });
+    if(!createRes.ok){
+      const t = await createRes.text().catch(()=> '');
+      throw new Error(`kie.ai createTask a répondu ${createRes.status}. ${t.slice(0,200)}`);
+    }
+    const createData = await createRes.json();
+    const taskId = createData?.data?.taskId || createData?.taskId;
+    if(!taskId) throw new Error('kie.ai n\'a pas renvoyé de taskId.');
+
+    const maxAttempts = 30;
+    for(let i=0;i<maxAttempts;i++){
+      await new Promise(r=>setTimeout(r, 2500));
+      const pollRes = await fetch(`https://api.kie.ai/api/v1/jobs/recordInfo?taskId=${encodeURIComponent(taskId)}`, {
+        headers: { 'Authorization': `Bearer ${apiKey}` }
+      });
+      if(!pollRes.ok) continue;
+      const pollData = await pollRes.json();
+      const state = pollData?.data?.state || pollData?.state;
+      if(state === 'success' || state === 'completed'){
+        const url = pollData?.data?.resultUrl || pollData?.data?.output?.[0] || pollData?.resultUrl;
+        if(!url) throw new Error('kie.ai a terminé la tâche mais sans URL de résultat.');
+        return url;
+      }
+      if(state === 'failed' || state === 'error'){
+        throw new Error('kie.ai a échoué sur cette tâche (state: failed).');
+      }
+    }
+    throw new Error('Délai dépassé en attendant kie.ai (30 tentatives).');
+  }
+
+  // ---- Stage rendering ----
+  const stageBody = document.getElementById('stageBody');
+  const frameCount = document.getElementById('frameCount');
+  let negCounter = 0;
+  let totalFrames = 0;
+
+  function ensureGrid(){
+    if(!document.getElementById('contactSheet')){
+      stageBody.innerHTML = '<div class="contact-sheet" id="contactSheet"></div>';
+    }
+    return document.getElementById('contactSheet');
+  }
+
+  function addPendingFrame(){
+    const grid = ensureGrid();
+    negCounter += 1;
+    const id = `frame-${negCounter}`;
+    const el = document.createElement('div');
+    el.className = 'frame pending';
+    el.id = id;
+    el.innerHTML = `
+      <span class="neg-number">N°${String(negCounter).padStart(2,'0')}</span>
+      <div class="placeholder"><div class="spin"></div></div>
+      <div class="frame-foot"><span>en cours…</span></div>
+    `;
+    grid.prepend(el);
+    return id;
+  }
+
+  function resolveFrame(id, url, label){
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.classList.remove('pending');
+    el.innerHTML = `
+      <span class="neg-number">${el.querySelector('.neg-number').textContent}</span>
+      <img src="${url}" alt="${label}">
+      <div class="frame-foot"><span>${label}</span><a class="dl" href="${url}" download="casting_${id}.png">Télécharger</a></div>
+    `;
+    totalFrames += 1;
+    frameCount.textContent = `${totalFrames} négatif${totalFrames>1?'s':''}`;
+  }
+
+  function failFrame(id, msg){
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.classList.remove('pending');
+    el.innerHTML = `
+      <span class="neg-number">${el.querySelector('.neg-number').textContent}</span>
+      <div class="placeholder" style="color:var(--danger);text-align:center;padding:0 12px;">${msg}</div>
+      <div class="frame-foot"><span>échec</span></div>
+    `;
+  }
+
+  // ---- Generate ----
+  const generateBtn = document.getElementById('generateBtn');
+  generateBtn.addEventListener('click', async ()=>{
+    clearError();
+    const desc = document.getElementById('charDesc').value.trim();
+    if(!desc){
+      showError('Ajoutez une description physique du personnage avant de lancer le casting.');
+      return;
+    }
+    const apiKey = engine === 'vertex' ? vertexKeyInput.value.trim() : kieKeyInput.value.trim();
+    if(!apiKey){
+      showError(`Renseignez votre clé ${engine === 'vertex' ? 'Vertex AI' : 'kie.ai'} pour générer.`);
+      return;
+    }
+
+    const count = parseInt(document.getElementById('shotCount').value, 10);
+    generateBtn.disabled = true;
+    generateBtn.textContent = 'Génération en cours…';
+
+    const jobs = Array.from({length: count}).map(()=>{
+      const prompt = buildPrompt();
+      const frameId = addPendingFrame();
+      return { prompt, frameId };
+    });
+
+    await Promise.all(jobs.map(async ({prompt, frameId})=>{
+      try{
+        const url = engine === 'vertex'
+          ? await generateWithVertex(prompt, apiKey)
+          : await generateWithKie(prompt, apiKey);
+        resolveFrame(frameId, url, shotSel.get());
+      }catch(err){
+        console.error(err);
+        failFrame(frameId, (err.message || 'Erreur inconnue').slice(0,120));
+      }
+    }));
+
+    generateBtn.disabled = false;
+    generateBtn.textContent = 'Lancer le casting';
+  });
+})();
+</script>
+
+</body>
+</html>
