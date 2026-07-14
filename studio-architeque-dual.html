@@ -143,7 +143,10 @@ WATER POINTS STRICT RULES:
 - BATHTUBS / SHOWERS: ONLY in Salle de bain or Salle d'eau. FORBIDDEN everywhere else.
 - FOUNTAINS / WATER FEATURES: FORBIDDEN unless explicitly requested.
 - NO random water elements placed in any room not dedicated to water.
+`;
 
+// Règle lumière — UNIQUEMENT pour la phase décoration finale (pas la phase béton brute, qui a son propre éclairage de chantier)
+const FINAL_LIGHTING_RULES = `
 STRICT LIGHTING RULES (CRITICAL — APPLIES TO EVERY LIGHT SOURCE IN THE ROOM):
 - The ONLY light source in the image is natural daylight coming through windows/openings.
 - Every ceiling light, pendant lamp, chandelier, lustre, wall sconce, table lamp, floor lamp, LED strip, spotlight and recessed spot MUST be physically present as a decorative OFF fixture — but MUST NOT emit, cast, or appear to emit any light.
@@ -204,7 +207,7 @@ const getPieceConstraints = (piece, type, subType, isEmpty, gardenType, decorati
   const lightingRule = isEmpty
     ? "Construction site temporary lighting (bare bulbs)"
     : "Large windows with abundant NATURAL DAYLIGHT ONLY — every ceiling light, pendant, chandelier/lustre, sconce and lamp is a dark UNLIT decorative fixture with ZERO glow, ZERO emission, ZERO warm light — daylight is the single light source in the entire image";
-  const base = { mandatory: ["Visible wall light switch near door", lightingRule, "Fully finished ceiling, painted, no raw concrete visible anywhere"], forbidden: ["NO construction materials visible","NO cement bags","NO tools","NO scaffolding","NO unfinished surfaces","NO glowing or lit light fixtures of any kind","NO glowing chandelier/lustre crystals","NO warm light halo around lamps or ceiling fixtures"], context: "" };
+  const base = { mandatory: ["Visible wall light switch near door", lightingRule, "Fully finished ceiling, painted, no raw concrete visible anywhere"], forbidden: ["NO construction materials visible","NO cement bags","NO tools","NO scaffolding","NO unfinished surfaces", ...(isEmpty ? [] : ["NO glowing or lit light fixtures of any kind","NO glowing chandelier/lustre crystals","NO warm light halo around lamps or ceiling fixtures"])], context: "" };
 
   if (piece.includes('Extérieur Villa') || piece.includes('Exterieur Villa')) {
     base.mandatory.push(
@@ -424,7 +427,8 @@ MANDATORY:
 ${constraints.mandatory.map(m => `- ${m}`).join('\n')}
 STRICTLY FORBIDDEN:
 ${constraints.forbidden.map(f => `- ${f}`).join('\n')}
-${GLOBAL_PROMPT_RULES}`;
+${GLOBAL_PROMPT_RULES}
+${FINAL_LIGHTING_RULES}`;
 };
 
 // ============================================================
