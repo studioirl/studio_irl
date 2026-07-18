@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studio Caméra — Studio IRL</title>
+<style>
+  :root{
+    --bg:#0a0a0f; --bg2:#12121a; --panel:#161620; --border:#2a2a38;
+    --accent:#e8c46a; --accent2:#c9a04e; --text:#eee9dd; --muted:#8a8a9a;
+    --danger:#e05656; --ok:#5ec98a;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:'Georgia',serif; background:radial-gradient(circle at top, #1a1a24, #08080c 70%);
+    color:var(--text); min-height:100vh;
+  }
+  header{
+    padding:32px 24px 16px; text-align:center; border-bottom:1px solid var(--border);
+  }
+  header h1{
+    font-size:1.9rem; letter-spacing:2px; margin:0; color:var(--accent);
+    text-transform:uppercase; font-weight:400;
+  }
+  header p{color:var(--muted); font-size:.9rem; margin-top:6px; font-style:italic}
+  .wrap{max-width:820px; margin:0 auto; padding:24px 16px 80px}
+  .card{
+    background:var(--panel); border:1px solid var(--border); border-radius:10px;
+    padding:22px; margin-bottom:20px;
+  }
+  .card h2{
+    margin:0 0 14px; font-size:1.05rem; color:var(--accent); font-weight:400;
+    letter-spacing:1px; text-transform:uppercase; display:flex; align-items:center; gap:10px;
+  }
+  .step-num{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:24px; height:24px; border-radius:50%; background:var(--accent); color:#0a0a0f;
+    font-size:.8rem; font-family:sans-serif; font-weight:bold;
+  }
+  label{display:block; font-size:.82rem; color:var(--muted); margin:12px 0 5px; font-family:sans-serif}
+  input[type=text], input[type=number], textarea, select{
+    width:100%; background:var(--bg2); border:1px solid var(--border); color:var(--text);
+    padding:10px 12px; border-radius:6px; font-family:sans-serif; font-size:.92rem;
+  }
+  textarea{resize:vertical; min-height:60px}
+  input:focus, textarea:focus, select:focus{outline:1px solid var(--accent); border-color:var(--accent)}
+  .row{display:flex; gap:12px; flex-wrap:wrap}
+  .row > div{flex:1; min-width:150px}
+  .beat{
+    background:var(--bg2); border:1px solid var(--border); border-radius:8px;
+    padding:14px; margin-bottom:12px; position:relative;
+  }
+  .beat-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:4px}
+  .beat-head span{font-family:sans-serif; font-size:.78rem; color:var(--accent2); letter-spacing:1px}
+  .rm-btn{
+    background:none; border:none; color:var(--danger); cursor:pointer; font-size:1rem;
+    font-family:sans-serif;
+  }
+  .btn{
+    font-family:sans-serif; background:var(--accent); color:#0a0a0f; border:none;
+    padding:11px 20px; border-radius:6px; font-weight:600; cursor:pointer; font-size:.9rem;
+    letter-spacing:.5px;
+  }
+  .btn:hover{background:var(--accent2)}
+  .btn.secondary{background:transparent; border:1px solid var(--border); color:var(--text)}
+  .btn.secondary:hover{border-color:var(--accent); color:var(--accent)}
+  .btn:disabled{opacity:.5; cursor:not-allowed}
+  .ref-imgs{display:flex; gap:10px; flex-wrap:wrap; margin-top:10px}
+  .ref-imgs img{
+    width:76px; height:76px; object-fit:cover; border-radius:6px; border:1px solid var(--border);
+  }
+  .ref-slot{position:relative}
+  .ref-slot .del{
+    position:absolute; top:-6px; right:-6px; background:var(--danger); color:#fff; border:none;
+    border-radius:50%; width:18px; height:18px; font-size:.7rem; cursor:pointer; line-height:1;
+  }
+  .upload-btn{
+    width:76px; height:76px; border:1px dashed var(--border); border-radius:6px;
+    display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--muted);
+    font-family:sans-serif; font-size:1.4rem;
+  }
+  .upload-btn:hover{border-color:var(--accent); color:var(--accent)}
+  #fileInput{display:none}
+  .out-box{
+    background:var(--bg2); border:1px solid var(--accent2); border-radius:8px; padding:16px;
+    font-family:'Courier New', monospace; font-size:.85rem; white-space:pre-wrap; line-height:1.5;
+    max-height:480px; overflow-y:auto; color:#f0e6c8;
+  }
+  .note{font-family:sans-serif; font-size:.78rem; color:var(--muted); margin-top:8px; line-height:1.4}
+  .status{font-family:sans-serif; font-size:.85rem; margin-top:10px}
+  .status.err{color:var(--danger)}
+  .status.ok{color:var(--ok)}
+  .actions{display:flex; gap:10px; margin-top:16px; flex-wrap:wrap}
+  details summary{cursor:pointer; color:var(--muted); font-family:sans-serif; font-size:.82rem}
+  .spinner{
+    display:inline-block; width:14px; height:14px; border:2px solid rgba(0,0,0,.3);
+    border-top-color:#0a0a0f; border-radius:50%; animation:spin .7s linear infinite; margin-right:6px;
+    vertical-align:middle;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Studio Caméra</h1>
+  <p>Générateur de prompts Veo 3.1 — chorégraphie caméra & ancrage d'identité</p>
+</header>
+
+<div class="wrap">
+
+  <div class="card">
+    <h2><span class="step-num">1</span>Clé API</h2>
+    <label>Clé API Vertex AI Express Mode (AQ...) — enregistrée localement dans ce navigateur</label>
+    <input type="text" id="apiKey" placeholder="AQ....">
+    <label>Modèle Gemini (génération de texte)</label>
+    <select id="modelSelect">
+      <option value="gemini-2.5-pro">gemini-2.5-pro (recommandé, meilleure analyse image)</option>
+      <option value="gemini-2.5-flash">gemini-2.5-flash (plus rapide)</option>
+    </select>
+  </div>
+
+  <div class="card">
+    <h2><span class="step-num">2</span>Ancrage identité — images de référence</h2>
+    <div class="note">Jusqu'à 3 images. Elles servent à deux choses : Gemini les analyse pour écrire une description physique ultra-précise (à réinjecter dans le prompt Veo3), et tu les attaches toi-même comme <em>reference images</em> dans Veo 3.1 au moment de générer.</div>
+    <div class="ref-imgs" id="refImgsContainer">
+      <div class="upload-btn" id="uploadBtn">+</div>
+    </div>
+    <input type="file" id="fileInput" accept="image/*" multiple>
+  </div>
+
+  <div class="card">
+    <h2><span class="step-num">3</span>Sujet & environnement</h2>
+    <label>Description du sujet (nom/rôle, apparence si pas déjà clair sur les photos)</label>
+    <textarea id="subjectDesc" placeholder="Ex: Marie, 30 ans, cheveux châtains mi-longs, tenue casual chic beige..."></textarea>
+    <label>Lieu / environnement</label>
+    <textarea id="environment" placeholder="Ex: Appartement lumineux avec baie vitrée donnant sur un balcon avec vue sur la mer, fin d'après-midi"></textarea>
+    <div class="row">
+      <div>
+        <label>Style visuel / ambiance</label>
+        <input type="text" id="style" placeholder="Ex: cinématique, lumière chaude naturelle, grain film subtil">
+      </div>
+      <div>
+        <label>Durée totale du plan (s)</label>
+        <select id="totalDuration">
+          <option value="4">4s</option>
+          <option value="6">6s</option>
+          <option value="8" selected>8s</option>
+        </select>
+      </div>
+    </div>
+    <label>Éléments fixes à ne jamais faire varier (décor, lumière, météo, tenue, coiffure...)</label>
+    <textarea id="lockedElements" placeholder="Ex: cheveux attachés en queue basse pendant tout le plan, lumière dorée de fin de journée constante, mer calme à l'arrière-plan, canapé beige en velours toujours visible à gauche, aucun changement de tenue"></textarea>
+    <div class="note">Ces éléments seront répétés à l'identique dans chaque segment du prompt (pas reformulés) pour empêcher toute dérive du visage, de la tenue ou du décor entre le début et la fin du plan.</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="step-num">4</span>Séquence caméra (par étapes)</h2>
+    <div class="note">Décris chaque étape du mouvement. Le studio les fusionnera en <strong>un seul plan continu chorégraphié</strong> (jamais des coupures brutales), avec timestamps précis — c'est ce que Veo 3.1 gère le mieux.</div>
+    <div id="beatsContainer"></div>
+    <button class="btn secondary" id="addBeatBtn" type="button">+ Ajouter une étape</button>
+  </div>
+
+  <div class="card">
+    <h2><span class="step-num">5</span>Générer</h2>
+    <button class="btn" id="generateBtn" type="button">Générer le prompt Veo 3.1</button>
+    <div id="status"></div>
+  </div>
+
+  <div class="card" id="outputCard" style="display:none">
+    <h2>Prompt final</h2>
+    <div class="out-box" id="outputBox"></div>
+    <div class="actions">
+      <button class="btn secondary" id="copyBtn" type="button">Copier</button>
+    </div>
+    <details style="margin-top:14px">
+      <summary>Instructions d'utilisation dans Veo 3.1</summary>
+      <div class="note" id="usageNotes" style="margin-top:8px"></div>
+    </details>
+  </div>
+
+</div>
+
+<script>
+const state = { refImages: [] }; // {mime, base64, dataUrl}
+
+// ---- API key persistence ----
+const apiKeyInput = document.getElementById('apiKey');
+apiKeyInput.value = localStorage.getItem('sc_apiKey') || '';
+apiKeyInput.addEventListener('change', ()=> localStorage.setItem('sc_apiKey', apiKeyInput.value.trim()));
+const modelSelect = document.getElementById('modelSelect');
+modelSelect.value = localStorage.getItem('sc_model') || 'gemini-2.5-pro';
+modelSelect.addEventListener('change', ()=> localStorage.setItem('sc_model', modelSelect.value));
+
+// ---- Reference images ----
+const fileInput = document.getElementById('fileInput');
+const uploadBtn = document.getElementById('uploadBtn');
+const refImgsContainer = document.getElementById('refImgsContainer');
+
+uploadBtn.addEventListener('click', ()=> fileInput.click());
+fileInput.addEventListener('change', async (e)=>{
+  const files = Array.from(e.target.files).slice(0, 3 - state.refImages.length);
+  for(const f of files){
+    const dataUrl = await new Promise((res,rej)=>{
+      const r = new FileReader();
+      r.onload = ()=> res(r.result);
+      r.onerror = rej;
+      r.readAsDataURL(f);
+    });
+    const base64 = dataUrl.split(',')[1];
+    state.refImages.push({mime: f.type, base64, dataUrl});
+  }
+  renderRefImages();
+  fileInput.value = '';
+});
+
+function renderRefImages(){
+  refImgsContainer.querySelectorAll('.ref-slot').forEach(el=>el.remove());
+  state.refImages.forEach((img, idx)=>{
+    const slot = document.createElement('div');
+    slot.className = 'ref-slot';
+    slot.innerHTML = `<img src="${img.dataUrl}"><button class="del" data-idx="${idx}">×</button>`;
+    refImgsContainer.insertBefore(slot, uploadBtn);
+  });
+  uploadBtn.style.display = state.refImages.length >= 3 ? 'none' : 'flex';
+  refImgsContainer.querySelectorAll('.del').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      state.refImages.splice(parseInt(btn.dataset.idx),1);
+      renderRefImages();
+    });
+  });
+}
+
+// ---- Beats (camera sequence steps) ----
+const beatsContainer = document.getElementById('beatsContainer');
+let beatCount = 0;
+
+function addBeat(prefill={}){
+  beatCount++;
+  const id = beatCount;
+  const div = document.createElement('div');
+  div.className = 'beat';
+  div.dataset.id = id;
+  div.innerHTML = `
+    <div class="beat-head"><span>ÉTAPE ${id}</span><button class="rm-btn" type="button">Supprimer</button></div>
+    <div class="row">
+      <div>
+        <label>Type de plan / angle</label>
+        <select class="b-shotType">
+          <optgroup label="Taille de plan">
+            <option>Extreme close-up (très gros plan)</option>
+            <option>Close-up (gros plan)</option>
+            <option>Medium close-up (plan rapproché épaule)</option>
+            <option>Medium shot (plan poitrine)</option>
+            <option>Medium wide shot (plan américain)</option>
+            <option>Wide shot (plan large)</option>
+            <option>Extreme wide shot / establishing shot (plan d'ensemble)</option>
+            <option>Two-shot (deux sujets)</option>
+            <option>Over-the-shoulder shot</option>
+            <option>POV shot (point de vue subjectif)</option>
+          </optgroup>
+          <optgroup label="Angle de caméra">
+            <option>Eye-level angle (angle neutre)</option>
+            <option>Low angle (contre-plongée)</option>
+            <option>High angle (plongée)</option>
+            <option>Bird's eye view (vue zénithale)</option>
+            <option>Worm's eye view (vue du sol)</option>
+            <option>Dutch angle / canted angle (plan incliné)</option>
+            <option>Aerial / drone shot (vue aérienne)</option>
+          </optgroup>
+        </select>
+      </div>
+      <div>
+        <label>Mouvement caméra</label>
+        <select class="b-camMove">
+          <optgroup label="Fixe / zoom">
+            <option>Static / locked-off (statique)</option>
+            <option>Zoom in (zoom avant)</option>
+            <option>Zoom out (zoom arrière)</option>
+            <option>Crash zoom (zoom brutal)</option>
+            <option>Dolly zoom / vertigo effect (effet Hitchcock)</option>
+            <option>Rack focus (changement de mise au point)</option>
+          </optgroup>
+          <optgroup label="Rotation caméra fixe">
+            <option>Pan left (panoramique gauche)</option>
+            <option>Pan right (panoramique droite)</option>
+            <option>Whip pan (panoramique rapide)</option>
+            <option>Tilt up (bascule vers le haut)</option>
+            <option>Tilt down (bascule vers le bas)</option>
+            <option>Rotation 180° (selfie → paysage)</option>
+            <option>Roll / Dutch tilt move (roulis)</option>
+          </optgroup>
+          <optgroup label="Déplacement caméra">
+            <option>Dolly-in (avance vers le sujet)</option>
+            <option>Dolly-out (recule du sujet)</option>
+            <option>Truck left / travelling gauche</option>
+            <option>Truck right / travelling droite</option>
+            <option>Pedestal up (montée verticale)</option>
+            <option>Pedestal down (descente verticale)</option>
+            <option>Crane / jib shot (grue)</option>
+            <option>Boom shot</option>
+            <option>Arc shot (mouvement circulaire autour du sujet)</option>
+            <option>Orbit 360° (rotation complète autour du sujet)</option>
+          </optgroup>
+          <optgroup label="Suivi / caméra portée">
+            <option>Steadicam / suivi fluide</option>
+            <option>Handheld (caméra à l'épaule, léger tremblement)</option>
+            <option>Gimbal tracking shot</option>
+            <option>Follow shot (suit le sujet par derrière/de face)</option>
+            <option>Push-in (avance douce et progressive)</option>
+            <option>Pull-out / reveal (recul qui révèle la scène)</option>
+          </optgroup>
+        </select>
+      </div>
+    </div>
+    <label>Action du sujet / de la scène pendant cette étape</label>
+    <textarea class="b-action" placeholder="Ex: elle parle face caméra en souriant, puis tourne lentement le téléphone/son regard vers l'horizon"></textarea>
+    <label>Durée de l'étape (secondes)</label>
+    <input type="number" class="b-duration" min="1" max="8" value="${prefill.duration||3}">
+  `;
+  div.querySelector('.rm-btn').addEventListener('click', ()=> div.remove());
+  beatsContainer.appendChild(div);
+}
+document.getElementById('addBeatBtn').addEventListener('click', ()=>addBeat());
+addBeat({duration:3});
+addBeat({duration:5});
+
+// ---- Generate ----
+const statusEl = document.getElementById('status');
+const outputCard = document.getElementById('outputCard');
+const outputBox = document.getElementById('outputBox');
+const usageNotes = document.getElementById('usageNotes');
+
+function collectBeats(){
+  return Array.from(beatsContainer.querySelectorAll('.beat')).map(b=>({
+    shotType: b.querySelector('.b-shotType').value,
+    camMove: b.querySelector('.b-camMove').value,
+    action: b.querySelector('.b-action').value.trim(),
+    duration: parseFloat(b.querySelector('.b-duration').value)||3
+  }));
+}
+
+document.getElementById('generateBtn').addEventListener('click', async ()=>{
+  const apiKey = apiKeyInput.value.trim();
+  if(!apiKey){ statusEl.innerHTML = '<span class="status err">Clé API manquante.</span>'; return; }
+  const beats = collectBeats();
+  if(beats.length===0){ statusEl.innerHTML = '<span class="status err">Ajoute au moins une étape.</span>'; return; }
+  if(state.refImages.length===0){ statusEl.innerHTML = '<span class="status err">Ajoute au moins une image de référence pour l\'ancrage identité.</span>'; return; }
+
+  const subjectDesc = document.getElementById('subjectDesc').value.trim();
+  const environment = document.getElementById('environment').value.trim();
+  const style = document.getElementById('style').value.trim();
+  const lockedElements = document.getElementById('lockedElements').value.trim();
+  const totalDuration = document.getElementById('totalDuration').value;
+  const model = modelSelect.value;
+
+  statusEl.innerHTML = '<span class="status"><span class="spinner"></span>Génération en cours…</span>';
+  outputCard.style.display = 'none';
+
+  const systemInstruction = `Tu es un directeur de la photographie expert en prompting Veo 3.1 (Google). Tu écris des prompts vidéo ultra-précis en ANGLAIS (Veo répond mieux en anglais), structurés ainsi :
+1. SHOT COMPOSITION (shot size, lens, angle)
+2. SUBJECT & IDENTITY (description physique ultra-précise du sujet, tirée des images de référence fournies — cheveux, visage, tenue, morphologie — pour éviter toute dérive d'identité)
+3. ENVIRONMENT
+4. CAMERA CHOREOGRAPHY — décris le mouvement de caméra comme UNE SEULE trajectoire continue et fluide découpée en timestamps (0-Xs, Xs-Ys, etc.), jamais comme des coupures/cuts séparés. Utilise le vocabulaire cinéma professionnel (dolly, pan, tilt, whip pan, crane, steadicam...).
+5. STYLE & LIGHTING & MOOD
+6. NEGATIVE PROMPT — toujours inclure une ligne "Negative:" avec au minimum: no face distortion, no identity drift, no morphing, no warping, no duplicate limbs, no motion blur artifacts, no inconsistent lighting, no background shifting.
+
+Règles strictes:
+- Un seul plan continu, pas de montage multi-clips, sauf si explicitement demandé.
+- Le mouvement de caméra doit être choréographié (une trajectoire qui enchaîne les étapes demandées sans rupture).
+- COHÉRENCE PHYSIQUE ET DE LIEU (critique) : rédige d'abord un "anchor block" fixe — une phrase unique décrivant le physique exact du sujet (visage, coiffure, tenue, morphologie) et une phrase unique décrivant le décor exact (lieu, lumière, météo, éléments fixes). Réutilise ces DEUX phrases MOT POUR MOT dans chaque segment temporel du prompt, sans les reformuler ni les paraphraser différemment d'un timestamp à l'autre. Ne fais varier ni le visage, ni la tenue, ni la coiffure, ni le décor, ni la lumière, ni la météo entre le début et la fin du plan, sauf si l'action demandée l'exige explicitement.
+- Dans le negative prompt, ajoute systématiquement en plus des items de base : no identity change mid-shot, no clothing change, no hairstyle change, no set change, no environment drift, no lighting shift between segments, no location inconsistency, no continuity errors.
+- Réponds UNIQUEMENT avec le prompt final prêt à copier-coller (en anglais), suivi d'une section "---USAGE NOTES---" en français expliquant comment attacher les images de référence dans Veo 3.1 et tout réglage complémentaire utile (aspect ratio, fps, reference images count).
+- Ne mets aucun autre texte, pas de préambule.`;
+
+  const beatsText = beats.map((b,i)=>`Step ${i+1} (${b.duration}s): Shot type: ${b.shotType}. Camera move: ${b.camMove}. Action: ${b.action}`).join('\n');
+
+  const userText = `Subject description: ${subjectDesc || '(voir images de référence)'}
+Environment: ${environment}
+Visual style/mood: ${style}
+Locked elements (must stay 100% identical across every timestamp segment — repeat verbatim, never rephrase or vary): ${lockedElements || '(déduis-les des images de référence et de l\'environnement décrit, et garde-les strictement constants)'}
+Total clip duration target: ${totalDuration}s
+Number of reference images provided: ${state.refImages.length}
+
+Camera sequence requested (à fusionner en UNE trajectoire continue et chorégraphiée):
+${beatsText}
+
+Écris le prompt Veo 3.1 final selon la structure imposée.`;
+
+  const parts = [{text: userText}];
+  state.refImages.forEach(img=>{
+    parts.push({inline_data:{mime_type: img.mime, data: img.base64}});
+  });
+
+  try{
+    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        system_instruction: {parts:[{text: systemInstruction}]},
+        contents: [{role:'user', parts}],
+        generationConfig: {temperature: 0.7, maxOutputTokens: 2048}
+      })
+    });
+    if(!resp.ok){
+      const errText = await resp.text();
+      throw new Error(`HTTP ${resp.status}: ${errText.slice(0,300)}`);
+    }
+    const data = await resp.json();
+    const text = data.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('') || '';
+    if(!text){ throw new Error('Réponse vide du modèle.'); }
+
+    const splitMarker = '---USAGE NOTES---';
+    let promptText = text, notes = '';
+    if(text.includes(splitMarker)){
+      [promptText, notes] = text.split(splitMarker);
+    }
+    outputBox.textContent = promptText.trim();
+    usageNotes.textContent = notes.trim() || "Attache les images de référence uploadées ci-dessus directement dans le champ 'reference images' de Veo 3.1 (jusqu'à 3), en plus du prompt texte ci-dessus.";
+    outputCard.style.display = 'block';
+    statusEl.innerHTML = '<span class="status ok">Prompt généré.</span>';
+  }catch(err){
+    statusEl.innerHTML = `<span class="status err">Erreur: ${err.message}</span>`;
+  }
+});
+
+document.getElementById('copyBtn').addEventListener('click', ()=>{
+  navigator.clipboard.writeText(outputBox.textContent);
+  statusEl.innerHTML = '<span class="status ok">Copié dans le presse-papier.</span>';
+});
+</script>
+
+</body>
+</html>
