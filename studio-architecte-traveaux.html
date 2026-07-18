@@ -668,44 +668,38 @@ const buildTravauxPrompt = (description, phase, nbPeople) => {
   const peopleClause = nbPeople === 0
     ? ''
     : nbPeople === 1
-      ? "- Use the PERSON REFERENCE IMAGE for the person's identity: same face, same body type, same general appearance — show this exact same person physically present in the scene."
-      : "- Use BOTH PERSON REFERENCE IMAGES for the identity of each of the two people: same faces, same body types, same general appearance for each — show these exact two people physically present together in the scene, as distinct individuals (do not merge or confuse their identities).";
+      ? "Use the PERSON REFERENCE IMAGE for the added person's identity: exact same face, same body type, same general appearance as in that reference photo — no other person, no substitute person."
+      : "Use BOTH PERSON REFERENCE IMAGES for the identity of the two added people: exact same faces, same body types, same general appearance as in those two reference photos, shown as two distinct individuals (do not merge, swap, or confuse their identities, and do not invent a different person).";
+
+  const baseIdentity = `THIS IS A PHOTO EDIT TASK, NOT A NEW GENERATION. Start from the exact SITE REFERENCE IMAGE and treat it as ground truth for absolutely everything in the frame: the walls, floor, ceiling, every existing piece of furniture, every existing decor object (mirrors, baskets, console/side tables, rugs, frames, plants, lighting fixtures), the wall colors and materials, the camera angle, the framing, and the overall composition. NONE of these elements may change, move, be restyled, resized, recolored, or replaced. The output must be recognizable at a glance as the SAME photo, with only the one specific change described below added to it.`;
 
   if (phase === 'finished') {
-    return `Ultra-realistic architectural/interior "AFTER" photography, 4K, 16:9 landscape, real-estate/architectural photo style.
-CONTEXT: The SITE REFERENCE IMAGE is a "BEFORE / mid-renovation" photo. It likely shows an unfinished, raw, or work-in-progress state, possibly with tools, materials, dust, bare surfaces, clutter, and it MAY show one or more people (workers) present in it.
-YOUR TASK: Generate the "AFTER" photo — taken weeks later, once the following renovation work has been 100% completed in this exact room, with nobody present: ${description}.
-⚠️ CRITICAL — DO NOT REPRODUCE THE CURRENT STATE OF THE REFERENCE PHOTO. Only reuse its fixed architecture: the wall positions, room shape/proportions, window and door locations, ceiling height. Every surface, finish, and furnishing must be shown as fully renovated and completed, even if the reference photo shows it bare, unfinished, or under construction. The visual result must look CLEARLY DIFFERENT from the reference photo — like a real estate listing photo taken after the renovation was delivered.
-⚠️ CRITICAL — PEOPLE: If the SITE REFERENCE IMAGE shows any person (worker or otherwise), you MUST completely remove them from the output. Treat the site reference purely as an empty architectural backdrop for its structure only. This output image must contain ZERO people, with no exceptions, regardless of who or what appears in the reference photo.
+    return `Ultra-realistic photo edit, 4K, 16:9 landscape, same photographic style, framing and lighting as the site reference photo.
+${baseIdentity}
+THE ONLY CHANGE TO MAKE: show the following work as FULLY COMPLETED, visible in the appropriate part of the frame (through a window/door if the work is outdoors, or on the relevant surface/area if indoors) — nothing else in the image changes: ${description}.
 MANDATORY:
-- The renovation work described is 100% complete: finished floors/walls/surfaces, fully installed fixtures, fully decorated and functional space consistent with the description.
-- ABSOLUTELY NO tools, construction materials, dust, plastic sheeting, exposed wiring, unpainted surfaces, or any work-in-progress element anywhere in the frame.
-- The room is COMPLETELY EMPTY of people — a clean, unoccupied, fully finished space shot like a real-estate / architectural photo, nobody standing or present anywhere in the frame, exactly like a standard empty-room architectural render.
-- Natural realistic daylight appropriate for a finished, lived-in or move-in-ready space.
-- Bright, clean, polished, professional real-estate photography feel.
+- The described work is 100% finished: no tools, no machinery, no construction materials, no workers, no mess remaining anywhere related to that work.
+- The image is COMPLETELY EMPTY of people — nobody standing or present anywhere in the frame, indoors or outdoors, even in the far background.
+- Every part of the image not directly related to the described work remains pixel-consistent with the site reference photo: same furniture, same decor, same colors, same camera angle.
 STRICTLY FORBIDDEN:
-- NO people of any kind in the frame, even partially, in the background, reflected in a mirror/window, or silhouetted — ZERO people, no exceptions, even if a person appears in the site reference image.
-- NO visible tools, construction materials, dust, or work-in-progress elements.
-- NO changing the room's structure, walls, windows, ceiling height, or door positions from the site reference image.
-- NO text, watermarks, or logos in the image.
-${GLOBAL_PROMPT_RULES}`;
+- NO people of any kind in the frame, even partially, in the background, reflected, or seen through a window/door — ZERO people, no exceptions, even if a person appears in the site reference image.
+- NO change to the room's existing furniture, decor, wall colors, materials, camera angle, or framing beyond what is explicitly described.
+- NO tools, machinery, construction materials, or work-in-progress elements remaining anywhere.
+- NO text, watermarks, or logos in the image.`;
   }
 
-  return `Ultra-realistic on-site construction/renovation photography, 4K, 16:9 landscape, photojournalistic documentary style.
-SCENE: A real construction/renovation site where the following work is being actively carried out right now: ${description}.
+  return `Ultra-realistic photo edit, 4K, 16:9 landscape, same photographic style, framing and lighting as the site reference photo.
+${baseIdentity}
+THE ONLY CHANGE TO MAKE: show the following work being actively carried out right now, visible in the appropriate part of the frame (through a window/door if the work is outdoors, or on the relevant surface/area if indoors) — nothing else in the image changes: ${description}.
+${peopleClause ? peopleClause + " Show them wearing appropriate work attire (work clothes, safety gear if relevant), actively engaged in the work described." : ''}
 MANDATORY:
-- Use the SITE REFERENCE IMAGE as the exact location: keep the same walls, room structure, proportions and existing state visible in that photo — the described work must be shown happening IN this exact space, not a generic location.
-${peopleClause ? peopleClause + " Wearing appropriate work attire (work clothes, safety gear if relevant), actively engaged in or overseeing the work described." : ''}
-- Show clear, realistic visual evidence of the work in progress: appropriate tools, materials, equipment, and a level of completion consistent with the description.
-- Natural, realistic on-site lighting — no artificial glow, no studio lighting.
-- Authentic candid documentary photo feel — NOT a posed studio portrait, NOT a rendered/CGI look.
+- Show clear, realistic visual evidence of the work in progress: appropriate tools, materials, equipment, and a level of completion consistent with the description, added ONLY in the relevant area of the frame.
+- Every part of the image not directly related to the described work remains pixel-consistent with the site reference photo: same furniture, same decor, same colors, same camera angle.
 STRICTLY FORBIDDEN:
-- NO work or renovation elements that are not implied by the description.
-- NO changing the room's structure, walls, windows, ceiling height, or door positions from the site reference image.
-- NO distorting, altering, or replacing any person's face or identity from the person reference image(s).
-- NO people added to the scene beyond those explicitly referenced.
-- NO text, watermarks, or logos in the image.
-${GLOBAL_PROMPT_RULES}`;
+- NO change to the room's existing furniture, decor, wall colors, materials, camera angle, or framing beyond what is explicitly described.
+- NO people added to the scene beyond those explicitly referenced in the person reference image(s).
+- NO distorting, altering, or replacing any person's face or identity from the person reference image(s) — never substitute a different-looking person.
+- NO text, watermarks, or logos in the image.`;
 };
 
 const generateTravauxImage = async (engine, apiKey, sitePhoto, personPhotos, description, phase) => {
@@ -722,8 +716,8 @@ const generateTravauxImage = async (engine, apiKey, sitePhoto, personPhotos, des
     const d = sitePhoto.includes(',') ? sitePhoto.split(',')[1] : sitePhoto;
     parts.push({ inlineData: { data: d, mimeType: 'image/jpeg' } });
     const siteLabel = phase === 'finished'
-      ? '⚠️ SITE REFERENCE IMAGE — above: this is a BEFORE / mid-renovation photo of the room. Reuse ONLY its fixed architecture (walls, proportions, window/door positions). Its current finish/condition (unfinished, bare, cluttered, work-in-progress) must NOT be reproduced — it must be replaced by a fully completed, renovated result. If this photo shows any person, they must NOT appear in the output — the output must be completely empty of people.'
-      : '⚠️ SITE REFERENCE IMAGE — above: this is the EXACT real location/room where the work takes place. Preserve its structure, walls, proportions and existing state exactly.';
+      ? '⚠️ SITE REFERENCE IMAGE — above: this is the exact real photo to edit. Preserve every element of it exactly as shown — furniture, decor, walls, colors, camera angle — and add ONLY the finished version of the described work. If this photo shows any person, they must NOT appear in the output — the output must be completely empty of people.'
+      : '⚠️ SITE REFERENCE IMAGE — above: this is the exact real photo to edit. Preserve every element of it exactly as shown — furniture, decor, walls, colors, camera angle — and add ONLY the described work in progress.';
     parts.push({ text: siteLabel });
   }
   people.forEach((personPhoto, idx) => {
