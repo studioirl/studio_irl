@@ -672,16 +672,19 @@ const buildTravauxPrompt = (description, phase, nbPeople) => {
       : "- Use BOTH PERSON REFERENCE IMAGES for the identity of each of the two people: same faces, same body types, same general appearance for each — show these exact two people physically present together in the scene, as distinct individuals (do not merge or confuse their identities).";
 
   if (phase === 'finished') {
-    return `Ultra-realistic architectural/interior photography, 4K, 16:9 landscape, photojournalistic documentary style.
-SCENE: The following renovation/construction work has just been FULLY COMPLETED in this exact space: ${description}.
+    return `Ultra-realistic architectural/interior "AFTER" photography, 4K, 16:9 landscape, real-estate/architectural photo style.
+CONTEXT: The SITE REFERENCE IMAGE is a "BEFORE / mid-renovation" photo. It likely shows an unfinished, raw, or work-in-progress state, possibly with tools, materials, dust, bare surfaces, clutter, and it MAY show one or more people (workers) present in it.
+YOUR TASK: Generate the "AFTER" photo — taken weeks later, once the following renovation work has been 100% completed in this exact room, with nobody present: ${description}.
+⚠️ CRITICAL — DO NOT REPRODUCE THE CURRENT STATE OF THE REFERENCE PHOTO. Only reuse its fixed architecture: the wall positions, room shape/proportions, window and door locations, ceiling height. Every surface, finish, and furnishing must be shown as fully renovated and completed, even if the reference photo shows it bare, unfinished, or under construction. The visual result must look CLEARLY DIFFERENT from the reference photo — like a real estate listing photo taken after the renovation was delivered.
+⚠️ CRITICAL — PEOPLE: If the SITE REFERENCE IMAGE shows any person (worker or otherwise), you MUST completely remove them from the output. Treat the site reference purely as an empty architectural backdrop for its structure only. This output image must contain ZERO people, with no exceptions, regardless of who or what appears in the reference photo.
 MANDATORY:
-- Use the SITE REFERENCE IMAGE as the exact location: keep the same walls, room structure, proportions visible in that photo, but now showing the FINISHED result of the described work applied to this space.
-- The work is 100% complete: no tools, no materials, no mess, no work-in-progress elements — a clean, fully finished result.
-- The room is EMPTY of people — a clean, unoccupied, fully finished space shot like a real-estate / architectural photo, nobody standing or present anywhere in the frame.
-- Natural realistic lighting appropriate for a finished, lived-in or move-in-ready space.
-- Authentic candid documentary photo feel — NOT a posed studio portrait, NOT a rendered/CGI look.
+- The renovation work described is 100% complete: finished floors/walls/surfaces, fully installed fixtures, fully decorated and functional space consistent with the description.
+- ABSOLUTELY NO tools, construction materials, dust, plastic sheeting, exposed wiring, unpainted surfaces, or any work-in-progress element anywhere in the frame.
+- The room is COMPLETELY EMPTY of people — a clean, unoccupied, fully finished space shot like a real-estate / architectural photo, nobody standing or present anywhere in the frame, exactly like a standard empty-room architectural render.
+- Natural realistic daylight appropriate for a finished, lived-in or move-in-ready space.
+- Bright, clean, polished, professional real-estate photography feel.
 STRICTLY FORBIDDEN:
-- NO people of any kind in the frame, even partially or in the background.
+- NO people of any kind in the frame, even partially, in the background, reflected in a mirror/window, or silhouetted — ZERO people, no exceptions, even if a person appears in the site reference image.
 - NO visible tools, construction materials, dust, or work-in-progress elements.
 - NO changing the room's structure, walls, windows, ceiling height, or door positions from the site reference image.
 - NO text, watermarks, or logos in the image.
@@ -718,7 +721,10 @@ const generateTravauxImage = async (engine, apiKey, sitePhoto, personPhotos, des
   if (sitePhoto) {
     const d = sitePhoto.includes(',') ? sitePhoto.split(',')[1] : sitePhoto;
     parts.push({ inlineData: { data: d, mimeType: 'image/jpeg' } });
-    parts.push({ text: '⚠️ SITE REFERENCE IMAGE — above: this is the EXACT real location/room where the work takes place. Preserve its structure, walls, proportions and existing state exactly.' });
+    const siteLabel = phase === 'finished'
+      ? '⚠️ SITE REFERENCE IMAGE — above: this is a BEFORE / mid-renovation photo of the room. Reuse ONLY its fixed architecture (walls, proportions, window/door positions). Its current finish/condition (unfinished, bare, cluttered, work-in-progress) must NOT be reproduced — it must be replaced by a fully completed, renovated result. If this photo shows any person, they must NOT appear in the output — the output must be completely empty of people.'
+      : '⚠️ SITE REFERENCE IMAGE — above: this is the EXACT real location/room where the work takes place. Preserve its structure, walls, proportions and existing state exactly.';
+    parts.push({ text: siteLabel });
   }
   people.forEach((personPhoto, idx) => {
     const d = personPhoto.includes(',') ? personPhoto.split(',')[1] : personPhoto;
@@ -990,15 +996,16 @@ const App = ({ apiKey, engine }) => {
     if (!travauxSitePhoto || !travauxDescription.trim()) return;
     setError(null);
     const people = [travauxPersonPhoto1, travauxPersonPhoto2].filter(Boolean);
+    const desc = travauxDescription.trim();
     updateState({ loading: true, loadingMessage: `${engine === 'kie' ? '🍌' : '🔷'} Mise en scène : travaux en cours...` });
     try {
-      const urlProgress = await generateTravauxImage(engine, apiKey, travauxSitePhoto, people, travauxDescription.trim(), 'progress');
+      const urlProgress = await generateTravauxImage(engine, apiKey, travauxSitePhoto, people, desc, 'progress');
       updateState({ loadingMessage: `${engine === 'kie' ? '🍌' : '🔷'} Mise en scène : travaux terminés...` });
-      const urlFinished = await generateTravauxImage(engine, apiKey, travauxSitePhoto, [], travauxDescription.trim(), 'finished');
+      const urlFinished = await generateTravauxImage(engine, apiKey, travauxSitePhoto, [], desc, 'finished');
       updateState({
         imagesFinales: [
-          { id: `travaux-progress-${Date.now()}`, piece: 'Travaux — En cours', url: urlProgress, prompt: 'Travaux' },
-          { id: `travaux-finished-${Date.now()}`, piece: 'Travaux — Terminé', url: urlFinished, prompt: 'Travaux' }
+          { id: `travaux-progress-${Date.now()}`, piece: 'Travaux — En cours', url: urlProgress, prompt: 'Travaux', promptFull: buildTravauxPrompt(desc, 'progress', people.length) },
+          { id: `travaux-finished-${Date.now()}`, piece: 'Travaux — Terminé', url: urlFinished, prompt: 'Travaux', promptFull: buildTravauxPrompt(desc, 'finished', 0) }
         ],
         page: 'resultat',
         loading: false
@@ -1481,6 +1488,10 @@ const App = ({ apiKey, engine }) => {
               React.createElement('div', { className: "relative aspect-video rounded-[4rem] overflow-hidden shadow-2xl bg-slate-900 border border-white/5 group" },
                 React.createElement('img', { src: img.url, className: "w-full h-full object-cover transition-transform duration-[5s] group-hover:scale-105", alt: img.piece }),
                 React.createElement('div', { className: "absolute top-8 left-8 px-6 py-3 bg-white/10 backdrop-blur-md rounded-full border border-white/20 text-[12px] font-black uppercase tracking-widest" }, "Master View 4K")
+              ),
+              img.promptFull && React.createElement('details', { className: "px-4" },
+                React.createElement('summary', { className: "cursor-pointer text-xs font-black uppercase tracking-widest text-slate-500 hover:text-blue-400" }, "Voir la consigne utilisée pour cette image"),
+                React.createElement('pre', { className: "mt-4 p-6 bg-black/40 rounded-2xl text-[11px] text-slate-400 whitespace-pre-wrap font-mono leading-relaxed max-h-96 overflow-y-auto" }, img.promptFull)
               ),
               img.slices && img.slices.length > 0 && React.createElement('div', { className: "space-y-8 animate-in" },
                 React.createElement('div', { className: "flex items-center gap-3 px-6" }, React.createElement(Camera, { className: "text-blue-500" }), React.createElement('span', { className: "font-black text-sm uppercase tracking-widest text-slate-400" }, "Plans techniques extraits")),
