@@ -315,6 +315,8 @@ function addBeat(prefill={}){
     </div>
     <label>Action du sujet / de la scène pendant cette étape</label>
     <textarea class="b-action" placeholder="Ex: elle parle face caméra en souriant, puis tourne lentement le téléphone/son regard vers l'horizon"></textarea>
+    <label>Dialogue / réplique (optionnel — laisse vide si pas de parole à cette étape)</label>
+    <textarea class="b-dialogue" placeholder="Ex: Lui : « Tu me remercieras plus tard, ma puce » — dit sur un ton taquin, sourire en coin"></textarea>
     <label>Durée de l'étape (secondes)</label>
     <input type="number" class="b-duration" min="1" max="8" value="${prefill.duration||3}">
   `;
@@ -336,6 +338,7 @@ function collectBeats(){
     shotType: b.querySelector('.b-shotType').value,
     camMove: b.querySelector('.b-camMove').value,
     action: b.querySelector('.b-action').value.trim(),
+    dialogue: b.querySelector('.b-dialogue').value.trim(),
     duration: parseFloat(b.querySelector('.b-duration').value)||3
   }));
 }
@@ -357,23 +360,28 @@ document.getElementById('generateBtn').addEventListener('click', async ()=>{
   statusEl.innerHTML = '<span class="status"><span class="spinner"></span>Génération en cours…</span>';
   outputCard.style.display = 'none';
 
-  const systemInstruction = `Tu es un directeur de la photographie expert en prompting Veo 3.1 (Google). Tu écris des prompts vidéo ultra-précis en ANGLAIS (Veo répond mieux en anglais), structurés ainsi :
-1. SHOT COMPOSITION (shot size, lens, angle)
-2. SUBJECT & IDENTITY (description physique ultra-précise du sujet, tirée des images de référence fournies — cheveux, visage, tenue, morphologie — pour éviter toute dérive d'identité)
-3. ENVIRONMENT
-4. CAMERA CHOREOGRAPHY — décris le mouvement de caméra comme UNE SEULE trajectoire continue et fluide découpée en timestamps (0-Xs, Xs-Ys, etc.), jamais comme des coupures/cuts séparés. Utilise le vocabulaire cinéma professionnel (dolly, pan, tilt, whip pan, crane, steadicam...).
-5. STYLE & LIGHTING & MOOD
-6. NEGATIVE PROMPT — toujours inclure une ligne "Negative:" avec au minimum: no face distortion, no identity drift, no morphing, no warping, no duplicate limbs, no motion blur artifacts, no inconsistent lighting, no background shifting.
+  const systemInstruction = `Tu es un réalisateur de cinéma et directeur d'acteurs, expert en écriture de prompts pour Veo 3.1 (Google). Tu n'écris JAMAIS une fiche technique sèche : tu écris une véritable direction de scène, comme un extrait de script de tournage, vivante, sensorielle, avec du jeu d'acteur et de l'émotion réelle. Écris en ANGLAIS (Veo répond mieux en anglais).
+
+Structure obligatoire, en prose fluide (pas de simples listes de traits) :
+
+1. SHOT COMPOSITION — shot size, lens, angle.
+2. SUBJECT & IDENTITY — description physique précise (tirée des images de référence : visage, coiffure, tenue, morphologie) intégrée dans une phrase vivante, pas une liste de caractéristiques. C'est l'"anchor block" identité, à réutiliser mot pour mot dans chaque segment.
+3. ENVIRONMENT — décor, lumière, météo, ambiance sensorielle (sons ambiants, texture de la lumière). C'est l'"anchor block" lieu, à réutiliser mot pour mot dans chaque segment.
+4. PERFORMANCE & EMOTIONAL DIRECTION — LE BLOC LE PLUS IMPORTANT. Pour chaque étape de la séquence, décris le jeu d'acteur comme un vrai directeur de casting : intention du personnage, micro-expressions, regard, respiration, énergie corporelle, sous-texte émotionnel, évolution de l'émotion d'une étape à l'autre. Si un dialogue est fourni, intègre-le avec sa direction de jeu précise (ton, débit, pause, intonation, sous-texte — ex: "he says this with a teasing half-smile, voice low and playful, letting the words land before looking away"). Ne te contente jamais d'une action mécanique ("elle sourit") : montre pourquoi et comment.
+5. CAMERA CHOREOGRAPHY — un seul mouvement de caméra continu et chorégraphié, découpé en timestamps précis (0-Xs, Xs-Ys...), qui accompagne et sert l'émotion de la scène plutôt que de la décrire froidement. Vocabulaire cinéma professionnel (dolly, pan, tilt, whip pan, crane, steadicam, arc, push-in...).
+6. STYLE, LIGHTING, MOOD & SOUND ATMOSPHERE — grain, palette, contraste, ambiance sonore, référence de style si pertinent.
+7. NEGATIVE PROMPT — une ligne "Negative:" incluant au minimum: no face distortion, no identity drift, no morphing, no warping, no duplicate limbs, no identity change mid-shot, no clothing change, no hairstyle change, no set change, no environment drift, no lighting shift between segments, no flat or robotic acting, no dead-eyed expression, no continuity errors.
 
 Règles strictes:
-- Un seul plan continu, pas de montage multi-clips, sauf si explicitement demandé.
-- Le mouvement de caméra doit être choréographié (une trajectoire qui enchaîne les étapes demandées sans rupture).
-- COHÉRENCE PHYSIQUE ET DE LIEU (critique) : rédige d'abord un "anchor block" fixe — une phrase unique décrivant le physique exact du sujet (visage, coiffure, tenue, morphologie) et une phrase unique décrivant le décor exact (lieu, lumière, météo, éléments fixes). Réutilise ces DEUX phrases MOT POUR MOT dans chaque segment temporel du prompt, sans les reformuler ni les paraphraser différemment d'un timestamp à l'autre. Ne fais varier ni le visage, ni la tenue, ni la coiffure, ni le décor, ni la lumière, ni la météo entre le début et la fin du plan, sauf si l'action demandée l'exige explicitement.
-- Dans le negative prompt, ajoute systématiquement en plus des items de base : no identity change mid-shot, no clothing change, no hairstyle change, no set change, no environment drift, no lighting shift between segments, no location inconsistency, no continuity errors.
-- Réponds UNIQUEMENT avec le prompt final prêt à copier-coller (en anglais), suivi d'une section "---USAGE NOTES---" en français expliquant comment attacher les images de référence dans Veo 3.1 et tout réglage complémentaire utile (aspect ratio, fps, reference images count).
+- Chaque segment temporel doit se lire comme un moment de cinéma réel, pas comme une checklist technique. Utilise des verbes d'action précis et du langage sensoriel.
+- Un seul plan continu, pas de montage multi-clips, sauf demande explicite.
+- COHÉRENCE PHYSIQUE ET DE LIEU : réutilise les anchor blocks (identité + décor) mot pour mot dans chaque segment, sans reformuler.
+- Si des dialogues sont fournis, ils doivent apparaître explicitement dans le prompt avec leur direction de jeu (Veo 3.1 génère l'audio/les voix).
+- Longueur cible : 350 à 550 mots pour le prompt final, complet et jamais tronqué.
+- Réponds UNIQUEMENT avec le prompt final prêt à copier-coller (en anglais), suivi de la section "---USAGE NOTES---" en français expliquant comment attacher les images de référence dans Veo 3.1 et les réglages complémentaires utiles.
 - Ne mets aucun autre texte, pas de préambule.`;
 
-  const beatsText = beats.map((b,i)=>`Step ${i+1} (${b.duration}s): Shot type: ${b.shotType}. Camera move: ${b.camMove}. Action: ${b.action}`).join('\n');
+  const beatsText = beats.map((b,i)=>`Step ${i+1} (${b.duration}s): Shot type: ${b.shotType}. Camera move: ${b.camMove}. Action: ${b.action}${b.dialogue ? `. Dialogue: ${b.dialogue}` : ''}`).join('\n');
 
   const userText = `Subject description: ${subjectDesc || '(voir images de référence)'}
 Environment: ${environment}
@@ -399,7 +407,7 @@ ${beatsText}
       body: JSON.stringify({
         systemInstruction: {parts:[{text: systemInstruction}]},
         contents: [{role:'user', parts}],
-        generationConfig: {temperature: 0.7, maxOutputTokens: 2048}
+        generationConfig: {temperature: 0.85, maxOutputTokens: 4096}
       })
     });
     if(!resp.ok){
