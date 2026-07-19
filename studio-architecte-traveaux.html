@@ -664,66 +664,77 @@ const generateSliceImage = async (engine, apiKey, roomLabel, slice, originalImag
 // ============================================================
 // MODE TRAVAUX — mise en scène de travaux (en cours + terminé)
 // ============================================================
-const buildTravauxPrompt = (description, phase, nbPeople) => {
+const buildTravauxPrompt = (description, phase, nbPeople, objets) => {
   const peopleClause = nbPeople === 0
     ? ''
     : nbPeople === 1
       ? "Use the PERSON REFERENCE IMAGE for the added person's identity: exact same face, same body type, same general appearance as in that reference photo — no other person, no substitute person."
       : "Use BOTH PERSON REFERENCE IMAGES for the identity of the two added people: exact same faces, same body types, same general appearance as in those two reference photos, shown as two distinct individuals (do not merge, swap, or confuse their identities, and do not invent a different person).";
 
-  const baseIdentity = `THIS IS A PHOTO EDIT TASK, NOT A NEW GENERATION. Start from the exact SITE REFERENCE IMAGE and treat it as ground truth for absolutely everything in the frame: the walls, floor, ceiling, every existing piece of furniture, every existing decor object (mirrors, baskets, console/side tables, rugs, frames, plants, lighting fixtures), the wall colors and materials, the camera angle, the framing, and the overall composition. NONE of these elements may change, move, be restyled, resized, recolored, or replaced. The output must be recognizable at a glance as the SAME photo, with only the one specific change described below added to it.`;
+  const objetsList = (objets || []).filter(o => o?.note?.trim());
+  const objetsClause = objetsList.length === 0 ? '' : `
+ADDITIONAL OBJECT REPLACEMENTS — for each one below, replace the existing corresponding object currently in the room with the EXACT object shown in its dedicated OBJECT REFERENCE IMAGE (same shape, color, material, design), placed naturally at the same location/scale as the object it replaces. Leave everything else in the room unchanged:
+${objetsList.map((o, i) => `${i + 1}) ${o.note.trim()}`).join('\n')}`;
+
+  const baseIdentity = `THIS IS A PHOTO EDIT TASK, NOT A NEW GENERATION. Start from the exact SITE REFERENCE IMAGE and treat it as ground truth for absolutely everything in the frame: the walls, floor, ceiling, every existing piece of furniture, every existing decor object (mirrors, baskets, console/side tables, rugs, frames, plants, lighting fixtures), the wall colors and materials, the camera angle, the framing, and the overall composition. NONE of these elements may change, move, be restyled, resized, recolored, or replaced — EXCEPT for the explicit object replacements listed below, if any, and the one specific change described further below. The output must be recognizable at a glance as the SAME photo, with only those specific changes applied to it.`;
 
   if (phase === 'finished') {
     return `Ultra-realistic photo edit, 4K, 16:9 landscape, same photographic style, framing and lighting as the site reference photo.
 ${baseIdentity}
-THE ONLY CHANGE TO MAKE: show the following work as FULLY COMPLETED, visible in the appropriate part of the frame (through a window/door if the work is outdoors, or on the relevant surface/area if indoors) — nothing else in the image changes: ${description}.
+THE ONLY CHANGE TO MAKE: show the following work as FULLY COMPLETED, visible in the appropriate part of the frame (through a window/door if the work is outdoors, or on the relevant surface/area if indoors) — nothing else in the image changes: ${description}.${objetsClause}
 MANDATORY:
 - The described work is 100% finished: no tools, no machinery, no construction materials, no workers, no mess remaining anywhere related to that work.
 - The image is COMPLETELY EMPTY of people — nobody standing or present anywhere in the frame, indoors or outdoors, even in the far background.
-- Every part of the image not directly related to the described work remains pixel-consistent with the site reference photo: same furniture, same decor, same colors, same camera angle.
+- Every part of the image not directly related to the described work or the listed object replacements remains pixel-consistent with the site reference photo: same furniture, same decor, same colors, same camera angle.
 STRICTLY FORBIDDEN:
 - NO people of any kind in the frame, even partially, in the background, reflected, or seen through a window/door — ZERO people, no exceptions, even if a person appears in the site reference image.
-- NO change to the room's existing furniture, decor, wall colors, materials, camera angle, or framing beyond what is explicitly described.
+- NO change to the room's existing furniture, decor, wall colors, materials, camera angle, or framing beyond what is explicitly described or listed.
 - NO tools, machinery, construction materials, or work-in-progress elements remaining anywhere.
 - NO text, watermarks, or logos in the image.`;
   }
 
   return `Ultra-realistic photo edit, 4K, 16:9 landscape, same photographic style, framing and lighting as the site reference photo.
 ${baseIdentity}
-THE ONLY CHANGE TO MAKE: show the following work being actively carried out right now, visible in the appropriate part of the frame (through a window/door if the work is outdoors, or on the relevant surface/area if indoors) — nothing else in the image changes: ${description}.
+THE ONLY CHANGE TO MAKE: show the following work being actively carried out right now, visible in the appropriate part of the frame (through a window/door if the work is outdoors, or on the relevant surface/area if indoors) — nothing else in the image changes: ${description}.${objetsClause}
 ${peopleClause ? peopleClause + " Show them wearing appropriate work attire (work clothes, safety gear if relevant), actively engaged in the work described." : ''}
 MANDATORY:
 - Show clear, realistic visual evidence of the work in progress: appropriate tools, materials, equipment, and a level of completion consistent with the description, added ONLY in the relevant area of the frame.
-- Every part of the image not directly related to the described work remains pixel-consistent with the site reference photo: same furniture, same decor, same colors, same camera angle.
+- Every part of the image not directly related to the described work or the listed object replacements remains pixel-consistent with the site reference photo: same furniture, same decor, same colors, same camera angle.
 STRICTLY FORBIDDEN:
-- NO change to the room's existing furniture, decor, wall colors, materials, camera angle, or framing beyond what is explicitly described.
+- NO change to the room's existing furniture, decor, wall colors, materials, camera angle, or framing beyond what is explicitly described or listed.
 - NO people added to the scene beyond those explicitly referenced in the person reference image(s).
 - NO distorting, altering, or replacing any person's face or identity from the person reference image(s) — never substitute a different-looking person.
 - NO text, watermarks, or logos in the image.`;
 };
 
-const generateTravauxImage = async (engine, apiKey, sitePhoto, personPhotos, description, phase) => {
+const generateTravauxImage = async (engine, apiKey, sitePhoto, personPhotos, description, phase, objets) => {
   const people = (personPhotos || []).filter(Boolean).slice(0, 2);
-  const mainPrompt = buildTravauxPrompt(description, phase, people.length);
+  const objetsList = (objets || []).filter(o => o?.photo && o?.note?.trim());
+  const mainPrompt = buildTravauxPrompt(description, phase, people.length, objetsList);
 
   if (engine === 'kie') {
-    return await callKieGenerate(apiKey, mainPrompt, [sitePhoto, ...people]);
+    return await callKieGenerate(apiKey, mainPrompt, [sitePhoto, ...people, ...objetsList.map(o => o.photo)]);
   }
 
-  // Vertex : ordre important — photo chantier en premier (structure), puis personne(s), puis instructions
+  // Vertex : ordre important — photo chantier en premier (structure), puis personne(s), puis objets, puis instructions
   const parts = [];
   if (sitePhoto) {
     const d = sitePhoto.includes(',') ? sitePhoto.split(',')[1] : sitePhoto;
     parts.push({ inlineData: { data: d, mimeType: 'image/jpeg' } });
     const siteLabel = phase === 'finished'
-      ? '⚠️ SITE REFERENCE IMAGE — above: this is the exact real photo to edit. Preserve every element of it exactly as shown — furniture, decor, walls, colors, camera angle — and add ONLY the finished version of the described work. If this photo shows any person, they must NOT appear in the output — the output must be completely empty of people.'
-      : '⚠️ SITE REFERENCE IMAGE — above: this is the exact real photo to edit. Preserve every element of it exactly as shown — furniture, decor, walls, colors, camera angle — and add ONLY the described work in progress.';
+      ? '⚠️ SITE REFERENCE IMAGE — above: this is the exact real photo to edit. Preserve every element of it exactly as shown — furniture, decor, walls, colors, camera angle — and add ONLY the finished version of the described work (and any listed object replacements). If this photo shows any person, they must NOT appear in the output — the output must be completely empty of people.'
+      : '⚠️ SITE REFERENCE IMAGE — above: this is the exact real photo to edit. Preserve every element of it exactly as shown — furniture, decor, walls, colors, camera angle — and add ONLY the described work in progress (and any listed object replacements).';
     parts.push({ text: siteLabel });
   }
   people.forEach((personPhoto, idx) => {
     const d = personPhoto.includes(',') ? personPhoto.split(',')[1] : personPhoto;
     parts.push({ inlineData: { data: d, mimeType: 'image/jpeg' } });
     parts.push({ text: `⚠️ PERSON REFERENCE IMAGE #${idx + 1} — above: reproduce this EXACT person (face, identity, general appearance) present in the scene as a distinct individual.` });
+  });
+  objetsList.forEach((objet, idx) => {
+    const d = objet.photo.includes(',') ? objet.photo.split(',')[1] : objet.photo;
+    parts.push({ inlineData: { data: d, mimeType: 'image/jpeg' } });
+    parts.push({ text: `⚠️ OBJECT REFERENCE IMAGE #${idx + 1} — above: this is the exact object to use for the replacement described as: "${objet.note.trim()}". Reproduce this object's exact shape, color, material and design, placed naturally where the object it replaces currently is.` });
   });
   parts.push({ text: mainPrompt });
   return await callVertexGenerate(apiKey, parts);
@@ -835,6 +846,7 @@ const App = ({ apiKey, engine }) => {
   const [travauxPersonPhoto1, setTravauxPersonPhoto1] = useState(null);
   const [travauxPersonPhoto2, setTravauxPersonPhoto2] = useState(null);
   const [travauxDescription, setTravauxDescription] = useState('');
+  const [travauxObjets, setTravauxObjets] = useState([]);
   const [error, setError] = useState(null);
   const isGeneratingRef = useRef(false);
 
@@ -990,16 +1002,17 @@ const App = ({ apiKey, engine }) => {
     if (!travauxSitePhoto || !travauxDescription.trim()) return;
     setError(null);
     const people = [travauxPersonPhoto1, travauxPersonPhoto2].filter(Boolean);
+    const objetsList = travauxObjets.filter(o => o?.photo && o?.note?.trim());
     const desc = travauxDescription.trim();
     updateState({ loading: true, loadingMessage: `${engine === 'kie' ? '🍌' : '🔷'} Mise en scène : travaux en cours...` });
     try {
-      const urlProgress = await generateTravauxImage(engine, apiKey, travauxSitePhoto, people, desc, 'progress');
+      const urlProgress = await generateTravauxImage(engine, apiKey, travauxSitePhoto, people, desc, 'progress', objetsList);
       updateState({ loadingMessage: `${engine === 'kie' ? '🍌' : '🔷'} Mise en scène : travaux terminés...` });
-      const urlFinished = await generateTravauxImage(engine, apiKey, travauxSitePhoto, [], desc, 'finished');
+      const urlFinished = await generateTravauxImage(engine, apiKey, travauxSitePhoto, [], desc, 'finished', objetsList);
       updateState({
         imagesFinales: [
-          { id: `travaux-progress-${Date.now()}`, piece: 'Travaux — En cours', url: urlProgress, prompt: 'Travaux', promptFull: buildTravauxPrompt(desc, 'progress', people.length) },
-          { id: `travaux-finished-${Date.now()}`, piece: 'Travaux — Terminé', url: urlFinished, prompt: 'Travaux', promptFull: buildTravauxPrompt(desc, 'finished', 0) }
+          { id: `travaux-progress-${Date.now()}`, piece: 'Travaux — En cours', url: urlProgress, prompt: 'Travaux', promptFull: buildTravauxPrompt(desc, 'progress', people.length, objetsList) },
+          { id: `travaux-finished-${Date.now()}`, piece: 'Travaux — Terminé', url: urlFinished, prompt: 'Travaux', promptFull: buildTravauxPrompt(desc, 'finished', 0, objetsList) }
         ],
         page: 'resultat',
         loading: false
@@ -1171,6 +1184,34 @@ const App = ({ apiKey, engine }) => {
               disabled: !travauxSitePhoto || !travauxDescription.trim(),
               className: "w-full py-8 bg-orange-600 text-white rounded-full font-black text-2xl shadow-xl hover:bg-orange-500 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-4 transition-all"
             }, "Mettre en scène les travaux ", React.createElement(Sparkles, {}))
+          )
+        ),
+        React.createElement('div', { className: "bg-white p-12 rounded-[3rem] shadow-xl border space-y-8" },
+          React.createElement('div', { className: "flex flex-col md:flex-row md:items-end md:justify-between gap-4" },
+            React.createElement('div', { className: "space-y-2" }, React.createElement('h3', { className: "text-3xl font-black flex items-center gap-3" }, React.createElement(LayoutGrid, { className: "text-orange-600" }), " 4. Objets à remplacer (optionnel)"), React.createElement('p', { className: "text-slate-500" }, "Lustre, canapé, miroir, table... uploade une photo de l'objet et précise ce qu'il doit remplacer.")),
+            React.createElement('button', { onClick: () => setTravauxObjets(prev => [...prev, { id: `obj-${Date.now()}`, photo: null, note: '' }]), className: "px-8 py-4 bg-orange-50 text-orange-600 border-2 border-orange-200 rounded-2xl font-black hover:bg-orange-100 transition-all whitespace-nowrap" }, "+ Ajouter un objet")
+          ),
+          travauxObjets.length > 0 && React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-6" },
+            travauxObjets.map((objet, idx) =>
+              React.createElement('div', { key: objet.id, className: "p-6 bg-slate-50 rounded-3xl border border-slate-200 space-y-4 relative" },
+                React.createElement('button', { onClick: () => setTravauxObjets(prev => prev.filter(o => o.id !== objet.id)), className: "absolute top-4 right-4 p-2 bg-red-500 text-white rounded-full shadow-lg z-10" }, React.createElement(Trash2, { size: 14 })),
+                !objet.photo
+                  ? React.createElement('label', { className: "block w-full aspect-video border-4 border-dashed border-slate-200 rounded-2xl hover:border-orange-500 transition-all cursor-pointer bg-white group" },
+                      React.createElement('input', { type: "file", accept: "image/*", className: "hidden", onChange: (e) => { const file = e.target.files?.[0]; if (file) { const r = new FileReader(); r.onload = (ev) => setTravauxObjets(prev => prev.map(o => o.id === objet.id ? { ...o, photo: ev.target?.result } : o)); r.readAsDataURL(file); } } }),
+                      React.createElement('div', { className: "w-full h-full flex flex-col items-center justify-center gap-2 text-slate-400 group-hover:text-orange-500" }, React.createElement(Upload, { size: 32 }), React.createElement('span', { className: "font-black text-[10px]" }, "PHOTO DE L'OBJET"))
+                    )
+                  : React.createElement('div', { className: "relative aspect-video rounded-2xl overflow-hidden border-4 border-orange-500" },
+                      React.createElement('img', { src: objet.photo, className: "w-full h-full object-cover", alt: "Objet" })
+                    ),
+                React.createElement('input', {
+                  type: "text",
+                  value: objet.note,
+                  onChange: e => setTravauxObjets(prev => prev.map(o => o.id === objet.id ? { ...o, note: e.target.value } : o)),
+                  placeholder: "Ex: Remplace le lustre du salon par cette photo de référence",
+                  className: "w-full p-4 bg-white border border-slate-200 rounded-xl outline-none focus:border-orange-500 transition-all text-sm"
+                })
+              )
+            )
           )
         )
       )
