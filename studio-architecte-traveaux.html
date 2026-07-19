@@ -673,8 +673,10 @@ const buildTravauxPrompt = (description, phase, nbPeople, objets) => {
 
   const objetsList = (objets || []).filter(o => o?.note?.trim());
   const objetsClause = objetsList.length === 0 ? '' : `
-ADDITIONAL OBJECT REPLACEMENTS — for each one below, replace the existing corresponding object currently in the room with the EXACT object shown in its dedicated OBJECT REFERENCE IMAGE (same shape, color, material, design), placed naturally at the same location/scale as the object it replaces. Leave everything else in the room unchanged:
+⚠️ MANDATORY OBJECT REPLACEMENTS (NOT OPTIONAL, HIGHEST PRIORITY) — for each one below, you MUST replace the existing corresponding object currently in the room with the EXACT object shown in its dedicated OBJECT REFERENCE IMAGE (same shape, color, material, design), placed naturally at the same location/scale as the object it replaces. This replacement must be clearly visible and unmistakable in the output. Leave everything else in the room unchanged:
 ${objetsList.map((o, i) => `${i + 1}) ${o.note.trim()}`).join('\n')}`;
+  const objetsMandatoryLine = objetsList.length ? '\n- Apply EVERY listed object replacement above exactly as specified — this is mandatory, not optional. The new object from its reference image must be clearly recognizable in the output.' : '';
+  const objetsForbiddenLine = objetsList.length ? '\n- NO keeping the original/old object unchanged for any listed replacement — reproducing the OBJECT REFERENCE IMAGE for each listed item is mandatory, this is the highest-priority instruction in this prompt.' : '';
 
   const baseIdentity = `THIS IS A PHOTO EDIT TASK, NOT A NEW GENERATION. Start from the exact SITE REFERENCE IMAGE and treat it as ground truth for absolutely everything in the frame: the walls, floor, ceiling, every existing piece of furniture, every existing decor object (mirrors, baskets, console/side tables, rugs, frames, plants, lighting fixtures), the wall colors and materials, the camera angle, the framing, and the overall composition. NONE of these elements may change, move, be restyled, resized, recolored, or replaced — EXCEPT for the explicit object replacements listed below, if any, and the one specific change described further below. The output must be recognizable at a glance as the SAME photo, with only those specific changes applied to it.`;
 
@@ -685,26 +687,26 @@ THE ONLY CHANGE TO MAKE: show the following work as FULLY COMPLETED, visible in 
 MANDATORY:
 - The described work is 100% finished: no tools, no machinery, no construction materials, no workers, no mess remaining anywhere related to that work.
 - The image is COMPLETELY EMPTY of people — nobody standing or present anywhere in the frame, indoors or outdoors, even in the far background.
-- Every part of the image not directly related to the described work or the listed object replacements remains pixel-consistent with the site reference photo: same furniture, same decor, same colors, same camera angle.
+- Every part of the image not directly related to the described work or the listed object replacements remains pixel-consistent with the site reference photo: same furniture, same decor, same colors, same camera angle.${objetsMandatoryLine}
 STRICTLY FORBIDDEN:
 - NO people of any kind in the frame, even partially, in the background, reflected, or seen through a window/door — ZERO people, no exceptions, even if a person appears in the site reference image.
 - NO change to the room's existing furniture, decor, wall colors, materials, camera angle, or framing beyond what is explicitly described or listed.
 - NO tools, machinery, construction materials, or work-in-progress elements remaining anywhere.
-- NO text, watermarks, or logos in the image.`;
+- NO text, watermarks, or logos in the image.${objetsForbiddenLine}`;
   }
 
   return `Ultra-realistic photo edit, 4K, 16:9 landscape, same photographic style, framing and lighting as the site reference photo.
 ${baseIdentity}
 THE ONLY CHANGE TO MAKE: show the following work being actively carried out right now, visible in the appropriate part of the frame (through a window/door if the work is outdoors, or on the relevant surface/area if indoors) — nothing else in the image changes: ${description}.${objetsClause}
-${peopleClause ? peopleClause + " Show them wearing appropriate work attire (work clothes, safety gear if relevant), actively engaged in the work described." : ''}
+${peopleClause ? peopleClause + " Keep their EXACT clothing/outfit as shown in the person reference photo — do NOT change, replace, or add clothing items (no forced work clothes, no safety gear) unless those same items are already visible in the reference photo itself. Show them actively engaged in the work described." : ''}
 MANDATORY:
 - Show clear, realistic visual evidence of the work in progress: appropriate tools, materials, equipment, and a level of completion consistent with the description, added ONLY in the relevant area of the frame.
-- Every part of the image not directly related to the described work or the listed object replacements remains pixel-consistent with the site reference photo: same furniture, same decor, same colors, same camera angle.
+- Every part of the image not directly related to the described work or the listed object replacements remains pixel-consistent with the site reference photo: same furniture, same decor, same colors, same camera angle.${objetsMandatoryLine}
 STRICTLY FORBIDDEN:
 - NO change to the room's existing furniture, decor, wall colors, materials, camera angle, or framing beyond what is explicitly described or listed.
 - NO people added to the scene beyond those explicitly referenced in the person reference image(s).
 - NO distorting, altering, or replacing any person's face or identity from the person reference image(s) — never substitute a different-looking person.
-- NO text, watermarks, or logos in the image.`;
+- NO text, watermarks, or logos in the image.${objetsForbiddenLine}`;
 };
 
 const generateTravauxImage = async (engine, apiKey, sitePhoto, personPhotos, description, phase, objets) => {
@@ -734,7 +736,7 @@ const generateTravauxImage = async (engine, apiKey, sitePhoto, personPhotos, des
   objetsList.forEach((objet, idx) => {
     const d = objet.photo.includes(',') ? objet.photo.split(',')[1] : objet.photo;
     parts.push({ inlineData: { data: d, mimeType: 'image/jpeg' } });
-    parts.push({ text: `⚠️ OBJECT REFERENCE IMAGE #${idx + 1} — above: this is the exact object to use for the replacement described as: "${objet.note.trim()}". Reproduce this object's exact shape, color, material and design, placed naturally where the object it replaces currently is.` });
+    parts.push({ text: `⚠️ OBJECT REFERENCE IMAGE #${idx + 1} — MANDATORY REPLACEMENT, NOT OPTIONAL: this is the exact object you MUST use for the replacement described as: "${objet.note.trim()}". Reproduce this object's exact shape, color, material and design, placed naturally where the object it replaces currently is. Do not keep the old object — this specific swap must be clearly visible in the final image.` });
   });
   parts.push({ text: mainPrompt });
   return await callVertexGenerate(apiKey, parts);
