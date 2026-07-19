@@ -465,7 +465,7 @@ function downloadBlob(dataUrl, filename) {
 // ============================================================
 // GENERATION — Vertex AI
 // ============================================================
-async function callVertexGenerate(apiKey, parts, model = 'gemini-3.1-flash-image-preview', allowReducedVariant = true) {
+async function callVertexGenerate(apiKey, parts, model = 'gemini-3.1-flash-image-preview', allowReducedVariant = true, imageConfig = { aspectRatio: '16:9', imageSize: '4K' }) {
   const endpoint = `https://aiplatform.googleapis.com/v1/publishers/google/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
   const fetchWithTimeout = async (url, options, timeoutMs = 120000) => {
@@ -482,7 +482,7 @@ async function callVertexGenerate(apiKey, parts, model = 'gemini-3.1-flash-image
     contents: [{ role: 'user', parts: p }],
     generationConfig: {
       responseModalities: ['IMAGE'],
-      imageConfig: { aspectRatio: '16:9', imageSize: '4K' }
+      ...(imageConfig ? { imageConfig } : {})
     }
   });
 
@@ -567,7 +567,7 @@ async function uploadImageToKie(apiKey, base64DataUri) {
   return data.data.downloadUrl;
 }
 
-async function callKieGenerate(apiKey, promptText, referenceImageDataUri) {
+async function callKieGenerate(apiKey, promptText, referenceImageDataUri, aspectRatio = '16:9') {
   let imageUrls = [];
   const failedUploads = [];
   const refs = Array.isArray(referenceImageDataUri) ? referenceImageDataUri.filter(Boolean) : (referenceImageDataUri ? [referenceImageDataUri] : []);
@@ -579,7 +579,7 @@ async function callKieGenerate(apiKey, promptText, referenceImageDataUri) {
   }
   const taskBody = {
     model: 'nano-banana-2',
-    input: { prompt: promptText, aspect_ratio: '16:9', resolution: '4K', output_format: 'png', image_input: imageUrls }
+    input: { prompt: promptText, ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}), resolution: '4K', output_format: 'png', image_input: imageUrls }
   };
   const createRes = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
     method: 'POST',
@@ -739,7 +739,7 @@ const generateTravauxImage = async (engine, apiKey, sitePhoto, personPhotos, des
     people.forEach((_, i) => {
       mapping += `- IMAGE ${objetsList.length + 2 + i} = PERSON REFERENCE ${i + 1} — reproduce this exact person's identity in the scene.\n`;
     });
-    return await callKieGenerate(apiKey, mapping + '\n' + mainPrompt, orderedImages);
+    return await callKieGenerate(apiKey, mapping + '\n' + mainPrompt, orderedImages, null);
   }
 
   // Vertex : ORDRE — objets de référence placés EN DERNIER, juste avant mainPrompt.
@@ -770,7 +770,10 @@ const generateTravauxImage = async (engine, apiKey, sitePhoto, personPhotos, des
 
   // model = pro (meilleure adhérence aux instructions multi-images que flash) + fallback réducteur désactivé
   // (le fallback ne garderait que la 1ère image, ce qui n'a pas de sens ici)
-  return await callVertexGenerate(apiKey, parts, 'gemini-3-pro-image-preview', false);
+  // imageConfig SANS aspectRatio forcé : c'est une édition de photo réelle, imposer un ratio
+  // différent de la photo source oblige le modèle à recomposer toute la pièce pour remplir
+  // un cadre étranger — c'est ce qui causait "la pièce n'est plus la même".
+  return await callVertexGenerate(apiKey, parts, 'gemini-3-pro-image-preview', false, { imageSize: '4K' });
 };
 
 // ============================================================
