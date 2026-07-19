@@ -678,12 +678,12 @@ ${objetsList.map((o, i) => `${i + 1}) ${o.note.trim()}`).join('\n')}`;
   const objetsMandatoryLine = objetsList.length ? '\n- Apply EVERY listed object replacement above exactly as specified — this is mandatory, not optional. The new object from its reference image must be clearly recognizable in the output.' : '';
   const objetsForbiddenLine = objetsList.length ? '\n- NO keeping the original/old object unchanged for any listed replacement — reproducing the OBJECT REFERENCE IMAGE for each listed item is mandatory, this is the highest-priority instruction in this prompt.' : '';
 
-  const baseIdentity = `THIS IS A PHOTO EDIT TASK, NOT A NEW GENERATION. Start from the exact SITE REFERENCE IMAGE and treat it as ground truth for absolutely everything in the frame: the walls, floor, ceiling, every existing piece of furniture, every existing decor object (mirrors, baskets, console/side tables, rugs, frames, plants, lighting fixtures), the wall colors and materials, the camera angle, the framing, and the overall composition. NONE of these elements may change, move, be restyled, resized, recolored, or replaced — EXCEPT for the explicit object replacements listed below, if any, and the one specific change described further below. The output must be recognizable at a glance as the SAME photo, with only those specific changes applied to it.`;
+  const baseIdentity = `THIS IS A PHOTO EDIT TASK, NOT A NEW GENERATION. Start from the exact SITE REFERENCE IMAGE and treat it as ground truth for absolutely everything in the frame: the walls, floor, ceiling, every existing piece of furniture, every existing decor object (mirrors, baskets, console/side tables, rugs, frames, plants, lighting fixtures), the wall colors and materials, the camera angle, the framing, and the overall composition. NONE of these elements may change, move, be restyled, resized, recolored, or replaced — EXCEPT for the object replacement(s) already specified above (if any) and the one specific change described further below, which override this preservation rule for those specific items only. The output must be recognizable at a glance as the SAME photo, with only those specific changes applied to it.`;
 
   if (phase === 'finished') {
-    return `Ultra-realistic photo edit, 4K, 16:9 landscape, same photographic style, framing and lighting as the site reference photo.
+    return `Ultra-realistic photo edit, 4K, 16:9 landscape, same photographic style, framing and lighting as the site reference photo.${objetsClause}
 ${baseIdentity}
-THE ONLY CHANGE TO MAKE: show the following work as FULLY COMPLETED, visible in the appropriate part of the frame (through a window/door if the work is outdoors, or on the relevant surface/area if indoors) — nothing else in the image changes: ${description}.${objetsClause}
+THE ONLY OTHER CHANGE TO MAKE: show the following work as FULLY COMPLETED, visible in the appropriate part of the frame (through a window/door if the work is outdoors, or on the relevant surface/area if indoors) — nothing else in the image changes: ${description}.
 MANDATORY:
 - The described work is 100% finished: no tools, no machinery, no construction materials, no workers, no mess remaining anywhere related to that work.
 - The image is COMPLETELY EMPTY of people — nobody standing or present anywhere in the frame, indoors or outdoors, even in the far background.
@@ -695,9 +695,9 @@ STRICTLY FORBIDDEN:
 - NO text, watermarks, or logos in the image.${objetsForbiddenLine}`;
   }
 
-  return `Ultra-realistic photo edit, 4K, 16:9 landscape, same photographic style, framing and lighting as the site reference photo.
+  return `Ultra-realistic photo edit, 4K, 16:9 landscape, same photographic style, framing and lighting as the site reference photo.${objetsClause}
 ${baseIdentity}
-THE ONLY CHANGE TO MAKE: show the following work being actively carried out right now, visible in the appropriate part of the frame (through a window/door if the work is outdoors, or on the relevant surface/area if indoors) — nothing else in the image changes: ${description}.${objetsClause}
+THE ONLY OTHER CHANGE TO MAKE: show the following work being actively carried out right now, visible in the appropriate part of the frame (through a window/door if the work is outdoors, or on the relevant surface/area if indoors) — nothing else in the image changes: ${description}.
 ${peopleClause ? peopleClause + " Keep their EXACT clothing/outfit as shown in the person reference photo — do NOT change, replace, or add clothing items (no forced work clothes, no safety gear) unless those same items are already visible in the reference photo itself. Show them actively engaged in the work described." : ''}
 MANDATORY:
 - Show clear, realistic visual evidence of the work in progress: appropriate tools, materials, equipment, and a level of completion consistent with the description, added ONLY in the relevant area of the frame.
@@ -715,28 +715,31 @@ const generateTravauxImage = async (engine, apiKey, sitePhoto, personPhotos, des
   const mainPrompt = buildTravauxPrompt(description, phase, people.length, objetsList);
 
   if (engine === 'kie') {
-    return await callKieGenerate(apiKey, mainPrompt, [sitePhoto, ...people, ...objetsList.map(o => o.photo)]);
+    // objets en premier : poids de référence le plus fort
+    return await callKieGenerate(apiKey, mainPrompt, [...objetsList.map(o => o.photo), sitePhoto, ...people]);
   }
 
-  // Vertex : ordre important — photo chantier en premier (structure), puis personne(s), puis objets, puis instructions
+  // Vertex : ORDRE CRITIQUE — Vertex traite les images dans l'ordre, la première a le plus de poids.
+  // Les objets de référence (ex: nouveau lustre) passent EN PREMIER pour être fidèlement reproduits,
+  // avant la photo chantier (structure) et les personnes.
   const parts = [];
+  objetsList.forEach((objet, idx) => {
+    const d = objet.photo.includes(',') ? objet.photo.split(',')[1] : objet.photo;
+    parts.push({ inlineData: { data: d, mimeType: 'image/jpeg' } });
+    parts.push({ text: `⚠️⚠️ OBJECT REFERENCE IMAGE #${idx + 1} — YOUR HIGHEST PRIORITY VISUAL REFERENCE. This is the EXACT physical object you MUST reproduce pixel-faithfully (same shape, same color, same material, same design — a literal copy of this object, not a reinterpretation) for the replacement described as: "${objet.note.trim()}". This object image takes priority over preserving the original object it replaces. Place it naturally at the location/scale of the object it replaces.` });
+  });
   if (sitePhoto) {
     const d = sitePhoto.includes(',') ? sitePhoto.split(',')[1] : sitePhoto;
     parts.push({ inlineData: { data: d, mimeType: 'image/jpeg' } });
     const siteLabel = phase === 'finished'
-      ? '⚠️ SITE REFERENCE IMAGE — above: this is the exact real photo to edit. Preserve every element of it exactly as shown — furniture, decor, walls, colors, camera angle — and add ONLY the finished version of the described work (and any listed object replacements). If this photo shows any person, they must NOT appear in the output — the output must be completely empty of people.'
-      : '⚠️ SITE REFERENCE IMAGE — above: this is the exact real photo to edit. Preserve every element of it exactly as shown — furniture, decor, walls, colors, camera angle — and add ONLY the described work in progress (and any listed object replacements).';
+      ? '⚠️ SITE REFERENCE IMAGE — above: this is the exact real photo to edit. Preserve every element of it exactly as shown — furniture, decor, walls, colors, camera angle — and add ONLY the finished version of the described work. If any OBJECT REFERENCE IMAGE(s) were provided above, the object(s) they replace must NOT be preserved — they are the one explicit exception. If this photo shows any person, they must NOT appear in the output — the output must be completely empty of people.'
+      : '⚠️ SITE REFERENCE IMAGE — above: this is the exact real photo to edit. Preserve every element of it exactly as shown — furniture, decor, walls, colors, camera angle — and add ONLY the described work in progress. If any OBJECT REFERENCE IMAGE(s) were provided above, the object(s) they replace must NOT be preserved — they are the one explicit exception.';
     parts.push({ text: siteLabel });
   }
   people.forEach((personPhoto, idx) => {
     const d = personPhoto.includes(',') ? personPhoto.split(',')[1] : personPhoto;
     parts.push({ inlineData: { data: d, mimeType: 'image/jpeg' } });
     parts.push({ text: `⚠️ PERSON REFERENCE IMAGE #${idx + 1} — above: reproduce this EXACT person (face, identity, general appearance) present in the scene as a distinct individual.` });
-  });
-  objetsList.forEach((objet, idx) => {
-    const d = objet.photo.includes(',') ? objet.photo.split(',')[1] : objet.photo;
-    parts.push({ inlineData: { data: d, mimeType: 'image/jpeg' } });
-    parts.push({ text: `⚠️ OBJECT REFERENCE IMAGE #${idx + 1} — MANDATORY REPLACEMENT, NOT OPTIONAL: this is the exact object you MUST use for the replacement described as: "${objet.note.trim()}". Reproduce this object's exact shape, color, material and design, placed naturally where the object it replaces currently is. Do not keep the old object — this specific swap must be clearly visible in the final image.` });
   });
   parts.push({ text: mainPrompt });
   return await callVertexGenerate(apiKey, parts);
