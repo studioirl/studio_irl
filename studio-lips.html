@@ -120,6 +120,101 @@ function blobToBase64(blob) {
 }
 
 /* =========================================================
+   INDEXEDDB (remplace localStorage pour les signatures — pas de plafond ~5Mo)
+   ========================================================= */
+const IDB_NAME = 'studiolips_db';
+const IDB_STORE = 'footprints';
+
+function openIDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(IDB_NAME, 1);
+    req.onupgradeneeded = () => { req.result.createObjectStore(IDB_STORE, { keyPath: 'id' }); };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function idbGetAll() {
+  const db = await openIDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readonly');
+    const req = tx.objectStore(IDB_STORE).getAll();
+    req.onsuccess = () => resolve(req.result.sort((a, b) => b.timestamp - a.timestamp));
+    req.onerror = () => reject(req.error);
+  });
+}
+async function idbPut(item) {
+  const db = await openIDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).put(item);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+async function idbDelete(id) {
+  const db = await openIDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+async function idbClear() {
+  const db = await openIDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).clear();
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+/* =========================================================
+   COMPRESSION AUDIO (remplace le rejet "fichier trop volumineux")
+   Extrait les N premières secondes en piste audio compressée (opus).
+   Le coût Gemini dépend de la durée, pas du poids du fichier :
+   compresser ne change rien au coût, ça évite juste les erreurs.
+   ========================================================= */
+function extractCompressedSample(file, maxSeconds = 45) {
+  return new Promise((resolve, reject) => {
+    const isVideo = file.type.startsWith('video');
+    const el = document.createElement(isVideo ? 'video' : 'audio');
+    el.src = URL.createObjectURL(file);
+    el.muted = true;
+    el.playsInline = true;
+
+    let recorder;
+    let stopped = false;
+    const chunks = [];
+
+    const cleanup = () => { URL.revokeObjectURL(el.src); };
+    const finish = () => {
+      if (stopped) return;
+      stopped = true;
+      if (recorder && recorder.state !== 'inactive') recorder.stop();
+    };
+
+    el.addEventListener('loadedmetadata', () => {
+      try {
+        const stream = el.captureStream ? el.captureStream() : el.mozCaptureStream();
+        const audioTracks = stream.getAudioTracks();
+        if (audioTracks.length === 0) { cleanup(); reject(new Error("Aucune piste audio détectée dans ce fichier.")); return; }
+        const audioStream = new MediaStream(audioTracks);
+        recorder = new MediaRecorder(audioStream, { mimeType: 'audio/webm;codecs=opus', audioBitsPerSecond: 32000 });
+        recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+        recorder.onstop = () => { cleanup(); resolve(new Blob(chunks, { type: 'audio/webm' })); };
+        recorder.start();
+        el.play().catch(reject);
+        el.addEventListener('ended', finish);
+        setTimeout(finish, maxSeconds * 1000);
+      } catch (err) { cleanup(); reject(err); }
+    });
+    el.addEventListener('error', () => { cleanup(); reject(new Error("Impossible de lire ce fichier.")); });
+  });
+}
+
+/* =========================================================
    VERTEX AI SERVICE (remplace geminiService.ts / @google/genai)
    Endpoint Express Mode : aiplatform.googleapis.com, clé AQ...
    ========================================================= */
@@ -266,7 +361,7 @@ Script à interpréter :
 ${scriptText}`;
 
   const body = {
-    contents: [{ parts: [{ text: fullPrompt }] }],
+    contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
     generationConfig: {
       responseModalities: ["AUDIO"],
       speechConfig: {
@@ -327,17 +422,26 @@ function ModeExtractor({ onFingerprintCreated, apiKey }) {
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 10 * 1024 * 1024) { setError("Fichier trop volumineux (Max 10Mo)."); return; }
     setIsAnalyzing(true);
     setError(null);
     try {
-      const base64 = await fileToBase64(file);
-      setOriginalAudio({ base64, mime: file.type });
-      const res = await analyzeVoice(base64, file.type, apiKey);
+      let workingBlob = file;
+      let workingMime = file.type;
+      // Compression automatique : au-delà de 3 Mo ou pour toute vidéo, on extrait
+      // les 45 premières secondes en piste audio compressée. Le coût Gemini dépend
+      // de la durée, pas du poids du fichier — aucun surcoût, juste plus fiable.
+      if (file.size > 3 * 1024 * 1024 || file.type.startsWith('video')) {
+        const compressed = await extractCompressedSample(file, 45);
+        workingBlob = compressed;
+        workingMime = compressed.type;
+      }
+      const base64 = await blobToBase64(workingBlob);
+      setOriginalAudio({ base64, mime: workingMime });
+      const res = await analyzeVoice(base64, workingMime, apiKey);
       setTempAnalysis(res);
     } catch (err) {
       console.error(err);
-      setError("Erreur lors de l'analyse du média. Assurez-vous qu'il contient une voix claire.");
+      setError(err.message || "Erreur lors de l'analyse du média. Assurez-vous qu'il contient une voix claire.");
     } finally { setIsAnalyzing(false); e.target.value = ''; }
   };
 
@@ -387,7 +491,7 @@ function ModeExtractor({ onFingerprintCreated, apiKey }) {
               SÉLECTIONNER
               <input type="file" className="hidden" accept="audio/*,video/*" onChange={handleFileUpload} />
             </label>
-            <p className="text-[8px] text-gray-600 uppercase font-bold mt-4 tracking-tighter">MP4, MOV, WAV, MP3... (Max 10Mo)</p>
+            <p className="text-[8px] text-gray-600 uppercase font-bold mt-4 tracking-tighter">MP4, MOV, WAV, MP3... Compression auto, aucune limite</p>
           </div>
         </div>
       ) : (
@@ -707,14 +811,15 @@ function App() {
   const originalAudioRef = useRef(null);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('voxprint_footprints');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        setFootprints(parsed);
-        if (parsed.length > 0) setSelectedFootprintId(parsed[0].id);
-      }
-    } catch (e) { localStorage.removeItem('voxprint_footprints'); }
+    (async () => {
+      try {
+        const saved = await idbGetAll();
+        if (saved.length > 0) {
+          setFootprints(saved);
+          setSelectedFootprintId(saved[0].id);
+        }
+      } catch (e) { console.error("Chargement IndexedDB impossible", e); }
+    })();
   }, []);
 
   const saveApiKey = () => {
@@ -727,31 +832,36 @@ function App() {
     setView('landing');
   };
 
-  const handleFingerprintCreated = (fp) => {
+  const handleFingerprintCreated = async (fp) => {
     try {
       const updated = [fp, ...footprints].slice(0, 3);
-      localStorage.setItem('voxprint_footprints', JSON.stringify(updated));
+      const removed = footprints.slice(2); // celles éjectées par la limite de 3
+      await idbPut(fp);
+      for (const r of removed) await idbDelete(r.id);
       setFootprints(updated);
       setSelectedFootprintId(fp.id);
       setActiveMode('synthesize');
-    } catch (e) { alert("Erreur Stockage : Supprimez d'anciennes signatures pour enregistrer celle-ci."); }
+    } catch (e) {
+      console.error(e);
+      alert("Erreur de stockage inattendue. Réessaie, et si ça persiste, réinitialise.");
+    }
   };
 
-  const clearAll = () => {
+  const clearAll = async () => {
     if (confirm("Effacer toutes les signatures ?")) {
-      localStorage.removeItem('voxprint_footprints');
+      await idbClear();
       setFootprints([]);
       setSelectedFootprintId(null);
       stopOriginalPlayback();
     }
   };
 
-  const deleteFootprint = (id, e) => {
+  const deleteFootprint = async (id, e) => {
     e.stopPropagation();
     if (playingOriginalId === id) stopOriginalPlayback();
+    await idbDelete(id);
     const updated = footprints.filter(f => f.id !== id);
     setFootprints(updated);
-    localStorage.setItem('voxprint_footprints', JSON.stringify(updated));
     if (selectedFootprintId === id) setSelectedFootprintId(updated.length > 0 ? updated[0].id : null);
   };
 
