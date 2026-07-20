@@ -465,8 +465,8 @@ function downloadBlob(dataUrl, filename) {
 // ============================================================
 // GENERATION — Vertex AI
 // ============================================================
-async function callVertexGenerate(apiKey, parts) {
-  const endpoint = `https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-3.1-flash-image-preview:generateContent?key=${encodeURIComponent(apiKey)}`;
+async function callVertexGenerate(apiKey, parts, model = 'gemini-3.1-flash-image-preview', allowReducedVariant = true, imageConfig = { aspectRatio: '16:9', imageSize: '4K' }) {
+  const endpoint = `https://aiplatform.googleapis.com/v1/publishers/google/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
   const fetchWithTimeout = async (url, options, timeoutMs = 120000) => {
     const controller = new AbortController();
@@ -482,14 +482,17 @@ async function callVertexGenerate(apiKey, parts) {
     contents: [{ role: 'user', parts: p }],
     generationConfig: {
       responseModalities: ['IMAGE'],
-      imageConfig: { aspectRatio: '16:9', imageSize: '4K' }
+      ...(imageConfig ? { imageConfig } : {})
     }
   });
 
   // Variantes : full parts → si image absente, retente en gardant seulement la 1ère image (structure) + texte
+  // NOTE: ce fallback n'a de sens que pour le flux décoration (1ère image = style ref à préserver).
+  // En Mode Travaux, appeler avec allowReducedVariant=false pour ne pas risquer de perdre
+  // l'objet ou le site de référence dans le fallback.
   const inlineCount = parts.filter(p => p.inlineData).length;
   const variants = [parts];
-  if (inlineCount >= 2) {
+  if (allowReducedVariant && inlineCount >= 2) {
     // Garder uniquement la 1ère inlineData (structure béton) + tous les texts
     const reduced = [];
     let imgAdded = 0;
@@ -564,15 +567,19 @@ async function uploadImageToKie(apiKey, base64DataUri) {
   return data.data.downloadUrl;
 }
 
-async function callKieGenerate(apiKey, promptText, referenceImageDataUri) {
+async function callKieGenerate(apiKey, promptText, referenceImageDataUri, aspectRatio = '16:9') {
   let imageUrls = [];
+  const failedUploads = [];
   const refs = Array.isArray(referenceImageDataUri) ? referenceImageDataUri.filter(Boolean) : (referenceImageDataUri ? [referenceImageDataUri] : []);
-  for (const ref of refs) {
-    try { imageUrls.push(await uploadImageToKie(apiKey, ref)); } catch(e) { console.warn('Upload ref kie échoué:', e.message); }
+  for (let i = 0; i < refs.length; i++) {
+    try { imageUrls.push(await uploadImageToKie(apiKey, refs[i])); } catch(e) { failedUploads.push(i); console.warn('Upload ref kie échoué:', e.message); }
+  }
+  if (failedUploads.length > 0) {
+    throw new Error(`Échec upload de ${failedUploads.length} image(s) de référence (index: ${failedUploads.join(',')}). Génération annulée pour éviter un rendu incomplet. Réessayez.`);
   }
   const taskBody = {
     model: 'nano-banana-2',
-    input: { prompt: promptText, aspect_ratio: '16:9', resolution: '4K', output_format: 'png', image_input: imageUrls }
+    input: { prompt: promptText, ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}), resolution: '4K', output_format: 'png', image_input: imageUrls }
   };
   const createRes = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
     method: 'POST',
@@ -673,12 +680,16 @@ const buildTravauxPrompt = (description, phase, nbPeople, objets) => {
 
   const objetsList = (objets || []).filter(o => o?.note?.trim());
   const objetsClause = objetsList.length === 0 ? '' : `
-⚠️ MANDATORY OBJECT REPLACEMENTS (NOT OPTIONAL, HIGHEST PRIORITY) — for each one below, you MUST replace the existing corresponding object currently in the room with the EXACT object shown in its dedicated OBJECT REFERENCE IMAGE (same shape, color, material, design), placed naturally at the same location/scale as the object it replaces. This replacement must be clearly visible and unmistakable in the output. Leave everything else in the room unchanged:
+⚠️ MANDATORY OBJECT PLACEMENT (NOT OPTIONAL, HIGHEST PRIORITY) — for each one below, place the EXACT object shown in its dedicated OBJECT REFERENCE IMAGE into the scene exactly as described (same shape, color, material, design — a literal copy, not a reinterpretation). If the description says to replace an existing item, remove that existing item and put this one in its place. If it describes a location for a new item, add it there. This must be clearly visible and unmistakable in the output. Leave everything else in the room unchanged:
 ${objetsList.map((o, i) => `${i + 1}) ${o.note.trim()}`).join('\n')}`;
-  const objetsMandatoryLine = objetsList.length ? '\n- Apply EVERY listed object replacement above exactly as specified — this is mandatory, not optional. The new object from its reference image must be clearly recognizable in the output.' : '';
-  const objetsForbiddenLine = objetsList.length ? '\n- NO keeping the original/old object unchanged for any listed replacement — reproducing the OBJECT REFERENCE IMAGE for each listed item is mandatory, this is the highest-priority instruction in this prompt.' : '';
+  const objetsMandatoryLine = objetsList.length ? '\n- Apply EVERY listed object placement above exactly as specified — this is mandatory, not optional. The object from its reference image must be clearly recognizable in the output, at the location described.' : '';
+  const objetsForbiddenLine = objetsList.length ? '\n- NO ignoring or softening any listed object placement — reproducing the OBJECT REFERENCE IMAGE for each listed item at its described location is mandatory, this is the highest-priority instruction in this prompt.' : '';
 
-  const baseIdentity = `THIS IS A PHOTO EDIT TASK, NOT A NEW GENERATION. Start from the exact SITE REFERENCE IMAGE and treat it as ground truth for absolutely everything in the frame: the walls, floor, ceiling, every existing piece of furniture, every existing decor object (mirrors, baskets, console/side tables, rugs, frames, plants, lighting fixtures), the wall colors and materials, the camera angle, the framing, and the overall composition. NONE of these elements may change, move, be restyled, resized, recolored, or replaced — EXCEPT for the object replacement(s) already specified above (if any) and the one specific change described further below, which override this preservation rule for those specific items only. The output must be recognizable at a glance as the SAME photo, with only those specific changes applied to it.`;
+  const personRemovalException = phase === 'finished'
+    ? " Removing any person visible in the SITE REFERENCE IMAGE is ALSO an explicit allowed exception to this preservation rule — the output must show the room completely empty of people even if the site reference photo contains one."
+    : '';
+
+  const baseIdentity = `THIS IS A PHOTO EDIT TASK, NOT A NEW GENERATION. Start from the exact SITE REFERENCE IMAGE and treat it as ground truth for absolutely everything in the frame: the walls, floor, ceiling, every existing piece of furniture, every existing decor object (mirrors, baskets, console/side tables, rugs, frames, plants, lighting fixtures), the wall colors and materials, the camera angle, the framing, and the overall composition. NONE of these elements may change, move, be restyled, resized, recolored, or replaced — EXCEPT for the object placement(s) already specified above (if any) and the one specific change described further below, which override this preservation rule for those specific items only.${personRemovalException} The output must be recognizable at a glance as the SAME photo, with only those specific changes applied to it.`;
 
   if (phase === 'finished') {
     return `Ultra-realistic photo edit, 4K, 16:9 landscape, same photographic style, framing and lighting as the site reference photo.${objetsClause}
@@ -687,12 +698,13 @@ THE ONLY OTHER CHANGE TO MAKE: show the following work as FULLY COMPLETED, visib
 MANDATORY:
 - The described work is 100% finished: no tools, no machinery, no construction materials, no workers, no mess remaining anywhere related to that work.
 - The image is COMPLETELY EMPTY of people — nobody standing or present anywhere in the frame, indoors or outdoors, even in the far background.
-- Every part of the image not directly related to the described work or the listed object replacements remains pixel-consistent with the site reference photo: same furniture, same decor, same colors, same camera angle.${objetsMandatoryLine}
+- Every part of the image not directly related to the described work or the listed object placements remains pixel-consistent with the site reference photo: same furniture, same decor, same colors, same camera angle.${objetsMandatoryLine}
 STRICTLY FORBIDDEN:
 - NO people of any kind in the frame, even partially, in the background, reflected, or seen through a window/door — ZERO people, no exceptions, even if a person appears in the site reference image.
 - NO change to the room's existing furniture, decor, wall colors, materials, camera angle, or framing beyond what is explicitly described or listed.
 - NO tools, machinery, construction materials, or work-in-progress elements remaining anywhere.
-- NO text, watermarks, or logos in the image.${objetsForbiddenLine}`;
+- NO text, watermarks, or logos in the image.${objetsForbiddenLine}
+⚠️ FINAL CHECK BEFORE OUTPUT: this image must contain ZERO people, not even one — this is the single most important requirement of this entire task, more important than matching the site photo exactly.`;
   }
 
   return `Ultra-realistic photo edit, 4K, 16:9 landscape, same photographic style, framing and lighting as the site reference photo.${objetsClause}
@@ -701,7 +713,7 @@ THE ONLY OTHER CHANGE TO MAKE: show the following work being actively carried ou
 ${peopleClause ? peopleClause + " Keep their EXACT clothing/outfit as shown in the person reference photo — do NOT change, replace, or add clothing items (no forced work clothes, no safety gear) unless those same items are already visible in the reference photo itself. Show them actively engaged in the work described." : ''}
 MANDATORY:
 - Show clear, realistic visual evidence of the work in progress: appropriate tools, materials, equipment, and a level of completion consistent with the description, added ONLY in the relevant area of the frame.
-- Every part of the image not directly related to the described work or the listed object replacements remains pixel-consistent with the site reference photo: same furniture, same decor, same colors, same camera angle.${objetsMandatoryLine}
+- Every part of the image not directly related to the described work or the listed object placements remains pixel-consistent with the site reference photo: same furniture, same decor, same colors, same camera angle.${objetsMandatoryLine}
 STRICTLY FORBIDDEN:
 - NO change to the room's existing furniture, decor, wall colors, materials, camera angle, or framing beyond what is explicitly described or listed.
 - NO people added to the scene beyond those explicitly referenced in the person reference image(s).
@@ -709,31 +721,66 @@ STRICTLY FORBIDDEN:
 - NO text, watermarks, or logos in the image.${objetsForbiddenLine}`;
 };
 
+// Passe dédiée : retire une éventuelle personne de la photo du site, RIEN d'autre.
+// Une instruction unique et simple est beaucoup plus fiable qu'un prompt qui demande
+// à la fois de retirer la personne, d'ajouter les travaux finis et de tout préserver —
+// c'est ce cumul d'instructions qui faisait réapparaître la personne sur "travaux terminés".
+const stripPersonFromSitePhoto = async (engine, apiKey, sitePhoto) => {
+  const prompt = `THIS IS A PHOTO EDIT TASK, NOT A NEW GENERATION. Your ONLY job: if there is a person anywhere in this photo (fully visible, partially visible, in the background, or reflected), remove them completely and fill in what would naturally be behind/under them — matching floor, wall, furniture, or background seamlessly, as if they were never there.
+STRICTLY FORBIDDEN: do NOT change anything else — same furniture, same decor, same wall colors, same materials, same camera angle, same framing, same lighting, same everything except the removed person. This is a single, narrow edit: person removal only.
+If there is no person anywhere in this photo, return the photo essentially unchanged.`;
+  if (engine === 'kie') {
+    return await callKieGenerate(apiKey, prompt, sitePhoto, null);
+  }
+  const d = sitePhoto.includes(',') ? sitePhoto.split(',')[1] : sitePhoto;
+  const parts = [
+    { inlineData: { data: d, mimeType: 'image/jpeg' } },
+    { text: prompt }
+  ];
+  return await callVertexGenerate(apiKey, parts, 'gemini-3-pro-image-preview', false, { imageSize: '4K' });
+};
+
 const generateTravauxImage = async (engine, apiKey, sitePhoto, personPhotos, description, phase, objets) => {
   const people = (personPhotos || []).filter(Boolean).slice(0, 2);
   const objetsList = (objets || []).filter(o => o?.photo && o?.note?.trim());
   const mainPrompt = buildTravauxPrompt(description, phase, people.length, objetsList);
 
-  if (engine === 'kie') {
-    // objets en premier : poids de référence le plus fort
-    return await callKieGenerate(apiKey, mainPrompt, [...objetsList.map(o => o.photo), sitePhoto, ...people]);
+  // Pour "terminé" : on nettoie d'abord la photo source de toute personne, dans un appel séparé
+  // et dédié, AVANT de lui appliquer l'édit "travaux finis". Ça évite de demander au modèle
+  // de faire deux choses contradictoires (retirer une personne + tout préserver) en même temps.
+  let effectiveSitePhoto = sitePhoto;
+  if (phase === 'finished' && sitePhoto) {
+    effectiveSitePhoto = await stripPersonFromSitePhoto(engine, apiKey, sitePhoto);
   }
 
-  // Vertex : ORDRE CRITIQUE — Vertex traite les images dans l'ordre, la première a le plus de poids.
-  // Les objets de référence (ex: nouveau lustre) passent EN PREMIER pour être fidèlement reproduits,
-  // avant la photo chantier (structure) et les personnes.
+  if (engine === 'kie') {
+    // Mapping explicite : kie.ai n'a qu'un seul champ prompt texte (pas de texte par image
+    // comme Vertex), donc sans ce mapping le modèle ne sait pas quelle image du tableau
+    // image_input correspond à quel rôle et priorise souvent la photo du site par défaut.
+    const orderedImages = [...objetsList.map(o => o.photo), effectiveSitePhoto, ...people];
+    let mapping = 'IMAGE ORDER MAPPING (CRITICAL — the images are provided in this exact order, use each one for its designated role ONLY):\n';
+    objetsList.forEach((o, i) => {
+      mapping += `- IMAGE ${i + 1} = OBJECT REFERENCE for placement "${o.note.trim()}" — reproduce this exact object pixel-faithfully at the location described (replace an existing item if the description says so, or add it there if not).\n`;
+    });
+    mapping += `- IMAGE ${objetsList.length + 1} = SITE REFERENCE PHOTO — preserve everything in it exactly except the described work/replacements.\n`;
+    people.forEach((_, i) => {
+      mapping += `- IMAGE ${objetsList.length + 2 + i} = PERSON REFERENCE ${i + 1} — reproduce this exact person's identity in the scene.\n`;
+    });
+    return await callKieGenerate(apiKey, mapping + '\n' + mainPrompt, orderedImages, null);
+  }
+
+  // Vertex : ORDRE — objets de référence placés EN DERNIER, juste avant mainPrompt.
+  // Raison : l'objet a besoin d'être la chose la plus "récente" vue par le modèle avant
+  // la génération (proximité avec le prompt final), pas la première (l'ancien ordre
+  // noyait l'instruction objet sous le site + les personnes placés après).
   const parts = [];
-  objetsList.forEach((objet, idx) => {
-    const d = objet.photo.includes(',') ? objet.photo.split(',')[1] : objet.photo;
-    parts.push({ inlineData: { data: d, mimeType: 'image/jpeg' } });
-    parts.push({ text: `⚠️⚠️ OBJECT REFERENCE IMAGE #${idx + 1} — YOUR HIGHEST PRIORITY VISUAL REFERENCE. This is the EXACT physical object you MUST reproduce pixel-faithfully (same shape, same color, same material, same design — a literal copy of this object, not a reinterpretation) for the replacement described as: "${objet.note.trim()}". This object image takes priority over preserving the original object it replaces. Place it naturally at the location/scale of the object it replaces.` });
-  });
-  if (sitePhoto) {
-    const d = sitePhoto.includes(',') ? sitePhoto.split(',')[1] : sitePhoto;
+
+  if (effectiveSitePhoto) {
+    const d = effectiveSitePhoto.includes(',') ? effectiveSitePhoto.split(',')[1] : effectiveSitePhoto;
     parts.push({ inlineData: { data: d, mimeType: 'image/jpeg' } });
     const siteLabel = phase === 'finished'
-      ? '⚠️ SITE REFERENCE IMAGE — above: this is the exact real photo to edit. Preserve every element of it exactly as shown — furniture, decor, walls, colors, camera angle — and add ONLY the finished version of the described work. If any OBJECT REFERENCE IMAGE(s) were provided above, the object(s) they replace must NOT be preserved — they are the one explicit exception. If this photo shows any person, they must NOT appear in the output — the output must be completely empty of people.'
-      : '⚠️ SITE REFERENCE IMAGE — above: this is the exact real photo to edit. Preserve every element of it exactly as shown — furniture, decor, walls, colors, camera angle — and add ONLY the described work in progress. If any OBJECT REFERENCE IMAGE(s) were provided above, the object(s) they replace must NOT be preserved — they are the one explicit exception.';
+      ? '⚠️ SITE REFERENCE IMAGE — above: this is the exact real photo to edit (already cleaned of any person). Preserve every element of it exactly as shown — furniture, decor, walls, colors, camera angle — and add ONLY the finished version of the described work. If any OBJECT REFERENCE IMAGE(s) appear further below, the object(s) they replace must NOT be preserved — they are the one explicit exception. Do NOT add any person to the scene.'
+      : '⚠️ SITE REFERENCE IMAGE — above: this is the exact real photo to edit. Preserve every element of it exactly as shown — furniture, decor, walls, colors, camera angle — and add ONLY the described work in progress. If any OBJECT REFERENCE IMAGE(s) appear further below, the object(s) they replace must NOT be preserved — they are the one explicit exception.';
     parts.push({ text: siteLabel });
   }
   people.forEach((personPhoto, idx) => {
@@ -741,8 +788,19 @@ const generateTravauxImage = async (engine, apiKey, sitePhoto, personPhotos, des
     parts.push({ inlineData: { data: d, mimeType: 'image/jpeg' } });
     parts.push({ text: `⚠️ PERSON REFERENCE IMAGE #${idx + 1} — above: reproduce this EXACT person (face, identity, general appearance) present in the scene as a distinct individual.` });
   });
+  objetsList.forEach((objet, idx) => {
+    const d = objet.photo.includes(',') ? objet.photo.split(',')[1] : objet.photo;
+    parts.push({ inlineData: { data: d, mimeType: 'image/jpeg' } });
+    parts.push({ text: `⚠️⚠️ OBJECT REFERENCE IMAGE #${idx + 1} — YOUR HIGHEST PRIORITY VISUAL REFERENCE, TAKE PRECEDENCE OVER EVERYTHING ABOVE FOR THIS SPECIFIC ITEM. This is the EXACT physical object you MUST reproduce pixel-faithfully (same shape, same color, same material, same design — a literal copy of this object, not a reinterpretation), placed in the scene as described here: "${objet.note.trim()}". If this description says to replace an existing item, remove that item and put this one there instead. This object image takes priority over preserving whatever it replaces or the empty space it fills.` });
+  });
   parts.push({ text: mainPrompt });
-  return await callVertexGenerate(apiKey, parts);
+
+  // model = pro (meilleure adhérence aux instructions multi-images que flash) + fallback réducteur désactivé
+  // (le fallback ne garderait que la 1ère image, ce qui n'a pas de sens ici)
+  // imageConfig SANS aspectRatio forcé : c'est une édition de photo réelle, imposer un ratio
+  // différent de la photo source oblige le modèle à recomposer toute la pièce pour remplir
+  // un cadre étranger — c'est ce qui causait "la pièce n'est plus la même".
+  return await callVertexGenerate(apiKey, parts, 'gemini-3-pro-image-preview', false, { imageSize: '4K' });
 };
 
 // ============================================================
@@ -848,10 +906,13 @@ const App = ({ apiKey, engine }) => {
   const [selectedSlices, setSelectedSlices] = useState([]);
   const [masterImageForSplit, setMasterImageForSplit] = useState(null);
   const [travauxSitePhoto, setTravauxSitePhoto] = useState(null);
+  const [travauxSitePhotoFinished, setTravauxSitePhotoFinished] = useState(null); // optionnel — sinon réutilise travauxSitePhoto
   const [travauxPersonPhoto1, setTravauxPersonPhoto1] = useState(null);
   const [travauxPersonPhoto2, setTravauxPersonPhoto2] = useState(null);
-  const [travauxDescription, setTravauxDescription] = useState('');
-  const [travauxObjets, setTravauxObjets] = useState([]);
+  const [travauxDescriptionProgress, setTravauxDescriptionProgress] = useState('');
+  const [travauxDescriptionFinished, setTravauxDescriptionFinished] = useState('');
+  const [travauxObjetProgress, setTravauxObjetProgress] = useState({ photo: null, note: '' });
+  const [travauxObjetFinished, setTravauxObjetFinished] = useState({ photo: null, note: '' });
   const [error, setError] = useState(null);
   const isGeneratingRef = useRef(false);
 
@@ -1004,20 +1065,29 @@ const App = ({ apiKey, engine }) => {
   };
 
   const runTravauxGeneration = async () => {
-    if (!travauxSitePhoto || !travauxDescription.trim()) return;
+    if (!travauxSitePhoto || !travauxDescriptionProgress.trim() || !travauxDescriptionFinished.trim()) return;
     setError(null);
     const people = [travauxPersonPhoto1, travauxPersonPhoto2].filter(Boolean);
-    const objetsList = travauxObjets.filter(o => o?.photo && o?.note?.trim());
-    const desc = travauxDescription.trim();
+    // Objet indépendant par image : celui de "en cours" ne s'applique qu'à l'image en cours,
+    // celui de "terminé" ne s'applique qu'à l'image terminée.
+    const objetsProgress = (travauxObjetProgress?.photo && travauxObjetProgress?.note?.trim()) ? [travauxObjetProgress] : [];
+    const objetsFinished = (travauxObjetFinished?.photo && travauxObjetFinished?.note?.trim()) ? [travauxObjetFinished] : [];
+    // Description indépendante par image : celle de "en cours" décrit l'action (avec la personne),
+    // celle de "terminé" décrit UNIQUEMENT le résultat fini (pas d'action, pas de personne).
+    // C'était le vrai bug : réutiliser la même description pour les deux faisait apparaître
+    // l'action/la personne même dans l'image "terminée", car le texte source la décrivait.
+    const descProgress = travauxDescriptionProgress.trim();
+    const descFinished = travauxDescriptionFinished.trim();
+    const sitePhotoFinished = travauxSitePhotoFinished || travauxSitePhoto;
     updateState({ loading: true, loadingMessage: `${engine === 'kie' ? '🍌' : '🔷'} Mise en scène : travaux en cours...` });
     try {
-      const urlProgress = await generateTravauxImage(engine, apiKey, travauxSitePhoto, people, desc, 'progress', objetsList);
+      const urlProgress = await generateTravauxImage(engine, apiKey, travauxSitePhoto, people, descProgress, 'progress', objetsProgress);
       updateState({ loadingMessage: `${engine === 'kie' ? '🍌' : '🔷'} Mise en scène : travaux terminés...` });
-      const urlFinished = await generateTravauxImage(engine, apiKey, travauxSitePhoto, [], desc, 'finished', objetsList);
+      const urlFinished = await generateTravauxImage(engine, apiKey, sitePhotoFinished, [], descFinished, 'finished', objetsFinished);
       updateState({
         imagesFinales: [
-          { id: `travaux-progress-${Date.now()}`, piece: 'Travaux — En cours', url: urlProgress, prompt: 'Travaux', promptFull: buildTravauxPrompt(desc, 'progress', people.length, objetsList) },
-          { id: `travaux-finished-${Date.now()}`, piece: 'Travaux — Terminé', url: urlFinished, prompt: 'Travaux', promptFull: buildTravauxPrompt(desc, 'finished', 0, objetsList) }
+          { id: `travaux-progress-${Date.now()}`, piece: 'Travaux — En cours', url: urlProgress, prompt: 'Travaux', promptFull: buildTravauxPrompt(descProgress, 'progress', people.length, objetsProgress) },
+          { id: `travaux-finished-${Date.now()}`, piece: 'Travaux — Terminé', url: urlFinished, prompt: 'Travaux', promptFull: buildTravauxPrompt(descFinished, 'finished', 0, objetsFinished) }
         ],
         page: 'resultat',
         loading: false
@@ -1158,6 +1228,19 @@ const App = ({ apiKey, engine }) => {
                   React.createElement('button', { onClick: () => setTravauxSitePhoto(null), className: "absolute top-4 right-4 p-3 bg-red-500 text-white rounded-full shadow-lg" }, React.createElement(Trash2, {}))
                 ),
             React.createElement('div', { className: "space-y-3 pt-4 border-t border-slate-100" },
+              React.createElement('h4', { className: "text-xl font-black flex items-center gap-3" }, React.createElement(Camera, { className: "text-orange-600" }), " 2b. Photo alternative — Image \"terminée\" (optionnel)"),
+              React.createElement('p', { className: "text-slate-500 text-sm" }, "Si absente, la photo du chantier ci-dessus est réutilisée pour l'image finale."),
+              !travauxSitePhotoFinished
+                ? React.createElement('label', { className: "block w-full aspect-video border-4 border-dashed border-slate-200 rounded-2xl hover:border-orange-500 transition-all cursor-pointer bg-slate-50 group" },
+                    React.createElement('input', { type: "file", accept: "image/*", className: "hidden", onChange: (e) => { const file = e.target.files?.[0]; if (file) { const r = new FileReader(); r.onload = (ev) => setTravauxSitePhotoFinished(ev.target?.result); r.readAsDataURL(file); } } }),
+                    React.createElement('div', { className: "w-full h-full flex flex-col items-center justify-center gap-2 text-slate-400 group-hover:text-orange-500" }, React.createElement(Upload, { size: 24 }), React.createElement('span', { className: "font-black text-[10px]" }, "PHOTO ALTERNATIVE (OPTIONNEL)"))
+                  )
+                : React.createElement('div', { className: "relative aspect-video rounded-2xl overflow-hidden border-4 border-orange-500" },
+                    React.createElement('img', { src: travauxSitePhotoFinished, className: "w-full h-full object-cover", alt: "Photo alternative" }),
+                    React.createElement('button', { onClick: () => setTravauxSitePhotoFinished(null), className: "absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full shadow-lg" }, React.createElement(Trash2, { size: 14 }))
+                  )
+            ),
+            React.createElement('div', { className: "space-y-3 pt-4 border-t border-slate-100" },
               React.createElement('h4', { className: "text-xl font-black flex items-center gap-3" }, React.createElement(Camera, { className: "text-orange-600" }), " 2. Personnes présentes (optionnel, max 2)"),
               React.createElement('div', { className: "grid grid-cols-2 gap-4" },
                 [{ photo: travauxPersonPhoto1, set: setTravauxPersonPhoto1, label: 'Personne 1' }, { photo: travauxPersonPhoto2, set: setTravauxPersonPhoto2, label: 'Personne 2' }].map((p, idx) =>
@@ -1176,46 +1259,58 @@ const App = ({ apiKey, engine }) => {
               )
             )
           ),
-          React.createElement('div', { className: "space-y-8 bg-white p-12 rounded-[3rem] shadow-xl border flex flex-col" },
-            React.createElement('div', { className: "space-y-2" }, React.createElement('h3', { className: "text-3xl font-black flex items-center gap-3" }, React.createElement(Info, { className: "text-orange-600" }), " 3. Description des travaux"), React.createElement('p', { className: "text-slate-500" }, "Décrivez précisément ce qui doit être en train de se faire dans la scène.")),
-            React.createElement('textarea', {
-              value: travauxDescription,
-              onChange: e => setTravauxDescription(e.target.value),
-              placeholder: "Ex: Pose de parquet flottant dans le salon, la personne est agenouillée en train de clipser une lame de parquet, mètre et scie à main posés au sol...",
-              className: "w-full flex-1 min-h-[220px] p-8 bg-slate-50 border border-slate-200 rounded-3xl outline-none focus:border-orange-500 transition-all text-lg"
-            }),
+          React.createElement('div', { className: "space-y-8 flex flex-col" },
+            React.createElement('div', { className: "space-y-8 bg-white p-10 rounded-[3rem] shadow-xl border flex flex-col" },
+              React.createElement('div', { className: "space-y-2" }, React.createElement('h3', { className: "text-2xl font-black flex items-center gap-3" }, React.createElement(Info, { className: "text-orange-600" }), " 3a. Description — Travaux EN COURS"), React.createElement('p', { className: "text-slate-500 text-sm" }, "L'action en train de se faire, avec la ou les personnes.")),
+              React.createElement('textarea', {
+                value: travauxDescriptionProgress,
+                onChange: e => setTravauxDescriptionProgress(e.target.value),
+                placeholder: "Ex: Pose de parquet flottant dans le salon, la personne est agenouillée en train de clipser une lame de parquet, mètre et scie à main posés au sol...",
+                className: "w-full flex-1 min-h-[140px] p-6 bg-slate-50 border border-slate-200 rounded-3xl outline-none focus:border-orange-500 transition-all"
+              })
+            ),
+            React.createElement('div', { className: "space-y-8 bg-white p-10 rounded-[3rem] shadow-xl border flex flex-col" },
+              React.createElement('div', { className: "space-y-2" }, React.createElement('h3', { className: "text-2xl font-black flex items-center gap-3" }, React.createElement(Info, { className: "text-orange-600" }), " 3b. Description — Travaux TERMINÉ"), React.createElement('p', { className: "text-slate-500 text-sm" }, "UNIQUEMENT le résultat fini. Aucune action, aucune personne dans le texte.")),
+              React.createElement('textarea', {
+                value: travauxDescriptionFinished,
+                onChange: e => setTravauxDescriptionFinished(e.target.value),
+                placeholder: "Ex: Parquet flottant posé et fini dans le salon, propre, aucun outil ni personne visible.",
+                className: "w-full flex-1 min-h-[140px] p-6 bg-slate-50 border border-slate-200 rounded-3xl outline-none focus:border-orange-500 transition-all"
+              })
+            ),
             React.createElement('button', {
               onClick: runTravauxGeneration,
-              disabled: !travauxSitePhoto || !travauxDescription.trim(),
+              disabled: !travauxSitePhoto || !travauxDescriptionProgress.trim() || !travauxDescriptionFinished.trim(),
               className: "w-full py-8 bg-orange-600 text-white rounded-full font-black text-2xl shadow-xl hover:bg-orange-500 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-4 transition-all"
             }, "Mettre en scène les travaux ", React.createElement(Sparkles, {}))
           )
         ),
-        React.createElement('div', { className: "bg-white p-12 rounded-[3rem] shadow-xl border space-y-8" },
-          React.createElement('div', { className: "flex flex-col md:flex-row md:items-end md:justify-between gap-4" },
-            React.createElement('div', { className: "space-y-2" }, React.createElement('h3', { className: "text-3xl font-black flex items-center gap-3" }, React.createElement(LayoutGrid, { className: "text-orange-600" }), " 4. Objets à remplacer (optionnel)"), React.createElement('p', { className: "text-slate-500" }, "Lustre, canapé, miroir, table... uploade une photo de l'objet et précise ce qu'il doit remplacer.")),
-            React.createElement('button', { onClick: () => setTravauxObjets(prev => [...prev, { id: `obj-${Date.now()}`, photo: null, note: '' }]), className: "px-8 py-4 bg-orange-50 text-orange-600 border-2 border-orange-200 rounded-2xl font-black hover:bg-orange-100 transition-all whitespace-nowrap" }, "+ Ajouter un objet")
-          ),
-          travauxObjets.length > 0 && React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-6" },
-            travauxObjets.map((objet, idx) =>
-              React.createElement('div', { key: objet.id, className: "p-6 bg-slate-50 rounded-3xl border border-slate-200 space-y-4 relative" },
-                React.createElement('button', { onClick: () => setTravauxObjets(prev => prev.filter(o => o.id !== objet.id)), className: "absolute top-4 right-4 p-2 bg-red-500 text-white rounded-full shadow-lg z-10" }, React.createElement(Trash2, { size: 14 })),
-                !objet.photo
-                  ? React.createElement('label', { className: "block w-full aspect-video border-4 border-dashed border-slate-200 rounded-2xl hover:border-orange-500 transition-all cursor-pointer bg-white group" },
-                      React.createElement('input', { type: "file", accept: "image/*", className: "hidden", onChange: (e) => { const file = e.target.files?.[0]; if (file) { const r = new FileReader(); r.onload = (ev) => setTravauxObjets(prev => prev.map(o => o.id === objet.id ? { ...o, photo: ev.target?.result } : o)); r.readAsDataURL(file); } } }),
-                      React.createElement('div', { className: "w-full h-full flex flex-col items-center justify-center gap-2 text-slate-400 group-hover:text-orange-500" }, React.createElement(Upload, { size: 32 }), React.createElement('span', { className: "font-black text-[10px]" }, "PHOTO DE L'OBJET"))
-                    )
-                  : React.createElement('div', { className: "relative aspect-video rounded-2xl overflow-hidden border-4 border-orange-500" },
-                      React.createElement('img', { src: objet.photo, className: "w-full h-full object-cover", alt: "Objet" })
-                    ),
-                React.createElement('input', {
-                  type: "text",
-                  value: objet.note,
-                  onChange: e => setTravauxObjets(prev => prev.map(o => o.id === objet.id ? { ...o, note: e.target.value } : o)),
-                  placeholder: "Ex: Remplace le lustre du salon par cette photo de référence",
-                  className: "w-full p-4 bg-white border border-slate-200 rounded-xl outline-none focus:border-orange-500 transition-all text-sm"
-                })
-              )
+        React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-10" },
+          [
+            { state: travauxObjetProgress, set: setTravauxObjetProgress, title: "4a. Objet — Image \"Travaux en cours\" (optionnel)", hint: "S'applique UNIQUEMENT à l'image en cours (ex: matériel/objet en train d'être posé)." },
+            { state: travauxObjetFinished, set: setTravauxObjetFinished, title: "4b. Objet — Image \"Travaux terminé\" (optionnel)", hint: "S'applique UNIQUEMENT à l'image finale (ex: objet fini/installé à sa place)." }
+          ].map((slot, slotIdx) =>
+            React.createElement('div', { key: slotIdx, className: "bg-white p-10 rounded-[3rem] shadow-xl border space-y-6" },
+              React.createElement('div', { className: "space-y-2" },
+                React.createElement('h3', { className: "text-2xl font-black flex items-center gap-3" }, React.createElement(LayoutGrid, { className: "text-orange-600" }), " ", slot.title),
+                React.createElement('p', { className: "text-slate-500 text-sm" }, slot.hint)
+              ),
+              !slot.state.photo
+                ? React.createElement('label', { className: "block w-full aspect-video border-4 border-dashed border-slate-200 rounded-2xl hover:border-orange-500 transition-all cursor-pointer bg-slate-50 group" },
+                    React.createElement('input', { type: "file", accept: "image/*", className: "hidden", onChange: (e) => { const file = e.target.files?.[0]; if (file) { const r = new FileReader(); r.onload = (ev) => slot.set(prev => ({ ...prev, photo: ev.target?.result })); r.readAsDataURL(file); } } }),
+                    React.createElement('div', { className: "w-full h-full flex flex-col items-center justify-center gap-2 text-slate-400 group-hover:text-orange-500" }, React.createElement(Upload, { size: 32 }), React.createElement('span', { className: "font-black text-[10px]" }, "PHOTO DE L'OBJET"))
+                  )
+                : React.createElement('div', { className: "relative aspect-video rounded-2xl overflow-hidden border-4 border-orange-500" },
+                    React.createElement('img', { src: slot.state.photo, className: "w-full h-full object-cover", alt: "Objet" }),
+                    React.createElement('button', { onClick: () => slot.set({ photo: null, note: '' }), className: "absolute top-3 right-3 p-2 bg-red-500 text-white rounded-full shadow-lg" }, React.createElement(Trash2, { size: 14 }))
+                  ),
+              React.createElement('input', {
+                type: "text",
+                value: slot.state.note,
+                onChange: e => slot.set(prev => ({ ...prev, note: e.target.value })),
+                placeholder: "Ex: Remplace le lustre du salon par cette photo — ou: Ajoute ce vase sur la table à droite",
+                className: "w-full p-4 bg-white border border-slate-200 rounded-xl outline-none focus:border-orange-500 transition-all text-sm"
+              })
             )
           )
         )
