@@ -986,10 +986,16 @@ async function callVertexAPI(subject) {
       if (!candidate) throw new Error("Aucune réponse du modèle.");
       if (candidate.finishReason === 'SAFETY') throw new Error("Génération bloquée par les filtres de sécurité. Reformule ta demande.");
 
-      for (const p of (candidate?.content?.parts || [])) {
+      const respParts = candidate?.content?.parts || [];
+      for (const p of respParts) {
         if (p.inlineData?.data) return `data:image/png;base64,${p.inlineData.data}`;
+        if (p.inline_data?.data) return `data:image/png;base64,${p.inline_data.data}`;
       }
-      throw new Error("Image non trouvée dans la réponse Vertex.");
+      const textParts = respParts.filter(p => p.text).map(p => p.text).join(' | ');
+      const debugInfo = textParts
+        ? `Le modèle a répondu par du texte au lieu d'une image: "${textParts.slice(0, 300)}"`
+        : `Aucune partie exploitable. finishReason: ${candidate?.finishReason || 'inconnu'}, parts: ${JSON.stringify(respParts).slice(0, 300)}`;
+      throw new Error(`Image non trouvée dans la réponse Vertex. ${debugInfo}`);
     } catch (err) {
       lastErr = err;
       const msg = String(err.message || '').toLowerCase();
