@@ -286,7 +286,8 @@ function showModeGrid() {
           <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#facc15;margin-bottom:6px">📋 Storyboard de préparation (optionnel — 3 photos si rempli)</div>
           <input type="text" class="s-select" style="margin-bottom:8px" placeholder="Étape 1 — Préparation (ex: éplucher les pommes de terre)" oninput="state.dishStep1=this.value">
           <input type="text" class="s-select" style="margin-bottom:8px" placeholder="Étape 2 — Cuisson (ex: pommes de terre dorées à la poêle)" oninput="state.dishStep2=this.value">
-          <div style="padding:8px 10px;background:rgba(250,204,21,0.08);border:1px solid rgba(250,204,21,0.2);border-radius:10px;font-size:10px;color:#fde68a;line-height:1.5">Laisse les 2 champs vides pour générer directement le plat final. Remplis-en un pour obtenir le storyboard en 3 photos (préparation → cuisson → plat final).</div>
+          <input type="text" class="s-select" style="margin-bottom:8px" placeholder="Étape 3 — Plat final (ex: gratin gratiné doré, dans le plat à four)" oninput="state.dishStep3=this.value">
+          <div style="padding:8px 10px;background:rgba(250,204,21,0.08);border:1px solid rgba(250,204,21,0.2);border-radius:10px;font-size:10px;color:#fde68a;line-height:1.5">Laisse les 3 champs vides pour générer directement le plat final. Remplis-en un pour obtenir le storyboard en 3 photos (préparation → cuisson → plat final). L'étape 3 reste toujours fidèle à la photo de référence, même avec une description.</div>
         </div>
       </div>
 
@@ -504,7 +505,7 @@ const state = {
   whatsappContact:'',whatsappCallType:'video',babyRef:'',carrierImg:'',bbqRef:'',strollerRef:'',strollerBaby:'',
   interphonePortal:'',interphoneVisitor:'',interphoneInterior:'',interphonePortalOpen:'',interphoneStep:1,
   menageToolImg:'',menageToolType:'passer_aspirateur',
-  dressingOutfits:[],tondeuseImg:'',dishImg:'',dishStep1:'',dishStep2:'',
+  dressingOutfits:[],tondeuseImg:'',dishImg:'',dishStep1:'',dishStep2:'',dishStep3:'',
   chaosEmotionAdult:'',chaosEmotionChild:'',chaosEmotionBaby:''
 };
 
@@ -858,7 +859,7 @@ async function generate(){
   const callTypeSel=document.getElementById('whatsappCallTypeSelect');
   if(callTypeSel)state.whatsappCallType=callTypeSel.value;
   const dishPhotoPresent=(state.roomSubtype==='cuisine_four'||state.roomSubtype==='cuisine_plaques_cuisson')&&!!state.dishImg;
-  const storyboardActive=dishPhotoPresent&&((state.dishStep1&&state.dishStep1.trim()!=='')||(state.dishStep2&&state.dishStep2.trim()!==''));
+  const storyboardActive=dishPhotoPresent&&((state.dishStep1&&state.dishStep1.trim()!=='')||(state.dishStep2&&state.dishStep2.trim()!=='')||(state.dishStep3&&state.dishStep3.trim()!==''));
   setLoading(true);
   try{
     if(storyboardActive){
@@ -878,7 +879,7 @@ async function generateDishStoryboard(){
   const steps=[
     {label:'Étape 1 — Préparation',fr:state.dishStep1||'Préparation des ingrédients, gros plan sur les mains en action.',en:state.dishStep1||'Preparing the raw ingredients, close-up on hands in action.',final:false},
     {label:'Étape 2 — Cuisson',fr:state.dishStep2||'Cuisson en cours, plat pas encore terminé.',en:state.dishStep2||'Cooking in progress, dish not yet finished.',final:false},
-    {label:'Étape 3 — Plat final',fr:'Photo finale du plat, identique à la photo de référence jointe, prêt à servir, fumant, posé dans la scène.',en:'Final photo of the dish, identical to the reference photo provided, ready to serve, steaming, placed in the scene.',final:true}
+    {label:'Étape 3 — Plat final',fr:state.dishStep3?`${state.dishStep3} — le plat doit rester identique à la photo de référence jointe.`:'Photo finale du plat, identique à la photo de référence jointe, prêt à servir, fumant, posé dans la scène.',en:state.dishStep3?`${state.dishStep3} — the dish must remain identical to the reference photo provided.`:'Final photo of the dish, identical to the reference photo provided, ready to serve, steaming, placed in the scene.',final:true}
   ];
   const results=[];
   for(let i=0;i<steps.length;i++){
