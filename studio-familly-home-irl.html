@@ -283,10 +283,10 @@ function showModeGrid() {
           <div class="uploader-overlay"><button class="remove-img-btn" onclick="removeImg(event,'dishImg')" type="button">✕</button></div>
         </div>
         <div id="dishStoryboardFields" style="margin-top:10px">
-          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#facc15;margin-bottom:6px">📋 Storyboard de préparation (3 photos générées)</div>
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#facc15;margin-bottom:6px">📋 Storyboard de préparation (optionnel — 3 photos si rempli)</div>
           <input type="text" class="s-select" style="margin-bottom:8px" placeholder="Étape 1 — Préparation (ex: éplucher les pommes de terre)" oninput="state.dishStep1=this.value">
           <input type="text" class="s-select" style="margin-bottom:8px" placeholder="Étape 2 — Cuisson (ex: pommes de terre dorées à la poêle)" oninput="state.dishStep2=this.value">
-          <div style="padding:8px 10px;background:rgba(250,204,21,0.08);border:1px solid rgba(250,204,21,0.2);border-radius:10px;font-size:10px;color:#fde68a;line-height:1.5">Étape 3 — Plat final : générée automatiquement, identique à la photo de référence.</div>
+          <div style="padding:8px 10px;background:rgba(250,204,21,0.08);border:1px solid rgba(250,204,21,0.2);border-radius:10px;font-size:10px;color:#fde68a;line-height:1.5">Laisse les 2 champs vides pour générer directement le plat final. Remplis-en un pour obtenir le storyboard en 3 photos (préparation → cuisson → plat final).</div>
         </div>
       </div>
 
@@ -857,10 +857,11 @@ async function generate(){
   // Sync whatsappCallType depuis le select
   const callTypeSel=document.getElementById('whatsappCallTypeSelect');
   if(callTypeSel)state.whatsappCallType=callTypeSel.value;
-  const dishModeActive=(state.roomSubtype==='cuisine_four'||state.roomSubtype==='cuisine_plaques_cuisson')&&!!state.dishImg;
+  const dishPhotoPresent=(state.roomSubtype==='cuisine_four'||state.roomSubtype==='cuisine_plaques_cuisson')&&!!state.dishImg;
+  const storyboardActive=dishPhotoPresent&&((state.dishStep1&&state.dishStep1.trim()!=='')||(state.dishStep2&&state.dishStep2.trim()!==''));
   setLoading(true);
   try{
-    if(dishModeActive){
+    if(storyboardActive){
       await generateDishStoryboard();
     } else {
       let result;
@@ -1051,6 +1052,7 @@ function buildKiePrompt(actionOverride,isFinalStep){
   if(state.roomImg)p.push('Room decor matches the reference photo provided.');
   else if(state.room)p.push(`Realistic ${state.room.label}, natural lived-in decor.`);
   if(!actionOverride&&state.action)p.push(`Action: ${state.action}.`);
+  if(!actionOverride&&state.dishImg)p.push('Dish instruction: the dish visible in the scene must be identical to the dish reference photo provided (same presentation, same ingredients, ready to serve).');
   p.push(`Season: ${state.season}. Weather: ${state.weather}. Time of day: ${state.dayMoment}.`);
   p.push(`Camera angle: ${state.cameraAngle}.`);
   p.push(state.energy==='chaos'?'Mood: slightly chaotic, authentic, lived-in family moment.':'Mood: calm, serene, natural.');
@@ -1102,6 +1104,7 @@ function buildPrompt(actionOverride,isFinalStep){
     if(isFinalStep)p.push('CONSIGNE PLAT FINAL : Reproduire fidèlement le plat de la photo de référence jointe — même présentation, mêmes ingrédients, même cuisson — posé/servi dans le contexte de la scène.');
     else p.push('CONSIGNE STORYBOARD : NE PAS montrer le plat fini à cette étape. Se concentrer uniquement sur l\'action décrite : mains, gestes, ingrédients tels qu\'ils sont à ce stade précis de la préparation.');
   } else if(state.action)p.push(`ACTION : ${state.action}`);
+  if(!actionOverride&&state.dishImg)p.push('CONSIGNE PLAT : Le plat visible dans la scène doit être identique à la photo de référence du plat jointe (même présentation, mêmes ingrédients, prêt à servir).');
   p.push(`SAISON : ${state.season} | MÉTÉO : ${state.weather} | MOMENT : ${state.dayMoment}`);
   p.push(`ÉNERGIE : ${state.energy==='chaos'?'CHAOS — Maison vivante, légèrement désordonnée.':'CALME — Atmosphère sereine.'}`);
   if(state.room)p.push(`PIÈCE : ${state.room.label}${state.roomSubtype?' / '+state.roomSubtype:''}`);
