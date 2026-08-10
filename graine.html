@@ -1,0 +1,1816 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GRAINE — L'atelier de conception de mes petits explorateurs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+  :root{
+    --vert-foret:#314A3A;
+    --vert-sauge:#A8B7A0;
+    --creme:#F6F1E7;
+    --terre-cuite:#C77D5D;
+    --brun:#665347;
+    --encre:#292C29;
+    --blanc:#FFFDF8;
+    --line:rgba(41,44,41,0.12);
+    --line-strong:rgba(41,44,41,0.22);
+    --serif:'Fraunces', serif;
+    --sans:'DM Sans', sans-serif;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--creme);
+    color:var(--encre);
+    font-family:var(--sans);
+    min-height:100vh;
+  }
+  ::selection{ background:var(--vert-sauge); color:var(--vert-foret); }
+
+  .app{ display:flex; min-height:100vh; }
+
+  /* ===== Sidebar ===== */
+  .sidebar{
+    width:236px; flex-shrink:0; background:var(--vert-foret); color:var(--blanc);
+    padding:26px 18px; display:flex; flex-direction:column; gap:6px;
+  }
+  .brand{ font-family:var(--serif); font-size:24px; font-weight:600; letter-spacing:0.01em; margin-bottom:4px; padding:0 8px; display:flex; align-items:center; gap:8px;}
+  .brand-sub{ font-size:11px; color:var(--vert-sauge); padding:0 8px 22px; letter-spacing:0.03em; }
+  .nav-item{
+    display:flex; align-items:center; gap:10px; padding:11px 12px; border-radius:8px;
+    color:rgba(255,253,248,0.82); font-size:14.5px; cursor:pointer; user-select:none;
+  }
+  .nav-item:hover{ background:rgba(255,253,248,0.08); }
+  .nav-item.active{ background:rgba(255,253,248,0.14); color:var(--blanc); font-weight:500; }
+  .nav-spacer{ flex:1; }
+  .nav-item.settings{ border-top:1px solid rgba(255,253,248,0.15); margin-top:8px; padding-top:14px; }
+
+  main.content{ flex:1; padding:40px 48px 90px; max-width:1120px; }
+  .screen{ display:none; animation:fade .25s ease; }
+  .screen.active{ display:block; }
+  @keyframes fade{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;} }
+
+  h1.page-title{ font-family:var(--serif); font-weight:500; font-size:32px; margin:0 0 6px; color:var(--vert-foret); }
+  p.page-sub{ color:var(--brun); margin:0 0 30px; max-width:640px; line-height:1.6; }
+  h2.section-title{ font-family:var(--serif); font-size:20px; font-weight:500; color:var(--vert-foret); margin:0 0 12px; }
+
+  .card{ background:var(--blanc); border:1px solid var(--line); border-radius:var(--radius); padding:24px; }
+  .grid-3{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  .grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:900px){ .grid-3{grid-template-columns:1fr;} .grid-2{grid-template-columns:1fr;} }
+
+  label{ display:block; font-size:12.5px; font-weight:600; color:var(--brun); margin-bottom:6px; letter-spacing:0.01em; }
+  input[type=text], input[type=password], textarea, select{
+    width:100%; background:var(--creme); border:1px solid var(--line-strong); color:var(--encre);
+    padding:11px 12px; border-radius:8px; font-family:var(--sans); font-size:14px;
+  }
+  textarea{ min-height:76px; resize:vertical; line-height:1.5; }
+  input:focus, textarea:focus, select:focus{ outline:none; border-color:var(--terre-cuite); }
+  .field{ margin-bottom:16px; }
+  .hint{ font-size:12px; color:var(--brun); margin-top:6px; line-height:1.5; opacity:0.85; }
+  .check-row{ display:flex; flex-wrap:wrap; gap:8px; }
+  .chip{
+    font-size:13px; padding:8px 13px; border-radius:20px; border:1px solid var(--line-strong);
+    cursor:pointer; background:var(--creme); color:var(--brun); user-select:none;
+  }
+  .chip.selected{ background:var(--vert-foret); color:var(--blanc); border-color:var(--vert-foret); }
+
+  button.btn{
+    font-family:var(--sans); font-size:13.5px; font-weight:600;
+    background:var(--vert-foret); color:var(--blanc); border:none; border-radius:8px;
+    padding:12px 20px; cursor:pointer;
+  }
+  button.btn:hover{ background:#25382b; }
+  button.btn:disabled{ opacity:0.4; cursor:not-allowed; }
+  button.btn.ghost{ background:transparent; color:var(--vert-foret); border:1px solid var(--line-strong); }
+  button.btn.ghost:hover{ border-color:var(--vert-foret); background:rgba(49,74,58,0.05); }
+  button.btn.accent{ background:var(--terre-cuite); }
+  button.btn.accent:hover{ background:#b56a4c; }
+  button.btn.small{ padding:8px 13px; font-size:12px; }
+  button.btn.danger{ background:transparent; color:#a8503d; border:1px solid #a8503d; }
+
+  .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .row.between{ justify-content:space-between; }
+
+  /* accueil */
+  .big-tiles{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:38px; }
+  @media (max-width:900px){ .big-tiles{grid-template-columns:1fr;} }
+  .tile{
+    background:var(--blanc); border:1px solid var(--line); border-radius:var(--radius); padding:22px;
+    cursor:pointer; transition:border-color .15s, transform .1s;
+  }
+  .tile:hover{ border-color:var(--terre-cuite); transform:translateY(-1px); }
+  .tile .emoji{ font-size:26px; margin-bottom:10px; }
+  .tile h3{ font-family:var(--serif); font-size:18px; margin:0 0 4px; color:var(--vert-foret); font-weight:500; }
+  .tile p{ font-size:13px; color:var(--brun); margin:0; line-height:1.5; }
+
+  .graine-card{
+    background:var(--blanc); border:1px solid var(--line); border-radius:var(--radius); padding:18px;
+    cursor:pointer; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;
+  }
+  .graine-card:hover{ border-color:var(--terre-cuite); }
+  .graine-card h4{ font-family:var(--serif); font-size:17px; margin:0 0 4px; font-weight:500; }
+  .graine-card .meta{ font-size:12px; color:var(--brun); }
+  .statut-badge{ font-size:11.5px; padding:5px 11px; border-radius:14px; background:var(--vert-sauge); color:var(--vert-foret); font-weight:600; white-space:nowrap; }
+
+  .empty{ text-align:center; padding:40px 20px; color:var(--brun); }
+  .empty h3{ font-family:var(--serif); color:var(--vert-foret); font-weight:500; font-size:19px; margin-bottom:6px; }
+
+  /* explorer */
+  .fiche-block{ margin-bottom:30px; }
+  .fiche-row{ display:grid; grid-template-columns:150px 1fr; gap:12px; padding:11px 0; border-bottom:1px solid var(--line); font-size:13.5px; }
+  .fiche-row .k{ font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--terre-cuite); }
+  .fiche-row .v{ color:var(--encre); line-height:1.55; }
+
+  .cat-section{ margin-bottom:26px; }
+  .cat-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+  .item-card{
+    background:var(--blanc); border:1px solid var(--line); border-radius:8px; padding:14px 16px; margin-bottom:8px;
+  }
+  .item-card .txt{ font-size:14px; line-height:1.55; margin-bottom:6px; }
+  .item-card .cap{ font-size:11.5px; color:var(--terre-cuite); font-weight:600; margin-bottom:8px; }
+  .item-card .acts{ display:flex; gap:8px; flex-wrap:wrap; }
+  .item-card.gardee{ border-color:var(--vert-sauge); background:#fbfaf5; }
+  .item-card.ecartee{ opacity:0.4; }
+  .pill-mini{ font-size:10.5px; font-weight:700; padding:3px 8px; border-radius:10px; background:var(--vert-sauge); color:var(--vert-foret); }
+
+  /* composer */
+  .box-item{
+    background:var(--blanc); border:1px solid var(--line); border-radius:8px; padding:14px 16px; margin-bottom:8px;
+    display:flex; justify-content:space-between; align-items:flex-start; gap:12px;
+  }
+  .box-item .cat-tag{ font-size:10.5px; font-weight:700; text-transform:uppercase; color:var(--terre-cuite); letter-spacing:0.04em; margin-bottom:4px; }
+  .box-item .txt{ font-size:14px; line-height:1.5; }
+
+  .analyse-box{ background:#f2ede0; border:1px solid var(--vert-sauge); border-radius:8px; padding:18px; margin-top:14px; font-size:14px; line-height:1.65; color:var(--vert-foret); white-space:pre-wrap; }
+  .prop-card{ background:var(--blanc); border:1px solid var(--line); border-radius:8px; padding:16px; margin-bottom:10px; }
+  .prop-card h4{ font-family:var(--serif); font-size:16px; margin:0 0 6px; color:var(--vert-foret); font-weight:500; }
+  .prop-meta{ font-size:12px; color:var(--brun); margin-bottom:6px; }
+  .prop-field{ font-size:13px; margin-bottom:4px; line-height:1.5; }
+  .prop-field b{ color:var(--brun); }
+
+  /* creations */
+  .creation-group{ margin-bottom:18px; }
+  .creation-group h4{ font-family:var(--serif); font-size:15.5px; color:var(--terre-cuite); font-weight:600; margin:0 0 8px; }
+  .creation-card{ background:var(--blanc); border:1px solid var(--line); border-radius:8px; padding:13px 15px; margin-bottom:8px; }
+  .creation-card .txt{ font-size:14px; line-height:1.5; margin-bottom:5px; }
+  .creation-card .pourquoi{ font-size:12.5px; color:var(--brun); line-height:1.5; margin-bottom:8px; }
+
+  /* supports */
+  .support-suggest{ background:var(--blanc); border:1px solid var(--line-strong); border-radius:8px; padding:14px 16px; margin-bottom:8px; display:flex; gap:12px; align-items:flex-start; cursor:pointer; }
+  .support-suggest.selected{ border-color:var(--terre-cuite); background:#fbf3ee; }
+  .support-suggest input[type=checkbox]{ margin-top:3px; }
+  .support-suggest .stitre{ font-family:var(--serif); font-size:15.5px; color:var(--vert-foret); font-weight:500; margin-bottom:3px; }
+  .support-suggest .stype{ font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:var(--terre-cuite); margin-bottom:4px; }
+  .support-suggest .sjust{ font-size:13px; color:var(--brun); line-height:1.5; }
+
+  .support-card{ background:var(--blanc); border:1px solid var(--line); border-radius:var(--radius); padding:20px; margin-bottom:14px; }
+  .support-card .stitle-row{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:4px; }
+  .support-card h3{ font-family:var(--serif); font-size:18px; color:var(--vert-foret); font-weight:500; margin:0; }
+  .support-card .smeta{ font-size:12px; color:var(--brun); margin-bottom:14px; }
+  .support-page{ background:var(--creme); border:1px solid var(--line); border-radius:8px; padding:12px 14px; margin-bottom:8px; }
+  .support-page .pnum{ font-size:10.5px; font-weight:700; color:var(--terre-cuite); text-transform:uppercase; margin-bottom:4px; }
+  .support-page .ptxt{ font-size:13.5px; line-height:1.55; white-space:pre-wrap; }
+
+  /* editable / validation */
+  .editable{ outline:none; border-bottom:1px dashed var(--line-strong); cursor:text; transition:background .3s; border-radius:3px; padding:1px 2px; }
+  .editable:hover{ border-bottom-color:var(--terre-cuite); }
+  .editable:focus{ border-bottom-color:var(--terre-cuite); background:#fbf7ee; }
+  .valide-badge{ font-size:11px; font-weight:700; padding:4px 10px; border-radius:12px; background:var(--vert-foret); color:var(--blanc); white-space:nowrap; }
+  .btn.valide-on{ background:var(--vert-foret); color:var(--blanc); border-color:var(--vert-foret); }
+
+  /* bibliotheque */
+  .biblio-row{ background:var(--blanc); border:1px solid var(--line); border-radius:var(--radius); padding:16px 18px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap; }
+  .biblio-row h4{ font-family:var(--serif); font-size:16.5px; margin:0 0 3px; color:var(--vert-foret); font-weight:500; }
+  .biblio-row .meta{ font-size:12px; color:var(--brun); }
+  .biblio-row.is-archived{ opacity:0.55; }
+
+  /* mes récoltes */
+  .recolte-group{ margin-bottom:28px; }
+  .recolte-group h3{ font-family:var(--serif); font-size:17px; color:var(--terre-cuite); font-weight:600; margin:0 0 4px; }
+  .recolte-group .gmeta{ font-size:12px; color:var(--brun); margin-bottom:10px; }
+  .recolte-card{ background:var(--blanc); border:1px solid var(--line); border-radius:var(--radius); padding:16px 18px; margin-bottom:10px; }
+  .recolte-card .rtop{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:6px; }
+  .recolte-card h4{ font-family:var(--serif); font-size:16px; margin:0; color:var(--vert-foret); font-weight:500; }
+  .recolte-type{ font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:var(--terre-cuite); margin-bottom:3px; }
+  .recolte-meta{ font-size:12px; color:var(--brun); margin-bottom:10px; }
+  .version-badge{ font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:10px; background:var(--vert-sauge); color:var(--vert-foret); margin-left:6px; }
+  .recolte-actions{ display:flex; gap:6px; flex-wrap:wrap; }
+  .filters-row{ display:grid; grid-template-columns:1.4fr 1fr 1fr 1fr 1fr; gap:10px; margin-bottom:22px; }
+  @media (max-width:900px){ .filters-row{ grid-template-columns:1fr 1fr; } }
+
+  /* choice modal */
+  #choiceModalBg .modal{ max-width:420px; }
+
+  /* recolte detail modal */
+  #recolteModalBg .modal{ max-width:680px; }
+  #recolteModalBg input#recolteTitreInput{ font-family:var(--serif); font-size:20px; color:var(--vert-foret); border:none; border-bottom:1px dashed var(--line-strong); background:transparent; width:100%; padding:2px 0; margin-bottom:4px; }
+  #recolteModalBg .rmeta{ font-size:12px; color:var(--brun); margin-bottom:18px; }
+
+  /* activite */
+  .activite-block{ margin-bottom:22px; }
+  .activite-block h3{ font-family:var(--serif); font-size:17px; color:var(--vert-foret); margin:0 0 8px; font-weight:500; }
+  .activite-block p, .activite-block li{ font-size:14.5px; line-height:1.65; color:var(--encre); }
+  .mise-situation{ background:#f2ede0; border-left:3px solid var(--terre-cuite); padding:14px 16px; border-radius:6px; font-style:italic; color:var(--vert-foret); }
+  .vigilance-box{ background:#fbeee8; border:1px solid var(--terre-cuite); border-radius:8px; padding:14px 16px; font-size:13.5px; color:#8a4a34; }
+  details.logique{ margin-top:20px; border:1px solid var(--line); border-radius:8px; padding:12px 16px; }
+  details.logique summary{ cursor:pointer; font-weight:600; color:var(--vert-foret); font-size:13.5px; }
+  details.logique .content{ margin-top:10px; font-size:13.5px; line-height:1.6; color:var(--brun); }
+
+  /* modal */
+  .modal-bg{ position:fixed; inset:0; background:rgba(41,44,41,0.55); z-index:100; display:none; align-items:center; justify-content:center; padding:20px; }
+  .modal-bg.active{ display:flex; }
+  .modal{ background:var(--blanc); border-radius:14px; max-width:480px; width:100%; padding:26px; max-height:88vh; overflow:auto; }
+  .modal h2{ font-family:var(--serif); font-weight:500; margin:0 0 6px; font-size:21px; color:var(--vert-foret); }
+  .modal .close{ float:right; background:none; border:none; color:var(--brun); font-size:20px; cursor:pointer; }
+
+  .toast{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+    background:var(--vert-foret); color:var(--blanc); font-size:13px;
+    padding:12px 20px; border-radius:8px; z-index:200; display:none; max-width:80vw;
+  }
+  .spinner{
+    width:15px; height:15px; border:2px solid rgba(255,255,255,0.35); border-top-color:#fff;
+    border-radius:50%; display:inline-block; animation:spin .7s linear infinite; vertical-align:-3px; margin-right:8px;
+  }
+  .spinner.dark{ border:2px solid rgba(49,74,58,0.25); border-top-color:var(--vert-foret); }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <nav class="sidebar">
+    <div class="brand">🌱 GRAINE</div>
+    <div class="brand-sub">L'atelier de mes petits explorateurs</div>
+    <div class="nav-item active" data-nav="accueil">🏡 Accueil</div>
+    <div class="nav-item" data-nav="nouvelle">✨ Nouvelle Graine</div>
+    <div class="nav-item" data-nav="bibliotheque">🗃️ Mes Graines</div>
+    <div class="nav-item" data-nav="recoltes">🌾 Mes récoltes</div>
+    <div class="nav-spacer"></div>
+    <div class="nav-item settings" id="btnSettings">⚙️ Réglages API</div>
+  </nav>
+
+  <main class="content">
+
+    <!-- ACCUEIL -->
+    <section class="screen active" id="screen-accueil">
+      <h1 class="page-title">Bonjour Marie 🌱</h1>
+      <p class="page-sub">Qu'est-ce qu'on fait pousser aujourd'hui ?</p>
+
+      <div class="big-tiles">
+        <div class="tile" data-nav="nouvelle">
+          <div class="emoji">🌱</div>
+          <h3>Planter une idée</h3>
+          <p>J'ai déjà le thème de ma prochaine box.</p>
+        </div>
+        <div class="tile" id="tileSeche">
+          <div class="emoji">💡</div>
+          <h3>Je sèche</h3>
+          <p>J'ai besoin de nouvelles pistes.</p>
+        </div>
+        <div class="tile" id="tileRecolte">
+          <div class="emoji">🧺</div>
+          <h3>Ma dernière récolte</h3>
+          <p>Voir mes box terminées.</p>
+        </div>
+      </div>
+
+      <h2 class="section-title">Mes graines en cours</h2>
+      <div id="grainesEnCours"></div>
+
+      <div id="grainesRecolteesWrap" style="margin-top:30px;">
+        <h2 class="section-title">🌿 Ma dernière récolte</h2>
+        <div id="grainesRecoltees"></div>
+      </div>
+    </section>
+
+    <!-- NOUVELLE GRAINE -->
+    <section class="screen" id="screen-nouvelle">
+      <h1 class="page-title">Planter une nouvelle Graine</h1>
+      <p class="page-sub">Décris l'idée telle qu'elle est aujourd'hui — même incomplète. GRAINE va d'abord chercher, avant de proposer quoi que ce soit.</p>
+      <div class="card">
+        <div class="grid-2">
+          <div class="field">
+            <label>Nom / thème de la box</label>
+            <input type="text" id="fNom" placeholder="Ex : Les fourmis">
+          </div>
+          <div class="field">
+            <label>Saison</label>
+            <select id="fSaison">
+              <option>Printemps</option><option>Été</option><option selected>Automne</option><option>Hiver</option><option>Toute saison</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label>Âges concernés</label>
+            <select id="fAges">
+              <option>2–3 ans</option><option>3–4 ans</option><option selected>4–5 ans</option><option>5–6 ans</option><option>Plusieurs âges (2–6 ans)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>D'où vient l'idée ?</label>
+            <select id="fOrigine">
+              <option>Moi</option><option>Ma communauté</option><option>Une observation</option><option>Autre</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>Ce que j'imagine déjà</label>
+          <textarea id="fImagine" placeholder="Ex : J'aimerais crocheter une reine et plusieurs fourmis. Je voudrais probablement intégrer le cycle de vie mais je ne sais pas encore quoi faire d'autre."></textarea>
+        </div>
+        <div class="field">
+          <label>Ce que je veux absolument retrouver</label>
+          <div class="check-row" id="criteresRow">
+            <div class="chip" data-val="Nature">Nature</div>
+            <div class="chip" data-val="Manipulation">Manipulation</div>
+            <div class="chip" data-val="Exploration extérieure">Exploration extérieure</div>
+            <div class="chip" data-val="Jeu symbolique">Jeu symbolique</div>
+            <div class="chip" data-val="Créativité">Créativité</div>
+            <div class="chip" data-val="Activité sensorielle">Activité sensorielle</div>
+            <div class="chip" data-val="Apprentissages cognitifs">Apprentissages cognitifs</div>
+            <div class="chip" data-val="Cycle de vie">Cycle de vie</div>
+          </div>
+        </div>
+        <div class="row between" style="margin-top:10px;">
+          <button class="btn ghost" data-nav="accueil">← Annuler</button>
+          <button class="btn accent" id="btnGermer">🌱 Faire germer cette idée</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- EXPLORER -->
+    <section class="screen" id="screen-explorer">
+      <div id="explorerHead"></div>
+      <div id="explorerBody"></div>
+    </section>
+
+    <!-- COMPOSER -->
+    <section class="screen" id="screen-composer">
+      <div id="composerHead"></div>
+      <div id="composerBody"></div>
+    </section>
+
+    <!-- ACTIVITE -->
+    <section class="screen" id="screen-activite">
+      <div id="activiteHead"></div>
+      <div id="activiteBody"></div>
+    </section>
+
+    <!-- BIBLIOTHEQUE -->
+    <section class="screen" id="screen-bibliotheque">
+      <h1 class="page-title">Mes Graines</h1>
+      <p class="page-sub">Tout ce qui a été généré et validé dans chaque projet reste ici — modifiable, duplicable, archivable, exportable.</p>
+      <div class="row" style="margin-bottom:18px;">
+        <input type="text" id="biblioSearch" placeholder="Rechercher une graine..." style="max-width:280px;">
+        <div class="check-row" id="biblioFilters">
+          <div class="chip selected" data-filter="toutes">Toutes</div>
+          <div class="chip" data-filter="en_cours">En cours</div>
+          <div class="chip" data-filter="recoltee">Récoltées</div>
+          <div class="chip" data-filter="archivee">Archivées</div>
+        </div>
+      </div>
+      <div id="biblioList"></div>
+    </section>
+
+    <!-- MES RECOLTES -->
+    <section class="screen" id="screen-recoltes">
+      <h1 class="page-title">🌾 Mes récoltes</h1>
+      <p class="page-sub">Toute fiche pédagogique ou tout support enregistré ici est définitif : une régénération ailleurs dans GRAINE ne le touche jamais.</p>
+      <div class="filters-row">
+        <input type="text" id="recSearch" placeholder="Rechercher une création...">
+        <select id="recFiltreBox"><option value="">Toutes les box</option></select>
+        <select id="recFiltreSaison"><option value="">Toutes saisons</option><option>Printemps</option><option>Été</option><option>Automne</option><option>Hiver</option><option>Toute saison</option></select>
+        <select id="recFiltreAge"><option value="">Tous âges</option><option>2–3 ans</option><option>3–4 ans</option><option>4–5 ans</option><option>5–6 ans</option><option>Plusieurs âges (2–6 ans)</option></select>
+        <select id="recFiltreType"><option value="">Tous types</option><option value="activite">Fiche pédagogique</option><option value="support">Support imprimable</option><option value="carte">Carte Petit Explorateur</option></select>
+      </div>
+      <div id="recoltesList"></div>
+    </section>
+
+  </main>
+</div>
+
+<!-- CHOICE MODAL (conflit de version) -->
+<div class="modal-bg" id="choiceModalBg">
+  <div class="modal">
+    <h2 id="choiceModalTitle">Action requise</h2>
+    <p class="hint" id="choiceModalMsg" style="margin-bottom:16px;"></p>
+    <div id="choiceModalBtns" style="display:flex; flex-direction:column; gap:8px;"></div>
+  </div>
+</div>
+
+<!-- RECOLTE DETAIL MODAL -->
+<div class="modal-bg" id="recolteModalBg">
+  <div class="modal">
+    <button class="close" id="recolteModalClose">×</button>
+    <input type="text" id="recolteTitreInput">
+    <div class="rmeta" id="recolteModalMeta"></div>
+    <div id="recolteModalBody"></div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <button class="close" id="modalClose">×</button>
+    <h2>Réglages</h2>
+    <p class="hint" style="margin-bottom:18px;">Clé API Vertex AI Express Mode (préfixe AQ...), comme pour tes autres ateliers.</p>
+    <div class="field">
+      <label>Clé API (AQ...)</label>
+      <input type="password" id="apiKeyInput" placeholder="AQ.xxxxxxxxxxxxxxxxxxxx">
+    </div>
+    <div class="field">
+      <label>Modèle texte</label>
+      <input type="text" id="modelTextInput" value="gemini-2.5-flash">
+      <div class="hint">Modèle Vertex AI utilisé pour la recherche et les propositions.</div>
+    </div>
+    <div class="row between" style="margin-top:18px;">
+      <button class="btn danger small" id="btnResetAll">Réinitialiser toute la mémoire</button>
+      <button class="btn small" id="btnSaveSettings">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================================
+   GRAINE — moteur front-end
+   Persistance : IndexedDB (graines = ADN GRAINE, réglages)
+   IA : Vertex AI Express Mode (clé AQ...) — Gemini
+   ========================================================================= */
+
+/* ---------- IndexedDB ---------- */
+const DB_NAME = 'graine_db', DB_VERSION = 1;
+let db;
+function openDB(){
+  return new Promise((resolve, reject)=>{
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = (e)=>{ const d=e.target.result; if(!d.objectStoreNames.contains('kv')) d.createObjectStore('kv'); };
+    req.onsuccess = ()=>{ db = req.result; resolve(db); };
+    req.onerror = ()=> reject(req.error);
+  });
+}
+function kvGet(key, fallback){
+  return new Promise((resolve)=>{
+    try{ const tx=db.transaction('kv','readonly'); const r=tx.objectStore('kv').get(key);
+      r.onsuccess=()=>resolve(r.result!==undefined?r.result:fallback); r.onerror=()=>resolve(fallback);
+    }catch(e){ resolve(fallback); }
+  });
+}
+function kvSet(key, value){
+  return new Promise((resolve)=>{
+    try{ const tx=db.transaction('kv','readwrite'); tx.objectStore('kv').put(value,key);
+      tx.oncomplete=()=>resolve(true); tx.onerror=()=>resolve(false);
+    }catch(e){ resolve(false); }
+  });
+}
+
+/* ---------- State ---------- */
+let STATE = {
+  settings: { apiKey:'', modelText:'gemini-2.5-flash' },
+  graines: [], // voir schema ci-dessous
+  recoltes: [] // voir schema ci-dessous
+};
+/* schema graine :
+{ id, nom, saison, ages, origine, imagine, criteres:[], statut,
+  fiche:{vivant,observable,pertinent,trop_complexe,idees_recues,sources},
+  cartes:{decouvrir:[],apprendre:[],manipuler:[],fabriquer:[],creer:[],dehors:[],jouer:[]}, // items {id,texte,capacite,statut}
+  box:[{id,categorie,texte,capacite}],
+  analyse:'', carteExploratrice:'',
+  activites:{ [boxItemId]: {...} },
+  creations:null, // {crochet:[],tricot:[],feutrine:[],couture:[],accessoires:[],jeux:[]} items {texte,pourquoi}
+  supportsSuggeres:null, // [{id,titre,type,justification,age_range,selectionne}]
+  supports:[], // [{id,titre,type,contenu:{...},valide}]
+  activitesValidees:{}, // { [boxItemId]: true|false }
+  carteValidee:false,
+  archived:false,
+  dateCreation, dateModification }
+*/
+/* schema récolte (Mes récoltes — persistance définitive, indépendante de la graine) :
+{ id, type:'activite'|'support'|'carte', sourceKey, titre, version,
+  graineId, graineNom, saison, ages,
+  contenu: {...clone intégral du contenu généré...},
+  archived:false, dateCreation, dateModification }
+*/
+
+async function persistAll(){ await kvSet('settings', STATE.settings); await kvSet('graines', STATE.graines); await kvSet('recoltes', STATE.recoltes); }
+async function loadAll(){
+  STATE.settings = await kvGet('settings', STATE.settings);
+  STATE.graines = await kvGet('graines', []);
+  STATE.recoltes = await kvGet('recoltes', []);
+}
+function today(){ return new Date().toISOString().slice(0,10); }
+
+function toast(msg, ms=3400){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display='block';
+  clearTimeout(t._timer); t._timer = setTimeout(()=> t.style.display='none', ms);
+}
+function escHtml(s){ return (s==null?'':String(s)).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function uid(){ return crypto.randomUUID(); }
+
+/* rend un élément éditable en place ; saveFn(nouvelleValeur) doit muter l'objet en mémoire */
+function bindEditable(el, g, saveFn){
+  el.classList.add('editable');
+  el.setAttribute('contenteditable','true');
+  el.setAttribute('spellcheck','false');
+  el.addEventListener('blur', async ()=>{
+    saveFn(el.textContent.trim());
+    g.dateModification = new Date().toISOString().slice(0,10);
+    await persistAll();
+    el.style.background = '#eef5ea';
+    setTimeout(()=>{ el.style.background=''; }, 500);
+  });
+  el.addEventListener('keydown', (e)=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); el.blur(); } });
+}
+/* variante pour éditer une récolte (pas de graine associée à muter) */
+function bindEditableRecolte(el, recolte, saveFn){
+  el.classList.add('editable');
+  el.setAttribute('contenteditable','true');
+  el.setAttribute('spellcheck','false');
+  el.addEventListener('blur', async ()=>{
+    saveFn(el.textContent.trim());
+    recolte.dateModification = today();
+    await persistAll();
+    el.style.background = '#eef5ea';
+    setTimeout(()=>{ el.style.background=''; }, 500);
+  });
+  el.addEventListener('keydown', (e)=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); el.blur(); } });
+}
+
+/* ---------- Vertex AI Express Mode call ---------- */
+async function callGemini({prompt, jsonMode=true}){
+  const key = STATE.settings.apiKey;
+  if(!key){ toast('Ajoute ta clé API Vertex AI dans les réglages (⚙️).'); throw new Error('no key'); }
+  const model = STATE.settings.modelText || 'gemini-2.5-flash';
+  const url = `https://aiplatform.googleapis.com/v1/publishers/google/models/${model}:generateContent`;
+  const body = {
+    contents: [{ role:'user', parts:[{ text: prompt }] }],
+    generationConfig: jsonMode ? { responseMimeType:'application/json', temperature:0.85 } : { temperature:0.85 }
+  };
+  let lastErr;
+  for(let attempt=0; attempt<4; attempt++){
+    try{
+      const res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json','x-goog-api-key':key}, body: JSON.stringify(body) });
+      if(res.status===429){ await new Promise(r=>setTimeout(r,1000*Math.pow(2,attempt))); continue; }
+      if(!res.ok){ const t=await res.text(); throw new Error(`Erreur API ${res.status} : ${t.slice(0,300)}`); }
+      const data = await res.json();
+      const text = data.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('') || '';
+      if(!text) throw new Error('Réponse vide du modèle.');
+      return text;
+    }catch(e){ lastErr=e; if(attempt===3) throw e; }
+  }
+  throw lastErr;
+}
+function safeParseJSON(text){
+  let t = text.trim().replace(/^```json/i,'').replace(/^```/,'').replace(/```$/,'').trim();
+  try{ return JSON.parse(t); }
+  catch(e){
+    const m = t.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+    if(m){ try{ return JSON.parse(m[0]); }catch(e2){} }
+    throw new Error("Impossible d'interpréter la réponse du modèle.");
+  }
+}
+
+/* ---------- Règle mère / contexte ADN GRAINE ---------- */
+function systemPromptCore(){
+  return `Tu es GRAINE, l'atelier de conception de box éducatives saisonnières pour enfants de 2 à 6 ans, au service de Marie, artisane.
+
+RÈGLE MÈRE : GRAINE ne remplace jamais la créativité de Marie. Elle recherche, structure, propose, explique et questionne. Marie sélectionne, transforme, fabrique et valide. Toute proposition créative est présentée comme une possibilité, jamais comme une évidence.
+
+RIGUEUR FACTUELLE : pour toute affirmation sur la nature, le vivant ou le développement de l'enfant, distingue les faits établis des hypothèses. N'invente jamais de mécanisme neuroscientifique non étayé. Formule prudemment : "cette activité sollicite notamment..." plutôt que des promesses de développement ("cette activité développe...").
+
+APPRENTISSAGE ACTIF : privilégie observer, manipuler, chercher, comparer, classer, construire, raconter, expérimenter, jouer. Le papier ne doit pas être le réflexe par défaut.
+
+ADAPTATION 2-6 ANS : chaque proposition doit être réellement faisable et sûre pour l'âge indiqué, avec supervision adulte si nécessaire.
+
+ANTI-RÉPÉTITION : ne propose jamais une idée déjà réalisée dans l'historique fourni ci-dessous.
+
+UNIVERS DE FABRICATION DE MARIE : pour toute suggestion d'élément physique à créer, respecte strictement cet ordre de priorité : 1) crochet (matériau principal), 2) tricot, 3) feutrine, 4) couture (lorsque pertinente), 5) petits éléments complémentaires achetés, en priorité en bois ou matières naturelles/durables. Ne propose JAMAIS d'autre technique artisanale que Marie ne pratique pas (pas de poterie, peinture sur bois, menuiserie, macramé, etc.). Un accessoire acheté ne doit être suggéré que s'il enrichit réellement le thème, et toujours accompagné d'une justification de sa cohérence et de ce qu'il permet à l'enfant de faire. Aucune proposition ne doit être décorative pour être décorative : chaque élément sert le jeu, la découverte, la manipulation ou l'apprentissage.`;
+}
+function adnHistoriqueBlock(){
+  const passees = STATE.graines.filter(g=> g.id !== (window.__currentGraineId||'') );
+  if(passees.length===0) return "Aucune box réalisée pour l'instant.";
+  return passees.map(g=> `- ${g.nom} (${g.saison}, ${g.ages}) — statut : ${g.statut}` ).join('\n');
+}
+
+/* ---------- Navigation ---------- */
+const SCREENS = ['accueil','nouvelle','explorer','composer','activite','bibliotheque','recoltes'];
+function showScreen(name){
+  SCREENS.forEach(s=> document.getElementById('screen-'+s).classList.toggle('active', s===name));
+  document.querySelectorAll('.nav-item[data-nav]').forEach(el=>{
+    el.classList.toggle('active', el.dataset.nav===name);
+  });
+  if(name==='bibliotheque') renderBibliotheque();
+  if(name==='recoltes') renderRecoltes();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+document.querySelectorAll('[data-nav]').forEach(el=>{
+  el.addEventListener('click', ()=> showScreen(el.dataset.nav));
+});
+
+/* ---------- Statuts ---------- */
+const STATUT_LABELS = {
+  plantee:'🌰 Plantée', germination:'🌱 En germination', exploration:'🔎 En exploration',
+  construction:'🌿 En construction', recoltee:'🧺 Récoltée ✓'
+};
+
+/* ---------- ACCUEIL ---------- */
+function renderAccueil(){
+  const actives = STATE.graines.filter(g=>!g.archived);
+  const enCours = actives.filter(g=>g.statut!=='recoltee');
+  const recoltees = actives.filter(g=>g.statut==='recoltee');
+
+  const wrapCours = document.getElementById('grainesEnCours');
+  wrapCours.innerHTML = enCours.length ? '' : '<div class="empty"><h3>Aucune graine en cours</h3><p>Plante une nouvelle idée pour commencer.</p></div>';
+  enCours.forEach(g=>{
+    const el = document.createElement('div');
+    el.className = 'graine-card';
+    el.innerHTML = `<div><h4>${escHtml(g.nom)}</h4><div class="meta">${escHtml(g.saison)} · ${escHtml(g.ages)}</div></div><span class="statut-badge">${STATUT_LABELS[g.statut]||g.statut}</span>`;
+    el.addEventListener('click', ()=> openGraine(g.id));
+    wrapCours.appendChild(el);
+  });
+
+  const wrapRec = document.getElementById('grainesRecoltees');
+  document.getElementById('grainesRecolteesWrap').style.display = recoltees.length ? 'block' : 'none';
+  wrapRec.innerHTML = '';
+  recoltees.forEach(g=>{
+    const el = document.createElement('div');
+    el.className = 'graine-card';
+    el.innerHTML = `<div><h4>${escHtml(g.nom)}</h4><div class="meta">${escHtml(g.saison)} · ${escHtml(g.ages)} · ${g.box.length} éléments</div></div><span class="statut-badge">${STATUT_LABELS[g.statut]}</span>`;
+    el.addEventListener('click', ()=> openGraine(g.id, 'composer'));
+    wrapRec.appendChild(el);
+  });
+
+  if(STATE.graines.length){
+    const link = document.createElement('div');
+    link.style.marginTop = '18px';
+    link.innerHTML = `<button class="btn ghost small" data-nav="bibliotheque">🗃️ Voir toutes mes Graines (${STATE.graines.length})</button>`;
+    link.querySelector('button').addEventListener('click', ()=> showScreen('bibliotheque'));
+    wrapRec.parentElement.appendChild(link);
+  }
+}
+function openGraine(id, screen){
+  const g = STATE.graines.find(x=>x.id===id);
+  if(!g) return;
+  window.__currentGraineId = id;
+  if(!screen) screen = g.statut==='plantee' ? 'explorer' : (g.box && g.box.length ? 'composer' : 'explorer');
+  if(screen==='explorer') renderExplorer(id);
+  if(screen==='composer') renderComposer(id);
+  showScreen(screen);
+}
+
+/* ---------- Dupliquer / Archiver / Exporter (mémoire persistante par projet) ---------- */
+function dupliquerGraine(id){
+  const g = STATE.graines.find(x=>x.id===id);
+  if(!g) return;
+  const copie = JSON.parse(JSON.stringify(g));
+  copie.id = uid();
+  copie.nom = g.nom + ' (copie)';
+  copie.archived = false;
+  copie.dateCreation = new Date().toISOString().slice(0,10);
+  copie.dateModification = copie.dateCreation;
+  STATE.graines.push(copie);
+  persistAll();
+  toast('Graine dupliquée : « '+copie.nom+' ».');
+  renderBibliotheque();
+}
+async function toggleArchiveGraine(id){
+  const g = STATE.graines.find(x=>x.id===id);
+  if(!g) return;
+  g.archived = !g.archived;
+  g.dateModification = new Date().toISOString().slice(0,10);
+  await persistAll();
+  toast(g.archived ? 'Graine archivée.' : 'Graine désarchivée.');
+  renderBibliotheque();
+  renderAccueil();
+}
+function exporterGraine(id){
+  const g = STATE.graines.find(x=>x.id===id);
+  if(!g) return;
+  let out = '';
+  out += `GRAINE — ${g.nom}\n${'='.repeat(50)}\n\n`;
+  out += `Saison : ${g.saison}\nÂges : ${g.ages}\nStatut : ${STATUT_LABELS[g.statut]||g.statut}\nCréée le : ${g.dateCreation}\nDernière modification : ${g.dateModification||g.dateCreation}\n\n`;
+  if(g.fiche){
+    out += `--- FICHE RECHERCHE ---\n`;
+    Object.entries(g.fiche).forEach(([k,v])=> out += `${k} : ${v}\n`);
+    out += `\n`;
+  }
+  out += `--- CONTENU DE LA BOX (${g.box.length}) ---\n`;
+  g.box.forEach(i=> out += `[${CAT_LABELS[i.categorie]||i.categorie}] ${i.texte}${i.capacite?` (capacité : ${i.capacite})`:''}\n`);
+  out += `\n`;
+  if(g.creations){
+    out += `--- CRÉATIONS IMAGINÉES ---\n`;
+    Object.entries(g.creations).forEach(([cat,items])=>{
+      if(items && items.length){ out += `${CREA_LABELS[cat]||cat} :\n`; items.forEach(it=> out += `  - ${it.texte} — ${it.pourquoi}\n`); }
+    });
+    out += `\n`;
+  }
+  if(g.carteExploratrice){
+    out += `--- CARTE PETIT EXPLORATEUR ${g.carteValidee?'(validée)':''} ---\n${g.carteExploratrice}\n\n`;
+  }
+  if(g.analyse){ out += `--- ANALYSE GRAINE ---\n${g.analyse}\n\n`; }
+  if(g.supports && g.supports.length){
+    out += `--- SUPPORTS PÉDAGOGIQUES (${g.supports.length}) ---\n\n`;
+    g.supports.forEach(s=>{
+      const c = s.contenu;
+      out += `### ${s.titre} ${s.valide?'[VALIDÉ]':''} — ${s.type}\n`;
+      out += `Âge : ${c.age_range} · Objectif : ${c.objectif} · ${c.nb_pages}\n`;
+      out += `Consigne adulte : ${c.consigne_adulte}\n`;
+      if(c.consigne_enfant) out += `Consigne enfant : ${c.consigne_enfant}\n`;
+      (c.pages||[]).forEach(p=> out += `  Page/carte ${p.numero} : ${p.contenu_exact}\n`);
+      out += `Impression : ${c.impression}\n\n`;
+    });
+  }
+  if(g.box.length){
+    out += `--- ACTIVITÉS CONÇUES ---\n\n`;
+    g.box.forEach(item=>{
+      const a = g.activites[item.id];
+      if(!a) return;
+      const validee = g.activitesValidees && g.activitesValidees[item.id];
+      out += `### ${a.titre_mission||item.texte} ${validee?'[VALIDÉE]':''}\n`;
+      out += `Âge : ${a.age_conseille}\nIntention : ${a.intention_pedagogique}\nMatériel : ${a.materiel}\n`;
+      out += `Déroulement : ${a.deroulement}\nVigilances : ${a.vigilances}\n\n`;
+    });
+  }
+  const blob = new Blob([out], {type:'text/plain'});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url; link.download = `graine-${g.nom.toLowerCase().replace(/[^a-z0-9]+/g,'-')}.txt`;
+  document.body.appendChild(link); link.click(); link.remove();
+  URL.revokeObjectURL(url);
+  toast('Export téléchargé.');
+}
+
+/* ---------- BIBLIOTHEQUE (Mes Graines) ---------- */
+let biblioFilter = 'toutes', biblioSearch = '';
+function renderBibliotheque(){
+  const wrap = document.getElementById('biblioList');
+  let list = STATE.graines.slice().sort((a,b)=> (b.dateModification||b.dateCreation).localeCompare(a.dateModification||a.dateCreation));
+  if(biblioFilter==='en_cours') list = list.filter(g=>!g.archived && g.statut!=='recoltee');
+  else if(biblioFilter==='recoltee') list = list.filter(g=>!g.archived && g.statut==='recoltee');
+  else if(biblioFilter==='archivee') list = list.filter(g=>g.archived);
+  else list = list.filter(g=>!g.archived);
+  if(biblioSearch.trim()){
+    const q = biblioSearch.trim().toLowerCase();
+    list = list.filter(g=> g.nom.toLowerCase().includes(q) || (g.saison||'').toLowerCase().includes(q));
+  }
+  wrap.innerHTML = list.length ? '' : '<div class="empty"><h3>Aucune graine ici</h3><p>Change de filtre ou plante une nouvelle idée.</p></div>';
+  list.forEach(g=>{
+    const nbActivites = Object.keys(g.activites||{}).length;
+    const nbSupports = (g.supports||[]).length;
+    const row = document.createElement('div');
+    row.className = 'biblio-row' + (g.archived ? ' is-archived' : '');
+    row.innerHTML = `
+      <div>
+        <h4>${escHtml(g.nom)}</h4>
+        <div class="meta">${escHtml(g.saison)} · ${escHtml(g.ages)} · ${STATUT_LABELS[g.statut]||g.statut} · ${g.box.length} éléments · ${nbActivites} activité${nbActivites>1?'s':''} · ${nbSupports} support${nbSupports>1?'s':''} · maj ${g.dateModification||g.dateCreation}</div>
+      </div>
+      <div class="row">
+        <button class="btn ghost small" data-act="ouvrir">Ouvrir →</button>
+        <button class="btn ghost small" data-act="dupliquer">⧉ Dupliquer</button>
+        <button class="btn ghost small" data-act="archiver">${g.archived?'♻️ Désarchiver':'🗄 Archiver'}</button>
+        <button class="btn ghost small" data-act="exporter">⬇ Exporter</button>
+      </div>`;
+    row.querySelector('[data-act="ouvrir"]').addEventListener('click', ()=> openGraine(g.id));
+    row.querySelector('[data-act="dupliquer"]').addEventListener('click', ()=> dupliquerGraine(g.id));
+    row.querySelector('[data-act="archiver"]').addEventListener('click', ()=> toggleArchiveGraine(g.id));
+    row.querySelector('[data-act="exporter"]').addEventListener('click', ()=> exporterGraine(g.id));
+    wrap.appendChild(row);
+  });
+}
+document.getElementById('biblioSearch').addEventListener('input', (e)=>{ biblioSearch = e.target.value; renderBibliotheque(); });
+document.getElementById('biblioFilters').addEventListener('click', (e)=>{
+  const chip = e.target.closest('.chip'); if(!chip) return;
+  document.querySelectorAll('#biblioFilters .chip').forEach(c=>c.classList.remove('selected'));
+  chip.classList.add('selected');
+  biblioFilter = chip.dataset.filter;
+  renderBibliotheque();
+});
+
+/* =========================================================================
+   MES RÉCOLTES — persistance définitive et indépendante de la génération.
+   Un enregistrement ici est une COPIE (clonée en profondeur), jamais une
+   référence : régénérer la fiche source dans le projet ne peut ni la
+   modifier ni l'écraser. C'est la garantie centrale de cette fonctionnalité.
+   ========================================================================= */
+const TYPE_LABELS = { activite:'📋 Fiche pédagogique', support:'📄 Support imprimable', carte:'💌 Carte Petit Explorateur' };
+
+/* modal de choix (remplacer / nouvelle version / annuler) */
+function askChoice(message, options){
+  return new Promise(resolve=>{
+    document.getElementById('choiceModalMsg').textContent = message;
+    const btnsWrap = document.getElementById('choiceModalBtns');
+    btnsWrap.innerHTML = '';
+    options.forEach(opt=>{
+      const b = document.createElement('button');
+      b.className = 'btn ' + (opt.key==='annuler' ? 'ghost' : 'accent');
+      b.style.width = '100%';
+      b.textContent = opt.label;
+      b.addEventListener('click', ()=>{
+        document.getElementById('choiceModalBg').classList.remove('active');
+        resolve(opt.key);
+      });
+      btnsWrap.appendChild(b);
+    });
+    document.getElementById('choiceModalBg').classList.add('active');
+  });
+}
+
+/* enregistrement définitif — appelé par les boutons "🌱 Enregistrer dans mes récoltes" */
+async function enregistrerDansRecoltes(g, type, sourceKey, titre, contenu){
+  const existants = STATE.recoltes.filter(r=>r.sourceKey===sourceKey);
+  let action = 'nouvelle';
+  if(existants.length){
+    const choice = await askChoice(
+      `« ${titre} » a déjà été enregistrée dans Mes récoltes (${existants.length} version${existants.length>1?'s':''}). Que veux-tu faire ?`,
+      [
+        {key:'remplacer', label:'🔁 Remplacer la version existante'},
+        {key:'nouvelle', label:'🌱 Enregistrer comme nouvelle version'},
+        {key:'annuler', label:'Annuler'}
+      ]
+    );
+    if(!choice || choice==='annuler') return;
+    action = choice;
+  }
+  const contenuClone = JSON.parse(JSON.stringify(contenu)); // copie indépendante — le coeur de la garantie
+  if(action==='remplacer' && existants.length){
+    const target = existants.slice().sort((a,b)=> (b.dateModification||b.dateCreation).localeCompare(a.dateModification||a.dateCreation))[0];
+    target.titre = titre; target.contenu = contenuClone; target.dateModification = today();
+  } else {
+    const maxV = existants.length ? Math.max(...existants.map(r=>r.version||1)) : 0;
+    STATE.recoltes.push({
+      id:uid(), type, sourceKey, titre, version:maxV+1,
+      graineId:g.id, graineNom:g.nom, saison:g.saison, ages:g.ages,
+      contenu:contenuClone, archived:false, dateCreation:today(), dateModification:today()
+    });
+  }
+  await persistAll();
+  toast('🌱 Enregistré dans Mes récoltes — définitif, à l\'abri des régénérations.', 4500);
+}
+
+/* ---------- Rendu de l'écran Mes récoltes ---------- */
+let recSearch='', recFiltres={box:'',saison:'',age:'',type:''};
+function renderRecoltes(){
+  const boxSelect = document.getElementById('recFiltreBox');
+  const boxesActuelles = [...new Set(STATE.recoltes.map(r=>r.graineNom))].sort();
+  const currentVal = boxSelect.value;
+  boxSelect.innerHTML = '<option value="">Toutes les box</option>' + boxesActuelles.map(n=>`<option ${n===currentVal?'selected':''}>${escHtml(n)}</option>`).join('');
+
+  let list = STATE.recoltes.slice();
+  if(recSearch.trim()){ const q=recSearch.trim().toLowerCase(); list = list.filter(r=> r.titre.toLowerCase().includes(q)); }
+  if(recFiltres.box) list = list.filter(r=> r.graineNom===recFiltres.box);
+  if(recFiltres.saison) list = list.filter(r=> r.saison===recFiltres.saison);
+  if(recFiltres.age) list = list.filter(r=> r.ages===recFiltres.age);
+  if(recFiltres.type) list = list.filter(r=> r.type===recFiltres.type);
+  list.sort((a,b)=> (b.dateModification||b.dateCreation).localeCompare(a.dateModification||a.dateCreation));
+
+  const wrap = document.getElementById('recoltesList');
+  if(!list.length){ wrap.innerHTML = '<div class="empty"><h3>Aucune récolte ici</h3><p>Enregistre une fiche ou un support depuis un projet pour la retrouver ici, pour toujours.</p></div>'; return; }
+
+  const groupes = {};
+  list.forEach(r=>{ (groupes[r.graineNom] = groupes[r.graineNom]||[]).push(r); });
+
+  wrap.innerHTML = '';
+  Object.keys(groupes).forEach(nom=>{
+    const items = groupes[nom];
+    const grp = document.createElement('div'); grp.className='recolte-group';
+    grp.innerHTML = `<h3>🌱 ${escHtml(nom)}</h3><div class="gmeta">${items.length} création${items.length>1?'s':''} enregistrée${items.length>1?'s':''} · ${escHtml(items[0].saison)} · ${escHtml(items[0].ages)}</div>`;
+    items.forEach(r=>{
+      const card = document.createElement('div'); card.className='recolte-card';
+      card.innerHTML = `
+        <div class="rtop">
+          <div><div class="recolte-type">${TYPE_LABELS[r.type]||r.type}</div><h4>${escHtml(r.titre)}${r.version>1?`<span class="version-badge">v${r.version}</span>`:''}</h4></div>
+        </div>
+        <div class="recolte-meta">Enregistrée le ${r.dateCreation} · modifiée le ${r.dateModification||r.dateCreation}</div>
+        <div class="recolte-actions">
+          <button class="btn ghost small" data-act="ouvrir">👁 Ouvrir</button>
+          <button class="btn ghost small" data-act="modifier">✏️ Modifier</button>
+          <button class="btn ghost small" data-act="dupliquer">⧉ Dupliquer</button>
+          <button class="btn ghost small" data-act="imprimer">🖨 Imprimer</button>
+          <button class="btn ghost small" data-act="pdf">⬇ Exporter en PDF</button>
+          <button class="btn danger small" data-act="suppr">✕ Supprimer</button>
+        </div>`;
+      card.querySelector('[data-act="ouvrir"]').addEventListener('click', ()=> openRecolteDetail(r.id));
+      card.querySelector('[data-act="modifier"]').addEventListener('click', ()=> openRecolteDetail(r.id));
+      card.querySelector('[data-act="dupliquer"]').addEventListener('click', ()=> dupliquerRecolte(r.id));
+      card.querySelector('[data-act="imprimer"]').addEventListener('click', ()=> imprimerRecolte(r.id));
+      card.querySelector('[data-act="pdf"]').addEventListener('click', ()=> exporterRecoltePDF(r.id));
+      card.querySelector('[data-act="suppr"]').addEventListener('click', async ()=>{
+        if(!confirm(`Supprimer définitivement « ${r.titre} » de Mes récoltes ? Cette action est irréversible.`)) return;
+        STATE.recoltes = STATE.recoltes.filter(x=>x.id!==r.id);
+        await persistAll(); renderRecoltes();
+      });
+      grp.appendChild(card);
+    });
+    wrap.appendChild(grp);
+  });
+}
+document.getElementById('recSearch').addEventListener('input', e=>{ recSearch=e.target.value; renderRecoltes(); });
+document.getElementById('recFiltreBox').addEventListener('change', e=>{ recFiltres.box=e.target.value; renderRecoltes(); });
+document.getElementById('recFiltreSaison').addEventListener('change', e=>{ recFiltres.saison=e.target.value; renderRecoltes(); });
+document.getElementById('recFiltreAge').addEventListener('change', e=>{ recFiltres.age=e.target.value; renderRecoltes(); });
+document.getElementById('recFiltreType').addEventListener('change', e=>{ recFiltres.type=e.target.value; renderRecoltes(); });
+
+function dupliquerRecolte(id){
+  const r = STATE.recoltes.find(x=>x.id===id); if(!r) return;
+  const copie = JSON.parse(JSON.stringify(r));
+  copie.id = uid(); copie.titre = r.titre+' (copie)'; copie.version = 1; copie.sourceKey = 'copie-'+uid();
+  copie.dateCreation = today(); copie.dateModification = today();
+  STATE.recoltes.push(copie);
+  persistAll(); toast('Dupliquée dans Mes récoltes.'); renderRecoltes();
+}
+
+/* ---------- Détail / édition ---------- */
+function recolteFieldsSchema(type){
+  if(type==='activite') return [
+    ['intention_pedagogique','Intention pédagogique'], ['capacites_sollicitees','Capacités sollicitées'],
+    ['pourquoi','Pourquoi cette activité'], ['materiel','Matériel'], ['preparation_adulte','Préparation par l\'adulte'],
+    ['mise_en_situation_enfant','Mise en situation enfant'], ['consigne_enfant','Consigne enfant'], ['deroulement','Déroulement'],
+    ['simplifier','Simplifier (2-3 ans)'], ['aller_plus_loin','Aller plus loin (5-6 ans)'], ['questions_adulte','Questions pour l\'adulte'],
+    ['prolongement_nature','Prolongement dans la nature'], ['vigilances','Vigilances / supervision'], ['logique_pedagogique','Logique pédagogique (pour Marie)']
+  ];
+  if(type==='support') return [
+    ['objectif','Objectif'], ['consigne_adulte','Consigne adulte'], ['consigne_enfant','Consigne enfant'],
+    ['difficulte','Difficulté'], ['adaptation_2_3','Adaptation 2-3 ans'], ['adaptation_4_6','Adaptation 4-6 ans'], ['impression','Recommandations d\'impression']
+  ];
+  return [];
+}
+function openRecolteDetail(id){
+  const r = STATE.recoltes.find(x=>x.id===id); if(!r) return;
+  const titreInput = document.getElementById('recolteTitreInput');
+  titreInput.value = r.titre;
+  titreInput.oninput = null;
+  titreInput.onblur = async ()=>{ r.titre = titreInput.value.trim()||r.titre; r.dateModification = today(); await persistAll(); renderRecoltes(); };
+  document.getElementById('recolteModalMeta').textContent = `${TYPE_LABELS[r.type]} · ${r.graineNom} · ${r.saison} · ${r.ages} · v${r.version} · enregistrée le ${r.dateCreation}`;
+
+  const body = document.getElementById('recolteModalBody');
+  const c = r.contenu;
+  if(r.type==='carte'){
+    body.innerHTML = `<div class="analyse-box ed" data-f="texte">${escHtml(c.texte||'')}</div>`;
+    bindEditableRecolte(body.querySelector('[data-f]'), r, val=>{ c.texte = val; });
+  } else if(r.type==='support'){
+    let html = `<div class="smeta">${escHtml(c.age_range||'')} · ${escHtml(c.nb_pages||'')}</div>`;
+    recolteFieldsSchema('support').forEach(([k,label])=>{
+      if(c[k]===undefined) return;
+      html += `<div class="prop-field"><b>${label} :</b> <span class="ed" data-f="${k}">${escHtml(c[k])}</span></div>`;
+    });
+    html += `<h3 style="margin-top:16px;font-family:var(--serif);color:var(--vert-foret);">Contenu des cartes / pages</h3>`;
+    html += (c.pages||[]).map((p,pi)=>`<div class="support-page"><div class="pnum">Page/carte ${p.numero}</div><div class="ptxt ed" data-page="${pi}">${escHtml(p.contenu_exact)}</div></div>`).join('');
+    body.innerHTML = html;
+    body.querySelectorAll('[data-f]').forEach(el=> bindEditableRecolte(el, r, val=>{ c[el.dataset.f]=val; }));
+    body.querySelectorAll('[data-page]').forEach(el=> bindEditableRecolte(el, r, val=>{ c.pages[+el.dataset.page].contenu_exact = val; }));
+  } else if(r.type==='activite'){
+    let html = `<p class="hint" style="margin-bottom:14px;">Âge conseillé : ${escHtml(c.age_conseille||'')}</p>`;
+    recolteFieldsSchema('activite').forEach(([k,label])=>{
+      if(c[k]===undefined) return;
+      html += `<div class="activite-block"><h3>${escHtml(label)}</h3><p class="ed" data-f="${k}">${escHtml(c[k])}</p></div>`;
+    });
+    body.innerHTML = html;
+    body.querySelectorAll('[data-f]').forEach(el=> bindEditableRecolte(el, r, val=>{ c[el.dataset.f]=val; }));
+  }
+  document.getElementById('recolteModalBg').classList.add('active');
+}
+document.getElementById('recolteModalClose').addEventListener('click', ()=>{
+  document.getElementById('recolteModalBg').classList.remove('active');
+  renderRecoltes();
+});
+document.getElementById('recolteModalBg').addEventListener('click', (e)=>{ if(e.target.id==='recolteModalBg'){ document.getElementById('recolteModalBg').classList.remove('active'); renderRecoltes(); } });
+
+/* ---------- Impression / Export PDF — même mise en page, sans interface GRAINE ---------- */
+function pEsc(s){ return escHtml(s).replace(/\n/g,'<br>'); }
+function printSection(label, text){ if(!text) return ''; return `<div class="p-block"><h3>${escHtml(label)}</h3><p>${pEsc(text)}</p></div>`; }
+function buildRecolteInnerHTML(r){
+  const c = r.contenu;
+  if(r.type==='activite'){
+    return `
+      <h1>${escHtml(c.titre_mission||r.titre)}</h1>
+      <div class="p-meta">${escHtml(r.graineNom)} · ${escHtml(r.saison)} · ${escHtml(r.ages)} · Âge conseillé : ${escHtml(c.age_conseille||'')}</div>
+      ${printSection("Intention pédagogique", c.intention_pedagogique)}
+      ${printSection("Capacités sollicitées", c.capacites_sollicitees)}
+      ${printSection("Matériel", c.materiel)}
+      ${printSection("Préparation par l'adulte", c.preparation_adulte)}
+      <div class="p-block p-highlight"><h3>Mise en situation enfant</h3><p>${pEsc(c.mise_en_situation_enfant)}</p></div>
+      ${printSection("Consigne enfant", c.consigne_enfant)}
+      ${printSection("Déroulement", c.deroulement)}
+      ${printSection("Simplifier (2-3 ans)", c.simplifier)}
+      ${printSection("Aller plus loin (5-6 ans)", c.aller_plus_loin)}
+      ${printSection("Questions pour l'adulte", c.questions_adulte)}
+      ${printSection("Prolongement dans la nature", c.prolongement_nature)}
+      <div class="p-block p-warn"><h3>⚠️ Vigilances / supervision</h3><p>${pEsc(c.vigilances)}</p></div>
+    `;
+  }
+  if(r.type==='support'){
+    return `
+      <h1>${escHtml(c.titre||r.titre)}</h1>
+      <div class="p-meta">${escHtml(r.graineNom)} · ${escHtml(r.saison)} · ${escHtml(r.ages)} · ${escHtml(c.age_range||'')} · ${escHtml(c.nb_pages||'')}</div>
+      ${printSection("Objectif", c.objectif)}
+      ${printSection("Consigne adulte", c.consigne_adulte)}
+      ${printSection("Consigne enfant", c.consigne_enfant)}
+      ${printSection("Difficulté", c.difficulte)}
+      ${printSection("Adaptation 2-3 ans", c.adaptation_2_3)}
+      ${printSection("Adaptation 4-6 ans", c.adaptation_4_6)}
+      <h2 class="p-h2">Contenu des cartes / pages</h2>
+      ${(c.pages||[]).map(p=>`<div class="p-page"><div class="p-pnum">Carte/page ${p.numero}</div><div>${pEsc(p.contenu_exact)}</div></div>`).join('')}
+      ${printSection("Recommandations d'impression", c.impression)}
+    `;
+  }
+  if(r.type==='carte'){
+    return `<div class="p-carte"><div class="p-carte-badge">🌱 Petit Explorateur</div><div class="p-meta">${escHtml(r.graineNom)} · ${escHtml(r.saison)} · ${escHtml(r.ages)}</div><div class="p-carte-txt">${pEsc(c.texte)}</div></div>`;
+  }
+  return '';
+}
+function printPageCSS(){
+  return `
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600&family=DM+Sans:wght@400;500;700&display=swap');
+      body{ font-family:'DM Sans',sans-serif; color:#292C29; background:#fff; margin:0; padding:48px 56px; max-width:760px; margin:0 auto; }
+      h1{ font-family:'Fraunces',serif; font-weight:600; font-size:28px; color:#314A3A; margin:0 0 6px; }
+      h2.p-h2{ font-family:'Fraunces',serif; font-size:19px; color:#314A3A; margin:26px 0 10px; }
+      .p-meta{ font-size:12.5px; color:#665347; margin-bottom:26px; }
+      .p-block{ margin-bottom:18px; }
+      .p-block h3{ font-family:'Fraunces',serif; font-size:15px; color:#C77D5D; font-weight:600; margin:0 0 5px; }
+      .p-block p{ font-size:14px; line-height:1.6; margin:0; }
+      .p-highlight{ background:#f2ede0; border-left:3px solid #C77D5D; padding:14px 16px; border-radius:6px; }
+      .p-highlight h3{ color:#314A3A; }
+      .p-warn{ background:#fbeee8; border:1px solid #C77D5D; padding:14px 16px; border-radius:8px; }
+      .p-page{ background:#F6F1E7; border:1px solid #e5ddc9; border-radius:8px; padding:12px 14px; margin-bottom:10px; font-size:13.5px; line-height:1.55; }
+      .p-pnum{ font-size:10.5px; font-weight:700; color:#C77D5D; text-transform:uppercase; margin-bottom:4px; }
+      .p-carte{ text-align:center; padding:60px 20px; }
+      .p-carte-badge{ font-family:'Fraunces',serif; font-size:22px; color:#314A3A; margin-bottom:10px; }
+      .p-carte-txt{ font-family:'Fraunces',serif; font-style:italic; font-size:17px; line-height:1.8; color:#314A3A; margin-top:20px; }
+      @media print{ body{ padding:20mm; } }
+    </style>`;
+}
+function imprimerRecolte(id){
+  const r = STATE.recoltes.find(x=>x.id===id); if(!r) return;
+  const win = window.open('', '_blank');
+  if(!win){ toast("Le navigateur a bloqué l'ouverture de la fenêtre d'impression — autorise les pop-ups pour GRAINE."); return; }
+  win.document.write(`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>${escHtml(r.titre)}</title>${printPageCSS()}</head><body>${buildRecolteInnerHTML(r)}</body></html>`);
+  win.document.close();
+  win.focus();
+  setTimeout(()=> win.print(), 400);
+}
+function exporterRecoltePDF(id){
+  const r = STATE.recoltes.find(x=>x.id===id); if(!r) return;
+  if(typeof html2pdf === 'undefined'){ toast("La librairie d'export PDF n'a pas pu se charger (connexion internet requise)."); return; }
+  const hidden = document.createElement('div');
+  hidden.style.cssText = 'position:fixed; left:-9999px; top:0; width:760px; background:#fff;';
+  hidden.innerHTML = `<div style="font-family:'DM Sans',sans-serif;color:#292C29;padding:20px 10px;">
+    <style>
+      h1{font-family:'Fraunces',serif;font-weight:600;font-size:26px;color:#314A3A;margin:0 0 6px;}
+      h2{font-family:'Fraunces',serif;font-size:18px;color:#314A3A;margin:22px 0 10px;}
+      .p-meta{font-size:12px;color:#665347;margin-bottom:22px;}
+      .p-block{margin-bottom:16px;}
+      .p-block h3{font-family:'Fraunces',serif;font-size:14px;color:#C77D5D;font-weight:600;margin:0 0 4px;}
+      .p-block p{font-size:13px;line-height:1.55;margin:0;}
+      .p-highlight{background:#f2ede0;border-left:3px solid #C77D5D;padding:12px 14px;border-radius:6px;}
+      .p-warn{background:#fbeee8;border:1px solid #C77D5D;padding:12px 14px;border-radius:8px;}
+      .p-page{background:#F6F1E7;border:1px solid #e5ddc9;border-radius:8px;padding:10px 12px;margin-bottom:8px;font-size:12.5px;line-height:1.5;}
+      .p-pnum{font-size:10px;font-weight:700;color:#C77D5D;text-transform:uppercase;margin-bottom:3px;}
+      .p-carte{text-align:center;padding:40px 10px;}
+      .p-carte-badge{font-family:'Fraunces',serif;font-size:20px;color:#314A3A;margin-bottom:8px;}
+      .p-carte-txt{font-family:'Fraunces',serif;font-style:italic;font-size:16px;line-height:1.7;color:#314A3A;margin-top:16px;}
+    </style>
+    ${buildRecolteInnerHTML(r)}
+  </div>`;
+  document.body.appendChild(hidden);
+  toast('Génération du PDF...', 3000);
+  html2pdf().set({
+    margin:10, filename:`graine-${r.titre.toLowerCase().replace(/[^a-z0-9]+/g,'-')}.pdf`,
+    html2canvas:{ scale:2 }, jsPDF:{ unit:'mm', format:'a4', orientation:'portrait' },
+    pagebreak:{ mode:['avoid-all','css','legacy'] }
+  }).from(hidden).save().then(()=>{ document.body.removeChild(hidden); });
+}
+
+document.getElementById('tileSeche').addEventListener('click', ()=>{
+  toast("💡 Astuce : dans « Nouvelle Graine », laisse le thème vide et décris seulement la saison et l'envie dans « Ce que j'imagine déjà » — GRAINE proposera des territoires créatifs.", 6000);
+  showScreen('nouvelle');
+});
+document.getElementById('tileRecolte').addEventListener('click', ()=>{
+  document.getElementById('grainesRecolteesWrap').scrollIntoView({behavior:'smooth'});
+});
+
+/* ---------- NOUVELLE GRAINE ---------- */
+let selectedCriteres = [];
+document.getElementById('criteresRow').addEventListener('click', (e)=>{
+  const chip = e.target.closest('.chip');
+  if(!chip) return;
+  const val = chip.dataset.val;
+  if(selectedCriteres.includes(val)){ selectedCriteres = selectedCriteres.filter(v=>v!==val); chip.classList.remove('selected'); }
+  else { selectedCriteres.push(val); chip.classList.add('selected'); }
+});
+
+document.getElementById('btnGermer').addEventListener('click', async ()=>{
+  const nom = document.getElementById('fNom').value.trim();
+  if(!nom){ toast('Donne un nom ou thème à ta box.'); return; }
+  const g = {
+    id: uid(), nom, saison: document.getElementById('fSaison').value, ages: document.getElementById('fAges').value,
+    origine: document.getElementById('fOrigine').value, imagine: document.getElementById('fImagine').value,
+    criteres: [...selectedCriteres], statut:'germination',
+    fiche:null, cartes:{decouvrir:[],apprendre:[],manipuler:[],fabriquer:[],creer:[],dehors:[],jouer:[]},
+    box:[], analyse:'', carteExploratrice:'', activites:{},
+    creations:null, supportsSuggeres:null, supports:[],
+    activitesValidees:{}, carteValidee:false, archived:false,
+    dateCreation:new Date().toISOString().slice(0,10), dateModification:new Date().toISOString().slice(0,10)
+  };
+  STATE.graines.push(g);
+  window.__currentGraineId = g.id;
+  await persistAll();
+
+  const btn = document.getElementById('btnGermer');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner dark"></span>Germination...';
+  try{
+    await germerGraine(g);
+    await persistAll();
+    document.getElementById('fNom').value=''; document.getElementById('fImagine').value='';
+    selectedCriteres = []; document.querySelectorAll('#criteresRow .chip').forEach(c=>c.classList.remove('selected'));
+    renderExplorer(g.id);
+    showScreen('explorer');
+  }catch(e){
+    console.error(e); toast('Erreur : '+e.message);
+  }finally{
+    btn.disabled=false; btn.innerHTML='🌱 Faire germer cette idée';
+  }
+});
+
+async function germerGraine(g){
+  const prompt = `${systemPromptCore()}
+
+HISTORIQUE (à ne pas répéter) :
+${adnHistoriqueBlock()}
+
+NOUVELLE GRAINE À FAIRE GERMER :
+Thème : ${g.nom}
+Saison : ${g.saison}
+Âges : ${g.ages}
+Origine de l'idée : ${g.origine}
+Ce que Marie imagine déjà : ${g.imagine || '(rien de précis encore)'}
+Critères souhaités : ${g.criteres.join(', ') || '(aucun critère précis)'}
+
+ÉTAPE 1 — RECHERCHE : construis une fiche documentaire factuelle sur le thème (le vivant/phénomène, ce qu'un enfant de cet âge peut observer réellement, ce qui est pertinent, ce qui est trop complexe, idées reçues à ne pas reproduire, et des sources fiables identifiables si possible).
+
+ÉTAPE 2 — EXPLORATION : propose pour chacune des 7 catégories suivantes exactement 3 pistes courtes et concrètes, chacune reliée explicitement à une capacité de développement sollicitée (formulée prudemment) :
+- decouvrir : ce qui est fascinant dans cet univers
+- apprendre : apprentissages qui peuvent naturellement émerger
+- manipuler : ce que l'enfant pourrait toucher/déplacer/assembler/classer
+- fabriquer : ce que Marie pourrait créer physiquement (couture, crochet, bois, papier...)
+- creer : expériences artistiques/manuelles
+- dehors : ce qu'on pourrait observer/chercher dans la nature
+- jouer : jeu symbolique possible
+
+Réponds STRICTEMENT en JSON :
+{
+  "fiche": {"vivant":"...", "observable":"...", "pertinent":"...", "trop_complexe":"...", "idees_recues":"...", "sources":"..."},
+  "cartes": {
+    "decouvrir":[{"texte":"...","capacite":"..."}, ...3],
+    "apprendre":[...3], "manipuler":[...3], "fabriquer":[...3], "creer":[...3], "dehors":[...3], "jouer":[...3]
+  }
+}`;
+  const text = await callGemini({prompt});
+  const json = safeParseJSON(text);
+  g.fiche = json.fiche;
+  Object.keys(g.cartes).forEach(cat=>{
+    g.cartes[cat] = (json.cartes?.[cat]||[]).map(it=>({ id:uid(), texte:it.texte, capacite:it.capacite, statut:'propose' }));
+  });
+  g.statut = 'exploration';
+}
+
+/* ---------- EXPLORER ---------- */
+const CAT_LABELS = { decouvrir:'🔎 Découvrir', apprendre:'🧠 Apprendre', manipuler:'👐 Manipuler', fabriquer:'🧶 Fabriquer', creer:'🎨 Créer', dehors:'🌿 Explorer dehors', jouer:'🎭 Jouer' };
+
+function renderExplorer(id){
+  const g = STATE.graines.find(x=>x.id===id);
+  window.__currentGraineId = id;
+  document.getElementById('explorerHead').innerHTML = `
+    <h1 class="page-title">${escHtml(g.nom)}</h1>
+    <p class="page-sub">${escHtml(g.saison)} · ${escHtml(g.ages)} · ${STATUT_LABELS[g.statut]}</p>
+  `;
+  const body = document.getElementById('explorerBody');
+  body.innerHTML = '';
+
+  if(g.fiche){
+    const fiche = document.createElement('div');
+    fiche.className = 'card fiche-block';
+    fiche.innerHTML = `<h2 class="section-title">🔎 Ce qu'il faut connaître</h2>` +
+      [['vivant','Le vivant / phénomène'],['observable','Ce qui est observable'],['pertinent','Pertinent pour cet âge'],
+       ['trop_complexe','Trop complexe / inadapté'],['idees_recues','Idées reçues à éviter'],['sources','Sources']]
+      .map(([key,label])=>`<div class="fiche-row"><div class="k">${label}</div><div class="v" data-fkey="${key}">${escHtml(g.fiche[key]||'—')}</div></div>`).join('');
+    body.appendChild(fiche);
+    fiche.querySelectorAll('[data-fkey]').forEach(el=>{
+      bindEditable(el, g, (val)=>{ g.fiche[el.dataset.fkey] = val; });
+    });
+  }
+
+  Object.keys(CAT_LABELS).forEach(cat=>{
+    const sec = document.createElement('div');
+    sec.className = 'cat-section';
+    sec.innerHTML = `<div class="cat-head"><h2 class="section-title">${CAT_LABELS[cat]}</h2><button class="btn ghost small" data-regen="${cat}">↻ Régénérer</button></div><div class="items" data-cat="${cat}"></div>`;
+    body.appendChild(sec);
+    renderCatItems(g, cat, sec.querySelector('.items'));
+    sec.querySelector('[data-regen]').addEventListener('click', ()=> regenCategorie(g, cat));
+  });
+
+  const foot = document.createElement('div');
+  foot.className = 'row between';
+  foot.style.marginTop = '10px';
+  foot.innerHTML = `<button class="btn ghost" data-nav="accueil">← Accueil</button><button class="btn accent" id="btnToComposer">📦 Passer à la composition →</button>`;
+  body.appendChild(foot);
+  foot.querySelector('#btnToComposer').addEventListener('click', ()=>{ renderComposer(g.id); showScreen('composer'); });
+}
+function renderCatItems(g, cat, wrap){
+  wrap.innerHTML = '';
+  (g.cartes[cat]||[]).forEach(item=>{
+    const card = document.createElement('div');
+    card.className = 'item-card ' + (item.statut==='gardee'?'gardee':(item.statut==='ecartee'?'ecartee':''));
+    card.innerHTML = `
+      <div class="txt">${escHtml(item.texte)}</div>
+      ${item.capacite ? `<div class="cap">Capacité sollicitée : ${escHtml(item.capacite)}</div>` : ''}
+      <div class="acts">
+        ${item.statut==='gardee' ? `<span class="pill-mini">✓ Dans la box</span>` : `
+          <button class="btn ghost small" data-act="garder">♡ Garder</button>
+          <button class="btn ghost small" data-act="ecarter">🗑 Écarter</button>
+        `}
+      </div>`;
+    const g1 = card.querySelector('[data-act="garder"]');
+    if(g1) g1.addEventListener('click', ()=>{
+      item.statut = 'gardee';
+      g.box.push({ id:uid(), categorie:cat, texte:item.texte, capacite:item.capacite });
+      if(g.statut==='exploration') g.statut='construction';
+      persistAll(); renderExplorer(g.id);
+    });
+    const g2 = card.querySelector('[data-act="ecarter"]');
+    if(g2) g2.addEventListener('click', ()=>{ item.statut='ecartee'; persistAll(); renderCatItems(g,cat,wrap); });
+    wrap.appendChild(card);
+  });
+}
+async function regenCategorie(g, cat){
+  toast('Nouvelle génération pour « '+CAT_LABELS[cat]+' »...');
+  try{
+    const prompt = `${systemPromptCore()}
+
+Graine : ${g.nom} (${g.saison}, ${g.ages}).
+Fiche recherche : ${JSON.stringify(g.fiche)}
+Idées déjà proposées pour cette catégorie (à ne pas répéter) : ${(g.cartes[cat]||[]).map(i=>i.texte).join(' | ')}
+
+Propose 3 NOUVELLES pistes pour la catégorie "${CAT_LABELS[cat]}", différentes des précédentes.
+Réponds STRICTEMENT en JSON : {"items":[{"texte":"...","capacite":"..."}, ...3]}`;
+    const text = await callGemini({prompt});
+    const json = safeParseJSON(text);
+    const nouveaux = (json.items||[]).map(it=>({ id:uid(), texte:it.texte, capacite:it.capacite, statut:'propose' }));
+    g.cartes[cat] = [...g.cartes[cat], ...nouveaux];
+    await persistAll();
+    renderExplorer(g.id);
+  }catch(e){ toast('Erreur : '+e.message); }
+}
+
+/* ---------- COMPOSER ---------- */
+function renderComposer(id){
+  const g = STATE.graines.find(x=>x.id===id);
+  window.__currentGraineId = id;
+  document.getElementById('composerHead').innerHTML = `
+    <div class="row between">
+      <div>
+        <h1 class="page-title">Composer ma box — ${escHtml(g.nom)}</h1>
+        <p class="page-sub">${STATUT_LABELS[g.statut]} · ${g.box.length} élément${g.box.length>1?'s':''} retenu${g.box.length>1?'s':''}</p>
+      </div>
+      <div class="row" style="margin-top:4px;">
+        <button class="btn ghost small" id="hDupliquer">⧉ Dupliquer</button>
+        <button class="btn ghost small" id="hArchiver">${g.archived?'♻️ Désarchiver':'🗄 Archiver'}</button>
+        <button class="btn ghost small" id="hExporter">⬇ Exporter</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('hDupliquer').addEventListener('click', ()=> dupliquerGraine(g.id));
+  document.getElementById('hArchiver').addEventListener('click', async ()=>{ await toggleArchiveGraine(g.id); renderComposer(g.id); });
+  document.getElementById('hExporter').addEventListener('click', ()=> exporterGraine(g.id));
+  const body = document.getElementById('composerBody');
+  body.innerHTML = '';
+
+  const colWrap = document.createElement('div'); colWrap.className='grid-2';
+  const left = document.createElement('div');
+  left.innerHTML = `<h2 class="section-title">📦 Ma box actuelle</h2>`;
+  const boxList = document.createElement('div'); boxList.id='boxList';
+  left.appendChild(boxList);
+  colWrap.appendChild(left);
+
+  const right = document.createElement('div');
+  right.innerHTML = `<h2 class="section-title">🌱 Analyse GRAINE</h2>
+    <button class="btn ghost small" id="btnAnalyse">Analyser l'équilibre de ma box</button>
+    <div id="analyseWrap"></div>`;
+  colWrap.appendChild(right);
+  body.appendChild(colWrap);
+
+  renderBoxList(g, boxList);
+  if(g.analyse){ document.getElementById('analyseWrap').innerHTML = `<div class="analyse-box">${escHtml(g.analyse)}</div>`; }
+  document.getElementById('btnAnalyse').addEventListener('click', ()=> analyserBox(g));
+
+  const propSec = document.createElement('div');
+  propSec.style.marginTop = '30px';
+  propSec.innerHTML = `<div class="row between"><h2 class="section-title" style="margin:0;">✨ Fais-moi une proposition</h2><button class="btn ghost small" id="btnPropose">Que proposerais-tu ?</button></div><div id="propWrap"></div>`;
+  body.appendChild(propSec);
+  document.getElementById('btnPropose').addEventListener('click', ()=> genererPropositions(g));
+
+  const creaSec = document.createElement('div');
+  creaSec.style.marginTop = '30px';
+  creaSec.innerHTML = `<div class="row between"><h2 class="section-title" style="margin:0;">🧶 Imaginer les créations de la box</h2><button class="btn ghost small" id="btnCreations">${g.creations ? '↻ Régénérer' : 'Générer des idées'}</button></div>
+    <p class="hint" style="margin-bottom:12px;">Crochet, tricot, feutrine, couture — dans ton univers de fabrication, et uniquement ce qui sert vraiment l'expérience de l'enfant.</p>
+    <div id="creaWrap"></div>`;
+  body.appendChild(creaSec);
+  document.getElementById('btnCreations').addEventListener('click', ()=> genererCreations(g));
+  if(g.creations) renderCreations(g, document.getElementById('creaWrap'));
+
+  const suppSec = document.createElement('div');
+  suppSec.style.marginTop = '30px';
+  suppSec.innerHTML = `<div class="row between"><h2 class="section-title" style="margin:0;">📄 Créer les supports de ma box</h2><button class="btn ghost small" id="btnSuggSupports">📄 Imaginer les supports pédagogiques</button></div>
+    <p class="hint" style="margin-bottom:12px;">GRAINE regarde d'abord ce que la box contient déjà (créations comprises) pour proposer du complémentaire, jamais de la redite.</p>
+    <div id="suppSuggWrap"></div>
+    <div id="suppFinalWrap"></div>`;
+  body.appendChild(suppSec);
+  document.getElementById('btnSuggSupports').addEventListener('click', ()=> suggererSupports(g));
+  if(g.supportsSuggeres) renderSuggestionsSupports(g, document.getElementById('suppSuggWrap'));
+  if(g.supports && g.supports.length) renderSupportsFinal(g, document.getElementById('suppFinalWrap'));
+
+  const carteSec = document.createElement('div');
+  carteSec.style.marginTop = '30px';
+  carteSec.innerHTML = `<div class="row between"><h2 class="section-title" style="margin:0;">💌 Carte « Petit Explorateur »</h2>
+    <div class="row"><select id="tonCarte" style="width:170px;"><option value="doux">Plus doux</option><option value="drole">Plus drôle</option><option value="poetique">Plus poétique</option><option value="mysterieux">Plus mystérieux</option><option value="aventure">Plus aventure</option></select>
+    <button class="btn ghost small" id="btnCarte">Générer</button>
+    ${g.carteExploratrice ? `<button class="btn small ${g.carteValidee?'valide-on':'ghost'}" id="btnValideCarte">${g.carteValidee?'✓ Validée':'✓ Valider'}</button>` : ''}
+    ${g.carteExploratrice ? `<button class="btn accent small" id="btnRecolteCarte">🌱 Enregistrer dans mes récoltes</button>` : ''}</div></div>
+    <div id="carteWrap">${g.carteExploratrice ? `<div class="analyse-box editable" contenteditable="true" spellcheck="false" id="carteTexte">${escHtml(g.carteExploratrice)}</div>` : ''}</div>`;
+  body.appendChild(carteSec);
+  document.getElementById('btnCarte').addEventListener('click', ()=> genererCarte(g));
+  const carteTexteEl = document.getElementById('carteTexte');
+  if(carteTexteEl) bindEditable(carteTexteEl, g, (val)=>{ g.carteExploratrice = val; });
+  const vBtn = document.getElementById('btnValideCarte');
+  if(vBtn) vBtn.addEventListener('click', async ()=>{ g.carteValidee = !g.carteValidee; await persistAll(); renderComposer(g.id); });
+  const rcBtn = document.getElementById('btnRecolteCarte');
+  if(rcBtn) rcBtn.addEventListener('click', ()=> enregistrerDansRecoltes(g, 'carte', g.id+'|carte', 'Carte Petit Explorateur — '+g.nom, { texte:g.carteExploratrice }));
+
+
+  const foot = document.createElement('div');
+  foot.className = 'row between';
+  foot.style.marginTop = '34px';
+  foot.innerHTML = `<button class="btn ghost" data-nav="accueil">← Accueil</button>
+    ${g.statut!=='recoltee' ? `<button class="btn accent" id="btnRecolter">🧺 Marquer comme récoltée</button>` : ''}`;
+  body.appendChild(foot);
+  const rBtn = foot.querySelector('#btnRecolter');
+  if(rBtn) rBtn.addEventListener('click', async ()=>{ g.statut='recoltee'; await persistAll(); toast('Box récoltée ✓'); renderComposer(g.id); });
+}
+function renderBoxList(g, wrap){
+  wrap.innerHTML = g.box.length ? '' : '<div class="empty"><h3>Box vide</h3><p>Retourne dans « Explorer » pour garder des idées.</p></div>';
+  g.box.forEach(item=>{
+    const el = document.createElement('div'); el.className='box-item';
+    el.innerHTML = `<div><div class="cat-tag">${CAT_LABELS[item.categorie]||item.categorie}</div><div class="txt" data-boxtxt="${item.id}">${escHtml(item.texte)}</div></div>
+      <div class="row"><button class="btn ghost small" data-act="activite">🎨 Concevoir</button><button class="btn ghost small" data-act="rm">✕</button></div>`;
+    el.querySelector('[data-act="rm"]').addEventListener('click', ()=>{
+      g.box = g.box.filter(x=>x.id!==item.id); persistAll(); renderBoxList(g, wrap);
+    });
+    el.querySelector('[data-act="activite"]').addEventListener('click', ()=>{
+      window.__currentBoxItemId = item.id; renderActivite(g.id, item.id); showScreen('activite');
+    });
+    bindEditable(el.querySelector('[data-boxtxt]'), g, (val)=>{ item.texte = val; });
+    wrap.appendChild(el);
+  });
+}
+async function analyserBox(g){
+  const wrap = document.getElementById('analyseWrap');
+  wrap.innerHTML = '<div class="empty"><span class="spinner dark"></span> Analyse en cours...</div>';
+  try{
+    const prompt = `${systemPromptCore()}
+
+Graine : ${g.nom} (${g.saison}, ${g.ages}).
+Contenu actuel de la box :
+${g.box.map(i=>`- [${CAT_LABELS[i.categorie]}] ${i.texte} (capacité : ${i.capacite||'—'})`).join('\n') || '(vide)'}
+
+Analyse l'équilibre de cette box en 4-6 phrases : quelles dimensions sont déjà bien couvertes (observation, manipulation, créativité, raisonnement, langage, motricité...), qu'est-ce qui manque éventuellement, et surtout — si la box est déjà suffisamment riche, dis-le clairement plutôt que de suggérer d'ajouter quelque chose par principe. "Plus n'est pas automatiquement mieux."
+Réponds en texte simple (pas de JSON), ton chaleureux mais direct, à destination de Marie.`;
+    const text = await callGemini({prompt, jsonMode:false});
+    g.analyse = text.trim();
+    await persistAll();
+    wrap.innerHTML = `<div class="analyse-box">${escHtml(g.analyse)}</div>`;
+  }catch(e){ wrap.innerHTML = `<div class="empty"><h3>Erreur</h3><p>${escHtml(e.message)}</p></div>`; }
+}
+async function genererPropositions(g){
+  const wrap = document.getElementById('propWrap');
+  wrap.innerHTML = '<div class="empty"><span class="spinner dark"></span> GRAINE réfléchit...</div>';
+  try{
+    const prompt = `${systemPromptCore()}
+
+Graine : ${g.nom} (${g.saison}, ${g.ages}).
+Contenu actuel de la box :
+${g.box.map(i=>`- [${CAT_LABELS[i.categorie]}] ${i.texte}`).join('\n') || '(vide)'}
+
+Marie te demande : "Qu'est-ce que TOI tu ajouterais à cette box ?"
+Propose 3 à 5 idées argumentées, réellement complémentaires à ce qui existe déjà (pas redondantes).
+Réponds STRICTEMENT en JSON :
+{"propositions":[{"concept":"...","pourquoi":"...","age":"...","capacite":"...","lien_theme":"...","materiel":"...","complexite_fabrication":"...","valeur_ajoutee":"...","categorie":"decouvrir|apprendre|manipuler|fabriquer|creer|dehors|jouer"}]}`;
+    const text = await callGemini({prompt});
+    const json = safeParseJSON(text);
+    wrap.innerHTML = '';
+    (json.propositions||[]).forEach(p=>{
+      const card = document.createElement('div'); card.className='prop-card';
+      card.innerHTML = `<h4>${escHtml(p.concept)}</h4>
+        <div class="prop-meta">${escHtml(p.age||'')} · ${CAT_LABELS[p.categorie]||p.categorie||''}</div>
+        <div class="prop-field"><b>Pourquoi :</b> ${escHtml(p.pourquoi||'')}</div>
+        <div class="prop-field"><b>Capacité sollicitée :</b> ${escHtml(p.capacite||'')}</div>
+        <div class="prop-field"><b>Lien avec le thème :</b> ${escHtml(p.lien_theme||'')}</div>
+        <div class="prop-field"><b>Matériel :</b> ${escHtml(p.materiel||'')}</div>
+        <div class="prop-field"><b>Complexité pour toi :</b> ${escHtml(p.complexite_fabrication||'')}</div>
+        <div class="prop-field"><b>Valeur ajoutée :</b> ${escHtml(p.valeur_ajoutee||'')}</div>
+        <button class="btn accent small" style="margin-top:8px;">🌱 Ajouter à ma box</button>`;
+      card.querySelector('button').addEventListener('click', async ()=>{
+        g.box.push({ id:uid(), categorie:p.categorie||'decouvrir', texte:p.concept, capacite:p.capacite });
+        await persistAll();
+        renderComposer(g.id);
+        toast('Ajouté à la box.');
+      });
+      wrap.appendChild(card);
+    });
+  }catch(e){ wrap.innerHTML = `<div class="empty"><h3>Erreur</h3><p>${escHtml(e.message)}</p></div>`; }
+}
+async function genererCarte(g){
+  if(g.carteValidee && !confirm('Cette carte a déjà été validée. La régénérer va remplacer son contenu. Continuer ?')) return;
+  const wrap = document.getElementById('carteWrap');
+  const ton = document.getElementById('tonCarte').value;
+  wrap.innerHTML = '<div class="empty"><span class="spinner dark"></span> Écriture de la carte...</div>';
+  try{
+    const prompt = `${systemPromptCore()}
+
+Rédige une courte carte d'ouverture "Petit Explorateur" (5-8 lignes) pour la box "${g.nom}" (${g.saison}, ${g.ages}).
+Contenu de la box : ${g.box.map(i=>i.texte).join(', ') || '(à définir)'}
+Ton souhaité : ${ton}.
+Adresse-toi directement à l'enfant, avec des emojis discrets, une écriture chaleureuse et une invitation à l'aventure. Pas de titre, juste le texte de la carte.`;
+    const text = await callGemini({prompt, jsonMode:false});
+    g.carteExploratrice = text.trim();
+    g.carteValidee = false;
+    g.dateModification = new Date().toISOString().slice(0,10);
+    await persistAll();
+    renderComposer(g.id);
+  }catch(e){ wrap.innerHTML = `<div class="empty"><h3>Erreur</h3><p>${escHtml(e.message)}</p></div>`; }
+}
+
+/* ---------- CRÉATIONS (univers de fabrication) ---------- */
+const CREA_LABELS = { crochet:'🧶 Crochet', tricot:'🧵 Tricot', feutrine:'✂️ Feutrine', couture:'🪡 Couture', accessoires:'🪵 Accessoires à acheter', jeux:'🎲 Jeux / manipulations possibles' };
+async function genererCreations(g){
+  const wrap = document.getElementById('creaWrap');
+  wrap.innerHTML = '<div class="empty"><span class="spinner dark"></span> GRAINE imagine les créations...</div>';
+  try{
+    const prompt = `${systemPromptCore()}
+
+Graine : ${g.nom} (${g.saison}, ${g.ages}).
+Ce que Marie imagine déjà : ${g.imagine || '(rien de précis)'}
+Contenu actuel de la box : ${g.box.map(i=>i.texte).join(', ') || '(vide)'}
+
+Propose des créations physiques pour cette box, dans l'univers de fabrication de Marie (crochet en priorité, puis tricot, feutrine, couture si pertinente, puis éventuels accessoires achetés en bois/matières naturelles). Pour chaque idée, explique en une phrase pourquoi elle sert le jeu/la découverte/la manipulation/l'apprentissage de l'enfant — jamais une justification purement décorative. Termine par des idées de jeux ou manipulations concrètes réalisables à partir de ces créations une fois fabriquées.
+
+Réponds STRICTEMENT en JSON (2-4 items par catégorie, tableau vide si non pertinent) :
+{
+  "crochet":[{"texte":"...","pourquoi":"..."}],
+  "tricot":[{"texte":"...","pourquoi":"..."}],
+  "feutrine":[{"texte":"...","pourquoi":"..."}],
+  "couture":[{"texte":"...","pourquoi":"..."}],
+  "accessoires":[{"texte":"...","pourquoi":"..."}],
+  "jeux":[{"texte":"...","pourquoi":"..."}]
+}`;
+    const text = await callGemini({prompt});
+    const json = safeParseJSON(text);
+    g.creations = json;
+    await persistAll();
+    renderCreations(g, wrap);
+  }catch(e){ wrap.innerHTML = `<div class="empty"><h3>Erreur</h3><p>${escHtml(e.message)}</p></div>`; }
+}
+function renderCreations(g, wrap){
+  wrap.innerHTML = '';
+  Object.keys(CREA_LABELS).forEach(cat=>{
+    const items = (g.creations && g.creations[cat]) || [];
+    if(!items.length) return;
+    const grp = document.createElement('div'); grp.className = 'creation-group';
+    grp.innerHTML = `<h4>${CREA_LABELS[cat]}</h4>`;
+    items.forEach(it=>{
+      const c = document.createElement('div'); c.className = 'creation-card';
+      const catBox = (cat==='jeux') ? 'jouer' : 'fabriquer';
+      c.innerHTML = `<div class="txt">${escHtml(it.texte)}</div><div class="pourquoi">${escHtml(it.pourquoi||'')}</div>
+        <button class="btn ghost small">🌱 Ajouter à ma box</button>`;
+      c.querySelector('button').addEventListener('click', async ()=>{
+        g.box.push({ id:uid(), categorie:catBox, texte:it.texte, capacite:'' });
+        await persistAll();
+        renderComposer(g.id);
+        toast('Ajouté à la box.');
+      });
+      grp.appendChild(c);
+    });
+    wrap.appendChild(grp);
+  });
+}
+
+/* ---------- SUPPORTS PÉDAGOGIQUES (PDF) ---------- */
+const SUPPORT_TYPES_HINT = "cartes de cycle de vie, cartes séquentielles, cartes de nomenclature/vocabulaire, associations image/mot, cartes de tri, jeux d'observation, cherche-et-trouve, cartes de couleurs/formes/quantités, premières activités de numération, pré-écriture/tracés, syllabes ou langage pour les plus grands, cartes mission du petit explorateur, mini-livret de découverte, fiche d'exploration de la nature, supports de jeu symbolique, carte d'entrée dans l'univers de la box (Petit Explorateur), ou tout autre support réellement pertinent";
+
+async function suggererSupports(g){
+  const wrap = document.getElementById('suppSuggWrap');
+  wrap.innerHTML = '<div class="empty"><span class="spinner dark"></span> GRAINE regarde ce qui existe déjà avant de proposer...</div>';
+  try{
+    const creaResume = g.creations ? Object.entries(g.creations).map(([cat,items])=> items.length ? `${CREA_LABELS[cat]||cat} : ${items.map(i=>i.texte).join('; ')}` : null).filter(Boolean).join('\n') : '(aucune création imaginée pour l\'instant)';
+    const prompt = `${systemPromptCore()}
+
+Graine : ${g.nom} (${g.saison}, ${g.ages}).
+Fiche recherche : ${JSON.stringify(g.fiche||{})}
+Contenu déjà retenu dans la box :
+${g.box.map(i=>`- [${CAT_LABELS[i.categorie]||i.categorie}] ${i.texte}`).join('\n') || '(vide)'}
+Créations physiques déjà imaginées :
+${creaResume}
+Supports déjà conçus précédemment (à ne pas répéter) : ${(g.supports||[]).map(s=>s.titre).join(', ') || '(aucun)'}
+
+Analyse d'abord ce que la box couvre déjà (par exemple : si un cycle de vie est déjà manipulable en crochet, ne propose pas un deuxième cycle de vie en carte papier — cherche plutôt le complémentaire : vocabulaire, séquence, observation, association, jeu). Types possibles à considérer (liste non exhaustive) : ${SUPPORT_TYPES_HINT}.
+
+Propose 3 à 6 supports imprimables réellement complémentaires à ce qui existe déjà. N'en propose aucun juste pour remplir la box.
+
+Réponds STRICTEMENT en JSON :
+{"suggestions":[{"titre":"...","type":"...","justification":"pourquoi ce support est complémentaire et non redondant","age_range":"..."}]}`;
+    const text = await callGemini({prompt});
+    const json = safeParseJSON(text);
+    g.supportsSuggeres = (json.suggestions||[]).map(s=>({ id:uid(), titre:s.titre, type:s.type, justification:s.justification, age_range:s.age_range, selectionne:true }));
+    await persistAll();
+    renderSuggestionsSupports(g, wrap);
+  }catch(e){ wrap.innerHTML = `<div class="empty"><h3>Erreur</h3><p>${escHtml(e.message)}</p></div>`; }
+}
+function renderSuggestionsSupports(g, wrap){
+  wrap.innerHTML = '';
+  (g.supportsSuggeres||[]).forEach(s=>{
+    const el = document.createElement('div');
+    el.className = 'support-suggest' + (s.selectionne ? ' selected':'');
+    el.innerHTML = `<input type="checkbox" ${s.selectionne?'checked':''}>
+      <div><div class="stype">${escHtml(s.type)} · ${escHtml(s.age_range||'')}</div><div class="stitre">${escHtml(s.titre)}</div><div class="sjust">${escHtml(s.justification)}</div></div>`;
+    const cb = el.querySelector('input');
+    el.addEventListener('click', (e)=>{
+      if(e.target.tagName!=='INPUT') cb.checked = !cb.checked;
+      s.selectionne = cb.checked; el.classList.toggle('selected', s.selectionne); persistAll();
+    });
+    wrap.appendChild(el);
+  });
+  const btnRow = document.createElement('div');
+  btnRow.style.marginTop = '12px';
+  btnRow.innerHTML = `<button class="btn accent small" id="btnConcevoirSupports">✏️ Concevoir les supports sélectionnés</button>`;
+  wrap.appendChild(btnRow);
+  document.getElementById('btnConcevoirSupports').addEventListener('click', ()=> concevoirSupports(g));
+}
+async function concevoirSupports(g){
+  const selected = (g.supportsSuggeres||[]).filter(s=>s.selectionne);
+  if(!selected.length){ toast('Sélectionne au moins un support.'); return; }
+  const finalWrap = document.getElementById('suppFinalWrap');
+  toast(`Conception de ${selected.length} support(s)...`, 5000);
+  for(const s of selected){
+    await concevoirUnSupport(g, s);
+  }
+  g.supportsSuggeres = g.supportsSuggeres.filter(s=>!selected.find(sel=>sel.id===s.id));
+  await persistAll();
+  renderSuggestionsSupports(g, document.getElementById('suppSuggWrap'));
+  renderSupportsFinal(g, finalWrap);
+  toast('Supports conçus ✓');
+}
+async function concevoirUnSupport(g, suggestion){
+  const prompt = `${systemPromptCore()}
+
+Graine : ${g.nom} (${g.saison}, ${g.ages}).
+Fiche recherche : ${JSON.stringify(g.fiche||{})}
+Contenu déjà dans la box : ${g.box.map(i=>i.texte).join(', ') || '(vide)'}
+
+Conçois intégralement le contenu du support suivant, prêt à être mis en page pour impression :
+Titre suggéré : ${suggestion.titre}
+Type : ${suggestion.type}
+Justification : ${suggestion.justification}
+Tranche d'âge : ${suggestion.age_range}
+
+Si le support est une carte d'entrée "Petit Explorateur" pour l'univers de la box : écris un texte chaleureux, merveilleux mais pas infantilisant, spécifique à ce thème (jamais générique), adressé directement à l'enfant.
+
+Réponds STRICTEMENT en JSON :
+{
+  "titre":"...", "age_range":"...", "objectif":"...", "nb_pages":"ex: 6 cartes",
+  "difficulte":"...", "adaptation_2_3":"...", "adaptation_4_6":"...",
+  "consigne_adulte":"...", "consigne_enfant":"...",
+  "pages":[{"numero":1,"contenu_exact":"texte exact à imprimer sur cette carte/page"}],
+  "ordre_elements":"...",
+  "impression":"recommandations impression / découpe / plastification"
+}`;
+  try{
+    const text = await callGemini({prompt});
+    const json = safeParseJSON(text);
+    g.supports.push({ id:uid(), titre:json.titre||suggestion.titre, type:suggestion.type, contenu:json, valide:false });
+  }catch(e){
+    console.error(e);
+    toast('Erreur sur « '+suggestion.titre+' » : '+e.message);
+  }
+}
+function renderSupportsFinal(g, wrap){
+  wrap.innerHTML = (g.supports&&g.supports.length) ? '<h2 class="section-title" style="margin-top:20px;">📄 Mes supports conçus</h2>' : '';
+  (g.supports||[]).forEach(s=>{
+    const c = s.contenu;
+    const card = document.createElement('div'); card.className = 'support-card';
+    card.innerHTML = `
+      <div class="stitle-row"><h3>${escHtml(s.titre)}</h3>
+        <div class="row">
+          <button class="btn accent small" data-act="recolte">🌱 Enregistrer</button>
+          <button class="btn small ${s.valide?'valide-on':'ghost'}" data-act="valider">${s.valide?'✓ Validé':'✓ Valider'}</button>
+          <button class="btn ghost small" data-act="regen">↻ Régénérer</button>
+          <button class="btn ghost small" data-act="del">✕</button>
+        </div>
+      </div>
+      <div class="smeta">${escHtml(s.type)} · ${escHtml(c.age_range||'')} · ${escHtml(c.nb_pages||'')}</div>
+      <div class="prop-field"><b>Objectif :</b> <span class="ed" data-f="objectif">${escHtml(c.objectif)}</span></div>
+      <div class="prop-field"><b>Consigne adulte :</b> <span class="ed" data-f="consigne_adulte">${escHtml(c.consigne_adulte)}</span></div>
+      ${c.consigne_enfant ? `<div class="prop-field"><b>Consigne enfant :</b> <span class="ed" data-f="consigne_enfant">${escHtml(c.consigne_enfant)}</span></div>` : ''}
+      <div class="prop-field"><b>Difficulté :</b> <span class="ed" data-f="difficulte">${escHtml(c.difficulte)}</span></div>
+      ${c.adaptation_2_3 ? `<div class="prop-field"><b>Adaptation 2-3 ans :</b> <span class="ed" data-f="adaptation_2_3">${escHtml(c.adaptation_2_3)}</span></div>` : ''}
+      ${c.adaptation_4_6 ? `<div class="prop-field"><b>Adaptation 4-6 ans :</b> <span class="ed" data-f="adaptation_4_6">${escHtml(c.adaptation_4_6)}</span></div>` : ''}
+      <div style="margin-top:12px;">${(c.pages||[]).map((p,pi)=>`<div class="support-page"><div class="pnum">Page/carte ${p.numero}</div><div class="ptxt ed" data-page="${pi}">${escHtml(p.contenu_exact)}</div></div>`).join('')}</div>
+      <div class="prop-field" style="margin-top:8px;"><b>Impression :</b> <span class="ed" data-f="impression">${escHtml(c.impression)}</span></div>
+    `;
+    card.querySelectorAll('[data-f]').forEach(el=>{
+      bindEditable(el, g, (val)=>{ c[el.dataset.f] = val; });
+    });
+    card.querySelectorAll('[data-page]').forEach(el=>{
+      bindEditable(el, g, (val)=>{ c.pages[+el.dataset.page].contenu_exact = val; });
+    });
+    card.querySelector('[data-act="recolte"]').addEventListener('click', ()=> enregistrerDansRecoltes(g, 'support', g.id+'|support|'+s.id, s.titre, c));
+    card.querySelector('[data-act="valider"]').addEventListener('click', async ()=>{ s.valide = !s.valide; g.dateModification=new Date().toISOString().slice(0,10); await persistAll(); renderSupportsFinal(g, wrap); });
+    card.querySelector('[data-act="del"]').addEventListener('click', async ()=>{
+      if(s.valide && !confirm('Ce support est validé. Le supprimer ?')) return;
+      g.supports = g.supports.filter(x=>x.id!==s.id); await persistAll(); renderSupportsFinal(g, wrap);
+    });
+    card.querySelector('[data-act="regen"]').addEventListener('click', async ()=>{
+      if(s.valide && !confirm('Ce support a déjà été validé. La régénérer va remplacer son contenu. Continuer ?')) return;
+      g.supports = g.supports.filter(x=>x.id!==s.id);
+      await concevoirUnSupport(g, { titre:s.titre, type:s.type, justification:'régénération', age_range:c.age_range });
+      await persistAll(); renderSupportsFinal(g, wrap);
+    });
+    wrap.appendChild(card);
+  });
+}
+
+/* ---------- ACTIVITE (Studio) ---------- */
+async function renderActivite(graineId, itemId){
+  const g = STATE.graines.find(x=>x.id===graineId);
+  const item = g.box.find(x=>x.id===itemId);
+  document.getElementById('activiteHead').innerHTML = `<h1 class="page-title">${escHtml(item.texte)}</h1><p class="page-sub">${CAT_LABELS[item.categorie]||''} · ${escHtml(g.nom)}</p>`;
+  const body = document.getElementById('activiteBody');
+
+  if(g.activites[itemId]){
+    renderActiviteContent(g, item, g.activites[itemId]);
+    return;
+  }
+  body.innerHTML = '<div class="empty"><span class="spinner dark"></span> GRAINE conçoit l\'activité complète...</div>';
+  try{
+    const prompt = `${systemPromptCore()}
+
+Graine : ${g.nom} (${g.saison}, ${g.ages}).
+Idée retenue à transformer en activité complète : "${item.texte}" (capacité visée : ${item.capacite||'—'}, catégorie : ${CAT_LABELS[item.categorie]||item.categorie}).
+Fiche recherche disponible : ${JSON.stringify(g.fiche||{})}
+
+Conçois une architecture d'activité complète. Écris aussi une version "mission de petit explorateur" du texte destiné à l'enfant (langage ludique et narratif plutôt que scolaire, même compétence visée).
+
+Réponds STRICTEMENT en JSON :
+{
+  "titre_mission": "ex: Mission : Les réserves de l'écureuil",
+  "age_conseille": "...",
+  "intention_pedagogique": "...",
+  "capacites_sollicitees": "...",
+  "pourquoi": "pourquoi cette activité, en une phrase",
+  "materiel": "liste sous forme de texte",
+  "preparation_adulte": "...",
+  "mise_en_situation_enfant": "texte narratif adressé à l'enfant, ton mission d'explorateur",
+  "consigne_enfant": "...",
+  "deroulement": "étapes, texte structuré",
+  "simplifier": "adaptation plus simple (2-3 ans)",
+  "aller_plus_loin": "adaptation plus poussée (5-6 ans)",
+  "questions_adulte": "questions que l'adulte peut poser pendant l'activité",
+  "prolongement_nature": "prolongement possible dehors",
+  "vigilances": "sécurité / supervision à respecter",
+  "logique_pedagogique": "explication à destination de Marie de pourquoi l'activité est construite ainsi"
+}`;
+    const text = await callGemini({prompt});
+    const json = safeParseJSON(text);
+    g.activites[itemId] = json;
+    await persistAll();
+    renderActiviteContent(g, item, json);
+  }catch(e){
+    body.innerHTML = `<div class="empty"><h3>Erreur</h3><p>${escHtml(e.message)}</p></div>`;
+  }
+}
+function renderActiviteContent(g, item, a){
+  const body = document.getElementById('activiteBody');
+  const validee = !!(g.activitesValidees && g.activitesValidees[item.id]);
+  const fields = [
+    ['intention_pedagogique','🎯 Intention pédagogique'], ['capacites_sollicitees','🧠 Capacités sollicitées'],
+    ['pourquoi','💬 Pourquoi cette activité'], ['materiel','🧺 Matériel'], ['preparation_adulte','🛠 Préparation par l\'adulte']
+  ];
+  body.innerHTML = `
+    <div class="card">
+      <div class="row between" style="align-items:flex-start;">
+        <h2 class="section-title">${escHtml(a.titre_mission||item.texte)}</h2>
+        <div class="row">
+          <button class="btn accent small" id="btnRecolteActivite">🌱 Enregistrer dans mes récoltes</button>
+          <button class="btn small ${validee?'valide-on':'ghost'}" id="btnValideActivite">${validee?'✓ Validée':'✓ Valider cette activité'}</button>
+        </div>
+      </div>
+      <p class="hint" style="margin-bottom:20px;">Âge conseillé : ${escHtml(a.age_conseille||'—')}</p>
+
+      ${fields.map(([k,label])=>`<div class="activite-block"><h3>${label}</h3><p class="ed" data-f="${k}">${escHtml(a[k])}</p></div>`).join('')}
+
+      <div class="activite-block">
+        <h3>🧭 Mise en situation enfant</h3>
+        <div class="mise-situation ed" data-f="mise_en_situation_enfant">${escHtml(a.mise_en_situation_enfant)}</div>
+      </div>
+
+      <div class="activite-block"><h3>📋 Consigne enfant</h3><p class="ed" data-f="consigne_enfant">${escHtml(a.consigne_enfant)}</p></div>
+      <div class="activite-block"><h3>▶️ Déroulement</h3><p class="ed" data-f="deroulement">${escHtml(a.deroulement)}</p></div>
+
+      <div class="grid-2">
+        <div class="activite-block"><h3>🌱 Simplifier</h3><p class="ed" data-f="simplifier">${escHtml(a.simplifier)}</p></div>
+        <div class="activite-block"><h3>🌳 Aller plus loin</h3><p class="ed" data-f="aller_plus_loin">${escHtml(a.aller_plus_loin)}</p></div>
+      </div>
+
+      <div class="activite-block"><h3>💬 Questions que l'adulte peut poser</h3><p class="ed" data-f="questions_adulte">${escHtml(a.questions_adulte)}</p></div>
+      <div class="activite-block"><h3>🌿 Prolongement dans la nature</h3><p class="ed" data-f="prolongement_nature">${escHtml(a.prolongement_nature)}</p></div>
+
+      <div class="activite-block">
+        <h3>⚠️ Vigilances / supervision</h3>
+        <div class="vigilance-box ed" data-f="vigilances">${escHtml(a.vigilances)}</div>
+      </div>
+
+      <details class="logique">
+        <summary>🧠 Voir la logique pédagogique</summary>
+        <div class="content ed" data-f="logique_pedagogique">${escHtml(a.logique_pedagogique)}</div>
+      </details>
+    </div>
+    <div class="row between" style="margin-top:24px;">
+      <button class="btn ghost" id="btnBackComposer">← Retour à la box</button>
+      <button class="btn ghost small" id="btnRegenActivite">↻ Régénérer cette activité</button>
+    </div>
+  `;
+  body.querySelectorAll('[data-f]').forEach(el=>{
+    bindEditable(el, g, (val)=>{ a[el.dataset.f] = val; });
+  });
+  document.getElementById('btnRecolteActivite').addEventListener('click', ()=> enregistrerDansRecoltes(g, 'activite', g.id+'|activite|'+item.id, a.titre_mission||item.texte, a));
+  document.getElementById('btnValideActivite').addEventListener('click', async ()=>{
+    g.activitesValidees = g.activitesValidees || {};
+    g.activitesValidees[item.id] = !g.activitesValidees[item.id];
+    g.dateModification = new Date().toISOString().slice(0,10);
+    await persistAll();
+    renderActiviteContent(g, item, a);
+  });
+  document.getElementById('btnBackComposer').addEventListener('click', ()=>{ renderComposer(g.id); showScreen('composer'); });
+  document.getElementById('btnRegenActivite').addEventListener('click', async ()=>{
+    if(g.activitesValidees && g.activitesValidees[item.id] && !confirm('Cette activité a déjà été validée. La régénérer va remplacer son contenu. Continuer ?')) return;
+    delete g.activites[item.id];
+    if(g.activitesValidees) delete g.activitesValidees[item.id];
+    await persistAll(); renderActivite(g.id, item.id);
+  });
+}
+
+/* ---------- Settings modal ---------- */
+function openSettings(){
+  document.getElementById('apiKeyInput').value = STATE.settings.apiKey || '';
+  document.getElementById('modelTextInput').value = STATE.settings.modelText || 'gemini-2.5-flash';
+  document.getElementById('modalBg').classList.add('active');
+}
+function closeSettings(){ document.getElementById('modalBg').classList.remove('active'); }
+document.getElementById('btnSettings').addEventListener('click', openSettings);
+document.getElementById('modalClose').addEventListener('click', closeSettings);
+document.getElementById('modalBg').addEventListener('click', (e)=>{ if(e.target.id==='modalBg') closeSettings(); });
+document.getElementById('btnSaveSettings').addEventListener('click', async ()=>{
+  STATE.settings.apiKey = document.getElementById('apiKeyInput').value.trim();
+  STATE.settings.modelText = document.getElementById('modelTextInput').value.trim() || 'gemini-2.5-flash';
+  await persistAll();
+  toast('Réglages enregistrés.');
+  closeSettings();
+});
+document.getElementById('btnResetAll').addEventListener('click', async ()=>{
+  if(!confirm('Effacer toute la mémoire ADN GRAINE (toutes les box) ? Cette action est irréversible.')) return;
+  STATE.graines = [];
+  await persistAll();
+  renderAccueil();
+  toast('Mémoire réinitialisée.');
+});
+
+/* ---------- init ---------- */
+(async function init(){
+  await openDB();
+  await loadAll();
+  renderAccueil();
+  showScreen('accueil');
+  if(!STATE.settings.apiKey){
+    setTimeout(()=>{ toast('Ajoute ta clé API Vertex AI dans les réglages (⚙️) pour commencer.', 5000); }, 600);
+  }
+})();
+</script>
+</body>
+</html>
