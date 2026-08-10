@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Jade — Raconte-le à Jade</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --jade: #1F6B5C;
+    --jade-dark: #163F36;
+    --ivory: #F7F2E8;
+    --charcoal: #28231F;
+    --clay: #C97D5D;
+    --sage: #E6EDE7;
+    --brass: #B79A63;
+    --radius: 14px;
+    --shadow: 0 1px 2px rgba(40,35,31,0.06), 0 8px 24px rgba(40,35,31,0.06);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--ivory);
+    color:var(--charcoal);
+    font-family:'Public Sans', -apple-system, sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    background-image:radial-gradient(circle at 1px 1px, rgba(40,35,31,0.035) 1px, transparent 0);
+    background-size: 22px 22px;
+  }
+  h1,h2,h3,.serif{font-family:'Fraunces', Georgia, serif; font-weight:500; letter-spacing:-0.01em;}
+  a{color:inherit;}
+
+  .app{display:flex; flex-direction:column; min-height:100vh; max-width:520px; margin:0 auto; position:relative;}
+  header.topbar{display:flex; align-items:center; justify-content:space-between; padding:22px 20px 10px;}
+  .mark{display:flex; align-items:center; gap:10px;}
+  .mark svg{width:26px;height:26px;flex-shrink:0;}
+  .mark span{font-family:'Fraunces', serif; font-size:19px; font-weight:600; color:var(--jade-dark); letter-spacing:0.01em;}
+  .icon-btn{
+    font-size:12px; color:var(--jade-dark); background:var(--sage);
+    padding:6px 12px; border-radius:100px; border:1px solid rgba(31,107,92,0.15);
+    cursor:pointer; font-family:'Public Sans', sans-serif;
+  }
+
+  main{flex:1; padding:6px 20px 100px;}
+  .greeting{margin:18px 0 4px; font-size:26px; line-height:1.25; color:var(--charcoal);}
+  .greeting .accent{color:var(--jade);}
+  .subline{color:rgba(40,35,31,0.6); font-size:14.5px; margin:0 0 22px;}
+
+  .prompts{display:flex; flex-direction:column; gap:10px; margin-bottom:22px;}
+  .prompt-btn{
+    display:flex; align-items:center; gap:12px; text-align:left; width:100%;
+    border:1px solid rgba(40,35,31,0.10); background:#fff; padding:14px 16px;
+    border-radius:var(--radius); font-family:'Public Sans', sans-serif; font-size:15px;
+    color:var(--charcoal); cursor:pointer; box-shadow:var(--shadow);
+    transition:transform .15s ease, border-color .15s ease;
+  }
+  .prompt-btn:hover{border-color:var(--jade); transform:translateY(-1px);}
+  .prompt-btn.primary{background:var(--jade); color:var(--ivory); border-color:var(--jade); font-weight:600;}
+  .prompt-btn.primary:hover{background:var(--jade-dark);}
+  .prompt-btn .dot{width:6px;height:6px;border-radius:50%; background:var(--clay); flex-shrink:0;}
+  .prompt-btn.primary .dot{background:var(--brass);}
+
+  .remembers{background:var(--sage); border-radius:var(--radius); padding:16px 18px; margin-top:8px;}
+  .remembers .label{text-transform:uppercase; letter-spacing:0.06em; font-size:11px; font-weight:700; color:var(--jade-dark); margin-bottom:6px;}
+  .remembers .memory-line{font-family:'Fraunces', serif; font-size:16px; line-height:1.4; color:var(--charcoal);}
+  .remembers.empty .memory-line{font-family:'Public Sans', sans-serif; font-size:14px; color:rgba(40,35,31,0.55);}
+
+  .chat-view{display:none; flex-direction:column; flex:1;}
+  .chat-view.active{display:flex;}
+  .chat-log{flex:1; padding:8px 20px 110px; display:flex; flex-direction:column; gap:14px; overflow-y:auto;}
+  .msg{max-width:82%; padding:12px 15px; border-radius:16px; font-size:15px; line-height:1.5; white-space:pre-wrap;}
+  .msg.jade{background:#fff; align-self:flex-start; border-bottom-left-radius:4px; box-shadow:var(--shadow);}
+  .msg.user{background:var(--jade); color:var(--ivory); align-self:flex-end; border-bottom-right-radius:4px;}
+  .typing{align-self:flex-start; display:flex; gap:4px; padding:14px 16px; background:#fff; border-radius:16px; border-bottom-left-radius:4px; box-shadow:var(--shadow);}
+  .typing span{width:6px;height:6px;border-radius:50%; background:var(--jade); opacity:0.4; animation:blink 1.2s infinite;}
+  .typing span:nth-child(2){animation-delay:0.2s;}
+  .typing span:nth-child(3){animation-delay:0.4s;}
+  @keyframes blink{0%,80%,100%{opacity:0.25;}40%{opacity:0.9;}}
+
+  .composer{
+    position:fixed; bottom:64px; left:50%; transform:translateX(-50%);
+    width:100%; max-width:520px; padding:10px 16px;
+    background:linear-gradient(to top, var(--ivory) 60%, rgba(247,242,232,0));
+    display:none;
+  }
+  .composer.active{display:block;}
+  .composer form{
+    display:flex; align-items:flex-end; gap:8px; background:#fff;
+    border:1px solid rgba(40,35,31,0.12); border-radius:20px; padding:8px 8px 8px 16px; box-shadow:var(--shadow);
+  }
+  .composer textarea{
+    flex:1; border:none; outline:none; resize:none; font-family:'Public Sans', sans-serif;
+    font-size:15px; line-height:1.4; max-height:110px; padding:6px 0; background:transparent; color:var(--charcoal);
+  }
+  .composer button{
+    background:var(--jade); color:var(--ivory); border:none; width:36px;height:36px;
+    border-radius:50%; flex-shrink:0; cursor:pointer; display:flex;align-items:center;justify-content:center;
+  }
+  .composer button:disabled{opacity:0.4;}
+
+  nav.bottomnav{
+    position:fixed; bottom:0;left:50%; transform:translateX(-50%); width:100%; max-width:520px;
+    background:#fff; border-top:1px solid rgba(40,35,31,0.08); display:flex; justify-content:space-around;
+    padding:8px 4px calc(8px + env(safe-area-inset-bottom));
+  }
+  nav.bottomnav button{
+    background:none;border:none; display:flex;flex-direction:column;align-items:center;gap:3px;
+    font-family:'Public Sans', sans-serif; font-size:10.5px; color:rgba(40,35,31,0.45); padding:4px 8px; cursor:pointer;
+  }
+  nav.bottomnav button.active{color:var(--jade-dark); font-weight:600;}
+
+  .screen-placeholder{padding:40px 4px; text-align:center; color:rgba(40,35,31,0.5); font-size:14px;}
+  .screen-placeholder .serif{display:block; font-size:19px; color:var(--charcoal); margin-bottom:6px;}
+  .view{display:none;}
+  .view.active{display:block;}
+  #home-view.active{display:flex; flex-direction:column;}
+
+  /* Story cards */
+  .story-card{
+    background:#fff; border-radius:var(--radius); padding:14px 16px; margin-bottom:10px;
+    box-shadow:var(--shadow); cursor:pointer;
+  }
+  .story-card .story-title{font-family:'Fraunces', serif; font-size:16px; margin-bottom:4px;}
+  .story-card .story-status{
+    display:inline-block; font-size:10.5px; text-transform:uppercase; letter-spacing:0.05em;
+    padding:3px 8px; border-radius:100px; background:var(--sage); color:var(--jade-dark); font-weight:700;
+  }
+
+  /* Modal (API key setup) */
+  .modal-backdrop{
+    position:fixed; inset:0; background:rgba(40,35,31,0.45); display:none;
+    align-items:center; justify-content:center; z-index:50; padding:20px;
+  }
+  .modal-backdrop.active{display:flex;}
+  .modal{
+    background:#fff; border-radius:18px; padding:26px 24px; max-width:400px; width:100%;
+    box-shadow:0 20px 60px rgba(40,35,31,0.25);
+  }
+  .modal h2{font-size:20px; margin:0 0 8px;}
+  .modal p{font-size:13.5px; color:rgba(40,35,31,0.65); line-height:1.5; margin:0 0 16px;}
+  .modal input{
+    width:100%; padding:11px 14px; border:1px solid rgba(40,35,31,0.15); border-radius:10px;
+    font-family:'Public Sans', sans-serif; font-size:14px; margin-bottom:12px; outline:none;
+  }
+  .modal input:focus{border-color:var(--jade);}
+  .modal button.save{
+    width:100%; background:var(--jade); color:var(--ivory); border:none; padding:12px;
+    border-radius:10px; font-weight:600; font-size:14px; cursor:pointer;
+  }
+  .modal button.save:hover{background:var(--jade-dark);}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <div class="mark">
+      <svg viewBox="0 0 26 26" fill="none">
+        <path d="M13 2 L22 9 L19 22 L7 22 L4 9 Z" fill="#1F6B5C"/>
+        <path d="M13 2 L22 9 L19 22 L7 22 L4 9 Z" stroke="#B79A63" stroke-width="0.6" fill="none" opacity="0.5"/>
+      </svg>
+      <span>Jade</span>
+    </div>
+    <button class="icon-btn" id="settings-btn">Réglages</button>
+  </header>
+
+  <main>
+    <!-- HOME -->
+    <section id="home-view" class="view active">
+      <p class="greeting">Salut <span class="accent" id="user-name-slot">toi</span>. Alors, qu'est-ce qui s'est passé aujourd'hui&nbsp;?</p>
+      <p class="subline">Raconte-le à Jade, ou dis-moi ce qu'il te faut.</p>
+
+      <div class="prompts">
+        <button class="prompt-btn primary" data-start="Il m'est arrivé un truc, j'ai envie de te le raconter.">
+          <span class="dot"></span> Raconte-le à Jade
+        </button>
+        <button class="prompt-btn" data-start="J'ai une idée de contenu, dis-moi ce que tu en penses.">
+          <span class="dot"></span> J'ai une idée
+        </button>
+        <button class="prompt-btn" data-start="Je ne sais pas quoi poster aujourd'hui, aide-moi.">
+          <span class="dot"></span> Je ne sais pas quoi poster
+        </button>
+        <button class="prompt-btn" data-start="Je dois vendre un produit, aide-moi à trouver l'angle.">
+          <span class="dot"></span> Je dois vendre quelque chose
+        </button>
+      </div>
+
+      <div class="remembers empty" id="remembers-box">
+        <div class="label">Jade se souvient…</div>
+        <div class="memory-line" id="remembers-text">Rien pour l'instant — commence par te raconter un peu à Jade.</div>
+      </div>
+    </section>
+
+    <!-- CHAT -->
+    <section id="chat-view" class="view">
+      <div class="chat-log" id="chat-log"></div>
+    </section>
+
+    <!-- STORIES -->
+    <section id="stories-view" class="view">
+      <h2 class="serif" style="font-size:20px; margin:14px 0 14px;">Bibliothèque d'Histoires</h2>
+      <div id="stories-list"></div>
+      <div id="stories-empty" class="screen-placeholder" style="display:none;">
+        <span class="serif">Encore vide</span>Raconte quelque chose à Jade et ça atterrira ici.
+      </div>
+    </section>
+
+    <section id="create-view" class="view">
+      <div class="screen-placeholder"><span class="serif">Créer</span>Contenus &amp; séries — bloc suivant.</div>
+    </section>
+    <section id="products-view" class="view">
+      <div class="screen-placeholder"><span class="serif">Produits</span>Bibliothèque produits — bloc suivant.</div>
+    </section>
+    <section id="results-view" class="view">
+      <div class="screen-placeholder"><span class="serif">Résultats</span>Performances — bloc suivant.</div>
+    </section>
+    <section id="me-view" class="view">
+      <div class="screen-placeholder"><span class="serif">Moi</span>Voix, identité, entreprise — bloc suivant.</div>
+    </section>
+  </main>
+
+  <div class="composer" id="composer">
+    <form id="composer-form">
+      <textarea id="composer-input" rows="1" placeholder="Écris à Jade…"></textarea>
+      <button type="submit" id="composer-send" aria-label="Envoyer">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 20L20 12L4 4L4 10L14 12L4 14Z" fill="currentColor"/></svg>
+      </button>
+    </form>
+  </div>
+
+  <nav class="bottomnav">
+    <button data-view="home-view" class="nav-btn active">🏠<div>Aujourd'hui</div></button>
+    <button data-view="stories-view" class="nav-btn">📖<div>Histoires</div></button>
+    <button data-view="create-view" class="nav-btn">✎<div>Créer</div></button>
+    <button data-view="products-view" class="nav-btn">◆<div>Produits</div></button>
+    <button data-view="results-view" class="nav-btn">↗<div>Résultats</div></button>
+    <button data-view="me-view" class="nav-btn">●<div>Moi</div></button>
+  </nav>
+</div>
+
+<!-- Modal réglages / clé Vertex -->
+<div class="modal-backdrop" id="settings-modal">
+  <div class="modal">
+    <h2 class="serif">Connexion à Jade</h2>
+    <p>Colle ta clé Vertex AI (Express, préfixe AQ). Elle reste uniquement dans ce navigateur.</p>
+    <input type="text" id="api-key-input" placeholder="AQ...">
+    <p style="margin-top:-4px;">Ton prénom, pour que Jade te salue correctement :</p>
+    <input type="text" id="first-name-input" placeholder="Ton prénom">
+    <button class="save" id="save-settings">Enregistrer</button>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   JADE — Studio IRL
+   App autonome, un seul fichier HTML, comme les autres studios.
+   - Clé Vertex AI saisie et stockée côté client (localStorage).
+   - Mémoire structurée persistée en IndexedDB (BrandProfile,
+     VoiceProfile, Stories, Messages).
+   - Appel direct à Vertex AI : x-goog-api-key header,
+     modèle gemini-2.5-flash.
+   ============================================================ */
+
+const VERTEX_MODEL = "gemini-2.5-flash";
+const VERTEX_URL = `https://aiplatform.googleapis.com/v1/publishers/google/models/${VERTEX_MODEL}:generateContent`;
+
+const JADE_SYSTEM_PROMPT = `Tu es Jade, partenaire créative des artisanes et petites marques.
+Tu n'es ni un générateur de posts génériques, ni une IA qui félicite systématiquement.
+Tu es chaleureuse, vive, directe, légèrement impertinente quand il le faut, stratégique,
+protectrice du temps de l'artisane. Tu challenges l'idée, jamais la personne.
+Si une idée est faible, dis-le clairement ("Non, je ne posterais pas ça") puis explique
+pourquoi et propose mieux. Tu écris dans la voix de l'utilisatrice une fois que tu la
+connais, mais tu lui parles, à elle, avec ta propre personnalité.
+Ne simule jamais une certitude que tu n'as pas : si tu manques d'info, pose une question précise.
+Quand elle te raconte un événement de sa vie qui pourrait devenir du contenu, dis-le lui
+et propose de le garder dans sa Bibliothèque d'Histoires.`;
+
+// ---------------- IndexedDB (mémoire persistante) ----------------
+const DB_NAME = 'jade_db';
+const DB_VERSION = 1;
+let dbInstance = null;
+
+function openDB(){
+  return new Promise((resolve, reject) => {
+    if(dbInstance) return resolve(dbInstance);
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if(!db.objectStoreNames.contains('profile')) db.createObjectStore('profile', { keyPath: 'key' });
+      if(!db.objectStoreNames.contains('stories')) db.createObjectStore('stories', { keyPath: 'id', autoIncrement: true });
+      if(!db.objectStoreNames.contains('messages')) db.createObjectStore('messages', { keyPath: 'id', autoIncrement: true });
+    };
+    req.onsuccess = (e) => { dbInstance = e.target.result; resolve(dbInstance); };
+    req.onerror = (e) => reject(e);
+  });
+}
+
+async function dbGet(store, key){
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(store, 'readonly');
+    const req = tx.objectStore(store).get(key);
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror = (e) => reject(e);
+  });
+}
+async function dbPut(store, value){
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(store, 'readwrite');
+    const req = tx.objectStore(store).put(value);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = (e) => reject(e);
+  });
+}
+async function dbGetAll(store){
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(store, 'readonly');
+    const req = tx.objectStore(store).getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = (e) => reject(e);
+  });
+}
+
+// ---------------- Réglages (clé API + prénom) ----------------
+function getApiKey(){ return localStorage.getItem('jade_vertex_key') || ''; }
+function getFirstName(){ return localStorage.getItem('jade_first_name') || ''; }
+
+const settingsModal = document.getElementById('settings-modal');
+document.getElementById('settings-btn').addEventListener('click', () => {
+  document.getElementById('api-key-input').value = getApiKey();
+  document.getElementById('first-name-input').value = getFirstName();
+  settingsModal.classList.add('active');
+});
+document.getElementById('save-settings').addEventListener('click', () => {
+  const key = document.getElementById('api-key-input').value.trim();
+  const name = document.getElementById('first-name-input').value.trim();
+  if(key) localStorage.setItem('jade_vertex_key', key);
+  if(name){
+    localStorage.setItem('jade_first_name', name);
+    document.getElementById('user-name-slot').textContent = name;
+  }
+  settingsModal.classList.remove('active');
+});
+settingsModal.addEventListener('click', (e) => {
+  if(e.target === settingsModal) settingsModal.classList.remove('active');
+});
+
+// Premier lancement : demander la clé si absente
+if(!getApiKey()){
+  setTimeout(() => settingsModal.classList.add('active'), 400);
+} else {
+  document.getElementById('user-name-slot').textContent = getFirstName() || 'toi';
+}
+
+// ---------------- Navigation ----------------
+const views = document.querySelectorAll('.view');
+const navBtns = document.querySelectorAll('.nav-btn');
+const composer = document.getElementById('composer');
+
+function showView(id){
+  views.forEach(v => v.classList.toggle('active', v.id === id));
+  navBtns.forEach(b => b.classList.toggle('active', b.dataset.view === id));
+  composer.classList.toggle('active', id === 'chat-view');
+  if(id === 'stories-view') renderStories();
+}
+navBtns.forEach(btn => btn.addEventListener('click', () => showView(btn.dataset.view)));
+
+// ---------------- Chat ----------------
+const chatLog = document.getElementById('chat-log');
+const form = document.getElementById('composer-form');
+const input = document.getElementById('composer-input');
+const sendBtn = document.getElementById('composer-send');
+
+let conversation = [];
+
+function appendMsg(role, text){
+  const el = document.createElement('div');
+  el.className = 'msg ' + role;
+  el.textContent = text;
+  chatLog.appendChild(el);
+  chatLog.scrollTop = chatLog.scrollHeight;
+}
+function appendTyping(){
+  const el = document.createElement('div');
+  el.className = 'typing';
+  el.id = 'typing-indicator';
+  el.innerHTML = '<span></span><span></span><span></span>';
+  chatLog.appendChild(el);
+  chatLog.scrollTop = chatLog.scrollHeight;
+}
+function removeTyping(){
+  const el = document.getElementById('typing-indicator');
+  if(el) el.remove();
+}
+
+async function buildMemoryContext(){
+  const stories = await dbGetAll('stories');
+  const recent = stories.slice(-8).reverse();
+  const brand = await dbGet('profile', 'brandProfile');
+  const voice = await dbGet('profile', 'voiceProfile');
+
+  const parts = [];
+  if(brand) parts.push(`PROFIL ENTREPRISE:\n${JSON.stringify(brand.value)}`);
+  if(voice) parts.push(`PROFIL DE VOIX:\n${JSON.stringify(voice.value)}`);
+  if(recent.length){
+    const summary = recent.map(s => `- [${s.status || 'brute'}] ${s.titre || s.resume || ''}`).join('\n');
+    parts.push(`HISTOIRES RÉCENTES:\n${summary}`);
+  }
+  return parts.length ? parts.join('\n\n') : "Tu ne connais pas encore cette utilisatrice — c'est probablement son premier échange. Commence à apprendre qui elle est.";
+}
+
+async function callVertex(userMessage, history){
+  const apiKey = getApiKey();
+  if(!apiKey){
+    settingsModal.classList.add('active');
+    throw new Error('missing_api_key');
+  }
+  const contextBlock = await buildMemoryContext();
+  const systemPrompt = `${JADE_SYSTEM_PROMPT}\n\n---\nCE QUE TU SAIS DÉJÀ SUR ELLE :\n${contextBlock}`;
+
+  const contents = (history || []).map(t => ({
+    role: t.role === 'jade' ? 'model' : 'user',
+    parts: [{ text: t.text }]
+  }));
+  contents.push({ role: 'user', parts: [{ text: userMessage }] });
+
+  const res = await fetch(VERTEX_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-goog-api-key': apiKey
+    },
+    body: JSON.stringify({
+      system_instruction: { parts: [{ text: systemPrompt }] },
+      contents,
+      generationConfig: { temperature: 0.9, maxOutputTokens: 1024 }
+    })
+  });
+
+  if(!res.ok){
+    const errText = await res.text();
+    throw new Error(`Vertex ${res.status}: ${errText}`);
+  }
+  const data = await res.json();
+  return data?.candidates?.[0]?.content?.parts?.map(p => p.text).join('') || '';
+}
+
+async function sendToJade(userText){
+  conversation.push({role:'user', text:userText});
+  appendMsg('user', userText);
+  input.value = '';
+  autosize();
+  sendBtn.disabled = true;
+  appendTyping();
+
+  try{
+    const reply = await callVertex(userText, conversation.slice(0, -1).slice(-12));
+    removeTyping();
+    conversation.push({role:'jade', text: reply});
+    appendMsg('jade', reply);
+
+    await dbPut('messages', { userMessage: userText, jadeReply: reply, createdAt: Date.now() });
+    refreshRemembers();
+  }catch(err){
+    removeTyping();
+    if(err.message !== 'missing_api_key'){
+      appendMsg('jade', "Attends, quelque chose a coincé. Vérifie ta clé Vertex dans les réglages.");
+    }
+    console.error('Jade chat error:', err);
+  }finally{
+    sendBtn.disabled = false;
+  }
+}
+
+form.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const text = input.value.trim();
+  if(!text) return;
+  sendToJade(text);
+});
+input.addEventListener('keydown', (e) => {
+  if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); form.requestSubmit(); }
+});
+function autosize(){
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 110) + 'px';
+}
+input.addEventListener('input', autosize);
+
+document.querySelectorAll('[data-start]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    showView('chat-view');
+    if(chatLog.children.length === 0) appendMsg('jade', "Alors, raconte.");
+    sendToJade(btn.dataset.start);
+  });
+});
+
+// ---------------- "Jade se souvient…" ----------------
+async function refreshRemembers(){
+  const stories = await dbGetAll('stories');
+  const candidate = stories.find(s => s.status === 'à creuser' || s.status === 'prête');
+  const box = document.getElementById('remembers-box');
+  const txt = document.getElementById('remembers-text');
+  if(candidate){
+    box.classList.remove('empty');
+    txt.textContent = `Tu ne m'as pas encore fini l'histoire : "${candidate.titre || candidate.resume}" 👀`;
+  }else{
+    box.classList.add('empty');
+    txt.textContent = "Rien pour l'instant — commence par te raconter un peu à Jade.";
+  }
+}
+refreshRemembers();
+
+// ---------------- Bibliothèque d'Histoires (lecture simple) ----------------
+async function renderStories(){
+  const stories = await dbGetAll('stories');
+  const list = document.getElementById('stories-list');
+  const empty = document.getElementById('stories-empty');
+  list.innerHTML = '';
+  if(!stories.length){
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  stories.slice().reverse().forEach(s => {
+    const card = document.createElement('div');
+    card.className = 'story-card';
+    card.innerHTML = `
+      <div class="story-title">${s.titre || s.resume || 'Sans titre'}</div>
+      <span class="story-status">${s.status || 'brute'}</span>
+    `;
+    list.appendChild(card);
+  });
+}
+</script>
+</body>
+</html>
