@@ -135,6 +135,15 @@
     padding:3px 8px; border-radius:100px; background:var(--sage); color:var(--jade-dark); font-weight:700;
   }
 
+  /* Sortie de contenu généré */
+  .content-output{background:#fff; border-radius:var(--radius); padding:16px; margin-top:14px; box-shadow:var(--shadow);}
+  .content-output h4{font-family:'Fraunces', serif; font-size:13px; text-transform:uppercase; letter-spacing:0.05em; color:var(--jade-dark); margin:14px 0 4px;}
+  .content-output h4:first-child{margin-top:0;}
+  .content-output p{font-size:14.5px; line-height:1.55; margin:0; white-space:pre-wrap;}
+  .metric-row{display:flex; gap:8px; margin-top:8px;}
+  .metric-row input{flex:1; padding:8px 10px; border:1px solid rgba(40,35,31,0.14); border-radius:8px; font-size:13px; font-family:'Public Sans', sans-serif;}
+  .small-link-btn{background:none; border:none; color:var(--clay); font-size:12.5px; cursor:pointer; padding:4px 0; text-decoration:underline;}
+
   /* Formulaire "Moi" */
   .form-label{display:block; font-size:12px; font-weight:600; color:var(--jade-dark); margin:10px 0 5px;}
   .form-input{
@@ -231,13 +240,58 @@
     </section>
 
     <section id="create-view" class="view">
-      <div class="screen-placeholder"><span class="serif">Créer</span>Contenus &amp; séries — bloc suivant.</div>
+      <h2 class="serif" style="font-size:20px; margin:14px 0 4px;">Créer</h2>
+      <p class="subline">Choisis une histoire, dis-moi l'objectif et le format, je m'occupe du reste.</p>
+      <div id="create-story-list"></div>
+      <div id="create-empty" class="screen-placeholder" style="display:none;">
+        <span class="serif">Rien à transformer pour l'instant</span>Raconte d'abord quelque chose à Jade — les histoires apparaîtront ici.
+      </div>
+
+      <div id="create-panel" style="display:none;">
+        <div class="story-card" style="cursor:default;">
+          <div class="story-title" id="create-panel-title" style="margin-bottom:12px;"></div>
+          <label class="form-label">Objectif de ce contenu</label>
+          <select class="form-input" id="create-objective">
+            <option value="être découverte">Être découverte</option>
+            <option value="obtenir des abonnés">Obtenir des abonnés</option>
+            <option value="créer de l'attachement">Créer de l'attachement</option>
+            <option value="vendre">Vendre</option>
+            <option value="faire revenir demain">Faire revenir demain</option>
+          </select>
+          <label class="form-label">Format</label>
+          <select class="form-input" id="create-format">
+            <option value="Reel court">Reel court</option>
+            <option value="Reel storytelling long">Reel storytelling long</option>
+            <option value="Stories">Stories</option>
+            <option value="Mini-série">Mini-série</option>
+            <option value="Carrousel">Carrousel</option>
+          </select>
+          <button class="prompt-btn primary" id="generate-content-btn" style="margin-top:6px;"><span class="dot"></span> Générer</button>
+        </div>
+        <div id="create-output"></div>
+      </div>
     </section>
+
     <section id="products-view" class="view">
-      <div class="screen-placeholder"><span class="serif">Produits</span>Bibliothèque produits — bloc suivant.</div>
+      <h2 class="serif" style="font-size:20px; margin:14px 0 4px;">Produits</h2>
+      <p class="subline">Ta bibliothèque produits — Jade s'en sert pour trouver l'angle quand tu dois vendre.</p>
+      <div class="story-card" style="cursor:default;">
+        <label class="form-label">Nom du produit</label>
+        <input type="text" class="form-input" id="product-name">
+        <label class="form-label">Description / particularités</label>
+        <textarea class="form-input" id="product-desc" rows="2"></textarea>
+        <button class="prompt-btn primary" id="add-product-btn" style="margin-top:10px;"><span class="dot"></span> Ajouter</button>
+      </div>
+      <div id="products-list" style="margin-top:14px;"></div>
     </section>
+
     <section id="results-view" class="view">
-      <div class="screen-placeholder"><span class="serif">Résultats</span>Performances — bloc suivant.</div>
+      <h2 class="serif" style="font-size:20px; margin:14px 0 4px;">Résultats</h2>
+      <p class="subline">Renseigne les performances de tes contenus publiés — Jade apprend ce qui marche chez toi.</p>
+      <div id="results-list"></div>
+      <div id="results-empty" class="screen-placeholder" style="display:none;">
+        <span class="serif">Rien encore</span>Génère un contenu depuis l'onglet "Créer" pour pouvoir suivre ses résultats ici.
+      </div>
     </section>
     <section id="me-view" class="view">
       <h2 class="serif" style="font-size:20px; margin:14px 0 4px;">Moi</h2>
@@ -339,15 +393,67 @@ Si une idée est faible, dis-le clairement ("Non, je ne posterais pas ça") puis
 pourquoi et propose mieux. Tu écris dans la voix de l'utilisatrice une fois que tu la
 connais, mais tu lui parles, à elle, avec ta propre personnalité.
 Ne simule jamais une certitude que tu n'as pas : si tu manques d'info, pose une question précise.
-Quand elle te raconte un événement de sa vie qui pourrait devenir du contenu, dis-le lui
-et propose de le garder dans sa Bibliothèque d'Histoires.
 Règle absolue : tu parles TOUJOURS à la première personne ("je"), jamais à la troisième
 personne. Ne dis jamais "Jade est..." ou "Jade pense que..." — dis "je suis...", "je pense
-que...". Tu es en train de lui parler directement, pas de décrire un personnage.`;
+que...". Tu es en train de lui parler directement, pas de décrire un personnage.
+
+--- NARRATIVE INTELLIGENCE ENGINE ---
+Tu ne dois pas seulement savoir QUOI raconter, mais COMMENT raconter chaque histoire.
+Ne demande JAMAIS à l'utilisatrice quelle structure narrative elle veut utiliser — elle n'a
+pas à connaître la théorie. Elle raconte, tu analyses, tu choisis en silence. La mécanique
+narrative reste invisible ; l'expérience reste humaine.
+
+Structures que tu connais et peux choisir selon l'histoire (jamais annoncées à l'utilisatrice) :
+1. Trame narrative : situation initiale → déclencheur → péripéties → résolution → situation finale.
+2. Plongeon inversé : commencer directement au moment de tension, revenir au contexte ensuite.
+3. "Ah mais en fait non" : contexte → péripéties → résolution apparente → twist → chute (seulement si un vrai retournement existe).
+4. Cliffhanger : contexte → tension → fin volontairement non résolue (seulement si une vraie suite existe).
+5. Cercle narratif : familier → désir → inconnu → adaptation → obtention → prix → retour → transformation.
+6. Voyage du héros : à réserver aux histoires majeures (création de marque, reconversion, crise) — jamais pour une petite anecdote d'atelier.
+7. Open loop : information intrigante → question → progression → fermeture de boucle (ne jamais promettre sans tenir).
+8. Erreur → conséquence → apprentissage.
+9. Avant → rupture → après.
+10. Cliente → problème → création → réaction (idéal pour intégrer un produit naturellement).
+11. L'objet raconte l'histoire : partir d'un détail physique réel (couture, matière, imperfection).
+12. Compte à rebours : seulement s'il existe une échéance réelle.
+13. L'histoire cachée : la surface parle de X, la profondeur parle de Y — sans sur-intellectualiser.
+
+Règles absolues du Narrative Engine :
+- Ne jamais inventer une émotion, une pensée, une parole de cliente, un événement ou un résultat
+  que l'utilisatrice n'a pas donné. Si une info manque, demande ("Et là, tu t'es dit quoi ?"),
+  ne fabrique jamais.
+- Maximum 1 à 3 questions à la fois, jamais un interrogatoire. Chaque question doit augmenter
+  la valeur narrative de l'histoire.
+- Ne jamais sur-dramatiser. Préserve les proportions émotionnelles réelles ("j'ai cassé une
+  aiguille" ne devient jamais "mon rêve s'est effondré").
+- Une histoire peut produire plusieurs contenus différents dans le temps (angles différents) —
+  ne la considère jamais "épuisée" après un seul contenu.
+- Si une histoire n'est pas assez intéressante pour un contenu dédié, dis-le clairement, tout
+  en la gardant en mémoire : "Je la garde, mais je ne pense pas qu'elle mérite un Reel toute seule."
+
+Quand l'utilisatrice raconte un événement (mode "Il m'est arrivé un truc") :
+écoute, pose 1-3 questions seulement si nécessaire, puis dis naturellement ce que tu en penses
+et si ça a du potentiel ("Celle-là je la garde, il y a un vrai retournement à la fin.").
+Termine en lui demandant si elle veut juste que tu gardes l'histoire ou si vous en faites
+quelque chose maintenant.
+
+EXTRACTION STRUCTURÉE — TRÈS IMPORTANT :
+Quand tu identifies qu'un message contient une histoire qui mérite d'être conservée dans la
+Bibliothèque d'Histoires, termine ta réponse (après ton message normal et chaleureux à
+l'utilisatrice) par un bloc cachée au format exact suivant, sur sa propre ligne, que
+l'utilisatrice ne verra jamais (il sera retiré avant affichage) :
+[[STORY_JSON]]{"titre":"...", "resume":"...", "personnesImpliquees":"...", "produitAssocie":"",
+"emotionDominante":"...", "probleme":"...", "tension":"...", "resolution":"...",
+"tension_score":0-10, "emotion_score":0-10, "twist_score":0-10, "transformation_score":0-10,
+"series_potential":0-10, "commercial_potential":0-10, "recommended_structures":["..."],
+"open_questions":"...", "status":"brute|à creuser|prête"}[[/STORY_JSON]]
+N'ajoute ce bloc QUE quand une vraie histoire vient d'être racontée — jamais pour une simple
+question ou une discussion stratégique. Ne mets jamais deux blocs. Les champs inconnus restent
+en chaîne vide, jamais inventés.`;
 
 // ---------------- IndexedDB (mémoire persistante) ----------------
 const DB_NAME = 'jade_db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 let dbInstance = null;
 
 function openDB(){
@@ -359,6 +465,8 @@ function openDB(){
       if(!db.objectStoreNames.contains('profile')) db.createObjectStore('profile', { keyPath: 'key' });
       if(!db.objectStoreNames.contains('stories')) db.createObjectStore('stories', { keyPath: 'id', autoIncrement: true });
       if(!db.objectStoreNames.contains('messages')) db.createObjectStore('messages', { keyPath: 'id', autoIncrement: true });
+      if(!db.objectStoreNames.contains('products')) db.createObjectStore('products', { keyPath: 'id', autoIncrement: true });
+      if(!db.objectStoreNames.contains('content')) db.createObjectStore('content', { keyPath: 'id', autoIncrement: true });
     };
     req.onsuccess = (e) => { dbInstance = e.target.result; resolve(dbInstance); };
     req.onerror = (e) => reject(e);
@@ -389,6 +497,15 @@ async function dbGetAll(store){
     const tx = db.transaction(store, 'readonly');
     const req = tx.objectStore(store).getAll();
     req.onsuccess = () => resolve(req.result || []);
+    req.onerror = (e) => reject(e);
+  });
+}
+async function dbDelete(store, key){
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(store, 'readwrite');
+    const req = tx.objectStore(store).delete(key);
+    req.onsuccess = () => resolve(true);
     req.onerror = (e) => reject(e);
   });
 }
@@ -437,14 +554,25 @@ const views = document.querySelectorAll('.view');
 const navBtns = document.querySelectorAll('.nav-btn');
 const composer = document.getElementById('composer');
 
-function showView(id){
+function showView(id, navId){
   views.forEach(v => v.classList.toggle('active', v.id === id));
-  navBtns.forEach(b => b.classList.toggle('active', b.dataset.view === id));
+  navBtns.forEach(b => b.classList.toggle('active', b.dataset.view === (navId || id)));
   composer.classList.toggle('active', id === 'chat-view');
   if(id === 'stories-view') renderStories();
   if(id === 'me-view') syncMeForm();
+  if(id === 'create-view') renderCreateStoryPicker();
+  if(id === 'products-view') renderProducts();
+  if(id === 'results-view') renderResults();
 }
-navBtns.forEach(btn => btn.addEventListener('click', () => showView(btn.dataset.view)));
+navBtns.forEach(btn => btn.addEventListener('click', () => {
+  const target = btn.dataset.view;
+  // "Aujourd'hui" doit ramener à la conversation en cours plutôt que la réinitialiser.
+  if(target === 'home-view' && conversation.length > 0){
+    showView('chat-view', 'home-view');
+  }else{
+    showView(target);
+  }
+}));
 
 // ---------------- Chat ----------------
 const chatLog = document.getElementById('chat-log');
@@ -453,6 +581,30 @@ const input = document.getElementById('composer-input');
 const sendBtn = document.getElementById('composer-send');
 
 let conversation = [];
+
+// ---------------- Persistance de la conversation en cours ----------------
+// Sauvegardée en localStorage pour survivre à une fermeture/réouverture
+// de l'appli (Safari décharge souvent l'onglet en arrière-plan).
+function saveConversation(){
+  localStorage.setItem('jade_current_conversation', JSON.stringify(conversation));
+}
+function loadSavedConversation(){
+  try{
+    const raw = localStorage.getItem('jade_current_conversation');
+    return raw ? JSON.parse(raw) : [];
+  }catch(e){
+    return [];
+  }
+}
+function restoreConversationIfAny(){
+  const saved = loadSavedConversation();
+  if(saved.length){
+    conversation = saved;
+    chatLog.innerHTML = '';
+    saved.forEach(m => appendMsg(m.role, m.text));
+    showView('chat-view');
+  }
+}
 
 function appendMsg(role, text){
   const el = document.createElement('div');
@@ -514,7 +666,7 @@ async function callVertex(userMessage, history){
     body: JSON.stringify({
       system_instruction: { parts: [{ text: systemPrompt }] },
       contents,
-      generationConfig: { temperature: 0.9, maxOutputTokens: 1024 }
+      generationConfig: { temperature: 0.9, maxOutputTokens: 2048 }
     })
   });
 
@@ -529,18 +681,26 @@ async function callVertex(userMessage, history){
 async function sendToJade(userText){
   conversation.push({role:'user', text:userText});
   appendMsg('user', userText);
+  saveConversation();
   input.value = '';
   autosize();
   sendBtn.disabled = true;
   appendTyping();
 
   try{
-    const reply = await callVertex(userText, conversation.slice(0, -1).slice(-12));
+    const rawReply = await callVertex(userText, conversation.slice(0, -1).slice(-12));
     removeTyping();
-    conversation.push({role:'jade', text: reply});
-    appendMsg('jade', reply);
+    const { visibleText, story } = extractStoryBlock(rawReply);
+    conversation.push({role:'jade', text: visibleText});
+    appendMsg('jade', visibleText);
+    saveConversation();
 
-    await dbPut('messages', { userMessage: userText, jadeReply: reply, createdAt: Date.now() });
+    if(story){
+      await dbPut('stories', { ...story, createdAt: Date.now() });
+      renderStories();
+    }
+
+    await dbPut('messages', { userMessage: userText, jadeReply: visibleText, createdAt: Date.now() });
     refreshRemembers();
   }catch(err){
     removeTyping();
@@ -551,6 +711,16 @@ async function sendToJade(userText){
   }finally{
     sendBtn.disabled = false;
   }
+}
+
+// Retire le bloc [[STORY_JSON]]...[[/STORY_JSON]] du texte affiché et le parse.
+function extractStoryBlock(rawText){
+  const match = rawText.match(/\[\[STORY_JSON\]\]([\s\S]*?)\[\[\/STORY_JSON\]\]/);
+  if(!match) return { visibleText: rawText.trim(), story: null };
+  const visibleText = rawText.replace(match[0], '').trim();
+  let story = null;
+  try{ story = JSON.parse(match[1]); }catch(e){ console.warn('Story JSON illisible', e); }
+  return { visibleText, story };
 }
 
 form.addEventListener('submit', async (e) => {
@@ -783,6 +953,7 @@ document.getElementById('save-me-btn').addEventListener('click', async () => {
 
 checkOnboardingBanner();
 syncMeForm();
+restoreConversationIfAny();
 
 // ---------------- Bibliothèque d'Histoires (lecture simple) ----------------
 async function renderStories(){
@@ -802,6 +973,231 @@ async function renderStories(){
       <div class="story-title">${s.titre || s.resume || 'Sans titre'}</div>
       <span class="story-status">${s.status || 'brute'}</span>
     `;
+    list.appendChild(card);
+  });
+}
+
+// ---------------- Bloc "Créer" — Transforme cette histoire (section 25) ----------------
+let selectedStoryForCreate = null;
+
+async function renderCreateStoryPicker(){
+  const stories = await dbGetAll('stories');
+  const list = document.getElementById('create-story-list');
+  const empty = document.getElementById('create-empty');
+  const panel = document.getElementById('create-panel');
+  list.innerHTML = '';
+  panel.style.display = 'none';
+  selectedStoryForCreate = null;
+
+  if(!stories.length){
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  stories.slice().reverse().forEach(s => {
+    const card = document.createElement('div');
+    card.className = 'story-card';
+    card.innerHTML = `
+      <div class="story-title">${s.titre || s.resume || 'Sans titre'}</div>
+      <span class="story-status">${s.status || 'brute'}</span>
+    `;
+    card.addEventListener('click', () => openCreatePanel(s));
+    list.appendChild(card);
+  });
+}
+
+function openCreatePanel(story){
+  selectedStoryForCreate = story;
+  document.getElementById('create-panel-title').textContent = story.titre || story.resume || 'Histoire sélectionnée';
+  document.getElementById('create-output').innerHTML = '';
+  document.getElementById('create-panel').style.display = 'block';
+}
+
+document.getElementById('generate-content-btn').addEventListener('click', async () => {
+  if(!selectedStoryForCreate) return;
+  const objective = document.getElementById('create-objective').value;
+  const format = document.getElementById('create-format').value;
+  const btn = document.getElementById('generate-content-btn');
+  const output = document.getElementById('create-output');
+  btn.disabled = true;
+  output.innerHTML = `<div class="content-output"><p style="color:rgba(40,35,31,0.5);">Jade réfléchit à l'angle…</p></div>`;
+
+  try{
+    const raw = await callVertexForContent(selectedStoryForCreate, objective, format);
+    const parsed = parseContentSections(raw);
+    renderContentOutput(parsed, raw);
+  }catch(err){
+    output.innerHTML = `<div class="content-output"><p>Attends, quelque chose a coincé. Vérifie ta clé Vertex.</p></div>`;
+    console.error(err);
+  }finally{
+    btn.disabled = false;
+  }
+});
+
+async function callVertexForContent(story, objective, format){
+  const apiKey = getApiKey();
+  if(!apiKey){ settingsModal.classList.add('active'); throw new Error('missing_api_key'); }
+
+  const voice = (await dbGet('profile', 'voiceProfile'))?.value || {};
+  const brand = (await dbGet('profile', 'brandProfile'))?.value || {};
+
+  const instruction = `${JADE_SYSTEM_PROMPT}
+
+---
+TÂCHE : transformer cette histoire en contenu (mode "Transforme cette histoire").
+
+HISTOIRE :
+${JSON.stringify(story)}
+
+OBJECTIF DU CONTENU : ${objective}
+FORMAT : ${format}
+PROFIL DE VOIX À RESPECTER : ${JSON.stringify(voice)}
+PROFIL ENTREPRISE : ${JSON.stringify(brand)}
+
+Sélectionne en interne la structure narrative la plus adaptée (ne l'annonce pas). Réponds
+UNIQUEMENT avec ces sections, chacune précédée exactement de son titre en majuscules suivi de
+deux-points, sans autre texte avant ou après :
+
+ANGLE: (pourquoi cette version de l'histoire est intéressante)
+HOOK: (première phrase / texte écran)
+STRUCTURE: (déroulé narratif en quelques lignes)
+SCRIPT: (dans la voix de l'utilisatrice, prêt à être filmé/écrit)
+VISUELS: (ce qu'elle peut filmer dans son atelier)
+CAPTION: (si pertinent pour ce format)
+CTA: (uniquement si ça sert l'objectif, sinon écris "Aucun")
+METRIQUE: (ce qu'il faudra observer après publication)`;
+
+  const res = await fetch(VERTEX_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+    body: JSON.stringify({
+      system_instruction: { parts: [{ text: instruction }] },
+      contents: [{ role: 'user', parts: [{ text: "Génère le contenu." }] }],
+      generationConfig: { temperature: 0.85, maxOutputTokens: 2048 }
+    })
+  });
+  if(!res.ok) throw new Error(`Vertex ${res.status}: ${await res.text()}`);
+  const data = await res.json();
+  return data?.candidates?.[0]?.content?.parts?.map(p => p.text).join('') || '';
+}
+
+function parseContentSections(raw){
+  const keys = ['ANGLE','HOOK','STRUCTURE','SCRIPT','VISUELS','CAPTION','CTA','METRIQUE'];
+  const result = {};
+  for(let i = 0; i < keys.length; i++){
+    const key = keys[i];
+    const nextKey = keys[i+1];
+    const startRe = new RegExp(key + '\\s*:');
+    const startMatch = raw.match(startRe);
+    if(!startMatch) continue;
+    const start = startMatch.index + startMatch[0].length;
+    let end = raw.length;
+    if(nextKey){
+      const endMatch = raw.slice(start).match(new RegExp(nextKey + '\\s*:'));
+      if(endMatch) end = start + endMatch.index;
+    }
+    result[key] = raw.slice(start, end).trim();
+  }
+  return result;
+}
+
+function renderContentOutput(parsed, raw){
+  const output = document.getElementById('create-output');
+  const labels = { ANGLE:'Angle', HOOK:'Hook', STRUCTURE:'Structure', SCRIPT:'Script', VISUELS:'Visuels', CAPTION:'Caption', CTA:'CTA', METRIQUE:'Métrique à observer' };
+  let html = '<div class="content-output">';
+  Object.keys(labels).forEach(k => {
+    if(parsed[k]) html += `<h4>${labels[k]}</h4><p>${parsed[k]}</p>`;
+  });
+  html += `<button class="prompt-btn primary small-save-content" style="margin-top:14px;"><span class="dot"></span> Enregistrer ce contenu</button>`;
+  html += '</div>';
+  output.innerHTML = html;
+
+  output.querySelector('.small-save-content').addEventListener('click', async () => {
+    await dbPut('content', {
+      storyId: selectedStoryForCreate.id,
+      storyTitle: selectedStoryForCreate.titre || selectedStoryForCreate.resume,
+      objective: document.getElementById('create-objective').value,
+      format: document.getElementById('create-format').value,
+      sections: parsed,
+      createdAt: Date.now()
+    });
+    // Marquer l'histoire comme utilisée sans la considérer "épuisée"
+    const story = await dbGet('stories', selectedStoryForCreate.id) || selectedStoryForCreate;
+    story.status = 'utilisée';
+    await dbPut('stories', story);
+    renderStories();
+    output.querySelector('.small-save-content').textContent = 'Enregistré ✓';
+    output.querySelector('.small-save-content').disabled = true;
+  });
+}
+
+// ---------------- Bloc "Produits" ----------------
+async function renderProducts(){
+  const products = await dbGetAll('products');
+  const list = document.getElementById('products-list');
+  list.innerHTML = '';
+  products.slice().reverse().forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'story-card';
+    card.style.cursor = 'default';
+    card.innerHTML = `
+      <div class="story-title">${p.name}</div>
+      <p style="font-size:13.5px; color:rgba(40,35,31,0.65); margin:4px 0 8px;">${p.description || ''}</p>
+      <button class="small-link-btn">Supprimer</button>
+    `;
+    card.querySelector('.small-link-btn').addEventListener('click', async () => {
+      await dbDelete('products', p.id);
+      renderProducts();
+    });
+    list.appendChild(card);
+  });
+}
+
+document.getElementById('add-product-btn').addEventListener('click', async () => {
+  const name = document.getElementById('product-name').value.trim();
+  const description = document.getElementById('product-desc').value.trim();
+  if(!name) return;
+  await dbPut('products', { name, description, createdAt: Date.now() });
+  document.getElementById('product-name').value = '';
+  document.getElementById('product-desc').value = '';
+  renderProducts();
+});
+
+// ---------------- Bloc "Résultats" ----------------
+async function renderResults(){
+  const items = await dbGetAll('content');
+  const list = document.getElementById('results-list');
+  const empty = document.getElementById('results-empty');
+  list.innerHTML = '';
+  if(!items.length){
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  items.slice().reverse().forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'story-card';
+    card.style.cursor = 'default';
+    const m = item.metrics || {};
+    card.innerHTML = `
+      <div class="story-title">${item.storyTitle || 'Contenu'}</div>
+      <span class="story-status">${item.format || ''} · ${item.objective || ''}</span>
+      <div class="metric-row">
+        <input type="number" placeholder="Vues" class="m-vues" value="${m.vues || ''}">
+        <input type="number" placeholder="Sauvegardes" class="m-sauvegardes" value="${m.sauvegardes || ''}">
+        <input type="number" placeholder="Ventes" class="m-ventes" value="${m.ventes || ''}">
+      </div>
+      <button class="small-link-btn" style="margin-top:8px;">Enregistrer les résultats</button>
+    `;
+    card.querySelector('.small-link-btn').addEventListener('click', async () => {
+      item.metrics = {
+        vues: Number(card.querySelector('.m-vues').value) || 0,
+        sauvegardes: Number(card.querySelector('.m-sauvegardes').value) || 0,
+        ventes: Number(card.querySelector('.m-ventes').value) || 0
+      };
+      await dbPut('content', item);
+      card.querySelector('.small-link-btn').textContent = 'Enregistré ✓';
+    });
     list.appendChild(card);
   });
 }
