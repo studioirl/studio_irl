@@ -100,6 +100,12 @@
     border-radius:50%; flex-shrink:0; cursor:pointer; display:flex;align-items:center;justify-content:center;
   }
   .composer button:disabled{opacity:0.4;}
+  #mic-btn{
+    background:transparent; color:var(--jade-dark); border:none; width:32px;height:32px;
+    border-radius:50%; flex-shrink:0; cursor:pointer; display:flex;align-items:center;justify-content:center;
+  }
+  #mic-btn.listening{color:var(--clay); animation:pulse-mic 1s infinite;}
+  @keyframes pulse-mic{0%,100%{opacity:1;}50%{opacity:0.4;}}
 
   nav.bottomnav{
     position:fixed; bottom:0;left:50%; transform:translateX(-50%); width:100%; max-width:520px;
@@ -279,6 +285,9 @@
 
   <div class="composer" id="composer">
     <form id="composer-form">
+      <button type="button" id="mic-btn" aria-label="Dicter">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 15a3 3 0 003-3V6a3 3 0 00-6 0v6a3 3 0 003 3z" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M19 11a7 7 0 01-14 0M12 18v3" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>
+      </button>
       <textarea id="composer-input" rows="1" placeholder="Écris à Jade…"></textarea>
       <button type="submit" id="composer-send" aria-label="Envoyer">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 20L20 12L4 4L4 10L14 12L4 14Z" fill="currentColor"/></svg>
@@ -568,6 +577,59 @@ function autosize(){
   input.style.height = Math.min(input.scrollHeight, 110) + 'px';
 }
 input.addEventListener('input', autosize);
+
+// ---------------- Dictée (bouton micro) ----------------
+// Utilise la reconnaissance vocale native du navigateur — gratuit,
+// aucun appel à Vertex. Simple fallback si le navigateur ne la supporte pas
+// (dans ce cas, le micro du clavier iOS fait déjà le même travail).
+const micBtn = document.getElementById('mic-btn');
+const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognizer = null;
+let isListening = false;
+
+if(SpeechRecognitionAPI){
+  recognizer = new SpeechRecognitionAPI();
+  recognizer.lang = 'fr-FR';
+  recognizer.continuous = false;
+  recognizer.interimResults = true;
+
+  recognizer.onstart = () => {
+    isListening = true;
+    micBtn.classList.add('listening');
+  };
+  recognizer.onend = () => {
+    isListening = false;
+    micBtn.classList.remove('listening');
+  };
+  recognizer.onerror = (e) => {
+    isListening = false;
+    micBtn.classList.remove('listening');
+    console.warn('Dictée : erreur', e.error);
+  };
+  recognizer.onresult = (event) => {
+    let transcript = '';
+    for(let i = 0; i < event.results.length; i++){
+      transcript += event.results[i][0].transcript;
+    }
+    input.value = transcript;
+    autosize();
+  };
+
+  micBtn.addEventListener('click', () => {
+    if(isListening){
+      recognizer.stop();
+    }else{
+      input.value = '';
+      recognizer.start();
+    }
+  });
+}else{
+  // Pas de Web Speech API dispo (certaines versions de Safari) —
+  // le micro du clavier iOS reste la solution : on le signale au clic.
+  micBtn.addEventListener('click', () => {
+    alert("La dictée intégrée n'est pas disponible sur ce navigateur. Utilise le micro de ton clavier (à côté de la barre d'espace) pour dicter directement dans le champ.");
+  });
+}
 
 document.querySelectorAll('[data-start]').forEach(btn => {
   btn.addEventListener('click', () => {
