@@ -129,6 +129,15 @@
     padding:3px 8px; border-radius:100px; background:var(--sage); color:var(--jade-dark); font-weight:700;
   }
 
+  /* Formulaire "Moi" */
+  .form-label{display:block; font-size:12px; font-weight:600; color:var(--jade-dark); margin:10px 0 5px;}
+  .form-input{
+    width:100%; padding:10px 12px; border:1px solid rgba(40,35,31,0.14); border-radius:9px;
+    font-family:'Public Sans', sans-serif; font-size:14px; color:var(--charcoal);
+    background:var(--ivory); outline:none; resize:vertical;
+  }
+  .form-input:focus{border-color:var(--jade);}
+
   /* Modal (API key setup) */
   .modal-backdrop{
     position:fixed; inset:0; background:rgba(40,35,31,0.45); display:none;
@@ -172,6 +181,13 @@
     <section id="home-view" class="view active">
       <p class="greeting">Salut <span class="accent" id="user-name-slot">toi</span>. Alors, qu'est-ce qui s'est passé aujourd'hui&nbsp;?</p>
       <p class="subline">Raconte-le à Jade, ou dis-moi ce qu'il te faut.</p>
+
+      <!-- ONBOARDING BANNER (affiché tant que le profil n'est pas rempli) -->
+      <div class="story-card" id="onboarding-banner" style="display:none; border:1px solid rgba(31,107,92,0.25); background:var(--sage); margin-bottom:16px;">
+        <div class="story-title" style="margin-bottom:6px;">On ne se connaît pas encore</div>
+        <p style="font-size:13.5px; color:rgba(40,35,31,0.7); margin:0 0 12px;">Avant de parler contenu, Jade a besoin de savoir qui tu es. Ça prend quelques minutes, et tu peux t'arrêter et reprendre quand tu veux.</p>
+        <button class="prompt-btn primary" id="start-onboarding-btn" style="margin:0;"><span class="dot"></span> Commencer</button>
+      </div>
 
       <div class="prompts">
         <button class="prompt-btn primary" data-start="Il m'est arrivé un truc, j'ai envie de te le raconter.">
@@ -218,7 +234,46 @@
       <div class="screen-placeholder"><span class="serif">Résultats</span>Performances — bloc suivant.</div>
     </section>
     <section id="me-view" class="view">
-      <div class="screen-placeholder"><span class="serif">Moi</span>Voix, identité, entreprise — bloc suivant.</div>
+      <h2 class="serif" style="font-size:20px; margin:14px 0 4px;">Moi</h2>
+      <p class="subline">Tout ce que Jade sait de toi. Modifie ou complète directement ici — ou via une conversation.</p>
+
+      <div class="story-card" style="cursor:default;">
+        <div class="story-title" style="margin-bottom:10px;">Entreprise</div>
+        <label class="form-label">Prénom</label>
+        <input type="text" class="form-input" id="me-firstName">
+        <label class="form-label">Nom de la marque</label>
+        <input type="text" class="form-input" id="me-brandName">
+        <label class="form-label">Depuis quand ?</label>
+        <input type="text" class="form-input" id="me-startedDate">
+        <label class="form-label">Pourquoi as-tu commencé ?</label>
+        <textarea class="form-input" id="me-whyStarted" rows="2"></textarea>
+        <label class="form-label">Qu'est-ce qui a été difficile ?</label>
+        <textarea class="form-input" id="me-difficulties" rows="2"></textarea>
+        <label class="form-label">Qu'est-ce qui te rend fière ?</label>
+        <textarea class="form-input" id="me-proudOf" rows="2"></textarea>
+        <label class="form-label">Qui achète chez toi ?</label>
+        <textarea class="form-input" id="me-customerTypes" rows="2"></textarea>
+        <label class="form-label">Tes valeurs</label>
+        <textarea class="form-input" id="me-values" rows="2"></textarea>
+      </div>
+
+      <div class="story-card" style="cursor:default;">
+        <div class="story-title" style="margin-bottom:10px;">Voix</div>
+        <label class="form-label">Expressions favorites</label>
+        <textarea class="form-input" id="me-favExpr" rows="2" placeholder="Séparées par des virgules"></textarea>
+        <label class="form-label">Expressions interdites (jamais dans ta bouche)</label>
+        <textarea class="form-input" id="me-forbiddenExpr" rows="2" placeholder="Séparées par des virgules"></textarea>
+        <label class="form-label">Comment parles-tu naturellement ?</label>
+        <textarea class="form-input" id="me-tone" rows="2"></textarea>
+        <label class="form-label">Tu tutoies ou tu vouvoies ta communauté ?</label>
+        <select class="form-input" id="me-tutoiement">
+          <option value="tutoiement">Tutoiement</option>
+          <option value="vouvoiement">Vouvoiement</option>
+        </select>
+      </div>
+
+      <button class="prompt-btn primary" id="save-me-btn" style="margin-top:4px;"><span class="dot"></span> Enregistrer</button>
+      <p id="save-me-confirm" style="display:none; text-align:center; font-size:13px; color:var(--jade-dark); margin-top:10px;">Enregistré.</p>
     </section>
   </main>
 
@@ -276,7 +331,10 @@ pourquoi et propose mieux. Tu écris dans la voix de l'utilisatrice une fois que
 connais, mais tu lui parles, à elle, avec ta propre personnalité.
 Ne simule jamais une certitude que tu n'as pas : si tu manques d'info, pose une question précise.
 Quand elle te raconte un événement de sa vie qui pourrait devenir du contenu, dis-le lui
-et propose de le garder dans sa Bibliothèque d'Histoires.`;
+et propose de le garder dans sa Bibliothèque d'Histoires.
+Règle absolue : tu parles TOUJOURS à la première personne ("je"), jamais à la troisième
+personne. Ne dis jamais "Jade est..." ou "Jade pense que..." — dis "je suis...", "je pense
+que...". Tu es en train de lui parler directement, pas de décrire un personnage.`;
 
 // ---------------- IndexedDB (mémoire persistante) ----------------
 const DB_NAME = 'jade_db';
@@ -336,15 +394,23 @@ document.getElementById('settings-btn').addEventListener('click', () => {
   document.getElementById('first-name-input').value = getFirstName();
   settingsModal.classList.add('active');
 });
-document.getElementById('save-settings').addEventListener('click', () => {
+document.getElementById('save-settings').addEventListener('click', async () => {
   const key = document.getElementById('api-key-input').value.trim();
   const name = document.getElementById('first-name-input').value.trim();
+  const isFirstSetup = !getApiKey();
   if(key) localStorage.setItem('jade_vertex_key', key);
   if(name){
     localStorage.setItem('jade_first_name', name);
     document.getElementById('user-name-slot').textContent = name;
   }
   settingsModal.classList.remove('active');
+
+  if(isFirstSetup && key){
+    const brand = await dbGet('profile', 'brandProfile');
+    if(!brand || !brand.value?.onboardingComplete){
+      startOnboarding();
+    }
+  }
 });
 settingsModal.addEventListener('click', (e) => {
   if(e.target === settingsModal) settingsModal.classList.remove('active');
@@ -367,6 +433,7 @@ function showView(id){
   navBtns.forEach(b => b.classList.toggle('active', b.dataset.view === id));
   composer.classList.toggle('active', id === 'chat-view');
   if(id === 'stories-view') renderStories();
+  if(id === 'me-view') syncMeForm();
 }
 navBtns.forEach(btn => btn.addEventListener('click', () => showView(btn.dataset.view)));
 
@@ -477,10 +544,20 @@ async function sendToJade(userText){
   }
 }
 
-form.addEventListener('submit', (e) => {
+form.addEventListener('submit', async (e) => {
   e.preventDefault();
   const text = input.value.trim();
   if(!text) return;
+
+  if(onboardingActive){
+    appendMsg('user', text);
+    input.value = '';
+    autosize();
+    await saveOnboardingAnswer(text);
+    askNextOnboardingStep();
+    return;
+  }
+
   sendToJade(text);
 });
 input.addEventListener('keydown', (e) => {
@@ -515,6 +592,135 @@ async function refreshRemembers(){
   }
 }
 refreshRemembers();
+
+// ---------------- Onboarding guidé (section 19 du brief) ----------------
+// Séquence scriptée (pas générée par le LLM) pour garantir une donnée
+// structurée fiable — la conversation reste naturelle, mais chaque réponse
+// est enregistrée directement dans brandProfile / voiceProfile.
+const ONBOARDING_STEPS = [
+  { field: 'whatYouMake',    target: 'brandProfile', q: "Pour commencer : qu'est-ce que tu fabriques ?" },
+  { field: 'startedDate',    target: 'brandProfile', q: "Depuis quand ?" },
+  { field: 'whyStarted',     target: 'brandProfile', q: "Pourquoi as-tu commencé cette activité ?" },
+  { field: 'difficulties',   target: 'brandProfile', q: "Qu'est-ce qui a été difficile jusqu'ici ?" },
+  { field: 'proudOf',        target: 'brandProfile', q: "Et qu'est-ce qui te rend le plus fière ?" },
+  { field: 'customerTypes',  target: 'brandProfile', q: "Qui achète chez toi, en général ?" },
+  { field: 'whyBuy',         target: 'brandProfile', q: "Pourquoi on achète chez toi et pas ailleurs, tu penses ?" },
+  { field: 'values',         target: 'brandProfile', q: "Si tu devais résumer tes valeurs en quelques mots ?" },
+  { field: 'tone',           target: 'voiceProfile',  q: "Maintenant parlons de ta voix. Comment tu parles naturellement — familière, posée, cash, drôle ?" },
+  { field: 'favoriteExpressions', target: 'voiceProfile', q: "Tu as des expressions ou des mots que tu utilises souvent ?" },
+  { field: 'forbiddenExpressions', target: 'voiceProfile', q: "Et à l'inverse, des mots ou tournures que tu ne dirais jamais, qui sonnent 'trop IA' pour toi ?" },
+  { field: 'whyJade',        target: 'brandProfile', q: "Dernière question : pourquoi tu voulais utiliser Jade ?" },
+];
+
+let onboardingActive = false;
+let onboardingStepIndex = 0;
+
+async function getOnboardingProgress(){
+  const p = await dbGet('profile', 'onboardingProgress');
+  return p ? p.value : 0;
+}
+async function setOnboardingProgress(i){
+  await dbPut('profile', { key: 'onboardingProgress', value: i });
+}
+
+async function checkOnboardingBanner(){
+  const brand = await dbGet('profile', 'brandProfile');
+  const done = brand && brand.value && brand.value.onboardingComplete;
+  document.getElementById('onboarding-banner').style.display = done ? 'none' : 'block';
+}
+
+async function startOnboarding(){
+  onboardingActive = true;
+  onboardingStepIndex = await getOnboardingProgress();
+  showView('chat-view');
+  chatLog.innerHTML = '';
+  appendMsg('jade', "Avant de parler contenu, j'ai besoin de comprendre qui tu es. Quelques questions, tu peux t'arrêter quand tu veux.");
+  askNextOnboardingStep();
+}
+
+function askNextOnboardingStep(){
+  if(onboardingStepIndex >= ONBOARDING_STEPS.length){
+    finishOnboarding();
+    return;
+  }
+  appendMsg('jade', ONBOARDING_STEPS[onboardingStepIndex].q);
+}
+
+async function finishOnboarding(){
+  const brand = (await dbGet('profile', 'brandProfile')) || { key: 'brandProfile', value: {} };
+  brand.value.onboardingComplete = true;
+  await dbPut('profile', brand);
+  onboardingActive = false;
+  appendMsg('jade', "Merci pour tout ça. Je commence déjà à mieux te connaître — et je vais continuer à apprendre à chaque fois que tu me racontes quelque chose.");
+  checkOnboardingBanner();
+  syncMeForm();
+}
+
+async function saveOnboardingAnswer(text){
+  const step = ONBOARDING_STEPS[onboardingStepIndex];
+  const record = (await dbGet('profile', step.target)) || { key: step.target, value: {} };
+  record.value[step.field] = text;
+  await dbPut('profile', record);
+  onboardingStepIndex++;
+  await setOnboardingProgress(onboardingStepIndex);
+}
+
+document.getElementById('start-onboarding-btn').addEventListener('click', startOnboarding);
+
+// ---------------- Formulaire "Moi" ----------------
+async function syncMeForm(){
+  const brand = (await dbGet('profile', 'brandProfile'))?.value || {};
+  const voice = (await dbGet('profile', 'voiceProfile'))?.value || {};
+  document.getElementById('me-firstName').value = getFirstName();
+  document.getElementById('me-brandName').value = brand.brandName || '';
+  document.getElementById('me-startedDate').value = brand.startedDate || '';
+  document.getElementById('me-whyStarted').value = brand.whyStarted || '';
+  document.getElementById('me-difficulties').value = brand.difficulties || '';
+  document.getElementById('me-proudOf').value = brand.proudOf || '';
+  document.getElementById('me-customerTypes').value = brand.customerTypes || '';
+  document.getElementById('me-values').value = brand.values || '';
+  document.getElementById('me-favExpr').value = voice.favoriteExpressions || '';
+  document.getElementById('me-forbiddenExpr').value = voice.forbiddenExpressions || '';
+  document.getElementById('me-tone').value = voice.tone || '';
+  document.getElementById('me-tutoiement').value = voice.tutoiement || 'tutoiement';
+}
+
+document.getElementById('save-me-btn').addEventListener('click', async () => {
+  const name = document.getElementById('me-firstName').value.trim();
+  if(name){
+    localStorage.setItem('jade_first_name', name);
+    document.getElementById('user-name-slot').textContent = name;
+  }
+  const brand = (await dbGet('profile', 'brandProfile')) || { key: 'brandProfile', value: {} };
+  Object.assign(brand.value, {
+    brandName: document.getElementById('me-brandName').value.trim(),
+    startedDate: document.getElementById('me-startedDate').value.trim(),
+    whyStarted: document.getElementById('me-whyStarted').value.trim(),
+    difficulties: document.getElementById('me-difficulties').value.trim(),
+    proudOf: document.getElementById('me-proudOf').value.trim(),
+    customerTypes: document.getElementById('me-customerTypes').value.trim(),
+    values: document.getElementById('me-values').value.trim(),
+    onboardingComplete: true // remplir le formulaire directement compte comme onboarding fait
+  });
+  await dbPut('profile', brand);
+
+  const voice = (await dbGet('profile', 'voiceProfile')) || { key: 'voiceProfile', value: {} };
+  Object.assign(voice.value, {
+    favoriteExpressions: document.getElementById('me-favExpr').value.trim(),
+    forbiddenExpressions: document.getElementById('me-forbiddenExpr').value.trim(),
+    tone: document.getElementById('me-tone').value.trim(),
+    tutoiement: document.getElementById('me-tutoiement').value
+  });
+  await dbPut('profile', voice);
+
+  const confirm = document.getElementById('save-me-confirm');
+  confirm.style.display = 'block';
+  setTimeout(() => confirm.style.display = 'none', 2000);
+  checkOnboardingBanner();
+});
+
+checkOnboardingBanner();
+syncMeForm();
 
 // ---------------- Bibliothèque d'Histoires (lecture simple) ----------------
 async function renderStories(){
