@@ -557,7 +557,7 @@
           <div class="chip" data-val="emoji">⚡ Pictogramme rapide (instantané)</div>
           <div class="chip" data-val="upload">🖼 Image personnelle importée</div>
         </div>
-        <p class="hint" style="margin-top:8px;">Les styles IA génèrent une vraie image par carte avec Gemini 2.5 Flash Image (« Nano Banana ») — sujet isolé, fond neutre, cohérent sur tout le set. Ça prend quelques secondes par carte. Le pictogramme rapide est instantané si tu veux juste prototyper la mise en page.</p>
+        <p class="hint" style="margin-top:8px;">Les styles IA génèrent une vraie image par carte avec le modèle image configuré dans les Réglages (par défaut : Gemini 3 Pro Image, sortie 4K) — sujet isolé, fond neutre, cohérent sur tout le set. Ça prend quelques secondes par carte. Le pictogramme rapide est instantané si tu veux juste prototyper la mise en page.</p>
 
         <h2 class="section-title" style="margin-top:22px;">4 · Format & impression</h2>
         <div class="grid-2">
@@ -662,8 +662,8 @@
     </div>
     <div class="field">
       <label>Modèle image</label>
-      <input type="text" id="modelImageInput" value="gemini-2.5-flash-image">
-      <div class="hint">« Nano Banana » — utilisé par le Studio de supports pour générer les vraies illustrations des cartes.</div>
+      <input type="text" id="modelImageInput" value="gemini-3.1-flash-image">
+      <div class="hint">Modèle utilisé par le Studio de supports pour générer les vraies illustrations. Options : <b>gemini-3.1-flash-image</b> (sortie 4K, le plus récent), <b>gemini-2.5-flash-image</b> (« Nano Banana », plus rapide, ~1024px), <b>imagen-4.0-ultra-generate-001</b> (photoréalisme Imagen, jusqu'à 2K).</div>
     </div>
     <div class="row between" style="margin-top:18px;">
       <button class="btn danger small" id="btnResetAll">Réinitialiser toute la mémoire</button>
@@ -709,7 +709,7 @@ function kvSet(key, value){
 
 /* ---------- State ---------- */
 let STATE = {
-  settings: { apiKey:'', modelText:'gemini-2.5-flash', modelImage:'gemini-2.5-flash-image' },
+  settings: { apiKey:'', modelText:'gemini-2.5-flash', modelImage:'gemini-3.1-flash-image' },
   graines: [], // voir schema ci-dessous
   recoltes: [], // voir schema ci-dessous
   contenusInsta: [], // voir schema ci-dessous
@@ -1639,6 +1639,7 @@ function renderPublicationsIG(){
         <span class="statut-pub ${c.statut}">${c.statut==='publie'?'✓ Publié':'Brouillon'}</span>
       </div>
       <p class="hint" style="margin:4px 0 6px;">${escHtml(c.angle)}</p>
+      ${c.lienPost ? `<p class="hint" style="margin:0 0 6px;">🔗 <a href="${escHtml(c.lienPost)}" target="_blank" rel="noopener">${escHtml(c.lienPost)}</a></p>` : ''}
       ${metricsHTML ? `<div style="margin-bottom:6px;">${metricsHTML}</div>` : ''}
       <div class="pub-actions">
         <button class="btn ghost small" data-act="ouvrir">👁 Ouvrir</button>
@@ -1706,7 +1707,10 @@ function openMetricsModal(id){
   const c = STATE.contenusInsta.find(x=>x.id===id); if(!c) return;
   const m = c.metriques || {};
   const wrap = document.getElementById('metricsFields');
-  wrap.innerHTML = Object.entries(METRIC_LABELS).map(([k,label])=>`
+  wrap.innerHTML = `
+    <div class="field" style="grid-column:1/-1;"><label>Lien du post Instagram</label><input type="text" id="metricLienPost" value="${escHtml(c.lienPost||'')}" placeholder="https://instagram.com/p/..."></div>
+    <div class="field" style="grid-column:1/-1;"><label>Légende réellement publiée (si différente du brouillon)</label><textarea id="metricLegendePubliee" placeholder="Colle ici ce que tu as vraiment posté, si tu l'as modifiée">${escHtml(c.legendePubliee||c.legende_instagram||'')}</textarea></div>
+  ` + Object.entries(METRIC_LABELS).map(([k,label])=>`
     <div class="field"><label>${label}</label><input type="text" data-mk="${k}" value="${escHtml(m[k]||'')}" placeholder="ex: 1 200"></div>
   `).join('');
   document.getElementById('metricsModalBg').classList.add('active');
@@ -1716,7 +1720,10 @@ document.getElementById('btnSaveMetrics').addEventListener('click', async ()=>{
   const c = STATE.contenusInsta.find(x=>x.id===metricsTargetId); if(!c) return;
   const m = {};
   document.querySelectorAll('#metricsFields [data-mk]').forEach(inp=>{ m[inp.dataset.mk] = inp.value.trim(); });
-  c.metriques = m; c.statut = 'publie'; if(!c.datePublication) c.datePublication = today(); c.dateModification = today();
+  c.metriques = m;
+  c.lienPost = document.getElementById('metricLienPost').value.trim();
+  c.legendePubliee = document.getElementById('metricLegendePubliee').value.trim();
+  c.statut = 'publie'; if(!c.datePublication) c.datePublication = today(); c.dateModification = today();
   await persistAll();
   document.getElementById('metricsModalBg').classList.remove('active');
   toast('Statistiques enregistrées.');
@@ -1730,7 +1737,7 @@ async function analyserPerformancesIG(){
   const wrap = document.getElementById('igAnalyseWrap');
   wrap.innerHTML = '<div class="empty"><span class="spinner dark"></span> Analyse des performances...</div>';
   try{
-    const donnees = publies.map(c=>`- "${c.titre}" · pilier: ${c.pilier} · format: ${c.format} · angle: ${c.angle} · hook principal: "${c.hooks?.[0]?.texte||''}" (mécanisme: ${c.hooks?.[0]?.mecanisme||''}) · métriques: ${JSON.stringify(c.metriques)}`).join('\n');
+    const donnees = publies.map(c=>`- "${c.titre}" · pilier: ${c.pilier} · format: ${c.format} · angle: ${c.angle} · hook principal: "${c.hooks?.[0]?.texte||''}" (mécanisme: ${c.hooks?.[0]?.mecanisme||''}) · légende réellement publiée: "${(c.legendePubliee||c.legende_instagram||'').slice(0,200)}" · métriques: ${JSON.stringify(c.metriques)}`).join('\n');
     const prompt = `${instaSystemPrompt()}
 
 Voici les contenus publiés par Marie avec leurs performances réelles :
@@ -1853,7 +1860,22 @@ async function resolveEmoji(subject){
 async function callGeminiImage(prompt){
   const key = STATE.settings.apiKey;
   if(!key) throw new Error('Clé API manquante.');
-  const model = STATE.settings.modelImage || 'gemini-2.5-flash-image';
+  const model = STATE.settings.modelImage || 'gemini-3.1-flash-image';
+
+  if(model.toLowerCase().startsWith('imagen')){
+    // Famille Imagen — endpoint :predict, résolution max documentée = 2K (pas de vrai 4K)
+    const url = `https://aiplatform.googleapis.com/v1/publishers/google/models/${model}:predict`;
+    const res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json','x-goog-api-key':key}, body: JSON.stringify({
+      instances:[{ prompt }], parameters:{ sampleCount:1, sampleImageSize:'2K' }
+    })});
+    if(!res.ok){ const t = await res.text(); throw new Error(`Erreur image ${res.status} : ${t.slice(0,200)}`); }
+    const data = await res.json();
+    const pred = data.predictions?.[0];
+    if(!pred || !pred.bytesBase64Encoded) throw new Error("Pas d'image renvoyée par le modèle.");
+    return `data:${pred.mimeType||'image/png'};base64,${pred.bytesBase64Encoded}`;
+  }
+
+  // Famille Gemini image (Nano Banana / Gemini 3 Pro Image) — endpoint :generateContent
   const url = `https://aiplatform.googleapis.com/v1/publishers/google/models/${model}:generateContent`;
   const res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json','x-goog-api-key':key}, body: JSON.stringify({ contents:[{role:'user', parts:[{text:prompt}]}] }) });
   if(!res.ok){ const t = await res.text(); throw new Error(`Erreur image ${res.status} : ${t.slice(0,200)}`); }
@@ -2820,7 +2842,7 @@ function renderActiviteContent(g, item, a){
 function openSettings(){
   document.getElementById('apiKeyInput').value = STATE.settings.apiKey || '';
   document.getElementById('modelTextInput').value = STATE.settings.modelText || 'gemini-2.5-flash';
-  document.getElementById('modelImageInput').value = STATE.settings.modelImage || 'gemini-2.5-flash-image';
+  document.getElementById('modelImageInput').value = STATE.settings.modelImage || 'gemini-3.1-flash-image';
   document.getElementById('modalBg').classList.add('active');
 }
 function closeSettings(){ document.getElementById('modalBg').classList.remove('active'); }
@@ -2830,7 +2852,7 @@ document.getElementById('modalBg').addEventListener('click', (e)=>{ if(e.target.
 document.getElementById('btnSaveSettings').addEventListener('click', async ()=>{
   STATE.settings.apiKey = document.getElementById('apiKeyInput').value.trim();
   STATE.settings.modelText = document.getElementById('modelTextInput').value.trim() || 'gemini-2.5-flash';
-  STATE.settings.modelImage = document.getElementById('modelImageInput').value.trim() || 'gemini-2.5-flash-image';
+  STATE.settings.modelImage = document.getElementById('modelImageInput').value.trim() || 'gemini-3.1-flash-image';
   await persistAll();
   toast('Réglages enregistrés.');
   closeSettings();
