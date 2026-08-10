@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GRAINE — L'atelier de conception de mes petits explorateurs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --vert-foret:#314A3A;
+    --vert-sauge:#A8B7A0;
+    --creme:#F6F1E7;
+    --terre-cuite:#C77D5D;
+    --brun:#665347;
+    --encre:#292C29;
+    --blanc:#FFFDF8;
+    --line:rgba(41,44,41,0.12);
+    --line-strong:rgba(41,44,41,0.22);
+    --serif:'Fraunces', serif;
+    --sans:'DM Sans', sans-serif;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--creme);
+    color:var(--encre);
+    font-family:var(--sans);
+    min-height:100vh;
+  }
+  ::selection{ background:var(--vert-sauge); color:var(--vert-foret); }
+
+  .app{ display:flex; min-height:100vh; }
+
+  /* ===== Sidebar ===== */
+  .sidebar{
+    width:236px; flex-shrink:0; background:var(--vert-foret); color:var(--blanc);
+    padding:26px 18px; display:flex; flex-direction:column; gap:6px;
+  }
+  .brand{ font-family:var(--serif); font-size:24px; font-weight:600; letter-spacing:0.01em; margin-bottom:4px; padding:0 8px; display:flex; align-items:center; gap:8px;}
+  .brand-sub{ font-size:11px; color:var(--vert-sauge); padding:0 8px 22px; letter-spacing:0.03em; }
+  .nav-item{
+    display:flex; align-items:center; gap:10px; padding:11px 12px; border-radius:8px;
+    color:rgba(255,253,248,0.82); font-size:14.5px; cursor:pointer; user-select:none;
+  }
+  .nav-item:hover{ background:rgba(255,253,248,0.08); }
+  .nav-item.active{ background:rgba(255,253,248,0.14); color:var(--blanc); font-weight:500; }
+  .nav-spacer{ flex:1; }
+  .nav-item.settings{ border-top:1px solid rgba(255,253,248,0.15); margin-top:8px; padding-top:14px; }
+
+  main.content{ flex:1; padding:40px 48px 90px; max-width:1120px; }
+  .screen{ display:none; animation:fade .25s ease; }
+  .screen.active{ display:block; }
+  @keyframes fade{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;} }
+
+  h1.page-title{ font-family:var(--serif); font-weight:500; font-size:32px; margin:0 0 6px; color:var(--vert-foret); }
+  p.page-sub{ color:var(--brun); margin:0 0 30px; max-width:640px; line-height:1.6; }
+  h2.section-title{ font-family:var(--serif); font-size:20px; font-weight:500; color:var(--vert-foret); margin:0 0 12px; }
+
+  .card{ background:var(--blanc); border:1px solid var(--line); border-radius:var(--radius); padding:24px; }
+  .grid-3{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  .grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:900px){ .grid-3{grid-template-columns:1fr;} .grid-2{grid-template-columns:1fr;} }
+
+  label{ display:block; font-size:12.5px; font-weight:600; color:var(--brun); margin-bottom:6px; letter-spacing:0.01em; }
+  input[type=text], input[type=password], textarea, select{
+    width:100%; background:var(--creme); border:1px solid var(--line-strong); color:var(--encre);
+    padding:11px 12px; border-radius:8px; font-family:var(--sans); font-size:14px;
+  }
+  textarea{ min-height:76px; resize:vertical; line-height:1.5; }
+  input:focus, textarea:focus, select:focus{ outline:none; border-color:var(--terre-cuite); }
+  .field{ margin-bottom:16px; }
+  .hint{ font-size:12px; color:var(--brun); margin-top:6px; line-height:1.5; opacity:0.85; }
+  .check-row{ display:flex; flex-wrap:wrap; gap:8px; }
+  .chip{
+    font-size:13px; padding:8px 13px; border-radius:20px; border:1px solid var(--line-strong);
+    cursor:pointer; background:var(--creme); color:var(--brun); user-select:none;
+  }
+  .chip.selected{ background:var(--vert-foret); color:var(--blanc); border-color:var(--vert-foret); }
+
+  button.btn{
+    font-family:var(--sans); font-size:13.5px; font-weight:600;
+    background:var(--vert-foret); color:var(--blanc); border:none; border-radius:8px;
+    padding:12px 20px; cursor:pointer;
+  }
+  button.btn:hover{ background:#25382b; }
+  button.btn:disabled{ opacity:0.4; cursor:not-allowed; }
+  button.btn.ghost{ background:transparent; color:var(--vert-foret); border:1px solid var(--line-strong); }
+  button.btn.ghost:hover{ border-color:var(--vert-foret); background:rgba(49,74,58,0.05); }
+  button.btn.accent{ background:var(--terre-cuite); }
+  button.btn.accent:hover{ background:#b56a4c; }
+  button.btn.small{ padding:8px 13px; font-size:12px; }
+  button.btn.danger{ background:transparent; color:#a8503d; border:1px solid #a8503d; }
+
+  .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .row.between{ justify-content:space-between; }
+
+  /* accueil */
+  .big-tiles{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:38px; }
+  @media (max-width:900px){ .big-tiles{grid-template-columns:1fr;} }
+  .tile{
+    background:var(--blanc); border:1px solid var(--line); border-radius:var(--radius); padding:22px;
+    cursor:pointer; transition:border-color .15s, transform .1s;
+  }
+  .tile:hover{ border-color:var(--terre-cuite); transform:translateY(-1px); }
+  .tile .emoji{ font-size:26px; margin-bottom:10px; }
+  .tile h3{ font-family:var(--serif); font-size:18px; margin:0 0 4px; color:var(--vert-foret); font-weight:500; }
+  .tile p{ font-size:13px; color:var(--brun); margin:0; line-height:1.5; }
+
+  .graine-card{
+    background:var(--blanc); border:1px solid var(--line); border-radius:var(--radius); padding:18px;
+    cursor:pointer; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;
+  }
+  .graine-card:hover{ border-color:var(--terre-cuite); }
+  .graine-card h4{ font-family:var(--serif); font-size:17px; margin:0 0 4px; font-weight:500; }
+  .graine-card .meta{ font-size:12px; color:var(--brun); }
+  .statut-badge{ font-size:11.5px; padding:5px 11px; border-radius:14px; background:var(--vert-sauge); color:var(--vert-foret); font-weight:600; white-space:nowrap; }
+
+  .empty{ text-align:center; padding:40px 20px; color:var(--brun); }
+  .empty h3{ font-family:var(--serif); color:var(--vert-foret); font-weight:500; font-size:19px; margin-bottom:6px; }
+
+  /* explorer */
+  .fiche-block{ margin-bottom:30px; }
+  .fiche-row{ display:grid; grid-template-columns:150px 1fr; gap:12px; padding:11px 0; border-bottom:1px solid var(--line); font-size:13.5px; }
+  .fiche-row .k{ font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--terre-cuite); }
+  .fiche-row .v{ color:var(--encre); line-height:1.55; }
+
+  .cat-section{ margin-bottom:26px; }
+  .cat-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+  .item-card{
+    background:var(--blanc); border:1px solid var(--line); border-radius:8px; padding:14px 16px; margin-bottom:8px;
+  }
+  .item-card .txt{ font-size:14px; line-height:1.55; margin-bottom:6px; }
+  .item-card .cap{ font-size:11.5px; color:var(--terre-cuite); font-weight:600; margin-bottom:8px; }
+  .item-card .acts{ display:flex; gap:8px; flex-wrap:wrap; }
+  .item-card.gardee{ border-color:var(--vert-sauge); background:#fbfaf5; }
+  .item-card.ecartee{ opacity:0.4; }
+  .pill-mini{ font-size:10.5px; font-weight:700; padding:3px 8px; border-radius:10px; background:var(--vert-sauge); color:var(--vert-foret); }
+
+  /* composer */
+  .box-item{
+    background:var(--blanc); border:1px solid var(--line); border-radius:8px; padding:14px 16px; margin-bottom:8px;
+    display:flex; justify-content:space-between; align-items:flex-start; gap:12px;
+  }
+  .box-item .cat-tag{ font-size:10.5px; font-weight:700; text-transform:uppercase; color:var(--terre-cuite); letter-spacing:0.04em; margin-bottom:4px; }
+  .box-item .txt{ font-size:14px; line-height:1.5; }
+
+  .analyse-box{ background:#f2ede0; border:1px solid var(--vert-sauge); border-radius:8px; padding:18px; margin-top:14px; font-size:14px; line-height:1.65; color:var(--vert-foret); white-space:pre-wrap; }
+  .prop-card{ background:var(--blanc); border:1px solid var(--line); border-radius:8px; padding:16px; margin-bottom:10px; }
+  .prop-card h4{ font-family:var(--serif); font-size:16px; margin:0 0 6px; color:var(--vert-foret); font-weight:500; }
+  .prop-meta{ font-size:12px; color:var(--brun); margin-bottom:6px; }
+  .prop-field{ font-size:13px; margin-bottom:4px; line-height:1.5; }
+  .prop-field b{ color:var(--brun); }
+
+  /* activite */
+  .activite-block{ margin-bottom:22px; }
+  .activite-block h3{ font-family:var(--serif); font-size:17px; color:var(--vert-foret); margin:0 0 8px; font-weight:500; }
+  .activite-block p, .activite-block li{ font-size:14.5px; line-height:1.65; color:var(--encre); }
+  .mise-situation{ background:#f2ede0; border-left:3px solid var(--terre-cuite); padding:14px 16px; border-radius:6px; font-style:italic; color:var(--vert-foret); }
+  .vigilance-box{ background:#fbeee8; border:1px solid var(--terre-cuite); border-radius:8px; padding:14px 16px; font-size:13.5px; color:#8a4a34; }
+  details.logique{ margin-top:20px; border:1px solid var(--line); border-radius:8px; padding:12px 16px; }
+  details.logique summary{ cursor:pointer; font-weight:600; color:var(--vert-foret); font-size:13.5px; }
+  details.logique .content{ margin-top:10px; font-size:13.5px; line-height:1.6; color:var(--brun); }
+
+  /* modal */
+  .modal-bg{ position:fixed; inset:0; background:rgba(41,44,41,0.55); z-index:100; display:none; align-items:center; justify-content:center; padding:20px; }
+  .modal-bg.active{ display:flex; }
+  .modal{ background:var(--blanc); border-radius:14px; max-width:480px; width:100%; padding:26px; max-height:88vh; overflow:auto; }
+  .modal h2{ font-family:var(--serif); font-weight:500; margin:0 0 6px; font-size:21px; color:var(--vert-foret); }
+  .modal .close{ float:right; background:none; border:none; color:var(--brun); font-size:20px; cursor:pointer; }
+
+  .toast{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+    background:var(--vert-foret); color:var(--blanc); font-size:13px;
+    padding:12px 20px; border-radius:8px; z-index:200; display:none; max-width:80vw;
+  }
+  .spinner{
+    width:15px; height:15px; border:2px solid rgba(255,255,255,0.35); border-top-color:#fff;
+    border-radius:50%; display:inline-block; animation:spin .7s linear infinite; vertical-align:-3px; margin-right:8px;
+  }
+  .spinner.dark{ border:2px solid rgba(49,74,58,0.25); border-top-color:var(--vert-foret); }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <nav class="sidebar">
+    <div class="brand">🌱 GRAINE</div>
+    <div class="brand-sub">L'atelier de mes petits explorateurs</div>
+    <div class="nav-item active" data-nav="accueil">🏡 Accueil</div>
+    <div class="nav-item" data-nav="nouvelle">✨ Nouvelle Graine</div>
+    <div class="nav-spacer"></div>
+    <div class="nav-item settings" id="btnSettings">⚙️ Réglages API</div>
+  </nav>
+
+  <main class="content">
+
+    <!-- ACCUEIL -->
+    <section class="screen active" id="screen-accueil">
+      <h1 class="page-title">Bonjour Marie 🌱</h1>
+      <p class="page-sub">Qu'est-ce qu'on fait pousser aujourd'hui ?</p>
+
+      <div class="big-tiles">
+        <div class="tile" data-nav="nouvelle">
+          <div class="emoji">🌱</div>
+          <h3>Planter une idée</h3>
+          <p>J'ai déjà le thème de ma prochaine box.</p>
+        </div>
+        <div class="tile" id="tileSeche">
+          <div class="emoji">💡</div>
+          <h3>Je sèche</h3>
+          <p>J'ai besoin de nouvelles pistes.</p>
+        </div>
+        <div class="tile" id="tileRecolte">
+          <div class="emoji">🧺</div>
+          <h3>Ma dernière récolte</h3>
+          <p>Voir mes box terminées.</p>
+        </div>
+      </div>
+
+      <h2 class="section-title">Mes graines en cours</h2>
+      <div id="grainesEnCours"></div>
+
+      <div id="grainesRecolteesWrap" style="margin-top:30px;">
+        <h2 class="section-title">🌿 Ma dernière récolte</h2>
+        <div id="grainesRecoltees"></div>
+      </div>
+    </section>
+
+    <!-- NOUVELLE GRAINE -->
+    <section class="screen" id="screen-nouvelle">
+      <h1 class="page-title">Planter une nouvelle Graine</h1>
+      <p class="page-sub">Décris l'idée telle qu'elle est aujourd'hui — même incomplète. GRAINE va d'abord chercher, avant de proposer quoi que ce soit.</p>
+      <div class="card">
+        <div class="grid-2">
+          <div class="field">
+            <label>Nom / thème de la box</label>
+            <input type="text" id="fNom" placeholder="Ex : Les fourmis">
+          </div>
+          <div class="field">
+            <label>Saison</label>
+            <select id="fSaison">
+              <option>Printemps</option><option>Été</option><option selected>Automne</option><option>Hiver</option><option>Toute saison</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label>Âges concernés</label>
+            <select id="fAges">
+              <option>2–3 ans</option><option>3–4 ans</option><option selected>4–5 ans</option><option>5–6 ans</option><option>Plusieurs âges (2–6 ans)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>D'où vient l'idée ?</label>
+            <select id="fOrigine">
+              <option>Moi</option><option>Ma communauté</option><option>Une observation</option><option>Autre</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>Ce que j'imagine déjà</label>
+          <textarea id="fImagine" placeholder="Ex : J'aimerais crocheter une reine et plusieurs fourmis. Je voudrais probablement intégrer le cycle de vie mais je ne sais pas encore quoi faire d'autre."></textarea>
+        </div>
+        <div class="field">
+          <label>Ce que je veux absolument retrouver</label>
+          <div class="check-row" id="criteresRow">
+            <div class="chip" data-val="Nature">Nature</div>
+            <div class="chip" data-val="Manipulation">Manipulation</div>
+            <div class="chip" data-val="Exploration extérieure">Exploration extérieure</div>
+            <div class="chip" data-val="Jeu symbolique">Jeu symbolique</div>
+            <div class="chip" data-val="Créativité">Créativité</div>
+            <div class="chip" data-val="Activité sensorielle">Activité sensorielle</div>
+            <div class="chip" data-val="Apprentissages cognitifs">Apprentissages cognitifs</div>
+            <div class="chip" data-val="Cycle de vie">Cycle de vie</div>
+          </div>
+        </div>
+        <div class="row between" style="margin-top:10px;">
+          <button class="btn ghost" data-nav="accueil">← Annuler</button>
+          <button class="btn accent" id="btnGermer">🌱 Faire germer cette idée</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- EXPLORER -->
+    <section class="screen" id="screen-explorer">
+      <div id="explorerHead"></div>
+      <div id="explorerBody"></div>
+    </section>
+
+    <!-- COMPOSER -->
+    <section class="screen" id="screen-composer">
+      <div id="composerHead"></div>
+      <div id="composerBody"></div>
+    </section>
+
+    <!-- ACTIVITE -->
+    <section class="screen" id="screen-activite">
+      <div id="activiteHead"></div>
+      <div id="activiteBody"></div>
+    </section>
+
+  </main>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <button class="close" id="modalClose">×</button>
+    <h2>Réglages</h2>
+    <p class="hint" style="margin-bottom:18px;">Clé API Vertex AI Express Mode (préfixe AQ...), comme pour tes autres ateliers.</p>
+    <div class="field">
+      <label>Clé API (AQ...)</label>
+      <input type="password" id="apiKeyInput" placeholder="AQ.xxxxxxxxxxxxxxxxxxxx">
+    </div>
+    <div class="field">
+      <label>Modèle texte</label>
+      <input type="text" id="modelTextInput" value="gemini-2.5-flash">
+      <div class="hint">Modèle Vertex AI utilisé pour la recherche et les propositions.</div>
+    </div>
+    <div class="row between" style="margin-top:18px;">
+      <button class="btn danger small" id="btnResetAll">Réinitialiser toute la mémoire</button>
+      <button class="btn small" id="btnSaveSettings">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================================
+   GRAINE — moteur front-end
+   Persistance : IndexedDB (graines = ADN GRAINE, réglages)
+   IA : Vertex AI Express Mode (clé AQ...) — Gemini
+   ========================================================================= */
+
+/* ---------- IndexedDB ---------- */
+const DB_NAME = 'graine_db', DB_VERSION = 1;
+let db;
+function openDB(){
+  return new Promise((resolve, reject)=>{
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = (e)=>{ const d=e.target.result; if(!d.objectStoreNames.contains('kv')) d.createObjectStore('kv'); };
+    req.onsuccess = ()=>{ db = req.result; resolve(db); };
+    req.onerror = ()=> reject(req.error);
+  });
+}
+function kvGet(key, fallback){
+  return new Promise((resolve)=>{
+    try{ const tx=db.transaction('kv','readonly'); const r=tx.objectStore('kv').get(key);
+      r.onsuccess=()=>resolve(r.result!==undefined?r.result:fallback); r.onerror=()=>resolve(fallback);
+    }catch(e){ resolve(fallback); }
+  });
+}
+function kvSet(key, value){
+  return new Promise((resolve)=>{
+    try{ const tx=db.transaction('kv','readwrite'); tx.objectStore('kv').put(value,key);
+      tx.oncomplete=()=>resolve(true); tx.onerror=()=>resolve(false);
+    }catch(e){ resolve(false); }
+  });
+}
+
+/* ---------- State ---------- */
+let STATE = {
+  settings: { apiKey:'', modelText:'gemini-2.5-flash' },
+  graines: [] // voir schema ci-dessous
+};
+/* schema graine :
+{ id, nom, saison, ages, origine, imagine, criteres:[], statut,
+  fiche:{vivant,observable,pertinent,trop_complexe,idees_recues,sources},
+  cartes:{decouvrir:[],apprendre:[],manipuler:[],fabriquer:[],creer:[],dehors:[],jouer:[]}, // items {id,texte,capacite,statut}
+  box:[{id,categorie,texte,capacite}],
+  analyse:'', carteExploratrice:'',
+  activites:{ [boxItemId]: {...} }, dateCreation }
+*/
+
+async function persistAll(){ await kvSet('settings', STATE.settings); await kvSet('graines', STATE.graines); }
+async function loadAll(){
+  STATE.settings = await kvGet('settings', STATE.settings);
+  STATE.graines = await kvGet('graines', []);
+}
+
+function toast(msg, ms=3400){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display='block';
+  clearTimeout(t._timer); t._timer = setTimeout(()=> t.style.display='none', ms);
+}
+function escHtml(s){ return (s==null?'':String(s)).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function uid(){ return crypto.randomUUID(); }
+
+/* ---------- Vertex AI Express Mode call ---------- */
+async function callGemini({prompt, jsonMode=true}){
+  const key = STATE.settings.apiKey;
+  if(!key){ toast('Ajoute ta clé API Vertex AI dans les réglages (⚙️).'); throw new Error('no key'); }
+  const model = STATE.settings.modelText || 'gemini-2.5-flash';
+  const url = `https://aiplatform.googleapis.com/v1/publishers/google/models/${model}:generateContent`;
+  const body = {
+    contents: [{ role:'user', parts:[{ text: prompt }] }],
+    generationConfig: jsonMode ? { responseMimeType:'application/json', temperature:0.85 } : { temperature:0.85 }
+  };
+  let lastErr;
+  for(let attempt=0; attempt<4; attempt++){
+    try{
+      const res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json','x-goog-api-key':key}, body: JSON.stringify(body) });
+      if(res.status===429){ await new Promise(r=>setTimeout(r,1000*Math.pow(2,attempt))); continue; }
+      if(!res.ok){ const t=await res.text(); throw new Error(`Erreur API ${res.status} : ${t.slice(0,300)}`); }
+      const data = await res.json();
+      const text = data.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('') || '';
+      if(!text) throw new Error('Réponse vide du modèle.');
+      return text;
+    }catch(e){ lastErr=e; if(attempt===3) throw e; }
+  }
+  throw lastErr;
+}
+function safeParseJSON(text){
+  let t = text.trim().replace(/^```json/i,'').replace(/^```/,'').replace(/```$/,'').trim();
+  try{ return JSON.parse(t); }
+  catch(e){
+    const m = t.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+    if(m){ try{ return JSON.parse(m[0]); }catch(e2){} }
+    throw new Error("Impossible d'interpréter la réponse du modèle.");
+  }
+}
+
+/* ---------- Règle mère / contexte ADN GRAINE ---------- */
+function systemPromptCore(){
+  return `Tu es GRAINE, l'atelier de conception de box éducatives saisonnières pour enfants de 2 à 6 ans, au service de Marie, artisane.
+
+RÈGLE MÈRE : GRAINE ne remplace jamais la créativité de Marie. Elle recherche, structure, propose, explique et questionne. Marie sélectionne, transforme, fabrique et valide. Toute proposition créative est présentée comme une possibilité, jamais comme une évidence.
+
+RIGUEUR FACTUELLE : pour toute affirmation sur la nature, le vivant ou le développement de l'enfant, distingue les faits établis des hypothèses. N'invente jamais de mécanisme neuroscientifique non étayé. Formule prudemment : "cette activité sollicite notamment..." plutôt que des promesses de développement ("cette activité développe...").
+
+APPRENTISSAGE ACTIF : privilégie observer, manipuler, chercher, comparer, classer, construire, raconter, expérimenter, jouer. Le papier ne doit pas être le réflexe par défaut.
+
+ADAPTATION 2-6 ANS : chaque proposition doit être réellement faisable et sûre pour l'âge indiqué, avec supervision adulte si nécessaire.
+
+ANTI-RÉPÉTITION : ne propose jamais une idée déjà réalisée dans l'historique fourni ci-dessous.`;
+}
+function adnHistoriqueBlock(){
+  const passees = STATE.graines.filter(g=> g.id !== (window.__currentGraineId||'') );
+  if(passees.length===0) return "Aucune box réalisée pour l'instant.";
+  return passees.map(g=> `- ${g.nom} (${g.saison}, ${g.ages}) — statut : ${g.statut}` ).join('\n');
+}
+
+/* ---------- Navigation ---------- */
+const SCREENS = ['accueil','nouvelle','explorer','composer','activite'];
+function showScreen(name){
+  SCREENS.forEach(s=> document.getElementById('screen-'+s).classList.toggle('active', s===name));
+  document.querySelectorAll('.nav-item[data-nav]').forEach(el=>{
+    el.classList.toggle('active', el.dataset.nav===name);
+  });
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+document.querySelectorAll('[data-nav]').forEach(el=>{
+  el.addEventListener('click', ()=> showScreen(el.dataset.nav));
+});
+
+/* ---------- Statuts ---------- */
+const STATUT_LABELS = {
+  plantee:'🌰 Plantée', germination:'🌱 En germination', exploration:'🔎 En exploration',
+  construction:'🌿 En construction', recoltee:'🧺 Récoltée ✓'
+};
+
+/* ---------- ACCUEIL ---------- */
+function renderAccueil(){
+  const enCours = STATE.graines.filter(g=>g.statut!=='recoltee');
+  const recoltees = STATE.graines.filter(g=>g.statut==='recoltee');
+
+  const wrapCours = document.getElementById('grainesEnCours');
+  wrapCours.innerHTML = enCours.length ? '' : '<div class="empty"><h3>Aucune graine en cours</h3><p>Plante une nouvelle idée pour commencer.</p></div>';
+  enCours.forEach(g=>{
+    const el = document.createElement('div');
+    el.className = 'graine-card';
+    el.innerHTML = `<div><h4>${escHtml(g.nom)}</h4><div class="meta">${escHtml(g.saison)} · ${escHtml(g.ages)}</div></div><span class="statut-badge">${STATUT_LABELS[g.statut]||g.statut}</span>`;
+    el.addEventListener('click', ()=> openGraine(g.id));
+    wrapCours.appendChild(el);
+  });
+
+  const wrapRec = document.getElementById('grainesRecoltees');
+  document.getElementById('grainesRecolteesWrap').style.display = recoltees.length ? 'block' : 'none';
+  wrapRec.innerHTML = '';
+  recoltees.forEach(g=>{
+    const el = document.createElement('div');
+    el.className = 'graine-card';
+    el.innerHTML = `<div><h4>${escHtml(g.nom)}</h4><div class="meta">${escHtml(g.saison)} · ${escHtml(g.ages)} · ${g.box.length} éléments</div></div><span class="statut-badge">${STATUT_LABELS[g.statut]}</span>`;
+    el.addEventListener('click', ()=> openGraine(g.id, 'composer'));
+    wrapRec.appendChild(el);
+  });
+}
+function openGraine(id, screen){
+  const g = STATE.graines.find(x=>x.id===id);
+  if(!g) return;
+  window.__currentGraineId = id;
+  if(!screen) screen = g.statut==='plantee' ? 'explorer' : (g.box && g.box.length ? 'composer' : 'explorer');
+  if(screen==='explorer') renderExplorer(id);
+  if(screen==='composer') renderComposer(id);
+  showScreen(screen);
+}
+document.getElementById('tileSeche').addEventListener('click', ()=>{
+  toast("💡 Astuce : dans « Nouvelle Graine », laisse le thème vide et décris seulement la saison et l'envie dans « Ce que j'imagine déjà » — GRAINE proposera des territoires créatifs.", 6000);
+  showScreen('nouvelle');
+});
+document.getElementById('tileRecolte').addEventListener('click', ()=>{
+  document.getElementById('grainesRecolteesWrap').scrollIntoView({behavior:'smooth'});
+});
+
+/* ---------- NOUVELLE GRAINE ---------- */
+let selectedCriteres = [];
+document.getElementById('criteresRow').addEventListener('click', (e)=>{
+  const chip = e.target.closest('.chip');
+  if(!chip) return;
+  const val = chip.dataset.val;
+  if(selectedCriteres.includes(val)){ selectedCriteres = selectedCriteres.filter(v=>v!==val); chip.classList.remove('selected'); }
+  else { selectedCriteres.push(val); chip.classList.add('selected'); }
+});
+
+document.getElementById('btnGermer').addEventListener('click', async ()=>{
+  const nom = document.getElementById('fNom').value.trim();
+  if(!nom){ toast('Donne un nom ou thème à ta box.'); return; }
+  const g = {
+    id: uid(), nom, saison: document.getElementById('fSaison').value, ages: document.getElementById('fAges').value,
+    origine: document.getElementById('fOrigine').value, imagine: document.getElementById('fImagine').value,
+    criteres: [...selectedCriteres], statut:'germination',
+    fiche:null, cartes:{decouvrir:[],apprendre:[],manipuler:[],fabriquer:[],creer:[],dehors:[],jouer:[]},
+    box:[], analyse:'', carteExploratrice:'', activites:{}, dateCreation:new Date().toISOString().slice(0,10)
+  };
+  STATE.graines.push(g);
+  window.__currentGraineId = g.id;
+  await persistAll();
+
+  const btn = document.getElementById('btnGermer');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner dark"></span>Germination...';
+  try{
+    await germerGraine(g);
+    await persistAll();
+    document.getElementById('fNom').value=''; document.getElementById('fImagine').value='';
+    selectedCriteres = []; document.querySelectorAll('#criteresRow .chip').forEach(c=>c.classList.remove('selected'));
+    renderExplorer(g.id);
+    showScreen('explorer');
+  }catch(e){
+    console.error(e); toast('Erreur : '+e.message);
+  }finally{
+    btn.disabled=false; btn.innerHTML='🌱 Faire germer cette idée';
+  }
+});
+
+async function germerGraine(g){
+  const prompt = `${systemPromptCore()}
+
+HISTORIQUE (à ne pas répéter) :
+${adnHistoriqueBlock()}
+
+NOUVELLE GRAINE À FAIRE GERMER :
+Thème : ${g.nom}
+Saison : ${g.saison}
+Âges : ${g.ages}
+Origine de l'idée : ${g.origine}
+Ce que Marie imagine déjà : ${g.imagine || '(rien de précis encore)'}
+Critères souhaités : ${g.criteres.join(', ') || '(aucun critère précis)'}
+
+ÉTAPE 1 — RECHERCHE : construis une fiche documentaire factuelle sur le thème (le vivant/phénomène, ce qu'un enfant de cet âge peut observer réellement, ce qui est pertinent, ce qui est trop complexe, idées reçues à ne pas reproduire, et des sources fiables identifiables si possible).
+
+ÉTAPE 2 — EXPLORATION : propose pour chacune des 7 catégories suivantes exactement 3 pistes courtes et concrètes, chacune reliée explicitement à une capacité de développement sollicitée (formulée prudemment) :
+- decouvrir : ce qui est fascinant dans cet univers
+- apprendre : apprentissages qui peuvent naturellement émerger
+- manipuler : ce que l'enfant pourrait toucher/déplacer/assembler/classer
+- fabriquer : ce que Marie pourrait créer physiquement (couture, crochet, bois, papier...)
+- creer : expériences artistiques/manuelles
+- dehors : ce qu'on pourrait observer/chercher dans la nature
+- jouer : jeu symbolique possible
+
+Réponds STRICTEMENT en JSON :
+{
+  "fiche": {"vivant":"...", "observable":"...", "pertinent":"...", "trop_complexe":"...", "idees_recues":"...", "sources":"..."},
+  "cartes": {
+    "decouvrir":[{"texte":"...","capacite":"..."}, ...3],
+    "apprendre":[...3], "manipuler":[...3], "fabriquer":[...3], "creer":[...3], "dehors":[...3], "jouer":[...3]
+  }
+}`;
+  const text = await callGemini({prompt});
+  const json = safeParseJSON(text);
+  g.fiche = json.fiche;
+  Object.keys(g.cartes).forEach(cat=>{
+    g.cartes[cat] = (json.cartes?.[cat]||[]).map(it=>({ id:uid(), texte:it.texte, capacite:it.capacite, statut:'propose' }));
+  });
+  g.statut = 'exploration';
+}
+
+/* ---------- EXPLORER ---------- */
+const CAT_LABELS = { decouvrir:'🔎 Découvrir', apprendre:'🧠 Apprendre', manipuler:'👐 Manipuler', fabriquer:'🧶 Fabriquer', creer:'🎨 Créer', dehors:'🌿 Explorer dehors', jouer:'🎭 Jouer' };
+
+function renderExplorer(id){
+  const g = STATE.graines.find(x=>x.id===id);
+  window.__currentGraineId = id;
+  document.getElementById('explorerHead').innerHTML = `
+    <h1 class="page-title">${escHtml(g.nom)}</h1>
+    <p class="page-sub">${escHtml(g.saison)} · ${escHtml(g.ages)} · ${STATUT_LABELS[g.statut]}</p>
+  `;
+  const body = document.getElementById('explorerBody');
+  body.innerHTML = '';
+
+  if(g.fiche){
+    const fiche = document.createElement('div');
+    fiche.className = 'card fiche-block';
+    fiche.innerHTML = `<h2 class="section-title">🔎 Ce qu'il faut connaître</h2>` +
+      [['Le vivant / phénomène',g.fiche.vivant],['Ce qui est observable',g.fiche.observable],['Pertinent pour cet âge',g.fiche.pertinent],
+       ['Trop complexe / inadapté',g.fiche.trop_complexe],['Idées reçues à éviter',g.fiche.idees_recues],['Sources',g.fiche.sources]]
+      .map(([k,v])=>`<div class="fiche-row"><div class="k">${k}</div><div class="v">${escHtml(v||'—')}</div></div>`).join('');
+    body.appendChild(fiche);
+  }
+
+  Object.keys(CAT_LABELS).forEach(cat=>{
+    const sec = document.createElement('div');
+    sec.className = 'cat-section';
+    sec.innerHTML = `<div class="cat-head"><h2 class="section-title">${CAT_LABELS[cat]}</h2><button class="btn ghost small" data-regen="${cat}">↻ Régénérer</button></div><div class="items" data-cat="${cat}"></div>`;
+    body.appendChild(sec);
+    renderCatItems(g, cat, sec.querySelector('.items'));
+    sec.querySelector('[data-regen]').addEventListener('click', ()=> regenCategorie(g, cat));
+  });
+
+  const foot = document.createElement('div');
+  foot.className = 'row between';
+  foot.style.marginTop = '10px';
+  foot.innerHTML = `<button class="btn ghost" data-nav="accueil">← Accueil</button><button class="btn accent" id="btnToComposer">📦 Passer à la composition →</button>`;
+  body.appendChild(foot);
+  foot.querySelector('#btnToComposer').addEventListener('click', ()=>{ renderComposer(g.id); showScreen('composer'); });
+}
+function renderCatItems(g, cat, wrap){
+  wrap.innerHTML = '';
+  (g.cartes[cat]||[]).forEach(item=>{
+    const card = document.createElement('div');
+    card.className = 'item-card ' + (item.statut==='gardee'?'gardee':(item.statut==='ecartee'?'ecartee':''));
+    card.innerHTML = `
+      <div class="txt">${escHtml(item.texte)}</div>
+      ${item.capacite ? `<div class="cap">Capacité sollicitée : ${escHtml(item.capacite)}</div>` : ''}
+      <div class="acts">
+        ${item.statut==='gardee' ? `<span class="pill-mini">✓ Dans la box</span>` : `
+          <button class="btn ghost small" data-act="garder">♡ Garder</button>
+          <button class="btn ghost small" data-act="ecarter">🗑 Écarter</button>
+        `}
+      </div>`;
+    const g1 = card.querySelector('[data-act="garder"]');
+    if(g1) g1.addEventListener('click', ()=>{
+      item.statut = 'gardee';
+      g.box.push({ id:uid(), categorie:cat, texte:item.texte, capacite:item.capacite });
+      if(g.statut==='exploration') g.statut='construction';
+      persistAll(); renderExplorer(g.id);
+    });
+    const g2 = card.querySelector('[data-act="ecarter"]');
+    if(g2) g2.addEventListener('click', ()=>{ item.statut='ecartee'; persistAll(); renderCatItems(g,cat,wrap); });
+    wrap.appendChild(card);
+  });
+}
+async function regenCategorie(g, cat){
+  toast('Nouvelle génération pour « '+CAT_LABELS[cat]+' »...');
+  try{
+    const prompt = `${systemPromptCore()}
+
+Graine : ${g.nom} (${g.saison}, ${g.ages}).
+Fiche recherche : ${JSON.stringify(g.fiche)}
+Idées déjà proposées pour cette catégorie (à ne pas répéter) : ${(g.cartes[cat]||[]).map(i=>i.texte).join(' | ')}
+
+Propose 3 NOUVELLES pistes pour la catégorie "${CAT_LABELS[cat]}", différentes des précédentes.
+Réponds STRICTEMENT en JSON : {"items":[{"texte":"...","capacite":"..."}, ...3]}`;
+    const text = await callGemini({prompt});
+    const json = safeParseJSON(text);
+    const nouveaux = (json.items||[]).map(it=>({ id:uid(), texte:it.texte, capacite:it.capacite, statut:'propose' }));
+    g.cartes[cat] = [...g.cartes[cat], ...nouveaux];
+    await persistAll();
+    renderExplorer(g.id);
+  }catch(e){ toast('Erreur : '+e.message); }
+}
+
+/* ---------- COMPOSER ---------- */
+function renderComposer(id){
+  const g = STATE.graines.find(x=>x.id===id);
+  window.__currentGraineId = id;
+  document.getElementById('composerHead').innerHTML = `
+    <h1 class="page-title">Composer ma box — ${escHtml(g.nom)}</h1>
+    <p class="page-sub">${STATUT_LABELS[g.statut]} · ${g.box.length} élément${g.box.length>1?'s':''} retenu${g.box.length>1?'s':''}</p>
+  `;
+  const body = document.getElementById('composerBody');
+  body.innerHTML = '';
+
+  const colWrap = document.createElement('div'); colWrap.className='grid-2';
+  const left = document.createElement('div');
+  left.innerHTML = `<h2 class="section-title">📦 Ma box actuelle</h2>`;
+  const boxList = document.createElement('div'); boxList.id='boxList';
+  left.appendChild(boxList);
+  colWrap.appendChild(left);
+
+  const right = document.createElement('div');
+  right.innerHTML = `<h2 class="section-title">🌱 Analyse GRAINE</h2>
+    <button class="btn ghost small" id="btnAnalyse">Analyser l'équilibre de ma box</button>
+    <div id="analyseWrap"></div>`;
+  colWrap.appendChild(right);
+  body.appendChild(colWrap);
+
+  renderBoxList(g, boxList);
+  if(g.analyse){ document.getElementById('analyseWrap').innerHTML = `<div class="analyse-box">${escHtml(g.analyse)}</div>`; }
+  document.getElementById('btnAnalyse').addEventListener('click', ()=> analyserBox(g));
+
+  const propSec = document.createElement('div');
+  propSec.style.marginTop = '30px';
+  propSec.innerHTML = `<div class="row between"><h2 class="section-title" style="margin:0;">✨ Fais-moi une proposition</h2><button class="btn ghost small" id="btnPropose">Que proposerais-tu ?</button></div><div id="propWrap"></div>`;
+  body.appendChild(propSec);
+  document.getElementById('btnPropose').addEventListener('click', ()=> genererPropositions(g));
+
+  const carteSec = document.createElement('div');
+  carteSec.style.marginTop = '30px';
+  carteSec.innerHTML = `<div class="row between"><h2 class="section-title" style="margin:0;">💌 Carte « Petit Explorateur »</h2>
+    <div class="row"><select id="tonCarte" style="width:170px;"><option value="doux">Plus doux</option><option value="drole">Plus drôle</option><option value="poetique">Plus poétique</option><option value="mysterieux">Plus mystérieux</option><option value="aventure">Plus aventure</option></select>
+    <button class="btn ghost small" id="btnCarte">Générer</button></div></div>
+    <div id="carteWrap">${g.carteExploratrice ? `<div class="analyse-box">${escHtml(g.carteExploratrice)}</div>` : ''}</div>`;
+  body.appendChild(carteSec);
+  document.getElementById('btnCarte').addEventListener('click', ()=> genererCarte(g));
+
+  const foot = document.createElement('div');
+  foot.className = 'row between';
+  foot.style.marginTop = '34px';
+  foot.innerHTML = `<button class="btn ghost" data-nav="accueil">← Accueil</button>
+    ${g.statut!=='recoltee' ? `<button class="btn accent" id="btnRecolter">🧺 Marquer comme récoltée</button>` : ''}`;
+  body.appendChild(foot);
+  const rBtn = foot.querySelector('#btnRecolter');
+  if(rBtn) rBtn.addEventListener('click', async ()=>{ g.statut='recoltee'; await persistAll(); toast('Box récoltée ✓'); renderComposer(g.id); });
+}
+function renderBoxList(g, wrap){
+  wrap.innerHTML = g.box.length ? '' : '<div class="empty"><h3>Box vide</h3><p>Retourne dans « Explorer » pour garder des idées.</p></div>';
+  g.box.forEach(item=>{
+    const el = document.createElement('div'); el.className='box-item';
+    el.innerHTML = `<div><div class="cat-tag">${CAT_LABELS[item.categorie]||item.categorie}</div><div class="txt">${escHtml(item.texte)}</div></div>
+      <div class="row"><button class="btn ghost small" data-act="activite">🎨 Concevoir</button><button class="btn ghost small" data-act="rm">✕</button></div>`;
+    el.querySelector('[data-act="rm"]').addEventListener('click', ()=>{
+      g.box = g.box.filter(x=>x.id!==item.id); persistAll(); renderBoxList(g, wrap);
+    });
+    el.querySelector('[data-act="activite"]').addEventListener('click', ()=>{
+      window.__currentBoxItemId = item.id; renderActivite(g.id, item.id); showScreen('activite');
+    });
+    wrap.appendChild(el);
+  });
+}
+async function analyserBox(g){
+  const wrap = document.getElementById('analyseWrap');
+  wrap.innerHTML = '<div class="empty"><span class="spinner dark"></span> Analyse en cours...</div>';
+  try{
+    const prompt = `${systemPromptCore()}
+
+Graine : ${g.nom} (${g.saison}, ${g.ages}).
+Contenu actuel de la box :
+${g.box.map(i=>`- [${CAT_LABELS[i.categorie]}] ${i.texte} (capacité : ${i.capacite||'—'})`).join('\n') || '(vide)'}
+
+Analyse l'équilibre de cette box en 4-6 phrases : quelles dimensions sont déjà bien couvertes (observation, manipulation, créativité, raisonnement, langage, motricité...), qu'est-ce qui manque éventuellement, et surtout — si la box est déjà suffisamment riche, dis-le clairement plutôt que de suggérer d'ajouter quelque chose par principe. "Plus n'est pas automatiquement mieux."
+Réponds en texte simple (pas de JSON), ton chaleureux mais direct, à destination de Marie.`;
+    const text = await callGemini({prompt, jsonMode:false});
+    g.analyse = text.trim();
+    await persistAll();
+    wrap.innerHTML = `<div class="analyse-box">${escHtml(g.analyse)}</div>`;
+  }catch(e){ wrap.innerHTML = `<div class="empty"><h3>Erreur</h3><p>${escHtml(e.message)}</p></div>`; }
+}
+async function genererPropositions(g){
+  const wrap = document.getElementById('propWrap');
+  wrap.innerHTML = '<div class="empty"><span class="spinner dark"></span> GRAINE réfléchit...</div>';
+  try{
+    const prompt = `${systemPromptCore()}
+
+Graine : ${g.nom} (${g.saison}, ${g.ages}).
+Contenu actuel de la box :
+${g.box.map(i=>`- [${CAT_LABELS[i.categorie]}] ${i.texte}`).join('\n') || '(vide)'}
+
+Marie te demande : "Qu'est-ce que TOI tu ajouterais à cette box ?"
+Propose 3 à 5 idées argumentées, réellement complémentaires à ce qui existe déjà (pas redondantes).
+Réponds STRICTEMENT en JSON :
+{"propositions":[{"concept":"...","pourquoi":"...","age":"...","capacite":"...","lien_theme":"...","materiel":"...","complexite_fabrication":"...","valeur_ajoutee":"...","categorie":"decouvrir|apprendre|manipuler|fabriquer|creer|dehors|jouer"}]}`;
+    const text = await callGemini({prompt});
+    const json = safeParseJSON(text);
+    wrap.innerHTML = '';
+    (json.propositions||[]).forEach(p=>{
+      const card = document.createElement('div'); card.className='prop-card';
+      card.innerHTML = `<h4>${escHtml(p.concept)}</h4>
+        <div class="prop-meta">${escHtml(p.age||'')} · ${CAT_LABELS[p.categorie]||p.categorie||''}</div>
+        <div class="prop-field"><b>Pourquoi :</b> ${escHtml(p.pourquoi||'')}</div>
+        <div class="prop-field"><b>Capacité sollicitée :</b> ${escHtml(p.capacite||'')}</div>
+        <div class="prop-field"><b>Lien avec le thème :</b> ${escHtml(p.lien_theme||'')}</div>
+        <div class="prop-field"><b>Matériel :</b> ${escHtml(p.materiel||'')}</div>
+        <div class="prop-field"><b>Complexité pour toi :</b> ${escHtml(p.complexite_fabrication||'')}</div>
+        <div class="prop-field"><b>Valeur ajoutée :</b> ${escHtml(p.valeur_ajoutee||'')}</div>
+        <button class="btn accent small" style="margin-top:8px;">🌱 Ajouter à ma box</button>`;
+      card.querySelector('button').addEventListener('click', async ()=>{
+        g.box.push({ id:uid(), categorie:p.categorie||'decouvrir', texte:p.concept, capacite:p.capacite });
+        await persistAll();
+        renderComposer(g.id);
+        toast('Ajouté à la box.');
+      });
+      wrap.appendChild(card);
+    });
+  }catch(e){ wrap.innerHTML = `<div class="empty"><h3>Erreur</h3><p>${escHtml(e.message)}</p></div>`; }
+}
+async function genererCarte(g){
+  const wrap = document.getElementById('carteWrap');
+  const ton = document.getElementById('tonCarte').value;
+  wrap.innerHTML = '<div class="empty"><span class="spinner dark"></span> Écriture de la carte...</div>';
+  try{
+    const prompt = `${systemPromptCore()}
+
+Rédige une courte carte d'ouverture "Petit Explorateur" (5-8 lignes) pour la box "${g.nom}" (${g.saison}, ${g.ages}).
+Contenu de la box : ${g.box.map(i=>i.texte).join(', ') || '(à définir)'}
+Ton souhaité : ${ton}.
+Adresse-toi directement à l'enfant, avec des emojis discrets, une écriture chaleureuse et une invitation à l'aventure. Pas de titre, juste le texte de la carte.`;
+    const text = await callGemini({prompt, jsonMode:false});
+    g.carteExploratrice = text.trim();
+    await persistAll();
+    wrap.innerHTML = `<div class="analyse-box">${escHtml(g.carteExploratrice)}</div>`;
+  }catch(e){ wrap.innerHTML = `<div class="empty"><h3>Erreur</h3><p>${escHtml(e.message)}</p></div>`; }
+}
+
+/* ---------- ACTIVITE (Studio) ---------- */
+async function renderActivite(graineId, itemId){
+  const g = STATE.graines.find(x=>x.id===graineId);
+  const item = g.box.find(x=>x.id===itemId);
+  document.getElementById('activiteHead').innerHTML = `<h1 class="page-title">${escHtml(item.texte)}</h1><p class="page-sub">${CAT_LABELS[item.categorie]||''} · ${escHtml(g.nom)}</p>`;
+  const body = document.getElementById('activiteBody');
+
+  if(g.activites[itemId]){
+    renderActiviteContent(g, item, g.activites[itemId]);
+    return;
+  }
+  body.innerHTML = '<div class="empty"><span class="spinner dark"></span> GRAINE conçoit l\'activité complète...</div>';
+  try{
+    const prompt = `${systemPromptCore()}
+
+Graine : ${g.nom} (${g.saison}, ${g.ages}).
+Idée retenue à transformer en activité complète : "${item.texte}" (capacité visée : ${item.capacite||'—'}, catégorie : ${CAT_LABELS[item.categorie]||item.categorie}).
+Fiche recherche disponible : ${JSON.stringify(g.fiche||{})}
+
+Conçois une architecture d'activité complète. Écris aussi une version "mission de petit explorateur" du texte destiné à l'enfant (langage ludique et narratif plutôt que scolaire, même compétence visée).
+
+Réponds STRICTEMENT en JSON :
+{
+  "titre_mission": "ex: Mission : Les réserves de l'écureuil",
+  "age_conseille": "...",
+  "intention_pedagogique": "...",
+  "capacites_sollicitees": "...",
+  "pourquoi": "pourquoi cette activité, en une phrase",
+  "materiel": "liste sous forme de texte",
+  "preparation_adulte": "...",
+  "mise_en_situation_enfant": "texte narratif adressé à l'enfant, ton mission d'explorateur",
+  "consigne_enfant": "...",
+  "deroulement": "étapes, texte structuré",
+  "simplifier": "adaptation plus simple (2-3 ans)",
+  "aller_plus_loin": "adaptation plus poussée (5-6 ans)",
+  "questions_adulte": "questions que l'adulte peut poser pendant l'activité",
+  "prolongement_nature": "prolongement possible dehors",
+  "vigilances": "sécurité / supervision à respecter",
+  "logique_pedagogique": "explication à destination de Marie de pourquoi l'activité est construite ainsi"
+}`;
+    const text = await callGemini({prompt});
+    const json = safeParseJSON(text);
+    g.activites[itemId] = json;
+    await persistAll();
+    renderActiviteContent(g, item, json);
+  }catch(e){
+    body.innerHTML = `<div class="empty"><h3>Erreur</h3><p>${escHtml(e.message)}</p></div>`;
+  }
+}
+function renderActiviteContent(g, item, a){
+  const body = document.getElementById('activiteBody');
+  body.innerHTML = `
+    <div class="card">
+      <h2 class="section-title">${escHtml(a.titre_mission||item.texte)}</h2>
+      <p class="hint" style="margin-bottom:20px;">Âge conseillé : ${escHtml(a.age_conseille||'—')}</p>
+
+      <div class="activite-block"><h3>🎯 Intention pédagogique</h3><p>${escHtml(a.intention_pedagogique)}</p></div>
+      <div class="activite-block"><h3>🧠 Capacités sollicitées</h3><p>${escHtml(a.capacites_sollicitees)}</p></div>
+      <div class="activite-block"><h3>💬 Pourquoi cette activité</h3><p>${escHtml(a.pourquoi)}</p></div>
+      <div class="activite-block"><h3>🧺 Matériel</h3><p>${escHtml(a.materiel)}</p></div>
+      <div class="activite-block"><h3>🛠 Préparation par l'adulte</h3><p>${escHtml(a.preparation_adulte)}</p></div>
+
+      <div class="activite-block">
+        <h3>🧭 Mise en situation enfant</h3>
+        <div class="mise-situation">${escHtml(a.mise_en_situation_enfant)}</div>
+      </div>
+
+      <div class="activite-block"><h3>📋 Consigne enfant</h3><p>${escHtml(a.consigne_enfant)}</p></div>
+      <div class="activite-block"><h3>▶️ Déroulement</h3><p>${escHtml(a.deroulement)}</p></div>
+
+      <div class="grid-2">
+        <div class="activite-block"><h3>🌱 Simplifier</h3><p>${escHtml(a.simplifier)}</p></div>
+        <div class="activite-block"><h3>🌳 Aller plus loin</h3><p>${escHtml(a.aller_plus_loin)}</p></div>
+      </div>
+
+      <div class="activite-block"><h3>💬 Questions que l'adulte peut poser</h3><p>${escHtml(a.questions_adulte)}</p></div>
+      <div class="activite-block"><h3>🌿 Prolongement dans la nature</h3><p>${escHtml(a.prolongement_nature)}</p></div>
+
+      <div class="activite-block">
+        <h3>⚠️ Vigilances / supervision</h3>
+        <div class="vigilance-box">${escHtml(a.vigilances)}</div>
+      </div>
+
+      <details class="logique">
+        <summary>🧠 Voir la logique pédagogique</summary>
+        <div class="content">${escHtml(a.logique_pedagogique)}</div>
+      </details>
+    </div>
+    <div class="row between" style="margin-top:24px;">
+      <button class="btn ghost" id="btnBackComposer">← Retour à la box</button>
+      <button class="btn ghost small" id="btnRegenActivite">↻ Régénérer cette activité</button>
+    </div>
+  `;
+  document.getElementById('btnBackComposer').addEventListener('click', ()=>{ renderComposer(g.id); showScreen('composer'); });
+  document.getElementById('btnRegenActivite').addEventListener('click', async ()=>{
+    delete g.activites[item.id]; await persistAll(); renderActivite(g.id, item.id);
+  });
+}
+
+/* ---------- Settings modal ---------- */
+function openSettings(){
+  document.getElementById('apiKeyInput').value = STATE.settings.apiKey || '';
+  document.getElementById('modelTextInput').value = STATE.settings.modelText || 'gemini-2.5-flash';
+  document.getElementById('modalBg').classList.add('active');
+}
+function closeSettings(){ document.getElementById('modalBg').classList.remove('active'); }
+document.getElementById('btnSettings').addEventListener('click', openSettings);
+document.getElementById('modalClose').addEventListener('click', closeSettings);
+document.getElementById('modalBg').addEventListener('click', (e)=>{ if(e.target.id==='modalBg') closeSettings(); });
+document.getElementById('btnSaveSettings').addEventListener('click', async ()=>{
+  STATE.settings.apiKey = document.getElementById('apiKeyInput').value.trim();
+  STATE.settings.modelText = document.getElementById('modelTextInput').value.trim() || 'gemini-2.5-flash';
+  await persistAll();
+  toast('Réglages enregistrés.');
+  closeSettings();
+});
+document.getElementById('btnResetAll').addEventListener('click', async ()=>{
+  if(!confirm('Effacer toute la mémoire ADN GRAINE (toutes les box) ? Cette action est irréversible.')) return;
+  STATE.graines = [];
+  await persistAll();
+  renderAccueil();
+  toast('Mémoire réinitialisée.');
+});
+
+/* ---------- init ---------- */
+(async function init(){
+  await openDB();
+  await loadAll();
+  renderAccueil();
+  showScreen('accueil');
+  if(!STATE.settings.apiKey){
+    setTimeout(()=>{ toast('Ajoute ta clé API Vertex AI dans les réglages (⚙️) pour commencer.', 5000); }, 600);
+  }
+})();
+</script>
+</body>
+</html>
