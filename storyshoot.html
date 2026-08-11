@@ -1,0 +1,1707 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StoryShoot — Studio IRL</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=DM+Serif+Display:ital@0;1&display=swap');
+:root {
+  --plum-900:#0e0812;--plum-800:#160d1e;--plum-700:#1f1230;--plum-600:#2a1845;--plum-500:#3d2260;
+  --violet-400:#7c3aed;--violet-300:#a855f7;--violet-200:#c084fc;--violet-100:#e9d5ff;
+  --rose-400:#f43f5e;--rose-300:#fb7185;--white:#ffffff;
+  --text-muted:#9d8bb0;--text-mid:#c4b0d8;--text-bright:#ede8f5;
+  --radius-sm:8px;--radius-md:14px;--radius-lg:22px;--radius-xl:32px;
+  --shadow-card:0 4px 24px rgba(0,0,0,0.4),0 1px 4px rgba(0,0,0,0.3);
+  --shadow-glow:0 0 40px rgba(124,58,237,0.25);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--plum-900);color:var(--text-bright);min-height:100vh;overflow-x:hidden}
+
+/* SPLASH */
+#splash{position:fixed;inset:0;background:var(--plum-900);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1000;padding:24px}
+.splash-bg{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.splash-bg::before{content:'';position:absolute;top:-30%;left:-20%;width:80%;height:80%;background:radial-gradient(ellipse,rgba(124,58,237,0.18) 0%,transparent 70%);border-radius:50%}
+.splash-bg::after{content:'';position:absolute;bottom:-20%;right:-10%;width:60%;height:60%;background:radial-gradient(ellipse,rgba(244,63,94,0.10) 0%,transparent 70%);border-radius:50%}
+.splash-card{position:relative;background:linear-gradient(145deg,var(--plum-700),var(--plum-800));border:1px solid rgba(124,58,237,0.3);border-radius:var(--radius-xl);padding:52px 48px;width:100%;max-width:440px;box-shadow:var(--shadow-card),var(--shadow-glow);text-align:center}
+.splash-logo{display:inline-flex;align-items:center;gap:10px;margin-bottom:32px}
+.logo-icon{width:44px;height:44px;background:linear-gradient(135deg,var(--violet-400),var(--rose-400));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px}
+.logo-text{font-family:'DM Serif Display',serif;font-size:26px;color:var(--white);letter-spacing:-0.5px}
+.logo-text span{color:var(--violet-300)}
+.splash-tagline{font-size:13px;color:var(--text-muted);font-weight:300;letter-spacing:2px;text-transform:uppercase;margin-bottom:40px}
+.splash-label{font-size:12px;font-weight:500;color:var(--text-muted);text-align:left;margin-bottom:8px;letter-spacing:1px;text-transform:uppercase}
+.splash-input{width:100%;padding:16px 20px;background:rgba(255,255,255,0.05);border:1.5px solid rgba(124,58,237,0.3);border-radius:var(--radius-md);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;color:var(--white);text-align:center;letter-spacing:3px;text-transform:uppercase;transition:border-color 0.2s,box-shadow 0.2s;outline:none;margin-bottom:8px}
+.splash-input::placeholder{color:var(--text-muted);letter-spacing:1px;text-transform:none;font-weight:300}
+.splash-input:focus{border-color:var(--violet-400);box-shadow:0 0 0 3px rgba(124,58,237,0.15)}
+.splash-input.error{border-color:var(--rose-400);animation:shake 0.3s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.splash-error{font-size:12px;color:var(--rose-300);min-height:18px;margin-bottom:24px;text-align:center}
+.splash-footer{margin-top:28px;font-size:11px;color:var(--text-muted)}
+
+/* BUTTONS */
+.btn-primary{width:100%;padding:16px;background:linear-gradient(135deg,var(--violet-400),var(--rose-400));border:none;border-radius:var(--radius-md);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;color:var(--white);cursor:pointer;transition:opacity 0.2s,transform 0.15s;letter-spacing:0.3px}
+.btn-primary:hover{opacity:0.9;transform:translateY(-1px)}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+.btn-secondary{padding:12px 24px;background:rgba(124,58,237,0.15);border:1.5px solid var(--violet-400);border-radius:var(--radius-md);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;color:var(--violet-200);cursor:pointer;transition:all 0.2s}
+.btn-secondary:hover{background:rgba(124,58,237,0.25)}
+.btn-secondary:disabled{opacity:0.4;cursor:not-allowed}
+.btn-ghost{padding:10px 18px;background:transparent;border:1px solid rgba(124,58,237,0.3);border-radius:var(--radius-md);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text-muted);cursor:pointer;transition:all 0.2s}
+.btn-ghost:hover{border-color:var(--violet-300);color:var(--text-bright)}
+
+/* APP LAYOUT */
+#app{display:none;flex-direction:column;min-height:100vh}
+#quota-bar{position:sticky;top:0;z-index:100;background:var(--plum-800);border-bottom:1px solid rgba(124,58,237,0.2);padding:0 24px}
+.quota-inner{max-width:960px;margin:0 auto;padding:10px 0;display:flex;align-items:center;gap:16px}
+.quota-logo{font-family:'DM Serif Display',serif;font-size:16px;color:var(--white);white-space:nowrap;flex-shrink:0}
+.quota-logo span{color:var(--violet-300)}
+.quota-track{flex:1;height:6px;background:rgba(255,255,255,0.08);border-radius:99px;overflow:hidden}
+.quota-fill{height:100%;background:linear-gradient(90deg,var(--violet-400),var(--rose-400));border-radius:99px;transition:width 0.4s ease}
+.quota-text{font-size:12px;color:var(--text-muted);white-space:nowrap;flex-shrink:0}
+.quota-text strong{color:var(--text-bright)}
+.quota-user{font-size:11px;color:var(--violet-300);font-weight:500;white-space:nowrap;flex-shrink:0}
+
+/* STEP NAV */
+.step-nav{background:var(--plum-800);border-bottom:1px solid rgba(124,58,237,0.15);padding:0 24px;overflow-x:auto}
+.step-nav-inner{max-width:960px;margin:0 auto;display:flex;gap:0}
+.step-tab{padding:14px 20px;font-size:12px;font-weight:600;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all 0.2s;letter-spacing:0.5px;text-transform:uppercase}
+.step-tab.active{color:var(--violet-300);border-bottom-color:var(--violet-400)}
+.step-tab.done{color:var(--text-mid)}
+.step-tab.locked{opacity:0.4;cursor:not-allowed}
+
+/* MAIN */
+.app-main{flex:1;max-width:960px;margin:0 auto;width:100%;padding:40px 24px 80px}
+.app-hero{margin-bottom:40px;text-align:center}
+.hero-eyebrow{display:inline-block;font-size:11px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:var(--violet-300);margin-bottom:14px}
+.hero-title{font-family:'DM Serif Display',serif;font-size:clamp(28px,4vw,44px);line-height:1.1;color:var(--white);margin-bottom:12px}
+.hero-title em{font-style:italic;color:var(--violet-200)}
+.hero-sub{font-size:14px;color:var(--text-muted);font-weight:300;max-width:500px;margin:0 auto;line-height:1.6}
+
+/* SECTIONS */
+.section{margin-bottom:28px}
+.section-header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.section-num{width:28px;height:28px;border-radius:50%;background:rgba(124,58,237,0.2);border:1px solid rgba(124,58,237,0.4);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--violet-300);flex-shrink:0}
+.section-title{font-size:15px;font-weight:600;color:var(--text-bright)}
+.section-desc{font-size:12px;color:var(--text-muted);margin-left:38px;margin-top:-8px;margin-bottom:12px}
+.card{background:linear-gradient(145deg,var(--plum-700),var(--plum-800));border:1px solid rgba(124,58,237,0.18);border-radius:var(--radius-lg);padding:24px}
+
+/* FIELDS */
+.field-group{margin-bottom:16px}
+.field-label{font-size:12px;font-weight:600;color:var(--text-muted);letter-spacing:0.8px;margin-bottom:8px;display:block}
+.field-label .optional{font-size:10px;font-weight:400;color:var(--text-muted);margin-left:6px;opacity:0.7}
+textarea.field,input.field,select.field{width:100%;background:rgba(255,255,255,0.04);border:1.5px solid rgba(124,58,237,0.2);border-radius:var(--radius-md);padding:14px 16px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text-bright);outline:none;transition:border-color 0.2s;line-height:1.6}
+textarea.field{resize:vertical;min-height:90px}
+textarea.field::placeholder,input.field::placeholder{color:var(--text-muted);font-weight:300}
+textarea.field:focus,input.field:focus,select.field:focus{border-color:var(--violet-400)}
+select.field{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239d8bb0' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 16px center;padding-right:40px;background-color:rgba(255,255,255,0.04);cursor:pointer}
+select.field option{background:var(--plum-700)}
+
+/* UPLOAD */
+.upload-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px}
+.upload-zone{background:rgba(255,255,255,0.03);border:1.5px dashed rgba(124,58,237,0.3);border-radius:var(--radius-md);padding:20px 12px;text-align:center;cursor:pointer;transition:border-color 0.2s,background 0.2s;position:relative;overflow:hidden;min-height:110px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.upload-zone:hover{border-color:var(--violet-400);background:rgba(124,58,237,0.06)}
+.upload-zone.has-file{border-style:solid;border-color:rgba(124,58,237,0.5)}
+.upload-zone input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer}
+.upload-icon{font-size:22px;margin-bottom:6px}
+.upload-label{font-size:11px;font-weight:600;color:var(--text-mid);margin-bottom:3px}
+.upload-hint{font-size:10px;color:var(--text-muted)}
+.upload-preview{position:absolute;inset:0;object-fit:cover;width:100%;height:100%;border-radius:calc(var(--radius-md) - 2px);opacity:0.7}
+.upload-preview-overlay{position:absolute;inset:0;background:rgba(14,8,18,0.5);display:flex;align-items:center;justify-content:center;border-radius:calc(var(--radius-md) - 2px)}
+.upload-check{width:28px;height:28px;background:var(--violet-400);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px}
+
+/* FORMAT CHIPS */
+.format-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.format-chip{padding:12px 14px;background:rgba(255,255,255,0.03);border:1.5px solid rgba(124,58,237,0.18);border-radius:var(--radius-md);cursor:pointer;transition:all 0.15s}
+.format-chip:hover{border-color:rgba(124,58,237,0.4)}
+.format-chip.selected{background:rgba(124,58,237,0.15);border-color:var(--violet-400)}
+.format-chip-name{font-size:13px;font-weight:600;color:var(--text-bright);margin-bottom:2px}
+.format-chip-desc{font-size:11px;color:var(--text-muted);line-height:1.4}
+
+/* DECOR TOGGLE */
+.toggle-row{display:flex;gap:8px;margin-bottom:14px}
+.toggle-btn{flex:1;padding:10px;background:rgba(255,255,255,0.04);border:1.5px solid rgba(124,58,237,0.2);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;color:var(--text-muted);cursor:pointer;transition:all 0.2s}
+.toggle-btn.active{background:rgba(124,58,237,0.15);border-color:var(--violet-400);color:var(--violet-200)}
+
+/* HOOK CHOICES */
+.hook-choices{display:flex;flex-direction:column;gap:12px;margin-top:12px}
+.hook-choice{background:rgba(255,255,255,0.03);border:1.5px solid rgba(124,58,237,0.2);border-radius:var(--radius-md);padding:16px;cursor:pointer;transition:all 0.2s}
+.hook-choice:hover{border-color:rgba(124,58,237,0.5);background:rgba(124,58,237,0.05)}
+.hook-choice.selected{background:rgba(124,58,237,0.12);border-color:var(--violet-400)}
+.hook-choice-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.hook-badge{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 10px;border-radius:99px;background:rgba(124,58,237,0.2);color:var(--violet-300);border:1px solid rgba(124,58,237,0.3)}
+.hook-choice.selected .hook-badge{background:var(--violet-400);color:white;border-color:var(--violet-400)}
+.hook-choice-label{font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px}
+.hook-verbal{font-size:15px;font-weight:500;color:var(--text-bright);line-height:1.5;margin-bottom:6px}
+.hook-ecran{font-size:12px;color:var(--violet-200);font-style:italic;padding:6px 10px;background:rgba(124,58,237,0.08);border-radius:var(--radius-sm);margin-top:6px}
+
+/* CAPTURE MOTEUR */
+.capture-block{margin-bottom:20px}
+.capture-label{font-size:11px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--violet-300);margin-bottom:10px}
+.capture-chips{display:flex;flex-wrap:wrap;gap:8px}
+.capture-chip{padding:7px 14px;background:rgba(255,255,255,0.03);border:1.5px solid rgba(124,58,237,0.18);border-radius:99px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;color:var(--text-muted);cursor:pointer;transition:all 0.15s;user-select:none}
+.capture-chip:hover{border-color:rgba(124,58,237,0.5);color:var(--text-mid)}
+.capture-chip.selected{background:rgba(124,58,237,0.18);border-color:var(--violet-400);color:var(--violet-200)}
+.plans-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.plan-chip{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:rgba(255,255,255,0.03);border:1.5px solid rgba(124,58,237,0.18);border-radius:var(--radius-md);cursor:pointer;transition:all 0.15s}
+.plan-chip:hover{border-color:rgba(124,58,237,0.4)}
+.plan-chip.selected{background:rgba(124,58,237,0.15);border-color:var(--violet-400)}
+.plan-chip-check{width:18px;height:18px;border-radius:5px;border:1.5px solid rgba(124,58,237,0.4);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:11px;color:transparent;transition:all 0.15s}
+.plan-chip.selected .plan-chip-check{background:var(--violet-400);border-color:var(--violet-400);color:white}
+.plan-chip-name{font-size:12px;font-weight:600;color:var(--text-bright);margin-bottom:2px}
+.plan-chip-desc{font-size:11px;color:var(--text-muted);line-height:1.4}
+
+/* PROFILE CARD */
+.profile-card{background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.25);border-radius:var(--radius-md);padding:20px;margin-bottom:16px}
+.profile-section-title{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--violet-300);margin-bottom:12px}
+.profile-item{margin-bottom:14px}
+.profile-key{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px}
+.profile-val{font-size:13px;color:var(--text-bright);line-height:1.5}
+.profile-edit-field{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(124,58,237,0.3);border-radius:var(--radius-sm);padding:10px 12px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text-bright);outline:none;resize:vertical;min-height:60px;line-height:1.5}
+.profile-edit-field:focus{border-color:var(--violet-400)}
+.profile-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+
+/* SCRIPT BOX */
+.script-box{background:rgba(255,255,255,0.03);border:1px solid rgba(124,58,237,0.2);border-radius:var(--radius-md);padding:20px;margin-bottom:20px}
+.script-section{margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid rgba(124,58,237,0.1)}
+.script-section:last-child{margin-bottom:0;padding-bottom:0;border-bottom:none}
+.script-tag{display:inline-block;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:3px 10px;border-radius:99px;margin-bottom:8px}
+.script-tag.hook{background:rgba(244,63,94,0.15);color:var(--rose-300);border:1px solid rgba(244,63,94,0.3)}
+.script-tag.body{background:rgba(124,58,237,0.15);color:var(--violet-300);border:1px solid rgba(124,58,237,0.3)}
+.script-tag.cta{background:rgba(34,197,94,0.1);color:#4ade80;border:1px solid rgba(34,197,94,0.3)}
+.script-text{font-size:14px;color:var(--text-bright);line-height:1.7}
+.script-edit{width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(124,58,237,0.2);border-radius:var(--radius-sm);padding:12px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text-bright);outline:none;resize:vertical;min-height:80px;line-height:1.7}
+
+/* STORYBOARD */
+.story-scenes{display:flex;flex-direction:column;gap:14px}
+.scene-card{background:rgba(255,255,255,0.03);border:1px solid rgba(124,58,237,0.15);border-radius:var(--radius-md);padding:16px;display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:start}
+.scene-num{width:36px;height:36px;border-radius:10px;background:rgba(124,58,237,0.2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--violet-300);flex-shrink:0}
+.scene-title{font-size:13px;font-weight:600;color:var(--text-bright);margin-bottom:3px}
+.scene-plan{font-size:10px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px}
+.scene-desc{font-size:12px;color:var(--text-muted);line-height:1.5;margin-bottom:10px}
+.scene-emotion-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.emotion-tag{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.3);border-radius:99px;font-size:11px;font-weight:500;color:var(--violet-200)}
+.emotion-edit{padding:4px 10px;background:transparent;border:1px solid rgba(124,58,237,0.2);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text-muted);cursor:pointer;transition:all 0.2s}
+.emotion-edit:hover{border-color:var(--violet-300);color:var(--violet-200)}
+.scene-img-area{width:80px;height:142px;border-radius:var(--radius-sm);background:rgba(255,255,255,0.04);border:1px solid rgba(124,58,237,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;position:relative;font-size:10px;color:var(--text-muted)}
+.scene-gen-btn{position:absolute;inset:0;background:rgba(14,8,18,0.7);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.2s;cursor:pointer;border:none;font-size:18px}
+.scene-img-area:hover .scene-gen-btn{opacity:1}
+.scene-spinner{width:24px;height:24px;border:2px solid rgba(124,58,237,0.3);border-top-color:var(--violet-300);border-radius:50%;animation:spin 0.8s linear infinite;display:none}
+
+/* BROLL */
+.broll-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.broll-card{background:rgba(255,255,255,0.03);border:1px solid rgba(124,58,237,0.15);border-radius:var(--radius-md);padding:14px}
+.broll-cat{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--violet-300);margin-bottom:6px}
+.broll-desc{font-size:12px;color:var(--text-muted);line-height:1.5;margin-bottom:10px}
+.broll-img-area{width:100%;aspect-ratio:9/16;border-radius:var(--radius-sm);background:rgba(255,255,255,0.04);border:1px solid rgba(124,58,237,0.15);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;color:var(--text-muted);font-size:11px}
+.broll-gen-btn{position:absolute;inset:0;background:rgba(14,8,18,0.7);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.2s;cursor:pointer;border:none;font-size:18px}
+.broll-img-area:hover .broll-gen-btn{opacity:1}
+
+/* GEN ALL ROW */
+.gen-all-row{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:20px;padding-top:20px;border-top:1px solid rgba(124,58,237,0.15)}
+.gen-all-info{font-size:12px;color:var(--text-muted)}
+.btn-gen-all{padding:14px 28px;background:linear-gradient(135deg,var(--violet-400),var(--rose-400));border:none;border-radius:var(--radius-md);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;color:var(--white);cursor:pointer;transition:opacity 0.2s,transform 0.15s;display:flex;align-items:center;gap:8px}
+.btn-gen-all:hover{opacity:0.9;transform:translateY(-1px)}
+.btn-gen-all:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+
+/* QUOTA ALERT */
+.quota-alert{background:rgba(244,63,94,0.1);border:1px solid rgba(244,63,94,0.3);border-radius:var(--radius-md);padding:14px 18px;font-size:13px;color:var(--rose-300);display:none;align-items:center;gap:10px;margin-top:16px}
+.quota-alert.show{display:flex}
+
+/* SPINNER */
+.spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* EMOTION MODAL */
+#emotion-modal{display:none;position:fixed;inset:0;background:rgba(14,8,18,0.8);backdrop-filter:blur(4px);z-index:500;align-items:center;justify-content:center;padding:24px}
+#emotion-modal.open{display:flex}
+.emotion-modal-card{background:var(--plum-700);border:1px solid rgba(124,58,237,0.4);border-radius:var(--radius-xl);padding:32px;width:100%;max-width:400px}
+.emotion-modal-title{font-size:16px;font-weight:600;color:var(--white);margin-bottom:20px}
+.emotion-list{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px}
+.emotion-choice{padding:8px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(124,58,237,0.2);border-radius:99px;font-size:13px;color:var(--text-mid);cursor:pointer;transition:all 0.15s}
+.emotion-choice:hover,.emotion-choice.selected{background:rgba(124,58,237,0.2);border-color:var(--violet-400);color:var(--violet-200)}
+.btn-modal-close{width:100%;padding:12px;background:transparent;border:1px solid rgba(124,58,237,0.3);border-radius:var(--radius-md);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text-muted);cursor:pointer;transition:all 0.2s}
+.btn-modal-close:hover{border-color:var(--violet-300);color:var(--text-bright)}
+
+/* TOAST */
+#toast{position:fixed;bottom:32px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--plum-600);border:1px solid rgba(124,58,237,0.4);border-radius:var(--radius-md);padding:12px 20px;font-size:13px;color:var(--text-bright);z-index:9999;opacity:0;transition:opacity 0.3s,transform 0.3s;pointer-events:none;white-space:nowrap}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* DIVIDER */
+.divider{height:1px;background:rgba(124,58,237,0.15);margin:24px 0}
+.info-box{background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.2);border-radius:var(--radius-md);padding:14px 16px;font-size:13px;color:var(--text-mid);line-height:1.6;margin-bottom:16px}
+.badge-optional{display:inline-block;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:2px 8px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.3);border-radius:99px;color:var(--violet-300);margin-left:8px;vertical-align:middle}
+
+@media(max-width:600px){
+  .upload-grid{grid-template-columns:1fr 1fr}
+  .format-grid{grid-template-columns:1fr}
+  .plans-grid{grid-template-columns:1fr}
+  .broll-grid{grid-template-columns:1fr}
+  .scene-card{grid-template-columns:auto 1fr}
+  .scene-img-area{display:none}
+  .splash-card{padding:36px 24px}
+}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-bg"></div>
+  <div class="splash-card">
+    <div class="splash-logo">
+      <div class="logo-icon">🎬</div>
+      <div class="logo-text">Story<span>Shoot</span></div>
+    </div>
+    <div class="splash-tagline">Studio IRL — Contenu UGC Authentique</div>
+    <div class="splash-label">Ton code d'accès</div>
+    <input type="text" id="code-input" class="splash-input" placeholder="Entre ton code..." autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="10"/>
+    <div class="splash-error" id="splash-error"></div>
+    <button class="btn-primary" onclick="handleLogin()">Accéder à StoryShoot</button>
+    <div class="splash-footer">Accès réservé aux membres Studio IRL</div>
+  </div>
+</div>
+
+<!-- EMOTION MODAL -->
+<div id="emotion-modal">
+  <div class="emotion-modal-card">
+    <div class="emotion-modal-title">Choisir l'émotion de la scène</div>
+    <div class="emotion-list" id="emotion-list"></div>
+    <button class="btn-modal-close" onclick="closeEmotionModal()">Annuler</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div id="quota-bar">
+    <div class="quota-inner">
+      <div class="quota-logo">Story<span>Shoot</span></div>
+      <div class="quota-track"><div class="quota-fill" id="quota-fill" style="width:100%"></div></div>
+      <div class="quota-text" id="quota-text"><strong>10</strong> / 10 photos</div>
+      <div class="quota-user" id="quota-user">●</div>
+    </div>
+  </div>
+
+  <div class="step-nav">
+    <div class="step-nav-inner">
+      <div class="step-tab active" id="tab-0" onclick="goToStep(0)">0 · Contexte</div>
+      <div class="step-tab locked" id="tab-1" onclick="goToStep(1)">1 · Marque</div>
+      <div class="step-tab locked" id="tab-2" onclick="goToStep(2)">2 · Ton histoire</div>
+      <div class="step-tab locked" id="tab-3" onclick="goToStep(3)">3 · Profil client</div>
+      <div class="step-tab locked" id="tab-4" onclick="goToStep(4)">4 · Script</div>
+      <div class="step-tab locked" id="tab-5" onclick="goToStep(5)">5 · Storyboard</div>
+      <div class="step-tab locked" id="tab-6" onclick="goToStep(6)">6 · Moteur</div>
+      <div class="step-tab locked" id="tab-7" onclick="goToStep(7)">7 · B-Roll</div>
+    </div>
+  </div>
+
+  <div class="app-main">
+
+    <!-- ══════════════════════════════════
+         STEP 0 — CONTEXTE
+    ══════════════════════════════════ -->
+    <div id="step-0">
+      <div class="app-hero">
+        <div class="hero-eyebrow">Studio IRL · StoryShoot</div>
+        <h1 class="hero-title">Crée du contenu UGC<br><em>qui fait vraiment vendre</em></h1>
+        <p class="hero-sub">Remplis chaque étape — StoryShoot construit le script, le storyboard et les visuels.</p>
+      </div>
+
+      <div class="section">
+        <div class="section-header"><div class="section-num">A</div><div class="section-title">Visuels de référence</div></div>
+        <div class="section-desc">Avatar IA, produit, tenue, décor. Ces images servent à verrouiller l'identité et le produit dans toutes les générations.</div>
+        <div class="card">
+          <div class="upload-grid">
+            <div class="upload-zone" id="zone-avatar" onclick="triggerUpload('avatar-file')">
+              <input type="file" id="avatar-file" accept="image/*" onchange="handleUpload('avatar',this)">
+              <div class="upload-icon">👤</div>
+              <div class="upload-label">Avatar IA</div>
+              <div class="upload-hint">Photo référence</div>
+            </div>
+            <div class="upload-zone" id="zone-produit" onclick="triggerUpload('produit-file')">
+              <input type="file" id="produit-file" accept="image/*" onchange="handleUpload('produit',this)">
+              <div class="upload-icon">📦</div>
+              <div class="upload-label">Produit</div>
+              <div class="upload-hint">Photo du produit</div>
+            </div>
+            <div class="upload-zone" id="zone-vetement" onclick="triggerUpload('vetement-file')">
+              <input type="file" id="vetement-file" accept="image/*" onchange="handleUpload('vetement',this)">
+              <div class="upload-icon">👗</div>
+              <div class="upload-label">Tenue</div>
+              <div class="upload-hint">Optionnel</div>
+            </div>
+            <div class="upload-zone" id="zone-decor-custom" onclick="triggerUpload('decor-file')">
+              <input type="file" id="decor-file" accept="image/*" onchange="handleUpload('decor',this)">
+              <div class="upload-icon">🏠</div>
+              <div class="upload-label">Décor</div>
+              <div class="upload-hint">Optionnel</div>
+            </div>
+          </div>
+          <div style="margin-top:18px">
+            <div style="font-size:11px;font-weight:600;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">Mode décor</div>
+            <div class="toggle-row">
+              <button class="toggle-btn active" id="toggle-ia" onclick="setDecorMode('ia')">🤖 Décor IA</button>
+              <button class="toggle-btn" id="toggle-custom" onclick="setDecorMode('custom')">📸 Mon décor</button>
+            </div>
+            <div id="decor-ia-block">
+              <select class="field" id="decor-select">
+                <option value="">Sélectionne un environnement...</option>
+                <option value="modern apartment living room">🏢 Appartement moderne</option>
+                <option value="cozy family living room">🛋️ Salon familial</option>
+                <option value="contemporary kitchen">🍳 Cuisine contemporaine</option>
+                <option value="small bathroom">🚿 Salle de bain</option>
+                <option value="bright bedroom">🛏️ Chambre lumineuse</option>
+                <option value="home office">💻 Bureau à domicile</option>
+                <option value="terrace outdoor">🌿 Terrasse</option>
+                <option value="garden outdoor">🌳 Jardin</option>
+                <option value="gym">🏋️ Salle de sport</option>
+                <option value="cafe coffee shop">☕ Café</option>
+                <option value="car interior">🚗 Voiture</option>
+                <option value="corporate office">🏬 Bureau d'entreprise</option>
+              </select>
+            </div>
+            <div id="decor-custom-block" style="display:none">
+              <div style="font-size:12px;color:var(--text-muted);padding:8px 0">Ta photo décor est uploadée ci-dessus — StoryShoot va la reproduire fidèlement.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header"><div class="section-num">B</div><div class="section-title">Contexte du projet</div></div>
+        <div class="card">
+          <div class="field-group">
+            <label class="field-label">Nom de la marque et du produit</label>
+            <input type="text" class="field" id="ctx-produit" placeholder="Ex : Sérum Vitamin C · Marque Glow Paris">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Type de contenu</label>
+            <select class="field" id="ctx-type">
+              <option value="">Choisis le type...</option>
+              <option value="Organique">🌱 Organique — contenu authentique, pas de mention publicitaire</option>
+              <option value="Ads">📣 Ads — contenu publicitaire payant, optimisé pour la conversion</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Objectif de la vidéo</label>
+            <select class="field" id="ctx-objectif">
+              <option value="">Choisis l'objectif...</option>
+              <option value="Générer des ventes">💰 Générer des ventes</option>
+              <option value="Notoriété de marque">📢 Notoriété de marque</option>
+              <option value="Engagement et partage">❤️ Engagement et partage</option>
+              <option value="Trafic vers le site">🔗 Trafic vers le site</option>
+              <option value="Lancement produit">🚀 Lancement produit</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header"><div class="section-num">C</div><div class="section-title">Format de contenu UGC</div></div>
+        <div class="section-desc">Choisis le format qui correspond le mieux à ton contenu. Il guidera la structure du script.</div>
+        <div class="card">
+          <div class="format-grid" id="format-grid"></div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;margin-top:8px">
+        <button class="btn-gen-all" onclick="validateStep0()">Continuer → Infos marque</button>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════
+         STEP 1 — MARQUE
+    ══════════════════════════════════ -->
+    <div id="step-1" style="display:none">
+      <div class="app-hero">
+        <div class="hero-eyebrow">Étape 1 / 7</div>
+        <h1 class="hero-title">Recherche <em>marque & produit</em></h1>
+        <p class="hero-sub">Ces informations permettent à StoryShoot de construire un script aligné avec l'identité de la marque et les bénéfices réels du produit.</p>
+      </div>
+
+      <!-- DESCRIPTION PRODUIT -->
+      <div class="section">
+        <div class="section-header"><div class="section-num">①</div><div class="section-title">Description du produit</div></div>
+        <div class="section-desc">Décris le produit en détail — c'est la base de tout : script, objections, profil client, SEP.</div>
+        <div class="card">
+          <div class="field-group">
+            <label class="field-label">À quoi sert ce produit concrètement ?</label>
+            <textarea class="field" id="p-usage" placeholder="Ex : C'est un sérum vitamine C qui s'applique le matin sur le visage. Il illumine le teint, réduit les taches et protège la peau des agressions extérieures."></textarea>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Quels sont les résultats visibles et ressentis ?</label>
+            <textarea class="field" id="p-resultats" placeholder="Ex : Peau plus lumineuse en 2 semaines, taches atténuées en 4 semaines, teint unifié, sensation de peau protégée toute la journée."></textarea>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Comment s'utilise-t-il ? (routine, fréquence, geste)</label>
+            <textarea class="field" id="p-utilisation" placeholder="Ex : 3-4 gouttes le matin sur peau propre avant la crème. Peut se mélanger au fond de teint. S'intègre en 30 secondes dans la routine."></textarea>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Qu'est-ce qui le rend différent des autres produits similaires ?</label>
+            <textarea class="field" id="p-difference" placeholder="Ex : Formule sans parfum, convient aux peaux sensibles. Concentration à 15% de vitamine C stable. Texture huile sèche qui ne graisse pas."></textarea>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Prix et disponibilité <span class="optional">(optionnel)</span></label>
+            <input type="text" class="field" id="p-prix" placeholder="Ex : 39€ · disponible sur leur site et en pharmacie">
+          </div>
+        </div>
+      </div>
+
+      <!-- INFOS MARQUE -->
+      <div class="section">
+        <div class="section-header"><div class="section-num">②</div><div class="section-title">La marque</div></div>
+        <div class="card">
+          <div class="field-group">
+            <label class="field-label">Quelle est la mission de la marque ?</label>
+            <textarea class="field" id="m-mission" placeholder="Pourquoi cette marque existe ? Quel problème résout-elle dans le monde ?"></textarea>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Pourquoi la marque a-t-elle été créée ?</label>
+            <textarea class="field" id="m-creation" placeholder="L'histoire de sa création, le déclic fondateur..."></textarea>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Quelles sont ses valeurs fondamentales ?</label>
+            <textarea class="field" id="m-valeurs" placeholder="Naturalité, performance, durabilité, accessibilité, luxe..."></textarea>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Qu'est-ce qui rend cette marque unique ?</label>
+            <textarea class="field" id="m-unique" placeholder="Sa philosophie, son histoire, sa façon de se positionner..."></textarea>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Comment ces valeurs se reflètent-elles dans ce produit ?</label>
+            <textarea class="field" id="m-produit-valeurs" placeholder="En quoi ce produit incarne-t-il ce que la marque défend ?"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;margin-top:20px;gap:12px">
+        <button class="btn-ghost" onclick="goToStep(0)">← Retour</button>
+        <button class="btn-gen-all" onclick="validateStep1()">Continuer → Ton histoire</button>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════
+         STEP 2 — HISTOIRE PERSONNELLE (optionnel)
+    ══════════════════════════════════ -->
+    <div id="step-2" style="display:none">
+      <div class="app-hero">
+        <div class="hero-eyebrow">Étape 2 / 7</div>
+        <h1 class="hero-title">Ton histoire <em>personnelle</em></h1>
+        <p class="hero-sub">Si tu as vécu une vraie transformation avec ce produit, raconte-la. Sinon, passe directement.</p>
+      </div>
+
+      <div class="info-box">
+        💡 Cette étape est <strong>optionnelle</strong>. Elle est utile si tu as réellement utilisé ce produit et que tu as une expérience personnelle à raconter. Si ce n'est pas le cas, clique directement sur "Passer cette étape".
+      </div>
+
+      <div class="card">
+        <div class="field-group">
+          <label class="field-label">Quel était ton problème ou besoin initial ?<span class="badge-optional">Optionnel</span></label>
+          <textarea class="field" id="h-probleme" placeholder="Ex : Je passais des heures chaque matin à essayer de discipliner mes cheveux rebelles..."></textarea>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Comment ce produit t'a-t-il aidée ? Quels bénéfices as-tu constatés ?<span class="badge-optional">Optionnel</span></label>
+          <textarea class="field" id="h-benefices" placeholder="Ex : Depuis que je l'utilise, je peux enfin les coiffer en 5 minutes..."></textarea>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Comment te sens-tu maintenant ? Qu'est-ce qui a vraiment changé pour toi ?<span class="badge-optional">Optionnel</span></label>
+          <textarea class="field" id="h-maintenant" placeholder="Ex : Je commence chaque journée avec le sourire, j'ai confiance en mon apparence..."></textarea>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;margin-top:20px;gap:12px;flex-wrap:wrap">
+        <button class="btn-ghost" onclick="goToStep(1)">← Retour</button>
+        <div style="display:flex;gap:10px">
+          <button class="btn-ghost" onclick="goToStep(3);genererProfil()">Passer cette étape →</button>
+          <button class="btn-gen-all" onclick="validateStep2()">Continuer → Profil client</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════
+         STEP 3 — PROFIL CLIENT
+    ══════════════════════════════════ -->
+    <div id="step-3" style="display:none">
+      <div class="app-hero">
+        <div class="hero-eyebrow">Étape 3 / 7</div>
+        <h1 class="hero-title">Profil <em>client cible</em></h1>
+        <p class="hero-sub">StoryShoot génère le profil automatiquement. Tu peux valider, modifier ou relancer.</p>
+      </div>
+
+      <div id="profil-loading" style="text-align:center;padding:60px 0;display:none">
+        <div class="spinner" style="width:32px;height:32px;margin:0 auto 16px"></div>
+        <div style="font-size:14px;color:var(--text-muted)">Analyse en cours...</div>
+      </div>
+
+      <div id="profil-result" style="display:none">
+        <div class="profile-card" id="profil-card"></div>
+        <div class="profile-actions">
+          <button class="btn-gen-all" id="btn-valider-profil" onclick="validerProfil()">✅ Valider ce profil</button>
+          <button class="btn-secondary" onclick="toggleEditProfil()">✏️ Modifier</button>
+          <button class="btn-ghost" onclick="genererProfil()">🔄 Relancer un nouveau profil</button>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-start;margin-top:20px">
+        <button class="btn-ghost" onclick="goToStep(2)">← Retour</button>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════
+         STEP 4 — SCRIPT
+    ══════════════════════════════════ -->
+    <div id="step-4" style="display:none">
+      <div class="app-hero">
+        <div class="hero-eyebrow">Étape 4 / 7</div>
+        <h1 class="hero-title">Ton <em>script UGC</em></h1>
+        <p class="hero-sub">Hook · Body · Call to Action — généré selon ta marque, ton profil client et ton format.</p>
+      </div>
+
+      <div id="script-loading" style="text-align:center;padding:60px 0;display:none">
+        <div class="spinner" style="width:32px;height:32px;margin:0 auto 16px"></div>
+        <div style="font-size:14px;color:var(--text-muted)">Rédaction du script en cours...</div>
+      </div>
+
+      <div id="script-result" style="display:none">
+        <div class="script-box" id="script-box"></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn-gen-all" onclick="validerScript()">✅ Valider ce script</button>
+          <button class="btn-secondary" onclick="toggleEditScript()">✏️ Modifier</button>
+          <button class="btn-ghost" onclick="genererScript()">🔄 Relancer</button>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-start;margin-top:20px">
+        <button class="btn-ghost" onclick="goToStep(3)">← Retour</button>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════
+         STEP 5 — MOTEUR DE CAPTURE
+    ══════════════════════════════════ -->
+    <!-- ══════════════════════════════════
+         STEP 5 — STORYBOARD
+    ══════════════════════════════════ -->
+    <div id="step-5" style="display:none">
+      <div class="app-hero">
+        <div class="hero-eyebrow">Étape 5 / 7</div>
+        <h1 class="hero-title">Storyboard & <em>génération</em></h1>
+        <p class="hero-sub">Scènes construites sur ton script. Hook = problème sans produit. Body = découverte. CTA = résultat.</p>
+      </div>
+
+      <div id="storyboard-loading" style="text-align:center;padding:60px 0;display:none">
+        <div class="spinner" style="width:32px;height:32px;margin:0 auto 16px"></div>
+        <div style="font-size:14px;color:var(--text-muted)">Construction du storyboard...</div>
+      </div>
+
+      <div id="storyboard-error" style="display:none;background:rgba(244,63,94,0.1);border:1px solid rgba(244,63,94,0.3);border-radius:var(--radius-md);padding:14px 18px;font-size:13px;color:var(--rose-300);margin-bottom:16px"></div>
+
+      <div id="storyboard-btn" style="text-align:center;padding:40px 0;display:none">
+        <button class="btn-gen-all" onclick="genererStoryboard()">✦ Générer le storyboard</button>
+      </div>
+
+      <div id="storyboard-result" style="display:none">
+        <div class="card">
+          <div class="story-scenes" id="story-scenes"></div>
+          <div class="quota-alert" id="quota-alert">⏳ Limite quotidienne atteinte. Reviens demain.</div>
+          <div class="gen-all-row">
+            <div class="gen-all-info" id="gen-all-info"></div>
+            <button class="btn-gen-all" id="btn-gen-all" onclick="genererTout()">
+              <span id="gen-all-spinner" style="display:none" class="spinner"></span>
+              <span id="gen-all-label">✦ Générer tout le shooting</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;margin-top:20px;gap:12px">
+        <button class="btn-ghost" onclick="goToStep(4)">← Retour</button>
+        <button class="btn-secondary" id="btn-go-moteur" style="display:none" onclick="goToStep(6)">Continuer → Moteur de capture</button>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════
+         STEP 6 — MOTEUR PAR SCÈNE
+    ══════════════════════════════════ -->
+    <div id="step-6" style="display:none">
+      <div class="app-hero">
+        <div class="hero-eyebrow">Étape 6 / 7</div>
+        <h1 class="hero-title">Moteur de <em>capture</em></h1>
+        <p class="hero-sub">Pour chaque scène du storyboard, choisis comment la filmer. Laisse vide pour une sélection automatique.</p>
+      </div>
+      <div id="moteur-scenes" style="display:flex;flex-direction:column;gap:20px"></div>
+      <div style="display:flex;justify-content:space-between;margin-top:20px;gap:12px">
+        <button class="btn-ghost" onclick="goToStep(5)">← Retour</button>
+        <button class="btn-gen-all" onclick="validerMoteur()">Valider & générer les images →</button>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════
+         STEP 7 — B-ROLL
+    ══════════════════════════════════ -->
+    <div id="step-7" style="display:none">
+      <div class="app-hero">
+        <div class="hero-eyebrow">Étape 7 / 7</div>
+        <h1 class="hero-title">Plans <em>B-Roll</em></h1>
+        <p class="hero-sub">Plans d'illustration pour enrichir le montage. Génère ceux dont tu as besoin.</p>
+      </div>
+
+      <div id="broll-loading" style="text-align:center;padding:60px 0;display:none">
+        <div class="spinner" style="width:32px;height:32px;margin:0 auto 16px"></div>
+        <div style="font-size:14px;color:var(--text-muted)">Génération des B-Rolls...</div>
+      </div>
+
+      <div id="broll-result" style="display:none">
+        <div class="broll-grid" id="broll-grid"></div>
+        <div class="gen-all-row" style="margin-top:24px;padding-top:24px;border-top:1px solid rgba(124,58,237,0.15)">
+          <div class="gen-all-info">Génère les B-Rolls dont tu as besoin pour le montage</div>
+          <button class="btn-gen-all" onclick="genererTousBroll()">✦ Générer tous les B-Rolls</button>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-start;margin-top:20px">
+        <button class="btn-ghost" onclick="goToStep(6)">← Retour</button>
+      </div>
+    </div>
+
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// CODES D'ACCÈS
+// ═══════════════════════════════════════════════════
+const CODES = {
+  'ADMIN2026':{ name:'Marie', admin:true },
+  'MEL6A2':{ name:'Mélanie', admin:false },'STE9Q4':{ name:'Stéphanie', admin:false },
+  'CHR8P7':{ name:'Christine', admin:false },'MAR9F4':{ name:'Marie', admin:false },
+  'VAN5Q8':{ name:'Vanessa', admin:false },'CEL4M8':{ name:'Céline', admin:false },
+  'VAN8O3':{ name:'Vanessa', admin:false },'ALI6Y9':{ name:'Alicia', admin:false },
+  'JOH7A4':{ name:'Johanna', admin:false },'AUR6R9':{ name:'Aurore', admin:false },
+  'SAR7H2':{ name:'Sara', admin:false },'VIR8G6':{ name:'Virginie', admin:false },
+  'LIO5R8':{ name:'Liora', admin:false },'ADE7L4':{ name:'Adeline', admin:false },
+  'SHA9R6':{ name:'Sharaf', admin:false },'LAE6T9':{ name:'Laetitia', admin:false },
+  'MAR8T6':{ name:'Marie', admin:false },'DIA7N5':{ name:'Dee Dee', admin:false },
+  'ALI7C8':{ name:'Alicia', admin:false },'ERI6Y4':{ name:'Eridye', admin:false },
+  'MEL9N7':{ name:'Mélanie', admin:false },'AUD7R5':{ name:'Audrey', admin:false },
+  'FAN6N4':{ name:'Fanny', admin:false },'ALI8C5':{ name:'Alicia', admin:false },
+  'STE4P8':{ name:'Stéphanie', admin:false },'AGN6S9':{ name:'Agnès', admin:false },
+  'MAN7U9':{ name:'Manuella', admin:false },'AMA8D3':{ name:'Amandine', admin:false },
+  'LIS5A4':{ name:'Lisa', admin:false },'MAN5D8':{ name:'Mandy', admin:false },
+};
+
+const MAX_DAILY = 10;
+const PROXY_URL = 'https://storyshoot-proxy-714057625054.europe-west1.run.app';
+const VERTEX_KEY = 'AQ.Ab8RN6LPy-v_gjaefbhA-vGIGYkFNYnAvlXinomSbVyWCGoC8g';
+
+// ═══════════════════════════════════════════════════
+// ÉTAT GLOBAL
+// ═══════════════════════════════════════════════════
+let currentUser = null, currentCode = null, currentStep = 0;
+let uploads = { avatar:null, produit:null, decor:null, vetement:null };
+let decorMode = 'ia';
+let selectedFormat = null;
+let selectedPlans = [];
+let captureSelections = { capture:null, cadrage:null, position:null, intention:null };
+let profilClient = null;
+let profilEditing = false;
+let scriptData = null;
+let scriptEditing = false;
+let storyboardData = null;
+let brollData = null;
+let modalCallback = null;
+
+// ═══════════════════════════════════════════════════
+// DONNÉES STATIQUES
+// ═══════════════════════════════════════════════════
+const FORMATS_UGC = [
+  { id:'temoignage', name:'Témoignage', desc:'Tu racontes ton expérience personnelle avec le produit' },
+  { id:'demo', name:'Démonstration', desc:'Tu montres comment utiliser le produit étape par étape' },
+  { id:'avant-apres', name:'Avant / Après', desc:'Comparaison visuelle avant et après utilisation' },
+  { id:'vlog', name:'Vlog / Une journée avec moi', desc:'Le produit intégré naturellement dans ta journée' },
+  { id:'hook-solution', name:'Hook problème → solution', desc:'Tu commences par une frustration puis présentes la solution' },
+  { id:'debunk', name:'Débunk / Mythe', desc:'Tu casses une idée reçue sur le produit ou la catégorie' },
+  { id:'unboxing', name:'Unboxing', desc:'Tu ouvres le colis et donnes tes premières impressions' },
+  { id:'first-impression', name:'First impression', desc:'Tu découvres le produit devant la caméra pour la première fois' },
+  { id:'routine', name:'Routine', desc:'Le produit fait partie d\'une habitude quotidienne' },
+  { id:'grwm', name:'GRWM', desc:'Tu te prépares tout en parlant du produit' },
+  { id:'asmr', name:'ASMR', desc:'Plans très rapprochés, sons du produit, texture, packaging' },
+  { id:'comparaison', name:'Comparaison', desc:'Tu compares avec ton ancienne solution' },
+  { id:'challenge', name:'Challenge / Test', desc:'Tu testes le produit pendant 24h ou dans une condition spécifique' },
+  { id:'educatif', name:'Face caméra éducatif', desc:'Tu expliques quelque chose lié au produit ou à la catégorie' },
+  { id:'storytelling', name:'Storytelling', desc:'Tu racontes une histoire autour du produit' },
+  { id:'lifestyle', name:'Contenu lifestyle', desc:'Le produit apparaît naturellement sans être le sujet principal' },
+];
+
+const PLANS_DEFINITIONS = [
+  { name:'Hero Product', desc:'Produit au centre, fond flou, logo lisible' },
+  { name:'Texture', desc:'Très gros plan sur la matière du produit' },
+  { name:'Application', desc:'Geste d\'application en cours, gros plan' },
+  { name:'Utilisation', desc:'Modèle utilise le produit naturellement' },
+  { name:'Lifestyle', desc:'Produit intégré dans une scène de vie' },
+  { name:'Portrait', desc:'Visage visible, émotion lisible' },
+  { name:'Flat Lay', desc:'Vue de dessus, composition organisée' },
+  { name:'Selfie Miroir', desc:'Routine matin/soir, salle de bain' },
+  { name:'Macro', desc:'Détail extrême, mise au point précise' },
+  { name:"Plan d'ensemble", desc:'Vue large, contexte complet de la scène' },
+  { name:'POV', desc:'Point de vue subjectif, immersif' },
+  { name:'Avant-Après', desc:'Comparaison gros plan, transformation' },
+  { name:'Packshot', desc:'Produit seul, sans modèle' },
+  { name:'Déballage', desc:'Unboxing, produit sorti de son emballage' },
+];
+
+const CAPTURE_OPTIONS = {
+  capture:{ id:'capture-grid', items:['Selfie bras tendu','Trépied','Posé sur meuble','Posé contre objet','Photo miroir','POV','Caméra arrière','Mix automatique'] },
+  cadrage:{ id:'cadrage-grid', items:['Visage','Buste','Taille','Corps entier','Détail produit','Détail geste','Ambiance'] },
+  position:{ id:'position-grid', items:['À hauteur des yeux','Sur un lavabo','Sur une table','Sur plan de travail','Au sol','Contre-plongée légère','Plongée légère'] },
+  intention:{ id:'intention-grid', items:['Montrer le problème','Montrer la découverte','Montrer le test','Montrer le résultat','Montrer une émotion','Montrer une routine','Montrer un détail','Montrer une preuve'] }
+};
+
+const BROLL_CATEGORIES = [
+  { cat:'Le produit', desc:'Produit sous différents angles, packaging, logo, rotation' },
+  { cat:'Détails du produit', desc:'Texture, mousse, liquide, matière, tissu — ce qui attire l\'œil' },
+  { cat:'Prise en main', desc:'Prendre, ouvrir, refermer, tenir, sortir du sac, poser' },
+  { cat:'Utilisation', desc:'Application, ingestion, utilisation en action, geste naturel' },
+  { cat:'Résultat', desc:'Bénéfice visible — peau lumineuse, cheveux coiffés, surface propre' },
+  { cat:'Contexte', desc:'Salle de bain, cuisine, bureau, chambre — produit dans la routine' },
+  { cat:'Émotion', desc:'Sourire, soulagement, surprise, satisfaction, moment de détente' },
+  { cat:'Esthétique', desc:'Lumière fenêtre, vapeur café, miroir, plante, eau — enrichit le montage' },
+];
+
+const EMOTIONS = [
+  'Frustration','Gêne','Colère','Fatigue','Stress','Honte',
+  'Découragement','Inquiétude','Surprise','Curiosité',
+  'Soulagement','Confiance','Joie','Fierté','Satisfaction',
+  'Gratitude','Enthousiasme','Espoir','Sérénité','Bonheur'
+];
+
+// ═══════════════════════════════════════════════════
+// QUOTA
+// ═══════════════════════════════════════════════════
+function getQuotaKey(code){ return 'ss_quota_'+code+'_'+new Date().toISOString().slice(0,10); }
+function getUsed(code){ return parseInt(localStorage.getItem(getQuotaKey(code))||'0',10); }
+function incrementUsed(code){ const k=getQuotaKey(code);const v=getUsed(code)+1;localStorage.setItem(k,v);return v; }
+function canGenerate(code){ if(CODES[code]?.admin)return true;return getUsed(code)<MAX_DAILY; }
+function remainingCount(code){ if(CODES[code]?.admin)return Infinity;return Math.max(0,MAX_DAILY-getUsed(code)); }
+function updateQuotaUI(){
+  if(!currentCode)return;
+  const u=CODES[currentCode];const isAdmin=u?.admin;const rem=remainingCount(currentCode);
+  const pct=isAdmin?100:(rem/MAX_DAILY*100);
+  document.getElementById('quota-fill').style.width=pct+'%';
+  document.getElementById('quota-text').innerHTML=isAdmin?'<strong>∞</strong> illimité':`<strong>${rem}</strong> / ${MAX_DAILY} restantes`;
+  document.getElementById('quota-user').textContent=u?.name||'';
+  const al=document.getElementById('quota-alert');
+  if(al)(!isAdmin&&rem===0)?al.classList.add('show'):al.classList.remove('show');
+  const bg=document.getElementById('btn-gen-all');
+  if(bg&&!isAdmin&&rem===0)bg.disabled=true;
+}
+
+// ═══════════════════════════════════════════════════
+// LOGIN
+// ═══════════════════════════════════════════════════
+function handleLogin(){
+  const raw=document.getElementById('code-input').value.trim().toUpperCase();
+  const inp=document.getElementById('code-input');const err=document.getElementById('splash-error');
+  if(!raw){inp.classList.add('error');err.textContent='Entre ton code.';setTimeout(()=>inp.classList.remove('error'),500);return;}
+  if(!CODES[raw]){inp.classList.add('error');err.textContent='Code invalide.';setTimeout(()=>inp.classList.remove('error'),500);return;}
+  currentCode=raw;currentUser=CODES[raw];launchApp();
+}
+function launchApp(){
+  sessionStorage.setItem('ss_session',currentCode);
+  document.getElementById('splash').style.display='none';
+  document.getElementById('app').style.display='flex';
+  updateQuotaUI();
+  renderFormats();
+  renderCaptureMoteur();
+  showToast('Bienvenue '+currentUser.name+' ! 🎬');
+}
+document.getElementById('code-input').addEventListener('keydown',e=>{if(e.key==='Enter')handleLogin();});
+
+// ═══════════════════════════════════════════════════
+// NAVIGATION STEPS
+// Les données sont toujours conservées — goToStep
+// ne réinitialise rien, il change juste l'affichage.
+// Les générations se déclenchent automatiquement
+// uniquement si le résultat n'existe pas encore.
+// ═══════════════════════════════════════════════════
+function goToStep(n){
+  // Bloquer les étapes non encore débloquées
+  // (autoriser si on revient en arrière ou si données existent)
+  const maxReachable = getMaxReachableStep();
+  if(n > maxReachable){ showToast('Complète les étapes précédentes d\'abord'); return; }
+
+  for(let i=0;i<8;i++){
+    const s=document.getElementById('step-'+i);
+    if(s)s.style.display=i===n?'block':'none';
+    const t=document.getElementById('tab-'+i);
+    if(t){
+      t.classList.remove('active','done','locked');
+      if(i===n)t.classList.add('active');
+      else if(i<=maxReachable)t.classList.add('done');
+      else t.classList.add('locked');
+    }
+  }
+  // Remettre l'onglet courant en active (pas done)
+  const tCur=document.getElementById('tab-'+n);
+  if(tCur){tCur.classList.remove('done');tCur.classList.add('active');}
+
+  currentStep=n;
+  window.scrollTo({top:0,behavior:'smooth'});
+
+  // Déclencher la génération automatique si on arrive sur une étape
+  // qui a besoin d'un résultat et qui n'en a pas encore
+  if(n===3 && !profilClient && !document.getElementById('profil-loading').style.display.includes('block')){
+    genererProfil();
+  }
+  if(n===4 && !scriptData && !document.getElementById('script-loading').style.display.includes('block')){
+    genererScript();
+  }
+  if(n===5){
+    const errEl=document.getElementById('storyboard-error');
+    if(errEl)errEl.style.display='none';
+    if(!storyboardData) genererStoryboard();
+  }
+  if(n===6 && storyboardData){
+    renderMoteurParScene();
+  }
+  if(n===7 && !brollData && !document.getElementById('broll-loading').style.display.includes('block')){
+    genererBroll();
+  }
+}
+
+// Détermine jusqu'où on peut naviguer selon ce qui est rempli
+function getMaxReachableStep(){
+  // Étape 0 toujours accessible
+  let max=0;
+  // Étape 1 : produit + type + format renseignés
+  const produit=document.getElementById('ctx-produit')?.value?.trim();
+  const type=document.getElementById('ctx-type')?.value;
+  if(produit && type && selectedFormat) max=1;
+  // Étape 2 : champs marque remplis
+  const mission=document.getElementById('m-mission')?.value?.trim();
+  const usage=document.getElementById('p-usage')?.value?.trim();
+  if(max>=1 && mission && usage) max=2;
+  // Étape 3+ : on a passé l'étape 2 (histoire optionnelle, toujours accessible après 2)
+  if(max>=2) max=3;
+  // Étape 4 : profil validé
+  if(profilClient) max=4;
+  // Étape 5 : script généré
+  if(scriptData) max=5;
+  // Étape 6 : moteur (après storyboard)
+  if(storyboardData) max=6;
+  // Étape 7 : broll (après moteur)
+  if(max>=6) max=7;
+  return max;
+}
+
+// ═══════════════════════════════════════════════════
+// UPLOADS
+// ═══════════════════════════════════════════════════
+function triggerUpload(id){}
+function handleUpload(type,input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const b64=e.target.result.split(',')[1];
+    uploads[type]={b64,dataUrl:e.target.result,mime:file.type};
+    const zId=type==='decor'?'zone-decor-custom':`zone-${type}`;
+    const zone=document.getElementById(zId);if(!zone)return;
+    zone.classList.add('has-file');
+    zone.querySelector('.upload-preview')?.remove();
+    zone.querySelector('.upload-preview-overlay')?.remove();
+    const img=document.createElement('img');img.className='upload-preview';img.src=e.target.result;zone.appendChild(img);
+    const ov=document.createElement('div');ov.className='upload-preview-overlay';ov.innerHTML='<div class="upload-check">✓</div>';zone.appendChild(ov);
+  };
+  reader.readAsDataURL(file);
+}
+
+// ═══════════════════════════════════════════════════
+// DECOR MODE
+// ═══════════════════════════════════════════════════
+function setDecorMode(mode){
+  decorMode=mode;
+  document.getElementById('toggle-ia').classList.toggle('active',mode==='ia');
+  document.getElementById('toggle-custom').classList.toggle('active',mode==='custom');
+  document.getElementById('decor-ia-block').style.display=mode==='ia'?'':'none';
+  document.getElementById('decor-custom-block').style.display=mode==='custom'?'':'none';
+}
+
+// ═══════════════════════════════════════════════════
+// FORMATS
+// ═══════════════════════════════════════════════════
+function renderFormats(){
+  const g=document.getElementById('format-grid');
+  g.innerHTML=FORMATS_UGC.map(f=>`
+    <div class="format-chip ${selectedFormat===f.id?'selected':''}" onclick="selectFormat('${f.id}')">
+      <div class="format-chip-name">${f.name}</div>
+      <div class="format-chip-desc">${f.desc}</div>
+    </div>`).join('');
+}
+function selectFormat(id){
+  selectedFormat=id;renderFormats();
+}
+
+// ═══════════════════════════════════════════════════
+// VALIDATE STEPS
+// ═══════════════════════════════════════════════════
+function validateStep0(){
+  if(!document.getElementById('ctx-produit').value.trim()){showToast('Entre le nom du produit 📦');return;}
+  if(!document.getElementById('ctx-type').value){showToast('Choisis le type de contenu');return;}
+  if(!selectedFormat){showToast('Choisis un format UGC');return;}
+  goToStep(1);
+}
+function validateStep1(){
+  const prodFields=['p-usage','p-resultats','p-utilisation','p-difference'];
+  for(const f of prodFields){if(!document.getElementById(f).value.trim()){showToast('Décris le produit complètement 📦');return;}}
+  const mFields=['m-mission','m-creation','m-valeurs','m-unique','m-produit-valeurs'];
+  for(const f of mFields){if(!document.getElementById(f).value.trim()){showToast('Remplis tous les champs marque 🏷️');return;}}
+  goToStep(2);
+}
+function validateStep2(){
+  goToStep(3);
+  genererProfil();
+}
+
+// ═══════════════════════════════════════════════════
+// GEMINI TEXT
+// ═══════════════════════════════════════════════════
+async function callGemini(prompt,images=[]){
+  const parts=[];
+  for(const img of images){if(img)parts.push({inline_data:{mime_type:img.mime,data:img.b64}});}
+  parts.push({text:prompt});
+  const body={contents:[{role:'user',parts}],generationConfig:{temperature:0.85,maxOutputTokens:4096}};
+  const res=await fetch(`https://europe-west1-aiplatform.googleapis.com/v1/publishers/google/models/gemini-2.5-flash:generateContent?key=${VERTEX_KEY}`,
+    {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e?.error?.message||'Erreur Gemini');}
+  const data=await res.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text||'';
+}
+
+// Parse JSON robuste — résistant aux apostrophes et caractères spéciaux français
+function parseJsonRobust(raw){
+  // 1. Supprimer les backticks markdown
+  let s=raw.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim();
+  // 2. Extraire le bloc JSON (entre { et })
+  const m=s.match(/\{[\s\S]*\}/);
+  if(!m)throw new Error('Aucun JSON trouvé dans la réponse');
+  s=m[0];
+  // 3. Tenter le parse direct
+  try{ return JSON.parse(s); }catch(e){}
+  // 4. Nettoyer les apostrophes courbes et guillemets typographiques
+  s=s.replace(/[\u2018\u2019]/g,"'").replace(/[\u201C\u201D]/g,'"');
+  try{ return JSON.parse(s); }catch(e){}
+  // 5. Échapper les apostrophes dans les valeurs string
+  s=s.replace(/"([^"]*?)"/g,(_,v)=>'"'+v.replace(/'/g,"\\'").replace(/\n/g,'\\n')+'"');
+  try{ return JSON.parse(s); }catch(e){ throw new Error('JSON invalide même après nettoyage : '+e.message); }
+}
+
+// ═══════════════════════════════════════════════════
+// GÉNÉRATION IMAGE
+// ═══════════════════════════════════════════════════
+async function generateImage(prompt){
+  const body={
+    code:currentCode,prompt,aspectRatio:'9:16',
+    avatarB64:uploads.avatar?.b64||null,avatarMime:uploads.avatar?.mime||'image/jpeg',
+    produitB64:uploads.produit?.b64||null,produitMime:uploads.produit?.mime||'image/jpeg',
+    vetementB64:uploads.vetement?.b64||null,vetementMime:uploads.vetement?.mime||'image/jpeg',
+  };
+  const res=await fetch(`${PROXY_URL}/generate-image`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const data=await res.json();
+  if(!res.ok){
+    if(res.status===429||data.quota_exceeded){document.getElementById('quota-alert')?.classList.add('show');document.getElementById('btn-gen-all')?.disabled&&(document.getElementById('btn-gen-all').disabled=true);}
+    throw new Error(data.error||`HTTP ${res.status}`);
+  }
+  return `data:${data.mimeType||'image/png'};base64,${data.image}`;
+}
+
+function buildImagePrompt(scenePrompt){
+  const locks=[];
+  if(uploads.avatar)locks.push('IDENTITY LOCKED — same face, skin tone, features as reference photo provided. Do not invent a new face.');
+  if(uploads.produit)locks.push('PRODUCT LOCKED — same packaging, shape, label, colors as product reference photo. Do not invent a product.');
+  if(uploads.vetement)locks.push('OUTFIT LOCKED — same garment, colors, style as outfit reference photo.');
+  const lockStr=locks.length?locks.join(' ')+'  ':'';
+  return `${scenePrompt} — ${lockStr}Portrait orientation 9:16, 4K ultra-detailed, shot on iPhone 15 Pro, natural light, authentic UGC style.`;
+}
+
+// ═══════════════════════════════════════════════════
+// STEP 3 — PROFIL CLIENT
+// ═══════════════════════════════════════════════════
+async function genererProfil(){
+  document.getElementById('profil-loading').style.display='block';
+  document.getElementById('profil-result').style.display='none';
+
+  const ctx={
+    produit:document.getElementById('ctx-produit').value,
+    type:document.getElementById('ctx-type').value,
+    objectif:document.getElementById('ctx-objectif').value,
+    format:selectedFormat,
+    descProduit:{
+      usage:document.getElementById('p-usage').value,
+      resultats:document.getElementById('p-resultats').value,
+      utilisation:document.getElementById('p-utilisation').value,
+      difference:document.getElementById('p-difference').value,
+      prix:document.getElementById('p-prix').value,
+    },
+    mission:document.getElementById('m-mission').value,
+    creation:document.getElementById('m-creation').value,
+    valeurs:document.getElementById('m-valeurs').value,
+    unique:document.getElementById('m-unique').value,
+    produitValeurs:document.getElementById('m-produit-valeurs').value,
+    histoire:{
+      probleme:document.getElementById('h-probleme').value,
+      benefices:document.getElementById('h-benefices').value,
+      maintenant:document.getElementById('h-maintenant').value,
+    }
+  };
+
+  const prompt=`Tu es StoryShoot, une IA de stratégie de contenu UGC.
+
+À partir des informations suivantes sur le produit et la marque, génère le profil détaillé du client cible idéal.
+Retourne UNIQUEMENT un JSON valide (sans markdown).
+
+DESCRIPTION DU PRODUIT :
+Usage : ${ctx.descProduit.usage}
+Résultats : ${ctx.descProduit.resultats}
+Utilisation : ${ctx.descProduit.utilisation}
+Différenciation : ${ctx.descProduit.difference}
+${ctx.descProduit.prix?'Prix : '+ctx.descProduit.prix:''}
+
+INFOS MARQUE :
+Produit : ${ctx.produit}
+Mission : ${ctx.mission}
+Pourquoi créée : ${ctx.creation}
+Valeurs : ${ctx.valeurs}
+Différenciation marque : ${ctx.unique}
+Valeurs dans le produit : ${ctx.produitValeurs}
+${ctx.histoire.probleme?'Histoire créatrice (problème) : '+ctx.histoire.probleme:''}
+${ctx.histoire.benefices?'Histoire créatrice (bénéfices) : '+ctx.histoire.benefices:''}
+${ctx.histoire.maintenant?'Histoire créatrice (maintenant) : '+ctx.histoire.maintenant:''}
+
+IMPORTANT : toutes les valeurs doivent être des STRINGS (chaînes de texte), jamais des tableaux ou des objets. Si tu as plusieurs éléments, sépare-les avec des virgules dans une seule string.
+
+Format JSON attendu (toutes valeurs = string) :
+{
+  "profil": "Description courte du client cible en 1-2 phrases",
+  "defis": "Défi 1, Défi 2, Défi 3 — séparés par des virgules dans une seule string",
+  "deja_essaye": "Ce qu'il a déjà essayé qui n'a pas fonctionné, en une seule string",
+  "vie_avant": "Description de sa vie avant le produit, ses sentiments, en une seule string",
+  "vie_apres": "Description de sa vie après avoir utilisé le produit, en une seule string",
+  "objections": "Objection 1 + comment la lever. Objection 2 + comment la lever. En une seule string."
+}`;
+
+  try{
+    const raw=await callGemini(prompt,[uploads.avatar,uploads.produit].filter(Boolean));
+    profilClient=parseJsonRobust(raw);
+    renderProfil(false);
+    document.getElementById('profil-loading').style.display='none';
+    document.getElementById('profil-result').style.display='block';
+  }catch(err){
+    document.getElementById('profil-loading').style.display='none';
+    showToast('Erreur profil : '+err.message);
+  }
+}
+
+function renderProfil(editing){
+  profilEditing=editing;
+  const card=document.getElementById('profil-card');
+  if(!profilClient){card.innerHTML='';return;}
+  const items=[
+    ['Profil client','profil'],['Défis & douleurs','defis'],
+    ['Ce qu\'il a déjà essayé','deja_essaye'],['Vie AVANT le produit','vie_avant'],
+    ['Vie APRÈS le produit','vie_apres'],['Objections à l\'achat','objections']
+  ];
+  // Sécuriser toutes les valeurs : si tableau ou objet → convertir en string
+  function safeStr(val){
+    if(!val)return'—';
+    if(typeof val==='string')return val;
+    if(Array.isArray(val))return val.map(v=>typeof v==='object'?Object.values(v).join(' : '):v).join(' · ');
+    if(typeof val==='object')return Object.entries(val).map(([k,v])=>`${k} : ${v}`).join(' · ');
+    return String(val);
+  }
+  card.innerHTML=`<div class="profile-section-title">👤 Profil client cible généré par StoryShoot</div>`+
+    items.map(([label,key])=>`
+      <div class="profile-item">
+        <div class="profile-key">${label}</div>
+        ${editing
+          ?`<textarea class="profile-edit-field" id="pe-${key}">${safeStr(profilClient[key])}</textarea>`
+          :`<div class="profile-val">${safeStr(profilClient[key])}</div>`}
+      </div>`).join('');
+}
+
+function toggleEditProfil(){
+  if(!profilEditing){
+    renderProfil(true);
+  } else {
+    const keys=['profil','defis','deja_essaye','vie_avant','vie_apres','objections'];
+    keys.forEach(k=>{
+      const el=document.getElementById('pe-'+k);
+      if(el)profilClient[k]=el.value;
+    });
+    renderProfil(false);
+    showToast('Profil mis à jour ✦');
+  }
+}
+
+function validerProfil(){
+  if(profilEditing)toggleEditProfil();
+  showToast('Profil validé ✅');
+  goToStep(4);
+}
+
+// ═══════════════════════════════════════════════════
+// STEP 4 — SCRIPT
+// ═══════════════════════════════════════════════════
+async function genererScript(){
+  document.getElementById('script-loading').style.display='block';
+  document.getElementById('script-result').style.display='none';
+
+  const ctx={
+    produit:document.getElementById('ctx-produit').value,
+    type:document.getElementById('ctx-type').value,
+    objectif:document.getElementById('ctx-objectif').value,
+    format:FORMATS_UGC.find(f=>f.id===selectedFormat)?.name||selectedFormat,
+    descProduit:{
+      usage:document.getElementById('p-usage').value,
+      resultats:document.getElementById('p-resultats').value,
+      utilisation:document.getElementById('p-utilisation').value,
+      difference:document.getElementById('p-difference').value,
+      prix:document.getElementById('p-prix').value,
+    },
+    mission:document.getElementById('m-mission').value,
+    valeurs:document.getElementById('m-valeurs').value,
+    unique:document.getElementById('m-unique').value,
+    histoire:{
+      probleme:document.getElementById('h-probleme').value,
+      benefices:document.getElementById('h-benefices').value,
+      maintenant:document.getElementById('h-maintenant').value,
+    }
+  };
+
+  const prompt=`Tu es StoryShoot, expert en copywriting UGC subconscient.
+
+REGLE ABSOLUE - PREMIERE PERSONNE : tout le script est ecrit a la 1ere personne (je, moi, mon) comme si la creatrice parlait a une amie. JAMAIS "ce produit va vous". Toujours : j'ai essaye, depuis que je l'utilise. Tutoiement toujours.
+
+PHILOSOPHIE : activer le subconscient par des images sensorielles, jamais des arguments rationnels.
+
+PRODUIT : ${ctx.produit}
+Usage : ${ctx.descProduit.usage}
+Resultats : ${ctx.descProduit.resultats}
+Utilisation : ${ctx.descProduit.utilisation}
+Differentiation : ${ctx.descProduit.difference}
+Format : ${ctx.format} | Type : ${ctx.type} | Objectif : ${ctx.objectif}
+Mission marque : ${ctx.mission} | Valeurs : ${ctx.valeurs}
+${ctx.histoire.probleme?'Histoire creatrice - probleme : '+ctx.histoire.probleme:''}
+${ctx.histoire.benefices?'Histoire creatrice - benefices : '+ctx.histoire.benefices:''}
+${ctx.histoire.maintenant?'Histoire creatrice - maintenant : '+ctx.histoire.maintenant:''}
+PROFIL CLIENT : ${profilClient?JSON.stringify(profilClient):'deduire des infos'}
+
+STRUCTURE SACREE :
+
+1. HOOK - 3 VERSIONS OBLIGATOIRES (meme probleme, 3 angles differents) :
+   - Version A - angle PROBLEME : montre une frustration concrete et physique (visant pyramide Maslow)
+   - Version B - angle BESOIN : montre un manque, quelque chose qu'on cherche
+   - Version C - angle DESIR : montre le reve, ce qu'on veut vivre
+   Chaque hook : max 3 secondes, percutant. REGLE ABSOLUE : le produit ne doit PAS etre mentionne dans le hook.
+
+2. INTRODUCTION PROBLEME : connexion emotionnelle. Sensoriel, vecu, storytelling. PAS de produit ici.
+
+3. PRESENTATION PRODUIT (methode SEP) : le produit apparait ICI pour la premiere fois.
+   Pour chaque benefice cle - Situation + Emotion + Pensees. JAMAIS les ingredients. Max 50 secondes total.
+
+4. CTA : naturel, direct, comme conseiller une amie. Produit present. Action claire.
+
+Retourne UNIQUEMENT ces balises XML, rien d'autre avant ni apres :
+
+<HOOK_A_VERBAL>hook version A verbal</HOOK_A_VERBAL>
+<HOOK_A_ECRAN>texte ecran hook A (vide si identique)</HOOK_A_ECRAN>
+<HOOK_B_VERBAL>hook version B verbal</HOOK_B_VERBAL>
+<HOOK_B_ECRAN>texte ecran hook B</HOOK_B_ECRAN>
+<HOOK_C_VERBAL>hook version C verbal</HOOK_C_VERBAL>
+<HOOK_C_ECRAN>texte ecran hook C</HOOK_C_ECRAN>
+<INTRO_PROBLEME>intro probleme sans produit</INTRO_PROBLEME>
+<PRESENTATION_PRODUIT>presentation produit methode SEP</PRESENTATION_PRODUIT>
+<CTA>call to action</CTA>
+<NOTES_REALISATEUR>consignes visuelles : emotions physiques a montrer pour chaque partie</NOTES_REALISATEUR>`;
+
+  try{
+    const raw=await callGemini(prompt);
+    function extractTag(text,tag){
+      const m=text.match(new RegExp('<'+tag+'>([\\s\\S]*?)<\\/'+tag+'>','i'));
+      return m?m[1].trim():'';
+    }
+    scriptData={
+      hook_a:extractTag(raw,'HOOK_A_VERBAL'),
+      hook_a_ecran:extractTag(raw,'HOOK_A_ECRAN'),
+      hook_b:extractTag(raw,'HOOK_B_VERBAL'),
+      hook_b_ecran:extractTag(raw,'HOOK_B_ECRAN'),
+      hook_c:extractTag(raw,'HOOK_C_VERBAL'),
+      hook_c_ecran:extractTag(raw,'HOOK_C_ECRAN'),
+      intro_probleme:extractTag(raw,'INTRO_PROBLEME'),
+      presentation_produit:extractTag(raw,'PRESENTATION_PRODUIT'),
+      cta:extractTag(raw,'CTA'),
+      notes_realisateur:extractTag(raw,'NOTES_REALISATEUR'),
+      hook_choisi:'A',
+    };
+    if(!scriptData.hook_a&&!scriptData.intro_probleme){
+      throw new Error('Reponse vide - relance');
+    }
+    renderScript(false);
+    document.getElementById('script-loading').style.display='none';
+    document.getElementById('script-result').style.display='block';
+  }catch(err){
+    document.getElementById('script-loading').style.display='none';
+    document.getElementById('script-result').innerHTML=`<div style="text-align:center;padding:40px 0"><div style="color:var(--rose-300);margin-bottom:16px;font-size:13px">${err.message}</div><button class="btn-gen-all" onclick="genererScript()">Relancer</button></div>`;
+    document.getElementById('script-result').style.display='block';
+  }
+}
+
+function renderScript(editing){
+  scriptEditing=editing;
+  const box=document.getElementById('script-box');
+  if(!scriptData||!box)return;
+  const hooks=[
+    {id:'A',verbal:scriptData.hook_a,ecran:scriptData.hook_a_ecran,label:'Version A - Probleme'},
+    {id:'B',verbal:scriptData.hook_b,ecran:scriptData.hook_b_ecran,label:'Version B - Besoin'},
+    {id:'C',verbal:scriptData.hook_c,ecran:scriptData.hook_c_ecran,label:'Version C - Desir'},
+  ].filter(h=>h.verbal);
+  const hooklist=hooks.map(h=>`
+    <div class="hook-choice ${scriptData.hook_choisi===h.id?'selected':''}" onclick="choisirHook('${h.id}')">
+      <div class="hook-choice-header">
+        <div class="hook-badge">${scriptData.hook_choisi===h.id?'Selectionne':'Choisir'}</div>
+        <div class="hook-choice-label">${h.label}</div>
+      </div>
+      <div class="hook-verbal">${h.verbal}</div>
+      ${h.ecran?`<div class="hook-ecran">Texte ecran : ${h.ecran}</div>`:''}
+    </div>`).join('');
+  box.innerHTML=`
+    <div class="script-section">
+      <div class="script-tag hook">HOOK - 3 versions (choisis la plus percutante)</div>
+      <div class="hook-choices">${hooklist}</div>
+    </div>
+    <div class="script-section">
+      <div class="script-tag body">INTRO PROBLEME - sans produit</div>
+      <div class="script-text">${scriptData.intro_probleme||''}</div>
+    </div>
+    <div class="script-section">
+      <div class="script-tag body">PRESENTATION PRODUIT - methode SEP</div>
+      <div class="script-text">${scriptData.presentation_produit||''}</div>
+    </div>
+    <div class="script-section">
+      <div class="script-tag cta">CALL TO ACTION</div>
+      <div class="script-text">${scriptData.cta||''}</div>
+    </div>
+    ${scriptData.notes_realisateur?`<div class="info-box" style="margin-top:12px">${scriptData.notes_realisateur}</div>`:''}`;
+}
+
+function choisirHook(id){
+  if(!scriptData)return;
+  scriptData.hook_choisi=id;
+  renderScript(false);
+}
+
+function toggleEditScript(){ showToast('Modifie directement dans les champs'); }
+
+function validerScript(){
+  if(!scriptData){showToast('Genere le script d abord');return;}
+  showToast('Script valide');
+  goToStep(5);
+}
+
+function renderCaptureMoteur(){
+  const pg=document.getElementById('plans-grid');
+  if(pg)pg.innerHTML=PLANS_DEFINITIONS.map(p=>`
+    <div class="plan-chip ${selectedPlans.includes(p.name)?'selected':''}" onclick="togglePlan('${p.name}')">
+      <div class="plan-chip-check">✓</div>
+      <div><div class="plan-chip-name">${p.name}</div><div class="plan-chip-desc">${p.desc}</div></div>
+    </div>`).join('');
+
+  Object.entries(CAPTURE_OPTIONS).forEach(([key,dim])=>{
+    const g=document.getElementById(dim.id);if(!g)return;
+    g.innerHTML=dim.items.map(item=>`
+      <div class="capture-chip ${captureSelections[key]===item?'selected':''}"
+           onclick="toggleCaptureDim('${key}','${item.replace(/'/g,"\\'")}')">
+        ${item}
+      </div>`).join('');
+  });
+  updateCaptureCount();
+}
+
+function togglePlan(name){
+  const idx=selectedPlans.indexOf(name);
+  if(idx>-1)selectedPlans.splice(idx,1);
+  else{ if(selectedPlans.length>=10){showToast('Maximum 10 plans ✦');return;} selectedPlans.push(name); }
+  renderCaptureMoteur();
+}
+function toggleCaptureDim(key,value){ captureSelections[key]=captureSelections[key]===value?null:value; renderCaptureMoteur(); }
+function clearCapture(){ selectedPlans=[];Object.keys(captureSelections).forEach(k=>captureSelections[k]=null);renderCaptureMoteur(); }
+function updateCaptureCount(){
+  const el=document.getElementById('capture-count');if(!el)return;
+  const n=selectedPlans.length+Object.values(captureSelections).filter(Boolean).length;
+  el.textContent=n>0?`${n} contrainte(s) active(s) · sélection manuelle`:'Sélection automatique active';
+}
+function buildCaptureConstraint(){
+  const n=selectedPlans.length+Object.values(captureSelections).filter(Boolean).length;
+  if(n===0)return'';
+  const lines=['\n\nCONTRAINTES CAPTURE UTILISATEUR :'];
+  if(selectedPlans.length>0)lines.push('- Plans à utiliser : '+selectedPlans.join(', '));
+  if(captureSelections.capture)lines.push('- Mode de capture : '+captureSelections.capture);
+  if(captureSelections.cadrage)lines.push('- Cadrage : '+captureSelections.cadrage);
+  if(captureSelections.position)lines.push('- Position caméra : '+captureSelections.position);
+  if(captureSelections.intention)lines.push('- Intention : '+captureSelections.intention);
+  return lines.join('\n');
+}
+
+function validateStep5(){
+  goToStep(6);
+}
+
+// ═══════════════════════════════════════════════════
+// STEP 6 — STORYBOARD
+// ═══════════════════════════════════════════════════
+async function genererStoryboard(){
+  const loadEl=document.getElementById('storyboard-loading');
+  const resEl=document.getElementById('storyboard-result');
+  const btnEl=document.getElementById('storyboard-btn');
+  const errEl=document.getElementById('storyboard-error');
+  if(loadEl)loadEl.style.display='block';
+  if(resEl)resEl.style.display='none';
+  if(btnEl)btnEl.style.display='none';
+  if(errEl)errEl.style.display='none';
+
+  if(!scriptData){
+    if(loadEl)loadEl.style.display='none';
+    if(btnEl)btnEl.style.display='block';
+    showToast('Valide ton script d abord');
+    return;
+  }
+
+  const decorInfo=decorMode==='ia'?(document.getElementById('decor-select')?.value||'modern apartment'):'custom decor from reference photo';
+  const hookChoisi=scriptData.hook_choisi||'A';
+  const hookTexte=scriptData['hook_'+hookChoisi.toLowerCase()]||scriptData.hook_a||'';
+  const scriptText=[
+    'Hook choisi ('+hookChoisi+') : '+hookTexte,
+    'Intro probleme : '+(scriptData.intro_probleme||''),
+    'Presentation produit : '+(scriptData.presentation_produit||''),
+    'CTA : '+(scriptData.cta||''),
+  ].join('\n');
+  const format=FORMATS_UGC.find(f=>f.id===selectedFormat)?.name||'Temoignage';
+
+  const prompt=`Tu es StoryShoot, IA de direction artistique UGC.
+
+SCRIPT :
+${scriptText}
+
+FORMAT : ${format} | DECOR : ${decorInfo}
+${uploads.avatar?'IDENTITY LOCKED - meme visage que reference avatar':''}
+${uploads.produit?'PRODUCT LOCKED - meme produit que reference fournie':''}
+
+REGLES STRICTES PRODUIT :
+- SCENES HOOK (partie=Hook) : LE PRODUIT NE DOIT ABSOLUMENT PAS APPARAITRE. On voit uniquement la personne, son emotion physique, son quotidien AVANT. Pas de produit, pas de packaging, rien.
+- SCENES BODY : Le produit apparait pour la premiere fois. On voit son utilisation et la transformation.
+- SCENE CTA : Produit present, resultat visible.
+
+EMOTIONS PHYSIQUES - decrire comme etats physiques observables :
+- Frustration = sourcils fronced, machoire crispee, regard las, epaules tombantes
+- Fatigue = yeux cernes, traits tires, posture courbee, geste lent
+- Soulagement = expiration visible, epaules qui se relachent, sourire leger
+- Joie = sourire franc, regard brillant, posture ouverte, geste spontane
+
+CADRAGES : varier entre chaque scene. Ne jamais repeter deux fois le meme.
+MODES UGC : selfie / bras tendu / miroir / POV / tripied / smartphone pose / camera arriere
+
+Structure :
+- Scene 1-2 : Hook (probleme, SANS produit)
+- Scenes 3-5 : Body (decouverte, utilisation, transformation)
+- Derniere scene : CTA
+
+Retourne UNIQUEMENT ce JSON brut, sans texte avant ni apres, sans backticks :
+{"storyboard":[{"scene":1,"partie":"Hook","titre":"...","plan":"...","cadrage":"...","mode_capture":"...","description":"...","emotion_physique":"description physique precise","prompt_image":"prompt anglais ultra-detaille. NO product visible in Hook scenes. Emotion as physical observable behavior. Shot on iPhone 15 Pro, natural light. NO studio look, NO advertising."}]}
+
+Genere 5 a 7 scenes.`;
+
+  try{
+    const images=[uploads.avatar,uploads.produit,uploads.vetement].filter(Boolean);
+    const raw=await callGemini(prompt,images);
+    storyboardData=parseJsonRobust(raw);
+    if(!storyboardData.storyboard?.length)throw new Error('Storyboard vide');
+    renderStoryboard();
+    if(loadEl)loadEl.style.display='none';
+    if(resEl)resEl.style.display='block';
+    const goBtn=document.getElementById('btn-go-moteur');
+    if(goBtn)goBtn.style.display='block';
+    showToast(storyboardData.storyboard.length+' scenes construites');
+  }catch(err){
+    console.error('Storyboard error:',err);
+    if(loadEl)loadEl.style.display='none';
+    if(errEl){errEl.textContent='Erreur : '+err.message;errEl.style.display='block';}
+    if(btnEl)btnEl.style.display='block';
+  }
+}
+
+function renderStoryboard(){
+  const scenes=storyboardData?.storyboard||[];
+  const container=document.getElementById('story-scenes');
+  if(!container)return;
+  const rem=remainingCount(currentCode);
+  const isAdmin=CODES[currentCode]?.admin;
+  const genInfo=document.getElementById('gen-all-info');
+  if(genInfo)genInfo.textContent=isAdmin?scenes.length+' scenes illimite':scenes.length+' scenes · '+rem+' restantes';
+  const partieColors={Hook:'rgba(244,63,94,0.15)',Body:'rgba(124,58,237,0.15)',CTA:'rgba(34,197,94,0.1)'};
+  container.innerHTML=scenes.map((s,i)=>`
+    <div class="scene-card" id="scene-card-${i}">
+      <div class="scene-num">${s.scene}</div>
+      <div class="scene-body">
+        <div class="scene-title">${s.titre||'Scene '+(i+1)}
+          ${s.partie?`<span style="font-size:10px;padding:2px 8px;border-radius:99px;background:${partieColors[s.partie]||'rgba(124,58,237,0.1)'};color:var(--text-mid);margin-left:6px">${s.partie}</span>`:''}
+        </div>
+        ${s.plan?`<div class="scene-plan">📷 ${s.plan}${s.cadrage?' · '+s.cadrage:''}${s.mode_capture?' · '+s.mode_capture:''}</div>`:''}
+        <div class="scene-desc">${s.description||''}</div>
+        ${s.emotion_physique?`<div style="font-size:11px;color:var(--violet-300);margin-top:6px;font-style:italic">🎭 ${s.emotion_physique}</div>`:''}
+        <div class="scene-emotion-row" style="margin-top:8px">
+          <div class="emotion-tag" id="emotion-tag-${i}">✦ ${s.emotion||'—'}</div>
+          <button class="emotion-edit" onclick="openEmotionModal(${i})">Modifier</button>
+        </div>
+      </div>
+      <div class="scene-img-area" id="img-area-${i}">
+        <span style="font-size:9px;opacity:0.4">${s.partie||'—'}</span>
+        <button class="scene-gen-btn" onclick="genererScene(${i})">▶</button>
+        <div class="scene-spinner" id="spinner-${i}"></div>
+      </div>
+    </div>`).join('');
+}
+
+// MOTEUR PAR SCENE
+function renderMoteurParScene(){
+  const scenes=storyboardData?.storyboard||[];
+  const container=document.getElementById('moteur-scenes');
+  if(!container||!scenes.length)return;
+  container.innerHTML=scenes.map((s,i)=>{
+    const partieColors={Hook:'rgba(244,63,94,0.3)',Body:'rgba(124,58,237,0.25)',CTA:'rgba(34,197,94,0.2)'};
+    return `
+    <div class="card" style="border-color:${partieColors[s.partie]||'rgba(124,58,237,0.25)'}">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+        <div class="scene-num">${s.scene}</div>
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:600;color:var(--text-bright)">${s.titre||'Scene '+(i+1)}</div>
+          <div style="font-size:11px;color:var(--text-muted)">${s.description||''}</div>
+        </div>
+        ${s.partie?`<span style="font-size:10px;padding:3px 10px;border-radius:99px;background:${partieColors[s.partie]||'rgba(124,58,237,0.1)'};color:var(--text-mid)">${s.partie}</span>`:''}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="field-group">
+          <label class="field-label" style="font-size:10px">📷 Plan photo</label>
+          <select class="field" id="ms-plan-${i}" style="font-size:12px;padding:8px 12px">
+            <option value="">Automatique</option>
+            ${PLANS_DEFINITIONS.map(p=>`<option value="${p.name}" ${s.plan===p.name?'selected':''}>${p.name}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field-group">
+          <label class="field-label" style="font-size:10px">🎥 Mode de capture</label>
+          <select class="field" id="ms-capture-${i}" style="font-size:12px;padding:8px 12px">
+            <option value="">Automatique</option>
+            ${CAPTURE_OPTIONS.capture.items.map(it=>`<option value="${it}" ${s.mode_capture===it?'selected':''}>${it}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field-group">
+          <label class="field-label" style="font-size:10px">📐 Cadrage</label>
+          <select class="field" id="ms-cadrage-${i}" style="font-size:12px;padding:8px 12px">
+            <option value="">Automatique</option>
+            ${CAPTURE_OPTIONS.cadrage.items.map(it=>`<option value="${it}" ${s.cadrage===it?'selected':''}>${it}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field-group">
+          <label class="field-label" style="font-size:10px">📍 Position camera</label>
+          <select class="field" id="ms-position-${i}" style="font-size:12px;padding:8px 12px">
+            <option value="">Automatique</option>
+            ${CAPTURE_OPTIONS.position.items.map(it=>`<option value="${it}">${it}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field-group" style="grid-column:1/-1">
+          <label class="field-label" style="font-size:10px">🎯 Intention</label>
+          <select class="field" id="ms-intention-${i}" style="font-size:12px;padding:8px 12px">
+            <option value="">Automatique</option>
+            ${CAPTURE_OPTIONS.intention.items.map(it=>`<option value="${it}">${it}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function validerMoteur(){
+  const scenes=storyboardData?.storyboard||[];
+  scenes.forEach((s,i)=>{
+    s.plan_choisi     =document.getElementById('ms-plan-'+i)?.value||'';
+    s.capture_choisie =document.getElementById('ms-capture-'+i)?.value||'';
+    s.cadrage_choisi  =document.getElementById('ms-cadrage-'+i)?.value||'';
+    s.position_choisie=document.getElementById('ms-position-'+i)?.value||'';
+    s.intention_choisie=document.getElementById('ms-intention-'+i)?.value||'';
+  });
+  showToast('Moteur configure');
+  goToStep(7);
+}
+
+async function genererScene(index){
+  if(!canGenerate(currentCode)){document.getElementById('quota-alert').classList.add('show');showToast('Limite atteinte ⏳');return;}
+  const scene=storyboardData?.storyboard?.[index];if(!scene)return;
+  const imgArea=document.getElementById('img-area-'+index);
+  const spinner=document.getElementById('spinner-'+index);
+  imgArea.querySelector('.scene-gen-btn').style.display='none';
+  spinner.style.display='block';
+  try{
+    const finalPrompt=buildImagePrompt(scene.prompt_image);
+    const imgData=await generateImage(finalPrompt);
+    incrementUsed(currentCode);updateQuotaUI();
+    imgArea.innerHTML=`<img src="${imgData}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">`;
+    const blob=await(await fetch(imgData)).blob();
+    const blobUrl=URL.createObjectURL(blob);
+    const dl=document.createElement('a');
+    dl.href=blobUrl;dl.download=`scene_${index+1}.png`;dl.innerHTML='⬇';
+    dl.style.cssText='position:absolute;bottom:4px;right:4px;background:rgba(14,8,18,0.7);color:white;border-radius:6px;padding:4px 8px;font-size:12px;text-decoration:none;z-index:2';
+    imgArea.style.position='relative';imgArea.appendChild(dl);
+    showToast(`Scène ${index+1} générée ✦`);
+  }catch(err){
+    spinner.style.display='none';
+    const gb=imgArea.querySelector('.scene-gen-btn');if(gb)gb.style.display='flex';
+    showToast('Erreur : '+err.message);
+  }
+}
+
+async function genererTout(){
+  if(!storyboardData)return;
+  const scenes=storyboardData.storyboard||[];
+  const isAdmin=CODES[currentCode]?.admin;
+  const rem=remainingCount(currentCode);
+  const toGen=isAdmin?scenes.length:Math.min(scenes.length,rem);
+  if(toGen===0){document.getElementById('quota-alert').classList.add('show');return;}
+  const btn=document.getElementById('btn-gen-all');
+  const spinner=document.getElementById('gen-all-spinner');
+  const label=document.getElementById('gen-all-label');
+  btn.disabled=true;spinner.style.display='inline-block';
+  for(let i=0;i<toGen;i++){
+    label.textContent=`Scène ${i+1} / ${toGen}...`;
+    await genererScene(i);
+    await new Promise(r=>setTimeout(r,800));
+  }
+  btn.disabled=false;spinner.style.display='none';label.textContent='✦ Générer tout le shooting';
+  showToast('Shooting terminé 🎬');
+}
+
+// ═══════════════════════════════════════════════════
+// STEP 7 — B-ROLL
+// ═══════════════════════════════════════════════════
+async function genererBroll(){
+  document.getElementById('broll-loading').style.display='block';
+  document.getElementById('broll-result').style.display='none';
+
+  const produit=document.getElementById('ctx-produit').value;
+  const decorInfo=decorMode==='ia'?(document.getElementById('decor-select').value||'modern apartment'):'custom decor';
+
+  const prompt=`Tu es StoryShoot. Génère des prompts B-Roll pour ce produit UGC.
+
+Produit : ${produit}
+Script : ${scriptData?scriptData.hook+' '+scriptData.body:''}
+Décor : ${decorInfo}
+${uploads.avatar?'Avatar fourni — IDENTITY LOCKED':''}
+${uploads.produit?'Produit fourni — PRODUCT LOCKED':''}
+
+Pour chaque catégorie B-Roll suivante, génère un prompt image anglais ultra-détaillé, style UGC authentique, gros plan ou plan rapproché, lumière naturelle, 9:16.
+
+Catégories : ${BROLL_CATEGORIES.map(b=>b.cat).join(', ')}
+
+Retourne UNIQUEMENT un JSON valide :
+{
+  "brolls": [
+    { "categorie": "...", "description_fr": "...", "prompt_image": "..." }
+  ]
+}`;
+
+  try{
+    const raw=await callGemini(prompt,[uploads.produit].filter(Boolean));
+    brollData=parseJsonRobust(raw);
+    renderBroll();
+    document.getElementById('broll-loading').style.display='none';
+    document.getElementById('broll-result').style.display='block';
+  }catch(err){
+    document.getElementById('broll-loading').style.display='none';
+    showToast('Erreur B-Roll : '+err.message);
+  }
+}
+
+function renderBroll(){
+  const brolls=brollData?.brolls||[];
+  const grid=document.getElementById('broll-grid');
+  grid.innerHTML=brolls.map((b,i)=>`
+    <div class="broll-card">
+      <div class="broll-cat">${b.categorie}</div>
+      <div class="broll-desc">${b.description_fr}</div>
+      <div class="broll-img-area" id="broll-area-${i}">
+        <span>9:16</span>
+        <button class="broll-gen-btn" onclick="genererBrollScene(${i})">▶</button>
+        <div class="scene-spinner" id="broll-spinner-${i}"></div>
+      </div>
+    </div>`).join('');
+}
+
+async function genererBrollScene(index){
+  if(!canGenerate(currentCode)){showToast('Limite atteinte ⏳');return;}
+  const b=brollData?.brolls?.[index];if(!b)return;
+  const area=document.getElementById('broll-area-'+index);
+  const spinner=document.getElementById('broll-spinner-'+index);
+  area.querySelector('.broll-gen-btn').style.display='none';
+  spinner.style.display='block';
+  try{
+    const finalPrompt=buildImagePrompt(b.prompt_image);
+    const imgData=await generateImage(finalPrompt);
+    incrementUsed(currentCode);updateQuotaUI();
+    area.innerHTML=`<img src="${imgData}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">`;
+    showToast(`B-Roll "${b.categorie}" généré ✦`);
+  }catch(err){
+    spinner.style.display='none';
+    const gb=area.querySelector('.broll-gen-btn');if(gb)gb.style.display='flex';
+    showToast('Erreur : '+err.message);
+  }
+}
+
+async function genererTousBroll(){
+  const brolls=brollData?.brolls||[];
+  for(let i=0;i<brolls.length;i++){
+    await genererBrollScene(i);
+    await new Promise(r=>setTimeout(r,800));
+  }
+  showToast('Tous les B-Rolls générés 🎬');
+}
+
+// ═══════════════════════════════════════════════════
+// EMOTION MODAL
+// ═══════════════════════════════════════════════════
+function openEmotionModal(idx){
+  modalCallback=(emotion)=>{
+    storyboardData.storyboard[idx].emotion=emotion;
+    document.getElementById('emotion-tag-'+idx).textContent='✦ '+emotion;
+    closeEmotionModal();
+  };
+  const current=storyboardData?.storyboard[idx]?.emotion||'';
+  document.getElementById('emotion-list').innerHTML=EMOTIONS.map(e=>`
+    <div class="emotion-choice ${e===current?'selected':''}" onclick="selectEmotion('${e}')">${e}</div>`).join('');
+  document.getElementById('emotion-modal').classList.add('open');
+}
+function selectEmotion(e){if(modalCallback)modalCallback(e);}
+function closeEmotionModal(){document.getElementById('emotion-modal').classList.remove('open');modalCallback=null;}
+
+// ═══════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════
+let toastTimer;
+function showToast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+// ═══════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════
+(function init(){
+  const saved=sessionStorage.getItem('ss_session');
+  if(saved&&CODES[saved]){currentCode=saved;currentUser=CODES[saved];launchApp();}
+})();
+</script>
+</body>
+</html>
