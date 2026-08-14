@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -1016,6 +1017,10 @@ async function generateImage(prompt){
     avatarB64:uploads.avatar?.b64||null,avatarMime:uploads.avatar?.mime||'image/jpeg',
     produitB64:uploads.produit?.b64||null,produitMime:uploads.produit?.mime||'image/jpeg',
     vetementB64:uploads.vetement?.b64||null,vetementMime:uploads.vetement?.mime||'image/jpeg',
+    // Le décor n'était jamais envoyé au générateur — uploadé pour rien.
+    // On le transmet uniquement en mode "Mon décor" (custom).
+    decorB64:(decorMode==='custom'&&uploads.decor)?uploads.decor.b64:null,
+    decorMime:uploads.decor?.mime||'image/jpeg',
   };
   const res=await fetch(`${PROXY_URL}/generate-image`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   const data=await res.json();
@@ -1037,6 +1042,9 @@ function buildImagePrompt(scenePrompt,productVisible=true){
     else locks.push('NO PRODUCT VISIBLE — do not show any product, packaging, bottle or branded item anywhere in the frame, even blurred or in background.');
   }
   if(uploads.vetement)locks.push('OUTFIT LOCKED — same garment, colors, style as outfit reference photo.');
+  // Le décor uploadé (mode "Mon décor") n'était jamais mentionné : chaque scène
+  // repartait d'un décor différent malgré la photo de référence fournie.
+  if(uploads.decor&&decorMode==='custom')locks.push('LOCATION LOCKED — same room, same background, same location as the decor reference photo provided. Every scene must take place in this exact location, do not invent a different room or setting.');
   const lockStr=locks.length?locks.join(' ')+'  ':'';
   return `${scenePrompt} — ${lockStr}Portrait orientation 9:16, 4K ultra-detailed, shot on iPhone 15 Pro, natural light, authentic UGC style.`;
 }
@@ -1462,7 +1470,10 @@ Retourne UNIQUEMENT ce JSON brut, sans texte avant ni apres, sans backticks :
 Genere 5 a 7 scenes.`;
 
   try{
-    const images=[uploads.avatar,uploads.produit,uploads.vetement].filter(Boolean);
+    // Le décor n'était jamais montré au modèle qui écrit le storyboard : il ne pouvait
+    // donc pas décrire des scènes cohérentes avec le lieu réel fourni par l'utilisatrice.
+    const decorImg=(decorMode==='custom'&&uploads.decor)?[uploads.decor]:[];
+    const images=[uploads.avatar,uploads.produit,uploads.vetement,...decorImg].filter(Boolean);
     const raw=await callGemini(prompt,images);
     storyboardData=parseJsonRobust(raw);
     if(!storyboardData.storyboard?.length)throw new Error('Storyboard vide');
@@ -1714,7 +1725,8 @@ Retourne UNIQUEMENT ce JSON brut sans texte avant ni apres :
 {"brolls":[{"nom":"BROLL1_Nom","moment_narratif":"...","description_fr":"...","photo_depart":"description precise en francais","instruction_video":"action courte","prompt_image":"prompt anglais detaille"}]}`;
 
   try{
-    const raw=await callGemini(prompt,[uploads.produit,uploads.avatar].filter(Boolean));
+    const decorImg=(decorMode==='custom'&&uploads.decor)?[uploads.decor]:[];
+    const raw=await callGemini(prompt,[uploads.produit,uploads.avatar,...decorImg].filter(Boolean));
     brollData=parseJsonRobust(raw);
     if(!brollData.brolls?.length)throw new Error('Pas de B-rolls generes');
     renderBroll();
