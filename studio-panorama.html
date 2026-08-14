@@ -368,16 +368,21 @@
       <button class="engine-pill" data-engine="kie">KIE.AI · Nano Banana</button>
     </div>
 
-    <button class="toggle-keys" id="toggle-keys">Configurer les clés API ▾</button>
+    <button class="toggle-keys" id="toggle-keys">⚙ Clés API &amp; connexions ▾</button>
     <div class="keys closed" id="keys-panel">
       <div>
-        <label class="field-label">CLÉ VERTEX AI (AQ...)</label>
+        <label class="field-label">CLÉ VERTEX AI — EXPRESS MODE (AQ...)</label>
         <input type="password" id="key-vertex" placeholder="AQ...">
       </div>
       <div>
         <label class="field-label">CLÉ KIE.AI</label>
         <input type="password" id="key-kie" placeholder="kie_...">
       </div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn-secondary" id="save-keys-btn" type="button">💾 Enregistrer</button>
+        <button class="btn-secondary" id="clear-keys-btn" type="button">🗑 Effacer</button>
+      </div>
+      <div class="status-line" id="keys-status" style="margin-top:0;text-align:left;">Les clés sont stockées uniquement dans ce navigateur (localStorage), jamais envoyées ailleurs qu'aux API que tu configures.</div>
     </div>
 
     <div class="badge-mode">RENDU ULTRA-RÉALISTE · SANS FILTRE · SANS LOGO</div>
@@ -479,19 +484,53 @@
 
   loadHistory().then(renderHistory);
 
-  /* ---------------- LOCALSTORAGE KEYS ---------------- */
-  try{
-    const savedVertex = localStorage.getItem('sp_key_vertex');
-    const savedKie = localStorage.getItem('sp_key_kie');
-    if(savedVertex) document.getElementById('key-vertex').value = savedVertex;
-    if(savedKie) document.getElementById('key-kie').value = savedKie;
-  }catch(e){}
+  /* ---------------- STOCKAGE SÉCURISÉ (localStorage) ---------------- */
+  function safeLocalGet(key, fallback=''){
+    try{ const v = localStorage.getItem(key); return v === null ? fallback : v; }
+    catch(e){ console.warn('[storage] lecture indisponible', e); return fallback; }
+  }
+  function safeLocalSet(key, value){
+    try{ localStorage.setItem(key, value); return true; }
+    catch(e){ console.warn('[storage] écriture indisponible', e); return false; }
+  }
+  function safeLocalRemove(key){
+    try{ localStorage.removeItem(key); return true; }
+    catch(e){ console.warn('[storage] suppression indisponible', e); return false; }
+  }
 
-  document.getElementById('key-vertex').addEventListener('change', (e)=>{
-    try{ localStorage.setItem('sp_key_vertex', e.target.value); }catch(err){}
+  /* ---------------- CLÉS API : préremplissage + save/clear ---------------- */
+  const vertexInput = document.getElementById('key-vertex');
+  const kieInput = document.getElementById('key-kie');
+  const keysStatus = document.getElementById('keys-status');
+  const keysPanel = document.getElementById('keys-panel');
+  const toggleKeysBtn = document.getElementById('toggle-keys');
+
+  vertexInput.value = safeLocalGet('sp_key_vertex');
+  kieInput.value = safeLocalGet('sp_key_kie');
+  if(vertexInput.value || kieInput.value){
+    keysPanel.classList.add('open');
+    keysPanel.classList.remove('closed');
+    toggleKeysBtn.textContent = '⚙ Clés API & connexions ▴';
+  }
+
+  document.getElementById('save-keys-btn').addEventListener('click', ()=>{
+    const okV = safeLocalSet('sp_key_vertex', vertexInput.value.trim());
+    const okK = safeLocalSet('sp_key_kie', kieInput.value.trim());
+    keysStatus.textContent = (okV && okK) ? '✔ Clés enregistrées dans ce navigateur.' : '⚠ Clés actives pour cette session, mais non sauvegardées (stockage indisponible ou plein).';
+    keysStatus.className = 'status-line ' + ((okV && okK) ? 'ok' : 'err');
+    setTimeout(()=>{
+      keysStatus.textContent = "Les clés sont stockées uniquement dans ce navigateur (localStorage), jamais envoyées ailleurs qu'aux API que tu configures.";
+      keysStatus.className = 'status-line';
+    }, 3000);
   });
-  document.getElementById('key-kie').addEventListener('change', (e)=>{
-    try{ localStorage.setItem('sp_key_kie', e.target.value); }catch(err){}
+
+  document.getElementById('clear-keys-btn').addEventListener('click', ()=>{
+    safeLocalRemove('sp_key_vertex');
+    safeLocalRemove('sp_key_kie');
+    vertexInput.value = '';
+    kieInput.value = '';
+    keysStatus.textContent = '🗑 Clés effacées.';
+    keysStatus.className = 'status-line';
   });
 
   /* ---------------- UI: DROPZONES ---------------- */
@@ -641,8 +680,8 @@ Livre une seule image photoréaliste, cohérente avec la scène et la direction 
 
   /* ---------------- VERTEX AI (Express Mode) ---------------- */
   async function generateWithVertex(direction){
-    const key = document.getElementById('key-vertex').value.trim();
-    if(!key) throw new Error('Clé Vertex AI manquante.');
+    const key = vertexInput.value.trim();
+    if(!key) throw new Error('Clé Vertex AI manquante — renseigne-la dans ⚙ Clés API & connexions.');
     if(!state.roomImage || !state.avatarImage) throw new Error('Il manque la pièce ou l\\'avatar.');
 
     const model = 'gemini-3.1-flash-image';
@@ -654,12 +693,15 @@ Livre une seule image photoréaliste, cohérente avec la scène et la direction 
       contents: [{
         role: 'user',
         parts: [
-          { text: prompt },
-          { inline_data: { mime_type: state.roomImage.mime, data: state.roomImage.base64 } },
-          { inline_data: { mime_type: state.avatarImage.mime, data: state.avatarImage.base64 } }
+          { inlineData: { data: state.roomImage.base64, mimeType: state.roomImage.mime } },
+          { inlineData: { data: state.avatarImage.base64, mimeType: state.avatarImage.mime } },
+          { text: prompt }
         ]
       }],
-      generationConfig: { responseModalities: ['IMAGE'] }
+      generationConfig: {
+        responseModalities: ['IMAGE'],
+        imageConfig: { aspectRatio: '1:1', imageSize: '4K' }
+      }
     };
 
     const doCall = async ()=>{
@@ -671,21 +713,27 @@ Livre une seule image photoréaliste, cohérente avec la scène et la direction 
         },
         body: JSON.stringify(body)
       });
+      let data = {};
+      try{ data = await res.json(); }catch(_){}
       if(!res.ok){
-        const errText = await res.text().catch(()=> '');
-        const e = new Error(`Vertex AI: ${res.status} ${errText}`);
+        const msg = data?.error?.message || `Erreur HTTP ${res.status}`;
+        const e = new Error(res.status === 401 ? 'Clé Vertex invalide (vérifie la clé Express Mode, préfixe AQ...).' : `Erreur Vertex ${res.status} : ${msg}`);
         e.status = res.status;
         throw e;
       }
-      return res.json();
+      return data;
     };
 
     const data = await withBackoff(doCall);
-    const parts = data?.candidates?.[0]?.content?.parts || [];
-    const imgPart = parts.find(p => p.inlineData || p.inline_data);
-    const inline = imgPart && (imgPart.inlineData || imgPart.inline_data);
-    if(!inline) throw new Error('Vertex AI n\\'a renvoyé aucune image.');
-    return `data:${inline.mimeType || inline.mime_type || 'image/png'};base64,${inline.data}`;
+    const candidate = data?.candidates?.[0];
+    if(!candidate) throw new Error('Aucune réponse du modèle Vertex.');
+    if(candidate.finishReason === 'SAFETY') throw new Error('Génération bloquée par les filtres de sécurité — reformule la direction.');
+    const parts = candidate?.content?.parts || [];
+    for(const p of parts){
+      const inline = p.inlineData || p.inline_data;
+      if(inline?.data) return `data:${inline.mimeType || inline.mime_type || 'image/png'};base64,${inline.data}`;
+    }
+    throw new Error('Vertex AI n\\'a renvoyé aucune image.');
   }
 
   /* ---------------- KIE.AI (Nano Banana) ---------------- */
@@ -705,12 +753,14 @@ Livre une seule image photoréaliste, cohérente avec la scène et la direction 
       throw e;
     }
     const json = await res.json();
-    return json?.data?.fileUrl || json?.data?.downloadUrl || json?.data?.url;
+    const url = json?.data?.downloadUrl || json?.data?.fileUrl || json?.data?.url;
+    if(!url) throw new Error(`Échec upload kie.ai : ${json?.msg || 'réponse invalide'}`);
+    return url;
   }
 
   async function generateWithKie(direction){
-    const key = document.getElementById('key-kie').value.trim();
-    if(!key) throw new Error('Clé kie.ai manquante.');
+    const key = kieInput.value.trim();
+    if(!key) throw new Error('Clé kie.ai manquante — renseigne-la dans ⚙ Clés API & connexions.');
     if(!state.roomImage || !state.avatarImage) throw new Error('Il manque la pièce ou l\\'avatar.');
 
     setStatus('Envoi des images à kie.ai...', '');
@@ -730,19 +780,25 @@ Livre une seule image photoréaliste, cohérente avec la scène et la direction 
           model: 'nano-banana-2',
           input: {
             prompt: prompt,
-            image_urls: [roomUrl, avatarUrl],
+            image_input: [roomUrl, avatarUrl],
             resolution: '4K',
             output_format: 'png'
           }
         })
       });
+      const data = await res.json().catch(()=>({}));
+      if(data.code && data.code !== 200){
+        const msg = data?.msg || data?.message || 'erreur inconnue';
+        const e = new Error(data.code === 401 ? 'Clé kie.ai invalide.' : data.code === 403 ? 'Accès refusé kie.ai — vérifie tes crédits.' : `Erreur kie.ai : ${msg}`);
+        e.status = data.code;
+        throw e;
+      }
       if(!res.ok){
-        const t = await res.text().catch(()=>'');
-        const e = new Error(`kie.ai createTask: ${res.status} ${t}`);
+        const e = new Error(`kie.ai createTask: ${res.status}`);
         e.status = res.status;
         throw e;
       }
-      return res.json();
+      return data;
     });
 
     const taskId = createRes?.data?.taskId || createRes?.taskId;
