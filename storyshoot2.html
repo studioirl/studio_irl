@@ -967,7 +967,7 @@ async function callGemini(prompt,images=[]){
   const parts=[];
   for(const img of images){if(img)parts.push({inline_data:{mime_type:img.mime,data:img.b64}});}
   parts.push({text:prompt});
-  const body={contents:[{role:'user',parts}],generationConfig:{temperature:0.85,maxOutputTokens:4096}};
+  const body={contents:[{role:'user',parts}],generationConfig:{temperature:0.85,maxOutputTokens:8192}};
   const res=await fetch(`https://europe-west1-aiplatform.googleapis.com/v1/publishers/google/models/gemini-2.5-flash:generateContent?key=${VERTEX_KEY}`,
     {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e?.error?.message||'Erreur Gemini');}
@@ -1191,67 +1191,42 @@ async function genererScript(){
     }
   };
 
-  const prompt=`Tu es un directeur creatif UGC. Tu ne rediges PAS une publicite classique. Tu construis l experience d une personne qui vivait un probleme, l a surmonte grace a un produit, et le raconte naturellement a une amie.
+  const prompt=`Tu es un directeur creatif UGC. Script a la 1ere personne ("je"), tutoiement, langage parle naturel. PAS de pub classique — une vraie histoire racontee a une amie.
 
-REGLE ABSOLUE - PREMIERE PERSONNE : script entierement en "je". JAMAIS "ce produit va vous". Tutoiement. Langage parle, phrases courtes, contractions naturelles.
-
-INFORMATIONS PRODUIT :
-Produit : ${ctx.produit}
-Usage concret : ${ctx.descProduit.usage}
+PRODUIT : ${ctx.produit}
+Usage : ${ctx.descProduit.usage}
 Resultats : ${ctx.descProduit.resultats}
 Utilisation : ${ctx.descProduit.utilisation}
 Difference : ${ctx.descProduit.difference}
 ${ctx.descProduit.prix?'Prix : '+ctx.descProduit.prix:''}
-Format : ${ctx.format} | Type : ${ctx.type} | Objectif : ${ctx.objectif}
-Mission marque : ${ctx.mission} | Valeurs : ${ctx.valeurs}
-${ctx.histoire.probleme?'Experience creatrice - probleme vecu : '+ctx.histoire.probleme:''}
-${ctx.histoire.benefices?'Experience creatrice - benefices constates : '+ctx.histoire.benefices:''}
-${ctx.histoire.maintenant?'Experience creatrice - maintenant : '+ctx.histoire.maintenant:''}
-PROFIL CLIENT : ${profilClient?JSON.stringify(profilClient):'deduire des infos produit'}
+Format : ${ctx.format} | Type : ${ctx.type}
+${ctx.histoire.probleme?'Vecu creatrice : '+ctx.histoire.probleme:''}
+${ctx.histoire.benefices?'Benefices : '+ctx.histoire.benefices:''}
+PROFIL CLIENT : ${profilClient?JSON.stringify(profilClient):'deduire'}
 
-ORDRE DE TRAVAIL (travaille silencieusement dans cet ordre avant d ecrire) :
-1. Comprendre le produit concretement - usage, situations d utilisation, probleme resolu, benefices reels
-2. Construire le territoire narratif : probleme vecu (pas explique - comment apparait-il dans la vie ? quel geste, quelle situation ?), desir concret (ce qu elle veut vraiment retrouver), vision du succes (scene concrete), vision de l echec si pertinent
-3. Construire l arc narratif : PROBLEME VECU > CONSEQUENCE/FRUSTRATION > DECOUVERTE > ESSAI > EXPERIENCE/PREUVE > CHANGEMENT > NOUVELLE VIE > CTA
+REGLES :
+- 3 HOOKS vraiment differents (pas 3 reformulations) : A=probleme vecu concret / B=confession ou aveu / C=resultat ou curiosite. Jamais le produit dans le hook.
+- INTRO PROBLEME : micro-moments SET (Situation precise + Emotion ressentie + Pensee naturelle). Pas de produit.
+- BODY : le produit arrive naturellement comme reponse. Caracteristiques = experiences vecues. Resultat montre pas dit.
+- CTA : conclusion naturelle, pas "commandez maintenant".
+- PLANS : lieu + position + action + cadrage + position telephone. Concret et filmable. PAS "montrer la frustration" mais "assise sur le bord du lit, elle tire sur le tissu, souffle, regard vers ses cuisses. Plan taille, telephone pose sur commode."
 
-METHODE SET pour chaque moment important :
-- Situation : que se passe-t-il concretement ? ou est-elle ? que faisait-elle ?
-- Emotion : qu est-ce qu elle ressent a ce moment precis ? (faire ressentir, ne pas nommer systematiquement)
-- Thought/Pensee : quelle pensee naturelle traverse son esprit ? ("Super... ca recommence." / "Attends... c est tout ?")
+Retourne UNIQUEMENT ces balises XML :
 
-HOOKS - 3 versions VRAIMENT DIFFERENTES (pas 3 reformulations) :
-Chaque hook doit creer un effet different parmi : reconnaissance immediate / probleme precis / curiosite / confession / surprise / contraste / revelation personnelle.
-- Version A - PROBLEME VECU : part d un moment concret, une situation precise
-- Version B - CONFESSION : aveu personnel, truc qu elle faisait ou evitait
-- Version C - RESULTAT/CONTRASTE ou CURIOSITE : ce qu elle vit maintenant, ou ce truc mysterieux
-REGLE : produit jamais mentionne dans le hook. Hook = ouvrir une histoire, PAS resumer la pub.
-
-BODY - micro-moments :
-Ne pas faire une fiche produit. Raconter l experience en micro-moments. Le produit entre dans l histoire comme une reponse a une situation, pas comme sujet principal. Transformer chaque caracteristique en experience vecue (format compact = "je la laisse dans mon sac" / application rapide = "ca me prend 30 secondes avant de sortir"). Faire ressentir le resultat (pas "je suis plus confiante" mais "maintenant je prends juste la robe que j ai envie de mettre, je reflechis meme plus a ca").
-
-CTA : conclusion naturelle du temoignage. Pas de "commandez maintenant". Plutot "si toi aussi c est toujours le meme probleme l ete, franchement, va regarder."
-
-PLANS VISUELS PRINCIPAUX : apres le script, pour chaque partie cle, indique l action concrete filmable.
-INTERDIT : "Montrer la frustration."
-CORRECT : "Assise sur le bord du lit en robe, elle tire sur le tissu, regarde ses cuisses, souffle. Telephone pose sur la commode, plan taille trois-quarts."
-Le plan doit indiquer : lieu + position + action + interaction produit si present + expression + cadrage + position telephone.
-
-Retourne UNIQUEMENT ces balises XML, rien d autre :
-
-<HOOK_A_VERBAL>hook version A verbal</HOOK_A_VERBAL>
-<HOOK_A_ECRAN>texte ecran hook A (vide si identique au verbal)</HOOK_A_ECRAN>
-<HOOK_A_PLAN>plan visuel hook A - description concrete et filmable</HOOK_A_PLAN>
-<HOOK_B_VERBAL>hook version B verbal</HOOK_B_VERBAL>
-<HOOK_B_ECRAN>texte ecran hook B</HOOK_B_ECRAN>
-<HOOK_B_PLAN>plan visuel hook B</HOOK_B_PLAN>
-<HOOK_C_VERBAL>hook version C verbal</HOOK_C_VERBAL>
-<HOOK_C_ECRAN>texte ecran hook C</HOOK_C_ECRAN>
-<HOOK_C_PLAN>plan visuel hook C</HOOK_C_PLAN>
-<INTRO_PROBLEME>intro probleme en micro-moments - situation precise, emotion, pensee. Sans produit.</INTRO_PROBLEME>
-<INTRO_PLANS>plans visuels intro probleme - 2 a 3 plans concrets et filmables</INTRO_PLANS>
-<PRESENTATION_PRODUIT>corps du script - decouverte naturelle du produit, methode SET, caracteristiques transformees en experiences vecues, resultat montre pas dit</PRESENTATION_PRODUIT>
-<BODY_PLANS>plans visuels body - 3 a 5 plans concrets et filmables</BODY_PLANS>
-<CTA>call to action - conclusion naturelle du temoignage</CTA>
+<HOOK_A_VERBAL>hook A verbal</HOOK_A_VERBAL>
+<HOOK_A_ECRAN>texte ecran A (vide si identique)</HOOK_A_ECRAN>
+<HOOK_A_PLAN>plan visuel A filmable</HOOK_A_PLAN>
+<HOOK_B_VERBAL>hook B verbal</HOOK_B_VERBAL>
+<HOOK_B_ECRAN>texte ecran B</HOOK_B_ECRAN>
+<HOOK_B_PLAN>plan visuel B filmable</HOOK_B_PLAN>
+<HOOK_C_VERBAL>hook C verbal</HOOK_C_VERBAL>
+<HOOK_C_ECRAN>texte ecran C</HOOK_C_ECRAN>
+<HOOK_C_PLAN>plan visuel C filmable</HOOK_C_PLAN>
+<INTRO_PROBLEME>intro probleme - micro-moments SET, sans produit</INTRO_PROBLEME>
+<INTRO_PLANS>2-3 plans visuels intro - concrets et filmables</INTRO_PLANS>
+<PRESENTATION_PRODUIT>body - decouverte naturelle, SET, caracteristiques en experiences vecues, resultat montre</PRESENTATION_PRODUIT>
+<BODY_PLANS>3-5 plans visuels body - concrets et filmables</BODY_PLANS>
+<CTA>call to action naturel</CTA>
 <CTA_PLAN>plan visuel CTA</CTA_PLAN>`;
 
   try{
