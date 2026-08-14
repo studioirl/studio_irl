@@ -1026,10 +1026,16 @@ async function generateImage(prompt){
   return `data:${data.mimeType||'image/png'};base64,${data.image}`;
 }
 
-function buildImagePrompt(scenePrompt){
+function buildImagePrompt(scenePrompt,productVisible=true){
   const locks=[];
   if(uploads.avatar)locks.push('IDENTITY LOCKED — same face, skin tone, features as reference photo provided. Do not invent a new face.');
-  if(uploads.produit)locks.push('PRODUCT LOCKED — same packaging, shape, label, colors as product reference photo. Do not invent a product.');
+  // Le produit n'est verrouillé (et donc rendu) que si la scène doit le montrer.
+  // Sur les scènes "produit caché" (typiquement le Hook), on force explicitement son absence
+  // pour éviter que le modèle image ne le fasse quand même apparaître en arrière-plan.
+  if(uploads.produit){
+    if(productVisible)locks.push('PRODUCT LOCKED — same packaging, shape, label, colors as product reference photo. Do not invent a product.');
+    else locks.push('NO PRODUCT VISIBLE — do not show any product, packaging, bottle or branded item anywhere in the frame, even blurred or in background.');
+  }
   if(uploads.vetement)locks.push('OUTFIT LOCKED — same garment, colors, style as outfit reference photo.');
   const lockStr=locks.length?locks.join(' ')+'  ':'';
   return `${scenePrompt} — ${lockStr}Portrait orientation 9:16, 4K ultra-detailed, shot on iPhone 15 Pro, natural light, authentic UGC style.`;
@@ -1433,7 +1439,7 @@ ${uploads.produit?'PRODUCT LOCKED - meme produit que reference fournie':''}
 
 REGLES STRICTES PRODUIT :
 - SCENES HOOK (partie=Hook) : LE PRODUIT NE DOIT ABSOLUMENT PAS APPARAITRE. On voit uniquement la personne, son emotion physique, son quotidien AVANT. Pas de produit, pas de packaging, rien.
-- SCENES BODY : Le produit apparait pour la premiere fois. On voit son utilisation et la transformation.
+- SCENES BODY : Le produit apparait SEULEMENT a partir de la scene de decouverte/solution, pas avant. Meme dans le Body, ne le montre pas sur chaque scene : privilegie l'utilisation et la transformation, le produit lui-meme n'a pas besoin d'etre visible a chaque plan.
 - SCENE CTA : Produit present, resultat visible.
 
 EMOTIONS PHYSIQUES - decrire comme etats physiques observables :
@@ -1483,7 +1489,11 @@ function renderStoryboard(){
   const genInfo=document.getElementById('gen-all-info');
   if(genInfo)genInfo.textContent=isAdmin?scenes.length+' scenes illimite':scenes.length+' scenes · '+rem+' restantes';
   const partieColors={Hook:'rgba(244,63,94,0.15)',Body:'rgba(124,58,237,0.15)',CTA:'rgba(34,197,94,0.1)'};
-  container.innerHTML=scenes.map((s,i)=>`
+  container.innerHTML=scenes.map((s,i)=>{
+    // Valeur par défaut : produit caché sur le Hook (problème sans produit),
+    // visible sur Body/CTA (découverte + résultat). Modifiable manuellement par l'utilisatrice.
+    if(s.produit_visible===undefined)s.produit_visible=(s.partie!=='Hook');
+    return `
     <div class="scene-card" id="scene-card-${i}">
       <div class="scene-num">${s.scene}</div>
       <div class="scene-body">
@@ -1496,6 +1506,9 @@ function renderStoryboard(){
         <div class="scene-emotion-row" style="margin-top:8px">
           <div class="emotion-tag" id="emotion-tag-${i}">✦ ${s.emotion||'—'}</div>
           <button class="emotion-edit" onclick="openEmotionModal(${i})">Modifier</button>
+          <button class="emotion-edit" id="produit-toggle-${i}" onclick="toggleProduitVisible(${i})" style="${s.produit_visible?'border-color:rgba(124,58,237,0.5);color:var(--violet-200)':''}">
+            ${s.produit_visible?'📦 Produit visible':'🚫 Produit caché'}
+          </button>
         </div>
         <div style="margin-top:10px">
           <textarea id="direction-${i}" placeholder="Direction de scène (optionnel) — Ex: lumière plus douce, regard vers le bas, produit en main gauche..." style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(124,58,237,0.2);border-radius:8px;padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text-bright);outline:none;resize:none;height:52px;line-height:1.4;color:var(--text-muted)" onchange="storyboardData.storyboard[${i}].direction=this.value"></textarea>
@@ -1506,7 +1519,15 @@ function renderStoryboard(){
         <button class="scene-gen-btn" onclick="genererScene(${i})">▶</button>
         <div class="scene-spinner" id="spinner-${i}"></div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
+}
+
+function toggleProduitVisible(idx){
+  const s=storyboardData?.storyboard?.[idx];
+  if(!s)return;
+  s.produit_visible=!s.produit_visible;
+  renderStoryboard();
 }
 
 // MOTEUR PAR SCENE
@@ -1597,7 +1618,8 @@ async function genererScene(index){
     const basePrompt=scene.prompt_image+directionStr+
       ' IMPORTANT: If any product packaging, label or text appears, render it as a subtle blurred background element — do NOT attempt to render readable text or logos as they will appear distorted. Focus on the person, emotion and scene composition.';
 
-    const finalPrompt=buildImagePrompt(basePrompt);
+    const productVisible=scene.produit_visible!==undefined?scene.produit_visible:(scene.partie!=='Hook');
+    const finalPrompt=buildImagePrompt(basePrompt,productVisible);
     const imgData=await generateImage(finalPrompt);
     incrementUsed(currentCode);updateQuotaUI();
 
@@ -1723,6 +1745,50 @@ function renderBroll(){
         <div class="scene-spinner" id="broll-spinner-${i}"></div>
       </div>
     </div>`).join('');
+}
+
+// Génère l'image d'un B-Roll donné. Cette fonction manquait entièrement,
+// c'est pourquoi cliquer sur ▶ ne faisait rien : le onclick appelait une
+// fonction inexistante et échouait silencieusement.
+async function genererBrollScene(index){
+  if(!canGenerate(currentCode)){document.getElementById('quota-alert')?.classList.add('show');showToast('Limite atteinte ⏳');return;}
+  const broll=brollData?.brolls?.[index];if(!broll)return;
+  const imgArea=document.getElementById('broll-area-'+index);
+  if(!imgArea)return;
+  const spinner=document.getElementById('broll-spinner-'+index);
+  const genBtn=imgArea.querySelector('.broll-gen-btn');
+  if(genBtn)genBtn.style.display='none';
+  if(spinner)spinner.style.display='block';
+  try{
+    const basePrompt=broll.prompt_image+
+      ' IMPORTANT: If any product packaging, label or text appears, render it as a subtle blurred background element — do NOT attempt to render readable text or logos as they will appear distorted. Focus on the scene composition.';
+    const finalPrompt=buildImagePrompt(basePrompt,true);
+    const imgData=await generateImage(finalPrompt);
+    incrementUsed(currentCode);updateQuotaUI();
+
+    imgArea.innerHTML=`<img src="${imgData}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">`;
+
+    const regenBtn=document.createElement('button');
+    regenBtn.innerHTML='🔄';
+    regenBtn.title='Régénérer';
+    regenBtn.style.cssText='position:absolute;top:4px;right:4px;background:rgba(14,8,18,0.75);color:white;border:none;border-radius:6px;padding:4px 7px;font-size:12px;cursor:pointer;z-index:2';
+    regenBtn.onclick=()=>genererBrollScene(index);
+    imgArea.style.position='relative';
+    imgArea.appendChild(regenBtn);
+
+    const blob=await(await fetch(imgData)).blob();
+    const blobUrl=URL.createObjectURL(blob);
+    const dl=document.createElement('a');
+    dl.href=blobUrl;dl.download=`broll_${index+1}.png`;dl.innerHTML='⬇';
+    dl.style.cssText='position:absolute;bottom:4px;right:4px;background:rgba(14,8,18,0.75);color:white;border-radius:6px;padding:4px 8px;font-size:12px;text-decoration:none;z-index:2';
+    imgArea.appendChild(dl);
+
+    showToast(`B-Roll ${index+1} généré ✦`);
+  }catch(err){
+    if(spinner)spinner.style.display='none';
+    const gb=imgArea.querySelector('.broll-gen-btn');if(gb)gb.style.display='flex';
+    showToast('Erreur B-Roll : '+err.message);
+  }
 }
 
 async function genererTousBroll(){
