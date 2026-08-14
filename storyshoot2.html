@@ -967,12 +967,26 @@ async function callGemini(prompt,images=[]){
   const parts=[];
   for(const img of images){if(img)parts.push({inline_data:{mime_type:img.mime,data:img.b64}});}
   parts.push({text:prompt});
-  const body={contents:[{role:'user',parts}],generationConfig:{temperature:0.85,maxOutputTokens:8192}};
+  const body={contents:[{role:'user',parts}],generationConfig:{temperature:0.85,maxOutputTokens:8192},
+    safetySettings:[
+      {category:'HARM_CATEGORY_HARASSMENT',threshold:'BLOCK_ONLY_HIGH'},
+      {category:'HARM_CATEGORY_HATE_SPEECH',threshold:'BLOCK_ONLY_HIGH'},
+      {category:'HARM_CATEGORY_SEXUALLY_EXPLICIT',threshold:'BLOCK_ONLY_HIGH'},
+      {category:'HARM_CATEGORY_DANGEROUS_CONTENT',threshold:'BLOCK_ONLY_HIGH'}
+    ]};
   const res=await fetch(`https://europe-west1-aiplatform.googleapis.com/v1/publishers/google/models/gemini-2.5-flash:generateContent?key=${VERTEX_KEY}`,
     {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-  if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e?.error?.message||'Erreur Gemini');}
+  if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e?.error?.message||`Erreur Gemini HTTP ${res.status}`);}
   const data=await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text||'';
+  const cand=data.candidates?.[0];
+  const text=cand?.content?.parts?.[0]?.text||'';
+  // Diagnostic : si le texte est vide, on remonte la vraie cause (blocage sécurité, coupure token, etc.)
+  // au lieu de laisser l'appelant croire à un simple "vide - relance" muet.
+  if(!text.trim()){
+    const reason=cand?.finishReason||data?.promptFeedback?.blockReason||'raison inconnue';
+    throw new Error('Réponse Gemini vide — finishReason: '+reason);
+  }
+  return text;
 }
 
 // Parse JSON robuste — résistant aux apostrophes et caractères spéciaux français
@@ -1254,7 +1268,10 @@ Retourne UNIQUEMENT ces balises XML :
       hook_choisi:'A',
     };
     if(!scriptData.hook_a&&!scriptData.intro_probleme){
-      throw new Error('Reponse vide - relance');
+      // On affiche un extrait de la réponse brute pour diagnostiquer : soit le format
+      // renvoyé par Gemini ne correspond pas aux balises attendues, soit il a halluciné
+      // un autre format. Ça évite de rester bloqué sur un message muet.
+      throw new Error('Balises non trouvées dans la réponse. Début de la réponse brute : "'+raw.slice(0,200)+'..."');
     }
     renderScript(false);
     document.getElementById('script-loading').style.display='none';
