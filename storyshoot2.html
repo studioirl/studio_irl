@@ -967,26 +967,12 @@ async function callGemini(prompt,images=[]){
   const parts=[];
   for(const img of images){if(img)parts.push({inline_data:{mime_type:img.mime,data:img.b64}});}
   parts.push({text:prompt});
-  const body={contents:[{role:'user',parts}],generationConfig:{temperature:0.85,maxOutputTokens:8192},
-    safetySettings:[
-      {category:'HARM_CATEGORY_HARASSMENT',threshold:'BLOCK_ONLY_HIGH'},
-      {category:'HARM_CATEGORY_HATE_SPEECH',threshold:'BLOCK_ONLY_HIGH'},
-      {category:'HARM_CATEGORY_SEXUALLY_EXPLICIT',threshold:'BLOCK_ONLY_HIGH'},
-      {category:'HARM_CATEGORY_DANGEROUS_CONTENT',threshold:'BLOCK_ONLY_HIGH'}
-    ]};
+  const body={contents:[{role:'user',parts}],generationConfig:{temperature:0.85,maxOutputTokens:8192}};
   const res=await fetch(`https://europe-west1-aiplatform.googleapis.com/v1/publishers/google/models/gemini-2.5-flash:generateContent?key=${VERTEX_KEY}`,
     {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-  if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e?.error?.message||`Erreur Gemini HTTP ${res.status}`);}
+  if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e?.error?.message||'Erreur Gemini');}
   const data=await res.json();
-  const cand=data.candidates?.[0];
-  const text=cand?.content?.parts?.[0]?.text||'';
-  // Diagnostic : si le texte est vide, on remonte la vraie cause (blocage sécurité, coupure token, etc.)
-  // au lieu de laisser l'appelant croire à un simple "vide - relance" muet.
-  if(!text.trim()){
-    const reason=cand?.finishReason||data?.promptFeedback?.blockReason||'raison inconnue';
-    throw new Error('Réponse Gemini vide — finishReason: '+reason);
-  }
-  return text;
+  return data.candidates?.[0]?.content?.parts?.[0]?.text||'';
 }
 
 // Parse JSON robuste — résistant aux apostrophes et caractères spéciaux français
@@ -1010,15 +996,14 @@ function parseJsonRobust(raw){
 // ═══════════════════════════════════════════════════
 // GÉNÉRATION IMAGE
 // ═══════════════════════════════════════════════════
-async function generateImage(prompt){
+async function generateImage(prompt, useAvatar=true){
   const body={
     code:currentCode,prompt,aspectRatio:'9:16',
-    avatarB64:uploads.avatar?.b64||null,avatarMime:uploads.avatar?.mime||'image/jpeg',
+    avatarB64:useAvatar?(uploads.avatar?.b64||null):null,
+    avatarMime:uploads.avatar?.mime||'image/jpeg',
     produitB64:uploads.produit?.b64||null,produitMime:uploads.produit?.mime||'image/jpeg',
     vetementB64:uploads.vetement?.b64||null,vetementMime:uploads.vetement?.mime||'image/jpeg',
-    // Le décor n'était jamais envoyé au générateur — uploadé pour rien.
-    // On le transmet uniquement en mode "Mon décor" (custom).
-    decorB64:(decorMode==='custom'&&uploads.decor)?uploads.decor.b64:null,
+    decorB64:decorMode==='custom'?(uploads.decor?.b64||null):null,
     decorMime:uploads.decor?.mime||'image/jpeg',
   };
   const res=await fetch(`${PROXY_URL}/generate-image`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
@@ -1030,20 +1015,11 @@ async function generateImage(prompt){
   return `data:${data.mimeType||'image/png'};base64,${data.image}`;
 }
 
-function buildImagePrompt(scenePrompt,productVisible=true){
+function buildImagePrompt(scenePrompt){
   const locks=[];
   if(uploads.avatar)locks.push('IDENTITY LOCKED — same face, skin tone, features as reference photo provided. Do not invent a new face.');
-  // Le produit n'est verrouillé (et donc rendu) que si la scène doit le montrer.
-  // Sur les scènes "produit caché" (typiquement le Hook), on force explicitement son absence
-  // pour éviter que le modèle image ne le fasse quand même apparaître en arrière-plan.
-  if(uploads.produit){
-    if(productVisible)locks.push('PRODUCT LOCKED — same packaging, shape, label, colors as product reference photo. Do not invent a product.');
-    else locks.push('NO PRODUCT VISIBLE — do not show any product, packaging, bottle or branded item anywhere in the frame, even blurred or in background.');
-  }
+  if(uploads.produit)locks.push('PRODUCT LOCKED — same packaging, shape, label, colors as product reference photo. Do not invent a product.');
   if(uploads.vetement)locks.push('OUTFIT LOCKED — same garment, colors, style as outfit reference photo.');
-  // Le décor uploadé (mode "Mon décor") n'était jamais mentionné : chaque scène
-  // repartait d'un décor différent malgré la photo de référence fournie.
-  if(uploads.decor&&decorMode==='custom')locks.push('LOCATION LOCKED — same room, same background, same location as the decor reference photo provided. Every scene must take place in this exact location, do not invent a different room or setting.');
   const lockStr=locks.length?locks.join(' ')+'  ':'';
   return `${scenePrompt} — ${lockStr}Portrait orientation 9:16, 4K ultra-detailed, shot on iPhone 15 Pro, natural light, authentic UGC style.`;
 }
@@ -1259,7 +1235,7 @@ Retourne UNIQUEMENT ces balises XML :
   try{
     const raw=await callGemini(prompt);
     function extractTag(text,tag){
-      const m=text.match(new RegExp('<'+tag+'>([\\s\\S]*?)<\\/'+tag+'>','i'));
+      const m=text.match(new RegExp('<'+tag+'>([\s\S]*?)<\/'+tag+'>','i'));
       return m?m[1].trim():'';
     }
     scriptData={
@@ -1281,10 +1257,7 @@ Retourne UNIQUEMENT ces balises XML :
       hook_choisi:'A',
     };
     if(!scriptData.hook_a&&!scriptData.intro_probleme){
-      // On affiche un extrait de la réponse brute pour diagnostiquer : soit le format
-      // renvoyé par Gemini ne correspond pas aux balises attendues, soit il a halluciné
-      // un autre format. Ça évite de rester bloqué sur un message muet.
-      throw new Error('Balises non trouvées dans la réponse. Début de la réponse brute : "'+raw.slice(0,200)+'..."');
+      throw new Error('Reponse vide - relance');
     }
     renderScript(false);
     document.getElementById('script-loading').style.display='none';
@@ -1446,7 +1419,7 @@ ${uploads.produit?'PRODUCT LOCKED - meme produit que reference fournie':''}
 
 REGLES STRICTES PRODUIT :
 - SCENES HOOK (partie=Hook) : LE PRODUIT NE DOIT ABSOLUMENT PAS APPARAITRE. On voit uniquement la personne, son emotion physique, son quotidien AVANT. Pas de produit, pas de packaging, rien.
-- SCENES BODY : Le produit apparait SEULEMENT a partir de la scene de decouverte/solution, pas avant. Meme dans le Body, ne le montre pas sur chaque scene : privilegie l'utilisation et la transformation, le produit lui-meme n'a pas besoin d'etre visible a chaque plan.
+- SCENES BODY : Le produit apparait pour la premiere fois. On voit son utilisation et la transformation.
 - SCENE CTA : Produit present, resultat visible.
 
 EMOTIONS PHYSIQUES - decrire comme etats physiques observables :
@@ -1469,10 +1442,7 @@ Retourne UNIQUEMENT ce JSON brut, sans texte avant ni apres, sans backticks :
 Genere 5 a 7 scenes.`;
 
   try{
-    // Le décor n'était jamais montré au modèle qui écrit le storyboard : il ne pouvait
-    // donc pas décrire des scènes cohérentes avec le lieu réel fourni par l'utilisatrice.
-    const decorImg=(decorMode==='custom'&&uploads.decor)?[uploads.decor]:[];
-    const images=[uploads.avatar,uploads.produit,uploads.vetement,...decorImg].filter(Boolean);
+    const images=[uploads.avatar,uploads.produit,uploads.vetement].filter(Boolean);
     const raw=await callGemini(prompt,images);
     storyboardData=parseJsonRobust(raw);
     if(!storyboardData.storyboard?.length)throw new Error('Storyboard vide');
@@ -1499,11 +1469,7 @@ function renderStoryboard(){
   const genInfo=document.getElementById('gen-all-info');
   if(genInfo)genInfo.textContent=isAdmin?scenes.length+' scenes illimite':scenes.length+' scenes · '+rem+' restantes';
   const partieColors={Hook:'rgba(244,63,94,0.15)',Body:'rgba(124,58,237,0.15)',CTA:'rgba(34,197,94,0.1)'};
-  container.innerHTML=scenes.map((s,i)=>{
-    // Valeur par défaut : produit caché sur le Hook (problème sans produit),
-    // visible sur Body/CTA (découverte + résultat). Modifiable manuellement par l'utilisatrice.
-    if(s.produit_visible===undefined)s.produit_visible=(s.partie!=='Hook');
-    return `
+  container.innerHTML=scenes.map((s,i)=>`
     <div class="scene-card" id="scene-card-${i}">
       <div class="scene-num">${s.scene}</div>
       <div class="scene-body">
@@ -1516,12 +1482,16 @@ function renderStoryboard(){
         <div class="scene-emotion-row" style="margin-top:8px">
           <div class="emotion-tag" id="emotion-tag-${i}">✦ ${s.emotion||'—'}</div>
           <button class="emotion-edit" onclick="openEmotionModal(${i})">Modifier</button>
-          <button class="emotion-edit" id="produit-toggle-${i}" onclick="toggleProduitVisible(${i})" style="${s.produit_visible?'border-color:rgba(124,58,237,0.5);color:var(--violet-200)':''}">
-            ${s.produit_visible?'📦 Produit visible':'🚫 Produit caché'}
-          </button>
         </div>
         <div style="margin-top:10px">
-          <textarea id="direction-${i}" placeholder="Direction de scène (optionnel) — Ex: lumière plus douce, regard vers le bas, produit en main gauche..." style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(124,58,237,0.2);border-radius:8px;padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text-bright);outline:none;resize:none;height:52px;line-height:1.4;color:var(--text-muted)" onchange="storyboardData.storyboard[${i}].direction=this.value"></textarea>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;padding:6px 10px;background:rgba(255,255,255,0.03);border-radius:8px">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text-muted);white-space:nowrap">
+              <input type="checkbox" id="scene-produit-${i}" ${(s.partie||'')!=='Hook'?'checked':''} style="accent-color:var(--violet-400)" onchange="storyboardData.storyboard[${i}].produit_visible=this.checked">
+              📦 Produit visible
+            </label>
+            <input type="text" id="scene-direction-produit-${i}" placeholder="Où ? (ex: tenu en main gauche, posé sur table)" style="flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(124,58,237,0.2);border-radius:6px;padding:5px 10px;font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text-bright);outline:none" onchange="storyboardData.storyboard[${i}].direction_produit=this.value">
+          </div>
+          <textarea id="direction-${i}" placeholder="Direction de scène (optionnel) — Ex: lumière plus douce, regard vers le bas..." style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(124,58,237,0.2);border-radius:8px;padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text-bright);outline:none;resize:none;height:52px;line-height:1.4" onchange="storyboardData.storyboard[${i}].direction=this.value"></textarea>
         </div>
       </div>
       <div class="scene-img-area" id="img-area-${i}">
@@ -1529,15 +1499,7 @@ function renderStoryboard(){
         <button class="scene-gen-btn" onclick="genererScene(${i})">▶</button>
         <div class="scene-spinner" id="spinner-${i}"></div>
       </div>
-    </div>`;
-  }).join('');
-}
-
-function toggleProduitVisible(idx){
-  const s=storyboardData?.storyboard?.[idx];
-  if(!s)return;
-  s.produit_visible=!s.produit_visible;
-  renderStoryboard();
+    </div>`).join('');
 }
 
 // MOTEUR PAR SCENE
@@ -1623,14 +1585,26 @@ async function genererScene(index){
     // Récupérer la direction de scène si renseignée
     const direction=document.getElementById('direction-'+index)?.value||scene.direction||'';
     const directionStr=direction?` DIRECTOR NOTE: ${direction}.`:'';
+    const produitVisible=document.getElementById('scene-produit-'+index)?.checked!==false&&scene.produit_visible!==false;
+    const directionProduit=document.getElementById('scene-direction-produit-'+index)?.value||scene.direction_produit||'';
 
-    // Prompt enrichi avec instruction texte/logo
+    let produitLock='';
+    if(!produitVisible){
+      produitLock='NO PRODUCT visible in this scene — person and environment only, no product or packaging.';
+    } else if(uploads.produit){
+      produitLock='PRODUCT LOCKED — same packaging, shape, label, colors as reference. Do not invent a product.'+(directionProduit?' Product placement: '+directionProduit:'');
+    }
+
+    const locks=[];
+    if(uploads.avatar)locks.push('IDENTITY LOCKED — same face, skin tone, features as reference. Do not invent a new face.');
+    if(uploads.vetement)locks.push('OUTFIT LOCKED — same garment as outfit reference.');
+    const lockStr=locks.length?locks.join(' ')+'  ':'';
+
     const basePrompt=scene.prompt_image+directionStr+
-      ' IMPORTANT: If any product packaging, label or text appears, render it as a subtle blurred background element — do NOT attempt to render readable text or logos as they will appear distorted. Focus on the person, emotion and scene composition.';
+      (produitVisible?' IMPORTANT: If any product text or logo appears, render it as subtle blurred element — do NOT attempt readable text as it will appear distorted.':'')+
+      ` — ${lockStr}Portrait orientation 9:16, 4K ultra-detailed, shot on iPhone 15 Pro, natural light, authentic UGC style.`;
 
-    const productVisible=scene.produit_visible!==undefined?scene.produit_visible:(scene.partie!=='Hook');
-    const finalPrompt=buildImagePrompt(basePrompt,productVisible);
-    const imgData=await generateImage(finalPrompt);
+    const imgData=await generateImage(basePrompt, true);
     incrementUsed(currentCode);updateQuotaUI();
 
     // Afficher l'image + boutons régénérer et télécharger
@@ -1724,8 +1698,7 @@ Retourne UNIQUEMENT ce JSON brut sans texte avant ni apres :
 {"brolls":[{"nom":"BROLL1_Nom","moment_narratif":"...","description_fr":"...","photo_depart":"description precise en francais","instruction_video":"action courte","prompt_image":"prompt anglais detaille"}]}`;
 
   try{
-    const decorImg=(decorMode==='custom'&&uploads.decor)?[uploads.decor]:[];
-    const raw=await callGemini(prompt,[uploads.produit,uploads.avatar,...decorImg].filter(Boolean));
+    const raw=await callGemini(prompt,[uploads.produit,uploads.avatar].filter(Boolean));
     brollData=parseJsonRobust(raw);
     if(!brollData.brolls?.length)throw new Error('Pas de B-rolls generes');
     renderBroll();
@@ -1750,56 +1723,19 @@ function renderBroll(){
       <div class="broll-desc">${b.description_fr||''}</div>
       ${b.photo_depart?`<div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;font-style:italic;line-height:1.4">📸 ${b.photo_depart}</div>`:''}
       ${b.instruction_video?`<div style="font-size:11px;color:var(--violet-300);margin-bottom:8px;line-height:1.4">🎬 ${b.instruction_video}</div>`:''}
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:8px 10px;background:rgba(255,255,255,0.03);border-radius:8px">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text-muted);white-space:nowrap">
+          <input type="checkbox" id="broll-produit-${i}" checked style="accent-color:var(--violet-400)">
+          📦 Produit visible
+        </label>
+        <input type="text" id="broll-direction-${i}" placeholder="Où ? (ex: posé sur lavabo, en arrière-plan)" style="flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(124,58,237,0.2);border-radius:6px;padding:5px 10px;font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text-bright);outline:none">
+      </div>
       <div class="broll-img-area" id="broll-area-${i}">
         <span style="font-size:9px;opacity:0.4">9:16</span>
         <button class="broll-gen-btn" onclick="genererBrollScene(${i})">▶</button>
         <div class="scene-spinner" id="broll-spinner-${i}"></div>
       </div>
     </div>`).join('');
-}
-
-// Génère l'image d'un B-Roll donné. Cette fonction manquait entièrement,
-// c'est pourquoi cliquer sur ▶ ne faisait rien : le onclick appelait une
-// fonction inexistante et échouait silencieusement.
-async function genererBrollScene(index){
-  if(!canGenerate(currentCode)){document.getElementById('quota-alert')?.classList.add('show');showToast('Limite atteinte ⏳');return;}
-  const broll=brollData?.brolls?.[index];if(!broll)return;
-  const imgArea=document.getElementById('broll-area-'+index);
-  if(!imgArea)return;
-  const spinner=document.getElementById('broll-spinner-'+index);
-  const genBtn=imgArea.querySelector('.broll-gen-btn');
-  if(genBtn)genBtn.style.display='none';
-  if(spinner)spinner.style.display='block';
-  try{
-    const basePrompt=broll.prompt_image+
-      ' IMPORTANT: If any product packaging, label or text appears, render it as a subtle blurred background element — do NOT attempt to render readable text or logos as they will appear distorted. Focus on the scene composition.';
-    const finalPrompt=buildImagePrompt(basePrompt,true);
-    const imgData=await generateImage(finalPrompt);
-    incrementUsed(currentCode);updateQuotaUI();
-
-    imgArea.innerHTML=`<img src="${imgData}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">`;
-
-    const regenBtn=document.createElement('button');
-    regenBtn.innerHTML='🔄';
-    regenBtn.title='Régénérer';
-    regenBtn.style.cssText='position:absolute;top:4px;right:4px;background:rgba(14,8,18,0.75);color:white;border:none;border-radius:6px;padding:4px 7px;font-size:12px;cursor:pointer;z-index:2';
-    regenBtn.onclick=()=>genererBrollScene(index);
-    imgArea.style.position='relative';
-    imgArea.appendChild(regenBtn);
-
-    const blob=await(await fetch(imgData)).blob();
-    const blobUrl=URL.createObjectURL(blob);
-    const dl=document.createElement('a');
-    dl.href=blobUrl;dl.download=`broll_${index+1}.png`;dl.innerHTML='⬇';
-    dl.style.cssText='position:absolute;bottom:4px;right:4px;background:rgba(14,8,18,0.75);color:white;border-radius:6px;padding:4px 8px;font-size:12px;text-decoration:none;z-index:2';
-    imgArea.appendChild(dl);
-
-    showToast(`B-Roll ${index+1} généré ✦`);
-  }catch(err){
-    if(spinner)spinner.style.display='none';
-    const gb=imgArea.querySelector('.broll-gen-btn');if(gb)gb.style.display='flex';
-    showToast('Erreur B-Roll : '+err.message);
-  }
 }
 
 async function genererTousBroll(){
@@ -1809,6 +1745,70 @@ async function genererTousBroll(){
     await new Promise(r=>setTimeout(r,800));
   }
   showToast('Tous les B-Rolls générés 🎬');
+}
+
+async function genererBrollScene(index){
+  if(!canGenerate(currentCode)){showToast('Limite atteinte ⏳');return;}
+  const b=brollData?.brolls?.[index];if(!b)return;
+  const area=document.getElementById('broll-area-'+index);
+  const spinner=document.getElementById('broll-spinner-'+index);
+  const genBtn=area.querySelector('.broll-gen-btn');
+  if(genBtn)genBtn.style.display='none';
+  spinner.style.display='block';
+
+  try{
+    // Toggle produit visible pour ce broll
+    const produitVisible=document.getElementById('broll-produit-'+index)?.checked!==false;
+    const directionProduit=document.getElementById('broll-direction-'+index)?.value||'';
+
+    // B-Roll : AVEC avatar (pris en compte ici), produit selon toggle
+    const locks=[];
+    if(uploads.avatar)locks.push('IDENTITY LOCKED — same face, skin tone, features as reference. Do not invent a new face.');
+    if(produitVisible&&uploads.produit){
+      locks.push('PRODUCT LOCKED — same packaging, shape, label, colors as product reference. Do not invent a product.');
+      if(directionProduit)locks.push('PRODUCT PLACEMENT: '+directionProduit+'.');
+    } else {
+      locks.push('NO PRODUCT visible in this scene — focus on person, environment, emotion only.');
+    }
+    if(uploads.vetement)locks.push('OUTFIT LOCKED — same garment as outfit reference.');
+
+    const lockStr=locks.join(' ');
+    const finalPromptBroll=`${b.prompt_image} — ${lockStr} Portrait orientation 9:16, 4K ultra-detailed, shot on iPhone 15 Pro, natural light, authentic UGC style. NO studio look, NO advertising aesthetic.`;
+
+    // Envoyer avec avatar mais produit conditionnel
+    const brollBody={
+      code:currentCode,
+      prompt:finalPromptBroll,
+      aspectRatio:'9:16',
+      avatarB64:uploads.avatar?.b64||null,
+      avatarMime:uploads.avatar?.mime||'image/jpeg',
+      produitB64:produitVisible?(uploads.produit?.b64||null):null,
+      produitMime:uploads.produit?.mime||'image/jpeg',
+      vetementB64:uploads.vetement?.b64||null,
+      vetementMime:uploads.vetement?.mime||'image/jpeg',
+    };
+
+    const res=await fetch(`${PROXY_URL}/generate-image`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(brollBody)});
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.error||'HTTP '+res.status);
+    const imgData=`data:${data.mimeType||'image/png'};base64,${data.image}`;
+
+    incrementUsed(currentCode);updateQuotaUI();
+    area.innerHTML=`<img src="${imgData}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">`;
+
+    // Bouton régénérer
+    const regenBtn=document.createElement('button');
+    regenBtn.innerHTML='🔄';regenBtn.title='Régénérer';
+    regenBtn.style.cssText='position:absolute;top:4px;right:4px;background:rgba(14,8,18,0.75);color:white;border:none;border-radius:6px;padding:4px 7px;font-size:12px;cursor:pointer;z-index:2';
+    regenBtn.onclick=()=>genererBrollScene(index);
+    area.style.position='relative';area.appendChild(regenBtn);
+
+    showToast('B-Roll généré ✦');
+  }catch(err){
+    spinner.style.display='none';
+    const gb=area.querySelector('.broll-gen-btn');if(gb)gb.style.display='flex';
+    showToast('Erreur : '+err.message);
+  }
 }
 
 // ═══════════════════════════════════════════════════
