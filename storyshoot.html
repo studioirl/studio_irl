@@ -310,58 +310,27 @@ select.field option{background:var(--plum-700)}
         <div class="section-desc">Avatar IA, produit, tenue, décor. Ces images servent à verrouiller l'identité et le produit dans toutes les générations.</div>
         <div class="card">
           <div class="upload-grid">
-            <div class="upload-zone" id="zone-avatar" onclick="triggerUpload('avatar-file')">
+            <div class="upload-zone" id="zone-avatar">
               <input type="file" id="avatar-file" accept="image/*" onchange="handleUpload('avatar',this)">
               <div class="upload-icon">👤</div>
               <div class="upload-label">Avatar IA</div>
               <div class="upload-hint">Photo référence</div>
             </div>
-            <div class="upload-zone" id="zone-produit" onclick="triggerUpload('produit-file')">
+            <div class="upload-zone" id="zone-produit">
               <input type="file" id="produit-file" accept="image/*" onchange="handleUpload('produit',this)">
               <div class="upload-icon">📦</div>
               <div class="upload-label">Produit</div>
               <div class="upload-hint">Photo du produit</div>
             </div>
-            <div class="upload-zone" id="zone-vetement" onclick="triggerUpload('vetement-file')">
+            <div class="upload-zone" id="zone-vetement">
               <input type="file" id="vetement-file" accept="image/*" onchange="handleUpload('vetement',this)">
               <div class="upload-icon">👗</div>
               <div class="upload-label">Tenue</div>
               <div class="upload-hint">Optionnel</div>
             </div>
-            <div class="upload-zone" id="zone-decor-custom" onclick="triggerUpload('decor-file')">
-              <input type="file" id="decor-file" accept="image/*" onchange="handleUpload('decor',this)">
-              <div class="upload-icon">🏠</div>
-              <div class="upload-label">Décor</div>
-              <div class="upload-hint">Optionnel</div>
-            </div>
+
           </div>
-          <div style="margin-top:18px">
-            <div style="font-size:11px;font-weight:600;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">Mode décor</div>
-            <div class="toggle-row">
-              <button class="toggle-btn active" id="toggle-ia" onclick="setDecorMode('ia')">🤖 Décor IA</button>
-              <button class="toggle-btn" id="toggle-custom" onclick="setDecorMode('custom')">📸 Mon décor</button>
-            </div>
-            <div id="decor-ia-block">
-              <select class="field" id="decor-select">
-                <option value="">Sélectionne un environnement...</option>
-                <option value="modern apartment living room">🏢 Appartement moderne</option>
-                <option value="cozy family living room">🛋️ Salon familial</option>
-                <option value="contemporary kitchen">🍳 Cuisine contemporaine</option>
-                <option value="small bathroom">🚿 Salle de bain</option>
-                <option value="bright bedroom">🛏️ Chambre lumineuse</option>
-                <option value="home office">💻 Bureau à domicile</option>
-                <option value="terrace outdoor">🌿 Terrasse</option>
-                <option value="garden outdoor">🌳 Jardin</option>
-                <option value="gym">🏋️ Salle de sport</option>
-                <option value="cafe coffee shop">☕ Café</option>
-                <option value="car interior">🚗 Voiture</option>
-                <option value="corporate office">🏬 Bureau d'entreprise</option>
-              </select>
-            </div>
-            <div id="decor-custom-block" style="display:none">
-              <div style="font-size:12px;color:var(--text-muted);padding:8px 0">Ta photo décor est uploadée ci-dessus — StoryShoot va la reproduire fidèlement.</div>
-            </div>
-          </div>
+
         </div>
       </div>
 
@@ -537,6 +506,7 @@ select.field option{background:var(--plum-700)}
           <button class="btn-gen-all" id="btn-valider-profil" onclick="validerProfil()">✅ Valider ce profil</button>
           <button class="btn-secondary" onclick="toggleEditProfil()">✏️ Modifier</button>
           <button class="btn-ghost" onclick="genererProfil()">🔄 Relancer un nouveau profil</button>
+          <button class="btn-ghost" onclick="telechargerProfil()">⬇ Télécharger</button>
         </div>
       </div>
 
@@ -894,7 +864,7 @@ function getMaxReachableStep(){
 // ═══════════════════════════════════════════════════
 // UPLOADS
 // ═══════════════════════════════════════════════════
-function triggerUpload(id){}
+function triggerUpload(id){ document.getElementById(id).click(); }
 function handleUpload(type,input){
   const file=input.files[0];if(!file)return;
   const reader=new FileReader();
@@ -966,7 +936,7 @@ async function callGemini(prompt,images=[]){
   const parts=[];
   for(const img of images){if(img)parts.push({inline_data:{mime_type:img.mime,data:img.b64}});}
   parts.push({text:prompt});
-  const body={contents:[{role:'user',parts}],generationConfig:{temperature:0.85,maxOutputTokens:4096}};
+  const body={contents:[{role:'user',parts}],generationConfig:{temperature:0.85,maxOutputTokens:8192}};
   const res=await fetch(`https://europe-west1-aiplatform.googleapis.com/v1/publishers/google/models/gemini-2.5-flash:generateContent?key=${VERTEX_KEY}`,
     {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e?.error?.message||'Erreur Gemini');}
@@ -995,12 +965,15 @@ function parseJsonRobust(raw){
 // ═══════════════════════════════════════════════════
 // GÉNÉRATION IMAGE
 // ═══════════════════════════════════════════════════
-async function generateImage(prompt){
+async function generateImage(prompt, useAvatar=true, lieuB64=null, lieuMime='image/jpeg'){
   const body={
     code:currentCode,prompt,aspectRatio:'9:16',
-    avatarB64:uploads.avatar?.b64||null,avatarMime:uploads.avatar?.mime||'image/jpeg',
+    avatarB64:useAvatar?(uploads.avatar?.b64||null):null,
+    avatarMime:uploads.avatar?.mime||'image/jpeg',
     produitB64:uploads.produit?.b64||null,produitMime:uploads.produit?.mime||'image/jpeg',
     vetementB64:uploads.vetement?.b64||null,vetementMime:uploads.vetement?.mime||'image/jpeg',
+    decorB64:lieuB64||null,
+    decorMime:lieuMime,
   };
   const res=await fetch(`${PROXY_URL}/generate-image`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   const data=await res.json();
@@ -1139,6 +1112,48 @@ function toggleEditProfil(){
   }
 }
 
+function uploadLieuScene(index, input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const b64=e.target.result.split(',')[1];
+    storyboardData.storyboard[index].lieu_b64=b64;
+    storyboardData.storyboard[index].lieu_mime=file.type;
+    showToast('Lieu scène '+(index+1)+' chargé ✦');
+    renderStoryboard();
+  };
+  reader.readAsDataURL(file);
+}
+
+function uploadLieuBroll(index, input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const b64=e.target.result.split(',')[1];
+    brollData.brolls[index].lieu_b64=b64;
+    brollData.brolls[index].lieu_mime=file.type;
+    showToast('Lieu B-Roll '+(index+1)+' chargé ✦');
+    renderBroll();
+  };
+  reader.readAsDataURL(file);
+}
+
+function telechargerProfil(){
+  if(!profilClient)return;
+  const labels={profil:'Profil client',defis:'Défis & douleurs',deja_essaye:'Ce qu\'il a déjà essayé',vie_avant:'Vie AVANT le produit',vie_apres:'Vie APRÈS le produit',objections:'Objections à l\'achat'};
+  const produit=document.getElementById('ctx-produit')?.value||'Produit';
+  let txt=`PROFIL CLIENT CIBLE — ${produit}\nStoryShoot · Studio IRL\n${'─'.repeat(40)}\n\n`;
+  Object.entries(labels).forEach(([k,label])=>{
+    if(profilClient[k])txt+=`${label.toUpperCase()}\n${profilClient[k]}\n\n`;
+  });
+  const blob=new Blob([txt],{type:'text/plain;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`profil_client_${produit.replace(/\s+/g,'_')}.txt`;
+  a.click();URL.revokeObjectURL(url);
+  showToast('Profil téléchargé ✦');
+}
+
 function validerProfil(){
   if(profilEditing)toggleEditProfil();
   showToast('Profil validé ✅');
@@ -1174,69 +1189,78 @@ async function genererScript(){
     }
   };
 
-  const prompt=`Tu es StoryShoot, expert en copywriting UGC subconscient.
+  const profilResume=profilClient?`Profil: ${profilClient.profil||''} Douleurs: ${profilClient.defis||''} Vie avant: ${profilClient.vie_avant||''}`.slice(0,300):'';
 
-REGLE ABSOLUE - PREMIERE PERSONNE : tout le script est ecrit a la 1ere personne (je, moi, mon) comme si la creatrice parlait a une amie. JAMAIS "ce produit va vous". Toujours : j'ai essaye, depuis que je l'utilise. Tutoiement toujours.
+  const prompt=`Script UGC 1ere personne "je", tutoiement, langage naturel. PAS de pub.
 
-PHILOSOPHIE : activer le subconscient par des images sensorielles, jamais des arguments rationnels.
+PRODUIT: ${ctx.produit}
+Usage: ${ctx.descProduit.usage}
+Resultats: ${ctx.descProduit.resultats}
+Difference: ${ctx.descProduit.difference}
+${ctx.histoire.probleme?'Vecu: '+ctx.histoire.probleme:''}
+${profilResume}
 
-PRODUIT : ${ctx.produit}
-Usage : ${ctx.descProduit.usage}
-Resultats : ${ctx.descProduit.resultats}
-Utilisation : ${ctx.descProduit.utilisation}
-Differentiation : ${ctx.descProduit.difference}
-Format : ${ctx.format} | Type : ${ctx.type} | Objectif : ${ctx.objectif}
-Mission marque : ${ctx.mission} | Valeurs : ${ctx.valeurs}
-${ctx.histoire.probleme?'Histoire creatrice - probleme : '+ctx.histoire.probleme:''}
-${ctx.histoire.benefices?'Histoire creatrice - benefices : '+ctx.histoire.benefices:''}
-${ctx.histoire.maintenant?'Histoire creatrice - maintenant : '+ctx.histoire.maintenant:''}
-PROFIL CLIENT : ${profilClient?JSON.stringify(profilClient):'deduire des infos'}
+3 HOOKS differents (jamais le produit): A=situation concrete vecue / B=confession/aveu / C=resultat ou curiosite
+INTRO: micro-moments sensoriels sans produit
+BODY: produit arrive naturellement, caracteristiques=experiences vecues, resultat montre pas dit
+CTA: conclusion naturelle
+PLANS: lieu+position+action+cadrage+position telephone (ex: "assise bord du lit, tire sur robe, souffle. Plan taille, tel pose commode")
 
-STRUCTURE SACREE :
+CONTROLE QUALITE (silencieux, avant d ecrire) :
+- Hook = situation ou tension precise ? Un seul probleme principal ?
+- Peut-on visualiser une scene reelle ? Sensation concrete presente ?
+- Pensee finale montre un changement dans le quotidien ?
+- Faits marque separes de l experience personnelle ?
+- Aucune information inventee ? Langage = vraie conversation ?
+- CTA = action claire ? Duree respectee (130-150 mots/min) ?
+- Une phrase pourrait-elle convenir a n importe quel produit concurrent ? Si oui, la rendre plus precise.
+- Si information inventee : supprimer. Si publicitaire : reecrire. Si SEP absent : reconstruire le body. Si duree depassee : supprimer elements secondaires.
 
-1. HOOK - 3 VERSIONS OBLIGATOIRES (meme probleme, 3 angles differents) :
-   - Version A - angle PROBLEME : montre une frustration concrete et physique (visant pyramide Maslow)
-   - Version B - angle BESOIN : montre un manque, quelque chose qu'on cherche
-   - Version C - angle DESIR : montre le reve, ce qu'on veut vivre
-   Chaque hook : max 3 secondes, percutant. REGLE ABSOLUE : le produit ne doit PAS etre mentionne dans le hook.
+FORMAT FINAL :
+- HOOK : une seule phrase, situation ou tension precise
+- BODY : texte oral fluide avec SEP integre, sans afficher les etiquettes Situation/Emotion/Pensees
+- CTA : une phrase courte avec action claire
+- PLANS : uniquement plans realisables correspondant exactement aux paroles. Pas de transformation visuelle inexistante.
 
-2. INTRODUCTION PROBLEME : connexion emotionnelle. Sensoriel, vecu, storytelling. PAS de produit ici.
-
-3. PRESENTATION PRODUIT (methode SEP) : le produit apparait ICI pour la premiere fois.
-   Pour chaque benefice cle - Situation + Emotion + Pensees. JAMAIS les ingredients. Max 50 secondes total.
-
-4. CTA : naturel, direct, comme conseiller une amie. Produit present. Action claire.
-
-Retourne UNIQUEMENT ces balises XML, rien d'autre avant ni apres :
-
-<HOOK_A_VERBAL>hook version A verbal</HOOK_A_VERBAL>
-<HOOK_A_ECRAN>texte ecran hook A (vide si identique)</HOOK_A_ECRAN>
-<HOOK_B_VERBAL>hook version B verbal</HOOK_B_VERBAL>
-<HOOK_B_ECRAN>texte ecran hook B</HOOK_B_ECRAN>
-<HOOK_C_VERBAL>hook version C verbal</HOOK_C_VERBAL>
-<HOOK_C_ECRAN>texte ecran hook C</HOOK_C_ECRAN>
-<INTRO_PROBLEME>intro probleme sans produit</INTRO_PROBLEME>
-<PRESENTATION_PRODUIT>presentation produit methode SEP</PRESENTATION_PRODUIT>
-<CTA>call to action</CTA>
-<NOTES_REALISATEUR>consignes visuelles : emotions physiques a montrer pour chaque partie</NOTES_REALISATEUR>`;
+Retourne UNIQUEMENT ces balises:
+<HOOK_A_VERBAL>une seule phrase</HOOK_A_VERBAL>
+<HOOK_A_ECRAN>texte ecran (vide si identique)</HOOK_A_ECRAN>
+<HOOK_A_PLAN>plan filmable</HOOK_A_PLAN>
+<HOOK_B_VERBAL>une seule phrase</HOOK_B_VERBAL>
+<HOOK_B_ECRAN>texte</HOOK_B_ECRAN>
+<HOOK_B_PLAN>plan filmable</HOOK_B_PLAN>
+<HOOK_C_VERBAL>une seule phrase</HOOK_C_VERBAL>
+<HOOK_C_ECRAN>texte</HOOK_C_ECRAN>
+<HOOK_C_PLAN>plan filmable</HOOK_C_PLAN>
+<INTRO_PROBLEME>intro sans produit - oral fluide SEP</INTRO_PROBLEME>
+<INTRO_PLANS>2-3 plans filmables</INTRO_PLANS>
+<PRESENTATION_PRODUIT>body complet oral fluide SEP sans etiquettes</PRESENTATION_PRODUIT>
+<BODY_PLANS>3-5 plans filmables</BODY_PLANS>
+<CTA>une phrase action claire</CTA>
+<CTA_PLAN>plan filmable</CTA_PLAN>`;
 
   try{
     const raw=await callGemini(prompt);
     function extractTag(text,tag){
-      const m=text.match(new RegExp('<'+tag+'>([\\s\\S]*?)<\\/'+tag+'>','i'));
+      const m=text.match(new RegExp('<'+tag+'>([\s\S]*?)<\/'+tag+'>','i'));
       return m?m[1].trim():'';
     }
     scriptData={
       hook_a:extractTag(raw,'HOOK_A_VERBAL'),
       hook_a_ecran:extractTag(raw,'HOOK_A_ECRAN'),
+      hook_a_plan:extractTag(raw,'HOOK_A_PLAN'),
       hook_b:extractTag(raw,'HOOK_B_VERBAL'),
       hook_b_ecran:extractTag(raw,'HOOK_B_ECRAN'),
+      hook_b_plan:extractTag(raw,'HOOK_B_PLAN'),
       hook_c:extractTag(raw,'HOOK_C_VERBAL'),
       hook_c_ecran:extractTag(raw,'HOOK_C_ECRAN'),
+      hook_c_plan:extractTag(raw,'HOOK_C_PLAN'),
       intro_probleme:extractTag(raw,'INTRO_PROBLEME'),
+      intro_plans:extractTag(raw,'INTRO_PLANS'),
       presentation_produit:extractTag(raw,'PRESENTATION_PRODUIT'),
+      body_plans:extractTag(raw,'BODY_PLANS'),
       cta:extractTag(raw,'CTA'),
-      notes_realisateur:extractTag(raw,'NOTES_REALISATEUR'),
+      cta_plan:extractTag(raw,'CTA_PLAN'),
       hook_choisi:'A',
     };
     if(!scriptData.hook_a&&!scriptData.intro_probleme){
@@ -1256,38 +1280,46 @@ function renderScript(editing){
   scriptEditing=editing;
   const box=document.getElementById('script-box');
   if(!scriptData||!box)return;
+
+  const planStyle='font-size:11px;color:var(--violet-300);font-style:italic;margin-top:8px;padding:8px 12px;background:rgba(124,58,237,0.06);border-left:2px solid rgba(124,58,237,0.3);border-radius:4px;line-height:1.5';
+
   const hooks=[
-    {id:'A',verbal:scriptData.hook_a,ecran:scriptData.hook_a_ecran,label:'Version A - Probleme'},
-    {id:'B',verbal:scriptData.hook_b,ecran:scriptData.hook_b_ecran,label:'Version B - Besoin'},
-    {id:'C',verbal:scriptData.hook_c,ecran:scriptData.hook_c_ecran,label:'Version C - Desir'},
+    {id:'A',verbal:scriptData.hook_a,ecran:scriptData.hook_a_ecran,plan:scriptData.hook_a_plan,label:'Version A — Problème vécu'},
+    {id:'B',verbal:scriptData.hook_b,ecran:scriptData.hook_b_ecran,plan:scriptData.hook_b_plan,label:'Version B — Confession'},
+    {id:'C',verbal:scriptData.hook_c,ecran:scriptData.hook_c_ecran,plan:scriptData.hook_c_plan,label:'Version C — Résultat / Curiosité'},
   ].filter(h=>h.verbal);
+
   const hooklist=hooks.map(h=>`
     <div class="hook-choice ${scriptData.hook_choisi===h.id?'selected':''}" onclick="choisirHook('${h.id}')">
       <div class="hook-choice-header">
-        <div class="hook-badge">${scriptData.hook_choisi===h.id?'Selectionne':'Choisir'}</div>
+        <div class="hook-badge">${scriptData.hook_choisi===h.id?'✓ Sélectionné':'Choisir'}</div>
         <div class="hook-choice-label">${h.label}</div>
       </div>
       <div class="hook-verbal">${h.verbal}</div>
-      ${h.ecran?`<div class="hook-ecran">Texte ecran : ${h.ecran}</div>`:''}
+      ${h.ecran?`<div class="hook-ecran">📺 ${h.ecran}</div>`:''}
+      ${h.plan?`<div style="${planStyle}">🎬 ${h.plan}</div>`:''}
     </div>`).join('');
+
   box.innerHTML=`
     <div class="script-section">
-      <div class="script-tag hook">HOOK - 3 versions (choisis la plus percutante)</div>
+      <div class="script-tag hook">🎣 HOOK — 3 versions (mécaniques différentes)</div>
       <div class="hook-choices">${hooklist}</div>
     </div>
     <div class="script-section">
-      <div class="script-tag body">INTRO PROBLEME - sans produit</div>
+      <div class="script-tag body">😔 INTRO PROBLÈME — micro-moments, sans produit</div>
       <div class="script-text">${scriptData.intro_probleme||''}</div>
+      ${scriptData.intro_plans?`<div style="${planStyle}">🎬 ${scriptData.intro_plans}</div>`:''}
     </div>
     <div class="script-section">
-      <div class="script-tag body">PRESENTATION PRODUIT - methode SEP</div>
+      <div class="script-tag body">✨ CORPS DU SCRIPT — découverte & transformation</div>
       <div class="script-text">${scriptData.presentation_produit||''}</div>
+      ${scriptData.body_plans?`<div style="${planStyle}">🎬 ${scriptData.body_plans}</div>`:''}
     </div>
     <div class="script-section">
-      <div class="script-tag cta">CALL TO ACTION</div>
+      <div class="script-tag cta">🎯 CALL TO ACTION</div>
       <div class="script-text">${scriptData.cta||''}</div>
-    </div>
-    ${scriptData.notes_realisateur?`<div class="info-box" style="margin-top:12px">${scriptData.notes_realisateur}</div>`:''}`;
+      ${scriptData.cta_plan?`<div style="${planStyle}">🎬 ${scriptData.cta_plan}</div>`:''}
+    </div>`;
 }
 
 function choisirHook(id){
@@ -1458,6 +1490,23 @@ function renderStoryboard(){
           <div class="emotion-tag" id="emotion-tag-${i}">✦ ${s.emotion||'—'}</div>
           <button class="emotion-edit" onclick="openEmotionModal(${i})">Modifier</button>
         </div>
+        <div style="margin-top:10px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;padding:6px 10px;background:rgba(255,255,255,0.03);border-radius:8px">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text-muted);white-space:nowrap">
+              <input type="checkbox" id="scene-produit-${i}" ${(s.partie||'')!=='Hook'?'checked':''} style="accent-color:var(--violet-400)" onchange="storyboardData.storyboard[${i}].produit_visible=this.checked">
+              📦 Produit visible
+            </label>
+            <input type="text" id="scene-direction-produit-${i}" placeholder="Où ? (ex: tenu en main gauche, posé sur table)" style="flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(124,58,237,0.2);border-radius:6px;padding:5px 10px;font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text-bright);outline:none" onchange="storyboardData.storyboard[${i}].direction_produit=this.value">
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <label style="font-size:12px;color:var(--text-muted);white-space:nowrap">🏠 Lieu :</label>
+            <label style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:rgba(255,255,255,0.04);border:1px solid rgba(124,58,237,0.2);border-radius:6px;cursor:pointer;font-size:11px;color:var(--violet-300)">
+              <input type="file" accept="image/*" style="display:none" onchange="uploadLieuScene(${i}, this)">
+              ${s.lieu_b64?'✓ Lieu chargé':'📷 Photo du lieu'}
+            </label>
+          </div>
+          <textarea id="direction-${i}" placeholder="Direction de scène — Ex: lumière douce, regard vers le bas..." style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(124,58,237,0.2);border-radius:8px;padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text-bright);outline:none;resize:none;height:52px;line-height:1.4" onchange="storyboardData.storyboard[${i}].direction=this.value"></textarea>
+        </div>
       </div>
       <div class="scene-img-area" id="img-area-${i}">
         <span style="font-size:9px;opacity:0.4">${s.partie||'—'}</span>
@@ -1543,19 +1592,55 @@ async function genererScene(index){
   const scene=storyboardData?.storyboard?.[index];if(!scene)return;
   const imgArea=document.getElementById('img-area-'+index);
   const spinner=document.getElementById('spinner-'+index);
-  imgArea.querySelector('.scene-gen-btn').style.display='none';
+  const genBtn=imgArea.querySelector('.scene-gen-btn');
+  if(genBtn)genBtn.style.display='none';
   spinner.style.display='block';
   try{
-    const finalPrompt=buildImagePrompt(scene.prompt_image);
-    const imgData=await generateImage(finalPrompt);
+    // Récupérer la direction de scène si renseignée
+    const direction=document.getElementById('direction-'+index)?.value||scene.direction||'';
+    const directionStr=direction?` DIRECTOR NOTE: ${direction}.`:'';
+    const produitVisible=document.getElementById('scene-produit-'+index)?.checked!==false&&scene.produit_visible!==false;
+    const directionProduit=document.getElementById('scene-direction-produit-'+index)?.value||scene.direction_produit||'';
+
+    let produitLock='';
+    if(!produitVisible){
+      produitLock='NO PRODUCT visible in this scene — person and environment only, no product or packaging.';
+    } else if(uploads.produit){
+      produitLock='PRODUCT LOCKED — same packaging, shape, label, colors as reference. Do not invent a product.'+(directionProduit?' Product placement: '+directionProduit:'');
+    }
+
+    const locks=[];
+    if(uploads.avatar)locks.push('IDENTITY LOCKED — same face, skin tone, features as reference. Do not invent a new face.');
+    if(uploads.vetement)locks.push('OUTFIT LOCKED — same garment as outfit reference.');
+    const lockStr=locks.length?locks.join(' ')+'  ':'';
+
+    const basePrompt=scene.prompt_image+directionStr+
+      (produitVisible?' IMPORTANT: If any product text or logo appears, render it as subtle blurred element — do NOT attempt readable text as it will appear distorted.':'')+
+      ` — ${lockStr}Portrait orientation 9:16, 4K ultra-detailed, shot on iPhone 15 Pro, natural light, authentic UGC style.`;
+
+    const imgData=await generateImage(basePrompt, true, scene.lieu_b64||null, scene.lieu_mime||'image/jpeg');
     incrementUsed(currentCode);updateQuotaUI();
+
+    // Afficher l'image + boutons régénérer et télécharger
     imgArea.innerHTML=`<img src="${imgData}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">`;
+
+    // Bouton régénérer
+    const regenBtn=document.createElement('button');
+    regenBtn.innerHTML='🔄';
+    regenBtn.title='Régénérer';
+    regenBtn.style.cssText='position:absolute;top:4px;right:4px;background:rgba(14,8,18,0.75);color:white;border:none;border-radius:6px;padding:4px 7px;font-size:12px;cursor:pointer;z-index:2';
+    regenBtn.onclick=()=>genererScene(index);
+    imgArea.style.position='relative';
+    imgArea.appendChild(regenBtn);
+
+    // Bouton télécharger
     const blob=await(await fetch(imgData)).blob();
     const blobUrl=URL.createObjectURL(blob);
     const dl=document.createElement('a');
     dl.href=blobUrl;dl.download=`scene_${index+1}.png`;dl.innerHTML='⬇';
-    dl.style.cssText='position:absolute;bottom:4px;right:4px;background:rgba(14,8,18,0.7);color:white;border-radius:6px;padding:4px 8px;font-size:12px;text-decoration:none;z-index:2';
-    imgArea.style.position='relative';imgArea.appendChild(dl);
+    dl.style.cssText='position:absolute;bottom:4px;right:4px;background:rgba(14,8,18,0.75);color:white;border-radius:6px;padding:4px 8px;font-size:12px;text-decoration:none;z-index:2';
+    imgArea.appendChild(dl);
+
     showToast(`Scène ${index+1} générée ✦`);
   }catch(err){
     spinner.style.display='none';
@@ -1592,30 +1677,44 @@ async function genererBroll(){
   document.getElementById('broll-result').style.display='none';
 
   const produit=document.getElementById('ctx-produit').value;
-  const decorInfo=decorMode==='ia'?(document.getElementById('decor-select').value||'modern apartment'):'custom decor';
+  const decorInfo=decorMode==='ia'?(document.getElementById('decor-select')?.value||'modern apartment'):'custom decor from reference photo';
+  const scriptResume=scriptData?[
+    scriptData.hook_a||'',
+    scriptData.intro_probleme||'',
+    scriptData.presentation_produit||'',
+    scriptData.cta||''
+  ].filter(Boolean).join(' ').slice(0,600):'';
 
-  const prompt=`Tu es StoryShoot. Génère des prompts B-Roll pour ce produit UGC.
+  const prompt=`Tu es un directeur creatif UGC. Tu dois creer exactement 5 B-rolls complementaires pour cette video UGC.
 
-Produit : ${produit}
-Script : ${scriptData?scriptData.hook+' '+scriptData.body:''}
-Décor : ${decorInfo}
-${uploads.avatar?'Avatar fourni — IDENTITY LOCKED':''}
-${uploads.produit?'Produit fourni — PRODUCT LOCKED':''}
+PRODUIT : ${produit}
+DECOR : ${decorInfo}
+SCRIPT RESUME : ${scriptResume}
+${uploads.produit?'PRODUCT LOCKED - meme produit que reference fournie':''}
+${uploads.avatar?'IDENTITY LOCKED - meme personne que reference fournie':''}
 
-Pour chaque catégorie B-Roll suivante, génère un prompt image anglais ultra-détaillé, style UGC authentique, gros plan ou plan rapproché, lumière naturelle, 9:16.
+REGLES ABSOLUES :
+1. Les B-rolls ne repetent PAS les plans principaux deja dans le script
+2. Chaque B-roll apporte quelque chose de nouveau : contexte / consequence / preuve / reaction / detail / micro-situation
+3. Les 5 B-rolls couvrent differents moments : PROBLEME VECU > FRUSTRATION/QUOTIDIEN > DECOUVERTE > UTILISATION > RESULTAT/NOUVELLE VIE
+4. Jamais 3 B-rolls sur le produit. Chercher des moments de VIE autour du script.
+5. Chaque scene doit sembler vécue, pas demontree.
 
-Catégories : ${BROLL_CATEGORIES.map(b=>b.cat).join(', ')}
+Pour chaque B-roll, fournis :
+- nom : court et explicite (ex: BROLL1_EviteLaRobe)
+- moment_narratif : probleme / quotidien / decouverte / utilisation / resultat
+- description_fr : description courte de la scene en francais
+- photo_depart : description PRECISE et detaillee de l image initiale pour la generation IA. Inclure : personnage + lieu + position + expression + produit ou objets + ce qu elle va faire + ambiance + cadrage UGC smartphone. Assez detaille pour que le generateur comprenne exactement la scene.
+- instruction_video : action courte et naturelle qui se deroule depuis cette image (gestes, regard, interaction produit, expression)
+- prompt_image : prompt anglais ultra-detaille pour la generation image, style UGC authentique, lumiere naturelle, 9:16
 
-Retourne UNIQUEMENT un JSON valide :
-{
-  "brolls": [
-    { "categorie": "...", "description_fr": "...", "prompt_image": "..." }
-  ]
-}`;
+Retourne UNIQUEMENT ce JSON brut sans texte avant ni apres :
+{"brolls":[{"nom":"BROLL1_Nom","moment_narratif":"...","description_fr":"...","photo_depart":"description precise en francais","instruction_video":"action courte","prompt_image":"prompt anglais detaille"}]}`;
 
   try{
-    const raw=await callGemini(prompt,[uploads.produit].filter(Boolean));
+    const raw=await callGemini(prompt,[uploads.produit,uploads.avatar].filter(Boolean));
     brollData=parseJsonRobust(raw);
+    if(!brollData.brolls?.length)throw new Error('Pas de B-rolls generes');
     renderBroll();
     document.getElementById('broll-loading').style.display='none';
     document.getElementById('broll-result').style.display='block';
@@ -1628,36 +1727,36 @@ Retourne UNIQUEMENT un JSON valide :
 function renderBroll(){
   const brolls=brollData?.brolls||[];
   const grid=document.getElementById('broll-grid');
+  const momentColors={probleme:'rgba(244,63,94,0.15)',quotidien:'rgba(244,63,94,0.1)',decouverte:'rgba(124,58,237,0.15)',utilisation:'rgba(124,58,237,0.1)',resultat:'rgba(34,197,94,0.1)'};
   grid.innerHTML=brolls.map((b,i)=>`
     <div class="broll-card">
-      <div class="broll-cat">${b.categorie}</div>
-      <div class="broll-desc">${b.description_fr}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div class="broll-cat">${b.nom||'BROLL'+(i+1)}</div>
+        ${b.moment_narratif?`<span style="font-size:9px;padding:2px 8px;border-radius:99px;background:${momentColors[b.moment_narratif]||'rgba(124,58,237,0.1)'};color:var(--text-mid)">${b.moment_narratif}</span>`:''}
+      </div>
+      <div class="broll-desc">${b.description_fr||''}</div>
+      ${b.photo_depart?`<div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;font-style:italic;line-height:1.4">📸 ${b.photo_depart}</div>`:''}
+      ${b.instruction_video?`<div style="font-size:11px;color:var(--violet-300);margin-bottom:8px;line-height:1.4">🎬 ${b.instruction_video}</div>`:''}
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <label style="font-size:12px;color:var(--text-muted);white-space:nowrap">🏠 Lieu :</label>
+        <label style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:rgba(255,255,255,0.04);border:1px solid rgba(124,58,237,0.2);border-radius:6px;cursor:pointer;font-size:11px;color:var(--violet-300)">
+          <input type="file" accept="image/*" style="display:none" onchange="uploadLieuBroll(${i}, this)">
+          ${b.lieu_b64?'✓ Lieu chargé':'📷 Photo du lieu'}
+        </label>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:8px 10px;background:rgba(255,255,255,0.03);border-radius:8px">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text-muted);white-space:nowrap">
+          <input type="checkbox" id="broll-produit-${i}" checked style="accent-color:var(--violet-400)">
+          📦 Produit visible
+        </label>
+        <input type="text" id="broll-direction-${i}" placeholder="Où ? (ex: posé sur lavabo, en arrière-plan)" style="flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(124,58,237,0.2);border-radius:6px;padding:5px 10px;font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text-bright);outline:none">
+      </div>
       <div class="broll-img-area" id="broll-area-${i}">
-        <span>9:16</span>
+        <span style="font-size:9px;opacity:0.4">9:16</span>
         <button class="broll-gen-btn" onclick="genererBrollScene(${i})">▶</button>
         <div class="scene-spinner" id="broll-spinner-${i}"></div>
       </div>
     </div>`).join('');
-}
-
-async function genererBrollScene(index){
-  if(!canGenerate(currentCode)){showToast('Limite atteinte ⏳');return;}
-  const b=brollData?.brolls?.[index];if(!b)return;
-  const area=document.getElementById('broll-area-'+index);
-  const spinner=document.getElementById('broll-spinner-'+index);
-  area.querySelector('.broll-gen-btn').style.display='none';
-  spinner.style.display='block';
-  try{
-    const finalPrompt=buildImagePrompt(b.prompt_image);
-    const imgData=await generateImage(finalPrompt);
-    incrementUsed(currentCode);updateQuotaUI();
-    area.innerHTML=`<img src="${imgData}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">`;
-    showToast(`B-Roll "${b.categorie}" généré ✦`);
-  }catch(err){
-    spinner.style.display='none';
-    const gb=area.querySelector('.broll-gen-btn');if(gb)gb.style.display='flex';
-    showToast('Erreur : '+err.message);
-  }
 }
 
 async function genererTousBroll(){
@@ -1667,6 +1766,72 @@ async function genererTousBroll(){
     await new Promise(r=>setTimeout(r,800));
   }
   showToast('Tous les B-Rolls générés 🎬');
+}
+
+async function genererBrollScene(index){
+  if(!canGenerate(currentCode)){showToast('Limite atteinte ⏳');return;}
+  const b=brollData?.brolls?.[index];if(!b)return;
+  const area=document.getElementById('broll-area-'+index);
+  const spinner=document.getElementById('broll-spinner-'+index);
+  const genBtn=area.querySelector('.broll-gen-btn');
+  if(genBtn)genBtn.style.display='none';
+  spinner.style.display='block';
+
+  try{
+    // Toggle produit visible pour ce broll
+    const produitVisible=document.getElementById('broll-produit-'+index)?.checked!==false;
+    const directionProduit=document.getElementById('broll-direction-'+index)?.value||'';
+
+    // B-Roll : AVEC avatar (pris en compte ici), produit selon toggle
+    const locks=[];
+    if(uploads.avatar)locks.push('IDENTITY LOCKED — same face, skin tone, features as reference. Do not invent a new face.');
+    if(produitVisible&&uploads.produit){
+      locks.push('PRODUCT LOCKED — same packaging, shape, label, colors as product reference. Do not invent a product.');
+      if(directionProduit)locks.push('PRODUCT PLACEMENT: '+directionProduit+'.');
+    } else {
+      locks.push('NO PRODUCT visible in this scene — focus on person, environment, emotion only.');
+    }
+    if(uploads.vetement)locks.push('OUTFIT LOCKED — same garment as outfit reference.');
+
+    const lockStr=locks.join(' ');
+    const finalPromptBroll=`${b.prompt_image} — ${lockStr} Portrait orientation 9:16, 4K ultra-detailed, shot on iPhone 15 Pro, natural light, authentic UGC style. NO studio look, NO advertising aesthetic. NO plants, NO decorative plants, NO potted plants.`;
+
+    // Envoyer avec avatar, produit conditionnel et lieu si uploadé
+    const brollBody={
+      code:currentCode,
+      prompt:finalPromptBroll,
+      aspectRatio:'9:16',
+      avatarB64:uploads.avatar?.b64||null,
+      avatarMime:uploads.avatar?.mime||'image/jpeg',
+      produitB64:produitVisible?(uploads.produit?.b64||null):null,
+      produitMime:uploads.produit?.mime||'image/jpeg',
+      vetementB64:uploads.vetement?.b64||null,
+      vetementMime:uploads.vetement?.mime||'image/jpeg',
+      decorB64:b.lieu_b64||null,
+      decorMime:b.lieu_mime||'image/jpeg',
+    };
+
+    const res=await fetch(`${PROXY_URL}/generate-image`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(brollBody)});
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.error||'HTTP '+res.status);
+    const imgData=`data:${data.mimeType||'image/png'};base64,${data.image}`;
+
+    incrementUsed(currentCode);updateQuotaUI();
+    area.innerHTML=`<img src="${imgData}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">`;
+
+    // Bouton régénérer
+    const regenBtn=document.createElement('button');
+    regenBtn.innerHTML='🔄';regenBtn.title='Régénérer';
+    regenBtn.style.cssText='position:absolute;top:4px;right:4px;background:rgba(14,8,18,0.75);color:white;border:none;border-radius:6px;padding:4px 7px;font-size:12px;cursor:pointer;z-index:2';
+    regenBtn.onclick=()=>genererBrollScene(index);
+    area.style.position='relative';area.appendChild(regenBtn);
+
+    showToast('B-Roll généré ✦');
+  }catch(err){
+    spinner.style.display='none';
+    const gb=area.querySelector('.broll-gen-btn');if(gb)gb.style.display='flex';
+    showToast('Erreur : '+err.message);
+  }
 }
 
 // ═══════════════════════════════════════════════════
