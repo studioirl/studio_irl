@@ -1241,9 +1241,14 @@ Retourne UNIQUEMENT ces balises:
 
   try{
     const raw=await callGemini(prompt);
+    if(!raw||raw.trim().length<20){
+      throw new Error('Réponse vide de Gemini — réessaie dans quelques secondes');
+    }
     function extractTag(text,tag){
-      const m=text.match(new RegExp('<'+tag+'>([\s\S]*?)<\/'+tag+'>','i'));
-      return m?m[1].trim():'';
+      const re=new RegExp('<'+tag+'>[\\s\\S]*?<\\/'+tag+'>','i');
+      const m=text.match(re);
+      if(m){return m[0].replace(new RegExp('<\\/?'+tag+'>','gi'),'').trim();}
+      return '';
     }
     scriptData={
       hook_a:extractTag(raw,'HOOK_A_VERBAL'),
@@ -1264,7 +1269,9 @@ Retourne UNIQUEMENT ces balises:
       hook_choisi:'A',
     };
     if(!scriptData.hook_a&&!scriptData.intro_probleme){
-      throw new Error('Reponse vide - relance');
+      // Fallback : afficher la réponse brute pour debug
+      console.log('Réponse brute Gemini:', raw.slice(0,500));
+      throw new Error('Format inattendu — relance ou vérifie la console');
     }
     renderScript(false);
     document.getElementById('script-loading').style.display='none';
