@@ -633,7 +633,7 @@ let selectedSex        = 'female';
 let selectedEyeColor   = 'Marron';
 let siblingChoice      = { brother: true, sister: false };
 let siblingAges        = { brother: 5, sister: 5 };
-let familySide         = 'mother';
+let familySide          = 'mother';
 let gpAges             = { grandpa: 70, grandma: 68 };
 let relationChoice     = { male: true, female: true };
 let relationAges       = { male: 30, female: 30 };
@@ -837,39 +837,43 @@ function selectEngine(engine) {
   const inp  = document.getElementById('apiKeyInput');
 
   if (engine === 'vertex') {
-    btnV.className = 'engine-btn active-vertex';
-    btnK.className = 'engine-btn';
-    lbl.textContent  = 'Clé API Vertex AI Express Mode';
-    inp.placeholder  = 'AQ...';
-    note.textContent = '⚡ Gemini 3.1 Flash Image • 4K';
-    note.className   = 'note';
+    if (btnV) btnV.className = 'engine-btn active-vertex';
+    if (btnK) btnK.className = 'engine-btn';
+    if (lbl)  lbl.textContent  = 'Clé API Vertex AI Express Mode';
+    if (inp)  inp.placeholder  = 'AQ...';
+    if (note) { note.textContent = '⚡ Gemini 3.1 Flash Image • 4K'; note.className = 'note'; }
   } else {
-    btnV.className = 'engine-btn';
-    btnK.className = 'engine-btn active-kie';
-    lbl.textContent  = 'Clé API kie.ai';
-    inp.placeholder  = 'Colle ta clé kie.ai ici...';
-    note.textContent = '🍌 Nano Banana 2 · image haute fidélité';
-    note.className   = 'note green';
+    if (btnV) btnV.className = 'engine-btn';
+    if (btnK) btnK.className = 'engine-btn active-kie';
+    if (lbl)  lbl.textContent  = 'Clé API kie.ai';
+    if (inp)  inp.placeholder  = 'Colle ta clé kie.ai ici...';
+    if (note) { note.textContent = '🍌 Nano Banana 2 · image haute fidélité'; note.className = 'note green'; }
   }
 }
 
 async function enterApp() {
-  const key = document.getElementById('apiKeyInput').value.trim();
-  const errEl = document.getElementById('homeError');
-  if (!key) {
-    errEl.textContent = 'Veuillez entrer votre clé API.';
-    errEl.style.display = 'block';
-    return;
+  try {
+    const key = document.getElementById('apiKeyInput').value.trim();
+    const errEl = document.getElementById('homeError');
+    if (!key) {
+      errEl.textContent = 'Veuillez entrer votre clé API.';
+      errEl.style.display = 'block';
+      return;
+    }
+    API_KEY = key;
+    errEl.style.display = 'none';
+    document.getElementById('home').style.display = 'none';
+    document.getElementById('app').classList.add('visible');
+    updateEngineUI();
+    buildSidebar();
+    updateMainTitle();
+    setView(currentView);
+    renderLab();
+  } catch(e) {
+    console.error('enterApp error:', e);
+    const errEl = document.getElementById('homeError');
+    if (errEl) { errEl.textContent = 'Erreur au démarrage : ' + e.message; errEl.style.display = 'block'; }
   }
-  API_KEY = key;
-  errEl.style.display = 'none';
-  document.getElementById('home').style.display = 'none';
-  document.getElementById('app').classList.add('visible');
-  updateEngineUI();
-  buildSidebar();
-  updateMainTitle();
-  setView(currentView);
-  renderLab();
 }
 
 function goHome() {
@@ -1006,7 +1010,7 @@ function renderLab() {
             onclick="handleGenerate()" ${isGenerating ? 'disabled' : ''}>
             ${isGenerating
               ? `<span class="spinner"></span>&nbsp;Séquençage...`
-              : `<span>${pregnancyStep === 3 ? 'Générer la naissance' : 'Générer l\'identité'}</span>`}
+              : `<span>${pregnancyStep === 3 ? 'Générer la naissance' : "Générer l'identité"}</span>`}
           </button>
         </div>
       </div>
@@ -1324,12 +1328,12 @@ function buildBreastfeedingPrompt() {
     : 'extérieur naturel (jardin, parc, lumière naturelle diffuse)';
 
   const momentLabel = bfMoment === 'nuit'
-    ? 'nuit ou tôt le matin, lumière tamisée, veilleuse ou fenêtre à l'aube'
+    ? "nuit ou tôt le matin, lumière tamisée, veilleuse ou fenêtre à l'aube"
     : 'lumière du jour, naturelle et douce';
 
   const intimiteLabel = bfIntimite < 33 ? 'pudique (peu de peau visible, tissu couvrant)'
     : bfIntimite < 66 ? 'naturelle (moment authentique sans être explicite)'
-    : 'intime et naturelle (scène documentaire, réalisme complet de l'allaitement)';
+    : "intime et naturelle (scène documentaire, réalisme complet de l'allaitement)";
 
   return `
 MODE : ALLAITEMENT
@@ -1721,7 +1725,7 @@ async function handleGenerate() {
   const needTwo = ['SIBLING','CHILD','BREASTFEEDING'].includes(activeMode);
   const needOne = ['GRANDPARENT','UNCLE_AUNT','COUSIN','PREGNANCY','EVOLUTION'].includes(activeMode);
   if (activeMode === 'BREASTFEEDING' && (!parent1||!parent2)) { alert("Photo de la maman ET photo du bébé obligatoires."); return; }
-  else if (needTwo && !activeMode !== 'BREASTFEEDING' && (!parent1||!parent2)) { alert("Photos des deux parents obligatoires."); return; }
+  else if (needTwo && activeMode !== 'BREASTFEEDING' && (!parent1||!parent2)) { alert("Photos des deux parents obligatoires."); return; }
   if (needOne && !parent1)             { alert("Photo source obligatoire."); return; }
 
   isGenerating  = true;
@@ -1802,9 +1806,13 @@ function showErrorState(msg) {
    INIT
 ══════════════════════════════════════════════════════════════════ */
 (async function init() {
-  await loadState();
+  try {
+    await loadState();
+  } catch(e) {
+    console.warn('loadState failed (non-bloquant):', e);
+  }
   // Pré-sélectionner le moteur enregistré
-  selectEngine(activeEngine);
+  try { selectEngine(activeEngine); } catch(e) { console.warn('selectEngine init:', e); }
 })();
 </script>
 </body>
