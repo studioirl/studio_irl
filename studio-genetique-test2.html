@@ -590,7 +590,7 @@ function buildSidebar(){
   const nav=document.getElementById('sidebarNav'); nav.innerHTML='';
   MODES.forEach(m=>{ const btn=document.createElement('button'); btn.className='mode-btn '+(m.id===activeMode?'active':''); btn.innerHTML=`<span class="mode-emoji">${m.icon}</span><span>${m.label}</span>`; btn.onclick=()=>setMode(m.id); nav.appendChild(btn); });
 }
-function setMode(mode){ activeMode=mode; pregnancyStep=1; birthStep=0; birthDone=[]; resultImages=[]; updateMainTitle(); buildSidebar(); renderLab(); saveSettings(); }
+function setMode(mode){ activeMode=mode; pregnancyStep=1; birthStep=0; birthDone=[]; accoStep=0; accoDone=[]; accoLieuLocked=false; echoStep=0; echoDone=[]; resultImages=[]; updateMainTitle(); buildSidebar(); renderLab(); saveSettings(); }
 function updateMainTitle(){ const mode=MODES.find(m=>m.id===activeMode); document.getElementById('mainTitle').innerHTML=`${mode?mode.label:'Studio'} <span>ADN v2.9</span>`; }
 function setView(v){ currentView=v; document.getElementById('labView').style.display=v==='lab'?'block':'none'; document.getElementById('galleryView').classList.toggle('hidden',v!=='gallery'); document.getElementById('tabLab').classList.toggle('active',v==='lab'); document.getElementById('tabGallery').classList.toggle('active',v==='gallery'); saveSettings(); }
 
@@ -610,7 +610,6 @@ function renderLab(){
   const btnLabel=isBirth ? getBirthBtnLabel()
     : activeMode==='FETAL_MOVE' ? '👣 Capturer le mouvement'
     : activeMode==='ECHOGRAPHIE' ? (echoStep===0?'🔬 Demarrer':'🔬 Image '+echoStep+'/5')
-    : activeMode==='ACCOUCHEMENT' ? (birthStep===0?'🏥 Démarrer':'🏥 '+(birthStep===1?'Image de référence':'Étape '+(birthStep-1)))
     : activeMode==='ACCOUCHEMENT' ? (accoStep===0?'🏥 Demarrer':'🏥 Sequence '+(accoStep)+' / '+getAccoTotalSteps())
     : (pregnancyStep===3?'Générer la naissance':'Générer l\'identité');
   const btnClass=isBirth ? 'ready-rose' : (activeMode==='FETAL_MOVE'||activeMode==='ECHOGRAPHIE'||activeMode==='ACCOUCHEMENT') ? 'ready-rose' : 'ready';
@@ -641,11 +640,10 @@ function getBirthBtnLabel(){
 
 function renderUploaders(){
   const singleMode=['GRANDPARENT','UNCLE_AUNT','COUSIN','PREGNANCY','EVOLUTION','FETAL_MOVE','ECHOGRAPHIE','ACCOUCHEMENT'].includes(activeMode);
-  const showFather=(activeMode==='PREGNANCY'&&birthFatherPresent&&birthStep>=2)||(activeMode==='ACCOUCHEMENT'&&birthFatherPresent);
+  const showFather=(activeMode==='PREGNANCY'&&birthFatherPresent&&birthStep>=2)||(activeMode==='ACCOUCHEMENT'&&accoFatherPresent);
   if(singleMode){
     const label=activeMode==='PREGNANCY'?'Photo Mère'
                :activeMode==='ECHOGRAPHIE'?'Photo Mère'
-               :activeMode==='ACCOUCHEMENT'?'Photo Mère'
                :activeMode==='ACCOUCHEMENT'?'Photo Mère'
                :activeMode==='FETAL_MOVE'?'Photo du ventre enceint'
                :activeMode==='EVOLUTION'?'Photo Source'
@@ -673,7 +671,6 @@ function renderParams(){
     case 'FETAL_MOVE':  return renderFetalMoveMode();
     case 'EVOLUTION':   return renderEvolution();
     case 'ECHOGRAPHIE':  return renderEchographie();
-    case 'ACCOUCHEMENT': return renderAccouchement();
     case 'ACCOUCHEMENT': return renderAccouchement();
     case 'PREGNANCY':   return renderPregnancy();
     case 'SIBLING':   return renderSibling();
@@ -917,7 +914,6 @@ Respect strict de l'identité des visages fournis.`;
   switch(activeMode){
     case 'FETAL_MOVE':   return buildFetalMovePrompt();
     case 'ECHOGRAPHIE':  return buildEchoPrompt();
-    case 'ACCOUCHEMENT': return buildAccouchementPrompt();
     case 'ACCOUCHEMENT': return buildAccoPrompt();
     case 'EVOLUTION': return `MODE : ÉVOLUTION TEMPORELLE\nÂge exact cible : ${evolutionAgeInput}\nSexe biologique : ${selectedSex==='female'?'XX':'XY'}\nCouleur des yeux : ${selectedEyeColor}\nConserver rigoureusement l'identité du sujet source.\nAdapter la morphologie, la texture de peau, la posture et les proportions à l'âge indiqué.\n${common}`;
     case 'SIBLING':{ const persons=[]; if(siblingChoice.brother) persons.push(`un frère de ${siblingAges.brother} ans`); if(siblingChoice.sister) persons.push(`une sœur de ${siblingAges.sister} ans`); return `MODE : FRATRIE\nCréer ${persons.join(' et ')} à partir des deux parents fournis.\nRessemblance familiale : ${rl} (${familyResemblance}%).\nVariations naturelles obligatoires. Pas de clonage.\n${common}`; }
@@ -1052,172 +1048,6 @@ function buildFetalMovePrompt(){
   prompt += 'Sortie : IMAGE PHOTOREALISTE UNIQUEMENT. Aucun texte. 4K. Zero retouche.';
 
   return prompt;
-}
-
-function renderAccouchement(){
-  var STEPS_HOSPITAL=[
-    {n:1,label:'Reference lieu',icon:'📸'},
-    {n:2,label:'Salle de travail',icon:'🏥'},
-    {n:3,label:'Poussee',icon:'💪'},
-    {n:4,label:'Premier regard',icon:'👶'},
-    {n:5,label:'Peau a peau',icon:'❤️'},
-    {n:6,label:'Chambre maternite',icon:'🌸'},
-  ];
-  var STEPS_WATER=[
-    {n:1,label:'Reference lieu',icon:'📸'},
-    {n:2,label:'Contractions dans l eau',icon:'🌊'},
-    {n:3,label:'Poussee dans l eau',icon:'💪'},
-    {n:4,label:'Bebe remonte',icon:'👶'},
-    {n:5,label:'Peau a peau',icon:'❤️'},
-    {n:6,label:'Chambre maternite',icon:'🌸'},
-  ];
-  var steps = birthLocation==='water' ? STEPS_WATER : STEPS_HOSPITAL;
-
-  var pills = steps.map(function(s){
-    var done=birthDone.includes(s.n), active=birthStep===s.n;
-    return '<div class="birth-step-pill '+(done?'done':active?'active':'')+'"><span class="step-num">'+(done?'&#10003;':s.n)+'</span>'+s.icon+' '+s.label+'</div>';
-  }).join('');
-
-  var html='';
-  html+='<div class="alert rose" style="margin-bottom:16px;">Mode Accouchement<p>Genere d abord l image de reference (face, identite claire), verrouillez le lieu, puis continuez la sequence.</p></div>';
-
-  // Lieu
-  html+='<div class="ctrl"><div class="ctrl-title">Lieu d accouchement</div><div class="row">';
-  html+='<button class="ctrl-btn '+(birthLocation==="hospital"?"active":"")+'" onclick="setBirthLocation(\'hospital\')">🏥 Salle de travail</button>';
-  html+='<button class="ctrl-btn '+(birthLocation==="water"?"active":"")+'" onclick="setBirthLocation(\'water\')">🌊 Dans l eau</button>';
-  html+='</div></div>';
-
-  // Nav pills
-  html+='<div class="birth-steps-nav">'+pills+'</div>';
-
-  // Options
-  html+='<div class="ctrl"><div class="ctrl-title">Bebes</div><div class="row">';
-  html+='<button class="ctrl-btn '+(birthBabyType==="singleton"?'active':'')+'" onclick="setBabyType(\'singleton\')">👶 Un bebe</button>';
-  html+='<button class="ctrl-btn '+(birthBabyType==="twins"?'active':'')+'" onclick="setBabyType(\'twins\')">👶👶 Jumeaux</button>';
-  html+='<button class="ctrl-btn '+(birthBabyType==="twin_girls"?'active':'')+'" onclick="setBabyType(\'twin_girls\')">👶👶 Jumelles</button>';
-  html+='</div></div>';
-
-  html+='<div class="ctrl"><div class="ctrl-title">Pere present</div><div class="row">';
-  html+='<button class="ctrl-btn '+(birthFatherPresent?'active':'')+'" onclick="toggleBirthOpt(\'father\')">👨 Oui</button>';
-  html+='<button class="ctrl-btn '+(!birthFatherPresent?'active':'')+'" onclick="toggleBirthOpt(\'no-father\')">Non</button>';
-  html+='</div></div>';
-
-  if(birthLocation==='hospital'){
-    html+='<div class="ctrl"><div class="ctrl-title">Peridurale</div><div class="row">';
-    html+='<button class="ctrl-btn '+(birthEpidural?'active':'')+'" onclick="toggleBirthOpt(\'epidural\')">💉 Avec</button>';
-    html+='<button class="ctrl-btn '+(!birthEpidural?'active':'')+'" onclick="toggleBirthOpt(\'no-epidural\')">Sans</button>';
-    html+='</div></div>';
-  }
-
-  if(birthDone.includes(4)||birthStep>=5){
-    html+='<div class="ctrl"><div class="ctrl-title">Couleur bonnets (chambre maternite)</div>';
-    html+='<input class="text-input" style="font-size:12px;padding:10px 14px;" type="text" value="'+birthHatColor+'" placeholder="Ex: bleu ciel, rose..." oninput="setBirthHatColor(this.value)"></div>';
-  }
-
-  if(birthRefGenerated){
-    html+='<div class="alert" style="margin-top:8px;border-left-color:rgba(16,185,129,.5);background:rgba(16,185,129,.05);color:#34d399;">✅ Lieu verrouille — coherence garantie pour toutes les images suivantes.</div>';
-  }
-
-  html+='<div style="margin-top:10px;"><button class="ctrl-btn" style="width:100%;" onclick="resetAccouchement()">↺ Recommencer la sequence</button></div>';
-
-  return html;
-}
-
-function buildAccouchementPrompt(){
-  var base='Sortie : IMAGE PHOTOREALISTE UNIQUEMENT. Aucun texte. 4K. Zero retouche. Respect strict de l identite du visage de la mere ET conservation absolue du volume du ventre de grossesse.';
-  var twins=birthBabyType==='singleton'?'grossesse simple — un seul bebe':(birthBabyType==='twins'?'grossesse gemelaie — jumeaux':'grossesse gemelaie — jumelles');
-  var fatherBlock=birthFatherPresent&&parentFather?'Le pere est present dans la scene, son visage correspond a la photo de reference fournie.':'';
-  var belly='IMPORTANT : conserver le ventre de grossesse avec son volume exact — ne pas reduire ni effacer le ventre.';
-  var p='';
-
-  if(birthStep===1){
-    // Image de reference — toujours de face
-    if(birthLocation==='water'){
-      p='MODE ACCOUCHEMENT — IMAGE DE REFERENCE : SALLE DE NAISSANCE DANS L EAU. ';
-      p+='VUE DE FACE OBLIGATOIRE — jamais de profil. ';
-      p+='La mere est dans une baignoire ou piscine de naissance, eau chaude et claire. ';
-      p+='Elle est vue de face, identite clairement visible, regard vers la camera. ';
-      if(birthFatherPresent) p+='Le pere est debout a cote de la baignoire, visible de face lui aussi, identite claire. ';
-      p+='Lumiere douce et chaude. Ambiance intimiste et sereine. ';
-    } else {
-      p='MODE ACCOUCHEMENT — IMAGE DE REFERENCE : SALLE DE TRAVAIL HOSPITALIERE. ';
-      p+='VUE DE FACE OBLIGATOIRE — jamais de profil. ';
-      p+='La mere est allongée sur le lit medicalise, vue de face, identite clairement visible, regard vers la camera. ';
-      if(birthEpidural) p+='Catheter epidural en place, monitoring foetal, perfusion IV visible. ';
-      if(birthFatherPresent) p+='Le pere est debout a cote du lit, visible de face lui aussi, identite claire. ';
-      p+='Lumiere hospitaliere professionnelle. Ambiance salle de travail reelle. ';
-    }
-    p+=belly+' '+twins+'. '+fatherBlock+' '+base;
-
-  } else if(birthStep===2){
-    if(birthLocation==='water'){
-      p='MODE ACCOUCHEMENT DANS L EAU — CONTRACTIONS. ';
-      p+='UTILISER L IMAGE DE REFERENCE pour coherence du lieu (meme baignoire, meme eclairage). ';
-      p+='La mere est dans l eau, en pleine contraction. Corps en tension, visage concentre et douloureux. ';
-      p+='Mains agrippees au bord de la baignoire. Eau legerement agitee autour d elle. ';
-      if(birthFatherPresent) p+='Le pere est a cote, hors de l eau ou au bord, main tendue vers elle, soutien visible. ';
-      p+='Sage-femme presente, en position de surveillance. Emotion brute et reelle. ';
-      p+=belly+' '+twins+'. '+fatherBlock+' '+base;
-    } else {
-      p='MODE ACCOUCHEMENT — SALLE DE TRAVAIL. ';
-      p+='UTILISER L IMAGE DE REFERENCE pour coherence du lieu. ';
-      p+='La mere est allongée dans le lit de la meme salle, monitoring visible, ';
-      if(birthEpidural) p+='peridurale en place, anesthesiste visible en arriere-plan. ';
-      p+='Visage concentre, debut du travail actif. ';
-      if(birthFatherPresent) p+='Pere present, assis ou debout a cote d elle, la soutenant. ';
-      p+=belly+' '+twins+'. '+fatherBlock+' '+base;
-    }
-
-  } else if(birthStep===3){
-    if(birthLocation==='water'){
-      p='MODE ACCOUCHEMENT DANS L EAU — POUSSEE. ';
-      p+='UTILISER L IMAGE DE REFERENCE pour coherence du lieu. ';
-      p+='La mere pousse dans l eau, effort maximal, visage en tension extreme, sueur, larmes, douleur et determination. ';
-      p+='Eau agitee autour d elle. Sage-femme en position dans l eau ou au bord, gants, prête a receptionner. ';
-      if(birthFatherPresent) p+='Pere present, tient sa main fermement, emotion intense sur son visage. ';
-      p+=belly+' '+twins+'. '+base;
-    } else {
-      p='MODE ACCOUCHEMENT — POUSSEE. ';
-      p+='UTILISER L IMAGE DE REFERENCE pour coherence du lieu. ';
-      p+='La mere pousse sur le lit, cuisses sur les etriers, corps en tension maximale. ';
-      p+='Visage : sueur, larmes, douleur et determination simultanees. Emotion brute totale. ';
-      p+='Sage-femme en position au pied du lit, gants steriles, mains pretées a recevoir. ';
-      if(birthFatherPresent) p+='Pere en tenue sterile, tient fermement la main de la mere, emotion intense. ';
-      p+=belly+' '+twins+'. '+fatherBlock+' '+base;
-    }
-
-  } else if(birthStep===4){
-    if(birthLocation==='water'){
-      p='MODE ACCOUCHEMENT DANS L EAU — BEBE REMONTE A LA SURFACE. ';
-      p+='La sage-femme remonte doucement le bebe de l eau, le tenant a deux mains. ';
-      p+='Bebe nouveau-ne realiste, couvert de vernix, premier contact avec l air. ';
-      p+='Eau autour, lumiere douce. Moment magique et biologique. ';
-      p+=twins+'. '+base;
-    } else {
-      p='MODE ACCOUCHEMENT — PREMIER REGARD. ';
-      p+='Plan sur les mains gantees de la sage-femme tenant le nouveau-ne juste apres la naissance. ';
-      p+='Bebe tenu a deux mains, realiste, peau rosee, position foetale naturelle. ';
-      p+='Eclairage medical de salle d accouchement. Moment documentaire fort. ';
-      p+=twins+'. '+base;
-    }
-
-  } else if(birthStep===5){
-    p='MODE ACCOUCHEMENT — PEAU A PEAU. ';
-    p+='La mere est allongée, encore en chemise d hopital ouverte sur la poitrine. ';
-    p+=(birthBabyType==='singleton'?'Un bebe pose sur sa poitrine en position foetale, tete sur le sein, enveloppe dans un lange blanc, bonnet creme de maternite.':'Un bebe sur chaque sein, chacun en lange blanc et bonnet creme, la mere les tient des deux bras.');
-    p+=' Mere epuisee et emue, larmes ou sourire tremblant, regard fixe sur son bebe. Sueur encore visible. ';
-    p+='Photo prise comme si le pere vole le moment — cadrage intime, leger angle plongeant. ';
-    p+=fatherBlock+' '+base;
-
-  } else if(birthStep===6){
-    p='MODE ACCOUCHEMENT — CHAMBRE MATERNITE. ';
-    p+='Chambre de maternite, lumiere douce, quelques heures apres la naissance. ';
-    p+=(birthBabyType==='singleton'?'La mere tient son bebe dans les bras, bebe habille, bonnet couleur '+birthHatColor+', bracelet d identification maternite visible.':(birthFatherPresent&&parentFather?'La mere tient un bebe, le pere tient le second, chacun habille, bonnet couleur '+birthHatColor+'.':'La mere a un bebe dans chaque bras, bonnets couleur '+birthHatColor+'.'));
-    p+=' Mere et pere (si present) avec bracelet d identification maternite. Ambiance calme et tendre. ';
-    p+=fatherBlock+' '+base;
-  }
-
-  return p;
 }
 
 function renderEchographie(){
@@ -1819,7 +1649,6 @@ async function handleGenerate(){
   if(isGenerating) return;
   if(activeMode==='PREGNANCY'&&pregnancyStep>=2&&birthStep===0){ birthStep=1; birthDone=[]; saveSettings(); renderLab(); return; }
   if(activeMode==='ECHOGRAPHIE'&&echoStep===0){ startEcho(); return; }
-  if(activeMode==='ACCOUCHEMENT'&&birthStep===0){ birthStep=1; birthDone=[]; birthRefGenerated=false; saveSettings(); renderLab(); return; }
   if(activeMode==='ACCOUCHEMENT'&&accoStep===0){ accoStep=1; accoDone=[]; accoLieuLocked=false; saveSettings(); renderLab(); return; }
   const needTwo=['SIBLING','CHILD'].includes(activeMode);
   const needOne=['GRANDPARENT','UNCLE_AUNT','COUSIN','PREGNANCY','EVOLUTION'].includes(activeMode);
@@ -1830,6 +1659,7 @@ async function handleGenerate(){
     const prompt=buildPrompt();
     let extraImages=[];
     if(activeMode==='PREGNANCY'&&birthStep>=1&&birthFatherPresent&&parentFather) extraImages.push(parentFather);
+    if(activeMode==='ACCOUCHEMENT'&&accoFatherPresent&&parentFather) extraImages.push(parentFather);
     let dataUrl;
     if(activeEngine==='kie') dataUrl=await callKieImage(prompt,extraImages);
     else dataUrl=await callVertexImage(prompt,extraImages);
@@ -1840,13 +1670,6 @@ async function handleGenerate(){
       if(!accoDone.includes(accoStep)) accoDone.push(accoStep);
       const total=getAccoTotalSteps();
       if(accoStep<total) accoStep++;
-      saveSettings(); await saveResults(); isGenerating=false; renderLab(); return;
-    }
-    if(activeMode==='ACCOUCHEMENT'){
-      if(birthStep===1) birthRefGenerated=true;
-      if(!birthDone.includes(birthStep)) birthDone.push(birthStep);
-      var maxBirthStep = birthLocation==='water' ? 6 : 5;
-      if(birthStep<maxBirthStep) birthStep++;
       saveSettings(); await saveResults(); isGenerating=false; renderLab(); return;
     }
     if(activeMode==='ECHOGRAPHIE'){
