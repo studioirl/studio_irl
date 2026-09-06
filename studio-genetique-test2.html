@@ -306,7 +306,7 @@ button,input,textarea,select{ font-family:inherit; }
 /* ══════════════════════════════════════════════════════════════════
    CONFIG
 ══════════════════════════════════════════════════════════════════ */
-const MODEL_VERTEX = 'gemini-3.1-flash-image-preview';
+const MODEL_VERTEX = 'gemini-3.1-flash-image';
 const DB_NAME      = 'studio-genetique-v29-db';
 const DB_VERSION   = 1;
 const STORAGE_KEY  = 'studio-genetique-v29-settings';
@@ -320,6 +320,7 @@ const MODES = [
   { id:'UNCLE_AUNT',  label:'Oncles / Tantes',     icon:'👨‍👩‍👧' },
   { id:'COUSIN',      label:'Cousins / Cousines',  icon:'🧑‍🤝‍🧑' },
   { id:'EVOLUTION',   label:'Évolution Temporelle',icon:'⏳' },
+  { id:'ECHOGRAPHIE',  label:'Échographie',          icon:'🔬' },
 ];
 
 const LOADING_STEPS_VERTEX = [
@@ -368,6 +369,7 @@ let stretchIntensity=0, stretchZones=['Ventre'];
 
 /* Bosses fœtales */
 let fetalMovement=false;
+let fetalEmotion='';
 let fetalTypeA='pied', fetalZoneA='hd', fetalIntensityA=1;
 let fetalTypeB='coude', fetalZoneB='mg', fetalIntensityB=1;
 
@@ -379,6 +381,15 @@ let birthBabyType='singleton'; // singleton | twins | twin_girls
 let birthHatColor='crème maternité';
 let resultImages=[];
 let evolutionAgeInput='18 mois';
+
+/* Échographie */
+let echoStep=0;
+let echoDone=[];
+let echoTwins=false;
+let echoMonth=3;
+let echoFatherPresent=false;
+let echoEmotionMom='';
+let echoEmotionDad='';
 
 /* ══ IndexedDB ══ */
 let _db=null;
@@ -430,10 +441,11 @@ function saveSettings(){
     pregMonth,isTwins,weightGain,initialWeight,initialCupSize,
     initialBust,initialThigh,pelvisWidening,breastVolume,
     breastfeedingPrep,stretchIntensity,stretchZones,
-    fetalMovement,fetalTypeA,fetalZoneA,fetalIntensityA,
+    fetalMovement,fetalEmotion,fetalTypeA,fetalZoneA,fetalIntensityA,
     fetalTypeB,fetalZoneB,fetalIntensityB,
     birthStep,birthDone,birthEpidural,birthFatherPresent,
-    birthBabyType,birthHatColor,evolutionAgeInput
+    birthBabyType,birthHatColor,evolutionAgeInput,
+    echoStep,echoDone,echoTwins,echoMonth,echoFatherPresent,echoEmotionMom,echoEmotionDad
   }));}catch(e){}
 }
 async function saveParents(){
@@ -475,12 +487,18 @@ async function loadState(){
       breastfeedingPrep=s.breastfeedingPrep??breastfeedingPrep;
       stretchIntensity=s.stretchIntensity??stretchIntensity; stretchZones=s.stretchZones??stretchZones;
       fetalMovement=s.fetalMovement??fetalMovement;
+      fetalEmotion=s.fetalEmotion??fetalEmotion;
       fetalTypeA=s.fetalTypeA??fetalTypeA; fetalZoneA=s.fetalZoneA??fetalZoneA; fetalIntensityA=s.fetalIntensityA??fetalIntensityA;
       fetalTypeB=s.fetalTypeB??fetalTypeB; fetalZoneB=s.fetalZoneB??fetalZoneB; fetalIntensityB=s.fetalIntensityB??fetalIntensityB;
       birthStep=s.birthStep??birthStep; birthDone=s.birthDone??birthDone;
       birthEpidural=s.birthEpidural??birthEpidural; birthFatherPresent=s.birthFatherPresent??birthFatherPresent;
       birthBabyType=s.birthBabyType??birthBabyType; birthHatColor=s.birthHatColor??birthHatColor;
       evolutionAgeInput=s.evolutionAgeInput??evolutionAgeInput;
+      echoStep=s.echoStep??echoStep; echoDone=s.echoDone??echoDone;
+      echoTwins=s.echoTwins??echoTwins; echoMonth=s.echoMonth??echoMonth;
+      echoFatherPresent=s.echoFatherPresent??echoFatherPresent;
+      echoEmotionMom=s.echoEmotionMom??echoEmotionMom;
+      echoEmotionDad=s.echoEmotionDad??echoEmotionDad;
     }
   }catch(e){}
   try{ await openDB(); parent1=await idbGet('parents','parent1'); parent2=await idbGet('parents','parent2'); parentFather=await idbGet('parents','parentFather'); }
@@ -554,8 +572,11 @@ function downloadImg(dataUrl,filename){
 function renderLab(){
   const lab=document.getElementById('labView');
   const isBirth=activeMode==='PREGNANCY'&&(birthStep>0||pregnancyStep>=2);
-  const btnLabel=isBirth ? getBirthBtnLabel() : (pregnancyStep===3?'Générer la naissance':'Générer l\'identité');
-  const btnClass=isBirth ? 'ready-rose' : 'ready';
+  const btnLabel=isBirth ? getBirthBtnLabel()
+    : activeMode==='FETAL_MOVE' ? '👣 Capturer le mouvement'
+    : activeMode==='ECHOGRAPHIE' ? (echoStep===0?'🔬 Demarrer':'🔬 Image '+echoStep+'/5')
+    : (pregnancyStep===3?'Générer la naissance':'Générer l\'identité');
+  const btnClass=isBirth ? 'ready-rose' : (activeMode==='FETAL_MOVE'||activeMode==='ECHOGRAPHIE') ? 'ready-rose' : 'ready';
 
   lab.innerHTML=`
     <div class="lab-grid">
@@ -582,10 +603,14 @@ function getBirthBtnLabel(){
 }
 
 function renderUploaders(){
-  const singleMode=['GRANDPARENT','UNCLE_AUNT','COUSIN','PREGNANCY','EVOLUTION'].includes(activeMode);
-  const showFather=activeMode==='PREGNANCY'&&birthFatherPresent&&(birthStep>=2||pregnancyStep>=2);
+  const singleMode=['GRANDPARENT','UNCLE_AUNT','COUSIN','PREGNANCY','EVOLUTION','FETAL_MOVE','ECHOGRAPHIE'].includes(activeMode);
+  const showFather=activeMode==='PREGNANCY'&&birthFatherPresent&&birthStep>=2;
   if(singleMode){
-    const label=activeMode==='PREGNANCY'?'Photo Mère':activeMode==='EVOLUTION'?'Photo Source':familySide==='mother'?'Photo Mère':'Photo Père';
+    const label=activeMode==='PREGNANCY'?'Photo Mère'
+               :activeMode==='ECHOGRAPHIE'?'Photo Mère'
+               :activeMode==='FETAL_MOVE'?'Photo du ventre enceint'
+               :activeMode==='EVOLUTION'?'Photo Source'
+               :familySide==='mother'?'Photo Mère':'Photo Père';
     return `<div class="single-upload">
       ${renderSingleUploader(1,label)}
       ${showFather?`<div style="margin-top:8px;">${renderFatherUploader()}</div>`:''}
@@ -606,9 +631,9 @@ function renderFatherUploader(){
 
 function renderParams(){
   switch(activeMode){
-    case 'FETAL_MOVE': return buildFetalMovePrompt();
-    case 'EVOLUTION':   return renderEvolution();
     case 'FETAL_MOVE':  return renderFetalMoveMode();
+    case 'EVOLUTION':   return renderEvolution();
+    case 'ECHOGRAPHIE':  return renderEchographie();
     case 'PREGNANCY':   return renderPregnancy();
     case 'SIBLING':   return renderSibling();
     case 'CHILD':     return renderChild();
@@ -754,7 +779,6 @@ function renderPregnancy(){
       ${stretchIntensity>0?`<div class="ctrl-title" style="margin-top:10px;">Zones actives</div><div class="tag-wrap">${zones.map(z=>`<button class="tag ${stretchZones.includes(z)?'active':''}" onclick="toggleZone('${z}')">${z}</button>`).join('')}</div>`:''}
     </div>
 
-    ${renderFetalMovement()}
 
     <div class="alert">Ventre anatomique v2.9 — Seins renforcés
       <p>Fundus, projection et seins calculés par mois. Bosses fœtales = déformation cutanée réaliste, pas d'artefact.</p>
@@ -787,6 +811,19 @@ function setRelationChoice(k,v){ relationChoice[k]=v; saveSettings(); renderLab(
 function toggleZone(z){ if(stretchZones.includes(z)) stretchZones=stretchZones.filter(x=>x!==z); else stretchZones.push(z); saveSettings(); renderLab(); }
 function toggleFetal(){ fetalMovement=!fetalMovement; saveSettings(); renderLab(); }
 function setFetalTwins(v){ isTwins=v; saveSettings(); renderLab(); }
+function setEchoTwins(v){ echoTwins=v; saveSettings(); renderLab(); }
+function setEchoFather(v){ echoFatherPresent=v; saveSettings(); renderLab(); }
+function setEchoMonth(v){ echoMonth=parseInt(v); saveSettings(); renderLab(); }
+function setEchoEmotionMom(v){ echoEmotionMom=v; saveSettings(); }
+function setEchoEmotionDad(v){ echoEmotionDad=v; saveSettings(); }
+function startEcho(){ echoStep=1; echoDone=[]; saveSettings(); renderLab(); }
+function nextEchoStep(){
+  if(!echoDone.includes(echoStep)) echoDone.push(echoStep);
+  echoStep++;
+  if(echoStep>5) echoStep=5;
+  saveSettings(); renderLab();
+}
+function setFetalEmotion(v){ fetalEmotion=v; saveSettings(); }
 function setFetalProp(prop,val){ if(prop==='typeA') fetalTypeA=val; if(prop==='typeB') fetalTypeB=val; if(prop==='zoneA') fetalZoneA=val; if(prop==='zoneB') fetalZoneB=val; if(prop==='intensityA') fetalIntensityA=val; if(prop==='intensityB') fetalIntensityB=val; saveSettings(); renderLab(); }
 function toggleBirthOpt(opt){ if(opt==='epidural') birthEpidural=true; if(opt==='no-epidural') birthEpidural=false; if(opt==='father') birthFatherPresent=true; if(opt==='no-father') birthFatherPresent=false; saveSettings(); renderLab(); }
 function setBabyType(t){ birthBabyType=t; saveSettings(); renderLab(); }
@@ -835,6 +872,8 @@ Respect strict de l'identité des visages fournis.`;
   if(activeMode==='PREGNANCY'&&birthStep>=1) return buildBirthPrompt();
 
   switch(activeMode){
+    case 'FETAL_MOVE':   return buildFetalMovePrompt();
+    case 'ECHOGRAPHIE':  return buildEchoPrompt();
     case 'EVOLUTION': return `MODE : ÉVOLUTION TEMPORELLE\nÂge exact cible : ${evolutionAgeInput}\nSexe biologique : ${selectedSex==='female'?'XX':'XY'}\nCouleur des yeux : ${selectedEyeColor}\nConserver rigoureusement l'identité du sujet source.\nAdapter la morphologie, la texture de peau, la posture et les proportions à l'âge indiqué.\n${common}`;
     case 'SIBLING':{ const persons=[]; if(siblingChoice.brother) persons.push(`un frère de ${siblingAges.brother} ans`); if(siblingChoice.sister) persons.push(`une sœur de ${siblingAges.sister} ans`); return `MODE : FRATRIE\nCréer ${persons.join(' et ')} à partir des deux parents fournis.\nRessemblance familiale : ${rl} (${familyResemblance}%).\nVariations naturelles obligatoires. Pas de clonage.\n${common}`; }
     case 'GRANDPARENT': case 'UNCLE_AUNT': case 'COUSIN':{ const isGP=activeMode==='GRANDPARENT',isUA=activeMode==='UNCLE_AUNT'; const rM=isGP?'grand-père':isUA?'oncle':'cousin'; const rF=isGP?'grand-mère':isUA?'tante':'cousine'; const persons=[]; if(relationChoice.male) persons.push(`${rM} de ${isGP?gpAges.grandpa:relationAges.male} ans`); if(relationChoice.female) persons.push(`${rF} de ${isGP?gpAges.grandma:relationAges.female} ans`); return `MODE : ${activeMode}\nBranche familiale : ${familySide==='mother'?'maternelle':'paternelle'}\nCréer ${persons.join(' et ')}.\nRessemblance familiale : ${rl} (${familyResemblance}%).\nHéritage identifiable sans clonage facial.\n${common}`; }
@@ -894,16 +933,25 @@ function renderFetalMoveMode(){
       <div class="ctrl-title" style="margin-top:12px;margin-bottom:6px;">Intensité</div>
       <div class="col" style="gap:6px;">${intRowA}</div>
     </div>
-    ${babyBSection}`;
+    ${babyBSection}
+    <div class="ctrl" style="background:rgba(124,58,237,0.06);border-color:rgba(124,58,237,0.2);">
+      <div class="ctrl-title" style="color:#a78bfa;">✨ Émotion du moment — optionnel</div>
+      <textarea
+        style="width:100%;background:rgba(255,255,255,0.04);color:#f3f4f6;border:1px solid rgba(124,58,237,0.25);border-radius:12px;padding:12px;font-size:12px;line-height:1.6;resize:vertical;min-height:80px;font-family:inherit;outline:none;"
+        placeholder="Décris ce qu'elle ressent à cet instant... Ex: Elle ferme les yeux, un sourire apparaît, elle pose doucement sa main sur l'endroit où le bébé vient de bouger. Surprise et tendresse mêlées."
+        oninput="setFetalEmotion(this.value)"
+      >${fetalEmotion}</textarea>
+      <div class="small-note" style="margin-top:6px;">Son visage et sa posture refléteront exactement cette émotion dans l'image générée.</div>
+    </div>`;
 }
 
 function buildFetalMovePrompt(){
   const typeNames={
-    pied:'un talon ou un pied de bébé',
-    coude:'un coude de bébé',
-    tete:'le sommet du crâne de bébé',
-    fessier:'le fessier de bébé',
-    dos:'le dos de bébé (forme longue et arrondie)',
+    pied:'un talon ou un pied de bebe',
+    coude:'un coude de bebe',
+    tete:'le sommet du crane de bebe',
+    fessier:'le fessier de bebe',
+    dos:'le dos de bebe (forme longue et arrondie)',
   };
   const zoneNames={
     hg:'haut gauche du ventre',hc:'haut centre du ventre',hd:'haut droit du ventre',
@@ -911,45 +959,166 @@ function buildFetalMovePrompt(){
     bg:'bas gauche du ventre',bc:'bas centre du ventre',bd:'bas droit du ventre',
   };
   const intensityDesc=[
-    'légère ondulation de la surface cutanée — déformation subtile de 2-3 cm, peau tendue localement, contour organique flou',
-    'bosse clairement visible de 4-6 cm — déformation nette sous la peau tendue, forme asymétrique et naturelle',
-    'saillie très prononcée de 7-10 cm — déformation marquée, peau très tendue et légèrement pâlie à l\'apex, forme organique imposante',
+    'legere ondulation de la surface cutanee — deformation subtile de 2-3 cm, peau tendue localement, contour organique flou',
+    'bosse clairement visible de 4-6 cm — deformation nette sous la peau tendue, forme asymetrique et naturelle',
+    'saillie tres prononcee de 7-10 cm — deformation marquee, peau tres tendue et legerement palie a l apex, forme organique imposante',
   ];
-  const partA=typeNames[fetalTypeA]||'un pied';
-  const zA=zoneNames[fetalZoneA]||'haut droit du ventre';
-  const iA=intensityDesc[Math.min(2,fetalIntensityA||0)];
-  const partB=typeNames[fetalTypeB]||'un coude';
-  const zB=zoneNames[fetalZoneB]||'milieu gauche du ventre';
-  const iB=intensityDesc[Math.min(2,fetalIntensityB||0)];
-  const common=`Sortie : IMAGE PHOTORÉALISTE UNIQUEMENT. Aucun texte. 4K. Zéro retouche. Respect strict de l'identité et de la posture de la personne.`;
+  const partA = typeNames[fetalTypeA] || 'un pied';
+  const zA    = zoneNames[fetalZoneA] || 'haut droit du ventre';
+  const iA    = intensityDesc[Math.min(2, fetalIntensityA||0)];
+  const partB = typeNames[fetalTypeB] || 'un coude';
+  const zB    = zoneNames[fetalZoneB] || 'milieu gauche du ventre';
+  const iB    = intensityDesc[Math.min(2, fetalIntensityB||0)];
 
-  return `MODE : MOUVEMENT FŒTAL — Simulation de bosses sur le ventre
+  let prompt = 'MODE : MOUVEMENT FOETAL — Simulation de bosses sur le ventre\n\n';
+  prompt += 'INSTRUCTION PRINCIPALE :\n';
+  prompt += 'Utiliser la photo fournie comme base exacte.\n';
+  prompt += 'NE PAS modifier : la taille du ventre, le visage, les vetements, la posture, l arriere-plan, la couleur de peau.\n';
+  prompt += 'SEULE MODIFICATION AUTORISEE : ajouter les deformations cutanees decrites ci-dessous.\n\n';
 
-INSTRUCTION FONDAMENTALE :
-Utiliser la photo fournie comme base exacte.
-NE PAS modifier : la taille du ventre, le visage, les vêtements, la posture, l'arrière-plan, la couleur de peau.
-SEULE MODIFICATION AUTORISÉE : ajouter les déformations cutanées décrites ci-dessous.
+  prompt += 'MOUVEMENT ' + (isTwins ? 'BEBE A' : '') + ' — ' + (typeNames[fetalTypeA]||'pied') + ' :\n';
+  prompt += partA + ' exerce une pression depuis l interieur du ventre, au niveau du ' + zA + '.\n';
+  prompt += 'Resultat visible en surface : ' + iA + '.\n';
+  prompt += 'La deformation est organique et asymetrique — comme si quelque chose pousse doucement de l interieur.\n';
+  prompt += 'La peau s etire naturellement, contour flou, forme suit l anatomie du membre.\n';
+  prompt += 'PAS de boule parfaite. PAS de forme geometrique. PAS d artefact ajoute par-dessus.\n';
 
-MOUVEMENT ${isTwins?'BÉBÉ A':''} — ${typeNames[fetalTypeA]||'pied'} :
-${partA} exerce une pression depuis l'intérieur du ventre, au niveau du ${zA}.
-Résultat visible en surface : ${iA}.
-La déformation est organique et asymétrique — comme si quelque chose pousse doucement de l'intérieur.
-La peau s'étire naturellement depuis l'intérieur, contour flou, forme suit l'anatomie du membre.
-PAS de boule parfaite. PAS de forme géométrique. PAS d'artefact ajouté par-dessus.
-${isTwins?`
-MOUVEMENT BÉBÉ B — ${typeNames[fetalTypeB]||'coude'} :
-${partB} exerce une pression depuis l'intérieur, au niveau du ${zB}.
-Résultat visible : ${iB}.
-Les deux déformations sont simultanément visibles sur le ventre.
-Chacune a sa propre forme organique distincte et asymétrique.`:''}
+  if(isTwins){
+    prompt += '\nMOUVEMENT BEBE B — ' + (typeNames[fetalTypeB]||'coude') + ' :\n';
+    prompt += partB + ' exerce une pression depuis l interieur, au niveau du ' + zB + '.\n';
+    prompt += 'Resultat visible : ' + iB + '.\n';
+    prompt += 'Les deux deformations sont simultanement visibles sur le ventre.\n';
+    prompt += 'Chacune a sa propre forme organique distincte et asymetrique.\n';
+  }
 
-RÈGLE ANTI-ARTEFACT ABSOLUE :
-La bosse N'EST PAS un objet ajouté par-dessus la peau.
-C'est une DÉFORMATION DE LA SURFACE EXISTANTE du ventre, depuis l'intérieur.
-Texture et couleur de peau identiques à la référence — juste étirées localement.
-Rendu documentaire médical — photoréaliste, jamais illustratif.
-${common}`;
+  if(fetalEmotion && fetalEmotion.trim()){
+    prompt += '\nEMOTION ET EXPRESSION :\n';
+    prompt += 'Le visage de la femme exprime : ' + fetalEmotion.trim() + '\n';
+    prompt += 'Son expression, ses yeux, la position de sa tete et de ses epaules refletent exactement cette emotion.\n';
+    prompt += 'Sa main peut naturellement se poser sur l endroit du mouvement.\n';
+    prompt += 'L emotion doit etre subtile, authentique — pas jouee. Reelle.\n';
+  }
+
+  prompt += '\nREGLE ANTI-ARTEFACT ABSOLUE :\n';
+  prompt += 'La bosse n est PAS un objet ajoute par-dessus la peau.\n';
+  prompt += 'C est une DEFORMATION DE LA SURFACE EXISTANTE du ventre, depuis l interieur.\n';
+  prompt += 'Texture et couleur de peau identiques a la reference — juste etirees localement.\n';
+  prompt += 'Rendu documentaire medical — photoréaliste, jamais illustratif.\n';
+  prompt += 'Sortie : IMAGE PHOTOREALISTE UNIQUEMENT. Aucun texte. 4K. Zero retouche.';
+
+  return prompt;
 }
+
+function renderEchographie(){
+  var ESTEPS=[
+    {n:1,label:'Sonde sur le ventre',icon:'🔬'},
+    {n:2,label:'Reaction des parents',icon:'💕'},
+    {n:3,label:'Ecran du medecin',icon:'🖥️'},
+    {n:4,label:'Echographie 3D',icon:'✨'},
+    {n:5,label:'Cliche imprime',icon:'🖨️'},
+  ];
+  var pills=ESTEPS.map(function(s){
+    var done=echoDone.includes(s.n),active=echoStep===s.n;
+    return '<div class="birth-step-pill '+(done?'done':active?'active':'')+'"><span class="step-num">'+(done?'&#10003;':s.n)+'</span>'+s.icon+' '+s.label+'</div>';
+  }).join('');
+
+  var canShow3D=echoMonth>=5;
+  var warn3D=echoStep===4&&!canShow3D?'<div class="alert" style="margin-top:8px;"><p>Echo 3D disponible a partir du mois 5.</p></div>':'';
+  var months=[1,2,3,4,5,6,7,8,9];
+  var mHtml=months.map(function(m){return '<button class="tag '+(echoMonth===m?'active':'')+'" onclick="setEchoMonth('+m+')">M'+m+'</button>';}).join('');
+
+  var emotionSection='';
+  if(echoStep>=2){
+    emotionSection+='<div class="ctrl" style="background:rgba(124,58,237,0.06);border-color:rgba(124,58,237,0.2);">';
+    emotionSection+='<div class="ctrl-title" style="color:#a78bfa;">💜 Emotion de la maman</div>';
+    emotionSection+='<textarea style="width:100%;background:rgba(255,255,255,0.04);color:#f3f4f6;border:1px solid rgba(124,58,237,0.25);border-radius:12px;padding:12px;font-size:12px;line-height:1.6;resize:vertical;min-height:70px;font-family:inherit;outline:none;" placeholder="Ex: Elle pleure en silence, les mains sur la bouche..." oninput="setEchoEmotionMom(this.value)">'+echoEmotionMom+'</textarea>';
+    emotionSection+='</div>';
+    if(echoFatherPresent){
+      emotionSection+='<div class="ctrl" style="background:rgba(244,63,94,0.06);border-color:rgba(244,63,94,0.2);">';
+      emotionSection+='<div class="ctrl-title" style="color:#fb7185;">❤️ Emotion du papa</div>';
+      emotionSection+='<textarea style="width:100%;background:rgba(255,255,255,0.04);color:#f3f4f6;border:1px solid rgba(244,63,94,0.25);border-radius:12px;padding:12px;font-size:12px;line-height:1.6;resize:vertical;min-height:70px;font-family:inherit;outline:none;" placeholder="Ex: Il serre sa main, machoire serree, yeux brillants..." oninput="setEchoEmotionDad(this.value)">'+echoEmotionDad+'</textarea>';
+      emotionSection+='</div>';
+    }
+  }
+
+  var html='';
+  html+='<div class="alert rose" style="margin-bottom:16px;">Sequence Echographie<p>5 images sequentielles. Genere une image, puis passe a la suivante.</p></div>';
+  html+='<div class="birth-steps-nav">'+pills+'</div>';
+  html+='<div class="ctrl" style="background:rgba(37,99,235,0.05);border-color:rgba(37,99,235,0.2);">';
+  html+='<div class="ctrl-title" style="color:#60a5fa;">Mois de grossesse</div>';
+  html+='<div class="tag-wrap">'+mHtml+'</div></div>';
+  html+='<div class="ctrl"><div class="ctrl-title">Bebes</div><div class="row">';
+  html+='<button class="ctrl-btn '+(echoTwins?'':'active')+'" onclick="setEchoTwins(false)">👶 Un bebe</button>';
+  html+='<button class="ctrl-btn '+(echoTwins?'active':'')+'" onclick="setEchoTwins(true)">👶👶 Jumeaux</button>';
+  html+='</div></div>';
+  html+='<div class="ctrl"><div class="ctrl-title">Pere present</div><div class="row">';
+  html+='<button class="ctrl-btn '+(echoFatherPresent?'active':'')+'" onclick="setEchoFather(true)">👨 Oui</button>';
+  html+='<button class="ctrl-btn '+(!echoFatherPresent?'active':'')+'" onclick="setEchoFather(false)">Non</button>';
+  html+='</div></div>';
+  html+=emotionSection;
+  html+=warn3D;
+  return html;
+}
+
+
+function buildEchoPrompt(){
+  var gel='Gel d echographie transparent et brillant visible sur le ventre de la maman.';
+  var idf='Respect strict de l identite du visage de la maman. Lumiere de salle d echographie douce et tamisee, lueur bleutee de l ecran.';
+  var base='Sortie : IMAGE PHOTOREALISTE UNIQUEMENT. Aucun texte. 4K. Zero retouche.';
+  var twins=echoTwins?'Grossesse gemelaie — deux bebes.':'Grossesse simple — un seul bebe.';
+  var moisTxt='Mois de grossesse : '+echoMonth+'.';
+  var p='';
+
+  if(echoStep===1){
+    p='MODE ECHOGRAPHIE IMAGE 1 — LA SONDE. ';
+    p+='Salle d echographie, lumiere douce et tamisee, eclairage bleu de l ecran en arriere-plan. ';
+    p+='La maman est allongee sur la table, ventre degage et expose. '+gel+' ';
+    p+='Le medecin est assis a cote, de profil ou de trois-quarts, sa main tient la sonde posee sur le ventre avec soin. ';
+    p+='Vue d ensemble : maman allongée, ventre avec gel et sonde, medecin visible. Ecran echographique visible en arriere-plan flou. ';
+    p+='Moment de concentration calme, maman sereine, les yeux ouverts. ';
+    p+=moisTxt+' '+twins+' '+idf+' '+base;
+
+  } else if(echoStep===2){
+    var momEmo=echoEmotionMom.trim()?'Expression maman : '+echoEmotionMom.trim():'Elle est emue, yeux brillants, sourire tremblant.';
+    var dadEmo=echoFatherPresent?(echoEmotionDad.trim()?'Expression papa : '+echoEmotionDad.trim():'Il serre sa main, machoire serree, yeux brillants.'):'';
+    p='MODE ECHOGRAPHIE IMAGE 2 — LA DECOUVERTE. ';
+    p+='Vue de face cote parents. UTILISER L IMAGE DE REFERENCE pour coherence du lieu. ';
+    p+='La maman est allongée sur la table, tete legerement relevee, regard dirige vers l ecran en face d elle. ';
+    if(echoFatherPresent){ p+='Le papa est assis sur une chaise a cote d elle, ils sont ensemble, cote a cote. Il lui tient la main. '; }
+    p+='Le medecin est visible de dos ou de profil en arriere-plan, sonde sur le ventre ('+gel+'), concentre sur son ecran. ';
+    p+='EMOTIONS — capturer l instant emotionnel brut. '+momEmo+' '+dadEmo+' ';
+    p+='Les emotions sont subtiles, authentiques, non jouees. Les larmes ou la joie dans les yeux, pas dans une grimace. ';
+    p+=moisTxt+' '+twins+' '+idf+' '+base;
+
+  } else if(echoStep===3){
+    p='MODE ECHOGRAPHIE IMAGE 3 — ECRAN DU MEDECIN. ';
+    p+='Le medecin est de profil, concentre. Sa main tient la sonde sur le ventre de la maman. '+gel+' ';
+    p+='L ecran echographique est bien visible avec une interface realiste d echographe medical. ';
+    p+='Fond noir de l image echographique. ';
+    p+=(echoTwins?'Deux foetus visibles avec leurs mesures respectives (BIP, PC, CA, LF en mm). ':'Un foetus visible avec mesures medicales (BIP, PC, CA, LF en mm). ');
+    p+='Annotations et marqueurs de mesure visibles (croix de mesure, lignes pointillees). ';
+    p+='Informations patient dans les coins (semaines d amenorrhee, date, nom clinique fictif). ';
+    p+='Bebe(s) en position foetale clairement identifiable(s) sur l ecran. ';
+    p+=moisTxt+' '+twins+' '+idf+' '+base;
+
+  } else if(echoStep===4){
+    p='MODE ECHOGRAPHIE IMAGE 4 — ECHOGRAPHIE 3D. ';
+    p+='Gros plan sur l ecran echographe montrant une echographie 3D realiste. ';
+    p+=(echoTwins?'Deux bebes en rendu 3D, ton orange/sepia caracteristique, chaque bebe distinct en position foetale naturelle. ':'Un bebe en rendu 3D, ton orange/sepia caracteristique, visage et corps modelises en volume. Traits visibles : front, nez, levres. ');
+    p+='Interface echographe visible autour — fond noir, mesures, annotations medicales. ';
+    p+='Minimum 5 mois pour un rendu 3D coherent. Mois actuel : '+echoMonth+'. '+base;
+
+  } else if(echoStep===5){
+    p='MODE ECHOGRAPHIE IMAGE 5 — LE CLICHE IMPRIME. ';
+    p+='Simulation d une vraie impression papier d echographie. Format papier thermique horizontal, fond noir, coins legerement arrondis. ';
+    p+=(echoTwins?'Deux vignettes cote a cote — jumeau A et jumeau B, chacun avec ses mesures annotees. ':'Un bebe centre, image echographique realiste avec mesures annotees (BIP, LF, etc). ');
+    p+='Informations clinique : semaines d amenorrhee, date, nom clinique fictif, fleches de mesure. ';
+    p+='Aspect authentique d une vraie impression d echographie — pas une illustration. '+base;
+  }
+
+  return p;
+}
+
 
 function buildPregnancyPrompt(common){
   const fundusData={
@@ -1101,7 +1270,7 @@ ${common}`;
 
 /* ══ API VERTEX ══ */
 async function callVertexImage(prompt,extraImages=[]){
-  const modelsToTry=['gemini-3.1-flash-image-preview','gemini-3-pro-image-preview'];
+  const modelsToTry=['gemini-3.1-flash-image','gemini-3-pro-image-preview'];
   let lastVertexErr=new Error('Aucun modèle Vertex disponible.');
   for(const MODEL_TRY of modelsToTry){
   const endpoint=`https://aiplatform.googleapis.com/v1/publishers/google/models/${MODEL_TRY}:generateContent?key=${encodeURIComponent(API_KEY)}`;
@@ -1167,6 +1336,7 @@ async function callKieImage(prompt,extraImages=[]){
 async function handleGenerate(){
   if(isGenerating) return;
   if(activeMode==='PREGNANCY'&&pregnancyStep>=2&&birthStep===0){ birthStep=1; birthDone=[]; saveSettings(); renderLab(); return; }
+  if(activeMode==='ECHOGRAPHIE'&&echoStep===0){ startEcho(); return; }
   const needTwo=['SIBLING','CHILD'].includes(activeMode);
   const needOne=['GRANDPARENT','UNCLE_AUNT','COUSIN','PREGNANCY','EVOLUTION'].includes(activeMode);
   if(needTwo&&(!parent1||!parent2)){ alert("Photos des deux parents obligatoires."); return; }
@@ -1182,6 +1352,11 @@ async function handleGenerate(){
     const label=getBirthStepLabel();
     const isBirthScene=activeMode==='PREGNANCY'&&birthStep>=1;
     resultImages=[{dataUrl,engine:activeEngine,label,birth:isBirthScene}];
+    if(activeMode==='ECHOGRAPHIE'){
+      if(!echoDone.includes(echoStep)) echoDone.push(echoStep);
+      if(echoStep<5) echoStep++;
+      saveSettings(); await saveResults(); isGenerating=false; renderLab(); return;
+    }
     if(isBirthScene){
       if(!birthDone.includes(birthStep)) birthDone.push(birthStep);
       const needSecondTwin=birthStep===3&&(birthBabyType==='twins'||birthBabyType==='twin_girls')&&birthDone.filter(d=>d===3).length<2;
