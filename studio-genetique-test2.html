@@ -321,6 +321,7 @@ const MODES = [
   { id:'COUSIN',      label:'Cousins / Cousines',  icon:'🧑‍🤝‍🧑' },
   { id:'EVOLUTION',   label:'Évolution Temporelle',icon:'⏳' },
   { id:'ECHOGRAPHIE',  label:'Échographie',          icon:'🔬' },
+  { id:'ACCOUCHEMENT', label:'Accouchement',         icon:'🏥' },
 ];
 
 const LOADING_STEPS_VERTEX = [
@@ -384,6 +385,23 @@ let evolutionAgeInput='18 mois';
 
 /* Échographie */
 let echoStep=0;
+
+/* Accouchement */
+let accoStep=0;
+let accoDone=[];
+let accoType='hopital'; // 'hopital' | 'eau'
+let accoFatherPresent=false;
+let accoDoula=false;
+let accoSingleton='singleton'; // singleton|twins|twin_girls
+let accoEpidural=false;
+let accoObstetricien='female'; // male|female
+let accoFatherShortColor='bleu marine';
+let accoMomBraColor='noir';
+let accoHatColor='creme';
+let accoLieuLocked=false;
+let accoScenes=Array(10).fill('');
+let accoSelfieEmotion='';
+let accoCordCutter='pere'; // pere|obstetricien
 let echoDone=[];
 let echoTwins=false;
 let echoMonth=3;
@@ -445,7 +463,8 @@ function saveSettings(){
     fetalTypeB,fetalZoneB,fetalIntensityB,
     birthStep,birthDone,birthEpidural,birthFatherPresent,
     birthBabyType,birthHatColor,evolutionAgeInput,
-    echoStep,echoDone,echoTwins,echoMonth,echoFatherPresent,echoEmotionMom,echoEmotionDad
+    echoStep,echoDone,echoTwins,echoMonth,echoFatherPresent,echoEmotionMom,echoEmotionDad,
+    accoStep,accoDone,accoType,accoFatherPresent,accoDoula,accoSingleton,accoEpidural,accoObstetricien,accoFatherShortColor,accoMomBraColor,accoHatColor,accoLieuLocked,accoScenes,accoSelfieEmotion,accoCordCutter
   }));}catch(e){}
 }
 async function saveParents(){
@@ -499,6 +518,17 @@ async function loadState(){
       echoFatherPresent=s.echoFatherPresent??echoFatherPresent;
       echoEmotionMom=s.echoEmotionMom??echoEmotionMom;
       echoEmotionDad=s.echoEmotionDad??echoEmotionDad;
+      accoStep=s.accoStep??accoStep; accoDone=s.accoDone??accoDone;
+      accoType=s.accoType??accoType; accoFatherPresent=s.accoFatherPresent??accoFatherPresent;
+      accoDoula=s.accoDoula??accoDoula; accoSingleton=s.accoSingleton??accoSingleton;
+      accoEpidural=s.accoEpidural??accoEpidural; accoObstetricien=s.accoObstetricien??accoObstetricien;
+      accoFatherShortColor=s.accoFatherShortColor??accoFatherShortColor;
+      accoMomBraColor=s.accoMomBraColor??accoMomBraColor;
+      accoHatColor=s.accoHatColor??accoHatColor;
+      accoLieuLocked=s.accoLieuLocked??accoLieuLocked;
+      accoScenes=s.accoScenes??accoScenes;
+      accoSelfieEmotion=s.accoSelfieEmotion??accoSelfieEmotion;
+      accoCordCutter=s.accoCordCutter??accoCordCutter;
     }
   }catch(e){}
   try{ await openDB(); parent1=await idbGet('parents','parent1'); parent2=await idbGet('parents','parent2'); parentFather=await idbGet('parents','parentFather'); }
@@ -575,8 +605,9 @@ function renderLab(){
   const btnLabel=isBirth ? getBirthBtnLabel()
     : activeMode==='FETAL_MOVE' ? '👣 Capturer le mouvement'
     : activeMode==='ECHOGRAPHIE' ? (echoStep===0?'🔬 Demarrer':'🔬 Image '+echoStep+'/5')
+    : activeMode==='ACCOUCHEMENT' ? (accoStep===0?'🏥 Demarrer':'🏥 Sequence '+(accoStep)+' / '+getAccoTotalSteps())
     : (pregnancyStep===3?'Générer la naissance':'Générer l\'identité');
-  const btnClass=isBirth ? 'ready-rose' : (activeMode==='FETAL_MOVE'||activeMode==='ECHOGRAPHIE') ? 'ready-rose' : 'ready';
+  const btnClass=isBirth ? 'ready-rose' : (activeMode==='FETAL_MOVE'||activeMode==='ECHOGRAPHIE'||activeMode==='ACCOUCHEMENT') ? 'ready-rose' : 'ready';
 
   lab.innerHTML=`
     <div class="lab-grid">
@@ -603,11 +634,12 @@ function getBirthBtnLabel(){
 }
 
 function renderUploaders(){
-  const singleMode=['GRANDPARENT','UNCLE_AUNT','COUSIN','PREGNANCY','EVOLUTION','FETAL_MOVE','ECHOGRAPHIE'].includes(activeMode);
+  const singleMode=['GRANDPARENT','UNCLE_AUNT','COUSIN','PREGNANCY','EVOLUTION','FETAL_MOVE','ECHOGRAPHIE','ACCOUCHEMENT'].includes(activeMode);
   const showFather=activeMode==='PREGNANCY'&&birthFatherPresent&&birthStep>=2;
   if(singleMode){
     const label=activeMode==='PREGNANCY'?'Photo Mère'
                :activeMode==='ECHOGRAPHIE'?'Photo Mère'
+               :activeMode==='ACCOUCHEMENT'?'Photo Mère'
                :activeMode==='FETAL_MOVE'?'Photo du ventre enceint'
                :activeMode==='EVOLUTION'?'Photo Source'
                :familySide==='mother'?'Photo Mère':'Photo Père';
@@ -634,6 +666,7 @@ function renderParams(){
     case 'FETAL_MOVE':  return renderFetalMoveMode();
     case 'EVOLUTION':   return renderEvolution();
     case 'ECHOGRAPHIE':  return renderEchographie();
+    case 'ACCOUCHEMENT': return renderAccouchement();
     case 'PREGNANCY':   return renderPregnancy();
     case 'SIBLING':   return renderSibling();
     case 'CHILD':     return renderChild();
@@ -874,6 +907,7 @@ Respect strict de l'identité des visages fournis.`;
   switch(activeMode){
     case 'FETAL_MOVE':   return buildFetalMovePrompt();
     case 'ECHOGRAPHIE':  return buildEchoPrompt();
+    case 'ACCOUCHEMENT': return buildAccoPrompt();
     case 'EVOLUTION': return `MODE : ÉVOLUTION TEMPORELLE\nÂge exact cible : ${evolutionAgeInput}\nSexe biologique : ${selectedSex==='female'?'XX':'XY'}\nCouleur des yeux : ${selectedEyeColor}\nConserver rigoureusement l'identité du sujet source.\nAdapter la morphologie, la texture de peau, la posture et les proportions à l'âge indiqué.\n${common}`;
     case 'SIBLING':{ const persons=[]; if(siblingChoice.brother) persons.push(`un frère de ${siblingAges.brother} ans`); if(siblingChoice.sister) persons.push(`une sœur de ${siblingAges.sister} ans`); return `MODE : FRATRIE\nCréer ${persons.join(' et ')} à partir des deux parents fournis.\nRessemblance familiale : ${rl} (${familyResemblance}%).\nVariations naturelles obligatoires. Pas de clonage.\n${common}`; }
     case 'GRANDPARENT': case 'UNCLE_AUNT': case 'COUSIN':{ const isGP=activeMode==='GRANDPARENT',isUA=activeMode==='UNCLE_AUNT'; const rM=isGP?'grand-père':isUA?'oncle':'cousin'; const rF=isGP?'grand-mère':isUA?'tante':'cousine'; const persons=[]; if(relationChoice.male) persons.push(`${rM} de ${isGP?gpAges.grandpa:relationAges.male} ans`); if(relationChoice.female) persons.push(`${rF} de ${isGP?gpAges.grandma:relationAges.female} ans`); return `MODE : ${activeMode}\nBranche familiale : ${familySide==='mother'?'maternelle':'paternelle'}\nCréer ${persons.join(' et ')}.\nRessemblance familiale : ${rl} (${familyResemblance}%).\nHéritage identifiable sans clonage facial.\n${common}`; }
@@ -1120,6 +1154,277 @@ function buildEchoPrompt(){
 }
 
 
+function setAccoType(v){ accoType=v; saveSettings(); renderLab(); }
+function setAccoFather(v){ accoFatherPresent=v; saveSettings(); renderLab(); }
+function setAccoDoula(v){ accoDoula=v; saveSettings(); renderLab(); }
+function setAccoSingleton(v){ accoSingleton=v; saveSettings(); renderLab(); }
+function setAccoEpidural(v){ accoEpidural=v; saveSettings(); renderLab(); }
+function setAccoObstetricien(v){ accoObstetricien=v; saveSettings(); renderLab(); }
+function setAccoFatherShortColor(v){ accoFatherShortColor=v; saveSettings(); }
+function setAccoMomBraColor(v){ accoMomBraColor=v; saveSettings(); }
+function setAccoHatColor(v){ accoHatColor=v; saveSettings(); }
+function setAccoCordCutter(v){ accoCordCutter=v; saveSettings(); renderLab(); }
+function setAccoSelfieEmotion(v){ accoSelfieEmotion=v; saveSettings(); }
+function setAccoScene(idx, v){ accoScenes[idx]=v; saveSettings(); }
+function toggleAccoLieu(){ accoLieuLocked=!accoLieuLocked; saveSettings(); renderLab(); }
+
+function getAccoTotalSteps(){
+  if(accoType==='eau') return 11; // ref + jusqu a 10 scenes libres
+  // hopital: ref + selfie + epidural? + travail + poussee + sortie + peauapeau + cordon + pesee + maternite
+  return accoEpidural ? 10 : 9;
+}
+
+function getAccoStepLabel(n){
+  if(n===1) return 'Image de reference';
+  if(accoType==='eau'){
+    return n===2 ? 'Contractions' : 'Scene '+(n-1);
+  }
+  // hopital
+  var steps=['Image de reference','Selfie'];
+  if(accoEpidural) steps.push('Pose peridural');
+  steps.push('Salle de travail','Poussee','Sortie bebe','Peau a peau','Coupe du cordon','Pesee','Chambre maternite');
+  return steps[n-1] || 'Sequence '+n;
+}
+
+function renderAccouchement(){
+  var stepDefs=[];
+  var total=getAccoTotalSteps();
+  for(var i=1;i<=total;i++) stepDefs.push({n:i,label:getAccoStepLabel(i)});
+
+  var pills=stepDefs.map(function(s){
+    var done=accoDone.includes(s.n);
+    var active=accoStep===s.n;
+    return '<div class="birth-step-pill '+(done?'done':active?'active':'')+'"><span class="step-num">'+(done?'&#10003;':s.n)+'</span>'+s.label+'</div>';
+  }).join('');
+
+  var html='';
+  html+='<div class="alert rose" style="margin-bottom:16px;">Mode Accouchement<p>Generez d abord l image de reference, verrouillez le lieu, puis generez chaque sequence.</p></div>';
+  html+='<div class="birth-steps-nav">'+pills+'</div>';
+
+  // Lieu lock (apres step 1 genere)
+  if(accoDone.includes(1)){
+    html+='<div class="ctrl" style="background:'+(accoLieuLocked?'rgba(16,185,129,0.08)':'rgba(255,255,255,0.02)')+';border-color:'+(accoLieuLocked?'rgba(16,185,129,0.3)':'var(--line)')+';">';
+    html+='<div class="ctrl-title" style="color:'+(accoLieuLocked?'#34d399':'var(--muted2)')+';">'+( accoLieuLocked?'🔒 Lieu verrouille':'🔓 Lieu non verrouille')+'</div>';
+    html+='<div class="row"><button class="ctrl-btn '+(accoLieuLocked?'active':'')+'" onclick="toggleAccoLieu()">'+(accoLieuLocked?'Deverrouiller':'Verrouiller le lieu')+'</button></div>';
+    html+='<div class="small-note">Une fois verrouille, toutes les sequences suivantes conserveront le meme decor.</div>';
+    html+='</div>';
+  }
+
+  // Type accouchement
+  html+='<div class="ctrl"><div class="ctrl-title">Type d accouchement</div><div class="row">';
+  html+='<button class="ctrl-btn '+(accoType==='hopital'?'active':'')+'" onclick="setAccoType(\"hopital\")">🏥 Hopital</button>';
+  html+='<button class="ctrl-btn '+(accoType==='eau'?'active':'')+'" onclick="setAccoType(\"eau\")">💧 Dans l eau</button>';
+  html+='</div></div>';
+
+  // Bébés
+  html+='<div class="ctrl"><div class="ctrl-title">Bebes</div><div class="row">';
+  html+='<button class="ctrl-btn '+(accoSingleton==='singleton'?'active':'')+'" onclick="setAccoSingleton(\"singleton\")">👶 Un bebe</button>';
+  html+='<button class="ctrl-btn '+(accoSingleton==='twins'?'active':'')+'" onclick="setAccoSingleton(\"twins\")">👶👶 Jumeaux</button>';
+  html+='<button class="ctrl-btn '+(accoSingleton==='twin_girls'?'active':'')+'" onclick="setAccoSingleton(\"twin_girls\")">👧👧 Jumelles</button>';
+  html+='</div></div>';
+
+  // Père
+  html+='<div class="ctrl"><div class="ctrl-title">Pere present</div><div class="row">';
+  html+='<button class="ctrl-btn '+(accoFatherPresent?'active':'')+'" onclick="setAccoFather(true)">👨 Oui</button>';
+  html+='<button class="ctrl-btn '+(!accoFatherPresent?'active':'')+'" onclick="setAccoFather(false)">Non</button>';
+  html+='</div>';
+  if(accoFatherPresent){
+    html+='<div class="ctrl-title" style="margin-top:10px;">Couleur short de bain du pere</div>';
+    html+='<input type="text" class="text-input" style="font-size:12px;padding:9px 12px;" value="'+accoFatherShortColor+'" placeholder="Ex: bleu marine, noir, blanc..." oninput="setAccoFatherShortColor(this.value)">';
+  }
+  html+='</div>';
+
+  // Options selon type
+  if(accoType==='eau'){
+    html+='<div class="ctrl"><div class="ctrl-title">Couleur soutien-gorge de bain (mere)</div>';
+    html+='<input type="text" class="text-input" style="font-size:12px;padding:9px 12px;" value="'+accoMomBraColor+'" placeholder="Ex: noir, bordeaux, blanc..." oninput="setAccoMomBraColor(this.value)">';
+    html+='</div>';
+    // Doula
+    html+='<div class="ctrl"><div class="ctrl-title">Doula presente (optionnel)</div><div class="row">';
+    html+='<button class="ctrl-btn '+(accoDoula?'active':'')+'" onclick="setAccoDoula(true)">Oui</button>';
+    html+='<button class="ctrl-btn '+(!accoDoula?'active':'')+'" onclick="setAccoDoula(false)">Non</button>';
+    html+='</div></div>';
+    // Scenes libres
+    html+='<div class="ctrl" style="background:rgba(124,58,237,0.06);border-color:rgba(124,58,237,0.2);">';
+    html+='<div class="ctrl-title" style="color:#a78bfa;">Directions de scene (jusqu a 10)</div>';
+    html+='<div class="small-note" style="margin-bottom:10px;">Decrivez ce qui se passe dans chaque sequence. Laissez vide pour ne pas generer.</div>';
+    for(var i=0;i<10;i++){
+      html+='<div style="margin-bottom:8px;"><div style="font-size:9px;color:var(--muted2);font-weight:800;text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px;">Scene '+(i+1)+'</div>';
+      html+='<textarea style="width:100%;background:rgba(255,255,255,0.04);color:#f3f4f6;border:1px solid rgba(124,58,237,0.2);border-radius:10px;padding:9px;font-size:11px;line-height:1.5;resize:vertical;min-height:50px;font-family:inherit;outline:none;" placeholder="Ex: contractions intenses, pere masse le dos, moment de calme..." oninput="setAccoScene('+i+',this.value)">'+accoScenes[i]+'</textarea></div>';
+    }
+    html+='</div>';
+  } else {
+    // Hôpital options
+    html+='<div class="ctrl"><div class="ctrl-title">Peridural</div><div class="row">';
+    html+='<button class="ctrl-btn '+(accoEpidural?'active':'')+'" onclick="setAccoEpidural(true)">💉 Avec</button>';
+    html+='<button class="ctrl-btn '+(!accoEpidural?'active':'')+'" onclick="setAccoEpidural(false)">Sans</button>';
+    html+='</div></div>';
+
+    html+='<div class="ctrl"><div class="ctrl-title">Obstétricien / Sage-femme</div><div class="row">';
+    html+='<button class="ctrl-btn '+(accoObstetricien==='female'?'active':'')+'" onclick="setAccoObstetricien(\"female\")">👩 Femme</button>';
+    html+='<button class="ctrl-btn '+(accoObstetricien==='male'?'active':'')+'" onclick="setAccoObstetricien(\"male\")">👨 Homme</button>';
+    html+='</div></div>';
+
+    // Selfie émotion
+    html+='<div class="ctrl" style="background:rgba(124,58,237,0.06);border-color:rgba(124,58,237,0.2);">';
+    html+='<div class="ctrl-title" style="color:#a78bfa;">✨ Emotion selfie (sequence 2)</div>';
+    html+='<textarea style="width:100%;background:rgba(255,255,255,0.04);color:#f3f4f6;border:1px solid rgba(124,58,237,0.25);border-radius:12px;padding:12px;font-size:12px;line-height:1.6;resize:vertical;min-height:70px;font-family:inherit;outline:none;" placeholder="Ex: melange de larmes et de sourires, anxiete et amour, rires nerveux..." oninput="setAccoSelfieEmotion(this.value)">'+accoSelfieEmotion+'</textarea>';
+    html+='</div>';
+
+    // Coupe cordon
+    html+='<div class="ctrl"><div class="ctrl-title">Coupe du cordon par</div><div class="row">';
+    html+='<button class="ctrl-btn '+(accoCordCutter==='pere'?'active':'')+'" onclick="setAccoCordCutter(\"pere\")">👨 Le pere</button>';
+    html+='<button class="ctrl-btn '+(accoCordCutter==='obstetricien'?'active':'')+'" onclick="setAccoCordCutter(\"obstetricien\")">👩‍⚕️ Obstetricien</button>';
+    html+='</div></div>';
+
+    // Couleur bonnets
+    html+='<div class="ctrl"><div class="ctrl-title">Couleur bonnets (chambre maternite)</div>';
+    html+='<input type="text" class="text-input" style="font-size:12px;padding:9px 12px;" value="'+accoHatColor+'" placeholder="Ex: creme, bleu ciel, rose..." oninput="setAccoHatColor(this.value)">';
+    html+='</div>';
+  }
+
+  return html;
+}
+
+function buildAccoPrompt(){
+  var obs = accoObstetricien==='female' ? 'sage-femme (femme, tenue sterile complete : blouse, charlotte, masque, gants)' : 'obstetricien (homme, tenue sterile complete : blouse, charlotte, masque, gants)';
+  var twins = accoSingleton==='singleton' ? 'un seul bebe' : accoSingleton==='twins' ? 'jumeaux' : 'jumelles';
+  var pere = accoFatherPresent ? 'Le pere est present, visible dans la scene.' : 'Le pere n est pas dans cette scene.';
+  var idf = 'Respect strict de l identite du visage de la mere (et du pere si present) fourni en reference.';
+  var base = 'Sortie : IMAGE PHOTOREALISTE UNIQUEMENT. Aucun texte. 4K. Zero retouche. Emotion brute. Realisme total.';
+  var lieu = accoLieuLocked ? 'VERROUILLAGE DU LIEU : conserver exactement le meme decor, le meme eclairage, les memes murs et equipements que l image de reference fournie.' : '';
+  var vernix = 'Le bebe est recouvert de vernix caseosa : substance blanche cremeuse et cireuse, comme du fromage blanc gras, couvrant la peau du bebe a la naissance. C est normal et naturel.';
+  var p = '';
+
+  if(accoType==='eau'){
+    var idx = accoStep-2; // step 1=ref, step 2+=scenes
+    if(accoStep===1){
+      p='IMAGE DE REFERENCE — ACCOUCHEMENT DANS L EAU. ';
+      p+='Grande baignoire ou piscine de naissance, eau chaude legerement trouble, eclairage doux et intimiste. ';
+      p+='La mere est dans l eau, en soutien-gorge de bain couleur '+accoMomBraColor+'. Ventre tres gros visible sous l eau. ';
+      if(accoFatherPresent) p+='Le pere est dans l eau en short de bain couleur '+accoFatherShortColor+', a cote d elle. ';
+      if(accoDoula) p+='Une doula est presente, hors de l eau, en tenue confortable, posture douce et professionnelle. ';
+      p+='Scene sereine d avant-travail. '+idf+' '+base;
+    } else if(idx>=0 && idx<10 && accoScenes[idx] && accoScenes[idx].trim()){
+      p='ACCOUCHEMENT DANS L EAU — SCENE '+(idx+1)+'. ';
+      p+='Tout se passe dans la baignoire de naissance / piscine d accouchement. Eau chaude, eclairage intime. ';
+      p+='La mere porte un soutien-gorge de bain couleur '+accoMomBraColor+'. Douleur naturelle visible sur le corps et le visage. ';
+      if(accoFatherPresent) p+='Le pere est dans l eau, short de bain couleur '+accoFatherShortColor+'. ';
+      if(accoDoula) p+='La doula est presente et visible dans la scene. ';
+      p+='DIRECTION DE SCENE : '+accoScenes[idx].trim()+'. ';
+      p+=vernix+' Sang et liquide amniotique visibles si bebe est ne. ';
+      p+=lieu+' '+idf+' '+base;
+    } else {
+      p='ACCOUCHEMENT DANS L EAU — SCENE. Direction de scene non renseignee. '+base;
+    }
+    return p;
+  }
+
+  // HOPITAL
+  var stepList=['ref','selfie'];
+  if(accoEpidural) stepList.push('epidural');
+  stepList.push('travail','poussee','sortie','peauapeau','cordon','pesee','maternite');
+  var stepId = stepList[accoStep-1] || 'ref';
+
+  if(stepId==='ref'){
+    p='IMAGE DE REFERENCE — SALLE D ACCOUCHEMENT HOPITAL. ';
+    p+='Salle d accouchement hospitaliere moderne. Lit medicalise, monitoring foetal, equipements visibles. ';
+    p+='Lumiere froide et blanche d hopital. La mere est allongee ou assise sur le lit, en chemise d hopital (tunique ouverte dans le dos, couleur unie pale). ';
+    if(accoFatherPresent) p+='Le pere est assis a cote d elle. ';
+    p+='Personnels medicaux presents en arriere-plan. Photo de reference — identite clairement visible. ';
+    p+=idf+' '+base;
+
+  } else if(stepId==='selfie'){
+    var emo = accoSelfieEmotion.trim() ? accoSelfieEmotion.trim() : 'melange d anxiete et d amour, sourire tremblant, yeux brillants';
+    p='SELFIE — AVANT LA NAISSANCE. ';
+    p+='Le pere prend un selfie avec la mere dans la salle d accouchement. Le telephone est hors champ — on voit seulement que son bras est tendu devant eux. ';
+    p+='Ils sont ensemble, cote a cote, la mere dans son lit en chemise d hopital. ';
+    p+='EMOTION : '+emo+'. L emotion est subtile, authentique, capturee a l instant T. ';
+    p+=lieu+' '+idf+' '+base;
+
+  } else if(stepId==='epidural'){
+    p='POSE DE LA PERIDURALE. ';
+    p+='La mere est assise sur le bord du lit, dos courbe en avant (position foetale assise), chemise d hopital ouverte dans le dos. ';
+    p+='SON DOS EST DESINFECTE A LA BETADINE : large zone orange-jaune vif visible sur la peau du bas du dos, autour de la zone lombaire L3-L4. ';
+    p+='L anesthesiste est debout derriere elle, blouse sterile, gants steriles, charlotte. Il insere une aiguille de Tuohy (longue aiguille medicale fine) entre les vertebres lombaires. ';
+    p+='Un fin catheter transparent depasse de l aiguille. Champ sterile (petite compresse) autour du point d injection. ';
+    if(accoFatherPresent) p+='Le pere est en face de la mere, lui tenant les deux mains pour la stabiliser. ';
+    p+=lieu+' '+idf+' '+base;
+
+  } else if(stepId==='travail'){
+    p='SALLE DE TRAVAIL — CONTRACTIONS. ';
+    p+='La mere est dans le lit medicalise, chemise d hopital. Monitoring foetal : capteurs relies au ventre par ceintures elastiques, cables visibles. Perfusion IV sur le bras. ';
+    if(accoEpidural) p+='Catheter de peridurale visible dans le dos, fixe avec du sparadrap transparent. Moniteur de peridurale visible. ';
+    p+=accoEpidural ? 'Sous peridurale : mere moins en douleur, visage concentre mais moins contracte. ' : 'SANS PERIDURALE : douleur intense visible — visage contracte, sueur, respiration haletante, corps tendu pendant la contraction. ';
+    var sf = accoObstetricien==='female' ? 'Sage-femme' : 'Obstetricien';
+    p+=sf+' present(e), personnel infirmier visible. ';
+    if(accoFatherPresent) p+='Le pere tient sa main. ';
+    p+=lieu+' '+idf+' '+base;
+
+  } else if(stepId==='poussee'){
+    p='MOMENT DE LA POUSSEE — EMOTION BRUTE. ';
+    p+='La mere est en plein effort de poussee. Cuisses ecartees sur les etriries obstetricaux. ';
+    p+='Corps en tension maximale : dos souleve, menton sur la poitrine, muscles du cou saillants, veines apparentes sur le front et le cou. ';
+    p+='Visage : sueur abondante sur le front et les tempes, larmes, douleur et determination melees, bouche ouverte en effort intense. ZERO GLAMOUR. ';
+    p+='Au niveau du perinee, la tete du bebe commence a couronner : on voit le sommet du crane avec cheveux mouilles, du sang et du liquide amniotique. ';
+    p+='La '+obs+' est en position au pied du lit, gants steriles, regard concentre. ';
+    if(accoFatherPresent) p+='Le pere est a cote, en tenue sterile, il lui tient la main fermement, visage emu et tendu. ';
+    p+=lieu+' '+idf+' '+base;
+
+  } else if(stepId==='sortie'){
+    p='SORTIE DU BEBE — PREMIER INSTANT. ';
+    p+='Le bebe vient de naitre. La '+obs+' le tient a deux mains, gants taches de sang. ';
+    p+=vernix+' Traces de sang et de liquide amniotique sur le bebe et sur les gants. ';
+    p+='Le bebe est en position foetale dans les mains du soignant. Peau rosee/rouge sous le vernix. Cordon ombilical encore attache, bleuatre et gelatineux, visible. ';
+    p+='Moment documentaire medical brut. Lumiere de salle d accouchement. ';
+    p+=lieu+' '+idf+' '+base;
+
+  } else if(stepId==='peauapeau'){
+    p='PEAU A PEAU — PREMIER CONTACT. ';
+    p+='Le bebe est pose directement sur la poitrine de la mere, peau contre peau. ';
+    p+=vernix+' Cordon ombilical encore ATTACHE — visible, bleuatre/grisatre, gelatineux, pas encore coupe. ';
+    p+=(accoSingleton==='singleton' ? 'Un bebe en position foetale naturelle, tete sur le sein de la mere. ' : 'Les bebes ('+twins+') sur la poitrine de la mere. ');
+    p+='La mere est epuisee, larmes silencieuses ou sourire tremblant, regard fixe sur son bebe. Sueur encore visible, cheveux colles. ZERO retouche. ';
+    p+=lieu+' '+idf+' '+base;
+
+  } else if(stepId==='cordon'){
+    if(accoCordCutter==='pere'){
+      p='COUPE DU CORDON PAR LE PERE. ';
+      p+='Le pere tient une paire de ciseaux medicaux steriles (grands ciseaux chirurgicaux metalliques). ';
+      p+='Il coupe le cordon ombilical — geste precis et tremblant a la fois. ';
+      p+='Son visage : larmes aux yeux, machoire serree, emotion totale et brute. C est le geste le plus fort de sa vie. ';
+      p+='Le cordon est bleuatre/grisatre, gelatineux, pince de chaque cote par des clamps medicaux verts ou blancs. ';
+    } else {
+      p='COUPE DU CORDON PAR L OBSTETRICIEN. ';
+      p+='La '+obs+' tient les ciseaux chirurgicaux steriles et coupe le cordon ombilical entre les deux clamps. ';
+      p+='Geste professionnel, precis. Cordon bleuatre gelatineux visible. ';
+      p+='La mere et le bebe visibles en arriere-plan ou en avant-plan. ';
+    }
+    p+=lieu+' '+idf+' '+base;
+
+  } else if(stepId==='pesee'){
+    p='PESEE DU BEBE. ';
+    p+='Le bebe est pose sur une balance neonatale (plateau blanc plat avec affichage numerique). ';
+    p+='Une infirmiere (femme en blouse blanche, charlotte) se penche au-dessus, verifiant le poids. Ses mains encadrent le bebe pour le securiser. ';
+    p+=vernix+' Le bebe est partiellement essuye mais garde encore des traces. ';
+    p+='On est toujours dans la salle d accouchement — memes murs, meme lumiere. ';
+    p+=lieu+' '+idf+' '+base;
+
+  } else if(stepId==='maternite'){
+    p='CHAMBRE DE MATERNITE — PREMIERES HEURES. ';
+    p+='Chambre de maternite, lumiere douce. ';
+    p+=(accoSingleton==='singleton'
+      ? 'La mere tient son bebe dans les bras. '
+      : accoFatherPresent ? 'La mere tient un '+twins.replace('s','')+', le pere tient le second. ' : 'La mere a un bebe dans chaque bras. ');
+    p+='Bebe(s) habilles : body simple, bonnet couleur '+accoHatColor+'. ';
+    p+='Bracelet d identification maternite visible au poignet de la mere ET du/des bebe(s) (bandelette plastique blanche avec code-barre). ';
+    if(accoFatherPresent) p+='Le pere est present, expression de tendresse et de fierte epuisee. ';
+    p+=lieu+' '+idf+' '+base;
+  }
+
+  return p;
+}
+
 function buildPregnancyPrompt(common){
   const fundusData={
     1:{cm:'non palpable',proj:0,circ:0,desc:'aucune modification visible du ventre'},
@@ -1337,6 +1642,7 @@ async function handleGenerate(){
   if(isGenerating) return;
   if(activeMode==='PREGNANCY'&&pregnancyStep>=2&&birthStep===0){ birthStep=1; birthDone=[]; saveSettings(); renderLab(); return; }
   if(activeMode==='ECHOGRAPHIE'&&echoStep===0){ startEcho(); return; }
+  if(activeMode==='ACCOUCHEMENT'&&accoStep===0){ accoStep=1; accoDone=[]; accoLieuLocked=false; saveSettings(); renderLab(); return; }
   const needTwo=['SIBLING','CHILD'].includes(activeMode);
   const needOne=['GRANDPARENT','UNCLE_AUNT','COUSIN','PREGNANCY','EVOLUTION'].includes(activeMode);
   if(needTwo&&(!parent1||!parent2)){ alert("Photos des deux parents obligatoires."); return; }
@@ -1352,6 +1658,12 @@ async function handleGenerate(){
     const label=getBirthStepLabel();
     const isBirthScene=activeMode==='PREGNANCY'&&birthStep>=1;
     resultImages=[{dataUrl,engine:activeEngine,label,birth:isBirthScene}];
+    if(activeMode==='ACCOUCHEMENT'){
+      if(!accoDone.includes(accoStep)) accoDone.push(accoStep);
+      const total=getAccoTotalSteps();
+      if(accoStep<total) accoStep++;
+      saveSettings(); await saveResults(); isGenerating=false; renderLab(); return;
+    }
     if(activeMode==='ECHOGRAPHIE'){
       if(!echoDone.includes(echoStep)) echoDone.push(echoStep);
       if(echoStep<5) echoStep++;
