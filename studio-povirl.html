@@ -203,6 +203,21 @@
     text-transform:uppercase;transition:0.2s;
   }
   .landing-enter-btn:hover{filter:brightness(1.08);transform:translateY(-1px);}
+
+  /* ---------- MODALE RECADRAGE SUJET-REGARD (retire le visage avant envoi) ---------- */
+  .crop-modal-overlay{
+    position:fixed;inset:0;z-index:60;background:rgba(5,13,10,0.92);
+    display:flex;align-items:center;justify-content:center;padding:20px;
+  }
+  .crop-modal-overlay.hidden{display:none;}
+  .crop-modal{background:var(--bg-panel);border:1px solid var(--border-strong);border-radius:14px;padding:22px;max-width:420px;width:100%;}
+  .crop-modal h3{font-size:11.5px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin:0 0 10px;}
+  .crop-preview-wrap{position:relative;border-radius:10px;overflow:hidden;border:1px solid var(--border);margin:14px 0 6px;}
+  .crop-preview-wrap img{display:block;width:100%;height:auto;}
+  .crop-mask{position:absolute;top:0;left:0;right:0;background:rgba(5,13,10,0.9);pointer-events:none;border-bottom:2px dashed var(--accent);}
+  .crop-modal input[type=range]{width:100%;accent-color:var(--accent);margin:6px 0 4px;}
+  .crop-modal-actions{display:flex;gap:10px;margin-top:16px;}
+  .crop-modal-actions .out-btn{flex:1;}
 </style>
 </head>
 <body>
@@ -233,6 +248,22 @@
     <div class="landing-chip"><b>⚡ Dual moteur</b>Vertex AI avec bascule automatique vers kie.ai.</div>
   </div>
   <button class="landing-enter-btn" id="enterAppBtn">▶ Entrer dans le studio</button>
+</div>
+
+<div class="crop-modal-overlay hidden" id="subjectCropModal">
+  <div class="crop-modal">
+    <h3>⚠ Retirer le visage avant envoi</h3>
+    <div class="hint" style="margin-top:0;">Le visage ne doit jamais être envoyé à l'IA — fais glisser pour ne garder que la zone en dessous (mains, corps, vêtements). La partie recouverte ne sera jamais transmise.</div>
+    <div class="crop-preview-wrap">
+      <img id="cropPreviewImg" src="">
+      <div class="crop-mask" id="cropMask"></div>
+    </div>
+    <input type="range" id="cropSlider" min="10" max="85" value="55">
+    <div class="crop-modal-actions">
+      <button class="out-btn" id="cropCancelBtn">✕ Annuler</button>
+      <button class="out-btn" id="cropConfirmBtn">✔ Valider le cadrage</button>
+    </div>
+  </div>
 </div>
 
 <div class="wrap">
@@ -273,7 +304,7 @@
     <div class="panel">
       <h2>Sujet-Regard <span style="color:var(--danger);font-weight:700;">(obligatoire)</span></h2>
       <div class="ref-grid ref-grid-single" id="subjectGrid"></div>
-      <div class="hint" style="margin-bottom:20px;">La personne placée ici devient automatiquement la caméra : toute la génération adopte strictement son point de vue, et elle n'apparaît jamais entièrement à l'écran (sauf reflet explicitement demandé). <b style="color:var(--accent);">Sans image ici, la génération est bloquée.</b></div>
+      <div class="hint" style="margin-bottom:20px;">La personne placée ici devient automatiquement la caméra : toute la génération adopte strictement son point de vue. <b style="color:var(--accent);">Son visage est retiré au recadrage avant tout envoi</b> — seule la zone en dessous (mains, corps, vêtements) sert de référence, pour qu'elle ne puisse jamais apparaître à l'écran. <b style="color:var(--danger);">Sans image ici, la génération est bloquée.</b></div>
 
       <h2>Références Personnages <span style="color:var(--text-dim);font-weight:400;">(jusqu'à 6)</span></h2>
       <div class="ref-grid" id="personGrid"></div>
@@ -479,8 +510,10 @@ function setEngine(eng) {
   document.getElementById('engineKie').classList.toggle('active', eng === 'kie');
 }
 
-// ---------- RÉFÉRENCE SUJET-REGARD (emplacement spécial, une seule image) ----------
-let subjectRegardImage = null; // dataURL unique — la personne qui devient la caméra
+// ---------- RÉFÉRENCE SUJET-REGARD (emplacement spécial, une seule image, recadrée pour exclure le visage) ----------
+let subjectRegardImage = null; // dataURL unique, déjà recadrée — la personne qui devient la caméra
+let rawSubjectImage = null;    // photo brute en attente de recadrage
+let cropCutPercent = 55;
 
 function renderSubjectGrid() {
   const grid = document.getElementById('subjectGrid');
@@ -500,14 +533,55 @@ function renderSubjectGrid() {
     add.innerHTML = `<span>+ Ajouter<br>le Sujet-Regard</span><input type="file" accept="image/*">`;
     add.querySelector('input').addEventListener('change', (e) => {
       if (e.target.files[0]) readFileAsDataURL(e.target.files[0]).then(dataUrl => {
-        subjectRegardImage = dataUrl;
-        renderSubjectGrid();
+        openSubjectCropper(dataUrl);
       });
     });
     grid.appendChild(add);
   }
   updateGenerateAvailability();
 }
+
+function openSubjectCropper(dataUrl) {
+  rawSubjectImage = dataUrl;
+  cropCutPercent = 55;
+  document.getElementById('cropPreviewImg').src = dataUrl;
+  document.getElementById('cropSlider').value = cropCutPercent;
+  updateCropMask();
+  document.getElementById('subjectCropModal').classList.remove('hidden');
+}
+
+function updateCropMask() {
+  document.getElementById('cropMask').style.height = cropCutPercent + '%';
+}
+
+document.getElementById('cropSlider').addEventListener('input', (e) => {
+  cropCutPercent = Number(e.target.value);
+  updateCropMask();
+});
+
+document.getElementById('cropCancelBtn').addEventListener('click', () => {
+  rawSubjectImage = null;
+  document.getElementById('subjectCropModal').classList.add('hidden');
+});
+
+document.getElementById('cropConfirmBtn').addEventListener('click', () => {
+  const img = new Image();
+  img.onload = () => {
+    const w = img.naturalWidth, h = img.naturalHeight;
+    const cutY = Math.round(h * cropCutPercent / 100);
+    const keepH = h - cutY;
+    if (keepH < 20) { setStatus('✖ Il doit rester une zone visible en bas de l\'image.'); return; }
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = keepH;
+    canvas.getContext('2d').drawImage(img, 0, cutY, w, keepH, 0, 0, w, keepH);
+    subjectRegardImage = canvas.toDataURL('image/jpeg', 0.92);
+    rawSubjectImage = null;
+    document.getElementById('subjectCropModal').classList.add('hidden');
+    renderSubjectGrid();
+  };
+  img.src = rawSubjectImage;
+});
 
 function updateGenerateAvailability() {
   const btn = document.getElementById('generateBtn');
@@ -615,7 +689,7 @@ ${MODE_REGARD}
 
 RÈGLE ABSOLUE — SUJET-REGARD DÉFINI PAR IMAGE : une image de référence a été explicitement désignée comme Sujet-Regard (c'est la toute première image de référence transmise). Cette personne devient automatiquement la caméra : toute la génération adopte strictement sa perspective à la première personne, conformément à la règle du mode Regard ci-dessus — ce n'est jamais déduit du texte, c'est fixé par cette image. Elle n'est jamais visible entièrement par une caméra externe : ni son visage, ni sa tête, ni son corps complet, ni en portrait, selfie, vue de dos, vue de profil, ou toute composition suggérant qu'elle est photographiée par quelqu'un d'autre.
 
-Exception miroir : si la scène demande explicitement un miroir ou une surface réfléchissante, le Sujet-Regard peut apparaître dans le reflet — cela correspond à ce qu'il voit depuis ses propres yeux. Ce reflet doit rester physiquement cohérent avec une vue à la première personne : miroir placé devant le Sujet-Regard, perspective depuis ses yeux, corps visible uniquement à l'intérieur du cadre du miroir, environnement réel visible autour de ce cadre. Ce reflet ne doit jamais devenir un mirror selfie classique : aucune caméra externe visible, aucune pose de shooting, aucun cadrage de selfie, aucune composition où le Sujet-Regard semble photographié par quelqu'un d'autre. Un téléphone ne doit apparaître dans le reflet que si la scène le demande explicitement, et même alors la perspective reste celle de ses yeux — jamais celle d'un selfie.
+Exception miroir : si la scène demande explicitement un miroir ou une surface réfléchissante, le Sujet-Regard peut apparaître dans le reflet — cela correspond à ce qu'il voit depuis ses propres yeux. Ce reflet doit rester physiquement cohérent avec une vue à la première personne : miroir placé devant le Sujet-Regard, perspective depuis ses yeux, corps visible uniquement à l'intérieur du cadre du miroir, environnement réel visible autour de ce cadre. Ce reflet ne doit jamais devenir un mirror selfie classique : aucune caméra externe visible, aucune pose de shooting, aucun cadrage de selfie, aucune composition où le Sujet-Regard semble photographié par quelqu'un d'autre. Un téléphone ne doit apparaître dans le reflet que si la scène le demande explicitement, et même alors la perspective reste celle de ses yeux — jamais celle d'un selfie. Note : la référence transmise ne contient volontairement pas son visage (retiré avant envoi) — un reflet en miroir peut donc rester silhouette/corps générique plutôt que reproduire des traits faciaux précis, ce qui est normal et préférable à une fuite de visage ailleurs dans l'image.
 
 Hors miroir ou reflet logique, seules certaines parties de son corps peuvent apparaître si le cadrage POV le justifie naturellement : mains, doigts, avant-bras, bras partiels, jambes, genoux, pieds, partie basse du torse, vêtements partiels, accessoires portés, chaussures — jamais son visage ou sa tête entière. Cette référence sert uniquement à guider ces éléments compatibles avec une perspective POV (teint des mains/jambes visibles, forme des mains, style des ongles, vêtements en fragments, bijoux, montre, chaussures, accessoires) — son identité complète n'est jamais reconstruite en personnage visible hors reflet.
 
