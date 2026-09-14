@@ -207,13 +207,14 @@
   /* ---------- MODALE RECADRAGE SUJET-REGARD (retire le visage avant envoi) ---------- */
   .crop-modal-overlay{
     position:fixed;inset:0;z-index:60;background:rgba(5,13,10,0.92);
-    display:flex;align-items:center;justify-content:center;padding:20px;
+    display:flex;align-items:flex-start;justify-content:center;
+    padding:20px 16px;overflow-y:auto;
   }
   .crop-modal-overlay.hidden{display:none;}
-  .crop-modal{background:var(--bg-panel);border:1px solid var(--border-strong);border-radius:14px;padding:22px;max-width:420px;width:100%;}
+  .crop-modal{background:var(--bg-panel);border:1px solid var(--border-strong);border-radius:14px;padding:22px;max-width:420px;width:100%;margin:auto;}
   .crop-modal h3{font-size:11.5px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin:0 0 10px;}
   .crop-preview-wrap{position:relative;border-radius:10px;overflow:hidden;border:1px solid var(--border);margin:14px 0 6px;}
-  .crop-preview-wrap img{display:block;width:100%;height:auto;}
+  .crop-preview-wrap img{display:block;width:auto;max-width:100%;height:auto;max-height:42vh;margin:0 auto;object-fit:contain;}
   .crop-mask{position:absolute;top:0;left:0;right:0;background:rgba(5,13,10,0.9);pointer-events:none;border-bottom:2px dashed var(--accent);}
   .crop-modal input[type=range]{width:100%;accent-color:var(--accent);margin:6px 0 4px;}
   .crop-modal-actions{display:flex;gap:10px;margin-top:16px;}
@@ -254,10 +255,11 @@
   <div class="crop-modal">
     <h3>⚠ Retirer le visage avant envoi</h3>
     <div class="hint" style="margin-top:0;">Le visage ne doit jamais être envoyé à l'IA — fais glisser pour ne garder que la zone en dessous (mains, corps, vêtements). La partie recouverte ne sera jamais transmise.</div>
-    <div class="crop-preview-wrap">
+    <div class="crop-preview-wrap" id="cropPreviewWrap">
       <img id="cropPreviewImg" src="">
       <div class="crop-mask" id="cropMask"></div>
     </div>
+    <div id="cropStatusLabel" style="font-size:11.5px;font-weight:700;letter-spacing:0.5px;margin-bottom:8px;"></div>
     <input type="range" id="cropSlider" min="10" max="85" value="55">
     <div class="crop-modal-actions">
       <button class="out-btn" id="cropCancelBtn">✕ Annuler</button>
@@ -304,7 +306,7 @@
     <div class="panel">
       <h2>Sujet-Regard <span style="color:var(--danger);font-weight:700;">(obligatoire)</span></h2>
       <div class="ref-grid ref-grid-single" id="subjectGrid"></div>
-      <div class="hint" style="margin-bottom:20px;">La personne placée ici devient automatiquement la caméra : toute la génération adopte strictement son point de vue. <b style="color:var(--accent);">Son visage est retiré au recadrage avant tout envoi</b> — seule la zone en dessous (mains, corps, vêtements) sert de référence, pour qu'elle ne puisse jamais apparaître à l'écran. <b style="color:var(--danger);">Sans image ici, la génération est bloquée.</b></div>
+      <div class="hint" style="margin-bottom:20px;">La personne placée ici devient automatiquement la caméra : toute la génération adopte strictement son point de vue. <b style="color:var(--accent);">Par défaut son visage est retiré au recadrage avant tout envoi</b> — seule la zone en dessous (mains, corps, vêtements) sert de référence. Une case à cocher permet d'envoyer le visage complet uniquement pour une scène avec miroir. <b style="color:var(--danger);">Sans image ici, la génération est bloquée.</b></div>
 
       <h2>Références Personnages <span style="color:var(--text-dim);font-weight:400;">(jusqu'à 6)</span></h2>
       <div class="ref-grid" id="personGrid"></div>
@@ -511,8 +513,9 @@ function setEngine(eng) {
 }
 
 // ---------- RÉFÉRENCE SUJET-REGARD (emplacement spécial, une seule image, recadrée pour exclure le visage) ----------
-let subjectRegardImage = null; // dataURL unique, déjà recadrée — la personne qui devient la caméra
-let rawSubjectImage = null;    // photo brute en attente de recadrage
+let subjectRegardImage = null;     // dataURL recadrée (par défaut, sans visage) — envoyée à l'IA
+let subjectRegardImageFull = null; // dataURL originale complète (avec visage) — utilisée seulement si case "miroir" cochée
+let rawSubjectImage = null;        // photo brute en attente de recadrage
 let cropCutPercent = 55;
 
 function renderSubjectGrid() {
@@ -524,9 +527,15 @@ function renderSubjectGrid() {
     thumb.innerHTML = `<img src="${subjectRegardImage}"><span class="ref-tag">SUJET-REGARD</span><div class="ref-remove">✕</div>`;
     thumb.querySelector('.ref-remove').addEventListener('click', () => {
       subjectRegardImage = null;
+      subjectRegardImageFull = null;
       renderSubjectGrid();
     });
     grid.appendChild(thumb);
+    const mirrorRow = document.createElement('div');
+    mirrorRow.className = 'fallback-row';
+    mirrorRow.style.marginTop = '10px';
+    mirrorRow.innerHTML = `<input type="checkbox" id="sendFullFaceCheckbox"> Scène avec miroir : envoyer le visage complet (risque de fuite ailleurs dans l'image)`;
+    grid.parentElement.insertBefore(mirrorRow, grid.nextSibling);
   } else {
     const add = document.createElement('label');
     add.className = 'ref-add';
@@ -544,14 +553,31 @@ function renderSubjectGrid() {
 function openSubjectCropper(dataUrl) {
   rawSubjectImage = dataUrl;
   cropCutPercent = 55;
-  document.getElementById('cropPreviewImg').src = dataUrl;
+  const previewImg = document.getElementById('cropPreviewImg');
+  const wrap = document.getElementById('cropPreviewWrap');
+  wrap.style.height = 'auto';
+  previewImg.onload = () => {
+    // Fixe une hauteur en pixels explicite : un % de hauteur sur un enfant
+    // position:absolute ne se résout pas correctement si le parent n'a
+    // qu'une hauteur "auto" issue du contenu — c'était le bug du curseur.
+    wrap.style.height = previewImg.clientHeight + 'px';
+    updateCropMask();
+  };
+  previewImg.src = dataUrl;
   document.getElementById('cropSlider').value = cropCutPercent;
-  updateCropMask();
   document.getElementById('subjectCropModal').classList.remove('hidden');
 }
 
 function updateCropMask() {
   document.getElementById('cropMask').style.height = cropCutPercent + '%';
+  const label = document.getElementById('cropStatusLabel');
+  if (cropCutPercent >= 45) {
+    label.textContent = '✔ Visage exclu — seule la zone claire ci-dessus sera envoyée';
+    label.style.color = 'var(--accent)';
+  } else {
+    label.textContent = '⚠ Visage encore visible dans la zone claire — remonte le curseur';
+    label.style.color = 'var(--danger)';
+  }
 }
 
 document.getElementById('cropSlider').addEventListener('input', (e) => {
@@ -576,6 +602,7 @@ document.getElementById('cropConfirmBtn').addEventListener('click', () => {
     canvas.height = keepH;
     canvas.getContext('2d').drawImage(img, 0, cutY, w, keepH, 0, 0, w, keepH);
     subjectRegardImage = canvas.toDataURL('image/jpeg', 0.92);
+    subjectRegardImageFull = rawSubjectImage;
     rawSubjectImage = null;
     document.getElementById('subjectCropModal').classList.add('hidden');
     renderSubjectGrid();
@@ -1047,7 +1074,9 @@ async function generate() {
   setStatus('⏳ Interprétation de la scène…');
 
   const prompt = buildSystemPrompt(direction);
-  const refImages = [...(subjectRegardImage ? [subjectRegardImage] : []), ...personImages, ...(locationImage ? [locationImage] : [])];
+  const useFullFace = document.getElementById('sendFullFaceCheckbox')?.checked;
+  const subjectImageToSend = (useFullFace && subjectRegardImageFull) ? subjectRegardImageFull : subjectRegardImage;
+  const refImages = [...(subjectImageToSend ? [subjectImageToSend] : []), ...personImages, ...(locationImage ? [locationImage] : [])];
   let resultUrl = null;
   let usedEngine = currentEngine;
 
