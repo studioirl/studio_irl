@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Studio Love</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💗</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#14101A;
+    --surface:#1F1926;
+    --surface-raised:#2A2233;
+    --border:#372C42;
+    --rose:#C97B84;
+    --rose-hi:#DA9BA2;
+    --gold:#C9A24B;
+    --text-hi:#F3EAE4;
+    --text-lo:#A79AAE;
+    --text-faint:#726480;
+    --danger:#D97A6B;
+    --radius:14px;
+    --radius-sm:9px;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--ink);
+    color:var(--text-hi);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+  }
+  #shell{
+    width:100%;
+    max-width:480px;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    position:relative;
+    background:
+      radial-gradient(120% 60% at 50% 0%, rgba(201,123,132,.14), transparent 60%),
+      var(--ink);
+  }
+  h1,h2,h3,.serif{font-family:'Fraunces',serif;font-weight:500;letter-spacing:.1px;}
+  h1{font-size:1.9rem;line-height:1.15;margin:0 0 6px;}
+  h2{font-size:1.35rem;margin:0 0 4px;}
+  h3{font-size:1.05rem;margin:0 0 2px;}
+  p{margin:0;color:var(--text-lo);line-height:1.5;}
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:calc(16px + var(--safe-top)) 20px 12px;
+    position:sticky;top:0;z-index:20;
+    background:linear-gradient(var(--ink) 70%, transparent);
+  }
+  .topbar .brand{display:flex;align-items:center;gap:8px;font-family:'Fraunces',serif;font-size:1.15rem;color:var(--text-hi);}
+  .topbar .brand .dot{width:7px;height:7px;border-radius:50%;background:var(--rose);}
+  .icon-btn{
+    width:38px;height:38px;border-radius:50%;
+    background:var(--surface);border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;
+    color:var(--text-hi);cursor:pointer;
+  }
+  .icon-btn:active{transform:scale(.94);}
+  main{flex:1;padding:0 20px calc(96px + var(--safe-bottom));overflow-x:hidden;}
+  .screen{display:none;animation:fadein .25s ease;}
+  .screen.active{display:block;}
+  @keyframes fadein{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+  .card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:16px;
+  }
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    width:100%;padding:14px 18px;border-radius:999px;border:none;
+    font-family:'Inter',sans-serif;font-weight:600;font-size:.97rem;
+    cursor:pointer;transition:transform .12s ease, opacity .12s ease;
+  }
+  .btn:active{transform:scale(.98);}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn-primary{background:var(--rose);color:#221317;}
+  .btn-primary:active:not(:disabled){background:var(--rose-hi);}
+  .btn-gold{background:var(--gold);color:#221317;}
+  .btn-ghost{background:transparent;color:var(--text-hi);border:1px solid var(--border);}
+  .btn-danger{background:transparent;color:var(--danger);border:1px solid rgba(217,122,107,.4);}
+  .btn-sm{padding:9px 14px;width:auto;font-size:.85rem;border-radius:999px;}
+  .row{display:flex;gap:10px;}
+  .row.wrap{flex-wrap:wrap;}
+  .col{display:flex;flex-direction:column;gap:10px;}
+  .stack{display:flex;flex-direction:column;gap:14px;}
+  .mt{margin-top:18px;}
+  .mt-sm{margin-top:10px;}
+
+  label.field-label{font-size:.8rem;color:var(--text-lo);margin-bottom:6px;display:block;}
+  input[type=text], input[type=password], textarea, select{
+    width:100%;background:var(--surface-raised);border:1px solid var(--border);
+    color:var(--text-hi);border-radius:var(--radius-sm);padding:12px 13px;
+    font-family:'Inter',sans-serif;font-size:.93rem;resize:vertical;
+  }
+  input::placeholder, textarea::placeholder{color:var(--text-faint);}
+  textarea{min-height:70px;line-height:1.4;}
+  select{appearance:none;-webkit-appearance:none;}
+
+  .chip{
+    padding:9px 14px;border-radius:999px;border:1px solid var(--border);
+    background:var(--surface-raised);color:var(--text-lo);font-size:.83rem;
+    cursor:pointer;white-space:nowrap;
+  }
+  .chip.selected{background:var(--rose);border-color:var(--rose);color:#221317;font-weight:600;}
+  .chip-scroll{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;}
+  .chip-scroll::-webkit-scrollbar{display:none;}
+
+  .tmpl-card{
+    min-width:118px;background:var(--surface-raised);border:1px solid var(--border);
+    border-radius:var(--radius-sm);padding:14px 10px;text-align:center;cursor:pointer;
+  }
+  .tmpl-card.selected{border-color:var(--rose);background:rgba(201,123,132,.14);}
+  .tmpl-card .emoji{font-size:1.6rem;display:block;margin-bottom:6px;}
+  .tmpl-card .name{font-size:.78rem;color:var(--text-hi);}
+
+  .checkline{display:flex;align-items:flex-start;gap:10px;cursor:pointer;}
+  .checkline input{margin-top:3px;width:17px;height:17px;accent-color:var(--rose);flex:none;}
+  .checkline span{font-size:.85rem;color:var(--text-lo);line-height:1.4;}
+
+  .couple-thumb{
+    width:100%;aspect-ratio:1/1;border-radius:var(--radius-sm);object-fit:cover;
+    background:var(--surface-raised);border:1px solid var(--border);
+  }
+  .couple-pair{display:flex;}
+  .couple-pair img{width:44%;aspect-ratio:1/1;object-fit:cover;border-radius:50%;border:2px solid var(--surface);}
+  .couple-pair img:last-child{margin-left:-14%;}
+
+  .upload-slot{
+    aspect-ratio:1/1;border-radius:var(--radius-sm);border:1.5px dashed var(--border);
+    display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;
+    color:var(--text-faint);font-size:.78rem;cursor:pointer;overflow:hidden;position:relative;
+    background:var(--surface-raised);
+  }
+  .upload-slot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+  .upload-slot input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+
+  .result-img{width:100%;border-radius:var(--radius);display:block;background:var(--surface-raised);}
+  .locked-badge{
+    display:inline-flex;align-items:center;gap:6px;background:rgba(201,162,75,.15);
+    color:var(--gold);border:1px solid rgba(201,162,75,.35);border-radius:999px;
+    padding:6px 12px;font-size:.78rem;font-weight:600;
+  }
+
+  .seq-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+  .seq-grid .frame{position:relative;border-radius:10px;overflow:hidden;background:var(--surface-raised);aspect-ratio:1/1;cursor:pointer;}
+  .seq-grid .frame img{width:100%;height:100%;object-fit:cover;}
+  .seq-grid .frame .idx{position:absolute;top:5px;left:5px;background:rgba(20,16,26,.7);color:var(--text-hi);font-size:.68rem;padding:2px 6px;border-radius:6px;}
+
+  .memory-item{display:flex;gap:12px;align-items:center;padding:10px;border-radius:var(--radius-sm);background:var(--surface);border:1px solid var(--border);cursor:pointer;}
+  .memory-item img,.memory-item .ph{width:56px;height:56px;border-radius:9px;object-fit:cover;background:var(--surface-raised);flex:none;}
+  .memory-item .meta{flex:1;min-width:0;}
+  .memory-item .meta .t{font-size:.92rem;color:var(--text-hi);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .memory-item .meta .s{font-size:.76rem;color:var(--text-lo);}
+
+  .bottomnav{
+    position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+    width:100%;max-width:480px;
+    background:rgba(31,25,38,.92);backdrop-filter:blur(14px);
+    border-top:1px solid var(--border);
+    display:flex;justify-content:space-around;
+    padding:10px 6px calc(10px + var(--safe-bottom));
+    z-index:30;
+  }
+  .navbtn{display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--text-faint);font-size:.68rem;background:none;border:none;cursor:pointer;padding:4px 10px;}
+  .navbtn.active{color:var(--rose-hi);}
+  .navbtn svg{width:21px;height:21px;}
+
+  .overlay{
+    position:fixed;inset:0;z-index:100;background:rgba(20,16,26,.88);
+    display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px;
+    text-align:center;padding:30px;
+  }
+  .overlay.active{display:flex;}
+  .spinner{width:38px;height:38px;border-radius:50%;border:3px solid var(--border);border-top-color:var(--rose);animation:spin 1s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .overlay p{color:var(--text-hi);font-size:.95rem;}
+  .overlay .sub{color:var(--text-lo);font-size:.8rem;}
+
+  .toast{
+    position:fixed;bottom:96px;left:50%;transform:translateX(-50%) translateY(20px);
+    max-width:420px;width:calc(100% - 40px);
+    background:var(--surface-raised);border:1px solid var(--border);color:var(--text-hi);
+    padding:12px 16px;border-radius:12px;font-size:.86rem;z-index:200;opacity:0;
+    transition:opacity .25s ease, transform .25s ease; pointer-events:none;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .toast.err{border-color:rgba(217,122,107,.5);}
+
+  .empty{text-align:center;padding:40px 10px;color:var(--text-faint);}
+  .empty .emoji{font-size:2.2rem;display:block;margin-bottom:10px;}
+
+  .back-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+  .back-row .icon-btn{width:34px;height:34px;}
+
+  .slider-wrap{display:flex;align-items:center;gap:10px;}
+  input[type=range]{-webkit-appearance:none;flex:1;height:4px;border-radius:2px;background:var(--border);}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--rose);cursor:pointer;}
+
+  details.adv{border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 13px;background:var(--surface-raised);}
+  details.adv summary{cursor:pointer;color:var(--text-lo);font-size:.85rem;}
+  .divider{height:1px;background:var(--border);margin:18px 0;}
+  .hint{font-size:.76rem;color:var(--text-faint);margin-top:4px;}
+  a.linklike{color:var(--rose-hi);text-decoration:none;font-weight:600;}
+  .modal-bg{position:fixed;inset:0;background:rgba(20,16,26,.92);z-index:150;display:none;align-items:center;justify-content:center;padding:20px;}
+  .modal-bg.active{display:flex;}
+  .modal-bg img, .modal-bg video{max-width:100%;max-height:80vh;border-radius:12px;}
+  .modal-close{position:absolute;top:calc(20px + var(--safe-top));right:20px;}
+</style>
+</head>
+<body>
+<div id="shell">
+
+  <div class="topbar">
+    <div class="brand"><span class="dot"></span>Studio Love</div>
+    <button class="icon-btn" onclick="showScreen('settings')" aria-label="Réglages">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2-1.5-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1L15 3.5h-4L10.7 6a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.6 7.6 0 0 0 0 2l-2 1.5 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1L11 20.5h4l.3-2.5a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4-2-1.5Z"/></svg>
+    </button>
+  </div>
+
+  <main>
+
+    <!-- ===================== HOME ===================== -->
+    <section class="screen" data-screen="home">
+      <h1 class="serif">Racontez vos<br>moments à deux.</h1>
+      <p>Studio Love transforme deux photos en souvenirs de couple réalistes — une image, une séquence, puis une vidéo.</p>
+      <button class="btn btn-primary mt" onclick="startCreateFlow()">Créer un moment</button>
+
+      <div class="mt" id="homeRecent"></div>
+    </section>
+
+    <!-- ===================== COUPLES LIST ===================== -->
+    <section class="screen" data-screen="couples">
+      <h2 class="serif">Vos couples</h2>
+      <p>Choisissez un profil ou créez-en un nouveau pour commencer un moment.</p>
+      <div class="col mt" id="couplesList"></div>
+      <button class="btn btn-ghost mt" onclick="openCoupleForm()">+ Nouveau profil couple</button>
+    </section>
+
+    <!-- ===================== COUPLE FORM ===================== -->
+    <section class="screen" data-screen="couple-form">
+      <div class="back-row">
+        <button class="icon-btn" onclick="showScreen('couples')">←</button>
+        <h2 class="serif" style="margin:0;">Profil couple</h2>
+      </div>
+      <div class="stack">
+        <div>
+          <label class="field-label">Photos de référence</label>
+          <div class="row">
+            <label class="upload-slot" id="slotA">
+              <span>+ Photo A</span>
+              <input type="file" accept="image/*" onchange="handleRefUpload(event,'A')">
+            </label>
+            <label class="upload-slot" id="slotB">
+              <span>+ Photo B</span>
+              <input type="file" accept="image/*" onchange="handleRefUpload(event,'B')">
+            </label>
+          </div>
+          <p class="hint">Une photo nette du visage de chaque personne, seule de préférence.</p>
+        </div>
+        <div>
+          <label class="field-label">Prénom — personne A</label>
+          <input type="text" id="nameA" placeholder="ex. Camille">
+        </div>
+        <div>
+          <label class="field-label">Prénom — personne B</label>
+          <input type="text" id="nameB" placeholder="ex. Lucas">
+        </div>
+        <div>
+          <label class="field-label">Nom du couple / du projet</label>
+          <input type="text" id="coupleTitle" placeholder="ex. Camille & Lucas">
+        </div>
+        <div class="divider" style="margin:4px 0;"></div>
+        <label class="checkline">
+          <input type="checkbox" id="consentMajeur">
+          <span>Je confirme que les deux personnes sur ces photos sont majeures.</span>
+        </label>
+        <label class="checkline">
+          <input type="checkbox" id="consentAutorisation">
+          <span>J'ai l'autorisation des deux personnes d'utiliser leurs photos pour créer ce contenu.</span>
+        </label>
+        <button class="btn btn-primary" onclick="saveCoupleProfile()">Enregistrer ce profil</button>
+      </div>
+    </section>
+
+    <!-- ===================== CREATE SCENE ===================== -->
+    <section class="screen" data-screen="create-scene">
+      <div class="back-row">
+        <button class="icon-btn" onclick="showScreen('couples')">←</button>
+        <h2 class="serif" style="margin:0;">Créer un moment</h2>
+      </div>
+      <div id="sceneCoupleSummary" class="card row" style="align-items:center;justify-content:space-between;margin-bottom:16px;"></div>
+
+      <div class="stack">
+        <div>
+          <label class="field-label">Template</label>
+          <div class="chip-scroll" id="templateScroll"></div>
+        </div>
+        <div>
+          <label class="field-label">Idées de scène (optionnel)</label>
+          <div class="chip-scroll" id="sceneIdeas"></div>
+        </div>
+        <div>
+          <label class="field-label">Décris la scène</label>
+          <textarea id="sceneText" placeholder="ex. Réveil doux un dimanche matin, lumière tamisée, elle a la tête sur son épaule"></textarea>
+        </div>
+        <div>
+          <label class="field-label">Ambiance</label>
+          <div class="chip-scroll" id="moodScroll"></div>
+        </div>
+        <div>
+          <label class="field-label">Style de capture</label>
+          <div class="chip-scroll" id="styleScroll"></div>
+        </div>
+        <div>
+          <label class="field-label">Tenues</label>
+          <div class="row">
+            <div class="chip selected" data-outfit="keep" onclick="selectOutfit('keep')" style="flex:1;text-align:center;">Garder les tenues de référence</div>
+            <div class="chip" data-outfit="adapt" onclick="selectOutfit('adapt')" style="flex:1;text-align:center;">Adapter à la scène</div>
+          </div>
+        </div>
+        <div>
+          <label class="field-label">Niveau de romantisme</label>
+          <div class="slider-wrap">
+            <input type="range" id="romanceSlider" min="1" max="5" value="3">
+            <span id="romanceVal" style="width:16px;text-align:center;color:var(--text-lo);font-size:.85rem;">3</span>
+          </div>
+        </div>
+        <div>
+          <label class="field-label">Résolution</label>
+          <div class="row">
+            <div class="chip selected" data-res="4k" onclick="selectResolution('4k')" style="flex:1;text-align:center;">4K (recommandé)</div>
+            <div class="chip" data-res="standard" onclick="selectResolution('standard')" style="flex:1;text-align:center;">Standard</div>
+          </div>
+        </div>
+        <button class="btn btn-primary mt-sm" id="generateFirstBtn" onclick="generateFirstImage()">Générer la première image</button>
+        <p class="hint" id="consentWarning" style="display:none;color:var(--danger);">Complète les cases de consentement sur ce profil couple avant de générer.</p>
+      </div>
+    </section>
+
+    <!-- ===================== FIRST IMAGE RESULT ===================== -->
+    <section class="screen" data-screen="first-image">
+      <div class="back-row">
+        <button class="icon-btn" onclick="showScreen('create-scene')">←</button>
+        <h2 class="serif" style="margin:0;">Ta scène</h2>
+      </div>
+      <img id="firstImagePreview" class="result-img" alt="Première image générée">
+      <div class="row mt">
+        <button class="btn btn-ghost" onclick="generateFirstImage(true)">Régénérer</button>
+        <button class="btn btn-ghost" onclick="showScreen('create-scene')">Modifier</button>
+      </div>
+      <button class="btn btn-gold mt-sm" onclick="lockScene()">Verrouiller la scène</button>
+    </section>
+
+    <!-- ===================== LOCKED SCENE ===================== -->
+    <section class="screen" data-screen="locked-scene">
+      <div class="back-row">
+        <button class="icon-btn" onclick="showScreen('home')">←</button>
+        <h2 class="serif" style="margin:0;">Scène verrouillée</h2>
+      </div>
+      <span class="locked-badge">🔒 Scène de référence figée</span>
+      <img id="lockedImagePreview" class="result-img mt-sm" alt="Scène verrouillée">
+      <div class="stack mt">
+        <p class="field-label" style="margin:0;">Générer une séquence</p>
+        <div class="row">
+          <button class="btn btn-ghost" onclick="generateSequence(3)">3 images</button>
+          <button class="btn btn-ghost" onclick="generateSequence(5)">5 images</button>
+          <button class="btn btn-ghost" onclick="generateSequence(10)">10 images</button>
+        </div>
+        <button class="btn btn-primary" onclick="openVideoCreation('scene')">Transformer en vidéo</button>
+        <button class="btn btn-ghost" onclick="saveMemoryFromLocked()">Sauvegarder dans mes souvenirs</button>
+      </div>
+    </section>
+
+    <!-- ===================== SEQUENCE RESULTS ===================== -->
+    <section class="screen" data-screen="sequence-results">
+      <div class="back-row">
+        <button class="icon-btn" onclick="showScreen('locked-scene')">←</button>
+        <h2 class="serif" style="margin:0;">La séquence</h2>
+      </div>
+      <div class="seq-grid" id="seqGrid"></div>
+      <div class="stack mt">
+        <button class="btn btn-ghost" onclick="regenerateSequence()">Régénérer toute la séquence</button>
+        <button class="btn btn-primary" onclick="openVideoCreation('sequence')">Transformer en vidéo</button>
+        <button class="btn btn-ghost" onclick="saveMemoryFromSequence()">Sauvegarder dans mes souvenirs</button>
+      </div>
+    </section>
+
+    <!-- ===================== VIDEO CREATION ===================== -->
+    <section class="screen" data-screen="video-creation">
+      <div class="back-row">
+        <button class="icon-btn" onclick="goBackFromVideo()">←</button>
+        <h2 class="serif" style="margin:0;">Transformer en vidéo</h2>
+      </div>
+      <img id="videoSourcePreview" class="result-img" alt="Image source">
+      <div class="stack mt">
+        <div>
+          <label class="field-label">Moteur vidéo</label>
+          <div class="row">
+            <div class="chip selected" data-engine="veo" onclick="selectVideoEngine('veo')" style="flex:1;text-align:center;">Veo 3.1</div>
+            <div class="chip" data-engine="kling" onclick="selectVideoEngine('kling')" style="flex:1;text-align:center;">Kling 3.0</div>
+          </div>
+        </div>
+        <div>
+          <label class="field-label">Format</label>
+          <div class="row">
+            <div class="chip selected" data-ratio="9:16" onclick="selectRatio('9:16')" style="flex:1;text-align:center;">9:16</div>
+            <div class="chip" data-ratio="1:1" onclick="selectRatio('1:1')" style="flex:1;text-align:center;">1:1</div>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="runVideoGeneration()">Générer la vidéo</button>
+      </div>
+      <video id="videoResult" class="result-img mt" controls style="display:none;"></video>
+      <div class="row mt-sm" id="videoActions" style="display:none;">
+        <button class="btn btn-ghost" onclick="downloadCurrentVideo()">Télécharger</button>
+        <button class="btn btn-primary" onclick="saveMemoryFromVideo()">Sauvegarder</button>
+      </div>
+    </section>
+
+    <!-- ===================== GALLERY ===================== -->
+    <section class="screen" data-screen="gallery">
+      <h2 class="serif">Vos souvenirs</h2>
+      <div class="chip-scroll mt-sm" id="galleryFilters"></div>
+      <div class="col mt" id="galleryList"></div>
+    </section>
+
+    <!-- ===================== SETTINGS ===================== -->
+    <section class="screen" data-screen="settings">
+      <h2 class="serif">Réglages</h2>
+      <div class="stack mt">
+        <div>
+          <label class="field-label">Clé API Vertex AI (Express)</label>
+          <input type="password" id="vertexApiKey" placeholder="AQ...">
+        </div>
+        <div>
+          <label class="field-label">Clé API kie.ai</label>
+          <input type="password" id="kieApiKey" placeholder="sk-...">
+        </div>
+        <div>
+          <label class="field-label">Résolution image par défaut</label>
+          <select id="defaultResolution">
+            <option value="4k">4K (gemini-3-pro-image-preview)</option>
+            <option value="standard">Standard (gemini-3.1-flash-image)</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label">Moteur vidéo par défaut</label>
+          <select id="defaultVideoEngine">
+            <option value="veo">Veo 3.1 (kie.ai)</option>
+            <option value="kling">Kling 3.0 (kie.ai)</option>
+          </select>
+        </div>
+        <details class="adv">
+          <summary>Réglages avancés (identifiants de modèles)</summary>
+          <div class="stack mt-sm">
+            <div>
+              <label class="field-label">Modèle Veo (kie.ai)</label>
+              <input type="text" id="veoModelId" placeholder="veo3_fast">
+            </div>
+            <div>
+              <label class="field-label">Modèle Kling (kie.ai)</label>
+              <input type="text" id="klingModelId" placeholder="kling-3.0/video">
+            </div>
+            <p class="hint">Les identifiants de modèles kie.ai évoluent régulièrement — vérifie docs.kie.ai si une génération échoue.</p>
+          </div>
+        </details>
+        <button class="btn btn-primary" onclick="saveSettings()">Enregistrer</button>
+        <div class="divider"></div>
+        <p class="hint">Studio Love fonctionne entièrement dans ce navigateur : tes clés API et tes créations restent stockées en local, sur cet appareil.</p>
+        <p class="hint">Contenu autorisé : romantique, affectueux, intime soft — jamais explicite. Personnes réelles et consentantes uniquement, jamais de mineurs ni de personnalités publiques.</p>
+        <button class="btn btn-danger" onclick="wipeAllData()">Effacer toutes les données locales</button>
+      </div>
+    </section>
+
+  </main>
+
+  <div class="bottomnav">
+    <button class="navbtn active" data-nav="home" onclick="showScreen('home')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9h14v-9"/></svg>
+      Accueil
+    </button>
+    <button class="navbtn" data-nav="couples" onclick="showScreen('couples')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="9" r="3.2"/><circle cx="16" cy="10.5" r="2.6"/><path d="M3.5 19c.6-3 3-4.8 5.5-4.8s4.9 1.8 5.5 4.8"/><path d="M13.5 15c1.8.2 3.7 1.6 4 4"/></svg>
+      Couples
+    </button>
+    <button class="navbtn" data-nav="gallery" onclick="showScreen('gallery')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.5" y="4.5" width="17" height="15" rx="2.4"/><path d="m3.5 15.5 4.5-4.5 3 3 4-4.5 5.5 6"/></svg>
+      Galerie
+    </button>
+    <button class="navbtn" data-nav="settings" onclick="showScreen('settings')">
+      <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2-1.5-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1L15 3.5h-4L10.7 6a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.6 7.6 0 0 0 0 2l-2 1.5 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1L11 20.5h4l.3-2.5a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4-2-1.5Z"/></svg>
+      Réglages
+    </button>
+  </div>
+
+  <div class="overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <p id="loadingMsg">Génération en cours…</p>
+    <p class="sub" id="loadingSub"></p>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="modal-bg" id="viewerModal" onclick="closeViewer(event)">
+    <button class="icon-btn modal-close" onclick="closeViewer(event)">✕</button>
+    <div id="viewerContent"></div>
+  </div>
+
+</div>
+
+<script>
+/* ======================================================================
+   STUDIO LOVE — moteur : Vertex AI (Gemini image) + kie.ai (Veo/Kling)
+   Architecture identique aux autres studios Studio IRL : fichier HTML
+   autonome, clés API saisies par l'utilisateur·rice, persistance locale
+   via IndexedDB, compatibilité Safari (Blob + createObjectURL).
+   ====================================================================== */
+
+const SAFETY_CLAUSE = "Les deux personnes représentées sont des adultes réels et consentants. Le contenu doit rester romantique, affectueux et intime au sens soft — jamais explicite ni sexuel. N'utilise jamais de personnalité publique ni de mineur.";
+
+const TEMPLATES = [
+  {id:'vlog', name:'Vlog Couple', emoji:'🎥', scenes:['Selfie vlog en marchant dans la rue, complices et rieurs','Vlog du matin dans la cuisine, café à la main','Vlog en voiture, musique et fous rires']},
+  {id:'voyage', name:'Voyage', emoji:'✈️', scenes:['Sur un balcon face à la mer, lumière du matin','Marché local, main dans la main','Coucher de soleil depuis un rooftop']},
+  {id:'plage', name:'Plage', emoji:'🏖️', scenes:['Selfie les pieds dans l’eau, vent dans les cheveux','Marche sur le sable au coucher du soleil','Allongés sur une serviette, rires partagés']},
+  {id:'hotel', name:'Hôtel', emoji:'🛏️', scenes:['Réveil doux dans des draps blancs','Petit-déjeuner au lit','Vue depuis la fenêtre de la chambre, tasse à la main']},
+  {id:'date', name:'Date Night', emoji:'🍷', scenes:['Dîner aux chandelles, regards complices','Rires autour d’un verre de vin','Sortie du restaurant, bras dessus bras dessous']},
+  {id:'cuisine', name:'Cuisine / Maison', emoji:'🍳', scenes:['Ils cuisinent ensemble en musique','Petite bataille de farine, fous rires','Câlin devant les fourneaux']},
+  {id:'voiture', name:'Voiture / Road Trip', emoji:'🚗', scenes:['Road trip, fenêtres ouvertes, cheveux au vent','Pause essence, rires complices','Nuit, la ville qui défile derrière eux']},
+  {id:'fiancailles', name:'Fiançailles', emoji:'💍', scenes:['Le moment de la demande','Rires et larmes de joie','Étreinte au coucher du soleil']},
+  {id:'fetes', name:'Fêtes / Saisons', emoji:'🎄', scenes:['Décoration du sapin ensemble','Chocolat chaud sous un plaid','Neige qui tombe, câlin dehors']},
+  {id:'longue-distance', name:'Long Distance Love', emoji:'📱', scenes:['Appel vidéo tendre, écrans côte à côte','Retrouvailles à l’aéroport','Souvenirs et lettres partagés']},
+  {id:'appart', name:'Appartement Cosy', emoji:'🛋️', scenes:['Dimanche pluvieux sur le canapé','Café du matin en pyjama','Lecture à deux, tête sur l’épaule']},
+  {id:'morning', name:'Morning Routine', emoji:'☀️', scenes:['Premier regard au réveil','Devant le miroir, complices','Café partagé en silence tendre']},
+  {id:'luxury', name:'Vacation Luxury', emoji:'🌴', scenes:['Bord de piscine à la villa','Cocktails au coucher du soleil','Terrasse privée, vue sur la mer']},
+  {id:'city', name:'City Walk', emoji:'🏙️', scenes:['Balade dans une ruelle animée','Pause devant une vitrine','Traversée d’un pont au crépuscule']},
+  {id:'rooftop', name:'Rooftop / Night Out', emoji:'🌃', scenes:['Rooftop, lumières de la ville','Danse improvisée','Rires sous les guirlandes lumineuses']}
+];
+const MOODS = ['Soft love','Playful','Passionate','Cozy','Romantic','Funny','Sleepy intimacy','Luxury','Nostalgic','Travel romance','Cute everyday','Deep emotional'];
+const STYLES = [
+  {id:'iphone-candid', name:'iPhone candid'},
+  {id:'iphone-selfie', name:'iPhone selfie'},
+  {id:'mirror-selfie', name:'Mirror selfie'},
+  {id:'travel-vlog', name:'Travel vlog'},
+  {id:'night-flash', name:'Night flash'},
+  {id:'digital-camera', name:'Digital camera'},
+  {id:'dslr', name:'DSLR / appareil photo'},
+  {id:'polaroid', name:'Polaroid'},
+  {id:'cinematic', name:'Cinematic still'}
+];
+const SEQ_STRUCTURES = {
+  3:['Mise en place : on comprend la scène, le lieu et l’énergie du couple.',
+     'Interaction naturelle : geste tendre, regard ou proximité.',
+     'Point culminant émotionnel : câlin, rire ou baiser doux.'],
+  5:['Introduction de la scène.',
+     'Rapprochement progressif.',
+     'Moment de complicité.',
+     'Point fort émotionnel de la séquence.',
+     'Afterglow, conclusion douce.'],
+  10:['Plan d’ensemble qui installe le moment.',
+      'Premier regard ou premier geste.',
+      'Interaction naturelle et détendue.',
+      'Montée de la connexion entre eux.',
+      'Geste complice.',
+      'Moment ludique ou romantique.',
+      'Pic émotionnel de la séquence.',
+      'Réaction, effet du moment précédent.',
+      'Détail intime ou tendre (mains, regard, sourire).',
+      'Image finale qui clôt l’histoire.']
+};
+
+/* ---------------------------- IndexedDB ---------------------------- */
+const DB_NAME='studio_love_db', DB_VERSION=1;
+let db;
+function openDB(){return new Promise((resolve,reject)=>{
+  const req=indexedDB.open(DB_NAME,DB_VERSION);
+  req.onupgradeneeded=e=>{
+    const d=e.target.result;
+    if(!d.objectStoreNames.contains('couples')) d.createObjectStore('couples',{keyPath:'id'});
+    if(!d.objectStoreNames.contains('scenes')) d.createObjectStore('scenes',{keyPath:'id'});
+    if(!d.objectStoreNames.contains('memories')) d.createObjectStore('memories',{keyPath:'id'});
+    if(!d.objectStoreNames.contains('kv')) d.createObjectStore('kv',{keyPath:'key'});
+  };
+  req.onsuccess=()=>{db=req.result;resolve(db);};
+  req.onerror=()=>reject(req.error);
+});}
+function idbPut(store,val){return new Promise((res,rej)=>{const tx=db.transaction(store,'readwrite');tx.objectStore(store).put(val);tx.oncomplete=()=>res(val);tx.onerror=()=>rej(tx.error);});}
+function idbGet(store,key){return new Promise((res,rej)=>{const tx=db.transaction(store,'readonly');const r=tx.objectStore(store).get(key);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+function idbGetAll(store){return new Promise((res,rej)=>{const tx=db.transaction(store,'readonly');const r=tx.objectStore(store).getAll();r.onsuccess=()=>res(r.result||[]);r.onerror=()=>rej(r.error);});}
+function idbDelete(store,key){return new Promise((res,rej)=>{const tx=db.transaction(store,'readwrite');tx.objectStore(store).delete(key);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);});}
+function idbClearAll(){return new Promise((res,rej)=>{
+  const tx=db.transaction(['couples','scenes','memories','kv'],'readwrite');
+  ['couples','scenes','memories','kv'].forEach(s=>tx.objectStore(s).clear());
+  tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error);
+});}
+
+async function getSetting(key){ const r=await idbGet('kv',key); return r?r.value:undefined; }
+async function setSetting(key,value){ return idbPut('kv',{key,value}); }
+
+/* ---------------------------- utils ---------------------------- */
+const uid=()=>'id_'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+function blobToBase64(blob){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(blob);});}
+function blobToDataURL(blob){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(blob);});}
+function base64ToBlob(b64,mime){const bytes=atob(b64);const arr=new Uint8Array(bytes.length);for(let i=0;i<bytes.length;i++)arr[i]=bytes.charCodeAt(i);return new Blob([arr],{type:mime||'image/png'});}
+function downloadBlob(blob,filename){
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),30000);
+}
+async function fetchWithBackoff(url,opts,maxRetries=5){
+  let delay=1500;
+  for(let attempt=0;attempt<=maxRetries;attempt++){
+    let res;
+    try{ res=await fetch(url,opts); }
+    catch(e){ if(attempt===maxRetries) throw e; await sleep(delay); delay=Math.min(delay*2,20000); continue; }
+    if(res.status!==429) return res;
+    if(attempt===maxRetries) return res;
+    await sleep(delay); delay=Math.min(delay*2,20000);
+  }
+}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+function toast(msg,isErr){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show'+(isErr?' err':'');
+  clearTimeout(t._timer);
+  t._timer=setTimeout(()=>t.classList.remove('show'),4200);
+}
+function showLoading(msg,sub){
+  document.getElementById('loadingMsg').textContent=msg||'Génération en cours…';
+  document.getElementById('loadingSub').textContent=sub||'';
+  document.getElementById('loadingOverlay').classList.add('active');
+}
+function updateLoadingSub(sub){ document.getElementById('loadingSub').textContent=sub||''; }
+function hideLoading(){ document.getElementById('loadingOverlay').classList.remove('active'); }
+
+/* ---------------------------- Vertex AI (images) ---------------------------- */
+async function generateImage({prompt, refBlobs=[], resolution='4k'}){
+  const key=await getSetting('vertexApiKey');
+  if(!key) throw new Error('Ajoute ta clé API Vertex AI dans Réglages avant de générer.');
+  const model = resolution==='4k' ? 'gemini-3-pro-image-preview' : 'gemini-3.1-flash-image';
+  const parts=[{text:prompt}];
+  for(const b of refBlobs){
+    if(!b) continue;
+    const b64=await blobToBase64(b);
+    parts.push({inlineData:{mimeType:b.type||'image/jpeg', data:b64}});
+  }
+  const body={ contents:[{role:'user', parts}], generationConfig:{ responseModalities:["IMAGE","TEXT"] } };
+  const res=await fetchWithBackoff(`https://aiplatform.googleapis.com/v1/publishers/google/models/${model}:generateContent`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-goog-api-key':key},
+    body:JSON.stringify(body)
+  });
+  if(!res.ok){ const t=await res.text().catch(()=> ''); throw new Error(`Erreur Vertex AI (${res.status}) : ${t.slice(0,180)}`); }
+  const data=await res.json();
+  const cand=data.candidates && data.candidates[0];
+  const imgPart = cand && cand.content && cand.content.parts && cand.content.parts.find(p=>p.inlineData);
+  if(!imgPart) throw new Error('Aucune image renvoyée par le modèle. Essaie de reformuler la scène.');
+  return base64ToBlob(imgPart.inlineData.data, imgPart.inlineData.mimeType||'image/png');
+}
+
+/* ---------------------------- kie.ai (vidéo) ---------------------------- */
+async function kieUpload(blob, filename){
+  const key=await getSetting('kieApiKey');
+  if(!key) throw new Error('Ajoute ta clé API kie.ai dans Réglages avant de générer une vidéo.');
+  const dataUrl=await blobToDataURL(blob);
+  const res=await fetchWithBackoff('https://kieai.redpandaai.co/api/file-base64-upload',{
+    method:'POST',
+    headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},
+    body:JSON.stringify({base64Data:dataUrl, uploadPath:'studio-love', fileName:filename})
+  });
+  const j=await res.json().catch(()=>({}));
+  const url = (j.data && (j.data.downloadUrl||j.data.fileUrl)) || j.downloadUrl || j.fileUrl;
+  if(!url) throw new Error('Échec de l’envoi de l’image vers kie.ai.');
+  return url;
+}
+async function kieCreateVideoTask({imageUrl, prompt, engine, aspectRatio}){
+  const key=await getSetting('kieApiKey');
+  if(engine==='veo'){
+    const model=(await getSetting('veoModelId'))||'veo3_fast';
+    const res=await fetchWithBackoff('https://api.kie.ai/api/v1/veo/generate',{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},
+      body:JSON.stringify({ prompt, model, aspect_ratio:aspectRatio,
+        generationType: imageUrl? 'REFERENCE_2_VIDEO':'TEXT_2_VIDEO',
+        imageUrls: imageUrl?[imageUrl]:undefined })
+    });
+    const j=await res.json().catch(()=>({}));
+    const taskId = j.data && j.data.taskId;
+    if(!taskId) throw new Error((j.msg)||'Échec de création de la tâche vidéo (Veo).');
+    return taskId;
+  } else {
+    const model=(await getSetting('klingModelId'))||'kling-3.0/video';
+    const res=await fetchWithBackoff('https://api.kie.ai/api/v1/jobs/createTask',{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},
+      body:JSON.stringify({ model, input:{ prompt, image_urls: imageUrl?[imageUrl]:undefined,
+        duration:'5', aspect_ratio:aspectRatio, mode:'std', sound:true, multi_shots:false } })
+    });
+    const j=await res.json().catch(()=>({}));
+    const taskId = j.data && j.data.taskId;
+    if(!taskId) throw new Error((j.msg)||'Échec de création de la tâche vidéo (Kling).');
+    return taskId;
+  }
+}
+async function kiePollTask(taskId, onProgress){
+  const key=await getSetting('kieApiKey');
+  let delay=4000;
+  for(let i=0;i<90;i++){
+    const res=await fetch(`https://api.kie.ai/api/v1/jobs/recordInfo?taskId=${encodeURIComponent(taskId)}`,{headers:{'Authorization':'Bearer '+key}});
+    const j=await res.json().catch(()=>({}));
+    const d=j.data;
+    if(!d) throw new Error(j.msg||'Réponse invalide de kie.ai.');
+    if(onProgress) onProgress(d.state,d.progress);
+    if(d.state==='success'){
+      let parsed={}; try{parsed=JSON.parse(d.resultJson||'{}');}catch(e){}
+      const url=(parsed.resultUrls||[])[0];
+      if(!url) throw new Error('Tâche terminée mais aucune vidéo renvoyée.');
+      return url;
+    }
+    if(d.state==='fail') throw new Error(d.failMsg||'La génération vidéo a échoué.');
+    await sleep(delay); delay=Math.min(delay*1.2,15000);
+  }
+  throw new Error('Délai dépassé en attendant la vidéo.');
+}
+
+/* ---------------------------- prompt builders ---------------------------- */
+function styleLabel(id){ const s=STYLES.find(x=>x.id===id); return s?s.name:'iPhone candid'; }
+function buildImagePrompt(ctx){
+  return [
+    `Crée une photo de couple ultra-réaliste, dans un style "${styleLabel(ctx.styleId)}", comme si elle avait été prise sur le vif (rendu smartphone par défaut, sauf si le style choisi indique un autre appareil).`,
+    `Respecte fidèlement le visage, la coiffure, la carnation et la morphologie des deux personnes montrées sur les images de référence fournies : ce sont leur identité, pas une simple inspiration.`,
+    `Scène : ${ctx.sceneText}.`,
+    `Ambiance émotionnelle recherchée : ${ctx.mood}.`,
+    `Niveau de romantisme : ${ctx.romance}/5. Le rendu doit rester naturel et spontané, jamais trop lisse ni trop "studio".`,
+    ctx.outfitPref==='keep' ? "Conserve les tenues visibles sur les photos de référence." : "Habille le couple avec une tenue cohérente avec la scène choisie.",
+    `Montre une vraie chimie entre les deux personnes (proximité, regard complice, geste tendre) sans que chaque image montre nécessairement un baiser.`,
+    SAFETY_CLAUSE
+  ].join(' ');
+}
+function buildSequencePrompt(ctx, stepText){
+  return [
+    `À partir de l'image de référence jointe (la scène verrouillée), génère l'étape suivante de ce moment de couple : ${stepText}`,
+    `Conserve strictement les mêmes visages, la même coiffure, les mêmes tenues, le même lieu, la même lumière et la même ambiance météo que sur l'image de référence — seules l'action et l'expression évoluent.`,
+    `Style : ${styleLabel(ctx.styleId)}. Ambiance : ${ctx.mood}.`,
+    SAFETY_CLAUSE
+  ].join(' ');
+}
+function buildVideoPrompt(ctx){
+  return [
+    `Anime cette scène de couple avec un mouvement naturel et réaliste${ctx.styleId==='iphone-candid'?', à la manière d’une vidéo tournée au smartphone':''}.`,
+    `Préserve l'identité des deux personnes, leurs tenues, le lieu, la lumière et l'émotion de l'image de référence.`,
+    `Mouvement de caméra léger, langage corporel crédible, aucune déformation ni morphing.`,
+    SAFETY_CLAUSE
+  ].join(' ');
+}
+
+/* ---------------------------- app state ---------------------------- */
+const state={
+  currentCoupleId:null,
+  selectedTemplateId:null,
+  selectedMood:MOODS[0],
+  selectedStyleId:'iphone-candid',
+  outfitPref:'keep',
+  resolution:'4k',
+  currentSceneId:null,      // scene draft / locked scene in DB
+  currentSequenceId:null,
+  videoContext:null,        // {sourceType:'scene'|'sequence', imageBlob, returnScreen}
+  videoEngine:'veo',
+  videoRatio:'9:16',
+  lastVideoBlob:null,
+  lastVideoMime:'video/mp4',
+  refBlobs:{A:null,B:null}
+};
+
+/* ---------------------------- navigation ---------------------------- */
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active', s.dataset.screen===name));
+  document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active', b.dataset.nav===name));
+  window.scrollTo(0,0);
+  if(name==='home') renderHome();
+  if(name==='couples') renderCouplesList();
+  if(name==='gallery') renderGallery();
+  if(name==='settings') loadSettingsIntoForm();
+}
+function startCreateFlow(){ showScreen('couples'); }
+
+/* ---------------------------- HOME ---------------------------- */
+async function renderHome(){
+  const memories=(await idbGetAll('memories')).sort((a,b)=>b.createdAt-a.createdAt).slice(0,3);
+  const box=document.getElementById('homeRecent');
+  if(!memories.length){ box.innerHTML=''; return; }
+  let html='<p class="field-label">Derniers souvenirs</p><div class="col mt-sm">';
+  for(const m of memories){
+    const src = m.previewBlob ? URL.createObjectURL(m.previewBlob) : '';
+    html+=`<div class="memory-item" onclick="showScreen('gallery')">
+      ${src?`<img src="${src}">`:'<div class="ph"></div>'}
+      <div class="meta"><div class="t">${escapeHtml(m.title)}</div><div class="s">${m.template||''}</div></div>
+    </div>`;
+  }
+  html+='</div>';
+  box.innerHTML=html;
+}
+
+/* ---------------------------- COUPLES ---------------------------- */
+async function renderCouplesList(){
+  const couples=await idbGetAll('couples');
+  const box=document.getElementById('couplesList');
+  if(!couples.length){ box.innerHTML='<div class="empty"><span class="emoji">💞</span>Aucun profil couple pour l’instant.</div>'; return; }
+  box.innerHTML='';
+  for(const c of couples){
+    const div=document.createElement('div');
+    div.className='card row';
+    div.style.alignItems='center';
+    div.style.justifyContent='space-between';
+    div.style.cursor='pointer';
+    const srcA=c.photoA?URL.createObjectURL(c.photoA):'';
+    const srcB=c.photoB?URL.createObjectURL(c.photoB):'';
+    div.innerHTML=`
+      <div class="row" style="align-items:center;">
+        <div class="couple-pair">${srcA?`<img src="${srcA}">`:''}${srcB?`<img src="${srcB}">`:''}</div>
+        <div style="margin-left:12px;">
+          <h3>${escapeHtml(c.title||(c.nameA+' & '+c.nameB))}</h3>
+          <p style="font-size:.78rem;">${c.consentMajeur&&c.consentAutorisation?'Consentement confirmé':'⚠ Consentement incomplet'}</p>
+        </div>
+      </div>`;
+    div.onclick=()=>selectCoupleForScene(c.id);
+    box.appendChild(div);
+  }
+}
+function selectCoupleForScene(coupleId){
+  state.currentCoupleId=coupleId;
+  openCreateScene();
+}
+function openCoupleForm(){
+  document.getElementById('nameA').value='';
+  document.getElementById('nameB').value='';
+  document.getElementById('coupleTitle').value='';
+  document.getElementById('consentMajeur').checked=false;
+  document.getElementById('consentAutorisation').checked=false;
+  state.refBlobs={A:null,B:null};
+  document.getElementById('slotA').innerHTML='<span>+ Photo A</span><input type="file" accept="image/*" onchange="handleRefUpload(event,\'A\')">';
+  document.getElementById('slotB').innerHTML='<span>+ Photo B</span><input type="file" accept="image/*" onchange="handleRefUpload(event,\'B\')">';
+  showScreen('couple-form');
+}
+function handleRefUpload(evt, who){
+  const file=evt.target.files[0];
+  if(!file) return;
+  state.refBlobs[who]=file;
+  const slot=document.getElementById('slot'+who);
+  const url=URL.createObjectURL(file);
+  slot.innerHTML=`<img src="${url}"><input type="file" accept="image/*" onchange="handleRefUpload(event,'${who}')">`;
+}
+async function saveCoupleProfile(){
+  const nameA=document.getElementById('nameA').value.trim();
+  const nameB=document.getElementById('nameB').value.trim();
+  const title=document.getElementById('coupleTitle').value.trim();
+  const consentMajeur=document.getElementById('consentMajeur').checked;
+  const consentAutorisation=document.getElementById('consentAutorisation').checked;
+  if(!state.refBlobs.A || !state.refBlobs.B){ toast('Ajoute les deux photos de référence.', true); return; }
+  if(!nameA || !nameB){ toast('Indique les deux prénoms.', true); return; }
+  if(!consentMajeur || !consentAutorisation){ toast('Les deux cases de consentement sont obligatoires.', true); return; }
+  const couple={
+    id:uid(), title: title||`${nameA} & ${nameB}`, nameA, nameB,
+    photoA:state.refBlobs.A, photoB:state.refBlobs.B,
+    consentMajeur, consentAutorisation, createdAt:Date.now()
+  };
+  await idbPut('couples', couple);
+  toast('Profil couple enregistré.');
+  state.currentCoupleId=couple.id;
+  showScreen('couples');
+}
+
+/* ---------------------------- CREATE SCENE ---------------------------- */
+async function openCreateScene(){
+  const couple=await idbGet('couples', state.currentCoupleId);
+  if(!couple){ showScreen('couples'); return; }
+  const box=document.getElementById('sceneCoupleSummary');
+  const srcA=couple.photoA?URL.createObjectURL(couple.photoA):'';
+  const srcB=couple.photoB?URL.createObjectURL(couple.photoB):'';
+  box.innerHTML=`
+    <div class="row" style="align-items:center;">
+      <div class="couple-pair">${srcA?`<img src="${srcA}">`:''}${srcB?`<img src="${srcB}">`:''}</div>
+      <span style="margin-left:12px;font-weight:600;">${escapeHtml(couple.title)}</span>
+    </div>
+    <a class="linklike" onclick="showScreen('couples')" style="font-size:.82rem;">Changer</a>`;
+
+  const consentWarning=document.getElementById('consentWarning');
+  const genBtn=document.getElementById('generateFirstBtn');
+  const consentOk = couple.consentMajeur && couple.consentAutorisation;
+  consentWarning.style.display = consentOk ? 'none' : 'block';
+  genBtn.disabled = !consentOk;
+
+  // templates
+  const ts=document.getElementById('templateScroll'); ts.innerHTML='';
+  TEMPLATES.forEach(t=>{
+    const c=document.createElement('div');
+    c.className='tmpl-card'+(state.selectedTemplateId===t.id?' selected':'');
+    c.innerHTML=`<span class="emoji">${t.emoji}</span><span class="name">${t.name}</span>`;
+    c.onclick=()=>selectTemplate(t.id);
+    ts.appendChild(c);
+  });
+  if(!state.selectedTemplateId) selectTemplate(TEMPLATES[0].id); else renderSceneIdeas(state.selectedTemplateId);
+
+  // moods
+  const ms=document.getElementById('moodScroll'); ms.innerHTML='';
+  MOODS.forEach(m=>{
+    const c=document.createElement('div');
+    c.className='chip'+(state.selectedMood===m?' selected':'');
+    c.textContent=m;
+    c.onclick=()=>{ state.selectedMood=m; renderCreateSceneChips(); };
+    ms.appendChild(c);
+  });
+
+  // styles
+  const ss=document.getElementById('styleScroll'); ss.innerHTML='';
+  STYLES.forEach(s=>{
+    const c=document.createElement('div');
+    c.className='chip'+(state.selectedStyleId===s.id?' selected':'');
+    c.textContent=s.name;
+    c.onclick=()=>{ state.selectedStyleId=s.id; renderCreateSceneChips(); };
+    ss.appendChild(c);
+  });
+
+  document.querySelectorAll('[data-outfit]').forEach(el=>el.classList.toggle('selected', el.dataset.outfit===state.outfitPref));
+  document.querySelectorAll('[data-res]').forEach(el=>el.classList.toggle('selected', el.dataset.res===state.resolution));
+  document.getElementById('romanceSlider').oninput=e=>{ document.getElementById('romanceVal').textContent=e.target.value; };
+
+  showScreen('create-scene');
+}
+function renderCreateSceneChips(){ openCreateSceneChipsOnly(); }
+function openCreateSceneChipsOnly(){
+  document.querySelectorAll('#moodScroll .chip').forEach(c=>c.classList.toggle('selected', c.textContent===state.selectedMood));
+  document.querySelectorAll('#styleScroll .chip').forEach(c=>{
+    const match = STYLES.find(s=>s.name===c.textContent && s.id===state.selectedStyleId);
+    c.classList.toggle('selected', !!match);
+  });
+}
+function selectTemplate(id){
+  state.selectedTemplateId=id;
+  document.querySelectorAll('#templateScroll .tmpl-card').forEach((c,i)=>c.classList.toggle('selected', TEMPLATES[i].id===id));
+  renderSceneIdeas(id);
+}
+function renderSceneIdeas(templateId){
+  const t=TEMPLATES.find(x=>x.id===templateId);
+  const box=document.getElementById('sceneIdeas'); box.innerHTML='';
+  (t?t.scenes:[]).forEach(sc=>{
+    const c=document.createElement('div');
+    c.className='chip';
+    c.textContent=sc;
+    c.onclick=()=>{ document.getElementById('sceneText').value=sc; };
+    box.appendChild(c);
+  });
+}
+function selectOutfit(v){ state.outfitPref=v; document.querySelectorAll('[data-outfit]').forEach(el=>el.classList.toggle('selected', el.dataset.outfit===v)); }
+function selectResolution(v){ state.resolution=v; document.querySelectorAll('[data-res]').forEach(el=>el.classList.toggle('selected', el.dataset.res===v)); }
+
+async function generateFirstImage(isRegen){
+  const couple=await idbGet('couples', state.currentCoupleId);
+  if(!couple) return;
+  const sceneText=document.getElementById('sceneText').value.trim();
+  if(!sceneText){ toast('Décris la scène (ou choisis une idée).', true); return; }
+  const romance=document.getElementById('romanceSlider').value;
+  const ctx={ sceneText, mood:state.selectedMood, styleId:state.selectedStyleId, outfitPref:state.outfitPref, romance };
+  const prompt=buildImagePrompt(ctx);
+
+  showLoading('Création de la première image…','Cela peut prendre 10 à 30 secondes.');
+  try{
+    const blob=await generateImage({ prompt, refBlobs:[couple.photoA, couple.photoB], resolution: state.resolution });
+    const scene={
+      id: (isRegen && state.currentSceneId) ? state.currentSceneId : uid(),
+      coupleId: couple.id,
+      templateId: state.selectedTemplateId,
+      mood: state.selectedMood,
+      styleId: state.selectedStyleId,
+      sceneText, outfitPref: state.outfitPref, romance, resolution: state.resolution,
+      promptSnapshot: prompt,
+      firstImageBlob: blob,
+      status:'draft',
+      sequences: (isRegen && state.currentSceneId) ? undefined : [],
+      videos: (isRegen && state.currentSceneId) ? undefined : [],
+      createdAt: Date.now()
+    };
+    if(isRegen && state.currentSceneId){
+      const existing=await idbGet('scenes', state.currentSceneId);
+      scene.sequences = existing?.sequences || [];
+      scene.videos = existing?.videos || [];
+      scene.status = existing?.status || 'draft';
+    }
+    await idbPut('scenes', scene);
+    state.currentSceneId=scene.id;
+    document.getElementById('firstImagePreview').src=URL.createObjectURL(blob);
+    showScreen('first-image');
+  }catch(e){ toast(e.message,true); }
+  finally{ hideLoading(); }
+}
+
+async function lockScene(){
+  const scene=await idbGet('scenes', state.currentSceneId);
+  if(!scene) return;
+  scene.status='locked';
+  scene.lockedImageBlob=scene.firstImageBlob;
+  await idbPut('scenes', scene);
+  document.getElementById('lockedImagePreview').src=URL.createObjectURL(scene.lockedImageBlob);
+  showScreen('locked-scene');
+}
+
+/* ---------------------------- SEQUENCES ---------------------------- */
+async function generateSequence(count){
+  const scene=await idbGet('scenes', state.currentSceneId);
+  if(!scene) return;
+  const structure=SEQ_STRUCTURES[count];
+  const ctx={ styleId:scene.styleId, mood:scene.mood };
+  showLoading(`Génération de la séquence (${count} images)…`);
+  const frames=[];
+  try{
+    for(let i=0;i<structure.length;i++){
+      updateLoadingSub(`Image ${i+1}/${structure.length}`);
+      const prompt=buildSequencePrompt(ctx, structure[i]);
+      const blob=await generateImage({ prompt, refBlobs:[scene.lockedImageBlob], resolution: scene.resolution });
+      frames.push({ id:uid(), orderIndex:i, blob, stepText:structure[i] });
+    }
+    const sequence={ id:uid(), length:count, frames, createdAt:Date.now() };
+    scene.sequences = scene.sequences||[];
+    scene.sequences.push(sequence);
+    await idbPut('scenes', scene);
+    state.currentSequenceId=sequence.id;
+    renderSequenceResults(scene, sequence);
+    showScreen('sequence-results');
+  }catch(e){ toast(e.message,true); }
+  finally{ hideLoading(); }
+}
+async function regenerateSequence(){
+  const scene=await idbGet('scenes', state.currentSceneId);
+  const seq=(scene.sequences||[]).find(s=>s.id===state.currentSequenceId);
+  if(!seq) return;
+  await generateSequence(seq.length);
+}
+function renderSequenceResults(scene, sequence){
+  const grid=document.getElementById('seqGrid'); grid.innerHTML='';
+  sequence.frames.forEach(f=>{
+    const url=URL.createObjectURL(f.blob);
+    const div=document.createElement('div');
+    div.className='frame';
+    div.innerHTML=`<img src="${url}"><span class="idx">${f.orderIndex+1}</span>`;
+    div.onclick=()=>openFrameViewer(scene,sequence,f);
+    grid.appendChild(div);
+  });
+}
+function openFrameViewer(scene,sequence,frame){
+  const content=document.getElementById('viewerContent');
+  content.innerHTML=`<img src="${URL.createObjectURL(frame.blob)}">
+    <div class="row mt-sm">
+      <button class="btn btn-ghost btn-sm" onclick="regenerateFrame('${scene.id}','${sequence.id}','${frame.id}')">Régénérer cette image</button>
+      <button class="btn btn-ghost btn-sm" onclick="downloadBlob(window.__curFrameBlob,'studio-love-frame.png')">Télécharger</button>
+    </div>`;
+  window.__curFrameBlob=frame.blob;
+  document.getElementById('viewerModal').classList.add('active');
+}
+function closeViewer(e){ if(e.target.id==='viewerModal'||e.target.classList.contains('modal-close')||e.target.closest('.modal-close')) document.getElementById('viewerModal').classList.remove('active'); }
+async function regenerateFrame(sceneId, sequenceId, frameId){
+  const scene=await idbGet('scenes', sceneId);
+  const seq=(scene.sequences||[]).find(s=>s.id===sequenceId);
+  const frame=seq.frames.find(f=>f.id===frameId);
+  if(!frame) return;
+  showLoading('Régénération de l’image…');
+  try{
+    const ctx={ styleId:scene.styleId, mood:scene.mood };
+    const prompt=buildSequencePrompt(ctx, frame.stepText);
+    const blob=await generateImage({ prompt, refBlobs:[scene.lockedImageBlob], resolution:scene.resolution });
+    frame.blob=blob;
+    await idbPut('scenes', scene);
+    document.getElementById('viewerModal').classList.remove('active');
+    renderSequenceResults(scene, seq);
+    toast('Image régénérée.');
+  }catch(e){ toast(e.message,true); }
+  finally{ hideLoading(); }
+}
+
+/* ---------------------------- VIDEO ---------------------------- */
+function selectVideoEngine(v){ state.videoEngine=v; document.querySelectorAll('[data-engine]').forEach(el=>el.classList.toggle('selected', el.dataset.engine===v)); }
+function selectRatio(v){ state.videoRatio=v; document.querySelectorAll('[data-ratio]').forEach(el=>el.classList.toggle('selected', el.dataset.ratio===v)); }
+async function openVideoCreation(sourceType){
+  const scene=await idbGet('scenes', state.currentSceneId);
+  let imageBlob;
+  if(sourceType==='scene'){ imageBlob=scene.lockedImageBlob; }
+  else{
+    const seq=(scene.sequences||[]).find(s=>s.id===state.currentSequenceId);
+    imageBlob = seq.frames[seq.frames.length-1].blob; // dernière image = point de départ de l'animation
+  }
+  state.videoContext={ sourceType, imageBlob };
+  state.videoEngine=(await getSetting('defaultVideoEngine'))||'veo';
+  document.querySelectorAll('[data-engine]').forEach(el=>el.classList.toggle('selected', el.dataset.engine===state.videoEngine));
+  document.getElementById('videoSourcePreview').src=URL.createObjectURL(imageBlob);
+  document.getElementById('videoResult').style.display='none';
+  document.getElementById('videoActions').style.display='none';
+  showScreen('video-creation');
+}
+function goBackFromVideo(){
+  showScreen(state.videoContext && state.videoContext.sourceType==='sequence' ? 'sequence-results' : 'locked-scene');
+}
+async function runVideoGeneration(){
+  const scene=await idbGet('scenes', state.currentSceneId);
+  const ctx=state.videoContext;
+  showLoading('Préparation de la vidéo…','Envoi de l’image de référence à kie.ai');
+  try{
+    const imageUrl=await kieUpload(ctx.imageBlob, 'studio-love-source.png');
+    const prompt=buildVideoPrompt({ styleId:scene.styleId });
+    const taskId=await kieCreateVideoTask({ imageUrl, prompt, engine:state.videoEngine, aspectRatio:state.videoRatio });
+    updateLoadingSub('Génération en cours, cela peut prendre plusieurs minutes…');
+    const videoUrl=await kiePollTask(taskId, (s,p)=>updateLoadingSub(`Statut : ${s}${p?` (${p}%)`:''}`));
+    updateLoadingSub('Téléchargement du résultat…');
+    const vRes=await fetch(videoUrl);
+    if(!vRes.ok) throw new Error('Impossible de télécharger la vidéo générée.');
+    const vBlob=await vRes.blob();
+    state.lastVideoBlob=vBlob;
+    state.lastVideoMime=vBlob.type||'video/mp4';
+    const player=document.getElementById('videoResult');
+    player.src=URL.createObjectURL(vBlob);
+    player.style.display='block';
+    document.getElementById('videoActions').style.display='flex';
+    toast('Vidéo générée avec succès.');
+  }catch(e){ toast(e.message,true); }
+  finally{ hideLoading(); }
+}
+function downloadCurrentVideo(){
+  if(!state.lastVideoBlob){ toast('Aucune vidéo à télécharger.',true); return; }
+  downloadBlob(state.lastVideoBlob, 'studio-love-video.mp4');
+}
+
+/* ---------------------------- MEMORIES / GALLERY ---------------------------- */
+async function saveMemoryFromLocked(){
+  const scene=await idbGet('scenes', state.currentSceneId);
+  const couple=await idbGet('couples', scene.coupleId);
+  await createMemory({ title: sceneTitleFor(scene,couple), type:'image', previewBlob:scene.lockedImageBlob, coupleId:couple.id, template:templateName(scene.templateId), sceneId:scene.id });
+}
+async function saveMemoryFromSequence(){
+  const scene=await idbGet('scenes', state.currentSceneId);
+  const couple=await idbGet('couples', scene.coupleId);
+  const seq=(scene.sequences||[]).find(s=>s.id===state.currentSequenceId);
+  await createMemory({ title: sceneTitleFor(scene,couple), type:'sequence', previewBlob:seq.frames[0].blob, coupleId:couple.id, template:templateName(scene.templateId), sceneId:scene.id, sequenceId:seq.id });
+}
+async function saveMemoryFromVideo(){
+  const scene=await idbGet('scenes', state.currentSceneId);
+  const couple=await idbGet('couples', scene.coupleId);
+  if(!state.lastVideoBlob){ toast('Génère une vidéo avant de sauvegarder.',true); return; }
+  await createMemory({ title: sceneTitleFor(scene,couple), type:'video', previewBlob: state.videoContext.imageBlob, videoBlob: state.lastVideoBlob, coupleId:couple.id, template:templateName(scene.templateId), sceneId:scene.id });
+}
+async function createMemory(m){
+  const memory={ id:uid(), title:m.title, type:m.type, previewBlob:m.previewBlob, videoBlob:m.videoBlob, coupleId:m.coupleId, template:m.template, sceneId:m.sceneId, sequenceId:m.sequenceId, createdAt:Date.now() };
+  await idbPut('memories', memory);
+  toast('Sauvegardé dans tes souvenirs.');
+  showScreen('gallery');
+}
+function sceneTitleFor(scene,couple){ return `${templateName(scene.templateId)} — ${couple.title}`; }
+function templateName(id){ const t=TEMPLATES.find(x=>x.id===id); return t?t.name:'Moment'; }
+
+async function renderGallery(){
+  const memories=(await idbGetAll('memories')).sort((a,b)=>b.createdAt-a.createdAt);
+  const box=document.getElementById('galleryList');
+  document.getElementById('galleryFilters').innerHTML='';
+  if(!memories.length){ box.innerHTML='<div class="empty"><span class="emoji">📷</span>Aucun souvenir sauvegardé pour l’instant.</div>'; return; }
+  box.innerHTML='';
+  for(const m of memories){
+    const src=m.previewBlob?URL.createObjectURL(m.previewBlob):'';
+    const div=document.createElement('div');
+    div.className='memory-item';
+    div.innerHTML=`
+      ${src?`<img src="${src}">`:'<div class="ph"></div>'}
+      <div class="meta">
+        <div class="t">${escapeHtml(m.title)}</div>
+        <div class="s">${m.type==='video'?'🎬 Vidéo':m.type==='sequence'?'🖼️ Séquence':'📸 Image'} · ${new Date(m.createdAt).toLocaleDateString('fr-FR')}</div>
+      </div>`;
+    div.onclick=()=>openMemory(m);
+    box.appendChild(div);
+  }
+}
+function openMemory(m){
+  const content=document.getElementById('viewerContent');
+  if(m.type==='video' && m.videoBlob){
+    content.innerHTML=`<video src="${URL.createObjectURL(m.videoBlob)}" controls autoplay></video>
+      <div class="row mt-sm"><button class="btn btn-ghost btn-sm" onclick="downloadBlob(window.__curFrameBlob,'studio-love.mp4')">Télécharger</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteMemory('${m.id}')">Supprimer</button></div>`;
+    window.__curFrameBlob=m.videoBlob;
+  } else {
+    content.innerHTML=`<img src="${URL.createObjectURL(m.previewBlob)}">
+      <div class="row mt-sm"><button class="btn btn-ghost btn-sm" onclick="downloadBlob(window.__curFrameBlob,'studio-love.png')">Télécharger</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteMemory('${m.id}')">Supprimer</button></div>`;
+    window.__curFrameBlob=m.previewBlob;
+  }
+  document.getElementById('viewerModal').classList.add('active');
+}
+async function deleteMemory(id){
+  await idbDelete('memories', id);
+  document.getElementById('viewerModal').classList.remove('active');
+  renderGallery();
+  toast('Souvenir supprimé.');
+}
+
+/* ---------------------------- SETTINGS ---------------------------- */
+async function loadSettingsIntoForm(){
+  document.getElementById('vertexApiKey').value=(await getSetting('vertexApiKey'))||'';
+  document.getElementById('kieApiKey').value=(await getSetting('kieApiKey'))||'';
+  document.getElementById('defaultResolution').value=(await getSetting('defaultResolution'))||'4k';
+  document.getElementById('defaultVideoEngine').value=(await getSetting('defaultVideoEngine'))||'veo';
+  document.getElementById('veoModelId').value=(await getSetting('veoModelId'))||'';
+  document.getElementById('klingModelId').value=(await getSetting('klingModelId'))||'';
+}
+async function saveSettings(){
+  await setSetting('vertexApiKey', document.getElementById('vertexApiKey').value.trim());
+  await setSetting('kieApiKey', document.getElementById('kieApiKey').value.trim());
+  await setSetting('defaultResolution', document.getElementById('defaultResolution').value);
+  await setSetting('defaultVideoEngine', document.getElementById('defaultVideoEngine').value);
+  await setSetting('veoModelId', document.getElementById('veoModelId').value.trim());
+  await setSetting('klingModelId', document.getElementById('klingModelId').value.trim());
+  state.resolution=(await getSetting('defaultResolution'))||'4k';
+  toast('Réglages enregistrés.');
+}
+async function wipeAllData(){
+  if(!confirm('Effacer définitivement tous les profils, scènes et souvenirs stockés sur cet appareil ?')) return;
+  await idbClearAll();
+  state.currentCoupleId=null; state.currentSceneId=null; state.currentSequenceId=null;
+  toast('Toutes les données locales ont été effacées.');
+  showScreen('home');
+}
+
+/* ---------------------------- misc ---------------------------- */
+function escapeHtml(str){ return (str||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ---------------------------- boot ---------------------------- */
+(async function boot(){
+  await openDB();
+  state.resolution=(await getSetting('defaultResolution'))||'4k';
+  showScreen('home');
+})();
+</script>
+</body>
+</html>
