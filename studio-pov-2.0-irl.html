@@ -189,12 +189,13 @@
   .landing-title{font-size:30px;letter-spacing:5px;margin:0 0 14px;font-weight:800;color:var(--text);}
   .landing-phrase{font-size:16px;color:var(--accent);letter-spacing:0.5px;max-width:480px;line-height:1.6;margin:0 0 10px;font-weight:600;}
   .landing-sub{font-size:12.5px;color:var(--text-dim);max-width:520px;line-height:1.7;margin:0 0 30px;}
-  .landing-keys{
-    width:100%;max-width:420px;text-align:left;border:1px solid var(--border);border-radius:12px;
-    padding:18px 20px;background:rgba(32,227,154,0.03);margin-bottom:30px;
+  .landing-chips{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;max-width:560px;margin-bottom:34px;}
+  .landing-chip{
+    border:1px solid var(--border);border-radius:10px;padding:10px 14px;
+    font-size:11px;letter-spacing:0.5px;color:var(--text-dim);background:rgba(32,227,154,0.03);
+    text-align:left;line-height:1.5;
   }
-  .landing-keys .field-label{margin-top:0;}
-  .landing-keys .field-label:not(:first-child){margin-top:14px;}
+  .landing-chip b{color:var(--accent);display:block;font-size:12px;letter-spacing:1px;margin-bottom:2px;}
   .landing-enter-btn{
     padding:16px 42px;border:none;border-radius:10px;
     background:linear-gradient(135deg,var(--accent),var(--accent-2));
@@ -225,16 +226,11 @@
   </svg>
   <h1 class="landing-title">STUDIO POV 2.0</h1>
   <div class="landing-phrase">Créez des images immersives où la caméra devient les yeux du sujet.</div>
-  <div class="landing-keys">
-    <label class="field-label">Clé API Vertex AI (Express Mode)</label>
-    <input type="password" id="vertexKeyInput" class="key-input" placeholder="AQ...">
-    <label class="field-label">Clé API kie.ai</label>
-    <input type="password" id="kieKeyInput" class="key-input" placeholder="Clé kie.ai" style="margin-bottom:0;">
-    <div class="settings-actions" style="margin-top:14px;">
-      <button class="out-btn" id="saveKeysBtn">💾 Enregistrer</button>
-      <button class="out-btn" id="clearKeysBtn">🗑 Effacer</button>
-    </div>
-    <div class="hint" id="keysStatus">Les clés sont stockées uniquement dans ton navigateur (localStorage), jamais envoyées ailleurs qu'aux API que tu configures.</div>
+  <div class="landing-chips">
+    <div class="landing-chip"><b>👁 100% POV</b>Aucune vue externe du Sujet-Regard, jamais.</div>
+    <div class="landing-chip"><b>🔒 Sujet-Regard obligatoire</b>Une image = une caméra définie, pas d'ambiguïté.</div>
+    <div class="landing-chip"><b>🪞 Reflet intelligent</b>Miroir autorisé, mirror selfie interdit.</div>
+    <div class="landing-chip"><b>⚡ Dual moteur</b>Vertex AI avec bascule automatique vers kie.ai.</div>
   </div>
   <button class="landing-enter-btn" id="enterAppBtn">▶ Entrer dans le studio</button>
 </div>
@@ -301,16 +297,27 @@ Ex : Elle est assise sur un canapé, elle regarde vers le bas où son bébé dor
         </div>
       </fieldset>
 
-      <div class="settings-toggle" id="settingsToggle">⚙ Réglages</div>
+      <div class="settings-toggle" id="settingsToggle">⚙ Clés API & connexions</div>
       <div class="settings-panel" id="settingsPanel">
-        <label class="field-label" style="margin-top:0;">Format de sortie</label>
+        <label class="field-label" style="margin-top:0;">Clé API Vertex AI (Express Mode)</label>
+        <input type="password" id="vertexKeyInput" class="key-input" placeholder="AQ...">
+
+        <label class="field-label">Clé API kie.ai</label>
+        <input type="password" id="kieKeyInput" class="key-input" placeholder="Clé kie.ai">
+
+        <label class="field-label">Format de sortie</label>
         <div class="engine-row" style="margin-top:0;margin-bottom:14px;">
           <div class="engine-opt active" id="fmt916" data-fmt="9:16">9:16</div>
           <div class="engine-opt" id="fmt11" data-fmt="1:1">1:1</div>
           <div class="engine-opt" id="fmt45" data-fmt="4:5">4:5</div>
           <div class="engine-opt" id="fmt169" data-fmt="16:9">16:9</div>
         </div>
-        <div class="hint">Les clés API se gèrent désormais sur l'écran d'accueil du studio.</div>
+
+        <div class="settings-actions">
+          <button class="out-btn" id="saveKeysBtn">💾 Enregistrer</button>
+          <button class="out-btn" id="clearKeysBtn">🗑 Effacer</button>
+        </div>
+        <div class="hint" id="keysStatus">Les clés sont stockées uniquement dans ton navigateur (localStorage), jamais envoyées ailleurs qu'aux API que tu configures.</div>
       </div>
 
       <button class="generate-btn" id="generateBtn">▶ Générer le POV</button>
@@ -384,6 +391,7 @@ settingsToggle.addEventListener('click', () => settingsPanel.classList.toggle('o
 // pré-remplir les champs avec ce qui est déjà enregistré
 document.getElementById('vertexKeyInput').value = CONFIG.VERTEX_API_KEY;
 document.getElementById('kieKeyInput').value = CONFIG.KIE_API_KEY;
+if (CONFIG.VERTEX_API_KEY || CONFIG.KIE_API_KEY) settingsPanel.classList.add('open');
 
 document.getElementById('saveKeysBtn').addEventListener('click', () => {
   const vertexKey = document.getElementById('vertexKeyInput').value.trim();
@@ -589,7 +597,7 @@ RÈGLE ABSOLUE — SUJET-REGARD DÉFINI PAR IMAGE : une image de référence a �
 
 Exception miroir : si la scène demande explicitement un miroir ou une surface réfléchissante, le Sujet-Regard peut apparaître dans le reflet — cela correspond à ce qu'il voit depuis ses propres yeux. Ce reflet doit rester physiquement cohérent avec une vue à la première personne : miroir placé devant le Sujet-Regard, perspective depuis ses yeux, corps visible uniquement à l'intérieur du cadre du miroir, environnement réel visible autour de ce cadre. Ce reflet ne doit jamais devenir un mirror selfie classique : aucune caméra externe visible, aucune pose de shooting, aucun cadrage de selfie, aucune composition où le Sujet-Regard semble photographié par quelqu'un d'autre. Un téléphone ne doit apparaître dans le reflet que si la scène le demande explicitement, et même alors la perspective reste celle de ses yeux — jamais celle d'un selfie.
 
-Hors miroir ou reflet logique, seules certaines parties de son corps peuvent apparaître si le cadrage POV le justifie naturellement : mains, doigts, avant-bras, bras partiels, jambes, genoux, pieds, partie basse du torse, vêtements partiels, accessoires portés, chaussures. AUCUNE partie de la tête n'apparaît jamais, même minime ou partielle : ni visage, ni tête entière, ni cheveux, ni oreille, ni joue, ni mâchoire, ni front, ni nez, ni nuque, ni cou vu de dos ou de côté. Ce n'est pas seulement "pas de tête entière" — c'est zéro fragment de tête, quel qu'il soit. Cette référence sert uniquement à guider les éléments compatibles avec une perspective POV (teint des mains/jambes visibles, forme des mains, style des ongles, vêtements en fragments, bijoux, montre, chaussures, accessoires) — son identité complète n'est jamais reconstruite en personnage visible hors reflet.
+Hors miroir ou reflet logique, seules certaines parties de son corps peuvent apparaître si le cadrage POV le justifie naturellement : mains, doigts, avant-bras, bras partiels, jambes, genoux, pieds, partie basse du torse, vêtements partiels, accessoires portés, chaussures. AUCUNE partie de la tête n'apparaît jamais, même minime ou partielle : ni visage, ni tête entière, ni cheveux, ni oreille, ni joue, ni mâchoire, ni front, ni nez, ni nuque, ni cou vu de dos ou de côté. Ce n'est pas seulement "pas de tête entière" — c'est zéro fragment de tête, quel qu'il soit, QUELLE QUE SOIT SA POSITION OU SON ORIENTATION DANS LE CADRE : pas en haut de l'image, pas à l'envers, pas de biais, pas partiellement caché par des cheveux, pas flou, pas en périphérie. Même une bouche, un nez ou un menton isolé visible n'importe où dans l'image (y compris tête en bas, comme si le Sujet-Regard se penchait en avant) est strictement interdit hors miroir explicitement demandé. Cette référence sert uniquement à guider les éléments compatibles avec une perspective POV (teint des mains/jambes visibles, forme des mains, style des ongles, vêtements en fragments, bijoux, montre, chaussures, accessoires) — son identité complète n'est jamais reconstruite en personnage visible hors reflet.
 
 RÈGLE ABSOLUE — CETTE RÉFÉRENCE NE SERT JAMAIS À CONSTRUIRE UN PERSONNAGE VISIBLE : l'image du Sujet-Regard est une donnée de calibration invisible (teint, mains, vêtements), pas un modèle de personnage. Ne l'utilise JAMAIS pour générer un corps ou un visage entier visible dans le cadre.
 
@@ -972,7 +980,7 @@ async function checkPovPurity(imageDataUrl, hasSecondaryRefs) {
   if (!CONFIG.VERTEX_API_KEY) return { valid: true, skipped: true };
   const checklistPrompt = `Tu es un contrôleur qualité strict pour un outil de génération d'images POV (point de vue subjectif à la première personne). Analyse l'image fournie et réponds UNIQUEMENT par "VALID" ou par "INVALID: <raison en 5 mots maximum>", sans autre texte.
 
-L'image est INVALIDE si elle montre, même partiellement et hors reflet de miroir explicite : le visage, la tête, les cheveux, une oreille, une joue, la nuque, le dos, les épaules, le buste, le profil, un corps entier ou un demi-corps de la personne qui tient la caméra (le "Sujet-Regard" — la perspective depuis laquelle la photo est prise).
+L'image est INVALIDE si elle montre, n'importe où dans le cadre, dans n'importe quelle orientation (y compris à l'envers, de biais, ou partiellement masquée par des cheveux), même partiellement et hors reflet de miroir explicite : le visage, la tête, les cheveux, une oreille, une joue, la nuque, le dos, les épaules, le buste, le profil, un corps entier ou un demi-corps de la personne qui tient la caméra (le "Sujet-Regard" — la perspective depuis laquelle la photo est prise). Un simple fragment de bouche, nez ou menton visible en haut du cadre compte aussi comme une violation.
 ${hasSecondaryRefs ? '' : "L'image est aussi INVALIDE si elle montre une personne humaine complète et visible, peu importe qui, car aucune référence secondaire n'a été fournie pour cette scène — zéro personne visible est attendu."}
 L'image est VALIDE si elle montre uniquement une vue subjective à la première personne (environnement, objets, éventuellement mains/bras/jambes cohérents avec l'action), sans aucune des violations ci-dessus.`;
 
@@ -999,23 +1007,6 @@ L'image est VALIDE si elle montre uniquement une vue subjective à la première 
   }
 }
 
-// ---------- DÉTECTION SELFIE BRAS TENDU (bloqué quand aucune référence secondaire) ----------
-// Le Sujet-Regard EST la caméra : un selfie classique (bras tendu, se prendre en photo
-// soi-même) est une contradiction directe du mode Regard. On bloque uniquement quand
-// aucune référence secondaire n'est fournie (donc pas de reflet miroir légitime en jeu).
-const SELFIE_PATTERNS = [
-  /selfie/i,
-  /bras\s+tendu/i,
-  /te?nd(?:s|re|u|ue)?\s+(?:le\s+|son\s+|mon\s+)?(?:bras|t[ée]l[ée]phone|portable|appareil)/i,
-  /se\s+(?:prend|prendre|photographie|filme)\s+(?:elle-m[êe]me|lui-m[êe]me|en\s+photo|en\s+selfie)/i,
-  /(?:me|se)\s+prend(?:re)?\s+en\s+photo/i,
-  /photo\s+de\s+(?:lui|elle|moi)[\s-]?m[êe]me/i,
-];
-
-function isSelfieRequest(direction) {
-  return SELFIE_PATTERNS.some(re => re.test(direction));
-}
-
 // ---------- ORCHESTRATION DUAL-ENGINE ----------
 async function generate() {
   const direction = document.getElementById('directionInput').value.trim();
@@ -1023,13 +1014,13 @@ async function generate() {
     setStatus('✖ Écris une direction avant de générer.');
     return;
   }
+  if (/selfie/i.test(direction) && personImages.length === 0) {
+    setStatus('✖ Studio POV ne fait pas de selfie sans référence secondaire : sans une autre personne dans la scène pour tenir l\'appareil, l\'app existe pour que tes yeux SOIENT la caméra, pas pour te photographier toi-même. Ajoute une référence secondaire ou reformule sans selfie.');
+    return;
+  }
   if (!subjectRegardImage) {
     setStatus('✖ Génération impossible : ajoutez une image de référence dans le champ Sujet-Regard. Cette personne deviendra la caméra de l\'image.');
     document.getElementById('subjectGrid').scrollIntoView({ behavior: 'smooth', block: 'center' });
-    return;
-  }
-  if (personImages.length === 0 && isSelfieRequest(direction)) {
-    setStatus('✖ Studio POV ne fait pas de selfie sans référence secondaire : sans une autre personne dans la scène pour tenir l\'appareil, l\'app existe pour que tes yeux SOIENT la caméra, pas pour te photographier toi-même. Ajoute une référence secondaire ou reformule sans selfie.');
     return;
   }
 
