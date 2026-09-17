@@ -189,13 +189,12 @@
   .landing-title{font-size:30px;letter-spacing:5px;margin:0 0 14px;font-weight:800;color:var(--text);}
   .landing-phrase{font-size:16px;color:var(--accent);letter-spacing:0.5px;max-width:480px;line-height:1.6;margin:0 0 10px;font-weight:600;}
   .landing-sub{font-size:12.5px;color:var(--text-dim);max-width:520px;line-height:1.7;margin:0 0 30px;}
-  .landing-chips{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;max-width:560px;margin-bottom:34px;}
-  .landing-chip{
-    border:1px solid var(--border);border-radius:10px;padding:10px 14px;
-    font-size:11px;letter-spacing:0.5px;color:var(--text-dim);background:rgba(32,227,154,0.03);
-    text-align:left;line-height:1.5;
+  .landing-keys{
+    width:100%;max-width:420px;text-align:left;border:1px solid var(--border);border-radius:12px;
+    padding:18px 20px;background:rgba(32,227,154,0.03);margin-bottom:30px;
   }
-  .landing-chip b{color:var(--accent);display:block;font-size:12px;letter-spacing:1px;margin-bottom:2px;}
+  .landing-keys .field-label{margin-top:0;}
+  .landing-keys .field-label:not(:first-child){margin-top:14px;}
   .landing-enter-btn{
     padding:16px 42px;border:none;border-radius:10px;
     background:linear-gradient(135deg,var(--accent),var(--accent-2));
@@ -226,11 +225,16 @@
   </svg>
   <h1 class="landing-title">STUDIO POV 2.0</h1>
   <div class="landing-phrase">Créez des images immersives où la caméra devient les yeux du sujet.</div>
-  <div class="landing-chips">
-    <div class="landing-chip"><b>👁 100% POV</b>Aucune vue externe du Sujet-Regard, jamais.</div>
-    <div class="landing-chip"><b>🔒 Sujet-Regard obligatoire</b>Une image = une caméra définie, pas d'ambiguïté.</div>
-    <div class="landing-chip"><b>🪞 Reflet intelligent</b>Miroir autorisé, mirror selfie interdit.</div>
-    <div class="landing-chip"><b>⚡ Dual moteur</b>Vertex AI avec bascule automatique vers kie.ai.</div>
+  <div class="landing-keys">
+    <label class="field-label">Clé API Vertex AI (Express Mode)</label>
+    <input type="password" id="vertexKeyInput" class="key-input" placeholder="AQ...">
+    <label class="field-label">Clé API kie.ai</label>
+    <input type="password" id="kieKeyInput" class="key-input" placeholder="Clé kie.ai" style="margin-bottom:0;">
+    <div class="settings-actions" style="margin-top:14px;">
+      <button class="out-btn" id="saveKeysBtn">💾 Enregistrer</button>
+      <button class="out-btn" id="clearKeysBtn">🗑 Effacer</button>
+    </div>
+    <div class="hint" id="keysStatus">Les clés sont stockées uniquement dans ton navigateur (localStorage), jamais envoyées ailleurs qu'aux API que tu configures.</div>
   </div>
   <button class="landing-enter-btn" id="enterAppBtn">▶ Entrer dans le studio</button>
 </div>
@@ -279,10 +283,6 @@
       <div class="ref-grid" id="personGrid"></div>
       <div class="hint" style="margin-bottom:20px;">Ce sont les <b style="color:var(--accent);">seules</b> personnes qui peuvent apparaître visibles dans l'image. Le Sujet-Regard n'est jamais compté comme un personnage visible, même s'il est seul. <b style="color:var(--danger);">Si ce champ est vide, aucune personne entière n'apparaît dans l'image</b> — même si ta direction mentionne quelqu'un d'autre, seule la scène/l'action vue depuis les yeux du Sujet-Regard sera montrée.</div>
 
-      <h2>Référence Lieu <span style="color:var(--text-dim);font-weight:400;">(optionnel)</span></h2>
-      <div class="ref-grid ref-grid-single" id="locationGrid"></div>
-      <div class="hint" style="margin-bottom:20px;">Une seule image, sans personnage — uniquement le décor. Ses dimensions, sa lumière et son agencement réels sont respectés, jamais réinventés.</div>
-
       <label class="field-label">Direction de la scène</label>
       <textarea id="directionInput" placeholder="Écris simplement ce que tu veux voir : où est l'avatar, ce qu'il regarde, ce qu'il fait, qui est avec lui, l'ambiance…
 
@@ -301,27 +301,16 @@ Ex : Elle est assise sur un canapé, elle regarde vers le bas où son bébé dor
         </div>
       </fieldset>
 
-      <div class="settings-toggle" id="settingsToggle">⚙ Clés API & connexions</div>
+      <div class="settings-toggle" id="settingsToggle">⚙ Réglages</div>
       <div class="settings-panel" id="settingsPanel">
-        <label class="field-label" style="margin-top:0;">Clé API Vertex AI (Express Mode)</label>
-        <input type="password" id="vertexKeyInput" class="key-input" placeholder="AQ...">
-
-        <label class="field-label">Clé API kie.ai</label>
-        <input type="password" id="kieKeyInput" class="key-input" placeholder="Clé kie.ai">
-
-        <label class="field-label">Format de sortie</label>
+        <label class="field-label" style="margin-top:0;">Format de sortie</label>
         <div class="engine-row" style="margin-top:0;margin-bottom:14px;">
           <div class="engine-opt active" id="fmt916" data-fmt="9:16">9:16</div>
           <div class="engine-opt" id="fmt11" data-fmt="1:1">1:1</div>
           <div class="engine-opt" id="fmt45" data-fmt="4:5">4:5</div>
           <div class="engine-opt" id="fmt169" data-fmt="16:9">16:9</div>
         </div>
-
-        <div class="settings-actions">
-          <button class="out-btn" id="saveKeysBtn">💾 Enregistrer</button>
-          <button class="out-btn" id="clearKeysBtn">🗑 Effacer</button>
-        </div>
-        <div class="hint" id="keysStatus">Les clés sont stockées uniquement dans ton navigateur (localStorage), jamais envoyées ailleurs qu'aux API que tu configures.</div>
+        <div class="hint">Les clés API se gèrent désormais sur l'écran d'accueil du studio.</div>
       </div>
 
       <button class="generate-btn" id="generateBtn">▶ Générer le POV</button>
@@ -395,7 +384,6 @@ settingsToggle.addEventListener('click', () => settingsPanel.classList.toggle('o
 // pré-remplir les champs avec ce qui est déjà enregistré
 document.getElementById('vertexKeyInput').value = CONFIG.VERTEX_API_KEY;
 document.getElementById('kieKeyInput').value = CONFIG.KIE_API_KEY;
-if (CONFIG.VERTEX_API_KEY || CONFIG.KIE_API_KEY) settingsPanel.classList.add('open');
 
 document.getElementById('saveKeysBtn').addEventListener('click', () => {
   const vertexKey = document.getElementById('vertexKeyInput').value.trim();
@@ -518,10 +506,9 @@ function updateGenerateAvailability() {
   }
 }
 
-// ---------- RÉFÉRENCES IMAGES : PERSONNAGES (jusqu'à 6) + LIEU (1) ----------
+// ---------- RÉFÉRENCES IMAGES : PERSONNAGES (jusqu'à 6) ----------
 const MAX_PERSON_REFS = 6;
 let personImages = [];   // tableau de dataURL, un par personnage
-let locationImage = null; // dataURL unique, décor seul
 
 function renderPersonGrid() {
   const grid = document.getElementById('personGrid');
@@ -551,32 +538,6 @@ function renderPersonGrid() {
   }
 }
 
-function renderLocationGrid() {
-  const grid = document.getElementById('locationGrid');
-  grid.innerHTML = '';
-  if (locationImage) {
-    const thumb = document.createElement('div');
-    thumb.className = 'ref-thumb';
-    thumb.innerHTML = `<img src="${locationImage}"><span class="ref-tag">LIEU</span><div class="ref-remove">✕</div>`;
-    thumb.querySelector('.ref-remove').addEventListener('click', () => {
-      locationImage = null;
-      renderLocationGrid();
-    });
-    grid.appendChild(thumb);
-  } else {
-    const add = document.createElement('label');
-    add.className = 'ref-add';
-    add.innerHTML = `<span>+ Ajouter<br>le décor</span><input type="file" accept="image/*">`;
-    add.querySelector('input').addEventListener('change', (e) => {
-      if (e.target.files[0]) readFileAsDataURL(e.target.files[0]).then(dataUrl => {
-        locationImage = dataUrl;
-        renderLocationGrid();
-      });
-    });
-    grid.appendChild(add);
-  }
-}
-
 function readFileAsDataURL(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -588,7 +549,6 @@ function readFileAsDataURL(file) {
 
 renderSubjectGrid();
 renderPersonGrid();
-renderLocationGrid();
 
 // ---------- CONSTRUCTION DU PROMPT SYSTÈME (interne, jamais affiché) ----------
 // Les règles ne sont pas des options figées : elles s'appliquent en fond,
@@ -609,6 +569,17 @@ MAUVAIS (interdit) — exemple 1 : une personne conduit une voiture → on voit 
 MAUVAIS (interdit) — exemple 2 : une personne boit un verre en face d'un ami au restaurant → on voit une portion de sa tête, ses cheveux ou son oreille en amorce dans le coin du cadre, plan "par-dessus l'épaule".
 BON (obligatoire) — mêmes scènes : on voit exactement ce qu'elle voit (pare-brise et route, ou l'ami en face qui regarde vers l'objectif), avec seulement ses mains/avant-bras visibles en bas du cadre si l'action l'implique. Zéro fragment de tête, jamais.
 Si l'image que tu t'apprêtes à générer montre ne serait-ce qu'un bout de tête, de cheveux ou d'oreille du Sujet-Regard : c'est faux, recommence entièrement en vue subjective pure.
+
+STRICT POV PURITY LOCK:
+Generate only from the first-person viewpoint of the Sujet-Regard.
+The Sujet-Regard is the camera, not a visible character.
+Do not place the Sujet-Regard anywhere in the visible scene.
+Do not show the Sujet-Regard's face, head, hair, neck, shoulders, back, profile, torso, half-body, full body, or silhouette outside an explicit mirror/reflection scene.
+Do not create an over-the-shoulder shot, third-person shot, side shot, back view, portrait, selfie, lifestyle photo, or external camera view.
+If no secondary reference person is provided, generate zero complete visible people representing the Sujet-Regard.
+Visible people may only come from secondary references or anonymous background context, never from the Sujet-Regard reference.
+Show only what the Sujet-Regard sees: environment, objects, action, light, atmosphere, and physically plausible POV body fragments such as hands, fingers, wrists, forearms, legs, knees, feet, clothing fragments, accessories, or held objects.
+Never clone the Sujet-Regard as a visible person.
 
 Tu es Studio POV, un moteur de prise de vue subjective immersive. L'utilisateur fournit des images de référence et décrit librement une scène en langage naturel — c'est à toi d'interpréter automatiquement qui possède le point de vue, où cette personne se trouve, ce qu'elle fait et regarde, sans qu'il ait besoin d'écrire la moindre règle technique.
 
@@ -676,12 +647,33 @@ VALIDATION FINALE OBLIGATOIRE avant génération : qui possède le POV ? Où se 
 RÉALISME HUMAIN EXTRÊME (s'applique à toute peau ou visage visible dans le cadre, y compris une personne qui interagit avec la caméra) :
 Rendu 4K ultra réaliste, format RAW, aucun filtre beauté, aucun lissage de peau, aucun aérographe, aucune retouche, aucune peau CGI, cireuse, plastique ou de texture IA, aucune brillance artificielle. Peau photographiée comme au format macro : pores visibles répartis de façon aléatoire avec variations naturelles de taille, grain de peau visible, fin duvet naturel captant la lumière, pigmentation naturellement irrégulière, micro-imperfections et petites taches parfaitement intégrées, texture des lèvres avec fines lignes naturelles, micro-ridules autour des yeux, légères rougeurs naturelles. Yeux réalistes avec fibres visibles dans l'iris, texture de la sclère, humidité naturelle, cils individuels à espacement naturel, sourcils composés de poils individuels. Cheveux avec mèches individuelles visibles, ligne capillaire réaliste, transition naturelle avec le cuir chevelu. Maquillage discret uniquement si pertinent à la scène, sans jamais masquer la texture de peau. Anatomie et proportions faciales fidèles à la réalité, profondeur de champ optique crédible — impossible à distinguer d'une véritable photographie.
 
+CONVERSION AUTOMATIQUE DE LA FORMULATION : n'interprète jamais une direction comme "montrer le Sujet-Regard en train de faire quelque chose". Convertis-la systématiquement en "vue depuis les yeux du Sujet-Regard pendant qu'il fait cette action". Exemple : l'entrée "il marche dans l'aéroport" ne doit jamais devenir une image de lui marchant — elle devient une vue strictement première personne montrant le terminal devant lui, le sol, les panneaux, la lumière, éventuellement une main tirant une valise ou ses pieds en mouvement, sans aucune personne complète le représentant.
+
+HUMAN CAMERA FEEL:
+Make the image feel like a real human first-person view, not a perfect staged render.
+Use subtle natural framing imperfections: slight asymmetry, mild head-level tilt, realistic hand/object distance, imperfect object placement, partially cropped foreground elements, natural depth of field, believable motion softness on active hands, and realistic everyday textures.
+Keep the image photorealistic, clear, high quality, and immersive.
+Use natural lighting with small variations, real shadows, reflections, skin texture, object wear, fingerprints, condensation, fabric wrinkles, table crumbs, or other ordinary life details when contextually appropriate.
+Focus should follow what the POV Owner is naturally looking at.
+Do not make the image messy, low quality, overly blurred, chaotic, distorted, or artificial.
+Never break strict POV: no external camera, no over-the-shoulder, no selfie, no portrait, no visible full POV Owner, no clone of the POV Owner.
+
+PRESENCE LEVEL ENGINE:
+Choose the minimum necessary amount of POV body presence to make the scene immersive and physically believable.
+Presence Level 0: no visible body, only what the POV Owner sees.
+Presence Level 1: subtle body hint such as fingertips, sleeve, wrist, partial knees, or shoes.
+Presence Level 2: one clear POV body fragment linked to the action, such as one hand holding an object, one forearm on a table, or legs visible while seated.
+Presence Level 3: multiple POV body fragments only when the action requires it, such as two hands on a steering wheel, two hands on a keyboard, or hands and legs during an active scene.
+Never add face, head, hair, neck, shoulders, back, profile, torso, half-body, full body, silhouette, or any visible external version of the POV Owner.
+If no secondary reference person is provided, do not generate any complete visible person.
+Use only the amount of body needed to support the action and immersion.
+Body presence must always remain physically plausible from the POV Owner's eyes.
+
 DIRECTION DE LA SCÈNE (donnée par l'utilisatrice, à interpréter fidèlement) :
 "${userDirection}"
 
 La toute première image de référence transmise est le Sujet-Regard : c'est elle qui possède le POV et devient la caméra, conformément à la règle absolue ci-dessus.
 ${personImages.length > 0 ? `${personImages.length} référence(s) secondaire(s) sont fournies après le Sujet-Regard — ce sont les SEULES personnes autorisées à apparaître visibles dans le cadre. Préserve fidèlement l'identité, la morphologie et le teint de chacune. Aucune autre personne que celles-ci ne doit apparaître.` : `Aucune référence secondaire fournie : zéro personne visible ne doit apparaître dans l'image, quelle que soit l'interaction décrite dans la direction. Montre uniquement ce que le Sujet-Regard voit (environnement, objets, action, ses propres mains/avant-bras/jambes si l'action le justifie) — jamais un personnage entier ou partiel inventé.`}
-${locationImage ? `Une image de référence du lieu est fournie séparément (dernière image transmise), sans personnage : reproduis fidèlement son architecture, ses dimensions, son mobilier, sa lumière et son agencement réels — ne réinvente jamais le décor.` : ''}
 
 RAPPEL FINAL AVANT GÉNÉRATION — PRIORITÉ ABSOLUE DE TEXTURE : peau et cheveux doivent être rendus avec un niveau de détail macro maximal, jamais lissés. Pores visibles sur toute la peau, grain net, fin duvet capté par la lumière, mèches de cheveux individuelles distinctes (pas de masse compacte), racines et cuir chevelu naturels. Traite cette image comme une vraie photo RAW haute résolution, pas comme un rendu synthétique poli. Zéro lissage, zéro flou de peau, zéro effet plastique — c'est la priorité qui prime sur toute autre considération esthétique.
 
@@ -971,6 +963,59 @@ async function fetchWithBackoff(url, opts, tries = 0) {
 }
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+// ---------- POV PURITY CHECK (contrôle après génération, best-effort) ----------
+// Analyse l'image produite via Vertex (vision) pour détecter une violation POV
+// (Sujet-Regard visible, clone, vue externe...). Échoue "ouvert" : si le contrôle
+// lui-même plante ou si aucune clé Vertex n'est configurée, on ne bloque jamais
+// l'affichage du résultat — c'est un filet de sécurité, pas un verrou dur.
+async function checkPovPurity(imageDataUrl, hasSecondaryRefs) {
+  if (!CONFIG.VERTEX_API_KEY) return { valid: true, skipped: true };
+  const checklistPrompt = `Tu es un contrôleur qualité strict pour un outil de génération d'images POV (point de vue subjectif à la première personne). Analyse l'image fournie et réponds UNIQUEMENT par "VALID" ou par "INVALID: <raison en 5 mots maximum>", sans autre texte.
+
+L'image est INVALIDE si elle montre, même partiellement et hors reflet de miroir explicite : le visage, la tête, les cheveux, une oreille, une joue, la nuque, le dos, les épaules, le buste, le profil, un corps entier ou un demi-corps de la personne qui tient la caméra (le "Sujet-Regard" — la perspective depuis laquelle la photo est prise).
+${hasSecondaryRefs ? '' : "L'image est aussi INVALIDE si elle montre une personne humaine complète et visible, peu importe qui, car aucune référence secondaire n'a été fournie pour cette scène — zéro personne visible est attendu."}
+L'image est VALIDE si elle montre uniquement une vue subjective à la première personne (environnement, objets, éventuellement mains/bras/jambes cohérents avec l'action), sans aucune des violations ci-dessus.`;
+
+  try {
+    const res = await fetch(CONFIG.VERTEX_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': CONFIG.VERTEX_API_KEY },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [
+          { inlineData: { data: imageDataUrl.split(',')[1], mimeType: 'image/png' } },
+          { text: checklistPrompt },
+        ]}],
+        generationConfig: { responseModalities: ['TEXT'] },
+      }),
+    });
+    if (!res.ok) return { valid: true, skipped: true };
+    const data = await res.json();
+    const textPart = (data?.candidates?.[0]?.content?.parts || []).find(p => typeof p.text === 'string')?.text || '';
+    const invalid = /INVALID/i.test(textPart);
+    return { valid: !invalid, reason: textPart.replace(/^INVALID:\s*/i, '').trim() };
+  } catch (e) {
+    console.warn('[pov-purity-check] contrôle indisponible, on laisse passer :', e.message);
+    return { valid: true, skipped: true };
+  }
+}
+
+// ---------- DÉTECTION SELFIE BRAS TENDU (bloqué quand aucune référence secondaire) ----------
+// Le Sujet-Regard EST la caméra : un selfie classique (bras tendu, se prendre en photo
+// soi-même) est une contradiction directe du mode Regard. On bloque uniquement quand
+// aucune référence secondaire n'est fournie (donc pas de reflet miroir légitime en jeu).
+const SELFIE_PATTERNS = [
+  /selfie/i,
+  /bras\s+tendu/i,
+  /te?nd(?:s|re|u|ue)?\s+(?:le\s+|son\s+|mon\s+)?(?:bras|t[ée]l[ée]phone|portable|appareil)/i,
+  /se\s+(?:prend|prendre|photographie|filme)\s+(?:elle-m[êe]me|lui-m[êe]me|en\s+photo|en\s+selfie)/i,
+  /(?:me|se)\s+prend(?:re)?\s+en\s+photo/i,
+  /photo\s+de\s+(?:lui|elle|moi)[\s-]?m[êe]me/i,
+];
+
+function isSelfieRequest(direction) {
+  return SELFIE_PATTERNS.some(re => re.test(direction));
+}
+
 // ---------- ORCHESTRATION DUAL-ENGINE ----------
 async function generate() {
   const direction = document.getElementById('directionInput').value.trim();
@@ -983,6 +1028,10 @@ async function generate() {
     document.getElementById('subjectGrid').scrollIntoView({ behavior: 'smooth', block: 'center' });
     return;
   }
+  if (personImages.length === 0 && isSelfieRequest(direction)) {
+    setStatus('✖ Studio POV ne fait pas de selfie sans référence secondaire : sans une autre personne dans la scène pour tenir l\'appareil, l\'app existe pour que tes yeux SOIENT la caméra, pas pour te photographier toi-même. Ajoute une référence secondaire ou reformule sans selfie.');
+    return;
+  }
 
   const btn = document.getElementById('generateBtn');
   btn.disabled = true;
@@ -992,7 +1041,7 @@ async function generate() {
   setStatus('⏳ Interprétation de la scène…');
 
   const prompt = buildSystemPrompt(direction);
-  const refImages = [...(subjectRegardImage ? [subjectRegardImage] : []), ...personImages, ...(locationImage ? [locationImage] : [])];
+  const refImages = [...(subjectRegardImage ? [subjectRegardImage] : []), ...personImages];
   let resultUrl = null;
   let usedEngine = currentEngine;
 
@@ -1016,6 +1065,18 @@ async function generate() {
 
     if (!resultUrl) throw new Error('Aucune image retournée par le moteur.');
 
+    // POV Purity Check — uniquement possible via Vertex (analyse vision). Best-effort :
+    // si indisponible, on affiche directement le résultat sans bloquer.
+    const MAX_PURITY_RETRIES = 2;
+    let purityAttempts = 0;
+    let purity = await checkPovPurity(resultUrl, personImages.length > 0);
+    while (!purity.valid && !purity.skipped && purityAttempts < MAX_PURITY_RETRIES) {
+      purityAttempts++;
+      setStatus(`⚠ Contrôle POV : ${purity.reason || 'violation détectée'} — nouvelle tentative ${purityAttempts}/${MAX_PURITY_RETRIES}…`);
+      resultUrl = usedEngine === 'vertex' ? await callVertex(prompt, refImages) : await callKie(prompt, refImages);
+      purity = await checkPovPurity(resultUrl, personImages.length > 0);
+    }
+
     outImg.src = resultUrl;
     outImg.style.display = 'block';
     outImg.onerror = () => setStatus('⚠ Image reçue mais illisible.');
@@ -1023,7 +1084,11 @@ async function generate() {
     await saveRenderToIDB('last_render', resultUrl);
     document.getElementById('downloadBtn').disabled = false;
     document.getElementById('regenBtn').disabled = false;
-    setStatus(`✔ Capturé via ${usedEngine === 'vertex' ? 'Vertex AI' : 'kie.ai'}`);
+    if (!purity.valid && !purity.skipped) {
+      setStatus(`⚠ Capturé via ${usedEngine === 'vertex' ? 'Vertex AI' : 'kie.ai'} — contrôle POV toujours en échec après ${MAX_PURITY_RETRIES} essais, vérifie visuellement.`);
+    } else {
+      setStatus(`✔ Capturé via ${usedEngine === 'vertex' ? 'Vertex AI' : 'kie.ai'}`);
+    }
   } catch (err) {
     console.error(err);
     setStatus('✖ Erreur : ' + err.message);
