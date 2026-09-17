@@ -581,30 +581,58 @@ const SEQ_STRUCTURES = {
       'Image finale qui clôt l’histoire.']
 };
 
-/* ---------------------------- IndexedDB ---------------------------- */
+/* ---------------------------- IndexedDB (avec repli mémoire) ----------------------------
+   Certains navigateurs bloquent IndexedDB quand le fichier est ouvert en local (file://)
+   plutôt qu'hébergé en http(s). Dans ce cas on bascule automatiquement sur un stockage
+   en mémoire (non persistant entre deux ouvertures, mais l'app reste utilisable). */
 const DB_NAME='studio_love_db', DB_VERSION=1;
 let db;
-function openDB(){return new Promise((resolve,reject)=>{
-  const req=indexedDB.open(DB_NAME,DB_VERSION);
-  req.onupgradeneeded=e=>{
-    const d=e.target.result;
-    if(!d.objectStoreNames.contains('couples')) d.createObjectStore('couples',{keyPath:'id'});
-    if(!d.objectStoreNames.contains('scenes')) d.createObjectStore('scenes',{keyPath:'id'});
-    if(!d.objectStoreNames.contains('memories')) d.createObjectStore('memories',{keyPath:'id'});
-    if(!d.objectStoreNames.contains('kv')) d.createObjectStore('kv',{keyPath:'key'});
-  };
-  req.onsuccess=()=>{db=req.result;resolve(db);};
-  req.onerror=()=>reject(req.error);
+let useMemoryFallback=false;
+let memStore={couples:{},scenes:{},memories:{},kv:{}};
+function openDB(){return new Promise((resolve)=>{
+  try{
+    if(!window.indexedDB) throw new Error('IndexedDB indisponible');
+    const req=indexedDB.open(DB_NAME,DB_VERSION);
+    req.onupgradeneeded=e=>{
+      const d=e.target.result;
+      if(!d.objectStoreNames.contains('couples')) d.createObjectStore('couples',{keyPath:'id'});
+      if(!d.objectStoreNames.contains('scenes')) d.createObjectStore('scenes',{keyPath:'id'});
+      if(!d.objectStoreNames.contains('memories')) d.createObjectStore('memories',{keyPath:'id'});
+      if(!d.objectStoreNames.contains('kv')) d.createObjectStore('kv',{keyPath:'key'});
+    };
+    req.onsuccess=()=>{db=req.result;resolve(db);};
+    req.onerror=()=>{ console.error('IndexedDB error', req.error); useMemoryFallback=true; resolve(null); };
+    req.onblocked=()=>{ console.error('IndexedDB blocked'); useMemoryFallback=true; resolve(null); };
+  }catch(e){
+    console.error('IndexedDB unavailable', e);
+    useMemoryFallback=true;
+    resolve(null);
+  }
 });}
-function idbPut(store,val){return new Promise((res,rej)=>{const tx=db.transaction(store,'readwrite');tx.objectStore(store).put(val);tx.oncomplete=()=>res(val);tx.onerror=()=>rej(tx.error);});}
-function idbGet(store,key){return new Promise((res,rej)=>{const tx=db.transaction(store,'readonly');const r=tx.objectStore(store).get(key);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
-function idbGetAll(store){return new Promise((res,rej)=>{const tx=db.transaction(store,'readonly');const r=tx.objectStore(store).getAll();r.onsuccess=()=>res(r.result||[]);r.onerror=()=>rej(r.error);});}
-function idbDelete(store,key){return new Promise((res,rej)=>{const tx=db.transaction(store,'readwrite');tx.objectStore(store).delete(key);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);});}
-function idbClearAll(){return new Promise((res,rej)=>{
-  const tx=db.transaction(['couples','scenes','memories','kv'],'readwrite');
-  ['couples','scenes','memories','kv'].forEach(s=>tx.objectStore(s).clear());
-  tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error);
-});}
+function idbPut(store,val){
+  if(useMemoryFallback){ const k=val.id||val.key; memStore[store][k]=val; return Promise.resolve(val); }
+  return new Promise((res,rej)=>{const tx=db.transaction(store,'readwrite');tx.objectStore(store).put(val);tx.oncomplete=()=>res(val);tx.onerror=()=>rej(tx.error);});
+}
+function idbGet(store,key){
+  if(useMemoryFallback){ return Promise.resolve(memStore[store][key]); }
+  return new Promise((res,rej)=>{const tx=db.transaction(store,'readonly');const r=tx.objectStore(store).get(key);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});
+}
+function idbGetAll(store){
+  if(useMemoryFallback){ return Promise.resolve(Object.values(memStore[store])); }
+  return new Promise((res,rej)=>{const tx=db.transaction(store,'readonly');const r=tx.objectStore(store).getAll();r.onsuccess=()=>res(r.result||[]);r.onerror=()=>rej(r.error);});
+}
+function idbDelete(store,key){
+  if(useMemoryFallback){ delete memStore[store][key]; return Promise.resolve(); }
+  return new Promise((res,rej)=>{const tx=db.transaction(store,'readwrite');tx.objectStore(store).delete(key);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);});
+}
+function idbClearAll(){
+  if(useMemoryFallback){ memStore={couples:{},scenes:{},memories:{},kv:{}}; return Promise.resolve(); }
+  return new Promise((res,rej)=>{
+    const tx=db.transaction(['couples','scenes','memories','kv'],'readwrite');
+    ['couples','scenes','memories','kv'].forEach(s=>tx.objectStore(s).clear());
+    tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error);
+  });
+}
 
 async function getSetting(key){ const r=await idbGet('kv',key); return r?r.value:undefined; }
 async function setSetting(key,value){ return idbPut('kv',{key,value}); }
@@ -865,23 +893,28 @@ function handleRefUpload(evt, who){
   slot.innerHTML=`<img src="${url}"><input type="file" accept="image/*" onchange="handleRefUpload(event,'${who}')">`;
 }
 async function saveCoupleProfile(){
-  const nameA=document.getElementById('nameA').value.trim();
-  const nameB=document.getElementById('nameB').value.trim();
-  const title=document.getElementById('coupleTitle').value.trim();
-  const consentMajeur=document.getElementById('consentMajeur').checked;
-  const consentAutorisation=document.getElementById('consentAutorisation').checked;
-  if(!state.refBlobs.A || !state.refBlobs.B){ toast('Ajoute les deux photos de référence.', true); return; }
-  if(!nameA || !nameB){ toast('Indique les deux prénoms.', true); return; }
-  if(!consentMajeur || !consentAutorisation){ toast('Les deux cases de consentement sont obligatoires.', true); return; }
-  const couple={
-    id:uid(), title: title||`${nameA} & ${nameB}`, nameA, nameB,
-    photoA:state.refBlobs.A, photoB:state.refBlobs.B,
-    consentMajeur, consentAutorisation, createdAt:Date.now()
-  };
-  await idbPut('couples', couple);
-  toast('Profil couple enregistré.');
-  state.currentCoupleId=couple.id;
-  showScreen('couples');
+  try{
+    const nameA=document.getElementById('nameA').value.trim();
+    const nameB=document.getElementById('nameB').value.trim();
+    const title=document.getElementById('coupleTitle').value.trim();
+    const consentMajeur=document.getElementById('consentMajeur').checked;
+    const consentAutorisation=document.getElementById('consentAutorisation').checked;
+    if(!state.refBlobs.A || !state.refBlobs.B){ toast('Ajoute les deux photos de référence.', true); return; }
+    if(!nameA || !nameB){ toast('Indique les deux prénoms.', true); return; }
+    if(!consentMajeur || !consentAutorisation){ toast('Les deux cases de consentement sont obligatoires.', true); return; }
+    const couple={
+      id:uid(), title: title||`${nameA} & ${nameB}`, nameA, nameB,
+      photoA:state.refBlobs.A, photoB:state.refBlobs.B,
+      consentMajeur, consentAutorisation, createdAt:Date.now()
+    };
+    await idbPut('couples', couple);
+    toast('Profil couple enregistré.');
+    state.currentCoupleId=couple.id;
+    showScreen('couples');
+  }catch(e){
+    console.error(e);
+    toast('Erreur lors de l’enregistrement : '+e.message, true);
+  }
 }
 
 /* ---------------------------- CREATE SCENE ---------------------------- */
@@ -1240,9 +1273,21 @@ async function wipeAllData(){
 /* ---------------------------- misc ---------------------------- */
 function escapeHtml(str){ return (str||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
+/* ---------------------------- gestion d'erreurs globale ----------------------------
+   Sans ça, une erreur dans une fonction async déclenchée par un clic (ex. écriture
+   IndexedDB qui échoue) était silencieuse : le bouton semblait ne "rien faire". */
+window.addEventListener('unhandledrejection', e=>{
+  console.error('Erreur non gérée :', e.reason);
+  toast((e.reason && e.reason.message) || 'Une erreur est survenue. Regarde la console pour le détail.', true);
+});
+window.addEventListener('error', e=>{ console.error('Erreur :', e.error||e.message); });
+
 /* ---------------------------- boot ---------------------------- */
 (async function boot(){
   await openDB();
+  if(useMemoryFallback){
+    toast("Stockage local indisponible dans ce contexte (souvent le cas en ouvrant le fichier directement, sans hébergement). L'app fonctionne, mais rien ne sera conservé après fermeture — héberge le fichier en ligne (ex. GitHub Pages) pour une sauvegarde durable.", true);
+  }
   state.resolution=(await getSetting('defaultResolution'))||'4k';
   showScreen('home');
 })();
