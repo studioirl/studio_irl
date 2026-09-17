@@ -171,10 +171,74 @@
   .settings-actions{display:flex;gap:10px;margin-bottom:10px;}
   .settings-actions .out-btn{padding:9px;font-size:10.5px;}
   #keysStatus.saved{color:var(--accent);}
+
+  /* ---------- PAGE D'ACCUEIL ---------- */
+  .landing-screen{
+    position:fixed;inset:0;z-index:50;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:32px;
+    background:
+      radial-gradient(circle at 15% 0%, rgba(32,227,154,0.10), transparent 45%),
+      radial-gradient(circle at 85% 100%, rgba(15,175,120,0.09), transparent 50%),
+      var(--bg);
+  }
+  .landing-screen.landing-hidden{display:none;}
+  .landing-eye{width:140px;height:140px;margin-bottom:26px;filter:drop-shadow(0 0 18px rgba(32,227,154,0.25));}
+  #landingPupilGroup{transform-box:fill-box;transform-origin:center;animation:landingBlink 5s infinite;}
+  @keyframes landingBlink{0%,92%,100%{transform:scaleY(1);}95%{transform:scaleY(0.08);}}
+  .landing-title{font-size:30px;letter-spacing:5px;margin:0 0 14px;font-weight:800;color:var(--text);}
+  .landing-phrase{font-size:16px;color:var(--accent);letter-spacing:0.5px;max-width:480px;line-height:1.6;margin:0 0 10px;font-weight:600;}
+  .landing-sub{font-size:12.5px;color:var(--text-dim);max-width:520px;line-height:1.7;margin:0 0 30px;}
+  .landing-keys{
+    width:100%;max-width:420px;text-align:left;border:1px solid var(--border);border-radius:12px;
+    padding:18px 20px;background:rgba(32,227,154,0.03);margin-bottom:30px;
+  }
+  .landing-keys .field-label{margin-top:0;}
+  .landing-keys .field-label:not(:first-child){margin-top:14px;}
+  .landing-enter-btn{
+    padding:16px 42px;border:none;border-radius:10px;
+    background:linear-gradient(135deg,var(--accent),var(--accent-2));
+    color:#052018;font-weight:800;font-size:13px;letter-spacing:3px;cursor:pointer;
+    text-transform:uppercase;transition:0.2s;
+  }
+  .landing-enter-btn:hover{filter:brightness(1.08);transform:translateY(-1px);}
 </style>
 </head>
 <body>
 <div class="scanlines"></div>
+
+<div class="landing-screen" id="landingScreen">
+  <svg class="landing-eye" viewBox="0 0 100 100">
+    <defs>
+      <radialGradient id="landingIrisGrad" cx="50%" cy="50%" r="60%">
+        <stop offset="0%" stop-color="#20E39A"/>
+        <stop offset="70%" stop-color="#0FAF78"/>
+        <stop offset="100%" stop-color="#053024"/>
+      </radialGradient>
+    </defs>
+    <path d="M5,50 Q50,10 95,50 Q50,90 5,50 Z" fill="none" stroke="#20E39A" stroke-width="2.5" opacity="0.85"/>
+    <g id="landingPupilGroup">
+      <circle cx="50" cy="50" r="17" fill="url(#landingIrisGrad)"/>
+      <circle cx="50" cy="50" r="7" fill="#04120D"/>
+      <circle cx="45" cy="45" r="2.4" fill="#F2F7F5" opacity="0.8"/>
+    </g>
+  </svg>
+  <h1 class="landing-title">STUDIO POV 2.0</h1>
+  <div class="landing-phrase">Créez des images immersives où la caméra devient les yeux du sujet.</div>
+  <div class="landing-keys">
+    <label class="field-label">Clé API Vertex AI (Express Mode)</label>
+    <input type="password" id="vertexKeyInput" class="key-input" placeholder="AQ...">
+    <label class="field-label">Clé API kie.ai</label>
+    <input type="password" id="kieKeyInput" class="key-input" placeholder="Clé kie.ai" style="margin-bottom:0;">
+    <div class="settings-actions" style="margin-top:14px;">
+      <button class="out-btn" id="saveKeysBtn">💾 Enregistrer</button>
+      <button class="out-btn" id="clearKeysBtn">🗑 Effacer</button>
+    </div>
+    <div class="hint" id="keysStatus">Les clés sont stockées uniquement dans ton navigateur (localStorage), jamais envoyées ailleurs qu'aux API que tu configures.</div>
+  </div>
+  <button class="landing-enter-btn" id="enterAppBtn">▶ Entrer dans le studio</button>
+</div>
+
 <div class="wrap">
 
   <header>
@@ -197,13 +261,13 @@
         </svg>
       </div>
       <div>
-        <h1>STUDIO POV</h1>
-        <div class="tagline">2.0 · Dual Vertex + Kie.ai</div>
+        <h1>STUDIO POV 2.0</h1>
+        <div class="tagline">Dual Vertex + Kie.ai</div>
       </div>
     </div>
     <div style="text-align:right;">
       <div class="rec"><span class="dot"></span> REC · FOCALE HUMAINE</div>
-      <div class="baseline">Tu ne regardes plus l'avatar. <b>Tu prends sa place.</b></div>
+      <div class="baseline">Créez des images immersives où la caméra devient les yeux du sujet.</div>
     </div>
   </header>
 
@@ -211,20 +275,13 @@
 
     <!-- LEFT : CONTROLS -->
     <div class="panel">
-      <h2>Références Personnages <span style="color:var(--text-dim);font-weight:400;">(jusqu'à 6)</span></h2>
+      <h2>Sujet-Regard <span style="color:var(--danger);font-weight:700;">(obligatoire)</span></h2>
+      <div class="ref-grid ref-grid-single" id="subjectGrid"></div>
+      <div class="hint" style="margin-bottom:20px;">La personne placée ici devient automatiquement la caméra : toute la génération adopte strictement son point de vue, et elle n'apparaît jamais entièrement à l'écran (sauf reflet explicitement demandé). <b style="color:var(--danger);">Sans image ici, la génération est bloquée.</b></div>
+
+      <h2>Références secondaires <span style="color:var(--text-dim);font-weight:400;">(jusqu'à 6 — les seuls personnages visibles)</span></h2>
       <div class="ref-grid" id="personGrid"></div>
-      <div class="hint" style="margin-bottom:20px;">Chaque visage ajouté doit être préservé fidèlement dans la scène. L'ordre n'a pas d'importance — décris qui est qui dans ta direction.</div>
-
-      <h2>Référence Lieu <span style="color:var(--text-dim);font-weight:400;">(optionnel)</span></h2>
-      <div class="ref-grid ref-grid-single" id="locationGrid"></div>
-      <div class="hint" style="margin-bottom:20px;">Une seule image, sans personnage — uniquement le décor. Ses dimensions, sa lumière et son agencement réels sont respectés, jamais réinventés.</div>
-
-      <label class="field-label">Mode POV</label>
-      <div class="engine-row" style="margin-bottom:6px;">
-        <div class="engine-opt active" id="modeRegard" data-mode="regard">👁 REGARD<br><span style="opacity:0.6;font-size:9.5px;">caméra = ses yeux</span></div>
-        <div class="engine-opt" id="modeTelephone" data-mode="telephone">📱 TÉLÉPHONE<br><span style="opacity:0.6;font-size:9.5px;">caméra = son téléphone</span></div>
-      </div>
-      <div class="hint" style="margin-bottom:20px;">Regard : la caméra est exactement à hauteur de ses yeux. Téléphone : la caméra est là où son bras pourrait réellement tenir son téléphone — peut s'éloigner du niveau des yeux, mais reste toujours accessible depuis son corps.</div>
+      <div class="hint" style="margin-bottom:20px;">Ce sont les <b style="color:var(--accent);">seules</b> personnes qui peuvent apparaître visibles dans l'image. Le Sujet-Regard n'est jamais compté comme un personnage visible, même s'il est seul. <b style="color:var(--danger);">Si ce champ est vide, aucune personne entière n'apparaît dans l'image</b> — même si ta direction mentionne quelqu'un d'autre, seule la scène/l'action vue depuis les yeux du Sujet-Regard sera montrée.</div>
 
       <label class="field-label">Direction de la scène</label>
       <textarea id="directionInput" placeholder="Écris simplement ce que tu veux voir : où est l'avatar, ce qu'il regarde, ce qu'il fait, qui est avec lui, l'ambiance…
@@ -244,27 +301,16 @@ Ex : Elle est assise sur un canapé, elle regarde vers le bas où son bébé dor
         </div>
       </fieldset>
 
-      <div class="settings-toggle" id="settingsToggle">⚙ Clés API & connexions</div>
+      <div class="settings-toggle" id="settingsToggle">⚙ Réglages</div>
       <div class="settings-panel" id="settingsPanel">
-        <label class="field-label" style="margin-top:0;">Clé API Vertex AI (Express Mode)</label>
-        <input type="password" id="vertexKeyInput" class="key-input" placeholder="AQ...">
-
-        <label class="field-label">Clé API kie.ai</label>
-        <input type="password" id="kieKeyInput" class="key-input" placeholder="Clé kie.ai">
-
-        <label class="field-label">Format de sortie</label>
+        <label class="field-label" style="margin-top:0;">Format de sortie</label>
         <div class="engine-row" style="margin-top:0;margin-bottom:14px;">
           <div class="engine-opt active" id="fmt916" data-fmt="9:16">9:16</div>
           <div class="engine-opt" id="fmt11" data-fmt="1:1">1:1</div>
           <div class="engine-opt" id="fmt45" data-fmt="4:5">4:5</div>
           <div class="engine-opt" id="fmt169" data-fmt="16:9">16:9</div>
         </div>
-
-        <div class="settings-actions">
-          <button class="out-btn" id="saveKeysBtn">💾 Enregistrer</button>
-          <button class="out-btn" id="clearKeysBtn">🗑 Effacer</button>
-        </div>
-        <div class="hint" id="keysStatus">Les clés sont stockées uniquement dans ton navigateur (localStorage), jamais envoyées ailleurs qu'aux API que tu configures.</div>
+        <div class="hint">Les clés API se gèrent désormais sur l'écran d'accueil du studio.</div>
       </div>
 
       <button class="generate-btn" id="generateBtn">▶ Générer le POV</button>
@@ -338,7 +384,6 @@ settingsToggle.addEventListener('click', () => settingsPanel.classList.toggle('o
 // pré-remplir les champs avec ce qui est déjà enregistré
 document.getElementById('vertexKeyInput').value = CONFIG.VERTEX_API_KEY;
 document.getElementById('kieKeyInput').value = CONFIG.KIE_API_KEY;
-if (CONFIG.VERTEX_API_KEY || CONFIG.KIE_API_KEY) settingsPanel.classList.add('open');
 
 document.getElementById('saveKeysBtn').addEventListener('click', () => {
   const vertexKey = document.getElementById('vertexKeyInput').value.trim();
@@ -422,10 +467,48 @@ function setEngine(eng) {
   document.getElementById('engineKie').classList.toggle('active', eng === 'kie');
 }
 
-// ---------- RÉFÉRENCES IMAGES : PERSONNAGES (jusqu'à 6) + LIEU (1) ----------
+// ---------- RÉFÉRENCE SUJET-REGARD (emplacement spécial, une seule image) ----------
+let subjectRegardImage = null; // dataURL unique — la personne qui devient la caméra
+
+function renderSubjectGrid() {
+  const grid = document.getElementById('subjectGrid');
+  grid.innerHTML = '';
+  if (subjectRegardImage) {
+    const thumb = document.createElement('div');
+    thumb.className = 'ref-thumb';
+    thumb.innerHTML = `<img src="${subjectRegardImage}"><span class="ref-tag">SUJET-REGARD</span><div class="ref-remove">✕</div>`;
+    thumb.querySelector('.ref-remove').addEventListener('click', () => {
+      subjectRegardImage = null;
+      renderSubjectGrid();
+    });
+    grid.appendChild(thumb);
+  } else {
+    const add = document.createElement('label');
+    add.className = 'ref-add';
+    add.innerHTML = `<span>+ Ajouter<br>le Sujet-Regard</span><input type="file" accept="image/*">`;
+    add.querySelector('input').addEventListener('change', (e) => {
+      if (e.target.files[0]) readFileAsDataURL(e.target.files[0]).then(dataUrl => {
+        subjectRegardImage = dataUrl;
+        renderSubjectGrid();
+      });
+    });
+    grid.appendChild(add);
+  }
+  updateGenerateAvailability();
+}
+
+function updateGenerateAvailability() {
+  const btn = document.getElementById('generateBtn');
+  if (!subjectRegardImage) {
+    btn.textContent = '▶ Ajoute un Sujet-Regard pour générer';
+  } else {
+    btn.textContent = '▶ Générer le POV';
+  }
+}
+
+// ---------- RÉFÉRENCES IMAGES : PERSONNAGES (jusqu'à 6) ----------
 const MAX_PERSON_REFS = 6;
 let personImages = [];   // tableau de dataURL, un par personnage
-let locationImage = null; // dataURL unique, décor seul
 
 function renderPersonGrid() {
   const grid = document.getElementById('personGrid');
@@ -455,32 +538,6 @@ function renderPersonGrid() {
   }
 }
 
-function renderLocationGrid() {
-  const grid = document.getElementById('locationGrid');
-  grid.innerHTML = '';
-  if (locationImage) {
-    const thumb = document.createElement('div');
-    thumb.className = 'ref-thumb';
-    thumb.innerHTML = `<img src="${locationImage}"><span class="ref-tag">LIEU</span><div class="ref-remove">✕</div>`;
-    thumb.querySelector('.ref-remove').addEventListener('click', () => {
-      locationImage = null;
-      renderLocationGrid();
-    });
-    grid.appendChild(thumb);
-  } else {
-    const add = document.createElement('label');
-    add.className = 'ref-add';
-    add.innerHTML = `<span>+ Ajouter<br>le décor</span><input type="file" accept="image/*">`;
-    add.querySelector('input').addEventListener('change', (e) => {
-      if (e.target.files[0]) readFileAsDataURL(e.target.files[0]).then(dataUrl => {
-        locationImage = dataUrl;
-        renderLocationGrid();
-      });
-    });
-    grid.appendChild(add);
-  }
-}
-
 function readFileAsDataURL(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -490,18 +547,8 @@ function readFileAsDataURL(file) {
   });
 }
 
+renderSubjectGrid();
 renderPersonGrid();
-renderLocationGrid();
-
-// ---------- MODE POV : REGARD vs TÉLÉPHONE ----------
-let povMode = 'regard';
-document.getElementById('modeRegard').addEventListener('click', () => setPovMode('regard'));
-document.getElementById('modeTelephone').addEventListener('click', () => setPovMode('telephone'));
-function setPovMode(mode) {
-  povMode = mode;
-  document.getElementById('modeRegard').classList.toggle('active', mode === 'regard');
-  document.getElementById('modeTelephone').classList.toggle('active', mode === 'telephone');
-}
 
 // ---------- CONSTRUCTION DU PROMPT SYSTÈME (interne, jamais affiché) ----------
 // Les règles ne sont pas des options figées : elles s'appliquent en fond,
@@ -517,50 +564,120 @@ Test physique obligatoire : "Si j'étais réellement cette personne, dans cette 
 
 Aucun téléphone n'existe dans ce mode : les deux mains du propriétaire sont disponibles. S'il tient, porte, ouvre, tend ou manipule quelque chose à deux mains, les deux avant-bras et les deux mains peuvent entrer naturellement dans le cadre au premier plan — la caméra reste malgré tout exactement à la position anatomique de ses yeux. Exemple : "je tends une assiette à deux mains vers la personne assise devant moi" → les deux avant-bras entrent dans le cadre, les deux mains tiennent l'assiette, la personne apparaît en face.`;
 
-  const MODE_TELEPHONE = `RÈGLE ABSOLUE — MODE TÉLÉPHONE : la caméra représente le téléphone tenu physiquement par le propriétaire du POV, pas exactement ses yeux. Détermine où son bras pourrait réellement placer ce téléphone depuis sa position (devant lui, sur le côté, plus bas, plus haut, bras tendu, près du corps, incliné vers une action) — toujours physiquement accessible depuis son propre corps, jamais une position impossible. Le propriétaire n'est jamais photographié par une troisième personne : c'est lui qui tient l'appareil. Son visage n'apparaît pas directement dans l'image (caméra arrière), mais sa main, ses doigts autour du téléphone, son bras, ses jambes ou ses pieds peuvent apparaître naturellement s'ils seraient réellement capturés depuis la position du téléphone — jamais ajoutés artificiellement. Le téléphone qui capture l'image lui-même n'est pas visible dans le cadre ; n'invente jamais un second téléphone pour expliquer la prise de vue, sauf si la scène en contient réellement un second entre les mains d'quelqu'un d'autre.
+  return `RÈGLE CRITIQUE N°1 — PRIORITÉ ABSOLUE SUR TOUT LE RESTE : la première image de référence (Sujet-Regard) ne doit JAMAIS apparaître comme une personne visible dans l'image générée. Aucune portion de sa tête — visage, cheveux, oreille, joue, mâchoire, nuque — ne doit JAMAIS apparaître, même minime. Elle n'est PAS le sujet de la photo, elle EST la caméra.
+MAUVAIS (interdit) — exemple 1 : une personne conduit une voiture → on voit sa tête, sa nuque et son dos depuis un siège arrière ou l'extérieur du véhicule.
+MAUVAIS (interdit) — exemple 2 : une personne boit un verre en face d'un ami au restaurant → on voit une portion de sa tête, ses cheveux ou son oreille en amorce dans le coin du cadre, plan "par-dessus l'épaule".
+BON (obligatoire) — mêmes scènes : on voit exactement ce qu'elle voit (pare-brise et route, ou l'ami en face qui regarde vers l'objectif), avec seulement ses mains/avant-bras visibles en bas du cadre si l'action l'implique. Zéro fragment de tête, jamais.
+Si l'image que tu t'apprêtes à générer montre ne serait-ce qu'un bout de tête, de cheveux ou d'oreille du Sujet-Regard : c'est faux, recommence entièrement en vue subjective pure.
 
-POV Téléphone ≠ selfie : le téléphone capture ce qui se passe devant le propriétaire (caméra orientée vers le monde extérieur), il n'est pas retourné vers son propre visage. Si la direction décrit explicitement un selfie, ce n'est plus ce mode.
+STRICT POV PURITY LOCK:
+Generate only from the first-person viewpoint of the Sujet-Regard.
+The Sujet-Regard is the camera, not a visible character.
+Do not place the Sujet-Regard anywhere in the visible scene.
+Do not show the Sujet-Regard's face, head, hair, neck, shoulders, back, profile, torso, half-body, full body, or silhouette outside an explicit mirror/reflection scene.
+Do not create an over-the-shoulder shot, third-person shot, side shot, back view, portrait, selfie, lifestyle photo, or external camera view.
+If no secondary reference person is provided, generate zero complete visible people representing the Sujet-Regard.
+Visible people may only come from secondary references or anonymous background context, never from the Sujet-Regard reference.
+Show only what the Sujet-Regard sees: environment, objects, action, light, atmosphere, and physically plausible POV body fragments such as hands, fingers, wrists, forearms, legs, knees, feet, clothing fragments, accessories, or held objects.
+Never clone the Sujet-Regard as a visible person.
 
-Les autres personnages peuvent interagir directement avec l'objectif : regarder vers la caméra, tendre la main vers elle, essayer d'attraper le téléphone, s'approcher très près, faire un geste vers la personne qui filme. La position du corps du propriétaire influence directement la stabilité, la hauteur et l'angle : allongé, debout, en train de courir ou de jouer avec un enfant ne cadrent pas de la même façon.
+Tu es Studio POV, un moteur de prise de vue subjective immersive. L'utilisateur fournit des images de référence et décrit librement une scène en langage naturel — c'est à toi d'interpréter automatiquement qui possède le point de vue, où cette personne se trouve, ce qu'elle fait et regarde, sans qu'il ait besoin d'écrire la moindre règle technique.
 
-Test physique obligatoire : "Si cette personne tenait réellement son téléphone dans cette position, pourrait-elle physiquement obtenir cette photo ?" Si non, la composition doit être reconstruite.
+${MODE_REGARD}
 
-Une seule main est disponible dans ce mode : la main qui tient le téléphone, et le téléphone lui-même, restent entièrement hors champ. L'autre main reste libre et peut apparaître pour tenir un objet, toucher quelqu'un, manger, boire, ouvrir quelque chose, montrer quelque chose, attraper une main — toute action réalisable avec une seule main. N'invente jamais une troisième main. Si l'action décrite nécessite obligatoirement deux mains, adapte-la en conservant l'intention de la scène mais en la rendant réalisable à une seule main (par exemple : reposer l'objet sur une surface plutôt que le tenir à deux mains, ou ne montrer qu'un des deux gestes).`;
+RÈGLE ABSOLUE — SUJET-REGARD DÉFINI PAR IMAGE : une image de référence a été explicitement désignée comme Sujet-Regard (c'est la toute première image de référence transmise). Cette personne devient automatiquement la caméra : toute la génération adopte strictement sa perspective à la première personne, conformément à la règle du mode Regard ci-dessus — ce n'est jamais déduit du texte, c'est fixé par cette image. Elle n'est jamais visible entièrement par une caméra externe : ni son visage, ni sa tête, ni son corps complet, ni en portrait, selfie, vue de dos, vue de profil, ou toute composition suggérant qu'elle est photographiée par quelqu'un d'autre.
 
-  return `Tu es Studio POV, un moteur de prise de vue subjective immersive. L'utilisateur fournit des images de référence et décrit librement une scène en langage naturel — c'est à toi d'interpréter automatiquement qui possède le point de vue, où cette personne se trouve, ce qu'elle fait et regarde (ou vers quoi elle oriente son téléphone), sans qu'il ait besoin d'écrire la moindre règle technique.
+Exception miroir : si la scène demande explicitement un miroir ou une surface réfléchissante, le Sujet-Regard peut apparaître dans le reflet — cela correspond à ce qu'il voit depuis ses propres yeux. Ce reflet doit rester physiquement cohérent avec une vue à la première personne : miroir placé devant le Sujet-Regard, perspective depuis ses yeux, corps visible uniquement à l'intérieur du cadre du miroir, environnement réel visible autour de ce cadre. Ce reflet ne doit jamais devenir un mirror selfie classique : aucune caméra externe visible, aucune pose de shooting, aucun cadrage de selfie, aucune composition où le Sujet-Regard semble photographié par quelqu'un d'autre. Un téléphone ne doit apparaître dans le reflet que si la scène le demande explicitement, et même alors la perspective reste celle de ses yeux — jamais celle d'un selfie.
 
-${povMode === 'telephone' ? MODE_TELEPHONE : MODE_REGARD}
+Hors miroir ou reflet logique, seules certaines parties de son corps peuvent apparaître si le cadrage POV le justifie naturellement : mains, doigts, avant-bras, bras partiels, jambes, genoux, pieds, partie basse du torse, vêtements partiels, accessoires portés, chaussures. AUCUNE partie de la tête n'apparaît jamais, même minime ou partielle : ni visage, ni tête entière, ni cheveux, ni oreille, ni joue, ni mâchoire, ni front, ni nez, ni nuque, ni cou vu de dos ou de côté. Ce n'est pas seulement "pas de tête entière" — c'est zéro fragment de tête, quel qu'il soit. Cette référence sert uniquement à guider les éléments compatibles avec une perspective POV (teint des mains/jambes visibles, forme des mains, style des ongles, vêtements en fragments, bijoux, montre, chaussures, accessoires) — son identité complète n'est jamais reconstruite en personnage visible hors reflet.
 
-Une interaction avec un deuxième personnage ne provoque jamais de sortie du mode choisi : l'autre personnage peut se trouver devant la caméra, prendre la main visible au premier plan, tendre un objet, parler ou regarder vers l'objectif — mais le propriétaire du POV n'est jamais montré aux côtés de cette personne depuis l'extérieur, et la caméra ne recule jamais pour "mieux montrer" ce qui se passe. Certaines informations peuvent rester hors champ : c'est normal, un humain ne voit ou ne filme jamais simultanément son propre corps et tout son environnement. C'est l'action qui s'adapte au POV, jamais l'inverse.
+RÈGLE ABSOLUE — CETTE RÉFÉRENCE NE SERT JAMAIS À CONSTRUIRE UN PERSONNAGE VISIBLE : l'image du Sujet-Regard est une donnée de calibration invisible (teint, mains, vêtements), pas un modèle de personnage. Ne l'utilise JAMAIS pour générer un corps ou un visage entier visible dans le cadre.
 
-Déduis toi-même, à partir de la direction donnée ci-dessous, la position physique du corps, la hauteur et l'orientation de caméra qui en découlent selon le mode choisi, ainsi que les parties du corps naturellement visibles et l'action en cours. Rien de tout cela n'est fixé à l'avance — adapte-toi entièrement à ce qui est décrit.
+RÈGLE DE CASTING OBLIGATOIRE — À APPLIQUER LITTÉRALEMENT :
+— Sujet-Regard = caméra subjective uniquement. Il n'est JAMAIS compté comme un personnage visible, jamais ajouté au casting de la scène, jamais dupliqué dans l'image.
+— Références secondaires (les images fournies après le Sujet-Regard) = les SEULES personnes qui peuvent apparaître visibles, entières ou partielles, dans l'image.
+— visible_people = nombre de références secondaires fournies. Rien d'autre n'entre dans ce calcul.
+— Si le nombre de références secondaires est 0, alors le nombre de personnes visibles dans l'image générée doit être 0 — AUCUNE EXCEPTION, même si la direction textuelle décrit une interaction avec quelqu'un (un ami, un serveur, un inconnu). N'invente jamais une personne visible pour combler la scène quand aucune référence secondaire n'existe.
+— Exemple concret : direction "il est au restaurant, il boit une bière" avec uniquement le Sujet-Regard fourni (0 référence secondaire) → l'image NE DOIT PAS montrer un homme au restaurant, ni lui, ni un ami inventé. Elle doit montrer uniquement ce qu'il voit : sa main tenant le verre, la table, le restaurant devant lui, la lumière, les objets proches — zéro personne visible.
+— Si des références secondaires sont fournies, ce sont exactement ces personnes-là (et seulement elles) qui peuvent apparaître dans le cadre, avec leur identité fidèlement préservée.
+
+EXCLUSIVITÉ MUTUELLE ABSOLUE : le Sujet-Regard ne peut JAMAIS être à la fois la source du point de vue (caméra) ET une personne visible dans la même image. Ces deux rôles sont mutuellement exclusifs, sans exception. Dès qu'un fragment POV de lui (main, bras, jambe, pied, objet tenu) est visible dans le cadre, cela confirme qu'il EST la caméra à cet instant — donc aucune personne visible dans cette même image ne peut le représenter, ni comme personnage entier, ni comme demi-corps, ni comme silhouette.
+
+INTERDICTIONS EXPLICITES SUPPLÉMENTAIRES — il est strictement interdit de générer le Sujet-Regard : devant la caméra ; de dos ; de face ; de profil ; en silhouette ; en corps entier ; en demi-corps ; comme personne marchant devant lui ; comme personne assise en face ou à côté ; comme personne tenant un objet en tant que personnage visible (par opposition à ses propres mains en POV) ; comme clone ou double de lui-même généré par erreur dans la scène. Chacune de ces compositions est invalide, sans exception, même partielle.
+
+ANTI-DUPLICATION : si une référence secondaire est fournie, elle doit représenter une personne clairement DIFFÉRENTE du Sujet-Regard — jamais la même personne dupliquée sous un autre angle. Si tu t'apprêtes à générer une personne visible qui ressemble au Sujet-Regard (même carrure, même style, même apparence générale), c'est une erreur : soit c'est en fait lui (donc il doit disparaître du cadre et devenir la caméra), soit reconstruis une apparence clairement distincte pour la référence secondaire.
+
+INTERDICTION SPÉCIFIQUE — PLAN "PAR-DESSUS L'ÉPAULE" : ne compose jamais la scène comme un plan où l'on voit le Sujet-Regard de dos, de profil ou de biais avec une partie de sa tête, ses cheveux ou son oreille dans le cadre pendant qu'il interagit avec quelqu'un en face de lui (ex : boire un verre face à un ami, discuter à table). C'est un cadrage à la troisième personne déguisé en POV — strictement interdit, même si aucune identité n'est reconnaissable. Exemple concret : "il boit une bière au restaurant avec quelqu'un en face" → INTERDIT : voir une portion de sa tête/cheveux/oreille en amorce alors qu'on aperçoit son ami en face. OBLIGATOIRE : cadrage droit devant lui — l'ami en face est entièrement visible et regarde vers l'objectif, et seuls sa main et son avant-bras tenant le verre apparaissent en bas du cadre, sans aucune trace de sa propre tête.
+
+RÈGLE ABSOLUE — AUCUN FRAGMENT CORPOREL FORCÉ : ces parties du corps ne sont PAS un ingrédient obligatoire de chaque image. Elles n'apparaissent QUE si l'action décrite les implique physiquement et logiquement (tenir, toucher, poser un pied, s'asseoir jambes visibles, etc.). Si la direction décrit une scène sans contact corporel direct — un lieu, un décor, un plat, un restaurant, un paysage, un objet observé sans le toucher — alors AUCUNE partie du corps du Sujet-Regard n'apparaît dans l'image : pas de main, pas de bras, pas de jambe, pas de doigt, même partiel. N'insère jamais un fragment corporel juste pour "rappeler" qu'il s'agit d'un POV : cela crée un membre flottant, incohérent, déconnecté de toute posture réelle, ce qui est strictement interdit. Quand une partie du corps apparaît, elle doit toujours être anatomiquement connectée à une posture cohérente et implicite (une main visible suppose un bras et une épaule qui existent hors-cadre dans une position plausible) — jamais une main ou un bras isolé, coupé net sans continuité logique, dupliqué, ou positionné à un endroit où le corps du Sujet-Regard ne pourrait physiquement pas se trouver compte tenu de l'action décrite.
+
+Si le Sujet-Regard est seul dans la scène, l'image reste une scène POV depuis ses yeux, sans jamais le montrer entièrement directement, sauf reflet explicitement demandé par la scène. Si d'autres personnes sont présentes (via d'autres images de référence ou décrites dans le texte), elles peuvent apparaître directement et entièrement dans le cadre, mais le Sujet-Regard reste toujours invisible en tant que personnage complet hors reflet, et demeure la source du regard. Il ne doit jamais être confondu avec ces autres personnes.
+
+Règle absolue : le Sujet-Regard est la caméra, jamais un sujet visible par une caméra externe.
+
+Une interaction avec un deuxième personnage — uniquement s'il correspond à une référence secondaire fournie — ne provoque jamais de sortie du mode Regard : ce personnage peut se trouver devant la caméra, prendre la main visible au premier plan, tendre un objet, parler ou regarder vers l'objectif — mais le propriétaire du POV n'est jamais montré à ses côtés depuis l'extérieur, et la caméra ne recule jamais pour "mieux montrer" ce qui se passe. Sans référence secondaire, rappel : aucune personne n'apparaît, même si la direction en décrit une. Certaines informations peuvent rester hors champ : c'est normal, un humain ne voit ou ne filme jamais simultanément son propre corps et tout son environnement. C'est l'action qui s'adapte au POV, jamais l'inverse.
+
+Déduis toi-même, à partir de la direction donnée ci-dessous, la position physique du corps, la hauteur et l'orientation de caméra qui en découlent, ainsi que les parties du corps naturellement visibles et l'action en cours. Rien de tout cela n'est fixé à l'avance — adapte-toi entièrement à ce qui est décrit.
 
 COHÉRENCE OBLIGATOIRE :
-${povMode === 'telephone'
-  ? "— Caméra positionnée là où le bras du propriétaire tiendrait réellement son téléphone (pas forcément à hauteur des yeux) — jamais un endroit inaccessible depuis son corps."
-  : "— Hauteur de caméra strictement identique à la hauteur des yeux du propriétaire selon sa position (assis ≠ debout ≠ allongé)."}
-— Seulement ce qu'un humain (ou son téléphone tenu en main) pourrait réellement capturer depuis cette position. Aucune caméra flottante, aucune vue impossible.
+— Hauteur de caméra strictement identique à la hauteur des yeux du propriétaire selon sa position (assis ≠ debout ≠ allongé).
+— Seulement ce qu'un humain pourrait réellement voir/capturer depuis cette position. Aucune caméra flottante, aucune vue impossible.
 — Toute main/bras visible doit accomplir une action anatomiquement crédible, jamais une main flottante ajoutée pour l'effet.
 — Toute personne interagissant avec le propriétaire oriente son regard/corps/geste vers l'objectif, avec une vraie relation spatiale.
-— Focale smartphone naturelle (principale ou ultra grand-angle) — pas de compression téléobjectif, pas de profondeur de champ cinéma.
+— Focale et rendu optique iPhone réels : plan principal 24mm f/1.78 (naturel, sans flou d'arrière-plan artificiel) ou ultra grand-angle 13mm f/2.2 selon la proximité de la scène — jamais la compression d'un téléobjectif (100mm+), jamais le flou de profondeur de champ d'un mode Portrait ou d'un objectif cinéma.
 — Distance humaine réelle respectée entre le propriétaire et ce qu'il regarde ou filme.
 — Cohérence anatomique stricte (bras, mains, doigts, jambes), même en gros plan proche objectif.
 — Environnement traité comme un lieu réel : dimensions, mobilier, lumière et profondeur cohérents, jamais réorganisé pour l'esthétique.
 — INTERDIT : cadrage éditorial parfait, symétrie systématique, pose mannequin, éclairage studio, peau retouchée, bokeh artificiel, HDR excessif, rendu type campagne de marque ou Pinterest.
 — Imperfection iPhone obligatoire et contextuelle à l'action et à la façon dont la caméra est réellement tenue (horizon légèrement incliné, cadrage décentré, léger flou, exposition imparfaite, grain smartphone) — jamais appliquée comme un filtre uniforme. L'image doit sembler capturée par une vraie personne en train de vivre l'instant.
 
-VALIDATION FINALE OBLIGATOIRE avant génération : qui possède le POV ? Mode Regard ou Téléphone ? Où se trouve physiquement le propriétaire ? Où doit se trouver la caméra selon ce mode ? Combien de mains sont réellement disponibles (deux en mode Regard, une seule en mode Téléphone) et l'action demandée est-elle réalisable avec ce nombre de mains ? Tout ce qui apparaît pourrait-il réellement être vu ou capturé depuis cette position ? Une autre personne interagit-elle avec le propriétaire, et cette interaction respecte-t-elle toujours le mode choisi ? La composition suppose-t-elle une troisième personne ou un photographe invisible ? Le propriétaire est-il montré de l'extérieur alors que le mode ne le permet pas ? Si l'une de ces trois dernières réponses est oui : composition invalide, à reconstruire avant génération. Question directrice finale : "qui tient ou possède la caméra, et cette personne pourrait-elle réellement obtenir exactement cette image depuis sa position ?" — si la réponse n'est pas immédiatement évidente, la composition doit être reconstruite.
+IMPERFECTION RÉALISTE OBLIGATOIRE PAR DÉFAUT (s'applique systématiquement, même si la direction ne le demande pas — ce n'est jamais optionnel) :
+— Imperfections de prise de vue, toujours présentes à un degré discret : horizon légèrement incliné, cadrage légèrement décentré, mise au point pas parfaitement nette sur toute l'image, légère sur/sous-exposition localisée, grain smartphone naturel, léger flou de mouvement si l'action bouge.
+— Imperfections de la scène elle-même, même non mentionnées dans la direction : petits désordres naturels cohérents avec le lieu et l'action — miettes ou traces sur une table, serviette froissée, mèche de cheveux pas parfaitement en place, léger reflet ou trace sur une vitre, objets pas parfaitement alignés, usure normale d'un lieu ou d'un objet réel, asymétrie naturelle d'un repas ou d'une pièce. Ces détails restent discrets et crédibles — jamais caricaturaux, jamais exagérés, jamais ajoutés pour l'effet comique.
+— Interdiction stricte du rendu "parfait" par défaut : pas de composition léchée façon shooting culinaire ou pub, pas de table dressée impeccablement, pas d'éclairage studio, pas de propreté ou de symétrie artificielle. Sans indication contraire de la direction, la scène doit toujours ressembler à un moment réellement vécu et capturé sans mise en scène — jamais à une photo publicitaire ou à un rendu trop lisse.
+
+RENFORCEMENT ANTI-DÉRIVE :
+— Un point d'ancrage au premier plan (objet tenu, surface touchée, geste, partie du corps) n'apparaît QUE si l'action décrite l'implique physiquement — jamais ajouté par défaut. Une scène de lieu, de décor ou d'objet observé sans contact reste une image propre, sans main, bras ou jambe insérés artificiellement pour "prouver" le POV.
+— Si la direction donnée impliquerait, telle quelle, un selfie, un portrait, un mirror selfie non justifié, un plan en pied, une pose de mode ou toute vue du propriétaire depuis l'extérieur, reformule silencieusement la scène en conservant l'intention (lieu, ambiance, action) mais en la rendant strictement conforme au mode choisi — ne signale jamais cette reformulation à l'écran, ne produis jamais la version incompatible.
+— L'environnement est toujours décrit comme ce que le propriétaire voit réellement depuis sa position (devant lui, autour de lui, légèrement en contrebas) — jamais comme un décor observé de l'extérieur.
+— Lumière et atmosphère restent crédibles et non publicitaires : jamais un rendu type shooting photo, campagne de mode, ou scène mise en scène depuis l'extérieur.
+
+VALIDATION FINALE OBLIGATOIRE avant génération : qui possède le POV ? Où se trouve physiquement le propriétaire ? Où doit se trouver la caméra (hauteur des yeux selon sa position) ? L'action décrite implique-t-elle réellement un contact corporel (main, bras, jambe) — si non, aucune partie du corps n'apparaît, même partielle. Toute partie du corps visible est-elle anatomiquement connectée à une posture cohérente, sans membre flottant, coupé net ou dupliqué ? Tout ce qui apparaît pourrait-il réellement être vu depuis cette position ? Une autre personne interagit-elle avec le propriétaire, et cette interaction respecte-t-elle toujours le mode Regard ? La composition suppose-t-elle une troisième personne ou un photographe invisible ? Le propriétaire est-il montré de l'extérieur ? Si l'une de ces trois dernières réponses est oui, ou si un fragment corporel est présent sans justification par l'action : composition invalide, à reconstruire avant génération. Question directrice finale : "cette personne pourrait-elle réellement voir exactement cette image depuis sa position ?" — si la réponse n'est pas immédiatement évidente, la composition doit être reconstruite.
 
 RÉALISME HUMAIN EXTRÊME (s'applique à toute peau ou visage visible dans le cadre, y compris une personne qui interagit avec la caméra) :
 Rendu 4K ultra réaliste, format RAW, aucun filtre beauté, aucun lissage de peau, aucun aérographe, aucune retouche, aucune peau CGI, cireuse, plastique ou de texture IA, aucune brillance artificielle. Peau photographiée comme au format macro : pores visibles répartis de façon aléatoire avec variations naturelles de taille, grain de peau visible, fin duvet naturel captant la lumière, pigmentation naturellement irrégulière, micro-imperfections et petites taches parfaitement intégrées, texture des lèvres avec fines lignes naturelles, micro-ridules autour des yeux, légères rougeurs naturelles. Yeux réalistes avec fibres visibles dans l'iris, texture de la sclère, humidité naturelle, cils individuels à espacement naturel, sourcils composés de poils individuels. Cheveux avec mèches individuelles visibles, ligne capillaire réaliste, transition naturelle avec le cuir chevelu. Maquillage discret uniquement si pertinent à la scène, sans jamais masquer la texture de peau. Anatomie et proportions faciales fidèles à la réalité, profondeur de champ optique crédible — impossible à distinguer d'une véritable photographie.
 
+CONVERSION AUTOMATIQUE DE LA FORMULATION : n'interprète jamais une direction comme "montrer le Sujet-Regard en train de faire quelque chose". Convertis-la systématiquement en "vue depuis les yeux du Sujet-Regard pendant qu'il fait cette action". Exemple : l'entrée "il marche dans l'aéroport" ne doit jamais devenir une image de lui marchant — elle devient une vue strictement première personne montrant le terminal devant lui, le sol, les panneaux, la lumière, éventuellement une main tirant une valise ou ses pieds en mouvement, sans aucune personne complète le représentant.
+
+HUMAN CAMERA FEEL:
+Make the image feel like a real human first-person view, not a perfect staged render.
+Use subtle natural framing imperfections: slight asymmetry, mild head-level tilt, realistic hand/object distance, imperfect object placement, partially cropped foreground elements, natural depth of field, believable motion softness on active hands, and realistic everyday textures.
+Keep the image photorealistic, clear, high quality, and immersive.
+Use natural lighting with small variations, real shadows, reflections, skin texture, object wear, fingerprints, condensation, fabric wrinkles, table crumbs, or other ordinary life details when contextually appropriate.
+Focus should follow what the POV Owner is naturally looking at.
+Do not make the image messy, low quality, overly blurred, chaotic, distorted, or artificial.
+Never break strict POV: no external camera, no over-the-shoulder, no selfie, no portrait, no visible full POV Owner, no clone of the POV Owner.
+
+PRESENCE LEVEL ENGINE:
+Choose the minimum necessary amount of POV body presence to make the scene immersive and physically believable.
+Presence Level 0: no visible body, only what the POV Owner sees.
+Presence Level 1: subtle body hint such as fingertips, sleeve, wrist, partial knees, or shoes.
+Presence Level 2: one clear POV body fragment linked to the action, such as one hand holding an object, one forearm on a table, or legs visible while seated.
+Presence Level 3: multiple POV body fragments only when the action requires it, such as two hands on a steering wheel, two hands on a keyboard, or hands and legs during an active scene.
+Never add face, head, hair, neck, shoulders, back, profile, torso, half-body, full body, silhouette, or any visible external version of the POV Owner.
+If no secondary reference person is provided, do not generate any complete visible person.
+Use only the amount of body needed to support the action and immersion.
+Body presence must always remain physically plausible from the POV Owner's eyes.
+
 DIRECTION DE LA SCÈNE (donnée par l'utilisatrice, à interpréter fidèlement) :
 "${userDirection}"
 
-${personImages.length > 0 ? `${personImages.length} image(s) de référence de personnage(s) sont fournies dans l'ordre — préserve fidèlement l'identité, la morphologie et le teint de chacun. Déduis du texte de direction qui est le propriétaire du POV parmi eux (souvent la première personne mentionnée ou celle décrite comme "je"/"elle"/"il" au centre de l'action) : ce personnage devient la caméra et n'est jamais visible de l'extérieur. Les autres personnages référencés peuvent apparaître dans le cadre s'ils entrent physiquement dans le champ de vision décrit.` : 'Aucune image de personnage fournie — invente une identité humaine crédible et cohérente avec la direction donnée.'}
-${locationImage ? `Une image de référence du lieu est fournie séparément (dernière image transmise), sans personnage : reproduis fidèlement son architecture, ses dimensions, son mobilier, sa lumière et son agencement réels — ne réinvente jamais le décor.` : ''}
+La toute première image de référence transmise est le Sujet-Regard : c'est elle qui possède le POV et devient la caméra, conformément à la règle absolue ci-dessus.
+${personImages.length > 0 ? `${personImages.length} référence(s) secondaire(s) sont fournies après le Sujet-Regard — ce sont les SEULES personnes autorisées à apparaître visibles dans le cadre. Préserve fidèlement l'identité, la morphologie et le teint de chacune. Aucune autre personne que celles-ci ne doit apparaître.` : `Aucune référence secondaire fournie : zéro personne visible ne doit apparaître dans l'image, quelle que soit l'interaction décrite dans la direction. Montre uniquement ce que le Sujet-Regard voit (environnement, objets, action, ses propres mains/avant-bras/jambes si l'action le justifie) — jamais un personnage entier ou partiel inventé.`}
 
 RAPPEL FINAL AVANT GÉNÉRATION — PRIORITÉ ABSOLUE DE TEXTURE : peau et cheveux doivent être rendus avec un niveau de détail macro maximal, jamais lissés. Pores visibles sur toute la peau, grain net, fin duvet capté par la lumière, mèches de cheveux individuelles distinctes (pas de masse compacte), racines et cuir chevelu naturels. Traite cette image comme une vraie photo RAW haute résolution, pas comme un rendu synthétique poli. Zéro lissage, zéro flou de peau, zéro effet plastique — c'est la priorité qui prime sur toute autre considération esthétique.
+
+DERNIER CONTRÔLE AVANT GÉNÉRATION — NE PAS IGNORER : regarde mentalement l'image que tu es sur le point de produire. Est-ce que le visage, la tête, la nuque ou le dos du Sujet-Regard (première image de référence) y sont visibles, même partiellement ? Si oui, c'est une erreur — reconstruis la scène en vue strictement subjective avant de générer, où seule la scène qu'il regarde (et éventuellement ses mains/avant-bras/jambes si l'action le justifie) est visible.
 
 Génère une seule image intégrant fidèlement les références fournies, en respectant strictement toutes les règles ci-dessus.`;
 }
@@ -846,11 +963,73 @@ async function fetchWithBackoff(url, opts, tries = 0) {
 }
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+// ---------- POV PURITY CHECK (contrôle après génération, best-effort) ----------
+// Analyse l'image produite via Vertex (vision) pour détecter une violation POV
+// (Sujet-Regard visible, clone, vue externe...). Échoue "ouvert" : si le contrôle
+// lui-même plante ou si aucune clé Vertex n'est configurée, on ne bloque jamais
+// l'affichage du résultat — c'est un filet de sécurité, pas un verrou dur.
+async function checkPovPurity(imageDataUrl, hasSecondaryRefs) {
+  if (!CONFIG.VERTEX_API_KEY) return { valid: true, skipped: true };
+  const checklistPrompt = `Tu es un contrôleur qualité strict pour un outil de génération d'images POV (point de vue subjectif à la première personne). Analyse l'image fournie et réponds UNIQUEMENT par "VALID" ou par "INVALID: <raison en 5 mots maximum>", sans autre texte.
+
+L'image est INVALIDE si elle montre, même partiellement et hors reflet de miroir explicite : le visage, la tête, les cheveux, une oreille, une joue, la nuque, le dos, les épaules, le buste, le profil, un corps entier ou un demi-corps de la personne qui tient la caméra (le "Sujet-Regard" — la perspective depuis laquelle la photo est prise).
+${hasSecondaryRefs ? '' : "L'image est aussi INVALIDE si elle montre une personne humaine complète et visible, peu importe qui, car aucune référence secondaire n'a été fournie pour cette scène — zéro personne visible est attendu."}
+L'image est VALIDE si elle montre uniquement une vue subjective à la première personne (environnement, objets, éventuellement mains/bras/jambes cohérents avec l'action), sans aucune des violations ci-dessus.`;
+
+  try {
+    const res = await fetch(CONFIG.VERTEX_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': CONFIG.VERTEX_API_KEY },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [
+          { inlineData: { data: imageDataUrl.split(',')[1], mimeType: 'image/png' } },
+          { text: checklistPrompt },
+        ]}],
+        generationConfig: { responseModalities: ['TEXT'] },
+      }),
+    });
+    if (!res.ok) return { valid: true, skipped: true };
+    const data = await res.json();
+    const textPart = (data?.candidates?.[0]?.content?.parts || []).find(p => typeof p.text === 'string')?.text || '';
+    const invalid = /INVALID/i.test(textPart);
+    return { valid: !invalid, reason: textPart.replace(/^INVALID:\s*/i, '').trim() };
+  } catch (e) {
+    console.warn('[pov-purity-check] contrôle indisponible, on laisse passer :', e.message);
+    return { valid: true, skipped: true };
+  }
+}
+
+// ---------- DÉTECTION SELFIE BRAS TENDU (bloqué quand aucune référence secondaire) ----------
+// Le Sujet-Regard EST la caméra : un selfie classique (bras tendu, se prendre en photo
+// soi-même) est une contradiction directe du mode Regard. On bloque uniquement quand
+// aucune référence secondaire n'est fournie (donc pas de reflet miroir légitime en jeu).
+const SELFIE_PATTERNS = [
+  /selfie/i,
+  /bras\s+tendu/i,
+  /te?nd(?:s|re|u|ue)?\s+(?:le\s+|son\s+|mon\s+)?(?:bras|t[ée]l[ée]phone|portable|appareil)/i,
+  /se\s+(?:prend|prendre|photographie|filme)\s+(?:elle-m[êe]me|lui-m[êe]me|en\s+photo|en\s+selfie)/i,
+  /(?:me|se)\s+prend(?:re)?\s+en\s+photo/i,
+  /photo\s+de\s+(?:lui|elle|moi)[\s-]?m[êe]me/i,
+];
+
+function isSelfieRequest(direction) {
+  return SELFIE_PATTERNS.some(re => re.test(direction));
+}
+
 // ---------- ORCHESTRATION DUAL-ENGINE ----------
 async function generate() {
   const direction = document.getElementById('directionInput').value.trim();
   if (!direction) {
     setStatus('✖ Écris une direction avant de générer.');
+    return;
+  }
+  if (!subjectRegardImage) {
+    setStatus('✖ Génération impossible : ajoutez une image de référence dans le champ Sujet-Regard. Cette personne deviendra la caméra de l\'image.');
+    document.getElementById('subjectGrid').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+  if (personImages.length === 0 && isSelfieRequest(direction)) {
+    setStatus('✖ Studio POV ne permet pas le selfie bras tendu : le Sujet-Regard EST la caméra, il ne peut pas se voir lui-même. Décris plutôt ce qu\'il regarde.');
     return;
   }
 
@@ -862,7 +1041,7 @@ async function generate() {
   setStatus('⏳ Interprétation de la scène…');
 
   const prompt = buildSystemPrompt(direction);
-  const refImages = [...personImages, ...(locationImage ? [locationImage] : [])];
+  const refImages = [...(subjectRegardImage ? [subjectRegardImage] : []), ...personImages];
   let resultUrl = null;
   let usedEngine = currentEngine;
 
@@ -886,6 +1065,18 @@ async function generate() {
 
     if (!resultUrl) throw new Error('Aucune image retournée par le moteur.');
 
+    // POV Purity Check — uniquement possible via Vertex (analyse vision). Best-effort :
+    // si indisponible, on affiche directement le résultat sans bloquer.
+    const MAX_PURITY_RETRIES = 2;
+    let purityAttempts = 0;
+    let purity = await checkPovPurity(resultUrl, personImages.length > 0);
+    while (!purity.valid && !purity.skipped && purityAttempts < MAX_PURITY_RETRIES) {
+      purityAttempts++;
+      setStatus(`⚠ Contrôle POV : ${purity.reason || 'violation détectée'} — nouvelle tentative ${purityAttempts}/${MAX_PURITY_RETRIES}…`);
+      resultUrl = usedEngine === 'vertex' ? await callVertex(prompt, refImages) : await callKie(prompt, refImages);
+      purity = await checkPovPurity(resultUrl, personImages.length > 0);
+    }
+
     outImg.src = resultUrl;
     outImg.style.display = 'block';
     outImg.onerror = () => setStatus('⚠ Image reçue mais illisible.');
@@ -893,7 +1084,11 @@ async function generate() {
     await saveRenderToIDB('last_render', resultUrl);
     document.getElementById('downloadBtn').disabled = false;
     document.getElementById('regenBtn').disabled = false;
-    setStatus(`✔ Capturé via ${usedEngine === 'vertex' ? 'Vertex AI' : 'kie.ai'}`);
+    if (!purity.valid && !purity.skipped) {
+      setStatus(`⚠ Capturé via ${usedEngine === 'vertex' ? 'Vertex AI' : 'kie.ai'} — contrôle POV toujours en échec après ${MAX_PURITY_RETRIES} essais, vérifie visuellement.`);
+    } else {
+      setStatus(`✔ Capturé via ${usedEngine === 'vertex' ? 'Vertex AI' : 'kie.ai'}`);
+    }
   } catch (err) {
     console.error(err);
     setStatus('✖ Erreur : ' + err.message);
@@ -906,6 +1101,10 @@ async function generate() {
 function setStatus(msg) {
   document.getElementById('statusLine').textContent = msg;
 }
+
+document.getElementById('enterAppBtn').addEventListener('click', () => {
+  document.getElementById('landingScreen').classList.add('landing-hidden');
+});
 
 document.getElementById('generateBtn').addEventListener('click', generate);
 document.getElementById('regenBtn').addEventListener('click', generate);
