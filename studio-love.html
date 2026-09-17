@@ -340,11 +340,7 @@
           </div>
         </div>
         <div>
-          <label class="field-label">Résolution</label>
-          <div class="row">
-            <div class="chip selected" data-res="4k" onclick="selectResolution('4k')" style="flex:1;text-align:center;">4K (recommandé)</div>
-            <div class="chip" data-res="standard" onclick="selectResolution('standard')" style="flex:1;text-align:center;">Standard</div>
-          </div>
+          <p class="hint">Résolution : 4K, toujours.</p>
         </div>
         <button class="btn btn-primary mt-sm" id="generateFirstBtn" onclick="generateFirstImage()">Générer la première image</button>
         <p class="hint" id="consentWarning" style="display:none;color:var(--danger);">Complète les cases de consentement sur ce profil couple avant de générer.</p>
@@ -448,13 +444,6 @@
         <div>
           <label class="field-label">Clé API kie.ai</label>
           <input type="password" id="kieApiKey" placeholder="sk-...">
-        </div>
-        <div>
-          <label class="field-label">Résolution image par défaut</label>
-          <select id="defaultResolution">
-            <option value="4k">4K (gemini-3-pro-image-preview)</option>
-            <option value="standard">Standard (gemini-3.1-flash-image)</option>
-          </select>
         </div>
         <div>
           <label class="field-label">Moteur vidéo par défaut</label>
@@ -682,8 +671,22 @@ function idbClearAll(){
   });
 }
 
-async function getSetting(key){ const r=await idbGet('kv',key); return r?r.value:undefined; }
-async function setSetting(key,value){ return idbPut('kv',{key,value}); }
+/* Réglages : stockés en localStorage, comme Studio POV — plus simple et plus fiable
+   que IndexedDB pour de petites valeurs, y compris en navigation privée. */
+function safeLocalGet(key, fallback=''){
+  try{ const v=localStorage.getItem('sl_'+key); return v===null?fallback:v; }
+  catch(e){ console.warn('[storage] localStorage indisponible en lecture:', e.message); return fallback; }
+}
+function safeLocalSet(key, value){
+  try{ localStorage.setItem('sl_'+key, value); return true; }
+  catch(e){ console.warn('[storage] échec écriture localStorage:', e.message); return false; }
+}
+function safeLocalRemove(key){
+  try{ localStorage.removeItem('sl_'+key); return true; }
+  catch(e){ console.warn('[storage] échec suppression localStorage:', e.message); return false; }
+}
+async function getSetting(key){ return safeLocalGet(key, ''); }
+async function setSetting(key,value){ return safeLocalSet(key, value); }
 
 /* ---------------------------- utils ---------------------------- */
 const uid=()=>'id_'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
@@ -724,28 +727,45 @@ function updateLoadingSub(sub){ document.getElementById('loadingSub').textConten
 function hideLoading(){ document.getElementById('loadingOverlay').classList.remove('active'); }
 
 /* ---------------------------- Vertex AI (images) ---------------------------- */
-async function generateImage({prompt, refBlobs=[], resolution='4k'}){
+async function generateImage({prompt, refBlobs=[], aspectRatio='9:16'}){
   const key=await getSetting('vertexApiKey');
   if(!key) throw new Error('Ajoute ta clé API Vertex AI dans Réglages avant de générer.');
-  const model = resolution==='4k' ? 'gemini-3-pro-image-preview' : 'gemini-3.1-flash-image';
-  const parts=[{text:prompt}];
+  // Un seul modèle stable — la 4K se demande via generationConfig.imageConfig, toujours.
+  const model = 'gemini-3.1-flash-image';
+  const parts=[];
   for(const b of refBlobs){
     if(!b) continue;
     const b64=await blobToBase64(b);
     parts.push({inlineData:{mimeType:b.type||'image/jpeg', data:b64}});
   }
-  const body={ contents:[{role:'user', parts}], generationConfig:{ responseModalities:["IMAGE","TEXT"] } };
+  parts.push({text:prompt});
+  const body={
+    contents:[{role:'user', parts}],
+    generationConfig:{ responseModalities:["IMAGE"], imageConfig:{ aspectRatio, imageSize:'4K' } }
+  };
   const res=await fetchWithBackoff(`https://aiplatform.googleapis.com/v1/publishers/google/models/${model}:generateContent`,{
     method:'POST',
     headers:{'Content-Type':'application/json','x-goog-api-key':key},
     body:JSON.stringify(body)
   });
-  if(!res.ok){ const t=await res.text().catch(()=> ''); throw new Error(`Erreur Vertex AI (${res.status}) : ${t.slice(0,180)}`); }
-  const data=await res.json();
-  const cand=data.candidates && data.candidates[0];
-  const imgPart = cand && cand.content && cand.content.parts && cand.content.parts.find(p=>p.inlineData);
-  if(!imgPart) throw new Error('Aucune image renvoyée par le modèle. Essaie de reformuler la scène.');
-  return base64ToBlob(imgPart.inlineData.data, imgPart.inlineData.mimeType||'image/png');
+  let data={};
+  try{ data=await res.json(); }catch(e){}
+  if(!res.ok){
+    const msg=(data && data.error && data.error.message) || `Erreur HTTP ${res.status}`;
+    if(res.status===401) throw new Error('Clé Vertex AI invalide — vérifie ta clé Express Mode (commence par AQ...).');
+    if(res.status===403) throw new Error('Accès refusé par Vertex AI — vérifie que ta clé Express Mode est active.');
+    if(res.status===429) throw new Error('Quota Vertex AI dépassé (429) — réessaie dans quelques instants.');
+    throw new Error(`Erreur Vertex AI (${res.status}) : ${msg}`);
+  }
+  const candidate = data && data.candidates && data.candidates[0];
+  if(!candidate) throw new Error('Aucune réponse du modèle Vertex AI.');
+  if(candidate.finishReason==='SAFETY') throw new Error('Génération bloquée par les filtres de sécurité — reformule la scène.');
+  const respParts = (candidate.content && candidate.content.parts) || [];
+  for(const p of respParts){
+    if(p.inlineData && p.inlineData.data) return base64ToBlob(p.inlineData.data, p.inlineData.mimeType||'image/png');
+    if(p.inline_data && p.inline_data.data) return base64ToBlob(p.inline_data.data, p.inline_data.mime_type||'image/png');
+  }
+  throw new Error('Aucune image dans la réponse Vertex AI (le modèle a peut-être répondu par du texte). Essaie de reformuler la scène.');
 }
 
 /* ---------------------------- kie.ai (vidéo) ---------------------------- */
@@ -851,7 +871,6 @@ const state={
   selectedMood:MOODS[0],
   selectedStyleId:'iphone-candid',
   outfitPref:'keep',
-  resolution:'4k',
   currentSceneId:null,      // scene draft / locked scene in DB
   currentSequenceId:null,
   videoContext:null,        // {sourceType:'scene'|'sequence', imageBlob, returnScreen}
@@ -1017,7 +1036,6 @@ async function openCreateScene(){
   });
 
   document.querySelectorAll('[data-outfit]').forEach(el=>el.classList.toggle('selected', el.dataset.outfit===state.outfitPref));
-  document.querySelectorAll('[data-res]').forEach(el=>el.classList.toggle('selected', el.dataset.res===state.resolution));
   document.getElementById('romanceSlider').oninput=e=>{ document.getElementById('romanceVal').textContent=e.target.value; };
 
   showScreen('create-scene');
@@ -1047,7 +1065,6 @@ function renderSceneIdeas(templateId){
   });
 }
 function selectOutfit(v){ state.outfitPref=v; document.querySelectorAll('[data-outfit]').forEach(el=>el.classList.toggle('selected', el.dataset.outfit===v)); }
-function selectResolution(v){ state.resolution=v; document.querySelectorAll('[data-res]').forEach(el=>el.classList.toggle('selected', el.dataset.res===v)); }
 
 async function generateFirstImage(isRegen){
   const couple=await idbGet('couples', state.currentCoupleId);
@@ -1060,14 +1077,14 @@ async function generateFirstImage(isRegen){
 
   showLoading('Création de la première image…','Cela peut prendre 10 à 30 secondes.');
   try{
-    const blob=await generateImage({ prompt, refBlobs:[couple.photoA, couple.photoB], resolution: state.resolution });
+    const blob=await generateImage({ prompt, refBlobs:[couple.photoA, couple.photoB] });
     const scene={
       id: (isRegen && state.currentSceneId) ? state.currentSceneId : uid(),
       coupleId: couple.id,
       templateId: state.selectedTemplateId,
       mood: state.selectedMood,
       styleId: state.selectedStyleId,
-      sceneText, outfitPref: state.outfitPref, romance, resolution: state.resolution,
+      sceneText, outfitPref: state.outfitPref, romance,
       promptSnapshot: prompt,
       firstImageBlob: blob,
       status:'draft',
@@ -1111,7 +1128,7 @@ async function generateSequence(count){
     for(let i=0;i<structure.length;i++){
       updateLoadingSub(`Image ${i+1}/${structure.length}`);
       const prompt=buildSequencePrompt(ctx, structure[i]);
-      const blob=await generateImage({ prompt, refBlobs:[scene.lockedImageBlob], resolution: scene.resolution });
+      const blob=await generateImage({ prompt, refBlobs:[scene.lockedImageBlob] });
       frames.push({ id:uid(), orderIndex:i, blob, stepText:structure[i] });
     }
     const sequence={ id:uid(), length:count, frames, createdAt:Date.now() };
@@ -1161,7 +1178,7 @@ async function regenerateFrame(sceneId, sequenceId, frameId){
   try{
     const ctx={ styleId:scene.styleId, mood:scene.mood };
     const prompt=buildSequencePrompt(ctx, frame.stepText);
-    const blob=await generateImage({ prompt, refBlobs:[scene.lockedImageBlob], resolution:scene.resolution });
+    const blob=await generateImage({ prompt, refBlobs:[scene.lockedImageBlob] });
     frame.blob=blob;
     await idbPut('scenes', scene);
     document.getElementById('viewerModal').classList.remove('active');
@@ -1295,7 +1312,6 @@ async function deleteMemory(id){
 async function loadSettingsIntoForm(){
   document.getElementById('vertexApiKey').value=(await getSetting('vertexApiKey'))||'';
   document.getElementById('kieApiKey').value=(await getSetting('kieApiKey'))||'';
-  document.getElementById('defaultResolution').value=(await getSetting('defaultResolution'))||'4k';
   document.getElementById('defaultVideoEngine').value=(await getSetting('defaultVideoEngine'))||'veo';
   document.getElementById('veoModelId').value=(await getSetting('veoModelId'))||'';
   document.getElementById('klingModelId').value=(await getSetting('klingModelId'))||'';
@@ -1303,11 +1319,9 @@ async function loadSettingsIntoForm(){
 async function saveSettings(){
   await setSetting('vertexApiKey', document.getElementById('vertexApiKey').value.trim());
   await setSetting('kieApiKey', document.getElementById('kieApiKey').value.trim());
-  await setSetting('defaultResolution', document.getElementById('defaultResolution').value);
   await setSetting('defaultVideoEngine', document.getElementById('defaultVideoEngine').value);
   await setSetting('veoModelId', document.getElementById('veoModelId').value.trim());
   await setSetting('klingModelId', document.getElementById('klingModelId').value.trim());
-  state.resolution=(await getSetting('defaultResolution'))||'4k';
   toast('Réglages enregistrés.');
 }
 async function wipeAllData(){
@@ -1336,7 +1350,6 @@ window.addEventListener('error', e=>{ console.error('Erreur :', e.error||e.messa
   if(useMemoryFallback){
     toast("Stockage local indisponible dans ce contexte (souvent le cas en ouvrant le fichier directement, sans hébergement). L'app fonctionne, mais rien ne sera conservé après fermeture — héberge le fichier en ligne (ex. GitHub Pages) pour une sauvegarde durable.", true);
   }
-  state.resolution=(await getSetting('defaultResolution'))||'4k';
   showScreen('home');
 })();
 </script>
