@@ -189,13 +189,12 @@
   .landing-title{font-size:30px;letter-spacing:5px;margin:0 0 14px;font-weight:800;color:var(--text);}
   .landing-phrase{font-size:16px;color:var(--accent);letter-spacing:0.5px;max-width:480px;line-height:1.6;margin:0 0 10px;font-weight:600;}
   .landing-sub{font-size:12.5px;color:var(--text-dim);max-width:520px;line-height:1.7;margin:0 0 30px;}
-  .landing-chips{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;max-width:560px;margin-bottom:34px;}
-  .landing-chip{
-    border:1px solid var(--border);border-radius:10px;padding:10px 14px;
-    font-size:11px;letter-spacing:0.5px;color:var(--text-dim);background:rgba(32,227,154,0.03);
-    text-align:left;line-height:1.5;
+  .landing-keys{
+    width:100%;max-width:420px;text-align:left;border:1px solid var(--border);border-radius:12px;
+    padding:18px 20px;background:rgba(32,227,154,0.03);margin-bottom:30px;
   }
-  .landing-chip b{color:var(--accent);display:block;font-size:12px;letter-spacing:1px;margin-bottom:2px;}
+  .landing-keys .field-label{margin-top:0;}
+  .landing-keys .field-label:not(:first-child){margin-top:14px;}
   .landing-enter-btn{
     padding:16px 42px;border:none;border-radius:10px;
     background:linear-gradient(135deg,var(--accent),var(--accent-2));
@@ -226,11 +225,16 @@
   </svg>
   <h1 class="landing-title">STUDIO POV 2.0</h1>
   <div class="landing-phrase">Créez des images immersives où la caméra devient les yeux du sujet.</div>
-  <div class="landing-chips">
-    <div class="landing-chip"><b>👁 100% POV</b>Aucune vue externe du Sujet-Regard, jamais.</div>
-    <div class="landing-chip"><b>🔒 Sujet-Regard obligatoire</b>Une image = une caméra définie, pas d'ambiguïté.</div>
-    <div class="landing-chip"><b>🪞 Reflet intelligent</b>Miroir autorisé, mirror selfie interdit.</div>
-    <div class="landing-chip"><b>⚡ Dual moteur</b>Vertex AI avec bascule automatique vers kie.ai.</div>
+  <div class="landing-keys">
+    <label class="field-label">Clé API Vertex AI (Express Mode)</label>
+    <input type="password" id="vertexKeyInput" class="key-input" placeholder="AQ...">
+    <label class="field-label">Clé API kie.ai</label>
+    <input type="password" id="kieKeyInput" class="key-input" placeholder="Clé kie.ai" style="margin-bottom:0;">
+    <div class="settings-actions" style="margin-top:14px;">
+      <button class="out-btn" id="saveKeysBtn">💾 Enregistrer</button>
+      <button class="out-btn" id="clearKeysBtn">🗑 Effacer</button>
+    </div>
+    <div class="hint" id="keysStatus">Les clés sont stockées uniquement dans ton navigateur (localStorage), jamais envoyées ailleurs qu'aux API que tu configures.</div>
   </div>
   <button class="landing-enter-btn" id="enterAppBtn">▶ Entrer dans le studio</button>
 </div>
@@ -275,7 +279,7 @@
       <div class="ref-grid ref-grid-single" id="subjectGrid"></div>
       <div class="hint" style="margin-bottom:20px;">La personne placée ici devient automatiquement la caméra : toute la génération adopte strictement son point de vue, et elle n'apparaît jamais entièrement à l'écran (sauf reflet explicitement demandé). <b style="color:var(--danger);">Sans image ici, la génération est bloquée.</b></div>
 
-      <h2>Références secondaires <span style="color:var(--text-dim);font-weight:400;">(jusqu'à 4 — les seuls personnages visibles)</span></h2>
+      <h2>Références secondaires <span style="color:var(--text-dim);font-weight:400;">(jusqu'à 6 — les seuls personnages visibles)</span></h2>
       <div class="ref-grid" id="personGrid"></div>
       <div class="hint" style="margin-bottom:20px;">Ce sont les <b style="color:var(--accent);">seules</b> personnes qui peuvent apparaître visibles dans l'image. Le Sujet-Regard n'est jamais compté comme un personnage visible, même s'il est seul. <b style="color:var(--danger);">Si ce champ est vide, aucune personne entière n'apparaît dans l'image</b> — même si ta direction mentionne quelqu'un d'autre, seule la scène/l'action vue depuis les yeux du Sujet-Regard sera montrée.</div>
 
@@ -297,27 +301,16 @@ Ex : Elle est assise sur un canapé, elle regarde vers le bas où son bébé dor
         </div>
       </fieldset>
 
-      <div class="settings-toggle" id="settingsToggle">⚙ Clés API & connexions</div>
+      <div class="settings-toggle" id="settingsToggle">⚙ Réglages</div>
       <div class="settings-panel" id="settingsPanel">
-        <label class="field-label" style="margin-top:0;">Clé API Vertex AI (Express Mode)</label>
-        <input type="password" id="vertexKeyInput" class="key-input" placeholder="AQ...">
-
-        <label class="field-label">Clé API kie.ai</label>
-        <input type="password" id="kieKeyInput" class="key-input" placeholder="Clé kie.ai">
-
-        <label class="field-label">Format de sortie</label>
+        <label class="field-label" style="margin-top:0;">Format de sortie</label>
         <div class="engine-row" style="margin-top:0;margin-bottom:14px;">
           <div class="engine-opt active" id="fmt916" data-fmt="9:16">9:16</div>
           <div class="engine-opt" id="fmt11" data-fmt="1:1">1:1</div>
           <div class="engine-opt" id="fmt45" data-fmt="4:5">4:5</div>
           <div class="engine-opt" id="fmt169" data-fmt="16:9">16:9</div>
         </div>
-
-        <div class="settings-actions">
-          <button class="out-btn" id="saveKeysBtn">💾 Enregistrer</button>
-          <button class="out-btn" id="clearKeysBtn">🗑 Effacer</button>
-        </div>
-        <div class="hint" id="keysStatus">Les clés sont stockées uniquement dans ton navigateur (localStorage), jamais envoyées ailleurs qu'aux API que tu configures.</div>
+        <div class="hint">Les clés API se gèrent désormais sur l'écran d'accueil du studio.</div>
       </div>
 
       <button class="generate-btn" id="generateBtn">▶ Générer le POV</button>
@@ -391,7 +384,6 @@ settingsToggle.addEventListener('click', () => settingsPanel.classList.toggle('o
 // pré-remplir les champs avec ce qui est déjà enregistré
 document.getElementById('vertexKeyInput').value = CONFIG.VERTEX_API_KEY;
 document.getElementById('kieKeyInput').value = CONFIG.KIE_API_KEY;
-if (CONFIG.VERTEX_API_KEY || CONFIG.KIE_API_KEY) settingsPanel.classList.add('open');
 
 document.getElementById('saveKeysBtn').addEventListener('click', () => {
   const vertexKey = document.getElementById('vertexKeyInput').value.trim();
@@ -514,8 +506,8 @@ function updateGenerateAvailability() {
   }
 }
 
-// ---------- RÉFÉRENCES IMAGES : PERSONNAGES (jusqu'à 4) ----------
-const MAX_PERSON_REFS = 4;
+// ---------- RÉFÉRENCES IMAGES : PERSONNAGES (jusqu'à 6) ----------
+const MAX_PERSON_REFS = 6;
 let personImages = [];   // tableau de dataURL, un par personnage
 
 function renderPersonGrid() {
@@ -572,59 +564,122 @@ Test physique obligatoire : "Si j'étais réellement cette personne, dans cette 
 
 Aucun téléphone n'existe dans ce mode : les deux mains du propriétaire sont disponibles. S'il tient, porte, ouvre, tend ou manipule quelque chose à deux mains, les deux avant-bras et les deux mains peuvent entrer naturellement dans le cadre au premier plan — la caméra reste malgré tout exactement à la position anatomique de ses yeux. Exemple : "je tends une assiette à deux mains vers la personne assise devant moi" → les deux avant-bras entrent dans le cadre, les deux mains tiennent l'assiette, la personne apparaît en face.`;
 
-  return `RÈGLE CRITIQUE N°1 — PRIORITÉ ABSOLUE SUR TOUT LE RESTE : le Sujet-Regard (première image de référence) EST la caméra, jamais un personnage visible. Aucune partie de sa tête — visage, cheveux, oreille, joue, mâchoire, front, nez, nuque, cou — n'apparaît jamais dans l'image, même minime, même partielle, même à l'envers, de biais, en haut du cadre, ou masquée par des cheveux. Ce n'est pas seulement "pas de tête entière" : zéro fragment de tête, dans n'importe quelle position ou orientation, sauf reflet de miroir explicitement demandé par la scène. Son visage, son dos, son profil, son buste, un demi-corps ou un corps entier de lui ne doivent jamais apparaître hors reflet.
+  return `RÈGLE CRITIQUE N°1 — PRIORITÉ ABSOLUE SUR TOUT LE RESTE : la première image de référence (Sujet-Regard) ne doit JAMAIS apparaître comme une personne visible dans l'image générée. Aucune portion de sa tête — visage, cheveux, oreille, joue, mâchoire, nuque — ne doit JAMAIS apparaître, même minime. Elle n'est PAS le sujet de la photo, elle EST la caméra.
+MAUVAIS (interdit) — exemple 1 : une personne conduit une voiture → on voit sa tête, sa nuque et son dos depuis un siège arrière ou l'extérieur du véhicule.
+MAUVAIS (interdit) — exemple 2 : une personne boit un verre en face d'un ami au restaurant → on voit une portion de sa tête, ses cheveux ou son oreille en amorce dans le coin du cadre, plan "par-dessus l'épaule".
+BON (obligatoire) — mêmes scènes : on voit exactement ce qu'elle voit (pare-brise et route, ou l'ami en face qui regarde vers l'objectif), avec seulement ses mains/avant-bras visibles en bas du cadre si l'action l'implique. Zéro fragment de tête, jamais.
+Si l'image que tu t'apprêtes à générer montre ne serait-ce qu'un bout de tête, de cheveux ou d'oreille du Sujet-Regard : c'est faux, recommence entièrement en vue subjective pure.
 
-Exemples :
-MAUVAIS — il conduit → on voit sa tête/nuque/dos depuis l'extérieur du véhicule.
-MAUVAIS — il boit un verre face à un ami → on voit un bout de sa tête/oreille/cheveux en amorce, plan "par-dessus l'épaule" (caméra externe déguisée, interdit même si l'identité n'est pas reconnaissable).
-BON — mêmes scènes : uniquement ce qu'il voit (route, ou l'ami en face qui regarde l'objectif), avec seulement ses mains/avant-bras en bas du cadre si l'action l'implique.
+STRICT POV PURITY LOCK:
+Generate only from the first-person viewpoint of the Sujet-Regard.
+The Sujet-Regard is the camera, not a visible character.
+Do not place the Sujet-Regard anywhere in the visible scene.
+Do not show the Sujet-Regard's face, head, hair, neck, shoulders, back, profile, torso, half-body, full body, or silhouette outside an explicit mirror/reflection scene.
+Do not create an over-the-shoulder shot, third-person shot, side shot, back view, portrait, selfie, lifestyle photo, or external camera view.
+If no secondary reference person is provided, generate zero complete visible people representing the Sujet-Regard.
+Visible people may only come from secondary references or anonymous background context, never from the Sujet-Regard reference.
+Show only what the Sujet-Regard sees: environment, objects, action, light, atmosphere, and physically plausible POV body fragments such as hands, fingers, wrists, forearms, legs, knees, feet, clothing fragments, accessories, or held objects.
+Never clone the Sujet-Regard as a visible person.
 
-Cette image de référence ne sert JAMAIS à construire un personnage visible — ni lui, ni quelqu'un d'autre. C'est une donnée de calibration invisible (teint, mains, vêtements), jamais un modèle de personnage à rendre visible.
-
-Exception miroir : si (et seulement si) la scène demande explicitement un miroir ou une surface réfléchissante, le Sujet-Regard peut apparaître en reflet — miroir devant lui, perspective depuis ses yeux, corps visible uniquement dans le cadre du miroir. Jamais un mirror selfie classique (pas de pose, pas de caméra externe visible). Un téléphone n'apparaît dans le reflet que si la scène le demande explicitement, sans jamais devenir un selfie.
-
-EXCLUSIVITÉ MUTUELLE : le Sujet-Regard ne peut jamais être à la fois la caméra ET une personne visible dans la même image. Dès qu'un de ses fragments POV apparaît (main, bras, jambe), cela confirme qu'il EST la caméra — donc aucune personne visible dans cette image ne peut le représenter, entier, demi-corps ou silhouette.
-
-ANTI-CLONE : si une référence secondaire est fournie, elle doit représenter une personne clairement différente du Sujet-Regard (pas la même personne sous un autre angle). Si une personne visible générée ressemble au Sujet-Regard, c'est une erreur à corriger.
-
-Si l'image que tu t'apprêtes à générer contient un bout de tête, de cheveux, d'oreille du Sujet-Regard, ou le clone visuellement quelque part dans le cadre : c'est faux, recommence entièrement en vue subjective pure.
-
-RÈGLE DE CASTING — visible_people = nombre de références secondaires fournies, rien d'autre. Le Sujet-Regard n'entre jamais dans ce calcul. Si 0 référence secondaire : 0 personne visible dans l'image, même si la direction décrit une interaction ("il boit une bière avec un ami" sans référence secondaire → montrer seulement sa main, le verre, la table, jamais une personne inventée). Si des références secondaires existent, ce sont exactement ces personnes (et seulement elles) qui peuvent apparaître, avec leur identité, leur morphologie, leur teint et LEURS VÊTEMENTS TELS QUE MONTRÉS sur leur photo — ne réinvente jamais leur tenue. Si la direction parle d'un total incluant le Sujet-Regard ("on est 3", "on est 4", "avec mes amis"), comprends que ce total inclut le Sujet-Regard lui-même : le nombre de personnes RÉELLEMENT VISIBLES dans l'image est donc ce total moins 1 (ex : "on est 4" → 3 personnes visibles). Si des références secondaires ont déjà été fournies, elles priment toujours sur ce calcul textuel et définissent seules les personnages visibles.
-
-Tu es Studio POV, un moteur de prise de vue subjective immersive. Interprète automatiquement la direction libre de l'utilisatrice pour déterminer où se trouve le Sujet-Regard, ce qu'il fait et regarde, sans qu'elle ait besoin d'écrire la moindre règle technique.
+Tu es Studio POV, un moteur de prise de vue subjective immersive. L'utilisateur fournit des images de référence et décrit librement une scène en langage naturel — c'est à toi d'interpréter automatiquement qui possède le point de vue, où cette personne se trouve, ce qu'elle fait et regarde, sans qu'il ait besoin d'écrire la moindre règle technique.
 
 ${MODE_REGARD}
 
-CONVERSION AUTOMATIQUE : n'interprète jamais une direction comme "montrer le Sujet-Regard faire X" — convertis-la toujours en "vue depuis ses yeux pendant qu'il fait X". Exemple : "il marche dans l'aéroport" → vue du terminal, du sol, des panneaux, éventuellement une main tirant une valise ou ses pieds — jamais une personne complète le représentant. Ce principe s'applique à toute action, quelle qu'elle soit, pas seulement à cet exemple.
+RÈGLE ABSOLUE — SUJET-REGARD DÉFINI PAR IMAGE : une image de référence a été explicitement désignée comme Sujet-Regard (c'est la toute première image de référence transmise). Cette personne devient automatiquement la caméra : toute la génération adopte strictement sa perspective à la première personne, conformément à la règle du mode Regard ci-dessus — ce n'est jamais déduit du texte, c'est fixé par cette image. Elle n'est jamais visible entièrement par une caméra externe : ni son visage, ni sa tête, ni son corps complet, ni en portrait, selfie, vue de dos, vue de profil, ou toute composition suggérant qu'elle est photographiée par quelqu'un d'autre.
 
-PRÉSENCE CORPORELLE — dose minimale nécessaire, jamais forcée :
-Niveau 0 (rien) : scène contemplative, regarder/observer/attendre — aucune partie du corps.
-Niveau 1 (léger) : bout de doigts, manche, poignet, chaussures en bas de cadre.
-Niveau 2 (moyen) : une main tenant un objet, avant-bras sur une table, jambes assises.
-Niveau 3 (fort) : deux mains sur un volant/clavier, ou mains + jambes en action.
-Choisis toujours le niveau minimal qui rend la scène crédible. Si l'action n'implique aucun contact physique (regarder un lieu, un décor, un plat sans le toucher), niveau 0 : zéro fragment, jamais inséré artificiellement "pour prouver le POV" — ça crée un membre flottant incohérent. Quand un fragment apparaît, il est toujours anatomiquement connecté à une posture cohérente (une main suppose un bras et une épaule crédibles hors-cadre), jamais isolé, coupé net, dupliqué ou impossible compte tenu de l'action.
+Exception miroir : si la scène demande explicitement un miroir ou une surface réfléchissante, le Sujet-Regard peut apparaître dans le reflet — cela correspond à ce qu'il voit depuis ses propres yeux. Ce reflet doit rester physiquement cohérent avec une vue à la première personne : miroir placé devant le Sujet-Regard, perspective depuis ses yeux, corps visible uniquement à l'intérieur du cadre du miroir, environnement réel visible autour de ce cadre. Ce reflet ne doit jamais devenir un mirror selfie classique : aucune caméra externe visible, aucune pose de shooting, aucun cadrage de selfie, aucune composition où le Sujet-Regard semble photographié par quelqu'un d'autre. Un téléphone ne doit apparaître dans le reflet que si la scène le demande explicitement, et même alors la perspective reste celle de ses yeux — jamais celle d'un selfie.
 
-RÈGLE DE NON-INVENTION : n'ajoute jamais un accessoire, bijou, vêtement, objet personnel ou geste qui n'est ni visible sur une référence, ni demandé dans la direction, ni strictement nécessaire à l'action décrite. La présence du Sujet-Regard doit émerger de la logique naturelle de la scène (cadrage, action, distance aux autres), jamais d'un détail décoratif inventé pour "faire sentir" sa présence.
+Hors miroir ou reflet logique, seules certaines parties de son corps peuvent apparaître si le cadrage POV le justifie naturellement : mains, doigts, avant-bras, bras partiels, jambes, genoux, pieds, partie basse du torse, vêtements partiels, accessoires portés, chaussures. AUCUNE partie de la tête n'apparaît jamais, même minime ou partielle : ni visage, ni tête entière, ni cheveux, ni oreille, ni joue, ni mâchoire, ni front, ni nez, ni nuque, ni cou vu de dos ou de côté. Ce n'est pas seulement "pas de tête entière" — c'est zéro fragment de tête, quel qu'il soit. Cette référence sert uniquement à guider les éléments compatibles avec une perspective POV (teint des mains/jambes visibles, forme des mains, style des ongles, vêtements en fragments, bijoux, montre, chaussures, accessoires) — son identité complète n'est jamais reconstruite en personnage visible hors reflet.
 
-COHÉRENCE TECHNIQUE :
-— Hauteur de caméra = hauteur des yeux du Sujet-Regard selon sa position (assis ≠ debout ≠ allongé). Uniquement ce qu'un humain pourrait réellement voir depuis cette position, jamais une vue impossible.
-— Focale iPhone réelle : 24mm f/1.78 (principal) ou 13mm f/2.2 (ultra grand-angle) selon la proximité — jamais de compression téléobjectif ni de flou d'arrière-plan type mode Portrait.
-— Distance humaine réaliste, cohérence anatomique stricte même en gros plan.
-— Environnement traité comme un lieu réel (dimensions, mobilier, lumière, profondeur cohérents).
-— Toute personne visible (référence secondaire) oriente son regard/corps vers l'objectif avec une vraie relation spatiale à la scène.
-— INTERDIT par défaut : cadrage éditorial parfait, symétrie systématique, pose mannequin, éclairage studio, peau retouchée, bokeh artificiel, HDR excessif, rendu type campagne/pub/Pinterest, table ou pièce dressée impeccablement.
-— Imperfection réaliste toujours présente, même sans le demander : horizon légèrement incliné, cadrage légèrement décentré, netteté pas uniforme partout, grain smartphone naturel, léger flou de mouvement si l'action bouge — et, quand la scène s'y prête, petits désordres naturels (miettes, serviette froissée, objets pas alignés, usure normale) — discrets et crédibles, jamais caricaturaux. Ça doit rester net et lisible : jamais volontairement raté, flou excessif, grain excessif, chaotique ou distordu.
-— Si un selfie est décrit sans aucune référence secondaire : reformule silencieusement en vue subjective pure sans selfie (personne d'autre pour tenir l'appareil).
+RÈGLE ABSOLUE — CETTE RÉFÉRENCE NE SERT JAMAIS À CONSTRUIRE UN PERSONNAGE VISIBLE : l'image du Sujet-Regard est une donnée de calibration invisible (teint, mains, vêtements), pas un modèle de personnage. Ne l'utilise JAMAIS pour générer un corps ou un visage entier visible dans le cadre.
 
-RÉALISME HUMAIN EXTRÊME : rendu 4K ultra réaliste type RAW, zéro lissage de peau, zéro effet plastique/CGI/IA. Peau avec pores visibles, grain naturel, pigmentation irrégulière, micro-imperfections crédibles. Yeux avec fibres d'iris et humidité naturelle, cils et sourcils individuels. Cheveux en mèches individuelles distinctes, jamais une masse compacte. Couleurs de peau et de teint toujours naturelles et cohérentes avec chaque référence fournie — jamais de teinte anormale (pas de peau verte, bleue, ou toute coloration non réaliste), jamais de déformation des yeux, du visage ou des proportions d'une personne visible. Avec plusieurs références secondaires simultanées, la fidélité anatomique et l'identité correcte de CHAQUE personne priment sur tout effet stylistique — ne sacrifie jamais la justesse des visages/couleurs de peau pour l'ambiance.
+RÈGLE DE CASTING OBLIGATOIRE — À APPLIQUER LITTÉRALEMENT :
+— Sujet-Regard = caméra subjective uniquement. Il n'est JAMAIS compté comme un personnage visible, jamais ajouté au casting de la scène, jamais dupliqué dans l'image.
+— Références secondaires (les images fournies après le Sujet-Regard) = les SEULES personnes qui peuvent apparaître visibles, entières ou partielles, dans l'image.
+— visible_people = nombre de références secondaires fournies. Rien d'autre n'entre dans ce calcul.
+— Si le nombre de références secondaires est 0, alors le nombre de personnes visibles dans l'image générée doit être 0 — AUCUNE EXCEPTION, même si la direction textuelle décrit une interaction avec quelqu'un (un ami, un serveur, un inconnu). N'invente jamais une personne visible pour combler la scène quand aucune référence secondaire n'existe.
+— Exemple concret : direction "il est au restaurant, il boit une bière" avec uniquement le Sujet-Regard fourni (0 référence secondaire) → l'image NE DOIT PAS montrer un homme au restaurant, ni lui, ni un ami inventé. Elle doit montrer uniquement ce qu'il voit : sa main tenant le verre, la table, le restaurant devant lui, la lumière, les objets proches — zéro personne visible.
+— Si des références secondaires sont fournies, ce sont exactement ces personnes-là (et seulement elles) qui peuvent apparaître dans le cadre, avec leur identité fidèlement préservée.
+
+EXCLUSIVITÉ MUTUELLE ABSOLUE : le Sujet-Regard ne peut JAMAIS être à la fois la source du point de vue (caméra) ET une personne visible dans la même image. Ces deux rôles sont mutuellement exclusifs, sans exception. Dès qu'un fragment POV de lui (main, bras, jambe, pied, objet tenu) est visible dans le cadre, cela confirme qu'il EST la caméra à cet instant — donc aucune personne visible dans cette même image ne peut le représenter, ni comme personnage entier, ni comme demi-corps, ni comme silhouette.
+
+INTERDICTIONS EXPLICITES SUPPLÉMENTAIRES — il est strictement interdit de générer le Sujet-Regard : devant la caméra ; de dos ; de face ; de profil ; en silhouette ; en corps entier ; en demi-corps ; comme personne marchant devant lui ; comme personne assise en face ou à côté ; comme personne tenant un objet en tant que personnage visible (par opposition à ses propres mains en POV) ; comme clone ou double de lui-même généré par erreur dans la scène. Chacune de ces compositions est invalide, sans exception, même partielle.
+
+ANTI-DUPLICATION : si une référence secondaire est fournie, elle doit représenter une personne clairement DIFFÉRENTE du Sujet-Regard — jamais la même personne dupliquée sous un autre angle. Si tu t'apprêtes à générer une personne visible qui ressemble au Sujet-Regard (même carrure, même style, même apparence générale), c'est une erreur : soit c'est en fait lui (donc il doit disparaître du cadre et devenir la caméra), soit reconstruis une apparence clairement distincte pour la référence secondaire.
+
+INTERDICTION SPÉCIFIQUE — PLAN "PAR-DESSUS L'ÉPAULE" : ne compose jamais la scène comme un plan où l'on voit le Sujet-Regard de dos, de profil ou de biais avec une partie de sa tête, ses cheveux ou son oreille dans le cadre pendant qu'il interagit avec quelqu'un en face de lui (ex : boire un verre face à un ami, discuter à table). C'est un cadrage à la troisième personne déguisé en POV — strictement interdit, même si aucune identité n'est reconnaissable. Exemple concret : "il boit une bière au restaurant avec quelqu'un en face" → INTERDIT : voir une portion de sa tête/cheveux/oreille en amorce alors qu'on aperçoit son ami en face. OBLIGATOIRE : cadrage droit devant lui — l'ami en face est entièrement visible et regarde vers l'objectif, et seuls sa main et son avant-bras tenant le verre apparaissent en bas du cadre, sans aucune trace de sa propre tête.
+
+INTERDICTION SPÉCIFIQUE — VUE LATÉRALE "MARCHE À CÔTÉ DE SOI-MÊME" : ne compose jamais la scène comme si une deuxième caméra marchait juste à côté ou légèrement en retrait du Sujet-Regard, montrant sur le bord du cadre une tranche verticale de son propre corps — cheveux qui tombent dans le champ, épaule, buste, débardeur ou haut, hanche, cuisse, jambe, jusqu'au pied, pendant qu'il marche dans une rue ou observe une scène devant lui. C'est le même problème que le plan par-dessus l'épaule, mais en version latérale/de profil : une tranche de corps entier (tête à pieds ou buste à pieds) occupant tout un bord du cadre n'est jamais un POV valide, c'est une vue à la troisième personne. Exemple concret : "elle marche dans une rue et regarde un chien devant elle" → INTERDIT : voir ses propres cheveux, son épaule, son buste, sa hanche et sa jambe en bordure verticale du cadre comme si on la filmait en marchant à côté d'elle. OBLIGATOIRE : cadrage droit devant elle — la rue, le chien, les passants, tels qu'elle les voit en regardant devant elle en marchant, sans aucune tranche de son propre buste, hanche ou jambe visible sur le bord du cadre (seuls ses pieds au sol en contrebas sont admissibles, jamais une tranche verticale remontant jusqu'au buste ou à la tête).
+
+RÈGLE ABSOLUE — AUCUN FRAGMENT CORPOREL FORCÉ : ces parties du corps ne sont PAS un ingrédient obligatoire de chaque image. Elles n'apparaissent QUE si l'action décrite les implique physiquement et logiquement (tenir, toucher, poser un pied, s'asseoir jambes visibles, etc.). Si la direction décrit une scène sans contact corporel direct — un lieu, un décor, un plat, un restaurant, un paysage, un objet observé sans le toucher — alors AUCUNE partie du corps du Sujet-Regard n'apparaît dans l'image : pas de main, pas de bras, pas de jambe, pas de doigt, même partiel. N'insère jamais un fragment corporel juste pour "rappeler" qu'il s'agit d'un POV : cela crée un membre flottant, incohérent, déconnecté de toute posture réelle, ce qui est strictement interdit. Quand une partie du corps apparaît, elle doit toujours être anatomiquement connectée à une posture cohérente et implicite (une main visible suppose un bras et une épaule qui existent hors-cadre dans une position plausible) — jamais une main ou un bras isolé, coupé net sans continuité logique, dupliqué, ou positionné à un endroit où le corps du Sujet-Regard ne pourrait physiquement pas se trouver compte tenu de l'action décrite.
+
+Si le Sujet-Regard est seul dans la scène, l'image reste une scène POV depuis ses yeux, sans jamais le montrer entièrement directement, sauf reflet explicitement demandé par la scène. Si d'autres personnes sont présentes (via d'autres images de référence ou décrites dans le texte), elles peuvent apparaître directement et entièrement dans le cadre, mais le Sujet-Regard reste toujours invisible en tant que personnage complet hors reflet, et demeure la source du regard. Il ne doit jamais être confondu avec ces autres personnes.
+
+Règle absolue : le Sujet-Regard est la caméra, jamais un sujet visible par une caméra externe.
+
+Une interaction avec un deuxième personnage — uniquement s'il correspond à une référence secondaire fournie — ne provoque jamais de sortie du mode Regard : ce personnage peut se trouver devant la caméra, prendre la main visible au premier plan, tendre un objet, parler ou regarder vers l'objectif — mais le propriétaire du POV n'est jamais montré à ses côtés depuis l'extérieur, et la caméra ne recule jamais pour "mieux montrer" ce qui se passe. Sans référence secondaire, rappel : aucune personne n'apparaît, même si la direction en décrit une. Certaines informations peuvent rester hors champ : c'est normal, un humain ne voit ou ne filme jamais simultanément son propre corps et tout son environnement. C'est l'action qui s'adapte au POV, jamais l'inverse.
+
+Déduis toi-même, à partir de la direction donnée ci-dessous, la position physique du corps, la hauteur et l'orientation de caméra qui en découlent, ainsi que les parties du corps naturellement visibles et l'action en cours. Rien de tout cela n'est fixé à l'avance — adapte-toi entièrement à ce qui est décrit.
+
+COHÉRENCE OBLIGATOIRE :
+— Hauteur de caméra strictement identique à la hauteur des yeux du propriétaire selon sa position (assis ≠ debout ≠ allongé).
+— Seulement ce qu'un humain pourrait réellement voir/capturer depuis cette position. Aucune caméra flottante, aucune vue impossible.
+— Toute main/bras visible doit accomplir une action anatomiquement crédible, jamais une main flottante ajoutée pour l'effet.
+— Toute personne interagissant avec le propriétaire oriente son regard/corps/geste vers l'objectif, avec une vraie relation spatiale.
+— Focale et rendu optique iPhone réels : plan principal 24mm f/1.78 (naturel, sans flou d'arrière-plan artificiel) ou ultra grand-angle 13mm f/2.2 selon la proximité de la scène — jamais la compression d'un téléobjectif (100mm+), jamais le flou de profondeur de champ d'un mode Portrait ou d'un objectif cinéma.
+— Distance humaine réelle respectée entre le propriétaire et ce qu'il regarde ou filme.
+— Cohérence anatomique stricte (bras, mains, doigts, jambes), même en gros plan proche objectif.
+— Environnement traité comme un lieu réel : dimensions, mobilier, lumière et profondeur cohérents, jamais réorganisé pour l'esthétique.
+— INTERDIT : cadrage éditorial parfait, symétrie systématique, pose mannequin, éclairage studio, peau retouchée, bokeh artificiel, HDR excessif, rendu type campagne de marque ou Pinterest.
+— Imperfection iPhone obligatoire et contextuelle à l'action et à la façon dont la caméra est réellement tenue (horizon légèrement incliné, cadrage décentré, léger flou, exposition imparfaite, grain smartphone) — jamais appliquée comme un filtre uniforme. L'image doit sembler capturée par une vraie personne en train de vivre l'instant.
+
+IMPERFECTION RÉALISTE OBLIGATOIRE PAR DÉFAUT (s'applique systématiquement, même si la direction ne le demande pas — ce n'est jamais optionnel) :
+— Imperfections de prise de vue, toujours présentes à un degré discret : horizon légèrement incliné, cadrage légèrement décentré, mise au point pas parfaitement nette sur toute l'image, légère sur/sous-exposition localisée, grain smartphone naturel, léger flou de mouvement si l'action bouge.
+— Imperfections de la scène elle-même, même non mentionnées dans la direction : petits désordres naturels cohérents avec le lieu et l'action — miettes ou traces sur une table, serviette froissée, mèche de cheveux pas parfaitement en place, léger reflet ou trace sur une vitre, objets pas parfaitement alignés, usure normale d'un lieu ou d'un objet réel, asymétrie naturelle d'un repas ou d'une pièce. Ces détails restent discrets et crédibles — jamais caricaturaux, jamais exagérés, jamais ajoutés pour l'effet comique.
+— Interdiction stricte du rendu "parfait" par défaut : pas de composition léchée façon shooting culinaire ou pub, pas de table dressée impeccablement, pas d'éclairage studio, pas de propreté ou de symétrie artificielle. Sans indication contraire de la direction, la scène doit toujours ressembler à un moment réellement vécu et capturé sans mise en scène — jamais à une photo publicitaire ou à un rendu trop lisse.
+
+RENFORCEMENT ANTI-DÉRIVE :
+— Un point d'ancrage au premier plan (objet tenu, surface touchée, geste, partie du corps) n'apparaît QUE si l'action décrite l'implique physiquement — jamais ajouté par défaut. Une scène de lieu, de décor ou d'objet observé sans contact reste une image propre, sans main, bras ou jambe insérés artificiellement pour "prouver" le POV.
+— Si la direction donnée impliquerait, telle quelle, un selfie, un portrait, un mirror selfie non justifié, un plan en pied, une pose de mode ou toute vue du propriétaire depuis l'extérieur, reformule silencieusement la scène en conservant l'intention (lieu, ambiance, action) mais en la rendant strictement conforme au mode choisi — ne signale jamais cette reformulation à l'écran, ne produis jamais la version incompatible.
+— L'environnement est toujours décrit comme ce que le propriétaire voit réellement depuis sa position (devant lui, autour de lui, légèrement en contrebas) — jamais comme un décor observé de l'extérieur.
+— Lumière et atmosphère restent crédibles et non publicitaires : jamais un rendu type shooting photo, campagne de mode, ou scène mise en scène depuis l'extérieur.
+
+VALIDATION FINALE OBLIGATOIRE avant génération : qui possède le POV ? Où se trouve physiquement le propriétaire ? Où doit se trouver la caméra (hauteur des yeux selon sa position) ? L'action décrite implique-t-elle réellement un contact corporel (main, bras, jambe) — si non, aucune partie du corps n'apparaît, même partielle. Toute partie du corps visible est-elle anatomiquement connectée à une posture cohérente, sans membre flottant, coupé net ou dupliqué ? Tout ce qui apparaît pourrait-il réellement être vu depuis cette position ? Une autre personne interagit-elle avec le propriétaire, et cette interaction respecte-t-elle toujours le mode Regard ? La composition suppose-t-elle une troisième personne ou un photographe invisible ? Le propriétaire est-il montré de l'extérieur ? Si l'une de ces trois dernières réponses est oui, ou si un fragment corporel est présent sans justification par l'action : composition invalide, à reconstruire avant génération. Question directrice finale : "cette personne pourrait-elle réellement voir exactement cette image depuis sa position ?" — si la réponse n'est pas immédiatement évidente, la composition doit être reconstruite.
+
+RÉALISME HUMAIN EXTRÊME (s'applique à toute peau ou visage visible dans le cadre, y compris une personne qui interagit avec la caméra) :
+Rendu 4K ultra réaliste, format RAW, aucun filtre beauté, aucun lissage de peau, aucun aérographe, aucune retouche, aucune peau CGI, cireuse, plastique ou de texture IA, aucune brillance artificielle. Peau photographiée comme au format macro : pores visibles répartis de façon aléatoire avec variations naturelles de taille, grain de peau visible, fin duvet naturel captant la lumière, pigmentation naturellement irrégulière, micro-imperfections et petites taches parfaitement intégrées, texture des lèvres avec fines lignes naturelles, micro-ridules autour des yeux, légères rougeurs naturelles. Yeux réalistes avec fibres visibles dans l'iris, texture de la sclère, humidité naturelle, cils individuels à espacement naturel, sourcils composés de poils individuels. Cheveux avec mèches individuelles visibles, ligne capillaire réaliste, transition naturelle avec le cuir chevelu. Maquillage discret uniquement si pertinent à la scène, sans jamais masquer la texture de peau. Anatomie et proportions faciales fidèles à la réalité, profondeur de champ optique crédible — impossible à distinguer d'une véritable photographie.
+
+CONVERSION AUTOMATIQUE DE LA FORMULATION : n'interprète jamais une direction comme "montrer le Sujet-Regard en train de faire quelque chose". Convertis-la systématiquement en "vue depuis les yeux du Sujet-Regard pendant qu'il fait cette action". Exemple : l'entrée "il marche dans l'aéroport" ne doit jamais devenir une image de lui marchant — elle devient une vue strictement première personne montrant le terminal devant lui, le sol, les panneaux, la lumière, éventuellement une main tirant une valise ou ses pieds en mouvement, sans aucune personne complète le représentant.
+
+HUMAN CAMERA FEEL:
+Make the image feel like a real human first-person view, not a perfect staged render.
+Use subtle natural framing imperfections: slight asymmetry, mild head-level tilt, realistic hand/object distance, imperfect object placement, partially cropped foreground elements, natural depth of field, believable motion softness on active hands, and realistic everyday textures.
+Keep the image photorealistic, clear, high quality, and immersive.
+Use natural lighting with small variations, real shadows, reflections, skin texture, object wear, fingerprints, condensation, fabric wrinkles, table crumbs, or other ordinary life details when contextually appropriate.
+Focus should follow what the POV Owner is naturally looking at.
+Do not make the image messy, low quality, overly blurred, chaotic, distorted, or artificial.
+Never break strict POV: no external camera, no over-the-shoulder, no selfie, no portrait, no visible full POV Owner, no clone of the POV Owner.
+
+PRESENCE LEVEL ENGINE:
+Choose the minimum necessary amount of POV body presence to make the scene immersive and physically believable.
+Presence Level 0: no visible body, only what the POV Owner sees.
+Presence Level 1: subtle body hint such as fingertips, sleeve, wrist, partial knees, or shoes.
+Presence Level 2: one clear POV body fragment linked to the action, such as one hand holding an object, one forearm on a table, or legs visible while seated.
+Presence Level 3: multiple POV body fragments only when the action requires it, such as two hands on a steering wheel, two hands on a keyboard, or hands and legs during an active scene.
+Never add face, head, hair, neck, shoulders, back, profile, torso, half-body, full body, silhouette, or any visible external version of the POV Owner.
+If no secondary reference person is provided, do not generate any complete visible person.
+Use only the amount of body needed to support the action and immersion.
+Body presence must always remain physically plausible from the POV Owner's eyes.
 
 DIRECTION DE LA SCÈNE (donnée par l'utilisatrice, à interpréter fidèlement) :
 "${userDirection}"
 
-La toute première image de référence transmise est le Sujet-Regard : c'est elle qui possède le POV et devient la caméra.
-${personImages.length > 0 ? `${personImages.length} référence(s) secondaire(s) sont fournies après le Sujet-Regard — ce sont les SEULES personnes autorisées à apparaître visibles. Préserve fidèlement l'identité, la morphologie, le teint et la tenue vestimentaire de chacune, exactement comme sur sa photo.` : `Aucune référence secondaire fournie : zéro personne visible ne doit apparaître dans l'image, quelle que soit l'interaction décrite dans la direction.`}
+La toute première image de référence transmise est le Sujet-Regard : c'est elle qui possède le POV et devient la caméra, conformément à la règle absolue ci-dessus.
+${personImages.length > 0 ? `${personImages.length} référence(s) secondaire(s) sont fournies après le Sujet-Regard — ce sont les SEULES personnes autorisées à apparaître visibles dans le cadre. Préserve fidèlement l'identité, la morphologie et le teint de chacune. Aucune autre personne que celles-ci ne doit apparaître.` : `Aucune référence secondaire fournie : zéro personne visible ne doit apparaître dans l'image, quelle que soit l'interaction décrite dans la direction. Montre uniquement ce que le Sujet-Regard voit (environnement, objets, action, ses propres mains/avant-bras/jambes si l'action le justifie) — jamais un personnage entier ou partiel inventé.`}
 
-DERNIER CONTRÔLE AVANT GÉNÉRATION : le visage, la tête, la nuque, le dos ou un clone du Sujet-Regard sont-ils visibles, même partiellement ? Un fragment corporel apparaît-il sans que l'action ne le justifie, ou de façon flottante/incohérente ? Le nombre de personnes visibles dépasse-t-il le nombre de références secondaires ? Une couleur de peau ou une anatomie est-elle distordue ? Si l'une de ces réponses est oui : composition invalide, reconstruis-la avant de générer.
+RAPPEL FINAL AVANT GÉNÉRATION — PRIORITÉ ABSOLUE DE TEXTURE : peau et cheveux doivent être rendus avec un niveau de détail macro maximal, jamais lissés. Pores visibles sur toute la peau, grain net, fin duvet capté par la lumière, mèches de cheveux individuelles distinctes (pas de masse compacte), racines et cuir chevelu naturels. Traite cette image comme une vraie photo RAW haute résolution, pas comme un rendu synthétique poli. Zéro lissage, zéro flou de peau, zéro effet plastique — c'est la priorité qui prime sur toute autre considération esthétique.
+
+DERNIER CONTRÔLE AVANT GÉNÉRATION — NE PAS IGNORER : regarde mentalement l'image que tu es sur le point de produire. Est-ce que le visage, la tête, la nuque ou le dos du Sujet-Regard (première image de référence) y sont visibles, même partiellement ? Si oui, c'est une erreur — reconstruis la scène en vue strictement subjective avant de générer, où seule la scène qu'il regarde (et éventuellement ses mains/avant-bras/jambes si l'action le justifie) est visible.
 
 Génère une seule image intégrant fidèlement les références fournies, en respectant strictement toutes les règles ci-dessus.`;
 }
@@ -919,7 +974,8 @@ async function checkPovPurity(imageDataUrl, hasSecondaryRefs) {
   if (!CONFIG.VERTEX_API_KEY) return { valid: true, skipped: true };
   const checklistPrompt = `Tu es un contrôleur qualité strict pour un outil de génération d'images POV (point de vue subjectif à la première personne). Analyse l'image fournie et réponds UNIQUEMENT par "VALID" ou par "INVALID: <raison en 5 mots maximum>", sans autre texte.
 
-L'image est INVALIDE si elle montre, n'importe où dans le cadre, dans n'importe quelle orientation (y compris à l'envers, de biais, ou partiellement masquée par des cheveux), même partiellement et hors reflet de miroir explicite : le visage, la tête, les cheveux, une oreille, une joue, la nuque, le dos, les épaules, le buste, le profil, un corps entier ou un demi-corps de la personne qui tient la caméra (le "Sujet-Regard" — la perspective depuis laquelle la photo est prise). Un simple fragment de bouche, nez ou menton visible en haut du cadre compte aussi comme une violation.
+L'image est INVALIDE si elle montre, même partiellement et hors reflet de miroir explicite : le visage, la tête, les cheveux, une oreille, une joue, la nuque, le dos, les épaules, le buste, le profil, un corps entier ou un demi-corps de la personne qui tient la caméra (le "Sujet-Regard" — la perspective depuis laquelle la photo est prise).
+Regarde en particulier les BORDS GAUCHE ET DROIT du cadre : si une tranche verticale du corps du Sujet-Regard y est visible (cheveux, épaule, buste, hanche, cuisse, jambe — comme si une deuxième caméra marchait à côté de lui ou légèrement en retrait), c'est INVALIDE, même si aucun visage n'est visible. Seuls des fragments isolés et cohérents avec une action (une main tenant un objet, des pieds au sol vus en contrebas) sont acceptables — pas une tranche continue remontant du pied jusqu'au buste ou aux cheveux sur un bord du cadre.
 ${hasSecondaryRefs ? '' : "L'image est aussi INVALIDE si elle montre une personne humaine complète et visible, peu importe qui, car aucune référence secondaire n'a été fournie pour cette scène — zéro personne visible est attendu."}
 L'image est VALIDE si elle montre uniquement une vue subjective à la première personne (environnement, objets, éventuellement mains/bras/jambes cohérents avec l'action), sans aucune des violations ci-dessus.`;
 
@@ -946,6 +1002,23 @@ L'image est VALIDE si elle montre uniquement une vue subjective à la première 
   }
 }
 
+// ---------- DÉTECTION SELFIE BRAS TENDU (bloqué quand aucune référence secondaire) ----------
+// Le Sujet-Regard EST la caméra : un selfie classique (bras tendu, se prendre en photo
+// soi-même) est une contradiction directe du mode Regard. On bloque uniquement quand
+// aucune référence secondaire n'est fournie (donc pas de reflet miroir légitime en jeu).
+const SELFIE_PATTERNS = [
+  /selfie/i,
+  /bras\s+tendu/i,
+  /te?nd(?:s|re|u|ue)?\s+(?:le\s+|son\s+|mon\s+)?(?:bras|t[ée]l[ée]phone|portable|appareil)/i,
+  /se\s+(?:prend|prendre|photographie|filme)\s+(?:elle-m[êe]me|lui-m[êe]me|en\s+photo|en\s+selfie)/i,
+  /(?:me|se)\s+prend(?:re)?\s+en\s+photo/i,
+  /photo\s+de\s+(?:lui|elle|moi)[\s-]?m[êe]me/i,
+];
+
+function isSelfieRequest(direction) {
+  return SELFIE_PATTERNS.some(re => re.test(direction));
+}
+
 // ---------- ORCHESTRATION DUAL-ENGINE ----------
 async function generate() {
   const direction = document.getElementById('directionInput').value.trim();
@@ -953,13 +1026,13 @@ async function generate() {
     setStatus('✖ Écris une direction avant de générer.');
     return;
   }
-  if (/selfie/i.test(direction)) {
-    setStatus('✖ Studio POV ne fait jamais de selfie : la caméra doit toujours être les yeux du Sujet-Regard, et un selfie l\'obligerait à apparaître (ou ferait de quelqu\'un d\'autre la caméra). Reformule sans selfie.');
-    return;
-  }
   if (!subjectRegardImage) {
     setStatus('✖ Génération impossible : ajoutez une image de référence dans le champ Sujet-Regard. Cette personne deviendra la caméra de l\'image.');
     document.getElementById('subjectGrid').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+  if (personImages.length === 0 && isSelfieRequest(direction)) {
+    setStatus('✖ Studio POV ne fait pas de selfie sans référence secondaire : sans une autre personne dans la scène pour tenir l\'appareil, l\'app existe pour que tes yeux SOIENT la caméra, pas pour te photographier toi-même. Ajoute une référence secondaire ou reformule sans selfie.');
     return;
   }
 
