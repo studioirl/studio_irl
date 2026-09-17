@@ -588,7 +588,19 @@ const SEQ_STRUCTURES = {
 const DB_NAME='studio_love_db', DB_VERSION=1;
 let db;
 let useMemoryFallback=false;
+let fallbackWarned=false;
 let memStore={couples:{},scenes:{},memories:{},kv:{}};
+function errMsg(e){
+  if(!e) return 'Erreur inconnue — le navigateur n’a pas fourni de détail (fréquent en navigation privée Safari).';
+  return e.message || String(e) || 'Erreur inconnue.';
+}
+function fallbackToMemory(context){
+  useMemoryFallback=true;
+  if(!fallbackWarned){
+    fallbackWarned=true;
+    toast('Stockage local indisponible ('+context+'). Souvent lié à la navigation privée sur Safari — ouvre le lien dans un onglet normal pour garder tes créations. L’app continue de fonctionner, mais rien ne sera conservé après fermeture.', true);
+  }
+}
 function openDB(){return new Promise((resolve)=>{
   try{
     if(!window.indexedDB) throw new Error('IndexedDB indisponible');
@@ -609,28 +621,64 @@ function openDB(){return new Promise((resolve)=>{
     resolve(null);
   }
 });}
+/* Chaque opération se rabat silencieusement sur la mémoire si IndexedDB échoue
+   (quota, navigation privée, transaction annulée sans détail...) plutôt que de
+   rejeter avec une erreur illisible — l'app doit toujours répondre au clic. */
 function idbPut(store,val){
   if(useMemoryFallback){ const k=val.id||val.key; memStore[store][k]=val; return Promise.resolve(val); }
-  return new Promise((res,rej)=>{const tx=db.transaction(store,'readwrite');tx.objectStore(store).put(val);tx.oncomplete=()=>res(val);tx.onerror=()=>rej(tx.error);});
+  return new Promise((resolve)=>{
+    try{
+      const tx=db.transaction(store,'readwrite');
+      tx.objectStore(store).put(val);
+      tx.oncomplete=()=>resolve(val);
+      const onFail=()=>{ fallbackToMemory('écriture'); memStore[store][val.id||val.key]=val; resolve(val); };
+      tx.onerror=onFail; tx.onabort=onFail;
+    }catch(e){ fallbackToMemory('écriture'); memStore[store][val.id||val.key]=val; resolve(val); }
+  });
 }
 function idbGet(store,key){
   if(useMemoryFallback){ return Promise.resolve(memStore[store][key]); }
-  return new Promise((res,rej)=>{const tx=db.transaction(store,'readonly');const r=tx.objectStore(store).get(key);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});
+  return new Promise((resolve)=>{
+    try{
+      const tx=db.transaction(store,'readonly');
+      const r=tx.objectStore(store).get(key);
+      r.onsuccess=()=>resolve(r.result);
+      r.onerror=()=>{ fallbackToMemory('lecture'); resolve(memStore[store][key]); };
+    }catch(e){ fallbackToMemory('lecture'); resolve(memStore[store][key]); }
+  });
 }
 function idbGetAll(store){
   if(useMemoryFallback){ return Promise.resolve(Object.values(memStore[store])); }
-  return new Promise((res,rej)=>{const tx=db.transaction(store,'readonly');const r=tx.objectStore(store).getAll();r.onsuccess=()=>res(r.result||[]);r.onerror=()=>rej(r.error);});
+  return new Promise((resolve)=>{
+    try{
+      const tx=db.transaction(store,'readonly');
+      const r=tx.objectStore(store).getAll();
+      r.onsuccess=()=>resolve(r.result||[]);
+      r.onerror=()=>{ fallbackToMemory('lecture'); resolve(Object.values(memStore[store])); };
+    }catch(e){ fallbackToMemory('lecture'); resolve(Object.values(memStore[store])); }
+  });
 }
 function idbDelete(store,key){
   if(useMemoryFallback){ delete memStore[store][key]; return Promise.resolve(); }
-  return new Promise((res,rej)=>{const tx=db.transaction(store,'readwrite');tx.objectStore(store).delete(key);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);});
+  return new Promise((resolve)=>{
+    try{
+      const tx=db.transaction(store,'readwrite');
+      tx.objectStore(store).delete(key);
+      tx.oncomplete=()=>resolve();
+      const onFail=()=>{ delete memStore[store][key]; resolve(); };
+      tx.onerror=onFail; tx.onabort=onFail;
+    }catch(e){ delete memStore[store][key]; resolve(); }
+  });
 }
 function idbClearAll(){
-  if(useMemoryFallback){ memStore={couples:{},scenes:{},memories:{},kv:{}}; return Promise.resolve(); }
-  return new Promise((res,rej)=>{
-    const tx=db.transaction(['couples','scenes','memories','kv'],'readwrite');
-    ['couples','scenes','memories','kv'].forEach(s=>tx.objectStore(s).clear());
-    tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error);
+  memStore={couples:{},scenes:{},memories:{},kv:{}};
+  if(useMemoryFallback || !db){ return Promise.resolve(); }
+  return new Promise((resolve)=>{
+    try{
+      const tx=db.transaction(['couples','scenes','memories','kv'],'readwrite');
+      ['couples','scenes','memories','kv'].forEach(s=>tx.objectStore(s).clear());
+      tx.oncomplete=()=>resolve(); tx.onerror=()=>resolve(); tx.onabort=()=>resolve();
+    }catch(e){ resolve(); }
   });
 }
 
@@ -913,7 +961,7 @@ async function saveCoupleProfile(){
     showScreen('couples');
   }catch(e){
     console.error(e);
-    toast('Erreur lors de l’enregistrement : '+e.message, true);
+    toast('Erreur lors de l’enregistrement : '+errMsg(e), true);
   }
 }
 
@@ -1037,7 +1085,7 @@ async function generateFirstImage(isRegen){
     state.currentSceneId=scene.id;
     document.getElementById('firstImagePreview').src=URL.createObjectURL(blob);
     showScreen('first-image');
-  }catch(e){ toast(e.message,true); }
+  }catch(e){ toast(errMsg(e),true); }
   finally{ hideLoading(); }
 }
 
@@ -1073,7 +1121,7 @@ async function generateSequence(count){
     state.currentSequenceId=sequence.id;
     renderSequenceResults(scene, sequence);
     showScreen('sequence-results');
-  }catch(e){ toast(e.message,true); }
+  }catch(e){ toast(errMsg(e),true); }
   finally{ hideLoading(); }
 }
 async function regenerateSequence(){
@@ -1119,7 +1167,7 @@ async function regenerateFrame(sceneId, sequenceId, frameId){
     document.getElementById('viewerModal').classList.remove('active');
     renderSequenceResults(scene, seq);
     toast('Image régénérée.');
-  }catch(e){ toast(e.message,true); }
+  }catch(e){ toast(errMsg(e),true); }
   finally{ hideLoading(); }
 }
 
@@ -1166,7 +1214,7 @@ async function runVideoGeneration(){
     player.style.display='block';
     document.getElementById('videoActions').style.display='flex';
     toast('Vidéo générée avec succès.');
-  }catch(e){ toast(e.message,true); }
+  }catch(e){ toast(errMsg(e),true); }
   finally{ hideLoading(); }
 }
 function downloadCurrentVideo(){
@@ -1278,9 +1326,9 @@ function escapeHtml(str){ return (str||'').replace(/[&<>"']/g, c=>({'&':'&amp;',
    IndexedDB qui échoue) était silencieuse : le bouton semblait ne "rien faire". */
 window.addEventListener('unhandledrejection', e=>{
   console.error('Erreur non gérée :', e.reason);
-  toast((e.reason && e.reason.message) || 'Une erreur est survenue. Regarde la console pour le détail.', true);
+  toast(errMsg(e.reason) || 'Une erreur est survenue. Regarde la console pour le détail.', true);
 });
-window.addEventListener('error', e=>{ console.error('Erreur :', e.error||e.message); });
+window.addEventListener('error', e=>{ console.error('Erreur :', e.error||e.message||e); });
 
 /* ---------------------------- boot ---------------------------- */
 (async function boot(){
