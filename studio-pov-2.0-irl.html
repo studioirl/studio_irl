@@ -902,13 +902,21 @@ async function purgeOldRenders() {
 }
 
 // ---------- APPEL VERTEX AI (Express Mode, clé AQ..., appel direct) ----------
-async function callVertex(prompt, imagesBase64) {
+async function callVertex(prompt, subjectImg, personImgs) {
   if (!CONFIG.VERTEX_API_KEY) throw new Error("Clé Vertex AI manquante — renseigne-la dans ⚙ Clés API & connexions.");
 
   const parts = [];
-  (imagesBase64 || []).forEach(img => {
+  parts.push({ text: "Voici les images de référence fournies, dans cet ordre exact. Chaque image est immédiatement précédée d'une étiquette qui définit son rôle EXACT et OBLIGATOIRE — respecte cette étiquette à la lettre pour chaque image, ne les confonds jamais entre elles." });
+
+  if (subjectImg) {
+    parts.push({ text: "IMAGE SUIVANTE = SUJET-REGARD. Cette personne EST la caméra. Elle ne doit JAMAIS apparaître comme personnage visible dans l'image générée, sous aucune forme (visage, tête, cheveux, profil, dos, buste, corps entier, silhouette), sauf reflet de miroir explicitement demandé par la scène. Utilise cette image UNIQUEMENT pour calibrer les fragments visibles compatibles avec un POV si l'action l'implique (teint des mains/jambes, forme des mains, vêtements partiels) — jamais pour construire un personnage entier visible." });
+    parts.push({ inlineData: { data: subjectImg.split(',')[1], mimeType: 'image/jpeg' } });
+  }
+  (personImgs || []).forEach((img, i) => {
+    parts.push({ text: `IMAGE SUIVANTE = RÉFÉRENCE SECONDAIRE ${i + 1}. Cette personne DOIT apparaître comme un personnage visible et entier dans l'image si la direction de la scène l'implique. Préserve fidèlement son identité exacte, sa morphologie, son teint, ses vêtements et ses traits. Ne la remplace JAMAIS par le Sujet-Regard (image précédente) ni par aucune autre personne, et ne l'omets jamais de la scène si la direction décrit une interaction avec elle.` });
     parts.push({ inlineData: { data: img.split(',')[1], mimeType: 'image/jpeg' } });
   });
+
   parts.push({ text: prompt });
 
   const body = {
@@ -1122,7 +1130,7 @@ async function generate() {
     setStatus(`⏳ Génération via ${currentEngine === 'vertex' ? 'Vertex AI' : 'kie.ai'}…`);
     if (currentEngine === 'vertex') {
       try {
-        resultUrl = await callVertex(prompt, refImages);
+        resultUrl = await callVertex(prompt, subjectRegardImage, personImages);
       } catch (err) {
         if (err.code === 429 && document.getElementById('autoFallback').checked) {
           setStatus('⚠ Vertex saturé (429) — bascule automatique sur kie.ai…');
@@ -1146,7 +1154,7 @@ async function generate() {
     while (!purity.valid && !purity.skipped && purityAttempts < MAX_PURITY_RETRIES) {
       purityAttempts++;
       setStatus(`⚠ Contrôle POV : ${purity.reason || 'violation détectée'} — nouvelle tentative ${purityAttempts}/${MAX_PURITY_RETRIES}…`);
-      resultUrl = usedEngine === 'vertex' ? await callVertex(prompt, refImages) : await callKie(prompt, refImages);
+      resultUrl = usedEngine === 'vertex' ? await callVertex(prompt, subjectRegardImage, personImages) : await callKie(prompt, refImages);
       purity = await checkPovPurity(resultUrl, personImages.length > 0);
     }
 
