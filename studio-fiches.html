@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studio Fiches — Générateur de fiches d'activités</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --pink:#f6c9c9; --pink-d:#e59aa0;
+    --mint:#cde9d9; --mint-d:#7fbf9d;
+    --blue:#cfe0f5; --blue-d:#7ca6d9;
+    --cream:#fbf3ee; --ink:#3a2f2f; --ink-soft:#7a6d6d;
+    --card:#ffffff; --line:#ece0da; --shadow:0 8px 24px rgba(58,47,47,.08);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Quicksand',sans-serif;background:var(--cream);color:var(--ink);}
+  h1,h2,h3,.brand{font-family:'Baloo 2',cursive;}
+  .wrap{max-width:1100px;margin:0 auto;padding:28px 20px 80px;}
+  header.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;}
+  .brand{font-size:26px;font-weight:700;color:var(--pink-d);}
+  .brand span{color:var(--mint-d);}
+  .gear{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 14px;cursor:pointer;font-size:14px;}
+  .card{background:var(--card);border-radius:20px;box-shadow:var(--shadow);padding:26px;margin-bottom:22px;border:1px solid var(--line);}
+  label.field-label{display:block;font-weight:600;margin-bottom:8px;font-size:14px;color:var(--ink-soft);}
+  input[type=text],textarea{width:100%;padding:12px 14px;border-radius:12px;border:1.5px solid var(--line);font-family:inherit;font-size:15px;background:#fffdfb;}
+  textarea{min-height:64px;resize:vertical;}
+  .row{display:flex;gap:14px;flex-wrap:wrap;}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
+  .chip{border:1.5px solid var(--line);border-radius:999px;padding:8px 14px;font-size:14px;cursor:pointer;background:#fffdfb;user-select:none;transition:.15s;}
+  .chip.on{background:var(--pink);border-color:var(--pink-d);color:var(--ink);font-weight:600;}
+  .btn{border:none;border-radius:14px;padding:13px 22px;font-family:inherit;font-weight:700;font-size:15px;cursor:pointer;transition:.15s;}
+  .btn-primary{background:var(--pink-d);color:#fff;}
+  .btn-primary:disabled{opacity:.5;cursor:default;}
+  .btn-primary:hover:not(:disabled){filter:brightness(1.05);}
+  .btn-ghost{background:transparent;border:1.5px solid var(--line);color:var(--ink);}
+  .btn-mint{background:var(--mint-d);color:#fff;}
+  .helper{font-size:13px;color:var(--ink-soft);margin-top:6px;}
+  .band-block{margin-bottom:18px;}
+  .band-title{font-weight:700;font-size:15px;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+  .band-badge{background:var(--blue);color:var(--ink);border-radius:999px;padding:3px 12px;font-size:12.5px;font-weight:700;}
+  .prop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;}
+  .prop-card{border:1.5px solid var(--line);border-radius:16px;padding:14px;cursor:pointer;background:#fffdfb;transition:.15s;}
+  .prop-card.on{border-color:var(--mint-d);background:#f3faf6;}
+  .prop-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px;}
+  .mat-tag{font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px;}
+  .mat-maths{background:var(--pink);} .mat-lecture{background:var(--mint);} .mat-monde{background:var(--blue);}
+  .prop-titre{font-weight:700;font-size:15px;margin:2px 0 4px;}
+  .prop-consigne{font-size:13px;color:var(--ink-soft);}
+  .check{width:20px;height:20px;border-radius:6px;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:13px;flex:none;}
+  .prop-card.on .check{background:var(--mint-d);border-color:var(--mint-d);color:#fff;}
+  .top-actions{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:22px;}
+  .spinner{display:inline-block;width:16px;height:16px;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;margin-right:8px;vertical-align:-3px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .error-box{background:#fdeceb;border:1.5px solid #f0b8b3;color:#8a2e26;padding:14px 16px;border-radius:12px;margin-bottom:16px;font-size:14px;}
+  .modal-bg{position:fixed;inset:0;background:rgba(58,47,47,.35);display:flex;align-items:center;justify-content:center;z-index:50;}
+  .modal{background:#fff;border-radius:18px;padding:26px;max-width:440px;width:90%;}
+  .step-nav{font-size:13px;color:var(--ink-soft);margin-bottom:6px;}
+  .fiche-page{background:#fff;width:210mm;min-height:297mm;margin:0 auto 30px;padding:16mm;border-radius:6px;box-shadow:var(--shadow);position:relative;}
+  .fiche-head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px dashed var(--line);padding-bottom:10px;margin-bottom:16px;}
+  .fiche-cat{font-size:12.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--ink-soft);}
+  .fiche-band{font-size:12.5px;font-weight:700;padding:4px 12px;border-radius:999px;}
+  .fiche-titre{font-size:24px;font-weight:700;margin:2px 0 6px;font-family:'Baloo 2',cursive;}
+  .fiche-consigne{font-size:14px;color:var(--ink-soft);margin-bottom:18px;}
+  .ex-grid{display:grid;gap:12px;}
+  .cell{border:1.5px dashed var(--line);border-radius:10px;min-height:60px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:17px;text-align:center;padding:6px;}
+  .assoc-box{border:1.5px solid var(--line);border-radius:12px;padding:10px;min-height:90px;position:relative;}
+  .assoc-num{position:absolute;top:-10px;right:-10px;background:var(--pink-d);color:#fff;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;}
+  .trace-box{border:1.5px dashed var(--line);border-radius:10px;min-height:56px;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:#c9c0c0;}
+  .trace-box.empty{color:transparent;}
+  .prob-item{border-bottom:1px dashed var(--line);padding:10px 0;font-size:15px;}
+  .prob-answer{border-bottom:1.5px solid var(--line);display:inline-block;min-width:120px;margin-left:8px;}
+  .blank{border-bottom:2px solid var(--pink-d);display:inline-block;min-width:80px;}
+  .word-bank{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;}
+  .word-chip{border:1.5px solid var(--mint-d);border-radius:999px;padding:5px 14px;font-size:13.5px;font-weight:600;}
+  .seq-row{display:flex;gap:12px;}
+  .seq-box{flex:1;border:1.5px dashed var(--line);border-radius:12px;min-height:100px;padding:8px;text-align:center;font-size:12.5px;color:var(--ink-soft);}
+  .seq-num{background:var(--blue-d);color:#fff;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;margin-bottom:6px;}
+  .vf-row{display:flex;justify-content:space-between;align-items:center;border-bottom:1px dashed var(--line);padding:10px 0;font-size:14.5px;}
+  .vf-opts{display:flex;gap:16px;font-size:13px;white-space:nowrap;}
+  .draw-box{border:1.5px dashed var(--line);border-radius:14px;min-height:180px;margin-top:6px;}
+  .fiche-footer{margin-top:22px;border-radius:14px;padding:12px 16px;display:flex;gap:10px;align-items:flex-start;font-size:13.5px;}
+  .mascot-emoji{font-size:26px;}
+  .fiche-brand{position:absolute;bottom:8mm;right:16mm;font-size:10.5px;color:#c9c0c0;}
+  #printArea{display:none;}
+  @media print{
+    body *{visibility:hidden;}
+    #printArea, #printArea *{visibility:visible;}
+    #printArea{display:block;position:absolute;left:0;top:0;}
+    .fiche-page{box-shadow:none;margin:0;page-break-after:always;}
+  }
+  .preview-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <header class="top">
+    <div class="brand">Studio <span>Fiches</span></div>
+    <button class="gear" onclick="openSettings()">⚙️ Clé API</button>
+  </header>
+
+  <!-- STEP 1 : THEME -->
+  <div class="card" id="step1">
+    <div class="step-nav">Étape 1 / 3</div>
+    <h2 style="margin-top:0;">Quel thème veux-tu aborder ?</h2>
+    <label class="field-label">Thème de la séance</label>
+    <textarea id="themeInput" placeholder="Ex : les quatre saisons, les animaux de la ferme, le cycle de l'eau, les émotions..."></textarea>
+
+    <div style="margin-top:18px;">
+      <label class="field-label">Tranches d'âge à couvrir</label>
+      <div class="chips" id="bandChips"></div>
+    </div>
+
+    <div style="margin-top:18px;">
+      <label class="field-label">Matières (optionnel — laisse tout coché pour un panel complet)</label>
+      <div class="chips" id="matiereChips"></div>
+    </div>
+
+    <div style="margin-top:18px;max-width:260px;">
+      <label class="field-label">Nombre de propositions par tranche d'âge</label>
+      <input type="text" id="countInput" value="2">
+    </div>
+
+    <div id="step1Error"></div>
+    <div style="margin-top:22px;">
+      <button class="btn btn-primary" id="genPropsBtn" onclick="generateProposals()">Générer les idées d'activités</button>
+    </div>
+  </div>
+
+  <!-- STEP 2 : SELECTION -->
+  <div class="card" id="step2" style="display:none;">
+    <div class="step-nav">Étape 2 / 3</div>
+    <div class="top-actions">
+      <h2 style="margin:0;">Choisis les fiches à créer</h2>
+      <div class="row">
+        <button class="btn btn-ghost" onclick="backToStep1()">← Modifier le thème</button>
+      </div>
+    </div>
+    <div id="propsContainer"></div>
+    <div id="step2Error"></div>
+    <div style="margin-top:20px;display:flex;align-items:center;gap:14px;">
+      <button class="btn btn-primary" id="genFichesBtn" onclick="generateFiches()">Créer les fiches sélectionnées</button>
+      <span class="helper" id="selCount"></span>
+    </div>
+  </div>
+
+  <!-- STEP 3 : PREVIEW -->
+  <div id="step3" style="display:none;">
+    <div class="preview-toolbar">
+      <div>
+        <div class="step-nav">Étape 3 / 3</div>
+        <h2 style="margin:0;">Aperçu des fiches</h2>
+      </div>
+      <div class="row">
+        <button class="btn btn-ghost" onclick="backToStep2()">← Revenir à la sélection</button>
+        <button class="btn btn-mint" onclick="window.print()">🖨️ Imprimer / Exporter en PDF</button>
+      </div>
+    </div>
+    <div id="fichesPreview"></div>
+  </div>
+</div>
+
+<div id="printArea"></div>
+
+<div class="modal-bg" id="settingsModal" style="display:none;">
+  <div class="modal">
+    <h3 style="margin-top:0;">Clé API Google (Vertex AI Express)</h3>
+    <p class="helper">Colle ici ta clé API Google (celle utilisée dans les autres studios IRL). Elle est stockée uniquement dans ton navigateur.</p>
+    <input type="text" id="apiKeyInput" placeholder="AQ...">
+    <div style="margin-top:16px;display:flex;gap:10px;justify-content:flex-end;">
+      <button class="btn btn-ghost" onclick="closeSettings()">Fermer</button>
+      <button class="btn btn-primary" onclick="saveApiKey()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ---------------- CONFIG ---------------- */
+const AGE_BANDS = [
+  {key:'2-3', label:'2-3 ans', section:'Avant la maternelle',
+    curriculum:"Motricité fine, découverte sensorielle, couleurs et formes de base, vocabulaire imagé, gestes simples (pointer, associer, empiler)."},
+  {key:'ps', label:'3-4 ans', section:'Petite Section',
+    curriculum:"Graphisme simple (lignes, ronds, points), reconnaissance des formes et couleurs, quantités jusqu'à 3, motricité fine, éveil aux sons."},
+  {key:'msgs', label:'4-5 ans', section:'Moyenne/Grande Section',
+    curriculum:"Reconnaissance des lettres et du prénom, quantités jusqu'à 10, graphisme précis (tracé guidé des lettres), conscience des syllabes."},
+  {key:'cpce1', label:'6-7 ans', section:'CP/CE1',
+    curriculum:"Lecture et écriture de syllabes et mots simples, nombres jusqu'à 20-100, additions et soustractions simples, premières phrases."},
+  {key:'ce2cm1', label:'8-9 ans', section:'CE2/CM1',
+    curriculum:"Lecture courante et compréhension, grammaire (nature des mots), conjugaison au présent, opérations posées, fractions simples."},
+  {key:'cm2', label:'10-11 ans', section:'CM2',
+    curriculum:"Grammaire avancée (fonction des mots), conjugaison (passé composé, imparfait, futur), fractions et décimaux, proportionnalité."}
+];
+const MATIERES = [
+  {key:'maths', label:'Maths & Logique', mascotte:'Milo', emoji:'🦊', cssClass:'mat-maths'},
+  {key:'lecture', label:'Lettres & Lecture', mascotte:'Lila', emoji:'🐰', cssClass:'mat-lecture'},
+  {key:'monde', label:'Découverte du monde', mascotte:'Nino', emoji:'🦉', cssClass:'mat-monde'}
+];
+const EXO_TYPES_SPEC = `
+- "reconnaissance": repérer/entourer des éléments identiques à un modèle dans une grille. contenu: {cible: string, cellules: string[]} (12 à 15 cellules, dont plusieurs égales à cible)
+- "tracage": tracer une lettre/un mot plusieurs fois. contenu: {texte: string, nbAvecModele: number, nbSansModele: number}
+- "association": compter/associer une quantité dans des contenants. contenu: {conteneur: string, groupes: [{cible:number}]} (3 à 4 groupes, cible entre 1 et 10)
+- "probleme_liste": petits problèmes ou questions avec espace réponse. contenu: {questions: [{enonce:string}]} (3 à 5 questions)
+- "texte_trous": texte court à trous avec banque de mots. contenu: {texte: string (utilise ___ pour chaque trou), motsBanque: string[]}
+- "sequence": remettre des étapes dans l'ordre ou illustrer une séquence. contenu: {etapes: [{numero:number, description:string}]} (3 à 5 étapes)
+- "vrai_faux": affirmations à cocher Vrai/Faux. contenu: {affirmations: [{texte:string}]} (4 à 6 affirmations)
+- "dessin_libre": dessin ou expression libre guidée par une consigne. contenu: {consigneDessin:string, nbCases:number}
+`;
+let state = {
+  selectedBands: AGE_BANDS.map(b=>b.key),
+  selectedMatieres: MATIERES.map(m=>m.key),
+  propositions: [],
+  fiches: [],
+  theme: ''
+};
+
+/* ---------------- API KEY ---------------- */
+function getApiKey(){ return localStorage.getItem('studiofiches_apikey') || ''; }
+function openSettings(){ document.getElementById('apiKeyInput').value = getApiKey(); document.getElementById('settingsModal').style.display='flex'; }
+function closeSettings(){ document.getElementById('settingsModal').style.display='none'; }
+function saveApiKey(){
+  const v = document.getElementById('apiKeyInput').value.trim();
+  localStorage.setItem('studiofiches_apikey', v);
+  closeSettings();
+}
+
+/* ---------------- VERTEX AI CALL ---------------- */
+async function callGemini(systemInstruction, userPrompt){
+  const key = getApiKey();
+  if(!key){ openSettings(); throw new Error("Ajoute d'abord ta clé API Google (bouton ⚙️ en haut à droite)."); }
+  const url = "https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-2.5-flash:generateContent";
+  const body = {
+    contents: [{ role:"user", parts:[{text:userPrompt}] }],
+    systemInstruction: { parts:[{text:systemInstruction}] },
+    generationConfig: { responseMimeType: "application/json", temperature: 0.9 }
+  };
+  const res = await fetch(url, {
+    method:"POST",
+    headers:{ "Content-Type":"application/json", "x-goog-api-key": key },
+    body: JSON.stringify(body)
+  });
+  if(!res.ok){
+    const t = await res.text();
+    throw new Error("Erreur API (" + res.status + ") : " + t.slice(0,300));
+  }
+  const data = await res.json();
+  const text = data?.candidates?.[0]?.content?.parts?.map(p=>p.text||"").join("") || "";
+  try{ return JSON.parse(text); }
+  catch(e){ throw new Error("Réponse IA illisible, réessaie."); }
+}
+
+/* ---------------- UI INIT ---------------- */
+function initChips(){
+  const bandBox = document.getElementById('bandChips');
+  AGE_BANDS.forEach(b=>{
+    const c = document.createElement('div');
+    c.className = 'chip on'; c.textContent = b.label + ' · ' + b.section;
+    c.onclick = ()=>{ c.classList.toggle('on'); syncBandSelection(); };
+    c.dataset.key = b.key;
+    bandBox.appendChild(c);
+  });
+  const matBox = document.getElementById('matiereChips');
+  MATIERES.forEach(m=>{
+    const c = document.createElement('div');
+    c.className = 'chip on'; c.textContent = m.emoji + ' ' + m.label;
+    c.onclick = ()=>{ c.classList.toggle('on'); syncMatiereSelection(); };
+    c.dataset.key = m.key;
+    matBox.appendChild(c);
+  });
+}
+function syncBandSelection(){
+  state.selectedBands = [...document.querySelectorAll('#bandChips .chip.on')].map(c=>c.dataset.key);
+}
+function syncMatiereSelection(){
+  state.selectedMatieres = [...document.querySelectorAll('#matiereChips .chip.on')].map(c=>c.dataset.key);
+}
+initChips();
+
+/* ---------------- STEP 1 -> PROPOSITIONS ---------------- */
+async function generateProposals(){
+  const theme = document.getElementById('themeInput').value.trim();
+  const errBox = document.getElementById('step1Error');
+  errBox.innerHTML = '';
+  if(!theme){ errBox.innerHTML = '<div class="error-box">Décris d\'abord le thème de la séance.</div>'; return; }
+  if(state.selectedBands.length===0){ errBox.innerHTML = '<div class="error-box">Sélectionne au moins une tranche d\'âge.</div>'; return; }
+  state.theme = theme;
+  const count = Math.max(1, Math.min(4, parseInt(document.getElementById('countInput').value) || 2));
+
+  const btn = document.getElementById('genPropsBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Génération en cours...';
+
+  const bands = AGE_BANDS.filter(b=>state.selectedBands.includes(b.key));
+  const matieres = MATIERES.filter(m=>state.selectedMatieres.includes(m.key));
+
+  const sys = `Tu es une experte en pédagogie française (Éducation nationale + approche Montessori), spécialisée dans la création de fiches d'activités imprimables pour enfants de 2 à 11 ans. Tu réponds UNIQUEMENT en JSON valide, sans texte autour, sans balises markdown.`;
+
+  const prompt = `Thème de la séance : "${theme}"
+
+Pour CHAQUE tranche d'âge ci-dessous, propose exactement ${count} idées de fiches d'activités liées au thème, adaptées au niveau scolaire et à la matière indiquée. Varie les types d'exercice.
+
+Tranches d'âge :
+${bands.map(b=>`- clé "${b.key}" (${b.label}, ${b.section}) — repères programme : ${b.curriculum}`).join('\n')}
+
+Matières autorisées (choisis mascotteKey parmi celles-ci selon la matière de chaque fiche) :
+${matieres.map(m=>`- "${m.key}" (${m.label}, mascotte ${m.mascotte})`).join('\n')}
+
+Types d'exercice autorisés pour le champ "exerciceType" (choisis le plus adapté à chaque idée) :
+${EXO_TYPES_SPEC}
+
+Réponds avec ce format JSON exact :
+{"propositions":[{"id":"string unique court","bandKey":"une des clés ci-dessus","matiereKey":"une des clés ci-dessus","titre":"titre court et concret","consigne":"consigne à l'enfant, une phrase","exerciceType":"un des types ci-dessus"}]}`;
+
+  try{
+    const result = await callGemini(sys, prompt);
+    state.propositions = result.propositions || [];
+    renderProposals();
+    document.getElementById('step1').style.display='none';
+    document.getElementById('step2').style.display='block';
+    window.scrollTo(0,0);
+  }catch(e){
+    errBox.innerHTML = '<div class="error-box">' + e.message + '</div>';
+  }finally{
+    btn.disabled=false; btn.innerHTML='Générer les idées d\'activités';
+  }
+}
+
+function bandInfo(key){ return AGE_BANDS.find(b=>b.key===key) || {label:key,section:''}; }
+function matiereInfo(key){ return MATIERES.find(m=>m.key===key) || {label:key,cssClass:'mat-monde',emoji:'✨',mascotte:'Nino'}; }
+
+function renderProposals(){
+  const box = document.getElementById('propsContainer');
+  box.innerHTML = '';
+  AGE_BANDS.forEach(band=>{
+    const items = state.propositions.filter(p=>p.bandKey===band.key);
+    if(items.length===0) return;
+    const blockDiv = document.createElement('div');
+    blockDiv.className='band-block';
+    blockDiv.innerHTML = `<div class="band-title"><span class="band-badge">${band.label}</span> ${band.section}</div>`;
+    const grid = document.createElement('div');
+    grid.className='prop-grid';
+    items.forEach(p=>{
+      const mat = matiereInfo(p.matiereKey);
+      const card = document.createElement('div');
+      card.className='prop-card on';
+      card.dataset.id = p.id;
+      card.innerHTML = `
+        <div class="prop-top">
+          <span class="mat-tag ${mat.cssClass}">${mat.emoji} ${mat.label}</span>
+          <div class="check">✓</div>
+        </div>
+        <div class="prop-titre">${p.titre}</div>
+        <div class="prop-consigne">${p.consigne}</div>`;
+      card.onclick = ()=>{ card.classList.toggle('on'); updateSelCount(); };
+      grid.appendChild(card);
+    });
+    blockDiv.appendChild(grid);
+    box.appendChild(blockDiv);
+  });
+  updateSelCount();
+}
+function updateSelCount(){
+  const n = document.querySelectorAll('#propsContainer .prop-card.on').length;
+  document.getElementById('selCount').textContent = n + ' fiche(s) sélectionnée(s)';
+}
+function backToStep1(){
+  document.getElementById('step2').style.display='none';
+  document.getElementById('step1').style.display='block';
+}
+function backToStep2(){
+  document.getElementById('step3').style.display='none';
+  document.getElementById('step2').style.display='block';
+}
+
+/* ---------------- STEP 2 -> FICHES ---------------- */
+async function generateFiches(){
+  const selectedIds = [...document.querySelectorAll('#propsContainer .prop-card.on')].map(c=>c.dataset.id);
+  const errBox = document.getElementById('step2Error');
+  errBox.innerHTML='';
+  if(selectedIds.length===0){ errBox.innerHTML='<div class="error-box">Sélectionne au moins une fiche.</div>'; return; }
+  const selected = state.propositions.filter(p=>selectedIds.includes(p.id));
+
+  const btn = document.getElementById('genFichesBtn');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Création des fiches...';
+
+  const sys = `Tu es une experte en pédagogie française qui rédige le contenu détaillé de fiches d'activités imprimables pour enfants. Tu réponds UNIQUEMENT en JSON valide, sans texte autour, sans markdown.`;
+
+  const prompt = `Thème de la séance : "${state.theme}"
+
+Pour chaque fiche ci-dessous, rédige le contenu complet de l'exercice selon son "exerciceType", en respectant strictement le schéma de contenu associé. Rédige aussi une "astuce" : une courte phrase à la première personne dite par la mascotte pour encourager l'enfant (max 8 mots), dans le ton d'un petit personnage bienveillant.
+
+Schémas de contenu par type :
+${EXO_TYPES_SPEC}
+
+Fiches à compléter :
+${JSON.stringify(selected.map(p=>({id:p.id,bandKey:p.bandKey,matiereKey:p.matiereKey,titre:p.titre,consigne:p.consigne,exerciceType:p.exerciceType})))}
+
+Réponds avec ce format JSON exact :
+{"fiches":[{"id":"reprendre l'id fourni","titre":"...","consigne":"...","bandKey":"...","matiereKey":"...","exerciceType":"...","astuce":"...","contenu":{...selon le schéma du type...}}]}`;
+
+  try{
+    const result = await callGemini(sys, prompt);
+    state.fiches = result.fiches || [];
+    renderFiches();
+    document.getElementById('step2').style.display='none';
+    document.getElementById('step3').style.display='block';
+    window.scrollTo(0,0);
+  }catch(e){
+    errBox.innerHTML = '<div class="error-box">' + e.message + '</div>';
+  }finally{
+    btn.disabled=false; btn.innerHTML='Créer les fiches sélectionnées';
+  }
+}
+
+/* ---------------- EXERCISE RENDERERS ---------------- */
+function renderExercise(type, c){
+  c = c || {};
+  switch(type){
+    case 'reconnaissance': {
+      const cells = c.cellules || [];
+      let html = `<div class="helper" style="margin-bottom:10px;">Modèle : <b>${c.cible||''}</b></div>`;
+      html += `<div class="ex-grid" style="grid-template-columns:repeat(3,1fr);">`;
+      cells.forEach(txt=>{ html += `<div class="cell">${txt}</div>`; });
+      html += `</div>`;
+      return html;
+    }
+    case 'tracage': {
+      const av = c.nbAvecModele||6, sans = c.nbSansModele||4, txt = c.texte||'';
+      let html = `<div class="ex-grid" style="grid-template-columns:repeat(5,1fr);">`;
+      for(let i=0;i<av;i++) html += `<div class="trace-box">${txt}</div>`;
+      html += `</div><div class="helper" style="margin:12px 0 6px;">Sans modèle</div><div class="ex-grid" style="grid-template-columns:repeat(5,1fr);">`;
+      for(let i=0;i<sans;i++) html += `<div class="trace-box empty"></div>`;
+      html += `</div>`;
+      return html;
+    }
+    case 'association': {
+      const groupes = c.groupes || [];
+      let html = `<div class="ex-grid" style="grid-template-columns:repeat(${Math.min(groupes.length,4)},1fr);">`;
+      groupes.forEach(g=>{
+        html += `<div class="assoc-box"><div class="assoc-num">${g.cible}</div><div class="helper">${c.conteneur||'contenant'}</div></div>`;
+      });
+      html += `</div>`;
+      return html;
+    }
+    case 'probleme_liste': {
+      const qs = c.questions || [];
+      return qs.map((q,i)=>`<div class="prob-item">${i+1}. ${q.enonce} <span class="prob-answer">&nbsp;</span></div>`).join('');
+    }
+    case 'texte_trous': {
+      const txt = (c.texte||'').replace(/___/g, '<span class="blank">&nbsp;</span>');
+      const bank = c.motsBanque||[];
+      return `<p style="font-size:16px;line-height:2;">${txt}</p><div class="word-bank">${bank.map(w=>`<span class="word-chip">${w}</span>`).join('')}</div>`;
+    }
+    case 'sequence': {
+      const etapes = c.etapes || [];
+      return `<div class="seq-row">${etapes.map(e=>`<div class="seq-box"><div class="seq-num">${e.numero}</div><div>${e.description||''}</div></div>`).join('')}</div>`;
+    }
+    case 'vrai_faux': {
+      const affs = c.affirmations || [];
+      return affs.map(a=>`<div class="vf-row"><span>${a.texte}</span><span class="vf-opts">☐ Vrai &nbsp; ☐ Faux</span></div>`).join('');
+    }
+    case 'dessin_libre': {
+      const n = c.nbCases||1;
+      let html = `<div class="helper" style="margin-bottom:8px;">${c.consigneDessin||''}</div>`;
+      for(let i=0;i<n;i++) html += `<div class="draw-box"></div>`;
+      return html;
+    }
+    default: return '';
+  }
+}
+
+function ficheHTML(f){
+  const band = bandInfo(f.bandKey);
+  const mat = matiereInfo(f.matiereKey);
+  return `
+  <div class="fiche-page">
+    <div class="fiche-head">
+      <div>
+        <div class="fiche-cat">${mat.emoji} ${mat.label}</div>
+      </div>
+      <div class="fiche-band mat-tag ${mat.cssClass}">${band.label}</div>
+    </div>
+    <div class="fiche-titre">${f.titre}</div>
+    <div class="fiche-consigne">${f.consigne}</div>
+    ${renderExercise(f.exerciceType, f.contenu)}
+    <div class="fiche-footer mat-tag ${mat.cssClass}" style="background:transparent;border:1.5px solid var(--line);">
+      <span class="mascot-emoji">${mat.emoji}</span>
+      <span><b>${mat.mascotte} :</b> « ${f.astuce||''} »</span>
+    </div>
+    <div class="fiche-brand">Studio Fiches • ${state.theme}</div>
+  </div>`;
+}
+
+function renderFiches(){
+  const preview = document.getElementById('fichesPreview');
+  const printArea = document.getElementById('printArea');
+  preview.innerHTML = state.fiches.map(ficheHTML).join('');
+  printArea.innerHTML = state.fiches.map(ficheHTML).join('');
+}
+</script>
+</body>
+</html>
