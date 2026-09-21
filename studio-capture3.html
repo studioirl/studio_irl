@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Studio Capture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --sage:#6F7F63;
+  --sage-dark:#3F4738;
+  --cream:#F4EFE6;
+  --surface:#FBF8F2;
+  --ink:#1F1F1C;
+  --ink-soft:#77736B;
+  --terracotta:#C9825A;
+  --morning:#E8C46A;
+  --border:#D8D1C4;
+  --danger:#AE4630;
+  --radius:3px;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--cream);
+  color:var(--ink);
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  line-height:1.5;
+}
+.wrap{max-width:640px;margin:0 auto;padding:0 20px 80px;}
+.exif{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11px;
+  letter-spacing:.02em;
+  color:var(--ink-soft);
+}
+
+/* ---------- landing / page d'ouverture ---------- */
+.landing-screen{
+  position:fixed;inset:0;z-index:80;background:var(--cream);
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+  text-align:center;padding:48px 24px 40px;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+}
+.landing-screen.hidden{display:none;}
+.landing-title{
+  font-family:'Fraunces',serif;font-weight:500;font-size:32px;color:var(--sage-dark);
+  margin:0 0 12px;letter-spacing:-.01em;
+}
+.landing-phrase{
+  font-size:15px;color:var(--ink-soft);max-width:380px;margin:0 0 30px;line-height:1.6;
+}
+.landing-keys{width:100%;max-width:320px;text-align:left;margin-bottom:24px;}
+.landing-keys .field-label{
+  font-size:12.5px;color:var(--ink-soft);margin-bottom:6px;display:block;
+}
+.landing-keys .key-input{
+  width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:10px 12px;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ink);
+  margin-bottom:16px;
+}
+.landing-keys .key-input:focus{outline:none;border-color:var(--sage);}
+.landing-keys .hint{margin-top:2px;text-align:center;}
+#keysStatus.saved{color:var(--sage-dark);}
+.landing-enter-btn{
+  padding:15px 40px;border:none;border-radius:var(--radius);background:var(--terracotta);
+  color:var(--surface);font-weight:600;font-size:14px;letter-spacing:.02em;cursor:pointer;
+  transition:background .15s;
+}
+.landing-enter-btn:hover{background:#B56F49;}
+
+/* ---------- header ---------- */
+header{
+  padding:36px 0 22px;
+  border-bottom:1px solid var(--border);
+  margin-bottom:28px;
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  gap:16px;
+}
+h1{
+  font-family:'Fraunces',serif;
+  font-weight:500;
+  font-size:30px;
+  margin:0 0 4px;
+  letter-spacing:-.01em;
+  color:var(--sage-dark);
+}
+header p{margin:0;color:var(--ink-soft);font-size:14px;max-width:340px;}
+.gear{
+  background:var(--surface);border:1px solid var(--border);border-radius:50%;
+  width:38px;height:38px;flex:none;cursor:pointer;color:var(--ink-soft);
+  font-size:16px;display:flex;align-items:center;justify-content:center;
+  transition:border-color .15s, color .15s;
+}
+.gear:hover{border-color:var(--sage);color:var(--sage-dark);}
+
+/* ---------- sections ---------- */
+section{margin-bottom:30px;}
+.label-row{
+  display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;
+}
+label.section-title{
+  font-family:'Fraunces',serif;
+  font-size:15px;
+  font-weight:500;
+  color:var(--sage-dark);
+}
+.hint{font-size:12px;color:var(--ink-soft);}
+
+/* upload grids */
+.uploads{display:flex;flex-wrap:wrap;gap:8px;}
+.thumb{
+  position:relative;width:72px;height:72px;border-radius:var(--radius);
+  overflow:hidden;border:1px solid var(--border);background:var(--surface);
+}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+.thumb button{
+  position:absolute;top:2px;right:2px;background:rgba(31,31,28,.72);color:#fff;
+  border:none;border-radius:50%;width:18px;height:18px;font-size:11px;line-height:18px;
+  cursor:pointer;padding:0;
+}
+.add-tile{
+  width:72px;height:72px;border-radius:var(--radius);border:1px dashed var(--border);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  color:var(--ink-soft);font-size:22px;background:var(--surface);flex:none;
+  transition:border-color .15s,color .15s;
+}
+.add-tile:hover{border-color:var(--sage);color:var(--sage-dark);}
+input[type=file]{display:none;}
+
+/* scene direction */
+textarea{
+  width:100%;min-height:96px;resize:vertical;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:12px 14px;font-family:'Inter',sans-serif;font-size:14.5px;color:var(--ink);
+}
+textarea:focus,select:focus,input[type=text]:focus,input[type=password]:focus{
+  outline:none;border-color:var(--sage);
+}
+.examples{margin-top:8px;font-size:12px;color:var(--ink-soft);font-style:italic;}
+
+/* chips */
+.chips{display:flex;gap:8px;flex-wrap:wrap;}
+.chip{
+  padding:7px 14px;border:1px solid var(--border);border-radius:20px;background:var(--surface);
+  font-size:13px;cursor:pointer;color:var(--ink-soft);transition:.15s;
+}
+.chip.active{background:var(--sage);color:var(--surface);border-color:var(--sage);}
+
+/* select */
+select{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:9px 12px;font-size:13.5px;color:var(--ink);font-family:'Inter',sans-serif;
+  width:100%;
+}
+
+/* accordion / advanced settings */
+.accordion-toggle{
+  width:100%;text-align:left;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:12px 14px;font-family:'Fraunces',serif;font-size:15px;
+  color:var(--sage-dark);cursor:pointer;display:flex;justify-content:space-between;align-items:center;
+}
+.accordion-toggle:hover{border-color:var(--sage);}
+.chevron{transition:transform .2s;color:var(--ink-soft);font-size:11px;}
+.accordion-toggle.open .chevron{transform:rotate(180deg);}
+.advanced-panel{display:none;margin-top:14px;padding:14px 16px;background:var(--surface);
+  border:1px solid var(--border);border-radius:var(--radius);}
+.advanced-panel.open{display:block;}
+.slider-row{margin-bottom:16px;}
+.slider-row:last-child{margin-bottom:0;}
+.slider-label-row{display:flex;justify-content:space-between;font-size:12.5px;color:var(--ink-soft);margin-bottom:5px;}
+.slider-value{font-family:'IBM Plex Mono',monospace;color:var(--sage-dark);}
+input[type=range]{width:100%;accent-color:var(--sage);}
+
+/* generate button */
+.generate{
+  width:100%;padding:15px;border:none;border-radius:var(--radius);
+  background:var(--terracotta);color:var(--surface);font-size:15px;font-weight:600;
+  cursor:pointer;letter-spacing:.01em;transition:background .15s;
+}
+.generate:hover{background:#B56F49;}
+.generate:disabled{background:var(--ink-soft);cursor:not-allowed;}
+
+/* status / loading */
+.status{
+  margin-top:12px;font-size:13px;color:var(--ink-soft);text-align:center;min-height:16px;
+}
+.status.err{color:var(--danger);}
+.status.ok{color:var(--sage-dark);}
+
+/* result */
+.result{margin-top:26px;}
+.result-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;}
+.polaroid{
+  border:1px solid var(--border);background:var(--surface);padding:10px 10px 12px;border-radius:var(--radius);
+}
+.polaroid img{width:100%;display:block;border-radius:2px;background:var(--cream);}
+.meta-strip{
+  display:flex;justify-content:space-between;padding:10px 2px 8px;flex-wrap:wrap;gap:6px;
+}
+.meta-strip span:first-child{color:var(--sage-dark);font-weight:500;}
+.polaroid .btn-secondary{width:100%;}
+.result-actions{display:flex;gap:8px;margin-top:14px;}
+.btn-secondary{
+  flex:1;padding:10px;border:1px solid var(--border);border-radius:var(--radius);
+  background:var(--surface);color:var(--ink);font-size:13px;cursor:pointer;
+}
+.btn-secondary:hover{border-color:var(--sage);}
+
+/* gallery */
+.gallery{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin-top:8px;
+}
+.gallery .cell{
+  position:relative;aspect-ratio:9/16;border-radius:var(--radius);overflow:hidden;
+  border:1px solid var(--border);cursor:pointer;background:var(--surface);
+}
+.gallery .cell img{width:100%;height:100%;object-fit:cover;}
+.gallery .empty{color:var(--ink-soft);font-size:13px;font-style:italic;}
+.badge-morning{
+  position:absolute;top:5px;right:5px;width:8px;height:8px;border-radius:50%;
+  background:var(--morning);box-shadow:0 0 0 2px rgba(251,248,242,.7);
+}
+.badge-saved{
+  position:absolute;bottom:5px;left:5px;width:16px;height:16px;border-radius:50%;
+  background:var(--sage-dark);color:var(--surface);font-size:10px;line-height:16px;
+  text-align:center;font-weight:600;
+}
+
+/* lightbox */
+.lightbox{
+  position:fixed;inset:0;background:rgba(24,22,18,.94);display:none;
+  align-items:center;justify-content:center;z-index:60;padding:20px;flex-direction:column;
+}
+.lightbox.open{display:flex;}
+.lightbox img{max-width:100%;max-height:78vh;border-radius:3px;}
+.lightbox .lb-actions{margin-top:14px;display:flex;gap:10px;}
+.lightbox button{
+  padding:9px 16px;border-radius:var(--radius);border:1px solid rgba(244,239,230,.3);
+  background:transparent;color:var(--cream);font-size:13px;cursor:pointer;
+}
+
+@media (max-width:420px){
+  h1{font-size:25px;}
+  .landing-title{font-size:27px;}
+}
+</style>
+</head>
+<body>
+
+<!-- ---------- page d'ouverture ---------- -->
+<div class="landing-screen" id="landingScreen">
+  <h1 class="landing-title">Studio Capture</h1>
+  <div class="landing-phrase">Des photos qu'on aurait pu retrouver dans la galerie de ton téléphone.</div>
+  <div class="landing-keys">
+    <label class="field-label">Clé API Vertex AI (Express Mode)</label>
+    <input type="password" id="vertexKeyInput" class="key-input" placeholder="AQ...">
+    <label class="field-label">Clé API kie.ai</label>
+    <input type="password" id="kieKeyInput" class="key-input" placeholder="Clé kie.ai">
+    <div class="hint" id="keysStatus">Les clés restent uniquement dans ce navigateur (localStorage), jamais envoyées ailleurs qu'aux API que tu configures.</div>
+  </div>
+  <button class="landing-enter-btn" id="enterAppBtn">Entrer dans le studio</button>
+</div>
+
+<div class="wrap">
+
+  <header>
+    <div>
+      <h1>Studio Capture</h1>
+      <p>Des photos qu'on aurait pu retrouver dans sa galerie iPhone — pas un shooting.</p>
+    </div>
+    <button class="gear" id="openSettings" title="Modifier les clés API">⚙</button>
+  </header>
+
+  <section>
+    <div class="label-row">
+      <label class="section-title">Référence du sujet</label>
+      <span class="hint">1 à 4 photos</span>
+    </div>
+    <div class="uploads" id="subjectUploads">
+      <div class="add-tile" id="addSubject">+</div>
+    </div>
+    <input type="file" id="subjectInput" accept="image/*" multiple>
+  </section>
+
+  <section>
+    <div class="label-row">
+      <label class="section-title">Référence du lieu</label>
+      <span class="hint">optionnel</span>
+    </div>
+    <div class="uploads" id="locationUploads">
+      <div class="add-tile" id="addLocation">+</div>
+    </div>
+    <input type="file" id="locationInput" accept="image/*">
+  </section>
+
+  <section>
+    <div class="label-row">
+      <label class="section-title" for="sceneDirection">Direction de scène</label>
+    </div>
+    <textarea id="sceneDirection" placeholder="Décris le moment, y compris la lumière si tu veux la préciser. Ex : « Elle est assise sur le lit d'hôtel, lumière du matin, un peu fatiguée. »"></textarea>
+    <div class="examples" id="exampleRotator"></div>
+  </section>
+
+  <section>
+    <div class="label-row"><label class="section-title">Moteur</label></div>
+    <div class="chips" id="engineChips">
+      <button class="chip active" data-engine="vertex">Vertex AI</button>
+      <button class="chip" data-engine="kieai">kie.ai</button>
+    </div>
+  </section>
+
+  <section>
+    <div class="label-row"><label class="section-title">Type de capture</label></div>
+    <select id="captureTypeSelect">
+      <option value="auto" selected>Automatique</option>
+      <option value="armslength">Selfie à bout de bras</option>
+      <option value="byOther">Photo prise par quelqu'un</option>
+      <option value="placed">Téléphone posé</option>
+      <option value="mirror">Photo miroir</option>
+      <option value="detail">Détail souvenir</option>
+      <option value="snapshot">Snapshot rapide</option>
+    </select>
+  </section>
+
+  <section>
+    <div class="label-row"><label class="section-title">Format</label></div>
+    <div class="chips" id="formatChips">
+      <button class="chip active" data-format="9:16">9:16</button>
+      <button class="chip" data-format="4:5">4:5</button>
+      <button class="chip" data-format="3:4">3:4</button>
+      <button class="chip" data-format="1:1">1:1</button>
+    </div>
+  </section>
+
+  <section>
+    <div class="label-row"><label class="section-title">Objectif</label></div>
+    <select id="lensSelect">
+      <option value="auto" selected>Automatique (selon la scène)</option>
+      <option value="0.5x">0.5x — ultra grand-angle (selfie, petit espace)</option>
+      <option value="1x">1x — caméra principale (par défaut)</option>
+      <option value="2x">2x — zoom naturel (moment volé, à distance)</option>
+    </select>
+  </section>
+
+  <section>
+    <div class="label-row"><label class="section-title">Niveau de réalisme</label></div>
+    <div class="chips" id="realismChips">
+      <button class="chip" data-profile="Propre naturel">Propre naturel</button>
+      <button class="chip" data-profile="Réaliste">Réaliste</button>
+      <button class="chip active" data-profile="Très humain">Très humain</button>
+      <button class="chip" data-profile="Chaotique">Chaotique</button>
+    </div>
+    <div class="hint" id="profileLabel" style="margin-top:8px;">Profil actif : Très humain</div>
+  </section>
+
+  <section>
+    <button class="accordion-toggle" id="advancedToggle">
+      Réglages avancés <span class="chevron">▾</span>
+    </button>
+    <div class="advanced-panel" id="advancedPanel"></div>
+  </section>
+
+  <section>
+    <div class="label-row"><label class="section-title">Nombre de photos</label></div>
+    <div class="chips" id="numPhotosChips">
+      <button class="chip active" data-num="1">1</button>
+      <button class="chip" data-num="2">2</button>
+      <button class="chip" data-num="4">4</button>
+      <button class="chip" data-num="6">6</button>
+    </div>
+  </section>
+
+  <section>
+    <button class="generate" id="generateBtn">Capturer le moment</button>
+    <div class="status" id="statusLine"></div>
+  </section>
+
+  <section class="result" id="resultSection" style="display:none;">
+    <div class="result-grid" id="resultGrid"></div>
+    <div class="result-actions">
+      <button class="btn-secondary" id="regenerateBtn">Reprendre la photo</button>
+    </div>
+  </section>
+
+  <section>
+    <div class="label-row">
+      <label class="section-title">Galerie</label>
+      <span class="hint" id="galleryCount"></span>
+    </div>
+    <div class="gallery" id="gallery"><span class="empty">Tes photos apparaîtront ici.</span></div>
+  </section>
+
+</div>
+
+<!-- lightbox -->
+<div class="lightbox" id="lightbox">
+  <img id="lightboxImg" alt="">
+  <div class="lb-actions">
+    <button id="lbDownload">Télécharger</button>
+    <button id="lbDelete">Supprimer</button>
+    <button id="lbClose">Fermer</button>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   STUDIO CAPTURE — logique applicative
+   Architecture double moteur (Vertex AI Express / kie.ai), stockage et
+   robustesse construits sur le même modèle que Studio POV 2.0 : page
+   d'ouverture pour les clés API (pas de champ modèle affiché — les modèles
+   sont fixés en interne), wrappers anti-erreur pour localStorage/IndexedDB,
+   backoff exponentiel sur 429, rendu 4K. Ne jamais changer les noms de
+   modèle par défaut sans instruction explicite. Aucun menu d'ambiance
+   lumineuse, aucune action ou pose prédéfinie : la scène reste entièrement
+   écrite par l'utilisatrice ; l'interface ne pilote que la logique de
+   capture et le degré d'imperfection réaliste.
+   ========================================================================= */
+
+// ---------- STOCKAGE SÉCURISÉ (localStorage) ----------
+function safeLocalGet(key, fallback = "") {
+  try {
+    const v = localStorage.getItem(key);
+    return v === null ? fallback : v;
+  } catch (e) {
+    console.warn('[storage] localStorage indisponible en lecture:', e.message);
+    return fallback;
+  }
+}
+function safeLocalSet(key, value) {
+  try { localStorage.setItem(key, value); return true; }
+  catch (e) {
+    console.warn('[storage] échec écriture localStorage:', e.message);
+    return false;
+  }
+}
+function safeLocalRemove(key) {
+  try { localStorage.removeItem(key); return true; }
+  catch (e) { console.warn('[storage] échec suppression localStorage:', e.message); return false; }
+}
+
+// ---------- CONFIG MOTEUR (modèles fixés en interne, jamais affichés) ----------
+const CONFIG = {
+  VERTEX_ENDPOINT_BASE: "https://aiplatform.googleapis.com/v1/publishers/google/models/",
+  VERTEX_MODEL: "gemini-3.1-flash-image",
+  KIE_UPLOAD_URL: "https://kieai.redpandaai.co/api/file-base64-upload",
+  KIE_TASK_URL: "https://api.kie.ai/api/v1/jobs/createTask",
+  KIE_POLL_URL: "https://api.kie.ai/api/v1/jobs/recordInfo",
+  KIE_MODEL: "nano-banana-2",
+  POLL_INTERVAL_MS: 5000,
+  POLL_MAX_TRIES: 60,
+};
+
+let currentEngine = safeLocalGet('sc_engine', 'vertex');
+
+function loadEngineSettings() {
+  return {
+    engine: currentEngine,
+    vertexKey: safeLocalGet('sc_vertex_key', ''),
+    kieKey: safeLocalGet('sc_kie_key', ''),
+  };
+}
+
+/* ---------------- engine chips ---------------- */
+document.querySelectorAll('#engineChips .chip').forEach(btn=>{
+  btn.classList.toggle('active', btn.dataset.engine === currentEngine);
+  btn.addEventListener('click', ()=>{
+    currentEngine = btn.dataset.engine;
+    safeLocalSet('sc_engine', currentEngine);
+    document.querySelectorAll('#engineChips .chip').forEach(c=>c.classList.toggle('active', c===btn));
+  });
+});
+
+/* =========================================================================
+   Page d'ouverture — clés API
+   ========================================================================= */
+
+const landingScreen = document.getElementById('landingScreen');
+const vertexKeyInput = document.getElementById('vertexKeyInput');
+const kieKeyInput = document.getElementById('kieKeyInput');
+const keysStatus = document.getElementById('keysStatus');
+
+function fillLandingKeys(){
+  vertexKeyInput.value = safeLocalGet('sc_vertex_key', '');
+  kieKeyInput.value = safeLocalGet('sc_kie_key', '');
+}
+fillLandingKeys();
+
+document.getElementById('enterAppBtn').addEventListener('click', ()=>{
+  try{
+    const vOk = safeLocalSet('sc_vertex_key', vertexKeyInput.value.trim());
+    const kOk = safeLocalSet('sc_kie_key', kieKeyInput.value.trim());
+    if(!vOk || !kOk){
+      keysStatus.textContent = '⚠ Stockage local indisponible — clé(s) active(s) pour cette session seulement.';
+    }
+  }catch(e){
+    console.warn('[landing] échec de sauvegarde des clés, on entre quand même:', e.message);
+  }
+  landingScreen.classList.add('hidden');
+  landingScreen.style.display = 'none';
+});
+
+document.getElementById('openSettings').addEventListener('click', ()=>{
+  fillLandingKeys();
+  keysStatus.textContent = "Les clés restent uniquement dans ce navigateur (localStorage), jamais envoyées ailleurs qu'aux API que tu configures.";
+  landingScreen.classList.remove('hidden');
+});
+
+/* =========================================================================
+   IndexedDB — persistance de la galerie, avec purge auto anti-quota
+   ========================================================================= */
+
+const DB_NAME = 'studio_capture_db';
+const DB_VERSION = 1;
+const STORE = 'photos';
+const MAX_STORED_PHOTOS = 24;
+let db = null;
+let dbReady = false;
+
+function openDB(){
+  return new Promise((resolve)=>{
+    try{
+      const req = indexedDB.open(DB_NAME, DB_VERSION);
+      req.onupgradeneeded = (e)=>{
+        const d = e.target.result;
+        if(!d.objectStoreNames.contains(STORE)) d.createObjectStore(STORE, {keyPath:'id'});
+      };
+      req.onsuccess = (e)=>{ db = e.target.result; dbReady = true; resolve(db); };
+      req.onerror = (e)=>{ console.warn('[storage] IndexedDB indisponible:', e.target.error?.message); resolve(null); };
+      req.onblocked = ()=>{ console.warn('[storage] ouverture IndexedDB bloquée'); resolve(null); };
+    }catch(e){ console.warn('[storage] IndexedDB non supporté:', e.message); resolve(null); }
+  });
+}
+
+function idbGetAll(){
+  if(!dbReady || !db) return Promise.resolve([]);
+  return new Promise((resolve)=>{
+    try{
+      const tx = db.transaction(STORE,'readonly');
+      const req = tx.objectStore(STORE).getAll();
+      req.onsuccess = ()=>resolve((req.result||[]).sort((a,b)=>b.ts-a.ts));
+      req.onerror = ()=>{ console.warn('[storage] lecture galerie échouée'); resolve([]); };
+    }catch(e){ console.warn('[storage] lecture galerie échouée:', e.message); resolve([]); }
+  });
+}
+function idbDelete(id){
+  if(!dbReady || !db) return Promise.resolve(false);
+  return new Promise((resolve)=>{
+    try{
+      const tx = db.transaction(STORE,'readwrite');
+      tx.objectStore(STORE).delete(id);
+      tx.oncomplete = ()=>resolve(true);
+      tx.onerror = ()=>resolve(false);
+    }catch(e){ resolve(false); }
+  });
+}
+// Les photos marquées "downloaded" (déjà enregistrées sur le téléphone) ne sont
+// jamais purgées automatiquement — seules les photos non téléchargées peuvent
+// être nettoyées, pour laisser toujours de la place aux nouvelles générations.
+async function idbPurgeExcess(){
+  const all = await idbGetAll(); // trié du plus récent au plus ancien
+  const downloadedCount = all.filter(r => r.downloaded).length;
+  const purgeable = all.filter(r => !r.downloaded);
+  const allowedNonDownloaded = Math.max(0, MAX_STORED_PHOTOS - downloadedCount);
+  if(purgeable.length <= allowedNonDownloaded) return;
+  const excess = purgeable.slice(allowedNonDownloaded); // les plus anciennes non téléchargées
+  for(const r of excess) await idbDelete(r.id);
+}
+async function idbPut(record){
+  if(!dbReady){ await openDB(); }
+  if(!dbReady || !db) return false;
+  const write = ()=> new Promise((resolve,reject)=>{
+    const tx = db.transaction(STORE,'readwrite');
+    tx.objectStore(STORE).put(record);
+    tx.oncomplete = ()=>resolve(true);
+    tx.onerror = ()=>reject(tx.error);
+  });
+  try{
+    await write();
+    await idbPurgeExcess();
+    return true;
+  }catch(e){
+    const isQuota = e && (e.name === 'QuotaExceededError' || String(e.message||'').toLowerCase().includes('quota'));
+    console.warn('[storage] échec écriture galerie:', e?.message||e);
+    if(isQuota){
+      setStatus('Stockage plein — nettoyage des anciennes photos…');
+      try{
+        const all = await idbGetAll();
+        // priorité de purge : les photos jamais téléchargées d'abord, les plus anciennes.
+        let purgeable = all.filter(r => !r.downloaded).sort((a,b)=>a.ts-b.ts);
+        if(purgeable.length === 0) purgeable = all.sort((a,b)=>a.ts-b.ts); // dernier recours
+        for(const r of purgeable.slice(0, Math.ceil(purgeable.length/2))) await idbDelete(r.id);
+        await write();
+        return true;
+      }catch(e2){
+        console.warn('[storage] échec après purge:', e2?.message||e2);
+        return false;
+      }
+    }
+    return false;
+  }
+}
+
+/* ---------------- state ---------------- */
+let subjectImages = [];   // [{dataUrl, base64, mime}]
+let locationImage = null; // {dataUrl, base64, mime}
+let currentFormat = '9:16';
+let lastResults = [];     // records from the last generation batch
+
+/* ---------------- uploads ---------------- */
+function fileToRecord(file){
+  return new Promise((resolve,reject)=>{
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      const dataUrl = reader.result;
+      const base64 = dataUrl.split(',')[1];
+      resolve({dataUrl, base64, mime:file.type || 'image/jpeg'});
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderSubjectUploads(){
+  const wrap = document.getElementById('subjectUploads');
+  wrap.querySelectorAll('.thumb').forEach(n=>n.remove());
+  subjectImages.forEach((img, i)=>{
+    const t = document.createElement('div');
+    t.className='thumb';
+    t.innerHTML = `<img src="${img.dataUrl}"><button data-i="${i}">×</button>`;
+    t.querySelector('button').onclick = (e)=>{
+      subjectImages.splice(parseInt(e.target.dataset.i),1);
+      renderSubjectUploads();
+    };
+    wrap.insertBefore(t, document.getElementById('addSubject'));
+  });
+  document.getElementById('addSubject').style.display = subjectImages.length>=4 ? 'none' : 'flex';
+}
+document.getElementById('addSubject').onclick = ()=> document.getElementById('subjectInput').click();
+document.getElementById('subjectInput').onchange = async (e)=>{
+  const files = Array.from(e.target.files).slice(0, 4 - subjectImages.length);
+  for(const f of files) subjectImages.push(await fileToRecord(f));
+  renderSubjectUploads();
+  e.target.value='';
+};
+
+function renderLocationUpload(){
+  const wrap = document.getElementById('locationUploads');
+  wrap.querySelectorAll('.thumb').forEach(n=>n.remove());
+  if(locationImage){
+    const t = document.createElement('div');
+    t.className='thumb';
+    t.innerHTML = `<img src="${locationImage.dataUrl}"><button>×</button>`;
+    t.querySelector('button').onclick = ()=>{ locationImage=null; renderLocationUpload(); };
+    wrap.insertBefore(t, document.getElementById('addLocation'));
+  }
+  document.getElementById('addLocation').style.display = locationImage ? 'none' : 'flex';
+}
+document.getElementById('addLocation').onclick = ()=> document.getElementById('locationInput').click();
+document.getElementById('locationInput').onchange = async (e)=>{
+  if(e.target.files[0]) locationImage = await fileToRecord(e.target.files[0]);
+  renderLocationUpload();
+  e.target.value='';
+};
+
+/* ---------------- format chips ---------------- */
+document.getElementById('formatChips').addEventListener('click', (e)=>{
+  if(!e.target.classList.contains('chip')) return;
+  document.querySelectorAll('#formatChips .chip').forEach(c=>c.classList.remove('active'));
+  e.target.classList.add('active');
+  currentFormat = e.target.dataset.format;
+});
+
+/* ---------------- nombre de photos ---------------- */
+document.getElementById('numPhotosChips').addEventListener('click', (e)=>{
+  if(!e.target.classList.contains('chip')) return;
+  document.querySelectorAll('#numPhotosChips .chip').forEach(c=>c.classList.remove('active'));
+  e.target.classList.add('active');
+});
+
+/* ---------------- example rotator ---------------- */
+const EXAMPLES = [
+  'Selfie miroir dans une salle de bain avant de sortir.',
+  'Photo prise à table pendant un dîner.',
+  'Elle rit dans la voiture, photo prise depuis le siège passager.',
+  'Moment de couple sur une plage, téléphone posé sur un sac.',
+  "Photo prise dans la rue pendant qu'il marche devant moi.",
+];
+let exIdx = 0;
+const exRotator = document.getElementById('exampleRotator');
+function rotateExample(){
+  exRotator.textContent = '« ' + EXAMPLES[exIdx % EXAMPLES.length] + ' »';
+  exIdx++;
+}
+rotateExample();
+setInterval(rotateExample, 4500);
+
+/* =========================================================================
+   TYPE DE CAPTURE — sélection explicite ou détection automatique
+   ========================================================================= */
+
+const CAPTURE_TYPES = {
+  armslength: {
+    label: 'Selfie à bout de bras',
+    instruction: "Real arm's-length selfie: subject holds the phone at arm's length, 0.5x wide-angle possible, imperfect framing, arm or shoulder sometimes visible in frame, gaze sometimes directed toward the screen rather than the lens.",
+    lens: '0.5x'
+  },
+  byOther: {
+    label: "Photo prise par quelqu'un",
+    instruction: "Photo taken by another person: natural human height and distance, spontaneous candid framing, subject not perfectly ready or posed, feels like a real person is genuinely holding the iPhone.",
+    lens: '1x'
+  },
+  placed: {
+    label: 'Téléphone posé',
+    instruction: "Phone placed on a real surface (table, nightstand, dashboard, shelf, bed): low or slightly imperfect angle, credible surface, slightly tilted framing, foreground element possibly partially blocking the shot, looks quickly set down, no tripod visible.",
+    lens: '1x'
+  },
+  mirror: {
+    label: 'Photo miroir',
+    instruction: "Mirror photo: the phone must be visible, either held in hand in frame or clearly present in the reflection, imperfect mirror surface, ordinary bathroom/bedroom/elevator/fitting-room type lighting.",
+    lens: '0.5x'
+  },
+  detail: {
+    label: 'Détail souvenir',
+    instruction: "Detail snapshot: framed on an object, a hand, an item of clothing, a meal, a texture, or a personal detail from the moment — never advertising-like, always personal and informal.",
+    lens: '2x'
+  },
+  snapshot: {
+    label: 'Snapshot rapide',
+    instruction: "Quick snapshot: taken fast without composing, slight blur, accidental-feeling framing, subject possibly off-center or partially caught mid-motion.",
+    lens: '1x'
+  },
+};
+
+function detectCaptureLogic(text){
+  const t = (text||'').toLowerCase();
+  if(/miroir/.test(t)) return CAPTURE_TYPES.mirror;
+  if(/selfie/.test(t) && !/miroir/.test(t)) return CAPTURE_TYPES.armslength;
+  if(/pos[ée]e?|table|comptoir|\blit\b|tableau de bord|étagère|rebord/.test(t)) return CAPTURE_TYPES.placed;
+  if(/détail|\bmain\b|boisson|ticket|\bclé\b|assiette|chaussure|texture|reflet/.test(t)) return CAPTURE_TYPES.detail;
+  if(/vite|rapide|à la volée|pressé/.test(t)) return CAPTURE_TYPES.snapshot;
+  if(/marche|devant moi|de l'autre côté|à distance|vole|volé/.test(t)) return CAPTURE_TYPES.detail;
+  return CAPTURE_TYPES.byOther;
+}
+
+function resolveCaptureLogic(typeKey, sceneText){
+  if(typeKey === 'auto') return detectCaptureLogic(sceneText);
+  return CAPTURE_TYPES[typeKey] || detectCaptureLogic(sceneText);
+}
+
+function resolveLens(manualLens, detected){
+  return manualLens === 'auto' ? detected.lens : manualLens;
+}
+
+/* =========================================================================
+   NIVEAU DE RÉALISME — presets + réglages avancés (sliders)
+   ========================================================================= */
+
+const SLIDER_DEFS = [
+  {key:'imperfection', label:'Imperfection générale', def:68},
+  {key:'framing',      label:'Cadrage humain',        def:75},
+  {key:'motion',       label:'Flou de mouvement',     def:35},
+  {key:'autofocus',    label:'Autofocus imparfait',   def:25},
+  {key:'exposure',     label:'Exposition imparfaite', def:30},
+  {key:'grain',        label:'Grain / bruit numérique', def:20},
+  {key:'distortion',   label:'Déformation smartphone',  def:25},
+  {key:'obstruction',  label:'Obstruction légère',      def:8},
+  {key:'skin',         label:'Texture de peau naturelle', def:90},
+];
+
+const REALISM_PRESETS = {
+  'Propre naturel': {imperfection:35, framing:45, motion:15, autofocus:10, exposure:15},
+  'Réaliste':       {imperfection:55, framing:65, motion:25, autofocus:20, exposure:25},
+  'Très humain':    {imperfection:68, framing:75, motion:35, autofocus:25, exposure:30},
+  'Chaotique':      {imperfection:85, framing:90, motion:55, autofocus:45, exposure:50},
+};
+
+let sliderValues = {};
+SLIDER_DEFS.forEach(d => sliderValues[d.key] = d.def);
+let currentProfile = 'Très humain';
+let programmaticSliderUpdate = false;
+
+function renderSliders(){
+  const panel = document.getElementById('advancedPanel');
+  panel.innerHTML = '';
+  SLIDER_DEFS.forEach(def=>{
+    const row = document.createElement('div');
+    row.className = 'slider-row';
+    row.innerHTML = `
+      <div class="slider-label-row"><span>${def.label}</span><span class="slider-value" id="val-${def.key}">${sliderValues[def.key]}</span></div>
+      <input type="range" min="0" max="100" value="${sliderValues[def.key]}" id="slider-${def.key}">
+    `;
+    panel.appendChild(row);
+  });
+  SLIDER_DEFS.forEach(def=>{
+    document.getElementById(`slider-${def.key}`).addEventListener('input', (e)=>{
+      const val = parseInt(e.target.value, 10);
+      sliderValues[def.key] = val;
+      document.getElementById(`val-${def.key}`).textContent = val;
+      if(!programmaticSliderUpdate){
+        currentProfile = 'Personnalisé';
+        updateRealismChipsUI();
+      }
+    });
+  });
+}
+
+function setSliderValue(key, val){
+  sliderValues[key] = val;
+  const input = document.getElementById(`slider-${key}`);
+  if(input) input.value = val;
+  const span = document.getElementById(`val-${key}`);
+  if(span) span.textContent = val;
+}
+
+function applyPreset(name){
+  const preset = REALISM_PRESETS[name];
+  if(!preset) return;
+  programmaticSliderUpdate = true;
+  Object.entries(preset).forEach(([k,v]) => setSliderValue(k, v));
+  programmaticSliderUpdate = false;
+  currentProfile = name;
+  updateRealismChipsUI();
+}
+
+function updateRealismChipsUI(){
+  document.querySelectorAll('#realismChips .chip').forEach(c=>{
+    c.classList.toggle('active', c.dataset.profile === currentProfile);
+  });
+  document.getElementById('profileLabel').textContent = `Profil actif : ${currentProfile}`;
+}
+
+document.getElementById('realismChips').addEventListener('click', (e)=>{
+  if(!e.target.classList.contains('chip')) return;
+  applyPreset(e.target.dataset.profile);
+});
+
+document.getElementById('advancedToggle').addEventListener('click', ()=>{
+  document.getElementById('advancedPanel').classList.toggle('open');
+  document.getElementById('advancedToggle').classList.toggle('open');
+});
+
+renderSliders();
+updateRealismChipsUI();
+
+/* =========================================================================
+   Construction du prompt — logique interne Studio Capture
+   ========================================================================= */
+
+const NEGATIVE_PROMPT = `professional photoshoot, studio lighting, cinematic lighting, movie still, fashion editorial, commercial advertising, perfect composition, perfectly centered subject, symmetrical framing, flawless skin, plastic skin, beauty filter, over-retouched face, artificial eyes, over-sharpened image, unrealistic HDR, fake bokeh, DSLR look, impossible camera angle, drone view, tripod shot, influencer pose, exaggerated smile, mannequin pose, luxury campaign, AI-looking skin, wax skin, distorted face, changed identity, extra fingers, malformed hands, duplicated limbs, unnatural body proportions, face morphing, overly clean background, perfect room, perfect lighting, overprocessed colors`;
+
+function lensDescription(lens){
+  if(lens === '0.5x') return '(ultra wide-angle: slight edge distortion, subject close, imperfect crop)';
+  if(lens === '2x') return '(natural zoom: tighter frame, slightly compressed background, less perfect stability)';
+  return '(main camera: natural rendering, realistic sharpness, available light)';
+}
+
+function buildRealismNarrative(v){
+  return `These realism settings translate into: a photo that feels real, unprepared, and not perfectly composed (imperfection ${v.imperfection}/100); the subject is not perfectly centered, the angle is slightly tilted, and the head or shoulders sometimes sit close to the frame edge in a spontaneous composition (human framing ${v.framing}/100); a micro motion blur may touch hands, hair, clothing, or a moving subject (motion blur realism ${v.motion}/100); focus stays at natural smartphone sharpness, sometimes slightly caught by a foreground object rather than studio-perfect (autofocus imperfection ${v.autofocus}/100); a window may be a little overexposed, shadows stay natural, and a direct flash is possible if the scene calls for it (exposure imperfection ${v.exposure}/100); discreet digital noise appears, especially in low light, for a realistic texture (digital noise/grain ${v.grain}/100); a slight wide-angle distortion can appear, especially for selfies, 0.5x shots, small spaces, or a phone held close to the subject (smartphone lens distortion ${v.distortion}/100); very rarely, a finger near the lens, a strand of hair, a case edge, or a foreground object may lightly obstruct the frame (light obstruction chance ${v.obstruction}/100); skin keeps its pores, light under-eye circles, redness, and real texture — never smoothed, plastic, or beautified (natural skin texture ${v.skin}/100).`;
+}
+
+function buildPrompt(sceneText, format, lens, captureLogic, hasLocationRef, sliders, profileName){
+  const settingsBlock = `Capture type:
+${captureLogic.label}
+
+Realism profile:
+${profileName}
+
+Internal photo realism settings:
+- Imperfection level: ${sliders.imperfection}/100
+- Human framing: ${sliders.framing}/100
+- Motion blur realism: ${sliders.motion}/100
+- Autofocus imperfection: ${sliders.autofocus}/100
+- Exposure imperfection: ${sliders.exposure}/100
+- Digital noise/grain: ${sliders.grain}/100
+- Smartphone lens distortion: ${sliders.distortion}/100
+- Light obstruction chance: ${sliders.obstruction}/100
+- Natural skin texture: ${sliders.skin}/100`;
+
+  return `Create an ultra-realistic 4K ${format} smartphone photo captured on an iPhone 17 Pro Max.
+
+Use the provided subject reference image(s) to preserve the person's identity, face, proportions, hair, skin texture, clothing, accessories, and natural appearance. Do not beautify or change the subject's identity.
+
+${hasLocationRef ? "Use the provided location reference image to preserve the real atmosphere, lighting, spatial feeling, colors, and everyday details of the place." : "Interpret a real, everyday location consistent with the scene direction below — not a polished or staged set."}
+
+Scene direction from the user (light and mood are described here, not imposed by the app):
+"${sceneText}"
+
+${settingsBlock}
+
+Capture logic: ${captureLogic.instruction}
+
+Simulated lens: ${lens} ${lensDescription(lens)}.
+
+${buildRealismNarrative(sliders)}
+
+The image should feel intimate, candid, imperfect, and human.
+
+Do not make the image cinematic, staged, polished, commercial, symmetrical, over-retouched, or artificially perfect.
+
+Avoid: ${NEGATIVE_PROMPT}`;
+}
+
+/* =========================================================================
+   Appels moteur — Vertex AI Express (4K) / kie.ai
+   ========================================================================= */
+
+async function fetchWithBackoff(url, opts, tries = 0){
+  const res = await fetch(url, opts);
+  if(res.status === 429 && tries < 5){
+    await sleep(1000 * Math.pow(2, tries));
+    return fetchWithBackoff(url, opts, tries + 1);
+  }
+  return res;
+}
+function sleep(ms){ return new Promise(r=>setTimeout(r, ms)); }
+
+async function callVertex(promptText, images, settings){
+  if(!settings.vertexKey) throw new Error('Clé Vertex AI manquante — renseigne-la via ⚙.');
+  const url = `${CONFIG.VERTEX_ENDPOINT_BASE}${CONFIG.VERTEX_MODEL}:generateContent`;
+
+  const parts = [];
+  images.forEach(img=>{
+    parts.push({inlineData:{mimeType: img.mime, data: img.base64}});
+  });
+  parts.push({text: promptText});
+
+  const body = {
+    contents:[{role:'user', parts}],
+    generationConfig:{
+      responseModalities:['IMAGE'],
+      imageConfig:{ aspectRatio: currentFormat, imageSize:'4K' }
+    }
+  };
+
+  const res = await fetchWithBackoff(url, {
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'x-goog-api-key': settings.vertexKey
+    },
+    body: JSON.stringify(body)
+  });
+
+  let data = {};
+  try{ data = await res.json(); }catch(_){}
+
+  if(!res.ok){
+    const msg = data?.error?.message || `Erreur HTTP ${res.status}`;
+    if(res.status === 401) throw new Error('Clé Vertex invalide. Vérifie ta clé Express Mode (commence par AQ...).');
+    if(res.status === 403) throw new Error('Accès refusé — vérifie que ta clé Vertex AI Express Mode est active.');
+    if(res.status === 429) throw new Error('Vertex AI : limite de requêtes atteinte (429) après plusieurs tentatives.');
+    throw new Error(`Erreur Vertex ${res.status} : ${msg}`);
+  }
+
+  const candidate = data?.candidates?.[0];
+  if(!candidate) throw new Error('Aucune réponse du modèle Vertex.');
+  if(candidate.finishReason === 'SAFETY') throw new Error('Génération bloquée par les filtres de sécurité — reformule ta direction.');
+
+  const respParts = candidate?.content?.parts || [];
+  for(const p of respParts){
+    if(p.inlineData?.data) return `data:${p.inlineData.mimeType||'image/png'};base64,${p.inlineData.data}`;
+    if(p.inline_data?.data) return `data:${p.inline_data.mime_type||'image/png'};base64,${p.inline_data.data}`;
+  }
+  throw new Error('Aucune image dans la réponse Vertex (le modèle a peut-être répondu par du texte).');
+}
+
+async function kieUploadBase64(base64, settings, label){
+  const res = await fetchWithBackoff(CONFIG.KIE_UPLOAD_URL, {
+    method:'POST',
+    headers:{'Content-Type':'application/json', 'Authorization':`Bearer ${settings.kieKey}`},
+    body: JSON.stringify({base64Data: base64, uploadPath:'images/studio-capture'})
+  });
+  const data = await res.json();
+  const url = data?.data?.downloadUrl;
+  if(!url) throw new Error(`Échec upload kie.ai (${label}) : ${data?.msg || 'réponse invalide'}`);
+  return url;
+}
+
+async function callKieAi(promptText, images, settings){
+  if(!settings.kieKey) throw new Error('Clé kie.ai manquante — renseigne-la via ⚙.');
+
+  const imageUrls = [];
+  for(let i=0;i<images.length;i++){
+    setStatus(`Envoi des références vers kie.ai… (${i+1}/${images.length})`);
+    imageUrls.push(await kieUploadBase64(images[i].base64, settings, `image ${i+1}`));
+  }
+
+  const taskRes = await fetchWithBackoff(CONFIG.KIE_TASK_URL, {
+    method:'POST',
+    headers:{'Content-Type':'application/json', 'Authorization':`Bearer ${settings.kieKey}`},
+    body: JSON.stringify({
+      model: CONFIG.KIE_MODEL,
+      input:{ prompt: promptText, aspect_ratio: currentFormat, resolution:'4K', output_format:'png', image_input: imageUrls }
+    })
+  });
+  const taskData = await taskRes.json();
+  if(taskData.code && taskData.code !== 200){
+    const msg = taskData?.msg || taskData?.message || 'erreur inconnue';
+    if(taskData.code === 401) throw new Error('Clé kie.ai invalide.');
+    if(taskData.code === 403) throw new Error('Accès refusé kie.ai — vérifie tes crédits.');
+    if(taskData.code === 429) throw new Error('Trop de requêtes kie.ai.');
+    throw new Error(`Erreur kie.ai : ${msg}`);
+  }
+  const taskId = taskData?.data?.taskId;
+  if(!taskId) throw new Error('kie.ai : aucun taskId retourné.');
+
+  for(let i=0;i<CONFIG.POLL_MAX_TRIES;i++){
+    await sleep(CONFIG.POLL_INTERVAL_MS);
+    const pollRes = await fetchWithBackoff(`${CONFIG.KIE_POLL_URL}?taskId=${taskId}`, {
+      headers:{'Authorization':`Bearer ${settings.kieKey}`}
+    });
+    const pollData = await pollRes.json();
+    const state = pollData?.data?.state;
+    setStatus(`kie.ai · statut : ${state || 'en attente'} (${(i+1)*(CONFIG.POLL_INTERVAL_MS/1000)}s)`);
+
+    if(state === 'fail' || state === 'failed'){
+      throw new Error(`kie.ai : échec — ${pollData?.data?.failMsg || 'raison inconnue'}`);
+    }
+    if(state === 'success'){
+      let resultUrl = null;
+      try{
+        const r = JSON.parse(pollData?.data?.resultJson || '{}');
+        resultUrl = r?.resultUrls?.[0] || r?.images?.[0]?.url || r?.url;
+      }catch(_){}
+      if(!resultUrl) throw new Error('kie.ai : succès mais aucune URL exploitable dans la réponse.');
+      const imgRes = await fetch(resultUrl);
+      const blob = await imgRes.blob();
+      return await new Promise((resolve,reject)=>{
+        const reader = new FileReader();
+        reader.onloadend = ()=>resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    }
+  }
+  throw new Error("kie.ai : délai d'attente dépassé.");
+}
+
+/* =========================================================================
+   Génération
+   ========================================================================= */
+
+const statusLine = document.getElementById('statusLine');
+const generateBtn = document.getElementById('generateBtn');
+const resultSection = document.getElementById('resultSection');
+
+function setStatus(msg, kind){
+  statusLine.textContent = msg || '';
+  statusLine.classList.toggle('err', kind === 'err');
+  statusLine.classList.toggle('ok', kind === 'ok');
+}
+
+function currentNumPhotos(){
+  const active = document.querySelector('#numPhotosChips .chip.active');
+  return active ? parseInt(active.dataset.num, 10) : 1;
+}
+
+async function generate(){
+  const sceneText = document.getElementById('sceneDirection').value.trim();
+  if(!sceneText){ setStatus('Décris la scène avant de générer.', 'err'); return; }
+  if(subjectImages.length === 0){ setStatus('Ajoute au moins une photo de référence du sujet.', 'err'); return; }
+
+  const settings = loadEngineSettings();
+  const typeKey = document.getElementById('captureTypeSelect').value;
+  const captureLogic = resolveCaptureLogic(typeKey, sceneText);
+  const manualLens = document.getElementById('lensSelect').value;
+  const lens = resolveLens(manualLens, captureLogic);
+  const prompt = buildPrompt(sceneText, currentFormat, lens, captureLogic, !!locationImage, sliderValues, currentProfile);
+
+  const images = [...subjectImages];
+  if(locationImage) images.push(locationImage);
+
+  const numPhotos = currentNumPhotos();
+
+  generateBtn.disabled = true;
+  const batch = [];
+
+  try{
+    for(let i=0; i<numPhotos; i++){
+      setStatus(numPhotos > 1
+        ? `Développement de la photo ${i+1}/${numPhotos}…`
+        : 'Développement de la photo (4K)…');
+
+      let imageUrl;
+      if(settings.engine === 'kieai'){
+        imageUrl = await callKieAi(prompt, images, settings);
+      } else {
+        imageUrl = await callVertex(prompt, images, settings);
+      }
+
+      const record = {
+        id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + i),
+        ts: Date.now() + i,
+        image: imageUrl,
+        format: currentFormat,
+        lens,
+        captureLabel: captureLogic.label,
+        scene: sceneText
+      };
+      await idbPut(record);
+      batch.push(record);
+    }
+
+    lastResults = batch;
+    showResults(batch);
+    await renderGallery();
+    setStatus(numPhotos > 1 ? `${numPhotos} photos capturées.` : 'Photo capturée.', 'ok');
+  }catch(err){
+    console.error(err);
+    setStatus(err.message || 'Une erreur est survenue.', 'err');
+  }finally{
+    generateBtn.disabled = false;
+  }
+}
+
+function showResults(records){
+  const grid = document.getElementById('resultGrid');
+  grid.innerHTML = '';
+  records.forEach(rec=>{
+    const div = document.createElement('div');
+    div.className = 'polaroid';
+    div.innerHTML = `
+      <img src="${rec.image}" alt="Photo générée">
+      <div class="meta-strip exif"><span>${rec.captureLabel}</span><span>${rec.lens} · ${rec.format}</span></div>
+    `;
+    const dl = document.createElement('button');
+    dl.className = 'btn-secondary';
+    dl.textContent = 'Télécharger';
+    dl.onclick = ()=> downloadAndMark(rec, dl);
+    div.appendChild(dl);
+    grid.appendChild(div);
+  });
+  resultSection.style.display = '';
+  resultSection.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+generateBtn.onclick = generate;
+document.getElementById('regenerateBtn').onclick = generate;
+
+// Nom de fichier lisible pour le stockage du téléphone : "StudioCapture_20260922_143512.jpg"
+function buildFilename(rec){
+  const d = new Date(rec.ts);
+  const pad = n => String(n).padStart(2,'0');
+  const stamp = `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+  return `StudioCapture_${stamp}.jpg`;
+}
+
+function downloadImage(src, filename){
+  // Compatible Safari/iOS : passe toujours par un Blob + URL.createObjectURL
+  // plutôt qu'un lien direct vers une data URL ou une URL distante, qui échoue
+  // silencieusement au téléchargement sur iOS.
+  fetch(src).then(r=>r.blob()).then(blob=>{
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url), 4000);
+  }).catch(()=>{
+    window.open(src, '_blank');
+  });
+}
+
+// Télécharge la photo et la marque comme "téléchargée" : elle n'est alors plus
+// jamais purgée automatiquement de la galerie locale, même quand le stockage
+// se remplit — c'est l'historique des photos déjà enregistrées sur le téléphone.
+async function downloadAndMark(rec, btnEl){
+  downloadImage(rec.image, buildFilename(rec));
+  if(!rec.downloaded){
+    rec.downloaded = true;
+    rec.downloadedAt = Date.now();
+    await idbPut(rec);
+    if(btnEl) btnEl.textContent = '✓ Enregistrée';
+    await renderGallery();
+  }
+}
+
+/* ---------------- gallery ---------------- */
+const galleryEl = document.getElementById('gallery');
+const galleryCount = document.getElementById('galleryCount');
+const lightbox = document.getElementById('lightbox');
+const lightboxImg = document.getElementById('lightboxImg');
+let lightboxRecord = null;
+
+async function renderGallery(){
+  const items = await idbGetAll();
+  galleryCount.textContent = items.length ? `${items.length} photo${items.length>1?'s':''}` : '';
+  galleryEl.innerHTML = '';
+  if(items.length === 0){
+    galleryEl.innerHTML = '<span class="empty">Tes photos apparaîtront ici.</span>';
+    return;
+  }
+  items.forEach((rec, i)=>{
+    const cell = document.createElement('div');
+    cell.className='cell';
+    cell.innerHTML = `<img src="${rec.image}">${i===0 ? '<div class="badge-morning"></div>' : ''}${rec.downloaded ? '<div class="badge-saved">✓</div>' : ''}`;
+    cell.onclick = ()=> openLightbox(rec);
+    galleryEl.appendChild(cell);
+  });
+}
+
+function openLightbox(rec){
+  lightboxRecord = rec;
+  lightboxImg.src = rec.image;
+  lightbox.classList.add('open');
+}
+document.getElementById('lbClose').onclick = ()=> lightbox.classList.remove('open');
+document.getElementById('lbDownload').onclick = ()=>{
+  if(lightboxRecord) downloadAndMark(lightboxRecord);
+};
+document.getElementById('lbDelete').onclick = async ()=>{
+  if(!lightboxRecord) return;
+  await idbDelete(lightboxRecord.id);
+  lightbox.classList.remove('open');
+  await renderGallery();
+};
+
+/* ---------------- init ---------------- */
+(async function init(){
+  await openDB();
+  await renderGallery();
+})();
+</script>
+</body>
+</html>
