@@ -280,6 +280,15 @@
           <input type="text" id="nameB" placeholder="ex. Lucas">
         </div>
         <div>
+          <label class="field-label">Tenue — personne A (optionnel)</label>
+          <input type="text" id="dressA" placeholder="ex. Robe blanche fluide, cheveux détachés">
+        </div>
+        <div>
+          <label class="field-label">Tenue — personne B (optionnel)</label>
+          <input type="text" id="dressB" placeholder="ex. Chemise lin beige, manches retroussées">
+          <p class="hint">Si renseigné, cette tenue est utilisée à chaque génération pour ce couple — la même à chaque fois, quelle que soit la scène.</p>
+        </div>
+        <div>
           <label class="field-label">Nom du couple / du projet</label>
           <input type="text" id="coupleTitle" placeholder="ex. Camille & Lucas">
         </div>
@@ -331,6 +340,7 @@
             <div class="chip selected" data-outfit="keep" onclick="selectOutfit('keep')" style="flex:1;text-align:center;">Garder les tenues de référence</div>
             <div class="chip" data-outfit="adapt" onclick="selectOutfit('adapt')" style="flex:1;text-align:center;">Adapter à la scène</div>
           </div>
+          <p class="hint">Ignoré si une tenue est renseignée dans le profil couple — elle est alors utilisée telle quelle.</p>
         </div>
         <div>
           <label class="field-label">Niveau de romantisme</label>
@@ -835,6 +845,15 @@ async function kiePollTask(taskId, onProgress){
 
 /* ---------------------------- prompt builders ---------------------------- */
 function styleLabel(id){ const s=STYLES.find(x=>x.id===id); return s?s.name:'iPhone candid'; }
+function outfitClause(ctx){
+  if(ctx.dressA || ctx.dressB){
+    const parts=[];
+    if(ctx.dressA) parts.push(`la personne A porte exactement : ${ctx.dressA}`);
+    if(ctx.dressB) parts.push(`la personne B porte exactement : ${ctx.dressB}`);
+    return `Tenue obligatoire et non négociable, identique à chaque génération pour ce couple : ${parts.join(' ; ')}. N'invente pas d'autre tenue, ne mélange pas avec la tenue visible sur les photos de référence.`;
+  }
+  return ctx.outfitPref==='keep' ? "Conserve les tenues visibles sur les photos de référence." : "Habille le couple avec une tenue cohérente avec la scène choisie.";
+}
 function buildImagePrompt(ctx){
   return [
     `Crée une photo de couple ultra-réaliste, dans un style "${styleLabel(ctx.styleId)}", comme si elle avait été prise sur le vif (rendu smartphone par défaut, sauf si le style choisi indique un autre appareil).`,
@@ -842,7 +861,7 @@ function buildImagePrompt(ctx){
     `Scène : ${ctx.sceneText}.`,
     `Ambiance émotionnelle recherchée : ${ctx.mood}.`,
     `Niveau de romantisme : ${ctx.romance}/5. Le rendu doit rester naturel et spontané, jamais trop lisse ni trop "studio".`,
-    ctx.outfitPref==='keep' ? "Conserve les tenues visibles sur les photos de référence." : "Habille le couple avec une tenue cohérente avec la scène choisie.",
+    outfitClause(ctx),
     `Montre une vraie chimie entre les deux personnes (proximité, regard complice, geste tendre) sans que chaque image montre nécessairement un baiser.`,
     SAFETY_CLAUSE
   ].join(' ');
@@ -850,7 +869,8 @@ function buildImagePrompt(ctx){
 function buildSequencePrompt(ctx, stepText){
   return [
     `À partir de l'image de référence jointe (la scène verrouillée), génère l'étape suivante de ce moment de couple : ${stepText}`,
-    `Conserve strictement les mêmes visages, la même coiffure, les mêmes tenues, le même lieu, la même lumière et la même ambiance météo que sur l'image de référence — seules l'action et l'expression évoluent.`,
+    `Conserve strictement les mêmes visages, la même coiffure, le même lieu, la même lumière et la même ambiance météo que sur l'image de référence — seules l'action et l'expression évoluent.`,
+    outfitClause(ctx),
     `Style : ${styleLabel(ctx.styleId)}. Ambiance : ${ctx.mood}.`,
     SAFETY_CLAUSE
   ].join(' ');
@@ -858,7 +878,7 @@ function buildSequencePrompt(ctx, stepText){
 function buildVideoPrompt(ctx){
   return [
     `Anime cette scène de couple avec un mouvement naturel et réaliste${ctx.styleId==='iphone-candid'?', à la manière d’une vidéo tournée au smartphone':''}.`,
-    `Préserve l'identité des deux personnes, leurs tenues, le lieu, la lumière et l'émotion de l'image de référence.`,
+    `Préserve l'identité des deux personnes, leurs tenues (${ctx.dressA||'tenue de référence'} / ${ctx.dressB||'tenue de référence'}), le lieu, la lumière et l'émotion de l'image de référence.`,
     `Mouvement de caméra léger, langage corporel crédible, aucune déformation ni morphing.`,
     SAFETY_CLAUSE
   ].join(' ');
@@ -943,6 +963,8 @@ function selectCoupleForScene(coupleId){
 function openCoupleForm(){
   document.getElementById('nameA').value='';
   document.getElementById('nameB').value='';
+  document.getElementById('dressA').value='';
+  document.getElementById('dressB').value='';
   document.getElementById('coupleTitle').value='';
   document.getElementById('consentMajeur').checked=false;
   document.getElementById('consentAutorisation').checked=false;
@@ -963,6 +985,8 @@ async function saveCoupleProfile(){
   try{
     const nameA=document.getElementById('nameA').value.trim();
     const nameB=document.getElementById('nameB').value.trim();
+    const dressA=document.getElementById('dressA').value.trim();
+    const dressB=document.getElementById('dressB').value.trim();
     const title=document.getElementById('coupleTitle').value.trim();
     const consentMajeur=document.getElementById('consentMajeur').checked;
     const consentAutorisation=document.getElementById('consentAutorisation').checked;
@@ -970,7 +994,7 @@ async function saveCoupleProfile(){
     if(!nameA || !nameB){ toast('Indique les deux prénoms.', true); return; }
     if(!consentMajeur || !consentAutorisation){ toast('Les deux cases de consentement sont obligatoires.', true); return; }
     const couple={
-      id:uid(), title: title||`${nameA} & ${nameB}`, nameA, nameB,
+      id:uid(), title: title||`${nameA} & ${nameB}`, nameA, nameB, dressA, dressB,
       photoA:state.refBlobs.A, photoB:state.refBlobs.B,
       consentMajeur, consentAutorisation, createdAt:Date.now()
     };
@@ -1072,7 +1096,7 @@ async function generateFirstImage(isRegen){
   const sceneText=document.getElementById('sceneText').value.trim();
   if(!sceneText){ toast('Décris la scène (ou choisis une idée).', true); return; }
   const romance=document.getElementById('romanceSlider').value;
-  const ctx={ sceneText, mood:state.selectedMood, styleId:state.selectedStyleId, outfitPref:state.outfitPref, romance };
+  const ctx={ sceneText, mood:state.selectedMood, styleId:state.selectedStyleId, outfitPref:state.outfitPref, romance, dressA:couple.dressA, dressB:couple.dressB };
   const prompt=buildImagePrompt(ctx);
 
   showLoading('Création de la première image…','Cela peut prendre 10 à 30 secondes.');
@@ -1085,6 +1109,7 @@ async function generateFirstImage(isRegen){
       mood: state.selectedMood,
       styleId: state.selectedStyleId,
       sceneText, outfitPref: state.outfitPref, romance,
+      dressA: couple.dressA, dressB: couple.dressB,
       promptSnapshot: prompt,
       firstImageBlob: blob,
       status:'draft',
@@ -1121,7 +1146,7 @@ async function generateSequence(count){
   const scene=await idbGet('scenes', state.currentSceneId);
   if(!scene) return;
   const structure=SEQ_STRUCTURES[count];
-  const ctx={ styleId:scene.styleId, mood:scene.mood };
+  const ctx={ styleId:scene.styleId, mood:scene.mood, dressA:scene.dressA, dressB:scene.dressB, outfitPref:scene.outfitPref };
   showLoading(`Génération de la séquence (${count} images)…`);
   const frames=[];
   try{
@@ -1176,7 +1201,7 @@ async function regenerateFrame(sceneId, sequenceId, frameId){
   if(!frame) return;
   showLoading('Régénération de l’image…');
   try{
-    const ctx={ styleId:scene.styleId, mood:scene.mood };
+    const ctx={ styleId:scene.styleId, mood:scene.mood, dressA:scene.dressA, dressB:scene.dressB, outfitPref:scene.outfitPref };
     const prompt=buildSequencePrompt(ctx, frame.stepText);
     const blob=await generateImage({ prompt, refBlobs:[scene.lockedImageBlob] });
     frame.blob=blob;
@@ -1216,7 +1241,7 @@ async function runVideoGeneration(){
   showLoading('Préparation de la vidéo…','Envoi de l’image de référence à kie.ai');
   try{
     const imageUrl=await kieUpload(ctx.imageBlob, 'studio-love-source.png');
-    const prompt=buildVideoPrompt({ styleId:scene.styleId });
+    const prompt=buildVideoPrompt({ styleId:scene.styleId, dressA:scene.dressA, dressB:scene.dressB });
     const taskId=await kieCreateVideoTask({ imageUrl, prompt, engine:state.videoEngine, aspectRatio:state.videoRatio });
     updateLoadingSub('Génération en cours, cela peut prendre plusieurs minutes…');
     const videoUrl=await kiePollTask(taskId, (s,p)=>updateLoadingSub(`Statut : ${s}${p?` (${p}%)`:''}`));
