@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Studio Copy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#E6EAF0;
+  --sheet:#FFFFFF;
+  --ink:#1B2440;
+  --ink-soft:#5F6B85;
+  --line:#C9D0DC;
+  --reg:#E6007E;
+  --reg-soft:#FCE3F0;
+  --ok:#1E7A55;
+  --err:#B3261E;
+  --font:'Bricolage Grotesque',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--reg);outline-offset:2px}
+.wrap{max-width:1180px;margin:0 auto;padding:24px 20px 80px}
+
+header.top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:28px;flex-wrap:wrap}
+h1{font-size:clamp(40px,7vw,68px);line-height:.95;margin:0;font-weight:800;letter-spacing:-.03em}
+h1 .mark{display:inline-block;width:.42em;height:.42em;border:.09em solid var(--reg);border-radius:50%;position:relative;margin-left:.12em;vertical-align:.08em}
+h1 .mark::before,h1 .mark::after{content:"";position:absolute;background:var(--reg)}
+h1 .mark::before{left:50%;top:-.3em;bottom:-.3em;width:.05em;transform:translateX(-50%)}
+h1 .mark::after{top:50%;left:-.3em;right:-.3em;height:.05em;transform:translateY(-50%)}
+.lead{max-width:56ch;color:var(--ink-soft);margin:12px 0 0}
+.gear{background:var(--sheet);border:1.5px solid var(--line);border-radius:12px;padding:10px 14px;cursor:pointer;font-weight:600}
+.gear:hover{border-color:var(--ink)}
+
+.grid{display:grid;grid-template-columns:1fr;gap:20px}
+@media(min-width:960px){.grid{grid-template-columns:1fr 1fr;align-items:start}}
+
+.sheet{position:relative;background:var(--sheet);border-radius:6px;padding:26px 24px 24px;box-shadow:0 1px 0 var(--line)}
+.sheet::before,.sheet::after{content:"";position:absolute;width:16px;height:16px;border:2px solid var(--reg);pointer-events:none}
+.sheet::before{top:8px;left:8px;border-right:0;border-bottom:0}
+.sheet::after{bottom:8px;right:8px;border-left:0;border-top:0}
+.sheet h2{font-size:24px;margin:0 0 4px;font-weight:800;letter-spacing:-.01em}
+.hint{color:var(--ink-soft);font-size:14px;margin:0 0 16px}
+
+.drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;border:2px dashed var(--line);border-radius:10px;padding:26px 16px;cursor:pointer;background:#F7F9FC;transition:border-color .15s,background .15s}
+.drop:hover,.drop.over{border-color:var(--reg);background:var(--reg-soft)}
+.drop strong{font-weight:600}
+.drop span{color:var(--ink-soft);font-size:14px}
+.drop input{display:none}
+
+.list{display:flex;flex-direction:column;gap:14px;margin-top:16px}
+.screen{display:grid;grid-template-columns:120px 1fr;gap:14px;border:1.5px solid var(--line);border-radius:10px;padding:12px}
+.thumb{position:relative;border-radius:6px;overflow:hidden;background:#EEF1F6;aspect-ratio:3/4}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.screen .body{display:flex;flex-direction:column;gap:8px;min-width:0}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.small{font-size:13px;color:var(--ink-soft)}
+textarea{width:100%;border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;background:#fff;resize:vertical;min-height:90px}
+textarea:focus,input[type=text]:focus,input[type=password]:focus,select:focus{border-color:var(--ink);outline:none}
+input[type=text],input[type=password],select{width:100%;border:1.5px solid var(--line);border-radius:8px;padding:9px 12px;background:#fff}
+
+.ref{display:grid;grid-template-columns:84px 1fr;gap:12px;border:1.5px solid var(--line);border-radius:10px;padding:10px}
+.ref .thumb{aspect-ratio:1/1}
+.ref .fields{display:grid;grid-template-columns:1fr 130px;gap:8px}
+@media(max-width:520px){.ref .fields{grid-template-columns:1fr}}
+.x{background:none;border:0;color:var(--ink-soft);cursor:pointer;font-size:13px;text-decoration:underline;padding:2px 0}
+.x:hover{color:var(--err)}
+
+.btn{border:0;border-radius:10px;padding:12px 20px;font-weight:600;cursor:pointer;background:var(--ink);color:#fff}
+.btn:hover{background:#0F1730}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn.ghost:hover{border-color:var(--ink)}
+.btn.go{background:var(--reg);font-size:18px;padding:16px 28px;width:100%}
+.btn.go:hover{background:#C4006B}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+
+.opts{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:16px 0}
+@media(min-width:520px){.opts{grid-template-columns:repeat(4,1fr)}}
+.opts label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--ink-soft);font-weight:600}
+
+.status{min-height:24px;margin:12px 0 0;font-size:14px}
+.status.err{color:var(--err)}
+.status.ok{color:var(--ok)}
+
+.results{margin-top:28px;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px}
+.card{background:var(--sheet);border-radius:6px;padding:10px 10px 14px;box-shadow:0 1px 0 var(--line)}
+.frame{position:relative;background:#EEF1F6;border-radius:4px;overflow:hidden;min-height:200px}
+.frame img{display:block;width:100%;height:auto}
+.frame.loading{aspect-ratio:4/5}
+.frame.loading::after{content:"";position:absolute;left:0;right:0;top:0;height:22%;background:linear-gradient(180deg,transparent,rgba(230,0,126,.35) 60%,rgba(230,0,126,.9) 98%,transparent);animation:scan 1.8s ease-in-out infinite}
+@keyframes scan{0%{transform:translateY(-100%)}100%{transform:translateY(480%)}}
+@media(prefers-reduced-motion:reduce){.frame.loading::after{animation:none;top:40%}}
+.card .meta{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px;font-size:13px;color:var(--ink-soft)}
+.card .err{color:var(--err);padding:16px;font-size:14px}
+
+dialog{border:0;border-radius:14px;padding:24px;max-width:460px;width:calc(100% - 32px);box-shadow:0 20px 60px rgba(27,36,64,.35)}
+dialog::backdrop{background:rgba(27,36,64,.45)}
+dialog h3{margin:0 0 4px;font-size:22px}
+dialog .f{display:flex;flex-direction:column;gap:4px;margin-top:14px;font-size:14px;font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div>
+    <h1>Studio Copy<span class="mark" aria-hidden="true"></span></h1>
+    <p class="lead">Donne un screen : le studio refait exactement la même pose avec tes personnes et tes objets. Ni les vêtements, ni le décor du screen ne sont repris.</p>
+  </div>
+  <button class="gear" id="openSettings" type="button">⚙ Clés API</button>
+</header>
+
+<div class="grid">
+
+  <section class="sheet" aria-labelledby="t1">
+    <h2 id="t1">Scène à copier</h2>
+    <p class="hint">Un ou plusieurs screens Instagram. Chaque screen donne sa propre image.</p>
+    <label class="drop" id="dropScreens">
+      <input type="file" id="fileScreens" accept="image/*" multiple>
+      <strong>Dépose tes screens ici</strong>
+      <span>ou touche pour les choisir</span>
+    </label>
+    <div class="list" id="screens"></div>
+  </section>
+
+  <section class="sheet" aria-labelledby="t2">
+    <h2 id="t2">Tes références</h2>
+    <p class="hint">Personnes, bébés, animaux, objets. Le nom que tu donnes relie chaque référence à son rôle dans le screen. Chaque personne garde la tenue de sa propre photo.</p>
+    <label class="drop" id="dropRefs">
+      <input type="file" id="fileRefs" accept="image/*" multiple>
+      <strong>Ajoute tes références</strong>
+      <span>jusqu'à 10 images</span>
+    </label>
+    <div class="list" id="refs"></div>
+  </section>
+
+</div>
+
+<section class="sheet" style="margin-top:20px" aria-labelledby="t3">
+  <h2 id="t3">Direction scène <span class="small" style="font-weight:400">(optionnel)</span></h2>
+  <p class="hint">Pour ajouter une précision : lieu, ambiance, lumière, détail à corriger. Vide, le décor reste neutre et la pose est copiée telle quelle.</p>
+  <textarea id="direction" placeholder="Ex. : dans un salon clair, lumière de fin de matinée, le bébé regarde vers la fenêtre."></textarea>
+
+  <div class="opts">
+    <label>Moteur
+      <select id="engine">
+        <option value="vertex">Vertex AI</option>
+        <option value="kie">kie.ai</option>
+      </select>
+    </label>
+    <label>Format
+      <select id="ratio">
+        <option value="auto">Comme le screen</option>
+        <option value="1:1">1:1</option>
+        <option value="4:5">4:5</option>
+        <option value="3:4">3:4</option>
+        <option value="2:3">2:3</option>
+        <option value="9:16">9:16</option>
+        <option value="16:9">16:9</option>
+      </select>
+    </label>
+    <label>Qualité
+      <select id="size">
+        <option value="1K">1K</option>
+        <option value="2K" selected>2K</option>
+        <option value="4K">4K</option>
+      </select>
+    </label>
+    <label>Variantes
+      <select id="variants">
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+      </select>
+    </label>
+  </div>
+
+  <button class="btn go" id="go" type="button">Générer la copie</button>
+  <p class="status" id="status" role="status" aria-live="polite"></p>
+</section>
+
+<div class="results" id="results"></div>
+
+</div>
+
+<dialog id="settings">
+  <h3>Clés API</h3>
+  <p class="small" style="margin:0">Enregistrées uniquement sur cet appareil, jamais envoyées ailleurs que vers le moteur choisi.</p>
+  <label class="f">Clé Vertex AI (préfixe AQ)
+    <input type="password" id="kVertex" autocomplete="off" placeholder="AQ…">
+  </label>
+  <label class="f">Clé kie.ai
+    <input type="password" id="kKie" autocomplete="off">
+  </label>
+  <div class="row" style="margin-top:18px;justify-content:flex-end">
+    <button class="btn ghost" id="closeSettings" type="button">Fermer</button>
+    <button class="btn" id="saveSettings" type="button">Enregistrer</button>
+  </div>
+</dialog>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------- utilitaires ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const store = {
+  get(k){ try{ return localStorage.getItem(k) || ''; }catch(e){ return ''; } },
+  set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+};
+let uid = 0;
+
+const MODELS = { text:'gemini-2.5-flash', image:'gemini-3.1-flash-image', kie:'nano-banana-2' };
+const TYPES = { person:'personne', child:'bébé / enfant', animal:'animal', object:'objet' };
+const MAX_REFS = 10;
+
+const state = { screens:[], refs:[], busy:false };
+
+/* ---------- images ---------- */
+function prepare(file, max = 1600){
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const k = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+      const w = Math.round(img.naturalWidth * k), h = Math.round(img.naturalHeight * k);
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,w,h);
+      ctx.drawImage(img,0,0,w,h);
+      URL.revokeObjectURL(url);
+      const dataUrl = c.toDataURL('image/jpeg', 0.9);
+      resolve({ id:++uid, dataUrl, b64:dataUrl.split(',')[1], mime:'image/jpeg', w, h });
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Image illisible : ' + file.name)); };
+    img.src = url;
+  });
+}
+
+const RATIOS = {'1:1':1,'4:5':.8,'3:4':.75,'2:3':.6667,'9:16':.5625,'16:9':1.7778};
+function nearestRatio(w,h){
+  const r = w/h; let best='1:1', d=Infinity;
+  for(const [k,v] of Object.entries(RATIOS)){
+    const x = Math.abs(Math.log(r/v));
+    if(x<d){ d=x; best=k; }
+  }
+  return best;
+}
+
+/* ---------- réseau ---------- */
+async function fetchRetry(url, opts, tries = 4){
+  let wait = 2000;
+  for(let i=0;i<tries;i++){
+    const r = await fetch(url, opts);
+    if((r.status !== 429 && r.status < 500) || i === tries-1) return r;
+    await sleep(wait); wait *= 2;
+  }
+}
+
+async function vertex(model, parts, gen){
+  const key = store.get('sc_vertex');
+  if(!key) throw new Error('Clé Vertex manquante. Ouvre ⚙ Clés API.');
+  const r = await fetchRetry(
+    'https://aiplatform.googleapis.com/v1/publishers/google/models/' + model + ':generateContent',
+    { method:'POST',
+      headers:{ 'Content-Type':'application/json', 'x-goog-api-key':key },
+      body:JSON.stringify({ contents:[{ role:'user', parts }], generationConfig:gen }) }
+  );
+  const j = await r.json().catch(() => ({}));
+  if(!r.ok) throw new Error((j.error && j.error.message) || ('Erreur Vertex ' + r.status));
+  return j;
+}
+
+/* ---------- prompts ---------- */
+const ANALYSIS_PROMPT = `Tu analyses un screen Instagram (la scène modèle) pour qu'un générateur d'images refasse la même scène avec d'autres personnes et d'autres objets. Réponds en français, de façon précise et factuelle, avec ces rubriques :
+
+Sujets : liste chaque personne ou animal visible (Sujet A, Sujet B…), son rôle dans la scène, et la référence (par son nom) à laquelle il correspond, d'après les images de référence fournies (adulte, bébé, animal).
+Poses : pour chaque sujet, position du corps, orientation, inclinaison de la tête, direction du regard, intensité de l'expression, position exacte des bras, des mains et des doigts, contacts entre les sujets.
+Objets : chaque objet important, sa position par rapport aux corps, et la référence correspondante, sinon un équivalent générique sans marque.
+Cadrage : type de plan, angle et hauteur de caméra, recadrage, direction de la lumière.
+Écarts : différences entre les sujets et objets du screen et les références fournies (sujet sans référence, référence inutilisée).
+Exclus : les vêtements, accessoires, coiffures et le décor du screen, ainsi que l'interface Instagram (icônes, textes, légende). Ne les décris pas, indique seulement qu'ils ne sont pas repris.`;
+
+function buildPrompt(screen, direction){
+  const refsList = state.refs.map(r => '- « ' + r.label + ' » (' + TYPES[r.type] + ')').join('\n');
+  const analysis = (screen.analysis || '').trim();
+  return `TÂCHE : recréer la pose et la composition de l'image SCÈNE MODÈLE en utilisant UNIQUEMENT les personnes, animaux et objets des images RÉFÉRENCES.
+
+RÈGLES ABSOLUES
+1. Copier à l'identique depuis la SCÈNE MODÈLE : le nombre de sujets, la position du corps de chacun, l'orientation, l'inclinaison de la tête, la direction du regard, l'intensité des expressions, la position des bras, des mains et des doigts, les contacts entre sujets, la position des objets par rapport aux corps, l'angle de caméra, le cadrage, le recadrage et la direction de la lumière.
+2. Identité : chaque sujet est la personne, l'enfant ou l'animal de sa propre référence (visage, cheveux, peau, morphologie inchangés). Aucun visage de la SCÈNE MODÈLE ne doit apparaître.
+3. Vêtements : ne jamais reprendre les vêtements, accessoires, bijoux ou coiffures de la SCÈNE MODÈLE. Chaque sujet porte exactement la tenue visible sur sa propre référence, identique (couleurs, coupe, matière). Si une référence ne montre pas de tenue lisible, utiliser une tenue simple et neutre.
+4. Objets : un objet de la SCÈNE MODÈLE est remplacé par l'objet de référence correspondant quand il existe, avec le même placement et le même usage. Sans référence, utiliser un équivalent générique sans marque.
+5. Décor : ne JAMAIS reproduire le décor, la pièce ou le lieu de la SCÈNE MODÈLE. Utiliser un décor simple, neutre et plausible, sauf si la DIRECTION SCÈNE en demande un autre.
+6. Rendu photographique réaliste, peau naturelle, sans filtre beauté. Aucun texte, filigrane ni élément d'interface (Instagram, icônes, légende) dans l'image finale.
+
+RÉFÉRENCES FOURNIES
+${refsList}
+${analysis ? '\nANALYSE DE LA SCÈNE MODÈLE (à suivre)\n' + analysis + '\n' : ''}${direction ? '\nDIRECTION SCÈNE\n' + direction + '\n' : ''}
+Les images de référence sont envoyées en premier, la SCÈNE MODÈLE en dernier. La SCÈNE MODÈLE ne sert que pour la pose, le cadrage et la lumière.`;
+}
+
+/* ---------- moteurs ---------- */
+async function analyse(screen){
+  const parts = [{ text: ANALYSIS_PROMPT }];
+  state.refs.forEach(r => {
+    parts.push({ text: 'Référence « ' + r.label + ' » (' + TYPES[r.type] + ') :' });
+    parts.push({ inlineData:{ mimeType:r.mime, data:r.b64 } });
+  });
+  parts.push({ text: 'Screen de la scène modèle :' });
+  parts.push({ inlineData:{ mimeType:screen.mime, data:screen.b64 } });
+  const j = await vertex(MODELS.text, parts, { temperature:0.2 });
+  const t = ((j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts) || [])
+    .map(p => p.text || '').join('').trim();
+  if(!t) throw new Error('Analyse vide. Réessaie.');
+  return t;
+}
+
+async function genVertex(screen, prompt, ratio, size){
+  const parts = [{ text: prompt }];
+  state.refs.forEach(r => {
+    parts.push({ text: 'RÉFÉRENCE « ' + r.label + ' » (' + TYPES[r.type] + ') :' });
+    parts.push({ inlineData:{ mimeType:r.mime, data:r.b64 } });
+  });
+  parts.push({ text: 'SCÈNE MODÈLE (pose, cadrage et lumière uniquement) :' });
+  parts.push({ inlineData:{ mimeType:screen.mime, data:screen.b64 } });
+  const j = await vertex(MODELS.image, parts, {
+    responseModalities:['TEXT','IMAGE'],
+    imageConfig:{ aspectRatio:ratio, imageSize:size }
+  });
+  const cand = j.candidates && j.candidates[0];
+  const ps = (cand && cand.content && cand.content.parts) || [];
+  const img = ps.find(p => p.inlineData && p.inlineData.data);
+  if(!img){
+    const why = (cand && cand.finishReason) || (j.promptFeedback && j.promptFeedback.blockReason) || 'aucune image renvoyée';
+    throw new Error('Pas d\'image générée (' + why + ').');
+  }
+  return 'data:' + (img.inlineData.mimeType || 'image/png') + ';base64,' + img.inlineData.data;
+}
+
+async function kieUpload(img, name, key){
+  const r = await fetchRetry('https://kieai.redpandaai.co/api/file-base64-upload', {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer ' + key },
+    body:JSON.stringify({ base64Data:img.dataUrl, uploadPath:'studio-copy', fileName:name })
+  });
+  const j = await r.json().catch(() => ({}));
+  const url = j && j.data && (j.data.downloadUrl || j.data.fileUrl);
+  if(!r.ok || !url) throw new Error((j && j.msg) || 'Envoi de l\'image vers kie.ai impossible.');
+  return url;
+}
+
+async function genKie(screen, prompt, ratio, size){
+  const key = store.get('sc_kie');
+  if(!key) throw new Error('Clé kie.ai manquante. Ouvre ⚙ Clés API.');
+  const urls = [];
+  for(let i=0;i<state.refs.length;i++) urls.push(await kieUpload(state.refs[i], 'ref' + (i+1) + '.jpg', key));
+  urls.push(await kieUpload(screen, 'screen.jpg', key));
+  const r = await fetchRetry('https://api.kie.ai/api/v1/jobs/createTask', {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer ' + key },
+    body:JSON.stringify({ model:MODELS.kie, input:{
+      prompt: prompt + '\n\nOrdre des images envoyées : les références dans l\'ordre de la liste, puis la SCÈNE MODÈLE en dernier.',
+      image_input:urls, aspect_ratio:ratio, resolution:size, output_format:'png'
+    } })
+  });
+  const j = await r.json().catch(() => ({}));
+  const taskId = j && j.data && j.data.taskId;
+  if(!r.ok || !taskId) throw new Error((j && j.msg) || 'Création de la tâche kie.ai impossible.');
+  for(let i=0;i<100;i++){
+    await sleep(3000);
+    const p = await fetchRetry('https://api.kie.ai/api/v1/jobs/recordInfo?taskId=' + encodeURIComponent(taskId), {
+      headers:{ 'Authorization':'Bearer ' + key }
+    });
+    const pj = await p.json().catch(() => ({}));
+    const d = pj && pj.data;
+    if(!d) continue;
+    if(d.state === 'success'){
+      let out = d.resultJson;
+      try{ if(typeof out === 'string') out = JSON.parse(out); }catch(e){}
+      const u = out && out.resultUrls && out.resultUrls[0];
+      if(!u) throw new Error('kie.ai n\'a renvoyé aucune image.');
+      return u;
+    }
+    if(d.state === 'fail') throw new Error(d.failMsg || 'Échec de la génération kie.ai.');
+  }
+  throw new Error('kie.ai met trop de temps. Réessaie.');
+}
+
+/* ---------- rendu écrans / références ---------- */
+function renderScreens(){
+  const box = $('#screens');
+  box.innerHTML = '';
+  state.screens.forEach((s, idx) => {
+    const el = document.createElement('div');
+    el.className = 'screen';
+    el.innerHTML =
+      '<div class="thumb"><img alt="Screen ' + (idx+1) + '" src="' + s.dataUrl + '"></div>' +
+      '<div class="body">' +
+        '<div class="row">' +
+          '<button class="btn ghost" type="button" data-a="analyse">Analyser la scène</button>' +
+          '<button class="x" type="button" data-a="rm">Retirer</button>' +
+        '</div>' +
+        '<p class="small" style="margin:0">Facultatif : l\'analyse est faite automatiquement à la génération si tu as une clé Vertex. Tu peux la relire et la corriger ici.</p>' +
+        (s.analysis !== undefined
+          ? '<textarea aria-label="Analyse de la scène ' + (idx+1) + '" data-a="ana">' + esc(s.analysis) + '</textarea>'
+          : '') +
+      '</div>';
+    el.querySelector('[data-a="rm"]').onclick = () => { state.screens = state.screens.filter(x => x.id !== s.id); renderScreens(); };
+    el.querySelector('[data-a="analyse"]').onclick = async e => {
+      if(!state.refs.length){ setStatus('Ajoute d\'abord tes références.', 'err'); return; }
+      e.target.disabled = true; e.target.textContent = 'Analyse en cours…';
+      try{ s.analysis = await analyse(s); setStatus('', ''); }
+      catch(err){ setStatus(err.message, 'err'); }
+      renderScreens();
+    };
+    const ta = el.querySelector('[data-a="ana"]');
+    if(ta) ta.oninput = () => { s.analysis = ta.value; };
+    box.appendChild(el);
+  });
+}
+
+function renderRefs(){
+  const box = $('#refs');
+  box.innerHTML = '';
+  state.refs.forEach((r, idx) => {
+    const el = document.createElement('div');
+    el.className = 'ref';
+    el.innerHTML =
+      '<div class="thumb"><img alt="Référence ' + (idx+1) + '" src="' + r.dataUrl + '"></div>' +
+      '<div>' +
+        '<div class="fields">' +
+          '<input type="text" aria-label="Nom de la référence ' + (idx+1) + '" value="' + esc(r.label) + '" placeholder="Ex. Maman, Bébé, Coussin">' +
+          '<select aria-label="Type de la référence ' + (idx+1) + '">' +
+            Object.entries(TYPES).map(([k,v]) => '<option value="' + k + '"' + (r.type===k?' selected':'') + '>' + v + '</option>').join('') +
+          '</select>' +
+        '</div>' +
+        '<button class="x" type="button">Retirer</button>' +
+      '</div>';
+    el.querySelector('input').oninput = e => { r.label = e.target.value; };
+    el.querySelector('select').onchange = e => { r.type = e.target.value; };
+    el.querySelector('.x').onclick = () => { state.refs = state.refs.filter(x => x.id !== r.id); renderRefs(); };
+    box.appendChild(el);
+  });
+}
+
+async function addFiles(files, target){
+  const list = Array.from(files).filter(f => f.type.startsWith('image/'));
+  for(const f of list){
+    try{
+      if(target === 'refs'){
+        if(state.refs.length >= MAX_REFS){ setStatus('Maximum ' + MAX_REFS + ' références.', 'err'); break; }
+        const img = await prepare(f);
+        img.label = 'Référence ' + (state.refs.length + 1);
+        img.type = 'person';
+        state.refs.push(img);
+      }else{
+        state.screens.push(await prepare(f));
+      }
+    }catch(e){ setStatus(e.message, 'err'); }
+  }
+  target === 'refs' ? renderRefs() : renderScreens();
+}
+
+function wireDrop(zoneId, inputId, target){
+  const z = $(zoneId), inp = $(inputId);
+  inp.addEventListener('change', () => { addFiles(inp.files, target); inp.value = ''; });
+  ['dragenter','dragover'].forEach(ev => z.addEventListener(ev, e => { e.preventDefault(); z.classList.add('over'); }));
+  ['dragleave','drop'].forEach(ev => z.addEventListener(ev, e => { e.preventDefault(); z.classList.remove('over'); }));
+  z.addEventListener('drop', e => addFiles(e.dataTransfer.files, target));
+}
+wireDrop('#dropScreens', '#fileScreens', 'screens');
+wireDrop('#dropRefs', '#fileRefs', 'refs');
+
+/* ---------- statut ---------- */
+function setStatus(msg, cls){
+  const s = $('#status');
+  s.textContent = msg; s.className = 'status' + (cls ? ' ' + cls : '');
+}
+
+/* ---------- résultats ---------- */
+async function download(url, name){
+  try{
+    const b = await (await fetch(url)).blob();
+    const u = URL.createObjectURL(b);
+    const a = document.createElement('a');
+    a.href = u; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(u), 4000);
+  }catch(e){ window.open(url, '_blank'); }
+}
+
+function addCard(label){
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = '<div class="frame loading"></div><div class="meta"><span>' + esc(label) + '</span></div>';
+  $('#results').prepend(card);
+  return card;
+}
+function fillCard(card, url, label){
+  const frame = card.querySelector('.frame');
+  frame.classList.remove('loading');
+  frame.innerHTML = '<img alt="Résultat ' + esc(label) + '" src="' + url + '">';
+  const meta = card.querySelector('.meta');
+  const b = document.createElement('button');
+  b.className = 'btn ghost'; b.type = 'button'; b.textContent = 'Télécharger';
+  b.onclick = () => download(url, 'studio-copy-' + Date.now() + '.png');
+  meta.appendChild(b);
+}
+function failCard(card, msg){
+  const frame = card.querySelector('.frame');
+  frame.classList.remove('loading');
+  frame.innerHTML = '<div class="err">' + esc(msg) + '</div>';
+}
+
+/* ---------- génération ---------- */
+async function run(){
+  if(state.busy) return;
+  if(!state.screens.length){ setStatus('Ajoute au moins un screen à copier.', 'err'); return; }
+  if(!state.refs.length){ setStatus('Ajoute au moins une référence.', 'err'); return; }
+  const engine = $('#engine').value;
+  const size = $('#size').value;
+  const variants = parseInt($('#variants').value, 10) || 1;
+  const direction = $('#direction').value.trim();
+  const canAnalyse = !!store.get('sc_vertex');
+
+  state.busy = true; $('#go').disabled = true;
+  const total = state.screens.length * variants;
+  let done = 0;
+
+  for(let si=0; si<state.screens.length; si++){
+    const screen = state.screens[si];
+
+    if(screen.analysis === undefined && canAnalyse){
+      setStatus('Lecture du screen ' + (si+1) + '/' + state.screens.length + '…', '');
+      try{ screen.analysis = await analyse(screen); renderScreens(); }
+      catch(e){ screen.analysis = undefined; }
+    }
+
+    const ratioSel = $('#ratio').value;
+    const ratio = ratioSel === 'auto' ? nearestRatio(screen.w, screen.h) : ratioSel;
+    const prompt = buildPrompt(screen, direction);
+
+    for(let v=0; v<variants; v++){
+      const label = 'Screen ' + (si+1) + (variants > 1 ? ' · variante ' + (v+1) : '');
+      const card = addCard(label);
+      setStatus('Génération ' + (done+1) + '/' + total + '…', '');
+      try{
+        const url = engine === 'kie'
+          ? await genKie(screen, prompt, ratio, size)
+          : await genVertex(screen, prompt, ratio, size);
+        fillCard(card, url, label);
+      }catch(e){
+        failCard(card, e.message);
+        setStatus(e.message, 'err');
+      }
+      done++;
+    }
+  }
+
+  state.busy = false; $('#go').disabled = false;
+  if(!$('#status').classList.contains('err')) setStatus('Terminé.', 'ok');
+}
+$('#go').addEventListener('click', run);
+
+/* ---------- réglages ---------- */
+const dlg = $('#settings');
+$('#openSettings').onclick = () => {
+  $('#kVertex').value = store.get('sc_vertex');
+  $('#kKie').value = store.get('sc_kie');
+  dlg.showModal();
+};
+$('#closeSettings').onclick = () => dlg.close();
+$('#saveSettings').onclick = () => {
+  store.set('sc_vertex', $('#kVertex').value.trim());
+  store.set('sc_kie', $('#kKie').value.trim());
+  dlg.close();
+};
+$('#engine').value = store.get('sc_engine') || 'vertex';
+$('#engine').addEventListener('change', e => store.set('sc_engine', e.target.value));
+
+})();
+</script>
+</body>
+</html>
