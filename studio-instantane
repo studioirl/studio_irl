@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studio Instantané</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#121110;
+    --bg2:#1c1a17;
+    --bg3:#252220;
+    --cream:#F3ECDD;
+    --flash:#FF4E2A;
+    --flash-dim:#8a2c18;
+    --text:#EDE7DA;
+    --muted:#948a7b;
+    --line:rgba(243,236,221,0.14);
+    --line-strong:rgba(243,236,221,0.28);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',sans-serif;-webkit-font-smoothing:antialiased;}
+  body{min-height:100vh;position:relative;overflow-x:hidden;}
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:1;opacity:.05;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  h1,h2,h3,.display{font-family:'Space Grotesk',sans-serif;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  .wrap{max-width:640px;margin:0 auto;padding:0 20px 80px;position:relative;z-index:2;}
+
+  /* corner brackets — viewfinder motif */
+  .frame{position:relative;padding:28px;border:1px solid var(--line);}
+  .frame::before,.frame::after,.frame .bl,.frame .br{content:"";position:absolute;width:16px;height:16px;}
+  .frame::before{top:-1px;left:-1px;border-top:2px solid var(--flash);border-left:2px solid var(--flash);}
+  .frame::after{top:-1px;right:-1px;border-top:2px solid var(--flash);border-right:2px solid var(--flash);}
+  .frame .bl{bottom:-1px;left:-1px;border-bottom:2px solid var(--flash);border-left:2px solid var(--flash);}
+  .frame .br{bottom:-1px;right:-1px;border-bottom:2px solid var(--flash);border-right:2px solid var(--flash);}
+
+  /* top bar */
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:22px 20px 0;max-width:640px;margin:0 auto;position:relative;z-index:2;}
+  .brand{display:flex;align-items:center;gap:10px;}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--flash);box-shadow:0 0 8px var(--flash);}
+  .brand span{font-family:'Space Grotesk';font-weight:600;letter-spacing:0.02em;font-size:15px;}
+  .gear{background:none;border:1px solid var(--line);color:var(--muted);width:34px;height:34px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;}
+  .gear:hover{color:var(--cream);border-color:var(--line-strong);}
+
+  /* hero */
+  .hero{padding:52px 0 30px;text-align:left;}
+  .hero .kicker{color:var(--flash);font-family:'IBM Plex Mono';font-size:12.5px;letter-spacing:.02em;margin-bottom:14px;}
+  .hero h1{font-size:clamp(34px,8vw,46px);line-height:1.04;margin:0 0 16px;font-weight:600;letter-spacing:-0.01em;}
+  .hero p{color:var(--muted);font-size:15.5px;line-height:1.55;max-width:46ch;margin:0 0 28px;}
+
+  .btn{display:inline-flex;align-items:center;gap:8px;background:var(--flash);color:#161210;border:none;padding:13px 22px;font-family:'Space Grotesk';font-weight:600;font-size:14.5px;border-radius:3px;cursor:pointer;letter-spacing:.01em;}
+  .btn:hover{background:#ff6a45;}
+  .btn:disabled{background:var(--bg3);color:var(--muted);cursor:not-allowed;}
+  .btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line-strong);}
+  .btn.ghost:hover{border-color:var(--flash);color:var(--flash);}
+  .btn.small{padding:9px 14px;font-size:13px;}
+
+  section{margin-top:34px;}
+  .step-label{font-family:'IBM Plex Mono';font-size:11.5px;color:var(--muted);letter-spacing:.03em;margin-bottom:10px;display:flex;gap:8px;align-items:center;}
+  .step-label b{color:var(--flash);}
+
+  /* avatar upload */
+  .dropzone{border:1px dashed var(--line-strong);border-radius:4px;padding:30px 20px;text-align:center;cursor:pointer;transition:.15s;}
+  .dropzone:hover{border-color:var(--flash);background:rgba(255,78,42,.04);}
+  .dropzone.has-image{padding:0;border-style:solid;overflow:hidden;}
+  .dropzone p{margin:0;color:var(--muted);font-size:14px;}
+  .dropzone .sub{font-size:12px;margin-top:6px;color:#665f52;}
+  #avatarPreview{width:100%;max-height:340px;object-fit:cover;display:block;}
+  .avatar-actions{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--bg2);border-top:1px solid var(--line);}
+  .avatar-actions span{font-size:12.5px;color:var(--muted);}
+
+  /* categories */
+  .cat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .cat-card{border:1px solid var(--line);padding:16px 14px;cursor:pointer;background:var(--bg2);transition:.12s;}
+  .cat-card:hover{border-color:var(--line-strong);}
+  .cat-card.active{border-color:var(--flash);background:rgba(255,78,42,.07);}
+  .cat-card h3{margin:0 0 4px;font-size:15px;font-weight:600;}
+  .cat-card p{margin:0;font-size:12px;color:var(--muted);}
+  .cat-card .count{font-family:'IBM Plex Mono';font-size:11px;color:var(--flash);margin-top:8px;display:block;}
+
+  /* scenes */
+  .scene-list{display:flex;flex-direction:column;gap:8px;}
+  .scene-item{display:flex;align-items:flex-start;gap:12px;padding:13px 14px;border:1px solid var(--line);cursor:pointer;background:var(--bg2);}
+  .scene-item:hover{border-color:var(--line-strong);}
+  .scene-item.checked{border-color:var(--flash);background:rgba(255,78,42,.06);}
+  .scene-item.disabled{opacity:.35;cursor:not-allowed;}
+  .checkbox{width:18px;height:18px;border:1px solid var(--line-strong);flex:none;margin-top:2px;position:relative;}
+  .scene-item.checked .checkbox{border-color:var(--flash);background:var(--flash);}
+  .scene-item.checked .checkbox::after{content:"";position:absolute;left:5px;top:1px;width:5px;height:9px;border:solid #161210;border-width:0 2px 2px 0;transform:rotate(45deg);}
+  .scene-txt b{display:block;font-size:14.5px;font-weight:600;margin-bottom:2px;}
+  .scene-txt span{font-size:12.5px;color:var(--muted);line-height:1.4;}
+
+  .sel-counter{font-family:'IBM Plex Mono';font-size:12px;color:var(--muted);margin:14px 0 4px;}
+  .sel-counter b{color:var(--flash);}
+
+  /* results */
+  .results-grid{display:grid;grid-template-columns:1fr;gap:16px;}
+  .result-card{border:1px solid var(--line);background:var(--bg2);}
+  .result-card img{width:100%;display:block;}
+  .result-card .rc-foot{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;}
+  .result-card .rc-foot span{font-size:12.5px;color:var(--muted);font-family:'IBM Plex Mono';}
+  .result-card .rc-status{padding:40px 14px;text-align:center;color:var(--muted);font-size:13px;font-family:'IBM Plex Mono';}
+  .exif{font-family:'IBM Plex Mono';font-size:10.5px;color:#5f574a;letter-spacing:.02em;margin-top:6px;}
+
+  /* modal settings */
+  .overlay{position:fixed;inset:0;background:rgba(10,9,8,.72);display:none;align-items:center;justify-content:center;z-index:50;padding:20px;}
+  .overlay.open{display:flex;}
+  .modal{background:var(--bg2);border:1px solid var(--line-strong);max-width:420px;width:100%;padding:26px;position:relative;}
+  .modal h2{margin:0 0 6px;font-size:19px;}
+  .modal p.desc{color:var(--muted);font-size:13px;margin:0 0 20px;line-height:1.5;}
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:6px;font-family:'IBM Plex Mono';}
+  .field input{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:11px 12px;font-size:13.5px;font-family:'IBM Plex Mono';border-radius:2px;}
+  .field input:focus{outline:none;border-color:var(--flash);}
+  .modal-actions{display:flex;gap:10px;margin-top:6px;}
+  .close-x{position:absolute;top:16px;right:16px;background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;}
+
+  .engine-toggle{display:flex;gap:8px;margin-bottom:16px;}
+  .engine-opt{flex:1;text-align:center;padding:9px;border:1px solid var(--line);font-size:12.5px;font-family:'IBM Plex Mono';cursor:pointer;color:var(--muted);}
+  .engine-opt.active{border-color:var(--flash);color:var(--flash);}
+
+  .hint{font-size:12px;color:var(--muted);line-height:1.5;margin-top:10px;}
+  .hint a{color:var(--flash);}
+
+  .loader{width:22px;height:22px;border:2px solid var(--line);border-top-color:var(--flash);border-radius:50%;display:inline-block;animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .top-progress{font-family:'IBM Plex Mono';font-size:12px;color:var(--muted);margin-bottom:14px;}
+  .banner{border:1px solid var(--flash-dim);background:rgba(255,78,42,.08);color:#ffb69f;padding:12px 14px;font-size:13px;margin-bottom:16px;border-radius:2px;}
+
+  ::selection{background:var(--flash);color:#161210;}
+  @media (max-width:420px){ .cat-grid{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><span class="dot"></span><span>STUDIO INSTANTANÉ</span></div>
+  <button class="gear" id="openSettings" title="Réglages">⚙</button>
+</div>
+
+<div class="wrap">
+
+  <div class="hero">
+    <div class="kicker mono">FREEBIE · SCÈNES LIFESTYLE</div>
+    <h1>Des photos qui n'ont<br>l'air de rien.</h1>
+    <p>Uploade un avatar, choisis une catégorie de scènes du quotidien, et génère 1 à 3 photos façon instantané smartphone — imparfaites, jamais posées.</p>
+  </div>
+
+  <section id="step1">
+    <div class="step-label"><b>01</b> Avatar</div>
+    <div class="frame">
+      <div class="bl"></div><div class="br"></div>
+      <div class="dropzone" id="dropzone">
+        <p>Clique ou dépose une photo</p>
+        <p class="sub">Un visage net, de face de préférence</p>
+      </div>
+    </div>
+    <input type="file" id="fileInput" accept="image/*" style="display:none">
+  </section>
+
+  <section id="step2" style="display:none;">
+    <div class="step-label"><b>02</b> Catégorie</div>
+    <div class="cat-grid" id="catGrid"></div>
+  </section>
+
+  <section id="step3" style="display:none;">
+    <div class="step-label"><b>03</b> Scènes <span style="color:var(--muted)">— jusqu'à 3</span></div>
+    <div class="scene-list" id="sceneList"></div>
+    <div class="sel-counter"><b id="selCount">0</b>/3 scène(s) sélectionnée(s)</div>
+    <div style="margin-top:16px;">
+      <button class="btn" id="generateBtn" disabled>Générer</button>
+    </div>
+  </section>
+
+  <section id="step4" style="display:none;">
+    <div class="step-label"><b>04</b> Résultats</div>
+    <div id="progressLine" class="top-progress"></div>
+    <div class="results-grid" id="resultsGrid"></div>
+  </section>
+
+</div>
+
+<!-- Settings modal -->
+<div class="overlay" id="settingsOverlay">
+  <div class="modal">
+    <button class="close-x" id="closeSettings">✕</button>
+    <h2>Réglages</h2>
+    <p class="desc">Tes clés restent uniquement dans ton navigateur (localStorage). Rien n'est envoyé à un serveur autre que le moteur choisi.</p>
+
+    <div class="engine-toggle">
+      <div class="engine-opt" data-engine="vertex">Vertex AI</div>
+      <div class="engine-opt" data-engine="kie">kie.ai</div>
+    </div>
+
+    <div id="vertexFields">
+      <div class="field">
+        <label>Clé API Vertex AI Express (AQ...)</label>
+        <input type="password" id="vertexKey" placeholder="AQ.xxxxxxxxxxxxxxxx">
+      </div>
+    </div>
+    <div id="kieFields" style="display:none;">
+      <div class="field">
+        <label>Clé API kie.ai</label>
+        <input type="password" id="kieKey" placeholder="sk-xxxxxxxxxxxxxxxx">
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" id="saveSettings">Enregistrer</button>
+      <button class="btn ghost" id="cancelSettings">Fermer</button>
+    </div>
+    <p class="hint">Vertex AI Express : clé de type AQ générée sur Google AI Studio. kie.ai : clé disponible dans ton tableau de bord kie.ai.</p>
+  </div>
+</div>
+
+<script>
+/* ---------------------------------------------------------
+   STUDIO INSTANTANÉ — données scènes
+--------------------------------------------------------- */
+const STYLE_SUFFIX = "Rendu photo réaliste non retouché, comme prise sur le vif au smartphone : angle légèrement imparfait, exposition naturelle non maîtrisée, léger flou de mouvement ou grain discret, décor réel et pas mis en scène, aucune pose ni regard caméra franc — l'aspect brut d'un instantané, pas d'une photo professionnelle.";
+
+const CATEGORIES = [
+  {
+    id: "maison",
+    name: "Maison / intérieur",
+    desc: "Chez soi, sans filtre",
+    scenes: [
+      {id:"cafe_matin", label:"Café du matin en pyjama", prompt:"Photo candide prise au smartphone, angle légèrement de travers comme tenue d'une main, [AVATAR] assis(e) à une table de cuisine en pyjama froissé, cheveux pas coiffés, tenant une tasse de café à deux mains, regard baissé vers la tasse ou perdu dans le vague. Lumière du matin naturelle et un peu dure venant d'une fenêtre latérale, légère surexposition par endroits. Arrière-plan de cuisine réel et un peu encombré (vaisselle, objets du quotidien flous)."},
+      {id:"canape_cocooning", label:"Canapé, soirée cocooning", prompt:"Photo prise au téléphone dans une pièce faiblement éclairée en soirée, [AVATAR] affalé(e) dans un canapé sous un plaid, une jambe repliée, lumière chaude et jaune d'une lampe hors champ créant des ombres douces, léger bruit numérique dû au faible éclairage. Cadrage imparfait, légèrement de biais. Reflet d'écran ou de lampe visible en arrière-plan."},
+      {id:"cuisine_repas", label:"Cuisine, préparation de repas", prompt:"Photo smartphone prise en hauteur ou de côté pendant que [AVATAR] cuisine, mains occupées (coupe, mélange), regard tourné vers la tâche et non vers l'objectif. Plan de travail légèrement en désordre (ingrédients éparpillés, torchon posé). Lumière de cuisine standard, un peu froide, ombres marquées. Flou de mouvement léger sur les mains."},
+      {id:"reveil_lit", label:"Réveil, lit défait", prompt:"Photo prise au réveil, [AVATAR] assis(e) au bord du lit ou encore allongé(e), yeux mi-clos, drap et oreillers en désordre autour. Lumière du matin filtrée par un rideau, tons doux mais légèrement surexposés. Cadrage serré et pas centré, angle qui suggère un selfie pris à bout de bras sans se regarder dans l'écran."},
+      {id:"menage_chaotique", label:"Ménage, maison chaotique", prompt:"Photo prise pendant une pause ménage, [AVATAR] tenant un aspirateur ou une serpillière, cheveux attachés à la va-vite ou en bandana, expression fatiguée. Pièce en arrière-plan volontairement en bazar : jouets d'enfants éparpillés au sol, coussins de canapé pas rangés, un panier de linge qui déborde dans un coin, poussière visible dans un rayon de lumière. Lumière naturelle crue de fenêtre, cadrage pas centré."},
+      {id:"machine_laver", label:"Machine à laver / linge", prompt:"Photo prise accroupi(e) ou penché(e) devant la machine à laver ouverte, [AVATAR] en train d'y enfourner du linge, à côté d'un panier à linge déjà bien rempli et un peu renversé sur le côté (chaussettes ou vêtements tombés au sol). Reflet du hublot visible, sol de buanderie ou salle de bain légèrement sale, lumière artificielle un peu froide et directe. Cadrage bas, angle naturel comme pris en se relevant."},
+      {id:"canape_epuisement", label:"Écroulé(e) sur le canapé, épuisement", prompt:"Photo prise à bout de bras ou par quelqu'un à côté, [AVATAR] complètement avachi(e) sur le canapé, jambes écartées ou repliées sans grâce, tête en arrière ou de travers contre un coussin, yeux fermés ou mi-clos, traits tirés, cheveux en bataille, expression du visage relâchée et pas flatteuse (bouche entrouverte, air épuisé). Éclairage de fin de journée, un peu terne, coussins et plaid en désordre autour."},
+      {id:"selfie_miroir_sdb", label:"Selfie miroir, salle de bain", prompt:"Photo selfie prise face à un miroir de salle de bain avec le téléphone visible dans le reflet, [AVATAR] dans une pose plus travaillée et esthétique (posture droite, léger angle flatteur, main sur la hanche ou tenant le téléphone à hauteur de visage). Arrière-plan de salle de bain réaliste et pas parfaitement rangé (produits de beauté sur le rebord du lavabo, serviette pendue de travers, traces sur le miroir). Lumière de salle de bain, mélange de lumière chaude et de reflet froid du miroir."}
+    ]
+  },
+  {
+    id: "exterieur",
+    name: "Extérieur / rue",
+    desc: "Dehors, en mouvement",
+    scenes: [
+      {id:"marche_ville", label:"Marche en ville", prompt:"Photo prise en marchant, tenue à bout de bras ou par-dessus l'épaule, [AVATAR] de dos ou de trois-quarts, sac à l'épaule, en mouvement dans une rue urbaine réelle (trottoir, façades, passants flous en arrière-plan). Légère distorsion grand-angle de smartphone, lumière de jour naturelle et changeante, horizon légèrement penché."},
+      {id:"attente_terrasse", label:"Attente (terrasse, arrêt de bus)", prompt:"Photo candide, [AVATAR] assis(e) à une table de café en terrasse ou sur un banc d'arrêt de bus, un coude posé, regard sur son téléphone ou dans le vide, posture relâchée et pas travaillée. Environnement urbain identifiable en arrière-plan (mobilier urbain, autres personnes floues). Lumière naturelle changeante, ombres portées réalistes."},
+      {id:"courses", label:"Courses", prompt:"Photo prise au smartphone d'une main pendant que [AVATAR] tient des sacs de courses de l'autre, en mouvement sur un trottoir ou sortant d'un magasin. Angle bas ou légèrement penché, léger flou de mouvement, lumière de jour naturelle, arrière-plan de rue ou parking flou."},
+      {id:"marche_marche", label:"Faire le marché", prompt:"Photo prise en marchant entre les étals, [AVATAR] tenant un sac en tissu ou un cabas à moitié rempli (légumes qui dépassent, sachet plastique noué à la va-vite), regard tourné vers un étal ou vers le contenu du sac plutôt que vers l'objectif. Sol un peu sale (feuilles de légumes tombées, caisses en bois), lumière extérieure dure de milieu de journée, léger flou de mouvement, arrière-plan de marché réaliste et encombré."},
+      {id:"depart_vacances", label:"Départ en vacances chaotique", prompt:"Photo prise dans l'entrée ou le coffre de la voiture, [AVATAR] entouré(e) de valises pas bien fermées, sacs qui débordent, un vêtement qui dépasse d'une fermeture éclair. Expression un peu stressée ou pressée, cheveux pas coiffés, tenue confortable de voyage. Lumière du matin, cadrage pas centré, angle pris rapidement entre deux allers-retours, léger flou de mouvement."}
+    ]
+  },
+  {
+    id: "travail",
+    name: "Travail / quotidien actif",
+    desc: "Entre deux tâches",
+    scenes: [
+      {id:"bureau_laptop", label:"Bureau / laptop", prompt:"Photo prise depuis le côté ou par-dessus l'épaule, [AVATAR] devant un ordinateur portable sur un bureau pas parfaitement rangé (câbles, tasse, post-it), posture penchée vers l'écran, expression concentrée ou fatiguée. Lumière d'écran visible sur le visage mélangée à la lumière ambiante de la pièce. Cadrage asymétrique."},
+      {id:"trajet_voiture", label:"Trajet en voiture", prompt:"Photo prise depuis le siège passager ou conducteur, [AVATAR] au volant, regard vers la route ou la fenêtre. Tableau de bord visible avec une fine couche de poussière, traces de doigts sur l'écran du GPS, quelques miettes ou un gobelet de café dans le porte-gobelet, un ticket de parking qui traîne. Reflets et contre-jour sur le pare-brise, légère buée sur les bords des vitres. Cadrage serré, légèrement flou dû au mouvement du véhicule."},
+      {id:"pause_dejeuner", label:"Pause déjeuner rapide", prompt:"Photo prise à table, [AVATAR] mangeant rapidement (sandwich, plat à emporter), regard sur son téléphone posé à côté ou ailleurs que l'objectif. Environnement de pause réel (bureau, banc, cantine), lumière neutre, cadrage pris sur le vif sans mise en scène."},
+      {id:"shopping_essayage", label:"Shopping / essayage", prompt:"Photo prise en cabine d'essayage ou devant un miroir de magasin, [AVATAR] en train d'ajuster un vêtement ou de se regarder, plusieurs articles sur le bras ou posés sur une chaise à côté. Éclairage de magasin un peu cru et pas flatteur (néons), reflet du miroir avec le téléphone visible. Cadrage naturel, pas posé, expression concentrée sur le vêtement plutôt que sur l'objectif."}
+    ]
+  },
+  {
+    id: "detente",
+    name: "Détente",
+    desc: "Moments off",
+    scenes: [
+      {id:"lecture_parc", label:"Lecture, balcon ou parc", prompt:"Photo prise en extérieur, [AVATAR] assis(e) avec un livre, lumière naturelle douce filtrée (arbres, ombre partielle), posture détendue et naturelle, regard sur le livre. Arrière-plan réel (balcon, herbe, banc), léger flou d'arrière-plan type profondeur de smartphone."},
+      {id:"sport_leger", label:"Sport léger (yoga, jogging)", prompt:"Photo prise en pause pendant une activité, [AVATAR] légèrement essoufflé(e) ou en étirement, tenue de sport, transpiration légère visible, environnement extérieur ou intérieur simple (parc, tapis de sol). Lumière naturelle, cadrage pris rapidement par un tiers ou en mode retardateur, pas de pose figée."},
+      {id:"moment_taquin", label:"Moment taquin / complicité en couple", prompt:"Photo prise sur le vif, [AVATAR] en train de rire aux éclats ou de se faire chatouiller/taquiner par son compagnon (personne générée, non fournie en référence), visage pris en pleine expression naturelle (bouche ouverte, yeux plissés de rire), corps en mouvement (recul, geste de défense, bras qui repousse). Cadrage un peu flou ou de travers, comme pris par surprise au milieu de l'action. Décor du quotidien en arrière-plan, lumière naturelle, aucune pose."}
+    ]
+  }
+];
+
+/* ---------------------------------------------------------
+   State
+--------------------------------------------------------- */
+let avatarBase64 = null;   // raw base64 (no prefix)
+let avatarMime = "image/jpeg";
+let currentCategory = null;
+let selectedScenes = [];   // array of scene ids, max 3
+
+/* ---------------------------------------------------------
+   Settings / API keys (localStorage)
+--------------------------------------------------------- */
+const LS_VERTEX = "si_vertex_key";
+const LS_KIE = "si_kie_key";
+const LS_ENGINE = "si_engine";
+
+function loadSettings(){
+  document.getElementById("vertexKey").value = localStorage.getItem(LS_VERTEX) || "";
+  document.getElementById("kieKey").value = localStorage.getItem(LS_KIE) || "";
+  setEngine(localStorage.getItem(LS_ENGINE) || "vertex");
+}
+function setEngine(engine){
+  document.querySelectorAll(".engine-opt").forEach(el=>{
+    el.classList.toggle("active", el.dataset.engine === engine);
+  });
+  document.getElementById("vertexFields").style.display = engine === "vertex" ? "block" : "none";
+  document.getElementById("kieFields").style.display = engine === "kie" ? "block" : "none";
+}
+document.querySelectorAll(".engine-opt").forEach(el=>{
+  el.addEventListener("click", ()=> setEngine(el.dataset.engine));
+});
+
+document.getElementById("openSettings").addEventListener("click", ()=>{
+  loadSettings();
+  document.getElementById("settingsOverlay").classList.add("open");
+});
+document.getElementById("closeSettings").addEventListener("click", ()=>{
+  document.getElementById("settingsOverlay").classList.remove("open");
+});
+document.getElementById("cancelSettings").addEventListener("click", ()=>{
+  document.getElementById("settingsOverlay").classList.remove("open");
+});
+document.getElementById("saveSettings").addEventListener("click", ()=>{
+  localStorage.setItem(LS_VERTEX, document.getElementById("vertexKey").value.trim());
+  localStorage.setItem(LS_KIE, document.getElementById("kieKey").value.trim());
+  const activeEngine = document.querySelector(".engine-opt.active").dataset.engine;
+  localStorage.setItem(LS_ENGINE, activeEngine);
+  document.getElementById("settingsOverlay").classList.remove("open");
+});
+
+/* first-load: if no keys at all, nudge settings open */
+window.addEventListener("DOMContentLoaded", ()=>{
+  loadSettings();
+  if(!localStorage.getItem(LS_VERTEX) && !localStorage.getItem(LS_KIE)){
+    // don't force it open, just leave gear visible
+  }
+});
+
+/* ---------------------------------------------------------
+   Step 1 — Avatar upload
+--------------------------------------------------------- */
+const dropzone = document.getElementById("dropzone");
+const fileInput = document.getElementById("fileInput");
+
+dropzone.addEventListener("click", ()=> fileInput.click());
+dropzone.addEventListener("dragover", e=>{ e.preventDefault(); });
+dropzone.addEventListener("drop", e=>{
+  e.preventDefault();
+  if(e.dataTransfer.files && e.dataTransfer.files[0]) handleAvatarFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener("change", e=>{
+  if(e.target.files && e.target.files[0]) handleAvatarFile(e.target.files[0]);
+});
+
+function handleAvatarFile(file){
+  avatarMime = file.type || "image/jpeg";
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const dataUrl = e.target.result;
+    avatarBase64 = dataUrl.split(",")[1];
+    renderAvatarPreview(dataUrl);
+    buildCategoryGrid();
+    document.getElementById("step2").style.display = "block";
+    document.getElementById("step2").scrollIntoView({behavior:"smooth", block:"start"});
+  };
+  reader.readAsDataURL(file);
+}
+
+function renderAvatarPreview(dataUrl){
+  dropzone.classList.add("has-image");
+  dropzone.innerHTML = `
+    <img id="avatarPreview" src="${dataUrl}" alt="Avatar">
+    <div class="avatar-actions">
+      <span>Avatar chargé</span>
+      <button class="btn small ghost" id="changeAvatarBtn" type="button">Changer</button>
+    </div>
+  `;
+  document.getElementById("changeAvatarBtn").addEventListener("click", (ev)=>{
+    ev.stopPropagation();
+    fileInput.click();
+  });
+}
+
+/* re-bind click after replacing innerHTML (delegation) */
+dropzone.addEventListener("click", (e)=>{
+  if(e.target.id === "changeAvatarBtn") return;
+});
+
+/* ---------------------------------------------------------
+   Step 2 — Categories
+--------------------------------------------------------- */
+function buildCategoryGrid(){
+  const grid = document.getElementById("catGrid");
+  grid.innerHTML = "";
+  CATEGORIES.forEach(cat=>{
+    const card = document.createElement("div");
+    card.className = "cat-card" + (currentCategory === cat.id ? " active" : "");
+    card.innerHTML = `<h3>${cat.name}</h3><p>${cat.desc}</p><span class="count mono">${cat.scenes.length} scènes</span>`;
+    card.addEventListener("click", ()=> selectCategory(cat.id));
+    grid.appendChild(card);
+  });
+}
+
+function selectCategory(catId){
+  currentCategory = catId;
+  selectedScenes = [];
+  buildCategoryGrid();
+  buildSceneList();
+  document.getElementById("step3").style.display = "block";
+  document.getElementById("step4").style.display = "none";
+  document.getElementById("step3").scrollIntoView({behavior:"smooth", block:"start"});
+}
+
+/* ---------------------------------------------------------
+   Step 3 — Scenes
+--------------------------------------------------------- */
+function buildSceneList(){
+  const cat = CATEGORIES.find(c=>c.id === currentCategory);
+  const list = document.getElementById("sceneList");
+  list.innerHTML = "";
+  cat.scenes.forEach(scene=>{
+    const item = document.createElement("div");
+    item.className = "scene-item";
+    item.innerHTML = `
+      <div class="checkbox"></div>
+      <div class="scene-txt"><b>${scene.label}</b><span>Photo candide, style instantané smartphone</span></div>
+    `;
+    item.addEventListener("click", ()=> toggleScene(scene.id, item));
+    list.appendChild(item);
+  });
+  updateSelCount();
+}
+
+function toggleScene(sceneId, el){
+  const idx = selectedScenes.indexOf(sceneId);
+  if(idx > -1){
+    selectedScenes.splice(idx,1);
+    el.classList.remove("checked");
+  } else {
+    if(selectedScenes.length >= 3) return;
+    selectedScenes.push(sceneId);
+    el.classList.add("checked");
+  }
+  updateSelCount();
+  refreshDisabledState();
+}
+
+function refreshDisabledState(){
+  const atMax = selectedScenes.length >= 3;
+  document.querySelectorAll(".scene-item").forEach(el=>{
+    if(!el.classList.contains("checked")){
+      el.classList.toggle("disabled", atMax);
+    }
+  });
+}
+
+function updateSelCount(){
+  document.getElementById("selCount").textContent = selectedScenes.length;
+  document.getElementById("generateBtn").disabled = selectedScenes.length === 0 || !avatarBase64;
+}
+
+/* ---------------------------------------------------------
+   Step 4 — Generate
+--------------------------------------------------------- */
+document.getElementById("generateBtn").addEventListener("click", async ()=>{
+  const engine = localStorage.getItem(LS_ENGINE) || "vertex";
+  const vertexKey = localStorage.getItem(LS_VERTEX);
+  const kieKey = localStorage.getItem(LS_KIE);
+
+  if(engine === "vertex" && !vertexKey){
+    alert("Ajoute ta clé Vertex AI dans les réglages (⚙) avant de générer.");
+    return;
+  }
+  if(engine === "kie" && !kieKey){
+    alert("Ajoute ta clé kie.ai dans les réglages (⚙) avant de générer.");
+    return;
+  }
+
+  const cat = CATEGORIES.find(c=>c.id === currentCategory);
+  const scenesToRun = cat.scenes.filter(s=> selectedScenes.includes(s.id));
+
+  document.getElementById("step4").style.display = "block";
+  document.getElementById("step4").scrollIntoView({behavior:"smooth", block:"start"});
+
+  const grid = document.getElementById("resultsGrid");
+  grid.innerHTML = "";
+  const cards = {};
+  scenesToRun.forEach(scene=>{
+    const card = document.createElement("div");
+    card.className = "result-card";
+    card.innerHTML = `<div class="rc-status"><span class="loader"></span><div style="margin-top:10px;">${scene.label}</div></div>`;
+    grid.appendChild(card);
+    cards[scene.id] = card;
+  });
+
+  let done = 0;
+  document.getElementById("progressLine").textContent = `0 / ${scenesToRun.length} générées`;
+
+  for(const scene of scenesToRun){
+    try{
+      const fullPrompt = scene.prompt.replace("[AVATAR]", "la personne de l'image de référence fournie") + " " + STYLE_SUFFIX;
+      let imgDataUrl;
+      if(engine === "vertex"){
+        imgDataUrl = await generateWithVertex(fullPrompt, vertexKey);
+      } else {
+        imgDataUrl = await generateWithKie(fullPrompt, kieKey);
+      }
+      cards[scene.id].innerHTML = `
+        <img src="${imgDataUrl}" alt="${scene.label}">
+        <div class="rc-foot">
+          <span>${scene.label}</span>
+          <a class="btn small ghost" download="studio-instantane-${scene.id}.png" href="${imgDataUrl}">Télécharger</a>
+        </div>
+      `;
+    }catch(err){
+      cards[scene.id].innerHTML = `<div class="rc-status">⚠ Échec — ${scene.label}<br><span style="font-size:11px;">${(err && err.message) ? err.message : "erreur inconnue"}</span></div>`;
+    }
+    done++;
+    document.getElementById("progressLine").textContent = `${done} / ${scenesToRun.length} générées`;
+  }
+});
+
+/* ---------------------------------------------------------
+   Vertex AI Express Mode — generateContent
+   endpoint: aiplatform.googleapis.com, key in header x-goog-api-key
+   model: gemini-3.1-flash-image
+--------------------------------------------------------- */
+async function generateWithVertex(promptText, apiKey){
+  const model = "gemini-3.1-flash-image";
+  const url = `https://aiplatform.googleapis.com/v1/publishers/google/models/${model}:generateContent`;
+
+  const body = {
+    contents: [{
+      role: "user",
+      parts: [
+        { inlineData: { mimeType: avatarMime, data: avatarBase64 } },
+        { text: promptText }
+      ]
+    }]
+  };
+
+  const resp = await fetchWithBackoff(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-goog-api-key": apiKey
+    },
+    body: JSON.stringify(body)
+  });
+
+  const data = await resp.json();
+  if(!resp.ok){
+    throw new Error((data && data.error && data.error.message) || `Erreur Vertex (${resp.status})`);
+  }
+  const parts = data?.candidates?.[0]?.content?.parts || [];
+  const imgPart = parts.find(p => p.inlineData && p.inlineData.data);
+  if(!imgPart) throw new Error("Aucune image renvoyée par Vertex.");
+  return blobUrlFromBase64(imgPart.inlineData.data, imgPart.inlineData.mimeType || "image/png");
+}
+
+/* ---------------------------------------------------------
+   kie.ai — base64 upload -> createTask -> poll recordInfo
+--------------------------------------------------------- */
+async function generateWithKie(promptText, apiKey){
+  // 1. upload avatar
+  const uploadResp = await fetchWithBackoff("https://kieai.redpandaai.co/api/file-base64-upload", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+    body: JSON.stringify({ base64Data: `data:${avatarMime};base64,${avatarBase64}`, fileName: "avatar.png" })
+  });
+  const uploadData = await uploadResp.json();
+  if(!uploadResp.ok) throw new Error(uploadData?.msg || "Échec de l'upload kie.ai");
+  const fileUrl = uploadData?.data?.fileUrl || uploadData?.data?.url;
+  if(!fileUrl) throw new Error("URL de fichier introuvable après upload kie.ai");
+
+  // 2. create task
+  const createResp = await fetchWithBackoff("https://api.kie.ai/api/v1/jobs/createTask", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      model: "nano-banana-2",
+      input: { prompt: promptText, image_urls: [fileUrl], output_format: "png" }
+    })
+  });
+  const createData = await createResp.json();
+  if(!createResp.ok) throw new Error(createData?.msg || "Échec de création de tâche kie.ai");
+  const taskId = createData?.data?.taskId;
+  if(!taskId) throw new Error("taskId manquant (kie.ai)");
+
+  // 3. poll
+  for(let i=0;i<40;i++){
+    await new Promise(r=>setTimeout(r, 3000));
+    const pollResp = await fetchWithBackoff(`https://api.kie.ai/api/v1/jobs/recordInfo?taskId=${taskId}`, {
+      headers: { "Authorization": `Bearer ${apiKey}` }
+    });
+    const pollData = await pollResp.json();
+    const state = pollData?.data?.state;
+    if(state === "success"){
+      const resultJson = typeof pollData.data.resultJson === "string" ? JSON.parse(pollData.data.resultJson) : pollData.data.resultJson;
+      const outUrl = resultJson?.resultUrls?.[0] || resultJson?.output?.[0];
+      if(!outUrl) throw new Error("Image de résultat introuvable (kie.ai)");
+      return outUrl;
+    }
+    if(state === "fail" || state === "failed"){
+      throw new Error(pollData?.data?.failMsg || "Échec de génération kie.ai");
+    }
+  }
+  throw new Error("Délai d'attente dépassé (kie.ai)");
+}
+
+/* ---------------------------------------------------------
+   Helpers
+--------------------------------------------------------- */
+function blobUrlFromBase64(base64, mime){
+  const byteChars = atob(base64);
+  const byteNumbers = new Array(byteChars.length);
+  for(let i=0;i<byteChars.length;i++) byteNumbers[i] = byteChars.charCodeAt(i);
+  const byteArray = new Uint8Array(byteNumbers);
+  const blob = new Blob([byteArray], {type: mime});
+  return URL.createObjectURL(blob);
+}
+
+async function fetchWithBackoff(url, options, retries=4){
+  for(let attempt=0; attempt<=retries; attempt++){
+    const resp = await fetch(url, options);
+    if(resp.status !== 429) return resp;
+    await new Promise(r=>setTimeout(r, 1000 * Math.pow(2, attempt)));
+  }
+  return fetch(url, options);
+}
+</script>
+</body>
+</html>
