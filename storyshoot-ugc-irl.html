@@ -1700,24 +1700,23 @@ async function genererScene(index){
     const produitVisible=document.getElementById('scene-produit-'+index)?.checked!==false&&scene.produit_visible!==false;
     const directionProduit=document.getElementById('scene-direction-produit-'+index)?.value||scene.direction_produit||'';
 
-    let produitLock='';
-    if(!produitVisible){
-      produitLock='NO PRODUCT visible in this scene — person and environment only, no product or packaging.';
-    } else if(uploads.produit){
-      produitLock='PRODUCT LOCKED — same packaging, shape, label, colors as reference. Do not invent a product.'+(directionProduit?' Product placement: '+directionProduit:'');
-    }
-
     const locks=[];
-    if(uploads.avatar)locks.push('IDENTITY LOCKED — same face, skin tone, features as reference. Do not invent a new face.');
+    if(uploads.avatar)locks.push('IDENTITY LOCKED — same face, skin tone, hair, features as reference. Do not invent a new face. If mirror present, reflection must match the person exactly — no collage effect.');
+    if(!produitVisible){
+      locks.push('NO PRODUCT visible in this scene — person and environment only.');
+    } else if(uploads.produit){
+      locks.push('PRODUCT LOCKED — reproduce EXACT product from reference including all text, logo, label as written. Text on packaging must be legible and faithful to the reference. Do not distort or invent any text.'+(directionProduit?' Product placement: '+directionProduit:'.'));
+    }
     if(uploads.vetement)locks.push('OUTFIT LOCKED — same garment as outfit reference.');
-    const lockStr=locks.length?locks.join(' ')+'  ':'';
+    const lockStr=locks.join(' ');
+
+    const resultVisuel='IMPORTANT: The physical result of the product must be CLEARLY VISIBLE and OBSERVABLE — not just a gesture. Show the actual transformation (defined bouncy curls strand by strand, visibly glowing skin, lengthened lashes, smooth hair, etc.). Result must be undeniable in the image.';
 
     const basePrompt=scene.prompt_image+directionStr+
-      (produitVisible?' IMPORTANT: If any product text or logo appears, render it as subtle blurred element — do NOT attempt readable text as it will appear distorted.':'')+
-      ` — ${lockStr}Portrait orientation 9:16, 4K ultra-detailed, shot on iPhone 15 Pro, natural light, authentic UGC style.`;
+      ` — ${lockStr} ${resultVisuel} NO inconsistent mirror reflections. Portrait orientation 9:16, 4K ultra-detailed, shot on iPhone 15 Pro, natural light, authentic UGC. NO studio look. NO plants.`;
 
     const imgData=await generateImage(basePrompt, true, scene.lieu_b64||null, scene.lieu_mime||'image/jpeg');
-    incrementUsed(currentCode);updateQuotaUI();
+    if(!CODES[currentCode]?.admin){incrementUsed(currentCode);updateQuotaUI();}
 
     // Afficher l'image + boutons régénérer et télécharger
     imgArea.innerHTML=`<img src="${imgData}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">`;
@@ -1891,34 +1890,35 @@ async function genererTousBroll(){
 }
 
 async function genererBrollScene(index){
-  if(!canGenerate(currentCode)){showToast('Limite atteinte ⏳');return;}
+  if(!canGenerate(currentCode)&&!CODES[currentCode]?.admin){showToast('Limite atteinte ⏳');return;}
   const b=brollData?.brolls?.[index];if(!b)return;
   const area=document.getElementById('broll-area-'+index);
-  const spinner=document.getElementById('broll-spinner-'+index);
-  const genBtn=area.querySelector('.broll-gen-btn');
-  if(genBtn)genBtn.style.display='none';
-  spinner.style.display='block';
+  if(!area)return;
+
+  // Vider et recréer le spinner proprement
+  area.innerHTML=`<div class="scene-spinner" id="broll-spinner-${index}" style="display:block"></div>`;
+  area.style.position='relative';
 
   try{
-    // Toggle produit visible pour ce broll
     const produitVisible=document.getElementById('broll-produit-'+index)?.checked!==false;
     const directionProduit=document.getElementById('broll-direction-'+index)?.value||'';
 
-    // B-Roll : AVEC avatar (pris en compte ici), produit selon toggle
     const locks=[];
-    if(uploads.avatar)locks.push('IDENTITY LOCKED — same face, skin tone, features as reference. Do not invent a new face.');
+    if(uploads.avatar)locks.push('IDENTITY LOCKED — same face, skin tone, hair, features as reference photo. Never invent a new face. Never create inconsistent reflections in mirrors.');
     if(produitVisible&&uploads.produit){
-      locks.push('PRODUCT LOCKED — same packaging, shape, label, colors as product reference. Do not invent a product.');
+      locks.push('PRODUCT LOCKED — reproduce the EXACT product from reference image including all text, logo, label exactly as written. The text on the packaging must be legible and faithful to the reference. Do not invent or distort any text.');
       if(directionProduit)locks.push('PRODUCT PLACEMENT: '+directionProduit+'.');
     } else {
-      locks.push('NO PRODUCT visible in this scene — focus on person, environment, emotion only.');
+      locks.push('NO PRODUCT visible — focus on person, environment, emotion only.');
     }
     if(uploads.vetement)locks.push('OUTFIT LOCKED — same garment as outfit reference.');
 
-    const lockStr=locks.join(' ');
-    const finalPromptBroll=`${b.prompt_image} — ${lockStr} Portrait orientation 9:16, 4K ultra-detailed, shot on iPhone 15 Pro, natural light, authentic UGC style. NO studio look, NO advertising aesthetic. NO plants, NO decorative plants, NO potted plants.`;
+    // Renforcement résultats visibles
+    const resultatsVisibles='IMPORTANT: The visual result of the product must be CLEARLY VISIBLE and PHYSICALLY OBSERVABLE. Do not just show a gesture — show the actual result on the person or surface (defined bouncy curls clearly visible strand by strand, glossy hydrated skin visibly glowing, lengthened lashes clearly defined, etc.). The result must be undeniable and visible in the image.';
 
-    // Envoyer avec avatar, produit conditionnel et lieu si uploadé
+    const lockStr=locks.join(' ');
+    const finalPromptBroll=`${b.prompt_image} — ${lockStr} ${resultatsVisibles} Portrait orientation 9:16, 4K ultra-detailed, shot on iPhone 15 Pro, natural light, authentic UGC style. NO studio look. NO plants. NO inconsistent mirror reflections.`;
+
     const brollBody={
       code:currentCode,
       prompt:finalPromptBroll,
@@ -1938,20 +1938,29 @@ async function genererBrollScene(index){
     if(!res.ok)throw new Error(data.error||'HTTP '+res.status);
     const imgData=`data:${data.mimeType||'image/png'};base64,${data.image}`;
 
-    incrementUsed(currentCode);updateQuotaUI();
+    if(!CODES[currentCode]?.admin){incrementUsed(currentCode);updateQuotaUI();}
+
+    // Afficher image
     area.innerHTML=`<img src="${imgData}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">`;
 
     // Bouton régénérer
     const regenBtn=document.createElement('button');
     regenBtn.innerHTML='🔄';regenBtn.title='Régénérer';
-    regenBtn.style.cssText='position:absolute;top:4px;right:4px;background:rgba(14,8,18,0.75);color:white;border:none;border-radius:6px;padding:4px 7px;font-size:12px;cursor:pointer;z-index:2';
+    regenBtn.style.cssText='position:absolute;top:4px;left:4px;background:rgba(14,8,18,0.75);color:white;border:none;border-radius:6px;padding:4px 7px;font-size:12px;cursor:pointer;z-index:2';
     regenBtn.onclick=()=>genererBrollScene(index);
-    area.style.position='relative';area.appendChild(regenBtn);
+    area.appendChild(regenBtn);
+
+    // Bouton télécharger
+    const blob=await(await fetch(imgData)).blob();
+    const blobUrl=URL.createObjectURL(blob);
+    const dl=document.createElement('a');
+    dl.href=blobUrl;dl.download=`broll_${index+1}.png`;dl.innerHTML='⬇';
+    dl.style.cssText='position:absolute;bottom:4px;right:4px;background:rgba(14,8,18,0.75);color:white;border-radius:6px;padding:4px 8px;font-size:12px;text-decoration:none;z-index:2';
+    area.appendChild(dl);
 
     showToast('B-Roll généré ✦');
   }catch(err){
-    spinner.style.display='none';
-    const gb=area.querySelector('.broll-gen-btn');if(gb)gb.style.display='flex';
+    area.innerHTML=`<button class="broll-gen-btn" onclick="genererBrollScene(${index})" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(14,8,18,0.5);border:none;font-size:18px;cursor:pointer">▶</button>`;
     showToast('Erreur : '+err.message);
   }
 }
