@@ -320,7 +320,7 @@ select.field option{background:var(--plum-700)}
               <input type="file" id="produit-file" accept="image/*" onchange="handleUpload('produit',this)">
               <div class="upload-icon">📦</div>
               <div class="upload-label">Produit</div>
-              <div class="upload-hint">Photo du produit</div>
+              <div class="upload-hint">Produit seul, de face, étiquette nette</div>
             </div>
             <div class="upload-zone" id="zone-vetement">
               <input type="file" id="vetement-file" accept="image/*" onchange="handleUpload('vetement',this)">
@@ -545,9 +545,6 @@ select.field option{background:var(--plum-700)}
     </div>
 
     <!-- ══════════════════════════════════
-         STEP 5 — MOTEUR DE CAPTURE
-    ══════════════════════════════════ -->
-    <!-- ══════════════════════════════════
          STEP 5 — STORYBOARD
     ══════════════════════════════════ -->
     <div id="step-5" style="display:none">
@@ -635,6 +632,9 @@ select.field option{background:var(--plum-700)}
       </div>
     </div>
 
+  </div><!-- /app-main -->
+</div><!-- /app -->
+
 <div id="toast"></div>
 
 <script>
@@ -662,7 +662,13 @@ const CODES = {
 
 const MAX_DAILY = 10;
 const PROXY_URL = 'https://storyshoot-proxy-90745837681.europe-west1.run.app';
-const VERTEX_KEY = 'AQ.Ab8RN6IonRfxOSWF6bQkFKlzNsSZokRTSQ39EGOPb_s0WpoMww';
+const VERTEX_KEY = 'AQ.Ab8RN6Jm1Snd7JLIK9rB3jBn1yF-nQ9RdplZOI1F9OuK3gRLxA';
+
+// ═══════════════════════════════════════════════════
+// VERROU PRODUIT — texte de l'emballage net et lisible
+// ═══════════════════════════════════════════════════
+const PRODUCT_LOCK = 'PRODUCT LOCKED — copy the reference product exactly. Label facing the camera, front-on, large in frame (at least 25% of image height), razor-sharp focus on the product, even lighting, no motion blur, no shadow or reflection across the text, no fingers covering the label. Reproduce all packaging text, logo and typography exactly as in the reference: same font, same spelling, same position. If text cannot be rendered legibly, keep the label clean rather than inventing letters.';
+const PRODUCT_PLACEMENT_DEFAULT = 'Product held toward camera at chest height.';
 
 // ═══════════════════════════════════════════════════
 // ÉTAT GLOBAL
@@ -968,13 +974,15 @@ function parseJsonRobust(raw){
 // ═══════════════════════════════════════════════════
 // GÉNÉRATION IMAGE
 // ═══════════════════════════════════════════════════
-async function generateImage(prompt, useAvatar=true){
+async function generateImage(prompt, useAvatar=true, lieuB64=null, lieuMime='image/jpeg'){
   const body={
     code:currentCode,prompt,aspectRatio:'9:16',
     avatarB64:useAvatar?(uploads.avatar?.b64||null):null,
     avatarMime:uploads.avatar?.mime||'image/jpeg',
     produitB64:uploads.produit?.b64||null,produitMime:uploads.produit?.mime||'image/jpeg',
     vetementB64:uploads.vetement?.b64||null,vetementMime:uploads.vetement?.mime||'image/jpeg',
+    decorB64:lieuB64||null,
+    decorMime:lieuMime,
   };
   const res=await fetch(`${PROXY_URL}/generate-image`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   const data=await res.json();
@@ -985,18 +993,10 @@ async function generateImage(prompt, useAvatar=true){
   return `data:${data.mimeType||'image/png'};base64,${data.image}`;
 }
 
-function buildSystemLock(){
-  const locks=[];
-  if(uploads.avatar) locks.push('⚠️ IDENTITY LOCK: The person in the avatar reference photo is the ONLY person allowed. Copy EXACTLY: face structure, skin tone, hair texture and color, age, morphology. Same person in every scene. DO NOT invent or modify the face.');
-  if(uploads.produit) locks.push('⚠️ PRODUCT LOCK: The product in the reference photo must appear EXACTLY as shown. Copy packaging shape, colors, proportions. DO NOT attempt to render text or logos — leave label areas as flat abstract color zones. DO NOT invent a different product.');
-  if(uploads.vetement) locks.push('⚠️ OUTFIT LOCK: The subject must wear EXACTLY the outfit shown in the clothing reference. Same garment, same colors, same style.');
-  return locks.join(' ');
-}
-
 function buildImagePrompt(scenePrompt){
   const locks=[];
   if(uploads.avatar)locks.push('IDENTITY LOCKED — same face, skin tone, features as reference photo provided. Do not invent a new face.');
-  if(uploads.produit)locks.push('PRODUCT LOCKED — same packaging, shape, label, colors as product reference photo. Do not invent a product.');
+  if(uploads.produit)locks.push(PRODUCT_LOCK);
   if(uploads.vetement)locks.push('OUTFIT LOCKED — same garment, colors, style as outfit reference photo.');
   const lockStr=locks.length?locks.join(' ')+'  ':'';
   return `${scenePrompt} — ${lockStr}Portrait orientation 9:16, 4K ultra-detailed, shot on iPhone 15 Pro, natural light, authentic UGC style.`;
@@ -1489,7 +1489,7 @@ function validateStep5(){
 }
 
 // ═══════════════════════════════════════════════════
-// STEP 6 — STORYBOARD
+// STEP 5 — STORYBOARD
 // ═══════════════════════════════════════════════════
 async function genererStoryboard(){
   const loadEl=document.getElementById('storyboard-loading');
@@ -1711,7 +1711,7 @@ async function genererScene(index){
     if(!produitVisible){
       locks.push('NO PRODUCT visible in this scene — person and environment only.');
     } else if(uploads.produit){
-      locks.push('PRODUCT LOCKED — same product shape, packaging color and design as reference. DO NOT attempt to render any text, letters or logo on the packaging — leave those areas as abstract color patches. The model cannot render readable text and attempts will produce distorted artifacts.'+(directionProduit?' Product placement: '+directionProduit:'.'));
+      locks.push(PRODUCT_LOCK+' Product placement: '+(directionProduit||PRODUCT_PLACEMENT_DEFAULT));
     }
     if(uploads.vetement)locks.push('OUTFIT LOCKED — same garment as outfit reference.');
     const lockStr=locks.join(' ');
@@ -1721,7 +1721,7 @@ async function genererScene(index){
     const basePrompt=scene.prompt_image+directionStr+
       ` — ${lockStr} ${resultVisuel} NO inconsistent mirror reflections. Portrait orientation 9:16, 4K ultra-detailed, shot on iPhone 15 Pro, natural light, authentic UGC. NO studio look. NO plants.`;
 
-    const sysLock=buildSystemLock(); const imgData=await generateImage(sysLock ? sysLock+' '+basePrompt : basePrompt, true);
+    const imgData=await generateImage(basePrompt, true, scene.lieu_b64||null, scene.lieu_mime||'image/jpeg');
     if(!CODES[currentCode]?.admin){incrementUsed(currentCode);updateQuotaUI();}
 
     // Afficher l'image + boutons régénérer et télécharger
@@ -1912,8 +1912,7 @@ async function genererBrollScene(index){
     const locks=[];
     if(uploads.avatar)locks.push('IDENTITY LOCKED — same face, skin tone, hair, features as reference photo. Never invent a new face. Never create inconsistent reflections in mirrors.');
     if(produitVisible&&uploads.produit){
-      locks.push('PRODUCT LOCKED — same product shape, packaging color and design as reference. DO NOT attempt to render any text, letters or logo — leave those areas as abstract color. Attempting text causes distortion artifacts.');
-      if(directionProduit)locks.push('PRODUCT PLACEMENT: '+directionProduit+'.');
+      locks.push(PRODUCT_LOCK+' Product placement: '+(directionProduit||PRODUCT_PLACEMENT_DEFAULT));
     } else {
       locks.push('NO PRODUCT visible — focus on person, environment, emotion only.');
     }
@@ -1935,6 +1934,8 @@ async function genererBrollScene(index){
       produitMime:uploads.produit?.mime||'image/jpeg',
       vetementB64:uploads.vetement?.b64||null,
       vetementMime:uploads.vetement?.mime||'image/jpeg',
+      decorB64:b.lieu_b64||null,
+      decorMime:b.lieu_mime||'image/jpeg',
     };
 
     const res=await fetch(`${PROXY_URL}/generate-image`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(brollBody)});
