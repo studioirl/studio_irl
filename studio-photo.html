@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studio Libre</title>
+<style>
+  :root{
+    --accent:#20E39A;
+    --accent-2:#0FAF78;
+    --bg:#071411;
+    --bg-panel:#0B1D18;
+    --bg-panel-2:#0E241E;
+    --text:#F2F7F5;
+    --text-dim:#9FC4B8;
+    --border:rgba(32,227,154,0.18);
+    --border-strong:rgba(32,227,154,0.45);
+    --danger:#E23D3D;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 15% 0%, rgba(32,227,154,0.08), transparent 45%),
+      radial-gradient(circle at 85% 100%, rgba(15,175,120,0.07), transparent 50%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Courier New', ui-monospace, monospace;
+    min-height:100vh;
+  }
+  .scanlines{
+    position:fixed; inset:0; pointer-events:none; z-index:1;
+    background:repeating-linear-gradient(180deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 3px);
+    mix-blend-mode:overlay;
+  }
+  .wrap{max-width:980px;margin:0 auto;padding:28px 20px 80px;position:relative;z-index:2;}
+
+  header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;border-bottom:1px solid var(--border);padding-bottom:22px;margin-bottom:28px;}
+  .brand{display:flex;align-items:center;gap:16px;}
+  .logo-wrap{width:58px;height:58px;flex-shrink:0;}
+  .brand h1{font-size:22px;letter-spacing:4px;margin:0;font-weight:700;color:var(--text);}
+  .brand .tagline{font-size:10.5px;letter-spacing:2px;color:var(--text-dim);margin-top:4px;text-transform:uppercase;}
+  .baseline{font-size:12px;color:var(--text-dim);letter-spacing:0.5px;margin-top:2px;text-align:right;}
+  .baseline b{color:var(--accent);font-weight:600;}
+
+  .grid{display:grid;grid-template-columns:1fr;gap:22px;}
+  @media(min-width:860px){.grid{grid-template-columns:1fr 1fr;align-items:start;}}
+
+  .panel{
+    background:linear-gradient(180deg,var(--bg-panel),var(--bg-panel-2));
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:20px;
+  }
+  .panel h2{
+    font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent);
+    margin:0 0 14px 0;display:flex;align-items:center;gap:8px;
+  }
+  .panel h2::before{content:"◈";font-size:10px;}
+
+  .ref-grid{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px;
+  }
+  .ref-grid-single{grid-template-columns:1fr 1fr;}
+  .ref-thumb{
+    position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;
+    border:1px solid var(--border);background:rgba(255,255,255,0.02);
+  }
+  .ref-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+  .ref-thumb .ref-remove{
+    position:absolute;top:5px;right:5px;width:22px;height:22px;border-radius:50%;
+    background:rgba(7,20,17,0.85);border:1px solid var(--border-strong);color:var(--text);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;line-height:1;
+  }
+  .ref-thumb .ref-remove:hover{background:var(--danger);border-color:var(--danger);}
+  .ref-thumb .ref-tag{
+    position:absolute;bottom:5px;left:5px;font-size:8.5px;letter-spacing:1px;color:var(--accent);
+    background:rgba(7,20,17,0.85);padding:2px 6px;border-radius:4px;text-transform:uppercase;
+  }
+  .ref-add{
+    aspect-ratio:1;border-radius:10px;border:1.5px dashed var(--border-strong);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+    cursor:pointer;background:rgba(32,227,154,0.03);transition:0.2s;position:relative;overflow:hidden;
+  }
+  .ref-add:hover{border-color:var(--accent);background:rgba(32,227,154,0.06);}
+  .ref-add span{font-size:9px;color:var(--text-dim);letter-spacing:0.5px;text-align:center;padding:0 4px;}
+  .ref-add input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+
+  label.field-label{
+    display:block;font-size:10.5px;letter-spacing:2px;text-transform:uppercase;
+    color:var(--text-dim);margin-bottom:8px;
+  }
+  textarea{
+    width:100%;background:rgba(255,255,255,0.02);border:1px solid var(--border);
+    border-radius:8px;color:var(--text);padding:14px;font-family:inherit;font-size:13.5px;
+    resize:vertical;line-height:1.55;
+  }
+  textarea:focus{outline:none;border-color:var(--accent);}
+  #directionInput{min-height:180px;}
+  .hint{font-size:11px;color:var(--text-dim);margin-top:8px;line-height:1.5;}
+
+  .engine-row{display:flex;gap:10px;margin-top:20px;}
+  .engine-opt{flex:1;border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center;cursor:pointer;font-size:11px;letter-spacing:1px;color:var(--text-dim);}
+  .engine-opt.active{border-color:var(--accent);color:var(--accent);background:rgba(32,227,154,0.06);}
+  .fallback-row{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:11px;color:var(--text-dim);}
+  .fallback-row input{accent-color:var(--accent);}
+
+  .generate-btn{
+    width:100%;padding:15px;border:none;border-radius:10px;
+    background:linear-gradient(135deg,var(--accent),var(--accent-2));
+    color:#052018;font-weight:800;font-size:13px;letter-spacing:2.5px;cursor:pointer;
+    text-transform:uppercase;margin-top:18px;transition:0.2s;
+  }
+  .generate-btn:hover{filter:brightness(1.08);transform:translateY(-1px);}
+  .generate-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
+  .status-line{font-size:11px;color:var(--accent);letter-spacing:1.5px;margin-top:10px;min-height:16px;}
+
+  .output-panel{min-height:480px;display:flex;flex-direction:column;}
+  .output-stage{
+    flex:1;border:1px solid var(--border);border-radius:12px;
+    background:repeating-linear-gradient(45deg,rgba(255,255,255,0.012) 0 10px,transparent 10px 20px),#050D0A;
+    display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;min-height:400px;
+  }
+  .output-stage img{width:100%;height:100%;object-fit:contain;}
+  .placeholder-msg{color:var(--text-dim);font-size:12px;text-align:center;letter-spacing:1px;padding:20px;}
+  .placeholder-msg .big-icon{width:64px;height:64px;margin:0 auto 16px;opacity:0.5;display:block;}
+  .frame-corner{position:absolute;width:22px;height:22px;border-color:var(--accent);opacity:0.55;}
+  .fc-tl{top:10px;left:10px;border-top:2px solid;border-left:2px solid;}
+  .fc-tr{top:10px;right:10px;border-top:2px solid;border-right:2px solid;}
+  .fc-bl{bottom:10px;left:10px;border-bottom:2px solid;border-left:2px solid;}
+  .fc-br{bottom:10px;right:10px;border-bottom:2px solid;border-right:2px solid;}
+  .out-actions{display:flex;gap:10px;margin-top:14px;}
+  .out-btn{
+    flex:1;padding:11px;border-radius:8px;border:1px solid var(--border-strong);
+    background:transparent;color:var(--accent);font-size:11px;letter-spacing:1.5px;cursor:pointer;
+    text-transform:uppercase;font-weight:700;
+  }
+  .out-btn:hover{background:rgba(32,227,154,0.08);}
+  .out-btn:disabled{opacity:0.35;cursor:not-allowed;}
+
+  ::-webkit-scrollbar{width:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:4px;}
+
+  .settings-toggle{
+    margin-top:18px;font-size:11px;letter-spacing:1.5px;color:var(--text-dim);
+    cursor:pointer;text-transform:uppercase;padding-top:14px;border-top:1px solid var(--border);
+    user-select:none;
+  }
+  .settings-toggle:hover{color:var(--accent);}
+  .settings-panel{display:none;margin-top:14px;}
+  .settings-panel.open{display:block;}
+  .key-input{
+    width:100%;background:rgba(255,255,255,0.02);border:1px solid var(--border);
+    border-radius:8px;color:var(--text);padding:10px 12px;font-family:inherit;font-size:12px;
+    margin-bottom:14px;
+  }
+  .key-input:focus{outline:none;border-color:var(--accent);}
+  .settings-actions{display:flex;gap:10px;margin-bottom:10px;}
+  .settings-actions .out-btn{padding:9px;font-size:10.5px;}
+  #keysStatus.saved{color:var(--accent);}
+</style>
+</head>
+<body>
+<div class="scanlines"></div>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="logo-wrap">
+        <svg viewBox="0 0 100 100" width="58" height="58">
+          <circle cx="50" cy="50" r="40" fill="none" stroke="#20E39A" stroke-width="2.5" opacity="0.85"/>
+          <circle cx="50" cy="50" r="16" fill="#0FAF78" opacity="0.55"/>
+          <circle cx="50" cy="50" r="6" fill="#04120D"/>
+        </svg>
+      </div>
+      <div>
+        <h1>STUDIO LIBRE</h1>
+        <div class="tagline">2.0 · Dual Vertex + Kie.ai</div>
+      </div>
+    </div>
+    <div class="baseline">Décris ta scène. <b>Studio la crée.</b></div>
+  </header>
+
+  <div class="grid">
+
+    <!-- LEFT : CONTROLS -->
+    <div class="panel">
+      <h2>Références Personnages <span style="color:var(--text-dim);font-weight:400;">(jusqu'à 6)</span></h2>
+      <div class="ref-grid" id="personGrid"></div>
+      <div class="hint" style="margin-bottom:20px;">Chaque visage ajouté est préservé fidèlement dans la scène. L'ordre n'a pas d'importance — décris qui est qui dans ta direction.</div>
+
+      <h2>Référence Lieu <span style="color:var(--text-dim);font-weight:400;">(optionnel)</span></h2>
+      <div class="ref-grid ref-grid-single" id="locationGrid"></div>
+      <div class="hint" style="margin-bottom:20px;">Une seule image, sans personnage — uniquement le décor. Ses dimensions, sa lumière et son agencement réels sont respectés, jamais réinventés.</div>
+
+      <label class="field-label">Direction de la scène</label>
+      <textarea id="directionInput" placeholder="Écris simplement ce que tu veux voir : où se passe la scène, qui est présent, ce qu'ils font, l'ambiance…
+
+Ex : Elle est assise sur un canapé, un bébé endormi dans les bras. Lumière douce de fin d'après-midi."></textarea>
+      <div class="hint">Décris la situation comme tu la vis. Studio se charge du cadrage, de la lumière et des imperfections naturelles.</div>
+
+      <fieldset style="border:none;padding:0;margin:0;">
+        <label class="field-label" style="margin-top:20px;">Moteur de génération</label>
+        <div class="engine-row">
+          <div class="engine-opt active" id="engineVertex" data-engine="vertex">VERTEX AI</div>
+          <div class="engine-opt" id="engineKie" data-engine="kie">KIE.AI</div>
+        </div>
+        <div class="fallback-row">
+          <input type="checkbox" id="autoFallback" checked>
+          Basculer automatiquement sur kie.ai si Vertex échoue (429 / quota)
+        </div>
+      </fieldset>
+
+      <div class="settings-toggle" id="settingsToggle">⚙ Clés API & connexions</div>
+      <div class="settings-panel" id="settingsPanel">
+        <label class="field-label" style="margin-top:0;">Clé API Vertex AI (Express Mode)</label>
+        <input type="password" id="vertexKeyInput" class="key-input" placeholder="AQ...">
+
+        <label class="field-label">Clé API kie.ai</label>
+        <input type="password" id="kieKeyInput" class="key-input" placeholder="Clé kie.ai">
+
+        <label class="field-label">Format de sortie</label>
+        <div class="engine-row" style="margin-top:0;margin-bottom:14px;">
+          <div class="engine-opt active" id="fmt916" data-fmt="9:16">9:16</div>
+          <div class="engine-opt" id="fmt11" data-fmt="1:1">1:1</div>
+          <div class="engine-opt" id="fmt45" data-fmt="4:5">4:5</div>
+          <div class="engine-opt" id="fmt169" data-fmt="16:9">16:9</div>
+        </div>
+
+        <div class="settings-actions">
+          <button class="out-btn" id="saveKeysBtn">💾 Enregistrer</button>
+          <button class="out-btn" id="clearKeysBtn">🗑 Effacer</button>
+        </div>
+        <div class="hint" id="keysStatus">Les clés sont stockées uniquement dans ton navigateur (localStorage), jamais envoyées ailleurs qu'aux API que tu configures.</div>
+      </div>
+
+      <button class="generate-btn" id="generateBtn">▶ Générer</button>
+      <div class="status-line" id="statusLine"></div>
+    </div>
+
+    <!-- RIGHT : OUTPUT -->
+    <div class="panel output-panel">
+      <h2>Rendu</h2>
+      <div class="output-stage" id="outputStage">
+        <div class="frame-corner fc-tl"></div>
+        <div class="frame-corner fc-tr"></div>
+        <div class="frame-corner fc-bl"></div>
+        <div class="frame-corner fc-br"></div>
+        <div class="placeholder-msg" id="placeholderMsg">
+          <svg class="big-icon" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="40" fill="none" stroke="#20E39A" stroke-width="2.5"/>
+            <circle cx="50" cy="50" r="15" fill="#0FAF78" opacity="0.5"/>
+          </svg>
+          Aucune image pour l'instant.<br>Écris ta direction et lance la génération.
+        </div>
+        <img id="outputImg" style="display:none;">
+      </div>
+      <div class="out-actions">
+        <button class="out-btn" id="downloadBtn" disabled>⬇ Télécharger</button>
+        <button class="out-btn" id="regenBtn" disabled>↻ Régénérer</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   STUDIO LIBRE — Génération d'images de contenu
+   Architecture dual-engine : Vertex AI (Gemini) + kie.ai
+   L'utilisatrice écrit une direction libre ; les règles de
+   réalisme sont appliquées automatiquement en interne.
+   ============================================================ */
+
+// ---------- CONFIG (valeurs modifiables chargées depuis localStorage) ----------
+// Les anciennes clés enregistrées sont reprises automatiquement (migration).
+const CONFIG = {
+  VERTEX_ENDPOINT: "https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-3.1-flash-image:generateContent",
+  VERTEX_API_KEY: safeLocalGet('sl_vertex_key') || safeLocalGet('sp_vertex_key'),
+  KIE_UPLOAD_URL: "https://kieai.redpandaai.co/api/file-base64-upload",
+  KIE_TASK_URL: "https://api.kie.ai/api/v1/jobs/createTask",
+  KIE_POLL_URL: "https://api.kie.ai/api/v1/jobs/recordInfo",
+  KIE_MODEL: "nano-banana-2",
+  KIE_API_KEY: safeLocalGet('sl_kie_key') || safeLocalGet('sp_kie_key'),
+  POLL_INTERVAL_MS: 5000,
+  POLL_MAX_TRIES: 60,
+};
+let outputFormat = safeLocalGet('sl_format') || safeLocalGet('sp_format') || '9:16';
+
+// ---------- SÉLECTEUR DE FORMAT ----------
+document.querySelectorAll('#settingsPanel [data-fmt]').forEach(btn => {
+  if (btn.dataset.fmt === outputFormat) btn.classList.add('active'); else btn.classList.remove('active');
+  btn.addEventListener('click', () => {
+    outputFormat = btn.dataset.fmt;
+    safeLocalSet('sl_format', outputFormat);
+    document.querySelectorAll('#settingsPanel [data-fmt]').forEach(b => b.classList.toggle('active', b === btn));
+  });
+});
+
+// ---------- PANNEAU CLÉS API ----------
+const settingsToggle = document.getElementById('settingsToggle');
+const settingsPanel = document.getElementById('settingsPanel');
+settingsToggle.addEventListener('click', () => settingsPanel.classList.toggle('open'));
+
+document.getElementById('vertexKeyInput').value = CONFIG.VERTEX_API_KEY;
+document.getElementById('kieKeyInput').value = CONFIG.KIE_API_KEY;
+if (CONFIG.VERTEX_API_KEY || CONFIG.KIE_API_KEY) settingsPanel.classList.add('open');
+
+document.getElementById('saveKeysBtn').addEventListener('click', () => {
+  const vertexKey = document.getElementById('vertexKeyInput').value.trim();
+  const kieKey = document.getElementById('kieKeyInput').value.trim();
+
+  const vertexSaved = safeLocalSet('sl_vertex_key', vertexKey);
+  const kieSaved = safeLocalSet('sl_kie_key', kieKey);
+
+  CONFIG.VERTEX_API_KEY = vertexKey;
+  CONFIG.KIE_API_KEY = kieKey;
+
+  const status = document.getElementById('keysStatus');
+  if (vertexSaved && kieSaved) {
+    status.textContent = '✔ Clés enregistrées dans ce navigateur.';
+    status.classList.add('saved');
+  } else {
+    status.textContent = '⚠ Clés actives pour cette session, mais non sauvegardées (stockage indisponible ou plein).';
+  }
+  setTimeout(() => {
+    status.textContent = "Les clés sont stockées uniquement dans ton navigateur (localStorage), jamais envoyées ailleurs qu'aux API que tu configures.";
+    status.classList.remove('saved');
+  }, 3000);
+});
+
+document.getElementById('clearKeysBtn').addEventListener('click', () => {
+  ['sl_vertex_key', 'sl_kie_key', 'sp_vertex_key', 'sp_kie_key'].forEach(safeLocalRemove);
+  document.getElementById('vertexKeyInput').value = '';
+  document.getElementById('kieKeyInput').value = '';
+  CONFIG.VERTEX_API_KEY = '';
+  CONFIG.KIE_API_KEY = '';
+  document.getElementById('keysStatus').textContent = '🗑 Clés effacées.';
+});
+
+// ---------- ENGINE SELECT ----------
+let currentEngine = 'vertex';
+document.getElementById('engineVertex').addEventListener('click', () => setEngine('vertex'));
+document.getElementById('engineKie').addEventListener('click', () => setEngine('kie'));
+function setEngine(eng) {
+  currentEngine = eng;
+  document.getElementById('engineVertex').classList.toggle('active', eng === 'vertex');
+  document.getElementById('engineKie').classList.toggle('active', eng === 'kie');
+}
+
+// ---------- RÉFÉRENCES IMAGES : PERSONNAGES (jusqu'à 6) + LIEU (1) ----------
+const MAX_PERSON_REFS = 6;
+let personImages = [];
+let locationImage = null;
+
+function renderPersonGrid() {
+  const grid = document.getElementById('personGrid');
+  grid.innerHTML = '';
+  personImages.forEach((img, i) => {
+    const thumb = document.createElement('div');
+    thumb.className = 'ref-thumb';
+    thumb.innerHTML = `<img src="${img}"><span class="ref-tag">P${i + 1}</span><div class="ref-remove" data-i="${i}">✕</div>`;
+    thumb.querySelector('.ref-remove').addEventListener('click', () => {
+      personImages.splice(i, 1);
+      renderPersonGrid();
+    });
+    grid.appendChild(thumb);
+  });
+  if (personImages.length < MAX_PERSON_REFS) {
+    const add = document.createElement('label');
+    add.className = 'ref-add';
+    add.innerHTML = `<span>+ Ajouter<br>(${personImages.length}/${MAX_PERSON_REFS})</span><input type="file" accept="image/*" multiple>`;
+    add.querySelector('input').addEventListener('change', (e) => {
+      const files = Array.from(e.target.files).slice(0, MAX_PERSON_REFS - personImages.length);
+      files.forEach(f => readFileAsDataURL(f).then(dataUrl => {
+        personImages.push(dataUrl);
+        renderPersonGrid();
+      }));
+    });
+    grid.appendChild(add);
+  }
+}
+
+function renderLocationGrid() {
+  const grid = document.getElementById('locationGrid');
+  grid.innerHTML = '';
+  if (locationImage) {
+    const thumb = document.createElement('div');
+    thumb.className = 'ref-thumb';
+    thumb.innerHTML = `<img src="${locationImage}"><span class="ref-tag">LIEU</span><div class="ref-remove">✕</div>`;
+    thumb.querySelector('.ref-remove').addEventListener('click', () => {
+      locationImage = null;
+      renderLocationGrid();
+    });
+    grid.appendChild(thumb);
+  } else {
+    const add = document.createElement('label');
+    add.className = 'ref-add';
+    add.innerHTML = `<span>+ Ajouter<br>le décor</span><input type="file" accept="image/*">`;
+    add.querySelector('input').addEventListener('change', (e) => {
+      if (e.target.files[0]) readFileAsDataURL(e.target.files[0]).then(dataUrl => {
+        locationImage = dataUrl;
+        renderLocationGrid();
+      });
+    });
+    grid.appendChild(add);
+  }
+}
+
+function readFileAsDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+renderPersonGrid();
+renderLocationGrid();
+
+// ---------- CONSTRUCTION DU PROMPT (interne, jamais affiché) ----------
+function buildSystemPrompt(userDirection) {
+  return `Tu es Studio, un moteur de création d'images réalistes pour du contenu. L'utilisatrice fournit des images de référence et décrit librement une scène en langage naturel — c'est à toi d'interpréter la scène, le cadrage, la lumière et l'ambiance les plus naturels, sans qu'elle ait besoin d'écrire la moindre règle technique.
+
+COHÉRENCE :
+— Le cadrage, la composition et l'angle sont choisis librement pour servir au mieux la scène décrite.
+— Cohérence anatomique stricte (visages, mains, doigts, bras, jambes).
+— Environnement traité comme un lieu réel : dimensions, mobilier, lumière et profondeur cohérents.
+— Rendu naturel de photo prise sur le vif avec un smartphone : lumière crédible, légères imperfections naturelles, jamais un rendu publicitaire, artificiel ou sur-retouché.
+
+RÉALISME HUMAIN EXTRÊME (s'applique à toute peau ou visage visible dans le cadre) :
+Rendu 4K ultra réaliste, format RAW, aucun filtre beauté, aucun lissage de peau, aucun aérographe, aucune retouche, aucune peau CGI, cireuse, plastique ou de texture IA, aucune brillance artificielle. Peau photographiée comme au format macro : pores visibles répartis de façon aléatoire avec variations naturelles de taille, grain de peau visible, fin duvet naturel captant la lumière, pigmentation naturellement irrégulière, micro-imperfections et petites taches parfaitement intégrées, texture des lèvres avec fines lignes naturelles, micro-ridules autour des yeux, légères rougeurs naturelles. Yeux réalistes avec fibres visibles dans l'iris, texture de la sclère, humidité naturelle, cils individuels à espacement naturel, sourcils composés de poils individuels. Cheveux avec mèches individuelles visibles, ligne capillaire réaliste, transition naturelle avec le cuir chevelu. Maquillage discret uniquement si pertinent à la scène, sans jamais masquer la texture de peau. Anatomie et proportions faciales fidèles à la réalité, profondeur de champ optique crédible — impossible à distinguer d'une véritable photographie.
+
+DIRECTION DE LA SCÈNE (donnée par l'utilisatrice, à interpréter fidèlement) :
+"${userDirection}"
+
+${personImages.length > 0 ? `${personImages.length} image(s) de référence de personnage(s) sont fournies dans l'ordre — préserve fidèlement l'identité, la morphologie et le teint de chacun, et déduis du texte de direction qui est qui.` : 'Aucune image de personnage fournie — invente une identité humaine crédible et cohérente avec la direction donnée.'}
+${locationImage ? `Une image de référence du lieu est fournie séparément (dernière image transmise), sans personnage : reproduis fidèlement son architecture, ses dimensions, son mobilier, sa lumière et son agencement réels — ne réinvente jamais le décor.` : ''}
+
+RAPPEL FINAL — PRIORITÉ ABSOLUE DE TEXTURE : peau et cheveux doivent être rendus avec un niveau de détail macro maximal, jamais lissés. Pores visibles sur toute la peau, grain net, fin duvet capté par la lumière, mèches de cheveux individuelles distinctes (pas de masse compacte), racines et cuir chevelu naturels. Traite cette image comme une vraie photo RAW haute résolution, pas comme un rendu synthétique poli. Zéro lissage, zéro flou de peau, zéro effet plastique.
+
+Génère une seule image intégrant fidèlement les références fournies, en respectant strictement toutes les règles ci-dessus.`;
+}
+
+// ============================================================
+// BLOC ANTI-ERREURS DE STOCKAGE
+// ============================================================
+const MAX_STORED_RENDERS = 8;
+
+function safeLocalGet(key, fallback = "") {
+  try {
+    const v = localStorage.getItem(key);
+    return v === null ? fallback : v;
+  } catch (e) {
+    console.warn('[storage] localStorage indisponible en lecture:', e.message);
+    return fallback;
+  }
+}
+
+function safeLocalSet(key, value) {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch (e) {
+    console.warn('[storage] échec écriture localStorage:', e.message);
+    if (e.name === 'QuotaExceededError' || e.code === 22) {
+      setStatus('⚠ Stockage local plein — certains réglages ne seront pas sauvegardés.');
+    }
+    return false;
+  }
+}
+
+function safeLocalRemove(key) {
+  try { localStorage.removeItem(key); return true; }
+  catch (e) { console.warn('[storage] échec suppression localStorage:', e.message); return false; }
+}
+
+// ---------- INDEXEDDB (persistance des rendus, avec purge auto anti-quota) ----------
+let idb = null;
+let idbReady = false;
+
+function openIDB() {
+  return new Promise((resolve) => {
+    try {
+      const req = indexedDB.open('studio_libre_db', 1);
+      req.onupgradeneeded = (e) => {
+        const d = e.target.result;
+        if (!d.objectStoreNames.contains('renders')) d.createObjectStore('renders', { keyPath: 'id' });
+      };
+      req.onsuccess = (e) => { idb = e.target.result; idbReady = true; resolve(idb); };
+      req.onerror = (e) => {
+        console.warn('[storage] IndexedDB indisponible:', e.target.error?.message);
+        idbReady = false;
+        resolve(null);
+      };
+      req.onblocked = () => {
+        console.warn('[storage] ouverture IndexedDB bloquée (autre onglet ouvert ?)');
+        resolve(null);
+      };
+    } catch (e) {
+      console.warn('[storage] IndexedDB non supporté:', e.message);
+      resolve(null);
+    }
+  });
+}
+openIDB();
+
+async function idbGetAllRenders() {
+  if (!idbReady || !idb) return [];
+  try {
+    return await new Promise((resolve, reject) => {
+      const tx = idb.transaction('renders', 'readonly');
+      const req = tx.objectStore('renders').getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => reject(req.error);
+    });
+  } catch (e) {
+    console.warn('[storage] lecture renders échouée:', e.message);
+    return [];
+  }
+}
+
+async function idbDeleteRender(id) {
+  if (!idbReady || !idb) return;
+  try {
+    await new Promise((resolve, reject) => {
+      const tx = idb.transaction('renders', 'readwrite');
+      tx.objectStore('renders').delete(id);
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch (e) {
+    console.warn('[storage] suppression render échouée:', e.message);
+  }
+}
+
+async function saveRenderToIDB(id, dataUrl) {
+  // Un échec ici ne doit JAMAIS empêcher l'affichage ou le téléchargement de l'image.
+  if (!idbReady || !idb) {
+    if (!idbReady) await openIDB();
+    if (!idbReady || !idb) return false;
+  }
+  const write = () => new Promise((resolve, reject) => {
+    const tx = idb.transaction('renders', 'readwrite');
+    tx.objectStore('renders').put({ id, dataUrl, ts: Date.now() });
+    tx.oncomplete = () => resolve(true);
+    tx.onerror = () => reject(tx.error);
+  });
+
+  try {
+    await write();
+    await purgeOldRenders();
+    return true;
+  } catch (e) {
+    const isQuota = e && (e.name === 'QuotaExceededError' || String(e.message || '').toLowerCase().includes('quota'));
+    console.warn('[storage] échec écriture render IndexedDB:', e?.message || e);
+    if (isQuota) {
+      setStatus('⚠ Stockage plein — nettoyage des anciens rendus…');
+      try {
+        const all = await idbGetAllRenders();
+        all.sort((a, b) => a.ts - b.ts);
+        for (const r of all.slice(0, Math.ceil(all.length / 2))) await idbDeleteRender(r.id);
+        await write();
+        return true;
+      } catch (e2) {
+        console.warn('[storage] échec après purge, abandon de la sauvegarde locale:', e2?.message || e2);
+        return false;
+      }
+    }
+    return false;
+  }
+}
+
+async function purgeOldRenders() {
+  try {
+    const all = await idbGetAllRenders();
+    if (all.length <= MAX_STORED_RENDERS) return;
+    all.sort((a, b) => a.ts - b.ts);
+    const excess = all.slice(0, all.length - MAX_STORED_RENDERS);
+    for (const r of excess) await idbDeleteRender(r.id);
+  } catch (e) {
+    console.warn('[storage] purge auto échouée:', e.message);
+  }
+}
+
+// ---------- APPEL VERTEX AI (Express Mode, clé AQ..., appel direct) ----------
+async function callVertex(prompt, imagesBase64) {
+  if (!CONFIG.VERTEX_API_KEY) throw new Error("Clé Vertex AI manquante — renseigne-la dans ⚙ Clés API & connexions.");
+
+  const parts = [];
+  (imagesBase64 || []).forEach(img => {
+    parts.push({ inlineData: { data: img.split(',')[1], mimeType: 'image/jpeg' } });
+  });
+  parts.push({ text: prompt });
+
+  const body = {
+    contents: [{ role: 'user', parts }],
+    generationConfig: {
+      responseModalities: ['IMAGE'],
+      imageConfig: { aspectRatio: outputFormat, imageSize: '4K' },
+    },
+  };
+
+  const res = await fetch(CONFIG.VERTEX_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-goog-api-key': CONFIG.VERTEX_API_KEY,
+    },
+    body: JSON.stringify(body),
+  });
+
+  let data = {};
+  try { data = await res.json(); } catch (_) {}
+
+  if (!res.ok) {
+    const msg = data?.error?.message || `Erreur HTTP ${res.status}`;
+    if (res.status === 401) throw new Error("Clé Vertex invalide. Vérifie ta clé Express Mode (commence par AQ...).");
+    if (res.status === 403) throw new Error("Accès refusé — vérifie que ta clé Vertex AI Express Mode est active.");
+    if (res.status === 429) { const err = new Error(`429 RESOURCE_EXHAUSTED: ${msg}`); err.code = 429; throw err; }
+    throw new Error(`Erreur Vertex ${res.status} : ${msg}`);
+  }
+
+  const candidate = data?.candidates?.[0];
+  if (!candidate) throw new Error('Aucune réponse du modèle Vertex.');
+  if (candidate.finishReason === 'SAFETY') throw new Error('Génération bloquée par les filtres de sécurité — reformule ta direction.');
+
+  const respParts = candidate?.content?.parts || [];
+  for (const p of respParts) {
+    if (p.inlineData?.data) return `data:image/png;base64,${p.inlineData.data}`;
+    if (p.inline_data?.data) return `data:image/png;base64,${p.inline_data.data}`;
+  }
+  throw new Error("Aucune image dans la réponse Vertex (le modèle a peut-être répondu par du texte).");
+}
+
+// ---------- APPEL KIE.AI (upload → createTask → polling) ----------
+async function callKie(prompt, imagesBase64) {
+  if (!CONFIG.KIE_API_KEY) throw new Error("Clé kie.ai manquante — renseigne-la dans ⚙ Clés API & connexions.");
+
+  let imageUrls = [];
+  const toUpload = imagesBase64 || [];
+  for (let i = 0; i < toUpload.length; i++) {
+    setStatus(`⏳ Upload des références vers kie.ai… (${i + 1}/${toUpload.length})`);
+    const uploadRes = await fetchWithBackoff(CONFIG.KIE_UPLOAD_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${CONFIG.KIE_API_KEY}` },
+      body: JSON.stringify({ base64Data: toUpload[i], uploadPath: 'images/studio-libre' }),
+    });
+    const uploadData = await uploadRes.json();
+    const url = uploadData?.data?.downloadUrl;
+    if (!url) throw new Error(`Échec upload kie.ai (image ${i + 1}) : ${uploadData?.msg || 'réponse invalide'}`);
+    imageUrls.push(url);
+  }
+
+  const taskRes = await fetchWithBackoff(CONFIG.KIE_TASK_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${CONFIG.KIE_API_KEY}` },
+    body: JSON.stringify({
+      model: CONFIG.KIE_MODEL,
+      input: {
+        prompt,
+        aspect_ratio: outputFormat,
+        resolution: '4K',
+        output_format: 'png',
+        image_input: imageUrls,
+      },
+    }),
+  });
+  const taskData = await taskRes.json();
+  if (taskData.code && taskData.code !== 200) {
+    const msg = taskData?.msg || taskData?.message || 'erreur inconnue';
+    if (taskData.code === 401) throw new Error('Clé kie.ai invalide.');
+    if (taskData.code === 403) throw new Error('Accès refusé kie.ai — vérifie tes crédits.');
+    if (taskData.code === 429) { const err = new Error('Trop de requêtes kie.ai.'); err.code = 429; throw err; }
+    throw new Error(`Erreur kie.ai : ${msg}`);
+  }
+  const taskId = taskData?.data?.taskId;
+  if (!taskId) throw new Error('kie.ai : pas de taskId retourné');
+
+  for (let i = 0; i < CONFIG.POLL_MAX_TRIES; i++) {
+    await sleep(CONFIG.POLL_INTERVAL_MS);
+    const pollRes = await fetchWithBackoff(`${CONFIG.KIE_POLL_URL}?taskId=${taskId}`, {
+      headers: { 'Authorization': `Bearer ${CONFIG.KIE_API_KEY}` },
+    });
+    const pollData = await pollRes.json();
+    const state_ = pollData?.data?.state;
+    setStatus(`kie.ai · statut : ${state_ || 'en attente'} (${(i + 1) * (CONFIG.POLL_INTERVAL_MS / 1000)}s)`);
+
+    if (state_ === 'fail') throw new Error(`kie.ai : échec — ${pollData?.data?.failMsg || 'raison inconnue'}`);
+    if (state_ === 'success') {
+      let imageUrl = null;
+      try {
+        const r = JSON.parse(pollData?.data?.resultJson || '{}');
+        imageUrl = r?.resultUrls?.[0] || r?.images?.[0]?.url || r?.url;
+      } catch (_) {}
+      if (!imageUrl) throw new Error('kie.ai : succès mais aucune URL exploitable dans la réponse.');
+      const imgRes = await fetch(imageUrl);
+      const blob = await imgRes.blob();
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    }
+  }
+  throw new Error('kie.ai : timeout de polling');
+}
+
+async function fetchWithBackoff(url, opts, tries = 0) {
+  const res = await fetch(url, opts);
+  if (res.status === 429 && tries < 5) {
+    await sleep(1000 * Math.pow(2, tries));
+    return fetchWithBackoff(url, opts, tries + 1);
+  }
+  return res;
+}
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ---------- ORCHESTRATION DUAL-ENGINE ----------
+async function generate() {
+  const direction = document.getElementById('directionInput').value.trim();
+  if (!direction) {
+    setStatus('✖ Écris une direction avant de générer.');
+    return;
+  }
+
+  const btn = document.getElementById('generateBtn');
+  btn.disabled = true;
+  document.getElementById('placeholderMsg').style.display = 'none';
+  const outImg = document.getElementById('outputImg');
+  outImg.style.display = 'none';
+  setStatus('⏳ Interprétation de la scène…');
+
+  const prompt = buildSystemPrompt(direction);
+  const refImages = [...personImages, ...(locationImage ? [locationImage] : [])];
+  let resultUrl = null;
+  let usedEngine = currentEngine;
+
+  try {
+    setStatus(`⏳ Génération via ${currentEngine === 'vertex' ? 'Vertex AI' : 'kie.ai'}…`);
+    if (currentEngine === 'vertex') {
+      try {
+        resultUrl = await callVertex(prompt, refImages);
+      } catch (err) {
+        if (err.code === 429 && document.getElementById('autoFallback').checked) {
+          setStatus('⚠ Vertex saturé (429) — bascule automatique sur kie.ai…');
+          usedEngine = 'kie';
+          resultUrl = await callKie(prompt, refImages);
+        } else {
+          throw err;
+        }
+      }
+    } else {
+      resultUrl = await callKie(prompt, refImages);
+    }
+
+    if (!resultUrl) throw new Error('Aucune image retournée par le moteur.');
+
+    outImg.src = resultUrl;
+    outImg.style.display = 'block';
+    outImg.onerror = () => setStatus('⚠ Image reçue mais illisible.');
+
+    await saveRenderToIDB('last_render', resultUrl);
+    document.getElementById('downloadBtn').disabled = false;
+    document.getElementById('regenBtn').disabled = false;
+    setStatus(`✔ Généré via ${usedEngine === 'vertex' ? 'Vertex AI' : 'kie.ai'}`);
+  } catch (err) {
+    console.error(err);
+    setStatus('✖ Erreur : ' + err.message);
+    document.getElementById('placeholderMsg').style.display = 'block';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function setStatus(msg) {
+  document.getElementById('statusLine').textContent = msg;
+}
+
+document.getElementById('generateBtn').addEventListener('click', generate);
+document.getElementById('regenBtn').addEventListener('click', generate);
+
+// ---------- TÉLÉCHARGEMENT (compatible iOS Safari via Blob) ----------
+document.getElementById('downloadBtn').addEventListener('click', async () => {
+  const img = document.getElementById('outputImg');
+  if (!img.src) return;
+  try {
+    const res = await fetch(img.src);
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = `studio-libre-${Date.now()}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 4000);
+  } catch (e) {
+    window.open(img.src, '_blank');
+  }
+});
+</script>
+</body>
+</html>
