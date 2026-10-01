@@ -328,40 +328,9 @@ select.field option{background:var(--plum-700)}
               <div class="upload-label">Tenue</div>
               <div class="upload-hint">Optionnel</div>
             </div>
-            <div class="upload-zone" id="zone-decor-custom">
-              <input type="file" id="decor-file" accept="image/*" onchange="handleUpload('decor',this)">
-              <div class="upload-icon">🏠</div>
-              <div class="upload-label">Décor</div>
-              <div class="upload-hint">Optionnel</div>
-            </div>
+
           </div>
-          <div style="margin-top:18px">
-            <div style="font-size:11px;font-weight:600;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">Mode décor</div>
-            <div class="toggle-row">
-              <button class="toggle-btn active" id="toggle-ia" onclick="setDecorMode('ia')">🤖 Décor IA</button>
-              <button class="toggle-btn" id="toggle-custom" onclick="setDecorMode('custom')">📸 Mon décor</button>
-            </div>
-            <div id="decor-ia-block">
-              <select class="field" id="decor-select">
-                <option value="">Sélectionne un environnement...</option>
-                <option value="modern apartment living room">🏢 Appartement moderne</option>
-                <option value="cozy family living room">🛋️ Salon familial</option>
-                <option value="contemporary kitchen">🍳 Cuisine contemporaine</option>
-                <option value="small bathroom">🚿 Salle de bain</option>
-                <option value="bright bedroom">🛏️ Chambre lumineuse</option>
-                <option value="home office">💻 Bureau à domicile</option>
-                <option value="terrace outdoor">🌿 Terrasse</option>
-                <option value="garden outdoor">🌳 Jardin</option>
-                <option value="gym">🏋️ Salle de sport</option>
-                <option value="cafe coffee shop">☕ Café</option>
-                <option value="car interior">🚗 Voiture</option>
-                <option value="corporate office">🏬 Bureau d'entreprise</option>
-              </select>
-            </div>
-            <div id="decor-custom-block" style="display:none">
-              <div style="font-size:12px;color:var(--text-muted);padding:8px 0">Ta photo décor est uploadée ci-dessus — StoryShoot va la reproduire fidèlement.</div>
-            </div>
-          </div>
+
         </div>
       </div>
 
@@ -605,10 +574,13 @@ select.field option{background:var(--plum-700)}
           <div class="quota-alert" id="quota-alert">⏳ Limite quotidienne atteinte. Reviens demain.</div>
           <div class="gen-all-row">
             <div class="gen-all-info" id="gen-all-info"></div>
-            <button class="btn-gen-all" id="btn-gen-all" onclick="genererTout()">
-              <span id="gen-all-spinner" style="display:none" class="spinner"></span>
-              <span id="gen-all-label">✦ Générer tout le shooting</span>
-            </button>
+            <div style="display:flex;gap:10px;align-items:center">
+              <button class="btn-gen-all" id="btn-gen-all" onclick="genererTout()">
+                <span id="gen-all-spinner" style="display:none" class="spinner"></span>
+                <span id="gen-all-label">✦ Générer tout le shooting</span>
+              </button>
+              <button id="btn-stop-gen" onclick="stopGeneration()" style="display:none;padding:14px 20px;background:rgba(244,63,94,0.2);border:1.5px solid var(--rose-400);border-radius:var(--radius-md);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;color:var(--rose-300);cursor:pointer">⏹ Stop</button>
+            </div>
           </div>
         </div>
       </div>
@@ -689,8 +661,8 @@ const CODES = {
 };
 
 const MAX_DAILY = 10;
-const PROXY_URL = 'https://storyshoot-proxy-714057625054.europe-west1.run.app';
-const VERTEX_KEY = 'AQ.Ab8RN6IonRfxOSWF6bQkFKlzNsSZokRTSQ39EGOPb_s0WpoMww';
+const PROXY_URL = 'https://storyshoot-proxy-90745837681.europe-west1.run.app';
+const VERTEX_KEY = 'AQ.Ab8RN6Jm1Snd7JLIK9rB3jBn1yF-nQ9RdplZOI1F9OuK3gRLxA';
 
 // ═══════════════════════════════════════════════════
 // ÉTAT GLOBAL
@@ -968,7 +940,7 @@ async function callGemini(prompt,images=[]){
   for(const img of images){if(img)parts.push({inline_data:{mime_type:img.mime,data:img.b64}});}
   parts.push({text:prompt});
   const body={contents:[{role:'user',parts}],generationConfig:{temperature:0.85,maxOutputTokens:8192}};
-  const res=await fetch(`https://europe-west1-aiplatform.googleapis.com/v1/publishers/google/models/gemini-2.5-flash:generateContent?key=${VERTEX_KEY}`,
+  const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${VERTEX_KEY}`,
     {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e?.error?.message||'Erreur Gemini');}
   const data=await res.json();
@@ -1003,8 +975,6 @@ async function generateImage(prompt, useAvatar=true){
     avatarMime:uploads.avatar?.mime||'image/jpeg',
     produitB64:uploads.produit?.b64||null,produitMime:uploads.produit?.mime||'image/jpeg',
     vetementB64:uploads.vetement?.b64||null,vetementMime:uploads.vetement?.mime||'image/jpeg',
-    decorB64:decorMode==='custom'?(uploads.decor?.b64||null):null,
-    decorMime:uploads.decor?.mime||'image/jpeg',
   };
   const res=await fetch(`${PROXY_URL}/generate-image`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   const data=await res.json();
@@ -1013,6 +983,14 @@ async function generateImage(prompt, useAvatar=true){
     throw new Error(data.error||`HTTP ${res.status}`);
   }
   return `data:${data.mimeType||'image/png'};base64,${data.image}`;
+}
+
+function buildSystemLock(){
+  const locks=[];
+  if(uploads.avatar) locks.push('⚠️ IDENTITY LOCK: The person in the avatar reference photo is the ONLY person allowed. Copy EXACTLY: face structure, skin tone, hair texture and color, age, morphology. Same person in every scene. DO NOT invent or modify the face.');
+  if(uploads.produit) locks.push('⚠️ PRODUCT LOCK: The product in the reference photo must appear EXACTLY as shown. Copy packaging shape, colors, proportions. DO NOT attempt to render text or logos — leave label areas as flat abstract color zones. DO NOT invent a different product.');
+  if(uploads.vetement) locks.push('⚠️ OUTFIT LOCK: The subject must wear EXACTLY the outfit shown in the clothing reference. Same garment, same colors, same style.');
+  return locks.join(' ');
 }
 
 function buildImagePrompt(scenePrompt){
@@ -1143,6 +1121,32 @@ function toggleEditProfil(){
   }
 }
 
+function uploadLieuScene(index, input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const b64=e.target.result.split(',')[1];
+    storyboardData.storyboard[index].lieu_b64=b64;
+    storyboardData.storyboard[index].lieu_mime=file.type;
+    showToast('Lieu scène '+(index+1)+' chargé ✦');
+    renderStoryboard();
+  };
+  reader.readAsDataURL(file);
+}
+
+function uploadLieuBroll(index, input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const b64=e.target.result.split(',')[1];
+    brollData.brolls[index].lieu_b64=b64;
+    brollData.brolls[index].lieu_mime=file.type;
+    showToast('Lieu B-Roll '+(index+1)+' chargé ✦');
+    renderBroll();
+  };
+  reader.readAsDataURL(file);
+}
+
 function telechargerProfil(){
   if(!profilClient)return;
   const labels={profil:'Profil client',defis:'Défis & douleurs',deja_essaye:'Ce qu\'il a déjà essayé',vie_avant:'Vie AVANT le produit',vie_apres:'Vie APRÈS le produit',objections:'Objections à l\'achat'};
@@ -1195,65 +1199,168 @@ async function genererScript(){
   };
 
   const profilResume=profilClient?`Profil: ${profilClient.profil||''} Douleurs: ${profilClient.defis||''} Vie avant: ${profilClient.vie_avant||''}`.slice(0,300):'';
+  const formatNom=FORMATS_UGC.find(f=>f.id===selectedFormat)?.name||ctx.format||'Temoignage';
 
-  const prompt=`Script UGC 1ere personne "je", tutoiement, langage naturel. PAS de pub.
+  const prompt=`Tu es un expert en scripts UGC. Ecris un script pour le format selectionne. Respecte strictement les regles ci-dessous.
 
-PRODUIT: ${ctx.produit}
-Usage: ${ctx.descProduit.usage}
-Resultats: ${ctx.descProduit.resultats}
-Difference: ${ctx.descProduit.difference}
-${ctx.histoire.probleme?'Vecu: '+ctx.histoire.probleme:''}
+FORMAT SELECTIONNE : ${formatNom}
+PRODUIT : ${ctx.produit}
+Usage : ${ctx.descProduit.usage}
+Resultats : ${ctx.descProduit.resultats}
+Difference : ${ctx.descProduit.difference}
+${ctx.descProduit.prix?'Prix : '+ctx.descProduit.prix:''}
+${ctx.histoire.probleme?'Experience creatrice - probleme : '+ctx.histoire.probleme:''}
+${ctx.histoire.benefices?'Experience creatrice - benefices : '+ctx.histoire.benefices:''}
+${ctx.histoire.maintenant?'Experience creatrice - maintenant : '+ctx.histoire.maintenant:''}
 ${profilResume}
 
-3 HOOKS differents (jamais le produit): A=situation concrete vecue / B=confession/aveu / C=resultat ou curiosite
-INTRO: micro-moments sensoriels sans produit
-BODY: produit arrive naturellement, caracteristiques=experiences vecues, resultat montre pas dit
-CTA: conclusion naturelle
-PLANS: lieu+position+action+cadrage+position telephone (ex: "assise bord du lit, tire sur robe, souffle. Plan taille, tel pose commode")
+=== METHODE SEP (raisonnement interne uniquement, ne jamais afficher S/E/P dans le script) ===
+S = Situation : moment precis, action, detail concret, consequence reelle. Ne jamais inventer lieu/moment/douleur.
+E = Emotion et sensations : physiques et concretes (ca tire, ca glisse, ca se relache...). Ne jamais inventer sensation.
+P = Pensees et projection : ce que le produit change dans le quotidien, ce qu on peut enfin faire ou ne plus faire.
+Transformation interne : caracteristique -> benefice -> moment utile -> sensation -> consequence quotidien -> pensee finale.
 
-Retourne UNIQUEMENT ces balises:
-<HOOK_A_VERBAL>texte</HOOK_A_VERBAL>
-<HOOK_A_ECRAN>texte ecran (vide si identique)</HOOK_A_ECRAN>
-<HOOK_A_PLAN>plan filmable</HOOK_A_PLAN>
-<HOOK_B_VERBAL>texte</HOOK_B_VERBAL>
-<HOOK_B_ECRAN>texte</HOOK_B_ECRAN>
-<HOOK_B_PLAN>plan filmable</HOOK_B_PLAN>
-<HOOK_C_VERBAL>texte</HOOK_C_VERBAL>
-<HOOK_C_ECRAN>texte</HOOK_C_ECRAN>
-<HOOK_C_PLAN>plan filmable</HOOK_C_PLAN>
+=== REGLES SEP PAR FORMAT ===
+Temoignage, Hook probleme solution, Avant/Apres, Storytelling, Comparaison : SEP complet et central.
+Demonstration, Routine, Vlog, GRWM, Challenge : SEP partiel.
+Lifestyle, Unboxing, First impression : SEP tres limite - jamais inventer resultat long terme.
+Educatif, Debunk : SEP facultatif uniquement pour illustrer.
+ASMR : pas de SEP verbal - sensations suggerees par image et son uniquement.
+
+=== REGLES GENERALES ===
+- 1ere personne "je", tutoiement, langage parle naturel, PAS de pub.
+- Ne jamais inventer : resultat, duree, frequence, douleur, emotion, scepticisme, avant/apres non fourni.
+- Ne jamais utiliser : "Stop scrolling", "Tu connais cette sensation", "Ce produit a change ma vie", "Un vrai tresor", "Cheveux de reve", "Tente l experience", "Tes cheveux meritent", "Fonce", "Tu ne le regretteras pas".
+- Classer silencieusement : experience personnelle / resultats personnels / faits marque / promesses marque. Une promesse marque ne devient pas un resultat personnel.
+
+=== HOOKS — 3 TYPES VRAIMENT DIFFERENTS ===
+Choisir 3 types parmi : preuve sociale / avis negatif twist / formatif / POV / curiosity gap / hook commentaire / selfie en marchant / feedback apres X temps / question probleme / hook transition / hook visuel / "je pensais que le probleme venait de moi" / "personne ne parle de ca" / "j ai teste et je ne m attendais pas a ca" / "j etais sceptique" / "erreur cachee" / "situation chaotique".
+Ne jamais prendre 3 fois le meme type. Adapter au format selectionne.
+
+CHAQUE HOOK complet = phrase verbale + texte ecran (lisible 2 secondes) + visuel 2 premieres secondes + emotion + transition vers body.
+
+REGLES HOOKS :
+- Jamais le produit dans le hook
+- Commencer par la vie de la cible, pas le produit
+- Style oral spontane — autorise : "Jpp", "Mama", "Omgg", "J etais pas prete", "Je vais pas mentir", "J etais a deux doigts de lacher"
+- Style interdit : "Parce que la verite c est que", "Et franchement", "Et c est la que", "Pas parce que... mais parce que", "Ma soeur"
+- Formules interdites absolument : "Stop scrolling", "J ai decouvert un secret", "Ce produit a change ma vie", "Un vrai tresor", "Cheveux de reve"
+- Un hook faible dit "regarde mon produit". Un hook puissant fait penser "attends ca me concerne"
+
+HOOK A : priorite types question-probleme / situation chaotique / "je pensais que le probleme venait de moi"
+HOOK B : priorite types avis negatif twist / hook commentaire / "j etais sceptique" / "personne ne parle de ca"  
+HOOK C : priorite types POV / curiosity gap / hook visuel / "j ai teste et je ne m attendais pas"
+
+=== BODY — STRUCTURE VARIABLE ===
+Choisir UNE structure parmi : avant-apres / journee dans ma vie / erreur-revelation / sceptique-test-surprise / accumulation de galeres / mini-scene immersive / probleme cache.
+Varier selon le produit et la cible. Ne jamais utiliser avant-apres par defaut.
+
+Elements obligatoires :
+1. Situation precise (scene concrete, moment precis, pas "j avais des problemes")
+2. Emotion claire et sensorielle (ca tire, ca bloque, ca pique, ca se relache)
+3. Tension ou tentative (ce qui n a pas marche, le scepticisme, la fatigue d essayer)
+4. Introduction naturelle du produit (suite logique de l histoire, jamais "ce produit est la solution parfaite")
+5. Preuves concretes reliees au quotidien (visuelles, sensorielles, pratiques)
+6. Ressenti final positif ou soulagement clair
+
+STYLE : "je", oral, sensoriel, pas parfait. Autorise : "J en avais marre", "Je vais pas mentir", "J etais a deux doigts de lacher". Interdit : "Ma vie a change", "C est miraculeux", "Resultat garanti".
+
+=== CTA — TYPE SELON OBJECTIF ===
+Objectif ventes -> conseil de copine ou projection.
+Objectif engagement -> engagement ou question.
+Objectif trafic -> conseil de copine ou defi-test.
+
+CTA court (1-2 phrases), naturel, prolonge l emotion du body.
+Interdit : "Commandez maintenant", "Cliquez ici", "Tente l experience", "Tes cheveux meritent", "Fonce", "Tu ne le regretteras pas".
+Autorise : "Je te mets le lien juste la", "Va jeter un oeil", "Teste et viens me dire", "Si t es dans la meme galere".
+
+=== CONTROLE FINAL (silencieux) ===
+Hook = type distinct des 3 autres ? Situation precise pas vague ? Jamais le produit dans le hook ? Body = structure variable utilisee ? Preuves concretes pas promesses ? Aucune info inventee ? CTA = action claire et naturelle ? Duree 130-150 mots/min respectee ? Si non -> corriger avant d afficher.
+
+=== PLANS ===
+Uniquement filmables et realistes. Format : lieu + position + action + expression + cadrage + position telephone. Ex : "Assise bord du lit, tire sur sa robe, souffle, regard vers ses cuisses. Plan taille, telephone pose sur commode." Pas de transformation visuelle inexistante.
+
+Retourne UNIQUEMENT ces balises XML, rien d autre avant ni apres :
+
+<HOOK_A_TYPE>type de hook utilise</HOOK_A_TYPE>
+<HOOK_A_VERBAL>phrase verbale</HOOK_A_VERBAL>
+<HOOK_A_ECRAN>texte ecran court</HOOK_A_ECRAN>
+<HOOK_A_VISUEL>action precise a filmer dans les 2 premieres secondes</HOOK_A_VISUEL>
+<HOOK_A_EMOTION>emotion recherchee</HOOK_A_EMOTION>
+<HOOK_A_TRANSITION>phrase de transition vers le body</HOOK_A_TRANSITION>
+<HOOK_A_PLAN>plan filmable complet</HOOK_A_PLAN>
+<HOOK_B_TYPE>type de hook utilise</HOOK_B_TYPE>
+<HOOK_B_VERBAL>phrase verbale</HOOK_B_VERBAL>
+<HOOK_B_ECRAN>texte ecran court</HOOK_B_ECRAN>
+<HOOK_B_VISUEL>action precise a filmer</HOOK_B_VISUEL>
+<HOOK_B_EMOTION>emotion recherchee</HOOK_B_EMOTION>
+<HOOK_B_TRANSITION>phrase de transition vers le body</HOOK_B_TRANSITION>
+<HOOK_B_PLAN>plan filmable complet</HOOK_B_PLAN>
+<HOOK_C_TYPE>type de hook utilise</HOOK_C_TYPE>
+<HOOK_C_VERBAL>phrase verbale</HOOK_C_VERBAL>
+<HOOK_C_ECRAN>texte ecran court</HOOK_C_ECRAN>
+<HOOK_C_VISUEL>action precise a filmer</HOOK_C_VISUEL>
+<HOOK_C_EMOTION>emotion recherchee</HOOK_C_EMOTION>
+<HOOK_C_TRANSITION>phrase de transition vers le body</HOOK_C_TRANSITION>
+<HOOK_C_PLAN>plan filmable complet</HOOK_C_PLAN>
+<BODY_TYPE>structure de body utilisee</BODY_TYPE>
 <INTRO_PROBLEME>intro sans produit</INTRO_PROBLEME>
 <INTRO_PLANS>2-3 plans filmables</INTRO_PLANS>
-<PRESENTATION_PRODUIT>body complet</PRESENTATION_PRODUIT>
+<PRESENTATION_PRODUIT>body complet oral fluide</PRESENTATION_PRODUIT>
 <BODY_PLANS>3-5 plans filmables</BODY_PLANS>
-<CTA>call to action</CTA>
-<CTA_PLAN>plan filmable</CTA_PLAN>`;
+<CTA_TYPE>type de CTA utilise</CTA_TYPE>
+<CTA>call to action naturel</CTA>
+<CTA_ECRAN>texte ecran CTA court</CTA_ECRAN>
+<CTA_PLAN>plan filmable CTA</CTA_PLAN>`;
 
   try{
     const raw=await callGemini(prompt);
+    if(!raw||raw.trim().length<20){
+      throw new Error('Réponse vide de Gemini — réessaie dans quelques secondes');
+    }
     function extractTag(text,tag){
-      const m=text.match(new RegExp('<'+tag+'>([\\s\\S]*?)<\\/'+tag+'>','i'));
-      return m?m[1].trim():'';
+      const re=new RegExp('<'+tag+'>[\\s\\S]*?<\\/'+tag+'>','i');
+      const m=text.match(re);
+      if(m){return m[0].replace(new RegExp('<\\/?'+tag+'>','gi'),'').trim();}
+      return '';
     }
     scriptData={
+      hook_a_type:extractTag(raw,'HOOK_A_TYPE'),
       hook_a:extractTag(raw,'HOOK_A_VERBAL'),
       hook_a_ecran:extractTag(raw,'HOOK_A_ECRAN'),
+      hook_a_visuel:extractTag(raw,'HOOK_A_VISUEL'),
+      hook_a_emotion:extractTag(raw,'HOOK_A_EMOTION'),
+      hook_a_transition:extractTag(raw,'HOOK_A_TRANSITION'),
       hook_a_plan:extractTag(raw,'HOOK_A_PLAN'),
+      hook_b_type:extractTag(raw,'HOOK_B_TYPE'),
       hook_b:extractTag(raw,'HOOK_B_VERBAL'),
       hook_b_ecran:extractTag(raw,'HOOK_B_ECRAN'),
+      hook_b_visuel:extractTag(raw,'HOOK_B_VISUEL'),
+      hook_b_emotion:extractTag(raw,'HOOK_B_EMOTION'),
+      hook_b_transition:extractTag(raw,'HOOK_B_TRANSITION'),
       hook_b_plan:extractTag(raw,'HOOK_B_PLAN'),
+      hook_c_type:extractTag(raw,'HOOK_C_TYPE'),
       hook_c:extractTag(raw,'HOOK_C_VERBAL'),
       hook_c_ecran:extractTag(raw,'HOOK_C_ECRAN'),
+      hook_c_visuel:extractTag(raw,'HOOK_C_VISUEL'),
+      hook_c_emotion:extractTag(raw,'HOOK_C_EMOTION'),
+      hook_c_transition:extractTag(raw,'HOOK_C_TRANSITION'),
       hook_c_plan:extractTag(raw,'HOOK_C_PLAN'),
+      body_type:extractTag(raw,'BODY_TYPE'),
       intro_probleme:extractTag(raw,'INTRO_PROBLEME'),
       intro_plans:extractTag(raw,'INTRO_PLANS'),
       presentation_produit:extractTag(raw,'PRESENTATION_PRODUIT'),
       body_plans:extractTag(raw,'BODY_PLANS'),
+      cta_type:extractTag(raw,'CTA_TYPE'),
       cta:extractTag(raw,'CTA'),
+      cta_ecran:extractTag(raw,'CTA_ECRAN'),
       cta_plan:extractTag(raw,'CTA_PLAN'),
       hook_choisi:'A',
     };
     if(!scriptData.hook_a&&!scriptData.intro_probleme){
-      throw new Error('Reponse vide - relance');
+      // Fallback : afficher la réponse brute pour debug
+      console.log('Réponse brute Gemini:', raw.slice(0,500));
+      throw new Error('Format inattendu — relance ou vérifie la console');
     }
     renderScript(false);
     document.getElementById('script-loading').style.display='none';
@@ -1273,41 +1380,49 @@ function renderScript(editing){
   const planStyle='font-size:11px;color:var(--violet-300);font-style:italic;margin-top:8px;padding:8px 12px;background:rgba(124,58,237,0.06);border-left:2px solid rgba(124,58,237,0.3);border-radius:4px;line-height:1.5';
 
   const hooks=[
-    {id:'A',verbal:scriptData.hook_a,ecran:scriptData.hook_a_ecran,plan:scriptData.hook_a_plan,label:'Version A — Problème vécu'},
-    {id:'B',verbal:scriptData.hook_b,ecran:scriptData.hook_b_ecran,plan:scriptData.hook_b_plan,label:'Version B — Confession'},
-    {id:'C',verbal:scriptData.hook_c,ecran:scriptData.hook_c_ecran,plan:scriptData.hook_c_plan,label:'Version C — Résultat / Curiosité'},
+    {id:'A',type:scriptData.hook_a_type,verbal:scriptData.hook_a,ecran:scriptData.hook_a_ecran,visuel:scriptData.hook_a_visuel,emotion:scriptData.hook_a_emotion,transition:scriptData.hook_a_transition,plan:scriptData.hook_a_plan},
+    {id:'B',type:scriptData.hook_b_type,verbal:scriptData.hook_b,ecran:scriptData.hook_b_ecran,visuel:scriptData.hook_b_visuel,emotion:scriptData.hook_b_emotion,transition:scriptData.hook_b_transition,plan:scriptData.hook_b_plan},
+    {id:'C',type:scriptData.hook_c_type,verbal:scriptData.hook_c,ecran:scriptData.hook_c_ecran,visuel:scriptData.hook_c_visuel,emotion:scriptData.hook_c_emotion,transition:scriptData.hook_c_transition,plan:scriptData.hook_c_plan},
   ].filter(h=>h.verbal);
+
+  const tagSt='font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:2px 8px;border-radius:99px;background:rgba(124,58,237,0.15);color:var(--violet-300)';
+  const planSt='font-size:11px;color:var(--violet-300);font-style:italic;margin-top:8px;padding:8px 12px;background:rgba(124,58,237,0.06);border-left:2px solid rgba(124,58,237,0.3);border-radius:4px;line-height:1.5';
+  const metaSt='font-size:11px;color:var(--text-muted);margin-top:6px;line-height:1.5';
 
   const hooklist=hooks.map(h=>`
     <div class="hook-choice ${scriptData.hook_choisi===h.id?'selected':''}" onclick="choisirHook('${h.id}')">
       <div class="hook-choice-header">
         <div class="hook-badge">${scriptData.hook_choisi===h.id?'✓ Sélectionné':'Choisir'}</div>
-        <div class="hook-choice-label">${h.label}</div>
+        <div class="hook-choice-label">Hook ${h.id}${h.type?` — <span style="${tagSt}">${h.type}</span>`:''}</div>
       </div>
       <div class="hook-verbal">${h.verbal}</div>
-      ${h.ecran?`<div class="hook-ecran">📺 ${h.ecran}</div>`:''}
-      ${h.plan?`<div style="${planStyle}">🎬 ${h.plan}</div>`:''}
+      ${h.ecran?`<div style="${metaSt}">📺 Texte écran : <em>${h.ecran}</em></div>`:''}
+      ${h.visuel?`<div style="${metaSt}">🎬 Visuel : ${h.visuel}</div>`:''}
+      ${h.emotion?`<div style="${metaSt}">💡 Émotion : ${h.emotion}</div>`:''}
+      ${h.transition?`<div style="${metaSt}">→ Transition : <em>${h.transition}</em></div>`:''}
+      ${h.plan?`<div style="${planSt}">📐 ${h.plan}</div>`:''}
     </div>`).join('');
 
   box.innerHTML=`
     <div class="script-section">
-      <div class="script-tag hook">🎣 HOOK — 3 versions (mécaniques différentes)</div>
+      <div class="script-tag hook">🎣 HOOK — 3 types différents (choisis le plus percutant)</div>
       <div class="hook-choices">${hooklist}</div>
     </div>
     <div class="script-section">
-      <div class="script-tag body">😔 INTRO PROBLÈME — micro-moments, sans produit</div>
+      <div class="script-tag body">😔 INTRO PROBLÈME${scriptData.body_type?` <span style="${tagSt}">${scriptData.body_type}</span>`:''}</div>
       <div class="script-text">${scriptData.intro_probleme||''}</div>
-      ${scriptData.intro_plans?`<div style="${planStyle}">🎬 ${scriptData.intro_plans}</div>`:''}
+      ${scriptData.intro_plans?`<div style="${planSt}">📐 ${scriptData.intro_plans}</div>`:''}
     </div>
     <div class="script-section">
-      <div class="script-tag body">✨ CORPS DU SCRIPT — découverte & transformation</div>
+      <div class="script-tag body">✨ CORPS DU SCRIPT</div>
       <div class="script-text">${scriptData.presentation_produit||''}</div>
-      ${scriptData.body_plans?`<div style="${planStyle}">🎬 ${scriptData.body_plans}</div>`:''}
+      ${scriptData.body_plans?`<div style="${planSt}">📐 ${scriptData.body_plans}</div>`:''}
     </div>
     <div class="script-section">
-      <div class="script-tag cta">🎯 CALL TO ACTION</div>
+      <div class="script-tag cta">🎯 CTA${scriptData.cta_type?` <span style="${tagSt}">${scriptData.cta_type}</span>`:''}</div>
       <div class="script-text">${scriptData.cta||''}</div>
-      ${scriptData.cta_plan?`<div style="${planStyle}">🎬 ${scriptData.cta_plan}</div>`:''}
+      ${scriptData.cta_ecran?`<div style="${metaSt}">📺 Texte écran : <em>${scriptData.cta_ecran}</em></div>`:''}
+      ${scriptData.cta_plan?`<div style="${planSt}">📐 ${scriptData.cta_plan}</div>`:''}
     </div>`;
 }
 
@@ -1487,7 +1602,14 @@ function renderStoryboard(){
             </label>
             <input type="text" id="scene-direction-produit-${i}" placeholder="Où ? (ex: tenu en main gauche, posé sur table)" style="flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(124,58,237,0.2);border-radius:6px;padding:5px 10px;font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text-bright);outline:none" onchange="storyboardData.storyboard[${i}].direction_produit=this.value">
           </div>
-          <textarea id="direction-${i}" placeholder="Direction de scène (optionnel) — Ex: lumière plus douce, regard vers le bas..." style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(124,58,237,0.2);border-radius:8px;padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text-bright);outline:none;resize:none;height:52px;line-height:1.4" onchange="storyboardData.storyboard[${i}].direction=this.value"></textarea>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <label style="font-size:12px;color:var(--text-muted);white-space:nowrap">🏠 Lieu :</label>
+            <label style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:rgba(255,255,255,0.04);border:1px solid rgba(124,58,237,0.2);border-radius:6px;cursor:pointer;font-size:11px;color:var(--violet-300)">
+              <input type="file" accept="image/*" style="display:none" onchange="uploadLieuScene(${i}, this)">
+              ${s.lieu_b64?'✓ Lieu chargé':'📷 Photo du lieu'}
+            </label>
+          </div>
+          <textarea id="direction-${i}" placeholder="Direction de scène — Ex: lumière douce, regard vers le bas..." style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(124,58,237,0.2);border-radius:8px;padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text-bright);outline:none;resize:none;height:52px;line-height:1.4" onchange="storyboardData.storyboard[${i}].direction=this.value"></textarea>
         </div>
       </div>
       <div class="scene-img-area" id="img-area-${i}">
@@ -1584,24 +1706,23 @@ async function genererScene(index){
     const produitVisible=document.getElementById('scene-produit-'+index)?.checked!==false&&scene.produit_visible!==false;
     const directionProduit=document.getElementById('scene-direction-produit-'+index)?.value||scene.direction_produit||'';
 
-    let produitLock='';
-    if(!produitVisible){
-      produitLock='NO PRODUCT visible in this scene — person and environment only, no product or packaging.';
-    } else if(uploads.produit){
-      produitLock='PRODUCT LOCKED — same packaging, shape, label, colors as reference. Do not invent a product.'+(directionProduit?' Product placement: '+directionProduit:'');
-    }
-
     const locks=[];
-    if(uploads.avatar)locks.push('IDENTITY LOCKED — same face, skin tone, features as reference. Do not invent a new face.');
+    if(uploads.avatar)locks.push('IDENTITY LOCKED — same face, skin tone, hair, features as reference. Do not invent a new face. If mirror present, reflection must match the person exactly — no collage effect.');
+    if(!produitVisible){
+      locks.push('NO PRODUCT visible in this scene — person and environment only.');
+    } else if(uploads.produit){
+      locks.push('PRODUCT LOCKED — same product shape, packaging color and design as reference. DO NOT attempt to render any text, letters or logo on the packaging — leave those areas as abstract color patches. The model cannot render readable text and attempts will produce distorted artifacts.'+(directionProduit?' Product placement: '+directionProduit:'.'));
+    }
     if(uploads.vetement)locks.push('OUTFIT LOCKED — same garment as outfit reference.');
-    const lockStr=locks.length?locks.join(' ')+'  ':'';
+    const lockStr=locks.join(' ');
+
+    const resultVisuel='IMPORTANT: The physical result of the product must be CLEARLY VISIBLE and OBSERVABLE — not just a gesture. Show the actual transformation (defined bouncy curls strand by strand, visibly glowing skin, lengthened lashes, smooth hair, etc.). Result must be undeniable in the image.';
 
     const basePrompt=scene.prompt_image+directionStr+
-      (produitVisible?' IMPORTANT: If any product text or logo appears, render it as subtle blurred element — do NOT attempt readable text as it will appear distorted.':'')+
-      ` — ${lockStr}Portrait orientation 9:16, 4K ultra-detailed, shot on iPhone 15 Pro, natural light, authentic UGC style.`;
+      ` — ${lockStr} ${resultVisuel} NO inconsistent mirror reflections. Portrait orientation 9:16, 4K ultra-detailed, shot on iPhone 15 Pro, natural light, authentic UGC. NO studio look. NO plants.`;
 
-    const imgData=await generateImage(basePrompt, true);
-    incrementUsed(currentCode);updateQuotaUI();
+    const sysLock=buildSystemLock(); const imgData=await generateImage(sysLock ? sysLock+' '+basePrompt : basePrompt, true);
+    if(!CODES[currentCode]?.admin){incrementUsed(currentCode);updateQuotaUI();}
 
     // Afficher l'image + boutons régénérer et télécharger
     imgArea.innerHTML=`<img src="${imgData}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">`;
@@ -1631,23 +1752,47 @@ async function genererScene(index){
   }
 }
 
+let isGenerating = false;
+
+function stopGeneration(){
+  isGenerating = false;
+  const btn=document.getElementById('btn-gen-all');
+  const spinner=document.getElementById('gen-all-spinner');
+  const label=document.getElementById('gen-all-label');
+  const stopBtn=document.getElementById('btn-stop-gen');
+  if(btn){btn.disabled=false;}
+  if(spinner)spinner.style.display='none';
+  if(label)label.textContent='✦ Générer tout le shooting';
+  if(stopBtn)stopBtn.style.display='none';
+  showToast('Génération arrêtée');
+}
+
 async function genererTout(){
   if(!storyboardData)return;
   const scenes=storyboardData.storyboard||[];
   const isAdmin=CODES[currentCode]?.admin;
-  const rem=remainingCount(currentCode);
-  const toGen=isAdmin?scenes.length:Math.min(scenes.length,rem);
-  if(toGen===0){document.getElementById('quota-alert').classList.add('show');return;}
+  // Fix admin : ignorer le quota pour admin
+  const toGen=isAdmin?scenes.length:Math.min(scenes.length,remainingCount(currentCode));
+  if(!isAdmin&&toGen===0){document.getElementById('quota-alert').classList.add('show');return;}
   const btn=document.getElementById('btn-gen-all');
   const spinner=document.getElementById('gen-all-spinner');
   const label=document.getElementById('gen-all-label');
-  btn.disabled=true;spinner.style.display='inline-block';
+  const stopBtn=document.getElementById('btn-stop-gen');
+  btn.disabled=true;
+  spinner.style.display='inline-block';
+  if(stopBtn)stopBtn.style.display='block';
+  isGenerating=true;
   for(let i=0;i<toGen;i++){
+    if(!isGenerating)break;
     label.textContent=`Scène ${i+1} / ${toGen}...`;
     await genererScene(i);
     await new Promise(r=>setTimeout(r,800));
   }
-  btn.disabled=false;spinner.style.display='none';label.textContent='✦ Générer tout le shooting';
+  isGenerating=false;
+  btn.disabled=false;
+  spinner.style.display='none';
+  label.textContent='✦ Générer tout le shooting';
+  if(stopBtn)stopBtn.style.display='none';
   showToast('Shooting terminé 🎬');
 }
 
@@ -1719,6 +1864,13 @@ function renderBroll(){
       <div class="broll-desc">${b.description_fr||''}</div>
       ${b.photo_depart?`<div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;font-style:italic;line-height:1.4">📸 ${b.photo_depart}</div>`:''}
       ${b.instruction_video?`<div style="font-size:11px;color:var(--violet-300);margin-bottom:8px;line-height:1.4">🎬 ${b.instruction_video}</div>`:''}
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <label style="font-size:12px;color:var(--text-muted);white-space:nowrap">🏠 Lieu :</label>
+        <label style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:rgba(255,255,255,0.04);border:1px solid rgba(124,58,237,0.2);border-radius:6px;cursor:pointer;font-size:11px;color:var(--violet-300)">
+          <input type="file" accept="image/*" style="display:none" onchange="uploadLieuBroll(${i}, this)">
+          ${b.lieu_b64?'✓ Lieu chargé':'📷 Photo du lieu'}
+        </label>
+      </div>
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:8px 10px;background:rgba(255,255,255,0.03);border-radius:8px">
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text-muted);white-space:nowrap">
           <input type="checkbox" id="broll-produit-${i}" checked style="accent-color:var(--violet-400)">
@@ -1744,34 +1896,35 @@ async function genererTousBroll(){
 }
 
 async function genererBrollScene(index){
-  if(!canGenerate(currentCode)){showToast('Limite atteinte ⏳');return;}
+  if(!canGenerate(currentCode)&&!CODES[currentCode]?.admin){showToast('Limite atteinte ⏳');return;}
   const b=brollData?.brolls?.[index];if(!b)return;
   const area=document.getElementById('broll-area-'+index);
-  const spinner=document.getElementById('broll-spinner-'+index);
-  const genBtn=area.querySelector('.broll-gen-btn');
-  if(genBtn)genBtn.style.display='none';
-  spinner.style.display='block';
+  if(!area)return;
+
+  // Vider et recréer le spinner proprement
+  area.innerHTML=`<div class="scene-spinner" id="broll-spinner-${index}" style="display:block"></div>`;
+  area.style.position='relative';
 
   try{
-    // Toggle produit visible pour ce broll
     const produitVisible=document.getElementById('broll-produit-'+index)?.checked!==false;
     const directionProduit=document.getElementById('broll-direction-'+index)?.value||'';
 
-    // B-Roll : AVEC avatar (pris en compte ici), produit selon toggle
     const locks=[];
-    if(uploads.avatar)locks.push('IDENTITY LOCKED — same face, skin tone, features as reference. Do not invent a new face.');
+    if(uploads.avatar)locks.push('IDENTITY LOCKED — same face, skin tone, hair, features as reference photo. Never invent a new face. Never create inconsistent reflections in mirrors.');
     if(produitVisible&&uploads.produit){
-      locks.push('PRODUCT LOCKED — same packaging, shape, label, colors as product reference. Do not invent a product.');
+      locks.push('PRODUCT LOCKED — same product shape, packaging color and design as reference. DO NOT attempt to render any text, letters or logo — leave those areas as abstract color. Attempting text causes distortion artifacts.');
       if(directionProduit)locks.push('PRODUCT PLACEMENT: '+directionProduit+'.');
     } else {
-      locks.push('NO PRODUCT visible in this scene — focus on person, environment, emotion only.');
+      locks.push('NO PRODUCT visible — focus on person, environment, emotion only.');
     }
     if(uploads.vetement)locks.push('OUTFIT LOCKED — same garment as outfit reference.');
 
-    const lockStr=locks.join(' ');
-    const finalPromptBroll=`${b.prompt_image} — ${lockStr} Portrait orientation 9:16, 4K ultra-detailed, shot on iPhone 15 Pro, natural light, authentic UGC style. NO studio look, NO advertising aesthetic.`;
+    // Renforcement résultats visibles
+    const resultatsVisibles='IMPORTANT: The visual result of the product must be CLEARLY VISIBLE and PHYSICALLY OBSERVABLE. Do not just show a gesture — show the actual result on the person or surface (defined bouncy curls clearly visible strand by strand, glossy hydrated skin visibly glowing, lengthened lashes clearly defined, etc.). The result must be undeniable and visible in the image.';
 
-    // Envoyer avec avatar mais produit conditionnel
+    const lockStr=locks.join(' ');
+    const finalPromptBroll=`${b.prompt_image} — ${lockStr} ${resultatsVisibles} Portrait orientation 9:16, 4K ultra-detailed, shot on iPhone 15 Pro, natural light, authentic UGC style. NO studio look. NO plants. NO inconsistent mirror reflections.`;
+
     const brollBody={
       code:currentCode,
       prompt:finalPromptBroll,
@@ -1789,20 +1942,29 @@ async function genererBrollScene(index){
     if(!res.ok)throw new Error(data.error||'HTTP '+res.status);
     const imgData=`data:${data.mimeType||'image/png'};base64,${data.image}`;
 
-    incrementUsed(currentCode);updateQuotaUI();
+    if(!CODES[currentCode]?.admin){incrementUsed(currentCode);updateQuotaUI();}
+
+    // Afficher image
     area.innerHTML=`<img src="${imgData}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">`;
 
     // Bouton régénérer
     const regenBtn=document.createElement('button');
     regenBtn.innerHTML='🔄';regenBtn.title='Régénérer';
-    regenBtn.style.cssText='position:absolute;top:4px;right:4px;background:rgba(14,8,18,0.75);color:white;border:none;border-radius:6px;padding:4px 7px;font-size:12px;cursor:pointer;z-index:2';
+    regenBtn.style.cssText='position:absolute;top:4px;left:4px;background:rgba(14,8,18,0.75);color:white;border:none;border-radius:6px;padding:4px 7px;font-size:12px;cursor:pointer;z-index:2';
     regenBtn.onclick=()=>genererBrollScene(index);
-    area.style.position='relative';area.appendChild(regenBtn);
+    area.appendChild(regenBtn);
+
+    // Bouton télécharger
+    const blob=await(await fetch(imgData)).blob();
+    const blobUrl=URL.createObjectURL(blob);
+    const dl=document.createElement('a');
+    dl.href=blobUrl;dl.download=`broll_${index+1}.png`;dl.innerHTML='⬇';
+    dl.style.cssText='position:absolute;bottom:4px;right:4px;background:rgba(14,8,18,0.75);color:white;border-radius:6px;padding:4px 8px;font-size:12px;text-decoration:none;z-index:2';
+    area.appendChild(dl);
 
     showToast('B-Roll généré ✦');
   }catch(err){
-    spinner.style.display='none';
-    const gb=area.querySelector('.broll-gen-btn');if(gb)gb.style.display='flex';
+    area.innerHTML=`<button class="broll-gen-btn" onclick="genererBrollScene(${index})" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(14,8,18,0.5);border:none;font-size:18px;cursor:pointer">▶</button>`;
     showToast('Erreur : '+err.message);
   }
 }
