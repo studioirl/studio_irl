@@ -307,7 +307,7 @@ select.field option{background:var(--plum-700)}
 
       <div class="section">
         <div class="section-header"><div class="section-num">A</div><div class="section-title">Visuels de référence</div></div>
-        <div class="section-desc">Avatar IA, produit, tenue, décor. Ces images servent à verrouiller l'identité et le produit dans toutes les générations.</div>
+        <div class="section-desc">Avatar IA, produit, tenue, décor. Ces images servent à verrouiller l'identité et le produit dans toutes les générations. Pour le produit : photo nette, de face, étiquette bien lisible.</div>
         <div class="card">
           <div class="upload-grid">
             <div class="upload-zone" id="zone-avatar">
@@ -320,7 +320,7 @@ select.field option{background:var(--plum-700)}
               <input type="file" id="produit-file" accept="image/*" onchange="handleUpload('produit',this)">
               <div class="upload-icon">📦</div>
               <div class="upload-label">Produit</div>
-              <div class="upload-hint">Photo du produit</div>
+              <div class="upload-hint">Face, étiquette lisible</div>
             </div>
             <div class="upload-zone" id="zone-vetement">
               <input type="file" id="vetement-file" accept="image/*" onchange="handleUpload('vetement',this)">
@@ -331,6 +331,14 @@ select.field option{background:var(--plum-700)}
 
           </div>
 
+        </div>
+      </div>
+
+      <div class="section" id="produit-texte-block" style="display:none">
+        <div class="section-header"><div class="section-num">📝</div><div class="section-title">Texte exact de l'emballage</div></div>
+        <div class="section-desc">Lu automatiquement sur ta photo produit. Vérifie et corrige : ce texte est recopié lettre par lettre dans les images.</div>
+        <div class="card">
+          <textarea class="field" id="produit-texte" style="min-height:130px" placeholder="Une ligne par ligne imprimée sur l'emballage..."></textarea>
         </div>
       </div>
 
@@ -545,9 +553,6 @@ select.field option{background:var(--plum-700)}
     </div>
 
     <!-- ══════════════════════════════════
-         STEP 5 — MOTEUR DE CAPTURE
-    ══════════════════════════════════ -->
-    <!-- ══════════════════════════════════
          STEP 5 — STORYBOARD
     ══════════════════════════════════ -->
     <div id="step-5" style="display:none">
@@ -635,6 +640,9 @@ select.field option{background:var(--plum-700)}
       </div>
     </div>
 
+  </div><!-- /app-main -->
+</div><!-- /app -->
+
 <div id="toast"></div>
 
 <script>
@@ -660,6 +668,10 @@ const CODES = {
   'LIS5A4':{ name:'Lisa', admin:false },'MAN5D8':{ name:'Mandy', admin:false },
 };
 
+// Qualité d'image : 4K ultra réaliste (ajouté à tous les prompts image)
+const IMAGE_SIZE = '4K';
+const QUALITY_SUFFIX = 'Shot as a real 4K ultra-realistic photograph: ultra-high resolution, tack-sharp focus, fine natural detail, true-to-life skin texture with visible pores and no airbrushing, realistic fabric and material textures, accurate natural lighting, true colors, clean low-noise image, no plastic or CGI look, no AI artifacts, no blur, no watermark.';
+
 const MAX_DAILY = 10;
 const PROXY_URL = 'https://storyshoot-proxy-90745837681.europe-west1.run.app';
 const VERTEX_KEY = 'AQ.Ab8RN6Jm1Snd7JLIK9rB3jBn1yF-nQ9RdplZOI1F9OuK3gRLxA';
@@ -680,6 +692,10 @@ let scriptEditing = false;
 let storyboardData = null;
 let brollData = null;
 let modalCallback = null;
+
+// Description exacte du produit (texte de l'emballage, couleurs, forme) extraite de la photo de référence
+let productDesc = null;
+let productDescPromise = null;
 
 // ═══════════════════════════════════════════════════
 // DONNÉES STATIQUES
@@ -867,22 +883,136 @@ function getMaxReachableStep(){
 // ═══════════════════════════════════════════════════
 // UPLOADS
 // ═══════════════════════════════════════════════════
+// Limites de redimensionnement (côté le plus long, qualité JPEG).
+// Le produit garde une résolution élevée pour que le texte de l'emballage reste lisible.
+const IMG_LIMITS = { avatar:[1536,0.92], produit:[2048,0.95], vetement:[1536,0.9], decor:[1280,0.88] };
+
+function escAttr(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// Redimensionne + normalise en JPEG (évite les photos 12 Mpx / HEIC / PNG transparents qui dégradent ou font échouer la génération)
+function prepareImage(file,maxSide,quality){
+  return new Promise(resolve=>{
+    const fallback=()=>{
+      const r=new FileReader();
+      r.onload=e=>resolve({dataUrl:e.target.result,mime:file.type||'image/jpeg'});
+      r.readAsDataURL(file);
+    };
+    const url=URL.createObjectURL(file);
+    const img=new Image();
+    img.onload=()=>{
+      try{
+        let w=img.naturalWidth,h=img.naturalHeight;
+        const s=Math.min(1,maxSide/Math.max(w,h));
+        w=Math.round(w*s);h=Math.round(h*s);
+        const c=document.createElement('canvas');c.width=w;c.height=h;
+        const ctx=c.getContext('2d');
+        ctx.fillStyle='#ffffff';ctx.fillRect(0,0,w,h);
+        ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+        ctx.drawImage(img,0,0,w,h);
+        URL.revokeObjectURL(url);
+        resolve({dataUrl:c.toDataURL('image/jpeg',quality),mime:'image/jpeg'});
+      }catch(e){URL.revokeObjectURL(url);fallback();}
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url);fallback();};
+    img.src=url;
+  });
+}
+
 function triggerUpload(id){ document.getElementById(id).click(); }
-function handleUpload(type,input){
+async function handleUpload(type,input){
   const file=input.files[0];if(!file)return;
-  const reader=new FileReader();
-  reader.onload=e=>{
-    const b64=e.target.result.split(',')[1];
-    uploads[type]={b64,dataUrl:e.target.result,mime:file.type};
-    const zId=type==='decor'?'zone-decor-custom':`zone-${type}`;
-    const zone=document.getElementById(zId);if(!zone)return;
-    zone.classList.add('has-file');
-    zone.querySelector('.upload-preview')?.remove();
-    zone.querySelector('.upload-preview-overlay')?.remove();
-    const img=document.createElement('img');img.className='upload-preview';img.src=e.target.result;zone.appendChild(img);
-    const ov=document.createElement('div');ov.className='upload-preview-overlay';ov.innerHTML='<div class="upload-check">✓</div>';zone.appendChild(ov);
+  const lim=IMG_LIMITS[type]||[1536,0.9];
+  const p=await prepareImage(file,lim[0],lim[1]);
+  const b64=p.dataUrl.split(',')[1];
+  uploads[type]={b64,dataUrl:p.dataUrl,mime:p.mime};
+  const zId=type==='decor'?'zone-decor-custom':`zone-${type}`;
+  const zone=document.getElementById(zId);if(!zone)return;
+  zone.classList.add('has-file');
+  zone.querySelector('.upload-preview')?.remove();
+  zone.querySelector('.upload-preview-overlay')?.remove();
+  const img=document.createElement('img');img.className='upload-preview';img.src=p.dataUrl;zone.appendChild(img);
+  const ov=document.createElement('div');ov.className='upload-preview-overlay';ov.innerHTML='<div class="upload-check">✓</div>';zone.appendChild(ov);
+  // Nouveau produit → on relit son emballage (texte exact) en arrière-plan
+  if(type==='produit'){
+    productDesc=null;
+    const taReset=document.getElementById('produit-texte');if(taReset)taReset.value='';
+    productDescPromise=analyserProduit();
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// ANALYSE DU PRODUIT (texte exact de l'emballage)
+// ═══════════════════════════════════════════════════
+async function analyserProduit(){
+  if(!uploads.produit)return null;
+  try{
+    const raw=await callGemini(
+`Look at this product photo and return EXACTLY two sections, with these two headers.
+TEXT:
+Every piece of text printed on the packaging, one line per printed line, transcribed exactly as written (capitals, accents, punctuation, numbers, units). Do NOT add any punctuation or word that is not printed. If a piece of text is unreadable write [illisible].
+LOOK:
+Product type, shape and proportions, packaging colors and materials, cap type, logo and illustrations with their positions. Maximum 60 words, in English.`,
+      [uploads.produit]);
+    const m=(raw||'').match(/TEXT:\s*([\s\S]*?)\s*LOOK:\s*([\s\S]*)/i);
+    let txt='',look='';
+    if(m){txt=m[1].trim();look=m[2].trim();}else{look=(raw||'').trim();}
+    productDesc=look.replace(/\s+/g,' ').slice(0,500)||null;
+    const ta=document.getElementById('produit-texte');
+    const blk=document.getElementById('produit-texte-block');
+    if(blk)blk.style.display='block';
+    if(ta&&!ta.value.trim())ta.value=txt;
+  }catch(e){
+    console.warn('Analyse produit impossible :',e.message);
+    productDesc=null;
+    const blk=document.getElementById('produit-texte-block');if(blk)blk.style.display='block';
+  }
+  return productDesc;
+}
+async function ensureProductDesc(){
+  if(productDesc||!uploads.produit)return productDesc;
+  if(!productDescPromise)productDescPromise=analyserProduit();
+  try{ await productDescPromise; }catch(e){}
+  return productDesc;
+}
+
+// Bloc de consignes produit injecté EN TÊTE du prompt image
+function buildProductDirective(direction,legible){
+  if(!uploads.produit)return '';
+  let s='PRODUCT LOCKED — the product must be an exact copy of the PRODUCT reference image: same shape, proportions, colors, cap, logo and label layout.';
+  if(productDesc)s+=' Packaging details taken from the reference: '+productDesc+'.';
+  const exact=(document.getElementById('produit-texte')?.value||'').trim();
+  if(exact)s+=' EXACT LABEL TEXT — copy it letter by letter. Never add, remove, translate or change any word, accent, number or punctuation mark: "'+exact.replace(/\n+/g,' / ')+'".';
+  s+=' All text on the packaging must be spelled exactly as in the reference — never invent, translate, shorten or distort words. If a very small line of text cannot be rendered perfectly, keep it as clean tiny print rather than inventing letters.';
+  if(legible){
+    s+=' LEGIBILITY: the front label faces the camera, parallel to the lens, fully unobstructed (no finger, hair or object covering the text), in tack-sharp focus with no motion blur, no depth-of-field blur, no glare or reflection on the label, evenly lit. The tube is gripped by its sides or lower back, fingers wrapped behind and along the edges: the thumb and fingers NEVER touch or cover the printed front label, so every line of text, including the small ingredient line, stays fully visible. The product is held or placed at the same distance as the face or hands and fills about 25 to 35 percent of the frame width, so the brand name is clearly readable. The product stays crisp and sharp even though the rest of the shot looks like a casual smartphone photo.';
+  }
+  if(direction)s+=' Product placement: '+direction+'.';
+  return s;
+}
+
+// ═══════════════════════════════════════════════════
+// ÉTATS VISIBLES (avant / pendant / résultat)
+// ═══════════════════════════════════════════════════
+function getResultatsProduit(){
+  return {
+    resultats:(document.getElementById('p-resultats')?.value||'').trim(),
+    usage:(document.getElementById('p-usage')?.value||'').trim(),
+    produit:(document.getElementById('ctx-produit')?.value||'').trim(),
   };
-  reader.readAsDataURL(file);
+}
+// Consigne image selon l'état de la scène : probleme (AVANT visible) / resultat (TRANSFORMATION visible)
+function buildEtatDirective(scene){
+  const etat=(scene.etat||'').toLowerCase();
+  const vis=(scene.etat_visuel||'').trim();
+  const R=getResultatsProduit();
+  const idLock=' The identity lock applies to the face and skin tone only: hair, lashes, makeup and skin condition must follow the VISIBLE STATE, not the reference photo.';
+  if(etat==='resultat'){
+    return 'RESULT SHOT — the visible transformation is the subject of this image. VISIBLE STATE (after using the product): '+(vis||R.resultats)+'. Frame close enough on the transformed area (hair, lashes, skin, surface...) so the result is large, sharp, well lit and impossible to miss, clearly different from the before look. Show it physically on the person, never only through a gesture or an expression.'+idLock;
+  }
+  if(etat==='probleme'){
+    return 'BEFORE STATE — the problem is visible and the product has NOT been used yet. VISIBLE STATE: '+(vis||('the opposite of this result: '+R.resultats))+'. The untransformed look must be clearly visible and realistic, never already improved.'+idLock;
+  }
+  return vis?('VISIBLE STATE: '+vis+'.'+idLock):'';
 }
 
 // ═══════════════════════════════════════════════════
@@ -968,13 +1098,16 @@ function parseJsonRobust(raw){
 // ═══════════════════════════════════════════════════
 // GÉNÉRATION IMAGE
 // ═══════════════════════════════════════════════════
-async function generateImage(prompt, useAvatar=true){
+// useProduit=false → la photo produit n'est PAS envoyée au modèle (scènes Hook / produit masqué)
+async function generateImage(prompt, useAvatar=true, lieuB64=null, lieuMime='image/jpeg', useProduit=true){
   const body={
-    code:currentCode,prompt,aspectRatio:'9:16',
+    code:currentCode,prompt,aspectRatio:'9:16',imageSize:IMAGE_SIZE,
     avatarB64:useAvatar?(uploads.avatar?.b64||null):null,
     avatarMime:uploads.avatar?.mime||'image/jpeg',
-    produitB64:uploads.produit?.b64||null,produitMime:uploads.produit?.mime||'image/jpeg',
+    produitB64:useProduit?(uploads.produit?.b64||null):null,produitMime:uploads.produit?.mime||'image/jpeg',
     vetementB64:uploads.vetement?.b64||null,vetementMime:uploads.vetement?.mime||'image/jpeg',
+    decorB64:lieuB64||null,
+    decorMime:lieuMime,
   };
   const res=await fetch(`${PROXY_URL}/generate-image`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   const data=await res.json();
@@ -985,21 +1118,13 @@ async function generateImage(prompt, useAvatar=true){
   return `data:${data.mimeType||'image/png'};base64,${data.image}`;
 }
 
-function buildSystemLock(){
-  const locks=[];
-  if(uploads.avatar) locks.push('⚠️ IDENTITY LOCK: The person in the avatar reference photo is the ONLY person allowed. Copy EXACTLY: face structure, skin tone, hair texture and color, age, morphology. Same person in every scene. DO NOT invent or modify the face.');
-  if(uploads.produit) locks.push('⚠️ PRODUCT LOCK: The product in the reference photo must appear EXACTLY as shown. Copy packaging shape, colors, proportions. DO NOT attempt to render text or logos — leave label areas as flat abstract color zones. DO NOT invent a different product.');
-  if(uploads.vetement) locks.push('⚠️ OUTFIT LOCK: The subject must wear EXACTLY the outfit shown in the clothing reference. Same garment, same colors, same style.');
-  return locks.join(' ');
-}
-
 function buildImagePrompt(scenePrompt){
   const locks=[];
   if(uploads.avatar)locks.push('IDENTITY LOCKED — same face, skin tone, features as reference photo provided. Do not invent a new face.');
   if(uploads.produit)locks.push('PRODUCT LOCKED — same packaging, shape, label, colors as product reference photo. Do not invent a product.');
   if(uploads.vetement)locks.push('OUTFIT LOCKED — same garment, colors, style as outfit reference photo.');
   const lockStr=locks.length?locks.join(' ')+'  ':'';
-  return `${scenePrompt} — ${lockStr}Portrait orientation 9:16, 4K ultra-detailed, shot on iPhone 15 Pro, natural light, authentic UGC style.`;
+  return `${scenePrompt} — ${lockStr}Portrait orientation 9:16, shot on iPhone 15 Pro, natural light, authentic UGC look. ${QUALITY_SUFFIX}`;
 }
 
 // ═══════════════════════════════════════════════════
@@ -1121,30 +1246,24 @@ function toggleEditProfil(){
   }
 }
 
-function uploadLieuScene(index, input){
+async function uploadLieuScene(index, input){
   const file=input.files[0];if(!file)return;
-  const reader=new FileReader();
-  reader.onload=e=>{
-    const b64=e.target.result.split(',')[1];
-    storyboardData.storyboard[index].lieu_b64=b64;
-    storyboardData.storyboard[index].lieu_mime=file.type;
-    showToast('Lieu scène '+(index+1)+' chargé ✦');
-    renderStoryboard();
-  };
-  reader.readAsDataURL(file);
+  const lim=IMG_LIMITS.decor;
+  const p=await prepareImage(file,lim[0],lim[1]);
+  storyboardData.storyboard[index].lieu_b64=p.dataUrl.split(',')[1];
+  storyboardData.storyboard[index].lieu_mime=p.mime;
+  showToast('Lieu scène '+(index+1)+' chargé ✦');
+  renderStoryboard();
 }
 
-function uploadLieuBroll(index, input){
+async function uploadLieuBroll(index, input){
   const file=input.files[0];if(!file)return;
-  const reader=new FileReader();
-  reader.onload=e=>{
-    const b64=e.target.result.split(',')[1];
-    brollData.brolls[index].lieu_b64=b64;
-    brollData.brolls[index].lieu_mime=file.type;
-    showToast('Lieu B-Roll '+(index+1)+' chargé ✦');
-    renderBroll();
-  };
-  reader.readAsDataURL(file);
+  const lim=IMG_LIMITS.decor;
+  const p=await prepareImage(file,lim[0],lim[1]);
+  brollData.brolls[index].lieu_b64=p.dataUrl.split(',')[1];
+  brollData.brolls[index].lieu_mime=p.mime;
+  showToast('Lieu B-Roll '+(index+1)+' chargé ✦');
+  renderBroll();
 }
 
 function telechargerProfil(){
@@ -1377,8 +1496,6 @@ function renderScript(editing){
   const box=document.getElementById('script-box');
   if(!scriptData||!box)return;
 
-  const planStyle='font-size:11px;color:var(--violet-300);font-style:italic;margin-top:8px;padding:8px 12px;background:rgba(124,58,237,0.06);border-left:2px solid rgba(124,58,237,0.3);border-radius:4px;line-height:1.5';
-
   const hooks=[
     {id:'A',type:scriptData.hook_a_type,verbal:scriptData.hook_a,ecran:scriptData.hook_a_ecran,visuel:scriptData.hook_a_visuel,emotion:scriptData.hook_a_emotion,transition:scriptData.hook_a_transition,plan:scriptData.hook_a_plan},
     {id:'B',type:scriptData.hook_b_type,verbal:scriptData.hook_b,ecran:scriptData.hook_b_ecran,visuel:scriptData.hook_b_visuel,emotion:scriptData.hook_b_emotion,transition:scriptData.hook_b_transition,plan:scriptData.hook_b_plan},
@@ -1489,7 +1606,7 @@ function validateStep5(){
 }
 
 // ═══════════════════════════════════════════════════
-// STEP 6 — STORYBOARD
+// STEP 5 — STORYBOARD
 // ═══════════════════════════════════════════════════
 async function genererStoryboard(){
   const loadEl=document.getElementById('storyboard-loading');
@@ -1518,6 +1635,7 @@ async function genererStoryboard(){
     'CTA : '+(scriptData.cta||''),
   ].join('\n');
   const format=FORMATS_UGC.find(f=>f.id===selectedFormat)?.name||'Temoignage';
+  const RES=getResultatsProduit();
 
   const prompt=`Tu es StoryShoot, IA de direction artistique UGC.
 
@@ -1532,6 +1650,18 @@ REGLES STRICTES PRODUIT :
 - SCENES HOOK (partie=Hook) : LE PRODUIT NE DOIT ABSOLUMENT PAS APPARAITRE. On voit uniquement la personne, son emotion physique, son quotidien AVANT. Pas de produit, pas de packaging, rien.
 - SCENES BODY : Le produit apparait pour la premiere fois. On voit son utilisation et la transformation.
 - SCENE CTA : Produit present, resultat visible.
+- DANS prompt_image, NE DECRIS JAMAIS l'emballage du produit (couleurs, texte, logo, forme) : ecris seulement "the product from the reference image". L'emballage vient de la photo de reference, jamais de ton imagination.
+- SCENES AVEC PRODUIT : le cadrage doit permettre de LIRE l'etiquette. Produit tenu a hauteur de poitrine ou de visage, face a la camera, etiquette non cachee par les doigts, plan buste/taille ou detail produit. Jamais de plan large ou le produit serait minuscule.
+
+RESULTATS DU PRODUIT A RENDRE VISIBLES (coeur du storyboard) :
+Resultats annonces : ${RES.resultats}
+Usage : ${RES.usage}
+- Chaque scene a un "etat" : probleme | decouverte | utilisation | resultat.
+- Hook = "probleme" : montre l'AVANT, le probleme concretement visible sur la personne (l'inverse du resultat annonce), produit non utilise.
+- Body = "decouverte" puis "utilisation" (application en cours, transformation pas encore finie).
+- Les 2 DERNIERES scenes (dont le CTA) = "resultat" : la TRANSFORMATION est le sujet de l'image. Cadrage serre sur la zone transformee (cheveux, cils, peau, surface...), jamais un plan large.
+- "etat_visuel" = description en anglais, physique et precise, de ce qu'on VOIT sur la personne dans cet etat, deduite UNIQUEMENT des resultats annonces ci-dessus (n'invente aucun resultat). Le resultat doit etre un changement visible, pas un geste ni une expression.
+- prompt_image doit reprendre cet etat_visuel.
 
 EMOTIONS PHYSIQUES - decrire comme etats physiques observables :
 - Frustration = sourcils fronced, machoire crispee, regard las, epaules tombantes
@@ -1548,9 +1678,9 @@ Structure :
 - Derniere scene : CTA
 
 Retourne UNIQUEMENT ce JSON brut, sans texte avant ni apres, sans backticks :
-{"storyboard":[{"scene":1,"partie":"Hook","titre":"...","plan":"...","cadrage":"...","mode_capture":"...","description":"...","emotion_physique":"description physique precise","prompt_image":"prompt anglais ultra-detaille. NO product visible in Hook scenes. Emotion as physical observable behavior. Shot on iPhone 15 Pro, natural light. NO studio look, NO advertising."}]}
+{"storyboard":[{"scene":1,"partie":"Hook","titre":"...","plan":"...","cadrage":"...","mode_capture":"...","description":"...","emotion_physique":"description physique precise","etat":"probleme","etat_visuel":"what is physically visible on the person in this state, in English","prompt_image":"prompt anglais ultra-detaille. NO product visible in Hook scenes. Emotion as physical observable behavior. Shot on iPhone 15 Pro, natural light. NO studio look, NO advertising."}]}
 
-Genere 5 a 7 scenes.`;
+Genere 5 a 7 scenes. Au moins 1 scene "probleme" et les 2 dernieres scenes en etat "resultat".`;
 
   try{
     const images=[uploads.avatar,uploads.produit,uploads.vetement].filter(Boolean);
@@ -1580,7 +1710,10 @@ function renderStoryboard(){
   const genInfo=document.getElementById('gen-all-info');
   if(genInfo)genInfo.textContent=isAdmin?scenes.length+' scenes illimite':scenes.length+' scenes · '+rem+' restantes';
   const partieColors={Hook:'rgba(244,63,94,0.15)',Body:'rgba(124,58,237,0.15)',CTA:'rgba(34,197,94,0.1)'};
-  container.innerHTML=scenes.map((s,i)=>`
+  container.innerHTML=scenes.map((s,i)=>{
+    const prodChecked=(s.produit_visible!==undefined)?s.produit_visible:((s.partie||'')!=='Hook');
+    const lisibleChecked=(s.lisible!==undefined)?s.lisible:true;
+    return `
     <div class="scene-card" id="scene-card-${i}">
       <div class="scene-num">${s.scene}</div>
       <div class="scene-body">
@@ -1595,12 +1728,16 @@ function renderStoryboard(){
           <button class="emotion-edit" onclick="openEmotionModal(${i})">Modifier</button>
         </div>
         <div style="margin-top:10px">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;padding:6px 10px;background:rgba(255,255,255,0.03);border-radius:8px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;padding:6px 10px;background:rgba(255,255,255,0.03);border-radius:8px;flex-wrap:wrap">
             <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text-muted);white-space:nowrap">
-              <input type="checkbox" id="scene-produit-${i}" ${(s.partie||'')!=='Hook'?'checked':''} style="accent-color:var(--violet-400)" onchange="storyboardData.storyboard[${i}].produit_visible=this.checked">
+              <input type="checkbox" id="scene-produit-${i}" ${prodChecked?'checked':''} style="accent-color:var(--violet-400)" onchange="storyboardData.storyboard[${i}].produit_visible=this.checked">
               📦 Produit visible
             </label>
-            <input type="text" id="scene-direction-produit-${i}" placeholder="Où ? (ex: tenu en main gauche, posé sur table)" style="flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(124,58,237,0.2);border-radius:6px;padding:5px 10px;font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text-bright);outline:none" onchange="storyboardData.storyboard[${i}].direction_produit=this.value">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text-muted);white-space:nowrap" title="Produit net, face caméra, étiquette lisible">
+              <input type="checkbox" id="scene-lisible-${i}" ${lisibleChecked?'checked':''} style="accent-color:var(--violet-400)" onchange="storyboardData.storyboard[${i}].lisible=this.checked">
+              🔍 Étiquette lisible
+            </label>
+            <input type="text" id="scene-direction-produit-${i}" value="${escAttr(s.direction_produit)}" placeholder="Où ? (ex: tenu en main gauche, posé sur table)" style="flex:1;min-width:160px;background:rgba(255,255,255,0.04);border:1px solid rgba(124,58,237,0.2);border-radius:6px;padding:5px 10px;font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text-bright);outline:none" onchange="storyboardData.storyboard[${i}].direction_produit=this.value">
           </div>
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
             <label style="font-size:12px;color:var(--text-muted);white-space:nowrap">🏠 Lieu :</label>
@@ -1609,7 +1746,7 @@ function renderStoryboard(){
               ${s.lieu_b64?'✓ Lieu chargé':'📷 Photo du lieu'}
             </label>
           </div>
-          <textarea id="direction-${i}" placeholder="Direction de scène — Ex: lumière douce, regard vers le bas..." style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(124,58,237,0.2);border-radius:8px;padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text-bright);outline:none;resize:none;height:52px;line-height:1.4" onchange="storyboardData.storyboard[${i}].direction=this.value"></textarea>
+          <textarea id="direction-${i}" placeholder="Direction de scène — Ex: lumière douce, regard vers le bas..." style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(124,58,237,0.2);border-radius:8px;padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text-bright);outline:none;resize:none;height:52px;line-height:1.4" onchange="storyboardData.storyboard[${i}].direction=this.value">${escAttr(s.direction)}</textarea>
         </div>
       </div>
       <div class="scene-img-area" id="img-area-${i}">
@@ -1617,7 +1754,8 @@ function renderStoryboard(){
         <button class="scene-gen-btn" onclick="genererScene(${i})">▶</button>
         <div class="scene-spinner" id="spinner-${i}"></div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 // MOTEUR PAR SCENE
@@ -1695,33 +1833,44 @@ async function genererScene(index){
   if(!canGenerate(currentCode)){document.getElementById('quota-alert').classList.add('show');showToast('Limite atteinte ⏳');return;}
   const scene=storyboardData?.storyboard?.[index];if(!scene)return;
   const imgArea=document.getElementById('img-area-'+index);
-  const spinner=document.getElementById('spinner-'+index);
-  const genBtn=imgArea.querySelector('.scene-gen-btn');
-  if(genBtn)genBtn.style.display='none';
-  spinner.style.display='block';
+  if(!imgArea)return;
+  // On garde l'état précédent (image ou bouton ▶) pour le restaurer en cas d'erreur
+  const prevHTML=imgArea.innerHTML;
+  // Le spinner est recréé à chaque fois : après une 1re génération il n'existait plus (c'était le bug du bouton 🔄)
+  imgArea.innerHTML=`<div class="scene-spinner" id="spinner-${index}" style="display:block"></div>`;
+  imgArea.style.position='relative';
   try{
     // Récupérer la direction de scène si renseignée
     const direction=document.getElementById('direction-'+index)?.value||scene.direction||'';
     const directionStr=direction?` DIRECTOR NOTE: ${direction}.`:'';
     const produitVisible=document.getElementById('scene-produit-'+index)?.checked!==false&&scene.produit_visible!==false;
+    const lisible=document.getElementById('scene-lisible-'+index)?.checked!==false&&scene.lisible!==false;
     const directionProduit=document.getElementById('scene-direction-produit-'+index)?.value||scene.direction_produit||'';
+    const isHook=(scene.partie||'')==='Hook';
+
+    // Lire l'emballage exact du produit (une seule fois, mis en cache)
+    if(produitVisible&&uploads.produit)await ensureProductDesc();
 
     const locks=[];
-    if(uploads.avatar)locks.push('IDENTITY LOCKED — same face, skin tone, hair, features as reference. Do not invent a new face. If mirror present, reflection must match the person exactly — no collage effect.');
+    if(uploads.avatar)locks.push('IDENTITY LOCKED — same face, skin tone and facial features as reference. Do not invent a new face. If mirror present, reflection must match the person exactly — no collage effect.');
     if(!produitVisible){
       locks.push('NO PRODUCT visible in this scene — person and environment only.');
-    } else if(uploads.produit){
-      locks.push('PRODUCT LOCKED — same product shape, packaging color and design as reference. DO NOT attempt to render any text, letters or logo on the packaging — leave those areas as abstract color patches. The model cannot render readable text and attempts will produce distorted artifacts.'+(directionProduit?' Product placement: '+directionProduit:'.'));
     }
     if(uploads.vetement)locks.push('OUTFIT LOCKED — same garment as outfit reference.');
     const lockStr=locks.join(' ');
 
-    const resultVisuel='IMPORTANT: The physical result of the product must be CLEARLY VISIBLE and OBSERVABLE — not just a gesture. Show the actual transformation (defined bouncy curls strand by strand, visibly glowing skin, lengthened lashes, smooth hair, etc.). Result must be undeniable in the image.';
+    // Etat visible de la scène : AVANT (Hook) / RÉSULTAT (fin) — issu des résultats annoncés du produit
+    const etatScene={etat:scene.etat||(isHook?'probleme':((scene.partie||'')==='CTA'?'resultat':'')),etat_visuel:scene.etat_visuel||''};
+    const resultVisuel=' '+buildEtatDirective(etatScene);
 
-    const basePrompt=scene.prompt_image+directionStr+
-      ` — ${lockStr} ${resultVisuel} NO inconsistent mirror reflections. Portrait orientation 9:16, 4K ultra-detailed, shot on iPhone 15 Pro, natural light, authentic UGC. NO studio look. NO plants.`;
+    // Consignes produit EN TÊTE du prompt : le modèle les pondère davantage
+    const prodBlock=(produitVisible&&uploads.produit)?buildProductDirective(directionProduit,lisible)+' ':'';
 
-    const sysLock=buildSystemLock(); const imgData=await generateImage(sysLock ? sysLock+' '+basePrompt : basePrompt, true);
+    const basePrompt=prodBlock+'SCENE: '+scene.prompt_image+directionStr+
+      ` — ${lockStr}${resultVisuel} NO inconsistent mirror reflections. Portrait orientation 9:16, shot on iPhone 15 Pro, natural light, authentic UGC look. ${QUALITY_SUFFIX} NO studio look. NO plants.`;
+
+    // La photo produit n'est envoyée que si le produit doit apparaître
+    const imgData=await generateImage(basePrompt, true, scene.lieu_b64||null, scene.lieu_mime||'image/jpeg', produitVisible);
     if(!CODES[currentCode]?.admin){incrementUsed(currentCode);updateQuotaUI();}
 
     // Afficher l'image + boutons régénérer et télécharger
@@ -1732,7 +1881,7 @@ async function genererScene(index){
     regenBtn.innerHTML='🔄';
     regenBtn.title='Régénérer';
     regenBtn.style.cssText='position:absolute;top:4px;right:4px;background:rgba(14,8,18,0.75);color:white;border:none;border-radius:6px;padding:4px 7px;font-size:12px;cursor:pointer;z-index:2';
-    regenBtn.onclick=()=>genererScene(index);
+    regenBtn.setAttribute('onclick','genererScene('+index+')');
     imgArea.style.position='relative';
     imgArea.appendChild(regenBtn);
 
@@ -1746,8 +1895,7 @@ async function genererScene(index){
 
     showToast(`Scène ${index+1} générée ✦`);
   }catch(err){
-    spinner.style.display='none';
-    const gb=imgArea.querySelector('.scene-gen-btn');if(gb)gb.style.display='flex';
+    imgArea.innerHTML=prevHTML;
     showToast('Erreur : '+err.message);
   }
 }
@@ -1804,6 +1952,7 @@ async function genererBroll(){
   document.getElementById('broll-result').style.display='none';
 
   const produit=document.getElementById('ctx-produit').value;
+  const RESB=getResultatsProduit();
   const decorInfo=decorMode==='ia'?(document.getElementById('decor-select')?.value||'modern apartment'):'custom decor from reference photo';
   const scriptResume=scriptData?[
     scriptData.hook_a||'',
@@ -1815,6 +1964,7 @@ async function genererBroll(){
   const prompt=`Tu es un directeur creatif UGC. Tu dois creer exactement 5 B-rolls complementaires pour cette video UGC.
 
 PRODUIT : ${produit}
+RESULTATS ANNONCES DU PRODUIT : ${RESB.resultats}
 DECOR : ${decorInfo}
 SCRIPT RESUME : ${scriptResume}
 ${uploads.produit?'PRODUCT LOCKED - meme produit que reference fournie':''}
@@ -1826,6 +1976,8 @@ REGLES ABSOLUES :
 3. Les 5 B-rolls couvrent differents moments : PROBLEME VECU > FRUSTRATION/QUOTIDIEN > DECOUVERTE > UTILISATION > RESULTAT/NOUVELLE VIE
 4. Jamais 3 B-rolls sur le produit. Chercher des moments de VIE autour du script.
 5. Chaque scene doit sembler vécue, pas demontree.
+7. etat_visuel (anglais) : ce qu'on VOIT physiquement sur la personne ou la zone dans ce plan, deduit UNIQUEMENT des resultats annonces. Pour moment_narratif probleme ou quotidien : l'AVANT visible (l'inverse du resultat). Pour resultat : la TRANSFORMATION evidente, en gros plan sur la zone transformee. N'invente aucun resultat.
+6. Dans prompt_image et photo_depart, NE DECRIS JAMAIS l'emballage (couleurs, texte, logo) : ecris seulement "the product from the reference image". Quand le produit est visible, il est tenu ou pose bien en face de la camera, etiquette non cachee, a distance d'une main ou du visage (jamais minuscule en arriere-plan).
 
 Pour chaque B-roll, fournis :
 - nom : court et explicite (ex: BROLL1_EviteLaRobe)
@@ -1836,7 +1988,7 @@ Pour chaque B-roll, fournis :
 - prompt_image : prompt anglais ultra-detaille pour la generation image, style UGC authentique, lumiere naturelle, 9:16
 
 Retourne UNIQUEMENT ce JSON brut sans texte avant ni apres :
-{"brolls":[{"nom":"BROLL1_Nom","moment_narratif":"...","description_fr":"...","photo_depart":"description precise en francais","instruction_video":"action courte","prompt_image":"prompt anglais detaille"}]}`;
+{"brolls":[{"nom":"BROLL1_Nom","moment_narratif":"...","description_fr":"...","photo_depart":"description precise en francais","instruction_video":"action courte","etat_visuel":"visible state in English","prompt_image":"prompt anglais detaille"}]}`;
 
   try{
     const raw=await callGemini(prompt,[uploads.produit,uploads.avatar].filter(Boolean));
@@ -1871,12 +2023,16 @@ function renderBroll(){
           ${b.lieu_b64?'✓ Lieu chargé':'📷 Photo du lieu'}
         </label>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:8px 10px;background:rgba(255,255,255,0.03);border-radius:8px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:8px 10px;background:rgba(255,255,255,0.03);border-radius:8px;flex-wrap:wrap">
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text-muted);white-space:nowrap">
           <input type="checkbox" id="broll-produit-${i}" checked style="accent-color:var(--violet-400)">
           📦 Produit visible
         </label>
-        <input type="text" id="broll-direction-${i}" placeholder="Où ? (ex: posé sur lavabo, en arrière-plan)" style="flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(124,58,237,0.2);border-radius:6px;padding:5px 10px;font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text-bright);outline:none">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text-muted);white-space:nowrap" title="Produit net, face caméra, étiquette lisible">
+          <input type="checkbox" id="broll-lisible-${i}" checked style="accent-color:var(--violet-400)">
+          🔍 Étiquette lisible
+        </label>
+        <input type="text" id="broll-direction-${i}" placeholder="Où ? (ex: posé sur lavabo, en arrière-plan)" style="flex:1;min-width:140px;background:rgba(255,255,255,0.04);border:1px solid rgba(124,58,237,0.2);border-radius:6px;padding:5px 10px;font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text-bright);outline:none">
       </div>
       <div class="broll-img-area" id="broll-area-${i}">
         <span style="font-size:9px;opacity:0.4">9:16</span>
@@ -1907,34 +2063,39 @@ async function genererBrollScene(index){
 
   try{
     const produitVisible=document.getElementById('broll-produit-'+index)?.checked!==false;
+    const lisible=document.getElementById('broll-lisible-'+index)?.checked!==false;
     const directionProduit=document.getElementById('broll-direction-'+index)?.value||'';
 
+    if(produitVisible&&uploads.produit)await ensureProductDesc();
+
     const locks=[];
-    if(uploads.avatar)locks.push('IDENTITY LOCKED — same face, skin tone, hair, features as reference photo. Never invent a new face. Never create inconsistent reflections in mirrors.');
-    if(produitVisible&&uploads.produit){
-      locks.push('PRODUCT LOCKED — same product shape, packaging color and design as reference. DO NOT attempt to render any text, letters or logo — leave those areas as abstract color. Attempting text causes distortion artifacts.');
-      if(directionProduit)locks.push('PRODUCT PLACEMENT: '+directionProduit+'.');
-    } else {
+    if(uploads.avatar)locks.push('IDENTITY LOCKED — same face, skin tone and facial features as reference photo. Never invent a new face. Never create inconsistent reflections in mirrors.');
+    if(!produitVisible||!uploads.produit){
       locks.push('NO PRODUCT visible — focus on person, environment, emotion only.');
     }
     if(uploads.vetement)locks.push('OUTFIT LOCKED — same garment as outfit reference.');
 
-    // Renforcement résultats visibles
-    const resultatsVisibles='IMPORTANT: The visual result of the product must be CLEARLY VISIBLE and PHYSICALLY OBSERVABLE. Do not just show a gesture — show the actual result on the person or surface (defined bouncy curls clearly visible strand by strand, glossy hydrated skin visibly glowing, lengthened lashes clearly defined, etc.). The result must be undeniable and visible in the image.';
+    // Renforcement résultats visibles (seulement quand le produit est à l'image)
+    const momentEtat={probleme:'probleme',quotidien:'probleme',resultat:'resultat'}[(b.moment_narratif||'').toLowerCase()]||'';
+    const resultatsVisibles=' '+buildEtatDirective({etat:momentEtat,etat_visuel:b.etat_visuel||''});
 
     const lockStr=locks.join(' ');
-    const finalPromptBroll=`${b.prompt_image} — ${lockStr} ${resultatsVisibles} Portrait orientation 9:16, 4K ultra-detailed, shot on iPhone 15 Pro, natural light, authentic UGC style. NO studio look. NO plants. NO inconsistent mirror reflections.`;
+    const prodBlock=(produitVisible&&uploads.produit)?buildProductDirective(directionProduit,lisible)+' ':'';
+    const finalPromptBroll=`${prodBlock}SCENE: ${b.prompt_image} — ${lockStr}${resultatsVisibles} Portrait orientation 9:16, shot on iPhone 15 Pro, natural light, authentic UGC look. ${QUALITY_SUFFIX} NO studio look. NO plants. NO inconsistent mirror reflections.`;
 
     const brollBody={
       code:currentCode,
       prompt:finalPromptBroll,
       aspectRatio:'9:16',
+      imageSize:IMAGE_SIZE,
       avatarB64:uploads.avatar?.b64||null,
       avatarMime:uploads.avatar?.mime||'image/jpeg',
       produitB64:produitVisible?(uploads.produit?.b64||null):null,
       produitMime:uploads.produit?.mime||'image/jpeg',
       vetementB64:uploads.vetement?.b64||null,
       vetementMime:uploads.vetement?.mime||'image/jpeg',
+      decorB64:b.lieu_b64||null,
+      decorMime:b.lieu_mime||'image/jpeg',
     };
 
     const res=await fetch(`${PROXY_URL}/generate-image`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(brollBody)});
