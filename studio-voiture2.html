@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Studio Voiture — Studio IRL</title>
+<style>
+:root{
+  --bg:#071226; --card:#0e1d3a; --card2:#122649; --line:#1f3a6b;
+  --blue:#2f7bff; --blue2:#6aa6ff; --txt:#eaf1ff; --mut:#8fa6cf; --ok:#34d399; --err:#ff6b6b;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+body{padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+.wrap{max-width:760px;margin:0 auto;padding:18px 16px 60px}
+h1{font-size:26px;margin:6px 0 4px;letter-spacing:-.5px}
+h1 span{color:var(--blue2)}
+.sub{color:var(--mut);font-size:14px;margin:0 0 18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}
+.card h2{font-size:13px;text-transform:uppercase;letter-spacing:1.2px;color:var(--blue2);margin:0 0 12px}
+label{display:block;font-size:13px;color:var(--mut);margin:0 0 6px}
+input[type=text],input[type=password],textarea,select{
+  width:100%;background:var(--card2);border:1px solid var(--line);color:var(--txt);border-radius:12px;
+  padding:12px;font-size:16px;font-family:inherit;outline:none}
+input:focus,textarea:focus,select:focus{border-color:var(--blue)}
+textarea{min-height:90px;resize:vertical}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.slot{position:relative;aspect-ratio:3/4;background:var(--card2);border:1.5px dashed var(--line);border-radius:14px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;cursor:pointer;overflow:hidden;padding:6px}
+.slot.req{border-color:var(--blue)}
+.slot .ic{font-size:22px;opacity:.8}
+.slot .nm{font-size:12px;font-weight:600;margin-top:4px}
+.slot .rq{font-size:10px;color:var(--blue2)}
+.slot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.slot .tag{position:absolute;left:0;right:0;bottom:0;background:rgba(7,18,38,.82);font-size:11px;font-weight:600;padding:5px 4px}
+.slot .x{position:absolute;top:5px;right:5px;width:24px;height:24px;border-radius:50%;background:rgba(7,18,38,.85);
+  color:#fff;border:0;font-size:14px;line-height:24px;padding:0;z-index:2}
+.carbox{display:flex;gap:12px;align-items:center}
+.carslot{width:110px;flex:none;aspect-ratio:4/3}
+.hint{font-size:12px;color:var(--mut);margin-top:8px;line-height:1.45}
+.badge{display:inline-block;margin-top:8px;padding:6px 10px;border-radius:999px;background:rgba(47,123,255,.15);
+  border:1px solid var(--blue);font-size:12px;color:var(--blue2);font-weight:600}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{width:100%;border:0;border-radius:14px;padding:16px;font-size:17px;font-weight:700;color:#fff;
+  background:linear-gradient(135deg,#1d5fe0,#3a8bff);cursor:pointer}
+.btn:disabled{opacity:.5}
+.btn.sec{background:var(--card2);border:1px solid var(--line);font-size:14px;padding:11px;font-weight:600}
+.status{font-size:14px;margin-top:12px;min-height:20px;color:var(--mut)}
+.status.err{color:var(--err)} .status.ok{color:var(--ok)}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--blue2);
+  border-radius:50%;animation:s 1s linear infinite;vertical-align:-2px;margin-right:8px}
+@keyframes s{to{transform:rotate(360deg)}}
+.res{margin-bottom:16px}
+.res img{width:100%;border-radius:14px;display:block;border:1px solid var(--line)}
+.res .acts{display:flex;gap:8px;margin-top:8px}
+.res .acts .btn{flex:1}
+.top{display:flex;justify-content:space-between;align-items:center}
+.lnk{background:none;border:0;color:var(--mut);font-size:12px;text-decoration:underline;cursor:pointer}
+#gate .card{margin-top:40px}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- PAGE CLÉ API -->
+<div id="gate" class="hidden">
+  <h1>Studio <span>Voiture</span></h1>
+  <p class="sub">Ta scène en voiture, parfaitement réaliste, en 4K.</p>
+  <div class="card">
+    <h2>Clé API Vertex AI</h2>
+    <label for="keyIn">Colle ta clé (commence par AQ.)</label>
+    <input type="password" id="keyIn" placeholder="AQ.xxxxxxxx" autocomplete="off">
+    <div class="hint">Ta clé reste uniquement dans ton navigateur.</div>
+    <div style="height:12px"></div>
+    <button class="btn" id="keyGo">Entrer dans le studio</button>
+  </div>
+</div>
+
+<!-- APPLI -->
+<div id="app" class="hidden">
+  <div class="top">
+    <div>
+      <h1>Studio <span>Voiture</span></h1>
+      <p class="sub">Les passagers en voiture, côté volant respecté, 4K réaliste.</p>
+    </div>
+    <button class="lnk" id="keyReset">Changer de clé</button>
+  </div>
+
+  <div class="card">
+    <h2>1 · Personnes dans la voiture (max 6)</h2>
+    <div class="grid" id="slots"></div>
+    <div class="hint">Le conducteur est obligatoire : c'est lui qui est au volant. Ajoute le passager avant et les autres si besoin.</div>
+  </div>
+
+  <div class="card">
+    <h2>2 · Voiture (optionnel)</h2>
+    <div class="carbox">
+      <div class="slot carslot" id="carSlot"><div class="ic">🚗</div><div class="nm">Intérieur</div></div>
+      <div class="hint" style="margin:0">Une photo de l'habitacle. Le sens du volant suit le pays (ou le sélecteur) et doit être le même que sur ta photo. Sans photo, le studio choisit une voiture adaptée au pays.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>3 · Pays / lieu</h2>
+    <label for="loc">Où se passe la scène ? (ex : Bali, Londres, Maroc, Islande…)</label>
+    <input type="text" id="loc" placeholder="Bali">
+    <div class="row" style="margin-top:10px">
+      <div>
+        <label for="side">Position du volant</label>
+        <select id="side">
+          <option value="auto">Automatique (selon le pays)</option>
+          <option value="left">Volant à gauche</option>
+          <option value="right">Volant à droite</option>
+        </select>
+      </div>
+      <div>
+        <label for="ratio">Format</label>
+        <select id="ratio">
+          <option value="4:5">4:5 (feed)</option>
+          <option value="9:16">9:16 (Reel / Story)</option>
+          <option value="3:4">3:4</option>
+          <option value="1:1">1:1</option>
+          <option value="16:9">16:9</option>
+        </select>
+      </div>
+    </div>
+    <div id="sideBadge" class="badge"></div>
+    <div class="hint">Sans photo de voiture, le sens de conduite du pays est appliqué (ex : Bali = volant à droite, conducteur à droite).</div>
+  </div>
+
+  <div class="card">
+    <h2>4 · Direction de scène (optionnel)</h2>
+    <textarea id="dir" placeholder="Ex : la passagère avant prend un selfie, le conducteur rit en regardant la route…"></textarea>
+    <div class="hint">Ceinture toujours attachée pour tout le monde, sauf si tu l'indiques ici.</div>
+  </div>
+
+  <button class="btn" id="go">Générer en 4K</button>
+  <div class="status" id="status"></div>
+  <div id="results" style="margin-top:16px"></div>
+</div>
+
+</div>
+
+<script>
+/* ---------- Config ---------- */
+const MODEL_IMAGE = "gemini-3-pro-image";   // même modèle 4K que les autres studios
+const ENDPOINT = m => `https://aiplatform.googleapis.com/v1/publishers/google/models/${m}:generateContent`;
+const KEY_STORE = "studio_voiture_vertex_key";
+
+const ROLES = [
+  {id:"driver",  name:"Conducteur",        req:true,  desc:"DRIVER (person at the steering wheel)"},
+  {id:"front",   name:"Passager avant",    req:false, desc:"FRONT PASSENGER (seat next to the driver)"},
+  {id:"rear1",   name:"Arrière 1",         req:false, desc:"REAR PASSENGER on the rear seat directly behind the driver"},
+  {id:"rear2",   name:"Arrière centre",    req:false, desc:"REAR PASSENGER in the middle of the rear bench"},
+  {id:"rear3",   name:"Arrière 2",         req:false, desc:"REAR PASSENGER on the rear seat directly behind the front passenger"},
+  {id:"extra",   name:"Siège en plus",     req:false, desc:"ADDITIONAL OCCUPANT (any remaining seat, child seat if it is a child)"}
+];
+
+/* Pays / lieux à conduite à droite (volant à droite) */
+const RHD = ["bali","lombok","java","indonesie","indonesia","royaume-uni","royaume uni","angleterre","ecosse","pays de galles","londres","uk","irlande","ireland","dublin",
+"australie","australia","sydney","melbourne","nouvelle-zelande","nouvelle zelande","new zealand","japon","japan","tokyo","kyoto","inde","india","goa","kerala",
+"thailande","thailand","bangkok","phuket","chiang mai","koh samui","malaisie","malaysia","kuala lumpur","singapour","singapore","afrique du sud","south africa","le cap","cape town",
+"kenya","tanzanie","tanzania","zanzibar","ouganda","uganda","zambie","zimbabwe","mozambique","namibie","botswana","malawi","pakistan","bangladesh","sri lanka","nepal","bhoutan","bhutan",
+"chypre","cyprus","malte","malta","jamaique","jamaica","barbade","barbados","trinite","bahamas","fidji","fiji","hong kong","macao","brunei","suriname","guyana","maldives",
+"ile maurice","maurice","mauritius","seychelles","timor"];
+
+const norm = s => (s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
+const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+function detectSide(loc){
+  const n = norm(loc);
+  if(!n) return null;
+  for(const k of RHD){ if(new RegExp("(^|[^a-z])"+esc(k)+"($|[^a-z])").test(n)) return "right"; }
+  return "left";
+}
+function currentSide(){
+  const m = $("side").value;
+  if(m!=="auto") return {side:m, auto:false};
+  const d = detectSide($("loc").value);
+  return {side:d||"left", auto:true, known:!!d};
+}
+
+/* ---------- Helpers ---------- */
+const $ = id => document.getElementById(id);
+const state = { refs:{}, car:null, key:"" };
+
+function getKey(){ try{return localStorage.getItem(KEY_STORE)||""}catch(e){return ""} }
+function setKey(v){ try{localStorage.setItem(KEY_STORE,v)}catch(e){} }
+
+function fileToJpeg(file, max=1280){
+  return new Promise((res,rej)=>{
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = ()=>{
+      let {width:w,height:h} = img;
+      const sc = Math.min(1, max/Math.max(w,h));
+      w=Math.round(w*sc); h=Math.round(h*sc);
+      const c = document.createElement("canvas"); c.width=w; c.height=h;
+      c.getContext("2d").drawImage(img,0,0,w,h);
+      const data = c.toDataURL("image/jpeg",0.88);
+      const c2 = document.createElement("canvas"); c2.width=w; c2.height=h;
+      const x2 = c2.getContext("2d"); x2.translate(w,0); x2.scale(-1,1); x2.drawImage(img,0,0,w,h);
+      const fl = c2.toDataURL("image/jpeg",0.88);
+      URL.revokeObjectURL(url);
+      res({dataUrl:data, b64:data.split(",")[1], flipB64:fl.split(",")[1]});
+    };
+    img.onerror = ()=>{URL.revokeObjectURL(url);rej(new Error("Image illisible"))};
+    img.src = url;
+  });
+}
+function pick(cb){
+  const i = document.createElement("input");
+  i.type="file"; i.accept="image/*";
+  i.onchange = ()=>{ if(i.files[0]) cb(i.files[0]); };
+  i.click();
+}
+
+/* ---------- UI ---------- */
+function renderSlots(){
+  const box = $("slots"); box.innerHTML="";
+  ROLES.forEach(r=>{
+    const d = document.createElement("div");
+    d.className = "slot"+(r.req?" req":"");
+    const ref = state.refs[r.id];
+    if(ref){
+      d.innerHTML = `<img src="${ref.dataUrl}" alt=""><div class="tag">${r.name}</div><button class="x" aria-label="Retirer">×</button>`;
+      d.querySelector(".x").onclick = e=>{e.stopPropagation(); delete state.refs[r.id]; renderSlots();};
+    } else {
+      d.innerHTML = `<div class="ic">＋</div><div class="nm">${r.name}</div>${r.req?'<div class="rq">obligatoire</div>':''}`;
+    }
+    d.onclick = ()=>pick(async f=>{
+      try{ state.refs[r.id] = await fileToJpeg(f); renderSlots(); }catch(e){ setStatus(e.message,"err"); }
+    });
+    box.appendChild(d);
+  });
+}
+function renderCar(){
+  const d = $("carSlot");
+  if(state.car){
+    d.innerHTML = `<img src="${state.car.dataUrl}" alt=""><button class="x" aria-label="Retirer">×</button>`;
+    d.querySelector(".x").onclick = e=>{e.stopPropagation(); state.car=null; renderCar(); renderBadge();};
+  } else {
+    d.innerHTML = `<div class="ic">🚗</div><div class="nm">Intérieur</div>`;
+  }
+  renderBadge();
+}
+$("carSlot").onclick = ()=>pick(async f=>{
+  try{ state.car = await fileToJpeg(f); renderCar(); }catch(e){ setStatus(e.message,"err"); }
+});
+function renderBadge(){
+  const b = $("sideBadge");
+  const s = currentSide();
+  const txt = s.side==="right" ? "Volant à droite — conducteur à droite" : "Volant à gauche — conducteur à gauche";
+  b.textContent = (s.auto && !s.known ? "Par défaut : " : "🧭 ") + txt + (state.car ? " (doit correspondre à ta photo de voiture)" : "");
+}
+function setStatus(msg,cls,spin){
+  const s = $("status");
+  s.className = "status "+(cls||"");
+  s.innerHTML = (spin?'<span class="spin"></span>':"")+msg;
+}
+
+/* ---------- Prompt ---------- */
+function buildParts(){
+  const loc = $("loc").value.trim();
+  const dir = $("dir").value.trim();
+  const {side} = currentSide();
+  const parts = [];
+  const used = ROLES.filter(r=>state.refs[r.id]);
+
+  const mirror = side==="right";
+  let sideRule;
+  if(mirror){
+    sideRule = "STEERING WHEEL POSITION: standard LEFT-hand-drive vehicle. The steering wheel and the driver's seat are on the LEFT side of the cabin (occupants' point of view, facing forward); the front passenger is on the RIGHT; traffic drives on the right side of the road. Do not apply any other driving convention. Mandatory and unmistakable. If a car interior reference is provided, reproduce its layout exactly as shown.";
+  } else if(state.car){
+    sideRule = "STEERING WHEEL POSITION: follow EXACTLY the steering wheel position visible in the car interior reference photo (wheel on the left of the cabin = driver on the left).";
+  } else {
+    sideRule = "STEERING WHEEL POSITION: left-hand-drive vehicle. The steering wheel and the driver's seat are on the LEFT side of the cabin (occupants' point of view, facing forward); the front passenger is on the RIGHT. Mandatory and unmistakable.";
+  }
+  const noText = mirror ? "\n\nBACKGROUND: avoid any readable signs, shop fronts with lettering, license plates or text anywhere in the frame." : "";
+
+  const carRule = state.car
+    ? "VEHICLE: use exactly the vehicle interior shown in the car reference photo (same model, dashboard, materials, colors, steering wheel)."
+    : `VEHICLE: no car reference was provided. Choose a plausible, everyday, slightly used car typical of ${loc||"the location"}, with a believable interior.`;
+
+  const intro = `Create ONE ultra-realistic photograph taken inside a car, in native 4K quality, indistinguishable from a real photo (natural light, real lens behavior, fine skin texture, no plastic look, no CGI, no illustration).
+
+${sideRule}
+
+${carRule}
+
+OCCUPANTS: show exactly ${used.length} person${used.length>1?"s":""}, no more, no fewer. Each person below must look EXACTLY like their reference photo (face, hair, skin tone, age, body type). Keep their identity faithful. Clothing should be coherent with the setting and not copied from the reference unless it fits.
+
+SEATBELTS (MANDATORY): every occupant wears a fastened seatbelt, clearly visible across the chest and buckled, unless the scene direction below explicitly says otherwise.
+
+LOCATION: ${loc?`The car is in ${loc}. Show the surroundings through the windows with local, accurate vegetation, architecture, road type and light typical of ${loc}.`:"Choose a natural everyday road setting with visible vegetation outside the windows."} Visible vegetation outside must be natural and slightly out of focus through the glass.
+
+REALISTIC DETAILS: traces of real life inside the car — a lightly dusty dashboard, small fingerprints on the glass, a phone mount or sunglasses, a bottle or a few receipts, lightly worn upholstery, natural reflections on the windshield, tiny imperfections. Nothing staged or showroom-clean.
+
+SCENE DIRECTION: ${dir?dir+" (follow this precisely; it takes priority for poses and actions, but keep the steering wheel position rule.)":"a natural, candid, relaxed moment during a drive, nobody posing at the camera unless it feels natural."}
+
+Never add text, logos, watermarks or captions.${noText}
+
+Reference photos follow, in order:`;
+  parts.push({text:intro});
+
+  used.forEach((r,i)=>{
+    parts.push({text:`REFERENCE ${i+1} — ${r.desc}:`});
+    parts.push({inlineData:{mimeType:"image/jpeg",data:mirror?state.refs[r.id].flipB64:state.refs[r.id].b64}});
+  });
+  if(state.car){
+    parts.push({text:"CAR INTERIOR REFERENCE (use this exact vehicle and its steering wheel position as shown):"});
+    parts.push({inlineData:{mimeType:"image/jpeg",data:mirror?state.car.flipB64:state.car.b64}});
+  }
+  return parts;
+}
+
+/* ---------- Appel Vertex ---------- */
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+async function callVertex(parts, ratio){
+  const body = {
+    contents:[{role:"user",parts}],
+    generationConfig:{
+      responseModalities:["TEXT","IMAGE"],
+      imageConfig:{aspectRatio:ratio, imageSize:"4K"}
+    }
+  };
+  let wait = 4000;
+  for(let attempt=0; attempt<5; attempt++){
+    const r = await fetch(ENDPOINT(MODEL_IMAGE),{
+      method:"POST",
+      headers:{"Content-Type":"application/json","x-goog-api-key":state.key},
+      body:JSON.stringify(body)
+    });
+    if(r.status===429){
+      setStatus(`Serveur saturé, nouvel essai dans ${Math.round(wait/1000)} s…`,"",true);
+      await sleep(wait); wait*=2; continue;
+    }
+    const j = await r.json().catch(()=>({}));
+    if(!r.ok){ throw new Error((j.error&&j.error.message)||("Erreur "+r.status)); }
+    const ps = (j.candidates&&j.candidates[0]&&j.candidates[0].content&&j.candidates[0].content.parts)||[];
+    const img = ps.find(p=>p.inlineData||p.inline_data);
+    if(!img){
+      const t = ps.map(p=>p.text).filter(Boolean).join(" ");
+      throw new Error(t||"Aucune image reçue. Reformule la direction de scène.");
+    }
+    const d = img.inlineData||img.inline_data;
+    return {b64:d.data, mime:d.mimeType||d.mime_type||"image/png"};
+  }
+  throw new Error("Trop de requêtes (429). Réessaie dans une minute.");
+}
+function flipResult(b64,mime){
+  return new Promise((res,rej)=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const c = document.createElement("canvas"); c.width=img.naturalWidth; c.height=img.naturalHeight;
+      const x = c.getContext("2d"); x.translate(c.width,0); x.scale(-1,1); x.drawImage(img,0,0);
+      c.toBlob(b=>b?res(URL.createObjectURL(b)):rej(new Error("Retournement impossible")),"image/png");
+    };
+    img.onerror = ()=>rej(new Error("Image reçue illisible"));
+    img.src = "data:"+mime+";base64,"+b64;
+  });
+}
+function b64ToBlobUrl(b64,mime){
+  const bin = atob(b64); const u = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i);
+  return URL.createObjectURL(new Blob([u],{type:mime}));
+}
+
+/* ---------- Génération ---------- */
+async function generate(){
+  if(!state.refs.driver){ setStatus("Ajoute d'abord la photo du conducteur.","err"); return; }
+  const btn = $("go"); btn.disabled = true;
+  setStatus("Génération en cours (4K, ça peut prendre une minute)…","",true);
+  try{
+    const out = await callVertex(buildParts(), $("ratio").value);
+    const mirror = currentSide().side==="right";
+    const url = mirror ? await flipResult(out.b64,out.mime) : b64ToBlobUrl(out.b64,out.mime);
+    const ext = mirror ? "png" : (out.mime.includes("jpeg")?"jpg":"png");
+    const div = document.createElement("div"); div.className="res";
+    div.innerHTML = `<img src="${url}" alt="Résultat"><div class="acts">
+      <a class="btn sec" style="text-align:center;text-decoration:none" href="${url}" download="studio-voiture-${Date.now()}.${ext}">Télécharger</a>
+      <button class="btn sec">Ouvrir (iPhone : appui long)</button></div>`;
+    div.querySelector("button").onclick = ()=>window.open(url,"_blank");
+    $("results").prepend(div);
+    setStatus("Terminé ✓","ok");
+  }catch(e){
+    setStatus(e.message||"Erreur inconnue","err");
+  }finally{ btn.disabled=false; }
+}
+
+/* ---------- Init ---------- */
+function showApp(){ $("gate").classList.add("hidden"); $("app").classList.remove("hidden"); renderSlots(); renderCar(); }
+function showGate(){ $("app").classList.add("hidden"); $("gate").classList.remove("hidden"); }
+$("keyGo").onclick = ()=>{
+  const v = $("keyIn").value.trim();
+  if(!v) return;
+  state.key = v; setKey(v); showApp();
+};
+$("keyReset").onclick = ()=>{ setKey(""); state.key=""; $("keyIn").value=""; showGate(); };
+$("loc").addEventListener("input",renderBadge);
+$("side").addEventListener("change",renderBadge);
+$("go").onclick = generate;
+state.key = getKey();
+state.key ? showApp() : showGate();
+</script>
+</body>
+</html>
