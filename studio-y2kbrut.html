@@ -3139,22 +3139,47 @@ const SN_CADRAGES = ['plan large', 'plan moyen', 'plan américain', 'plan rappro
 
 async function snCallText(system, user) {
   const endpoint = 'https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-2.5-flash:generateContent';
-  const resp = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': API_KEY },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: system }] },
-      contents: [{ role: 'user', parts: [{ text: user }] }],
-      generationConfig: { temperature: 0.6, maxOutputTokens: 16000, responseMimeType: 'application/json' }
-    })
-  });
-  let data = {};
-  try { data = await resp.json(); } catch (_) {}
-  if (!resp.ok) throw new Error((data.error && data.error.message) || ('Erreur Vertex ' + resp.status));
-  const parts = (((data.candidates || [])[0] || {}).content || {}).parts || [];
-  const txt = parts.map(p => p.text || '').join('');
-  if (!txt) throw new Error('Réponse vide du modèle');
-  return JSON.parse(cleanJson(txt));
+  // Tentatives : réflexion bornée, puis sans réflexion si la réponse est vide ou illisible
+  const tries = [{ think: 1024, temp: 0.6 }, { think: 0, temp: 0.4 }, { think: 0, temp: 0.8 }];
+  let lastErr;
+  for (let t = 0; t < tries.length; t++) {
+    try {
+      const resp = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': API_KEY },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: system }] },
+          contents: [{ role: 'user', parts: [{ text: user }] }],
+          generationConfig: {
+            temperature: tries[t].temp, maxOutputTokens: 32000, responseMimeType: 'application/json',
+            thinkingConfig: { thinkingBudget: tries[t].think }
+          }
+        })
+      });
+      let data = {};
+      try { data = await resp.json(); } catch (_) {}
+      if (!resp.ok) {
+        const msg = (data.error && data.error.message) || ('Erreur Vertex ' + resp.status);
+        if (resp.status === 429 && t < tries.length - 1) { await delay(8000); lastErr = new Error(msg); continue; }
+        throw new Error(msg);
+      }
+      const cand = (data.candidates || [])[0] || {};
+      const parts = (cand.content && cand.content.parts) || [];
+      const txt = parts.filter(p => !p.thought).map(p => p.text || '').join('');
+      if (!txt.trim()) {
+        const why = (data.promptFeedback && data.promptFeedback.blockReason) ? 'bloqué (' + data.promptFeedback.blockReason + ')' : (cand.finishReason ? 'fin : ' + cand.finishReason : 'aucune raison fournie');
+        lastErr = new Error('Réponse vide du modèle — ' + why);
+        continue;
+      }
+      try { return JSON.parse(cleanJson(txt)); }
+      catch (e) { lastErr = new Error('Réponse illisible (JSON incomplet), nouvelle tentative…'); continue; }
+    } catch (err) {
+      lastErr = err;
+      if (/Réponse|illisible/.test(err.message) && t < tries.length - 1) continue;
+      throw err;
+    }
+  }
+  throw lastErr || new Error('Réponse vide du modèle');
 }
 
 async function snGenerateBoard() {
