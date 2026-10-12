@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Studio Flash Y2K — IRL</title>
+<style>
+  :root{
+    --bg:#0a0510;--surface:#160b1f;--surface2:#1f1029;--line:#34193f;
+    --txt:#f5ebf8;--txt2:rgba(245,235,248,.62);--txt3:rgba(245,235,248,.36);
+    --pink:#ff3d8b;--blood:#d1122b;--silver:#d9d2e3;--ok:#53d38a;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{background:radial-gradient(1100px 480px at 50% -8%,#3a0f33 0%,transparent 60%),var(--bg);color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-weight:400;min-height:100vh;overflow-x:hidden;line-height:1.5}
+  .mono{font-family:ui-monospace,Menlo,Consolas,monospace}
+
+  /* SPLASH */
+  #splash{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;z-index:1000;padding:20px;transition:opacity .6s ease}
+  #splash.hidden{opacity:0;pointer-events:none}
+  .splash-logo{font-size:44px;font-weight:300;letter-spacing:.04em;text-align:center}
+  .splash-logo span{background:linear-gradient(90deg,var(--silver),var(--pink),var(--blood));-webkit-background-clip:text;background-clip:text;color:transparent;font-style:italic}
+  .splash-sub{font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--txt3);text-align:center;margin-top:8px}
+  .splash-tagline{font-style:italic;color:var(--txt2);text-align:center;max-width:380px;line-height:1.6;margin-top:10px;font-size:15px}
+  .splash-form{display:flex;flex-direction:column;gap:12px;width:100%;max-width:340px}
+  .section-label{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--txt3);margin-bottom:8px}
+  .engine-select{display:flex;gap:8px}
+  .engine-opt{flex:1;background:var(--surface);border:1px solid var(--line);color:var(--txt2);padding:10px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;text-align:center;cursor:pointer;border-radius:6px}
+  .engine-opt.active{border-color:var(--pink);color:var(--pink)}
+  .splash-input{background:var(--surface);border:1px solid var(--line);color:var(--txt);padding:14px 16px;font-size:16px;border-radius:6px;outline:none;width:100%}
+  .splash-input:focus{border-color:var(--pink)}
+  .splash-btn{background:linear-gradient(90deg,var(--pink),var(--blood));color:#fff;border:none;padding:14px;font-size:12px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;cursor:pointer;border-radius:6px}
+
+  /* APP */
+  #app{display:none}
+  #app.visible{display:block}
+  .header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(10,5,16,.92);backdrop-filter:blur(8px);z-index:20}
+  .header-logo{font-size:20px;font-weight:300;letter-spacing:.03em}
+  .header-logo span{color:var(--pink);font-style:italic}
+  .header-right{display:flex;gap:8px}
+  .badge{font-size:10px;letter-spacing:.12em;text-transform:uppercase;border:1px solid var(--line);border-radius:99px;padding:4px 10px;color:var(--txt2)}
+  .badge.pink{border-color:var(--pink);color:var(--pink)}
+  .main{display:grid;grid-template-columns:380px 1fr;gap:0;min-height:calc(100vh - 56px)}
+  @media(max-width:860px){.main{grid-template-columns:1fr}}
+  .panel-left{padding:18px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:20px}
+  @media(max-width:860px){.panel-left{border-right:none;border-bottom:1px solid var(--line)}}
+  .panel-right{padding:18px}
+  .section{display:block}
+
+  .avatar-zone{position:relative;border:1.5px dashed var(--line);border-radius:12px;min-height:160px;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;background:var(--surface);text-align:center;color:var(--txt2);font-size:13px}
+  .avatar-zone.has-image{border-style:solid;border-color:var(--pink)}
+  .avatar-zone img{width:100%;max-height:260px;object-fit:cover;display:block}
+  .avatar-zone input[type=file]{display:none}
+  .avatar-badge{position:absolute;top:8px;left:8px;background:var(--pink);color:#fff;font-size:9px;letter-spacing:.15em;padding:3px 8px;border-radius:99px}
+
+  .input,.textarea{width:100%;background:var(--surface);border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:12px 14px;font-size:16px;font-family:inherit;outline:none}
+  .input:focus,.textarea:focus{border-color:var(--pink)}
+  .textarea{min-height:170px;resize:vertical;line-height:1.55}
+  .hint{font-size:11px;color:var(--txt3);margin-top:6px}
+
+  .format-row{display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px;cursor:pointer}
+  .format-row.active{border-color:var(--pink)}
+  .format-label{font-size:13px}
+  .format-sub{font-size:11px;color:var(--txt3)}
+  .pill{width:40px;height:22px;border-radius:99px;background:var(--surface2);border:1px solid var(--line);position:relative;flex:none}
+  .pill::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--txt3);transition:transform .2s}
+  .format-row.active .pill{border-color:var(--pink)}
+  .format-row.active .pill::after{transform:translateX(18px);background:var(--pink)}
+
+  .warn{display:flex;gap:10px;background:rgba(255,61,139,.07);border:1px solid rgba(255,61,139,.3);border-radius:8px;padding:12px;margin-bottom:10px;font-size:12px;color:var(--txt2)}
+  .btn-brut{width:100%;margin-top:10px;background:linear-gradient(90deg,var(--pink),var(--blood));color:#fff;border:none;border-radius:10px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+  .btn-brut:disabled{opacity:.55;cursor:wait}
+
+  .empty-state{text-align:center;padding:70px 20px;color:var(--txt3)}
+  .empty-icon{font-size:40px;color:var(--pink);margin-bottom:10px}
+  .empty-title{font-size:18px;color:var(--txt2);margin-bottom:6px}
+  .brut-result{max-width:560px;margin:0 auto}
+  .brut-result-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+  .brut-result-title{font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--pink)}
+  .brut-emotion-detected{font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--txt3)}
+  .brut-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .brut-card-body{padding:16px}
+  .brut-card-emotion{font-size:26px;font-weight:600;color:var(--pink);line-height:1.2}
+  .brut-card-intensity{font-size:12px;color:var(--txt2);margin:6px 0 10px}
+  .brut-card-extract{font-style:italic;color:var(--silver);font-size:14px;border-left:2px solid var(--pink);padding-left:12px}
+  .meta{display:flex;flex-wrap:wrap;gap:6px;padding-top:12px}
+  .meta-tag{font-size:11px;border:1px solid var(--line);border-radius:99px;padding:3px 10px;color:var(--txt2);background:var(--surface2)}
+  .brut-image-area{background:#07030b;min-height:220px;display:flex;align-items:center;justify-content:center;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .brut-image-area img{width:100%;display:block}
+  .brut-card-actions{display:flex;gap:8px;padding:12px}
+  .seq-btn{flex:1;background:var(--surface2);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:12px;font-size:13px;cursor:pointer}
+  .seq-btn.primary{border-color:var(--pink);color:var(--pink)}
+  .seq-btn:disabled{opacity:.5;cursor:wait}
+  .loading{display:flex;flex-direction:column;align-items:center;gap:10px;padding:40px;color:var(--txt2);font-size:12px}
+  .dot{width:16px;height:16px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--pink);animation:spin .8s linear infinite;display:inline-block}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--surface2);border:1px solid var(--line);color:var(--txt);padding:10px 16px;border-radius:99px;font-size:13px;opacity:0;pointer-events:none;transition:all .25s;z-index:2000;max-width:90vw;text-align:center}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast.success{border-color:var(--ok);color:var(--ok)}
+  .toast.error{border-color:var(--blood);color:#ff9aa8}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div style="text-align:center">
+    <div class="splash-logo">Studio <span>Flash Y2K</span></div>
+    <div class="splash-sub">Prom Night · Émotions brutes · IRL</div>
+    <div class="splash-tagline">Une émotion, une image brute.<br>Comme une photo de compact numérique retrouvée au fond d'un tiroir.</div>
+  </div>
+  <div class="splash-form">
+    <div class="section-label" style="text-align:center">Moteur de génération</div>
+    <div class="engine-select">
+      <div class="engine-opt active" onclick="selectEngine('vertex')" id="opt-vertex">Vertex AI</div>
+      <div class="engine-opt" onclick="selectEngine('kie')" id="opt-kie">kie.ai</div>
+    </div>
+    <div id="vertex-key-group">
+      <input type="password" class="splash-input" id="api-key" placeholder="Clé API Vertex AI (AQ…)" autocomplete="off">
+    </div>
+    <div id="kie-key-group" style="display:none">
+      <input type="password" class="splash-input" id="kie-key" placeholder="Clé API kie.ai" autocomplete="off">
+    </div>
+    <button class="splash-btn" onclick="startApp()">▶ Entrer dans le studio</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="header">
+    <div class="header-logo">Studio <span>Flash Y2K</span></div>
+    <div class="header-right">
+      <div class="badge pink" id="header-format-badge">Story 9:16</div>
+      <div class="badge" id="engine-badge">Vertex AI</div>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- GAUCHE -->
+    <div class="panel-left">
+      <div class="section">
+        <div class="section-label">Avatar référence · obligatoire</div>
+        <div class="avatar-zone" id="avatar-zone" onclick="document.getElementById('avatar-input').click()">
+          <input type="file" id="avatar-input" accept="image/*" onchange="loadAvatar(event)">
+          <div id="avatar-placeholder">
+            <div style="font-size:28px">👤</div>
+            <div>Importer ta photo</div>
+            <div style="font-size:10px;margin-top:4px;color:var(--txt3)">Visage net, bonne lumière. La tenue sera refaite en style années 2000.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Lieu / Décor (optionnel)</div>
+        <input type="text" class="input" id="lieu-input" placeholder="Ex : couloir de lycée avec casiers, gymnase de bal, toilettes…">
+        <div class="hint">Vide : le studio choisit le décor qui amplifie le plus l'émotion.</div>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Format de l'image</div>
+        <div class="format-row" id="format-toggle" onclick="toggleCarousel()">
+          <div>
+            <div class="format-label">Mode Carrousel Instagram</div>
+            <div class="format-sub" id="format-sub-label">Désactivé — Story 9:16 par défaut</div>
+          </div>
+          <div class="pill"></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Ton émotion (optionnel)</div>
+        <input type="text" class="input" id="emotion-input" placeholder="Ex : la honte, la jalousie… ou laisse vide">
+        <div class="hint">Vide : le studio trouve l'émotion dominante de ton texte.</div>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Ton texte</div>
+        <div class="warn"><div>⚡</div><div>Le studio extrait l'émotion la plus intense de ton texte et génère une seule image, brute, sans filtre, avec le rendu d'un appareil photo des années 2000. Atmosphère lycée américain, tension suggérée.</div></div>
+        <textarea class="textarea" id="brut-text" placeholder="Raconte ce qui se passe, tel quel, même en vrac (tu peux dicter). Peu importe la longueur.&#10;&#10;Ex : Elle arrive dans le couloir, tout le monde se tait. Elle sent les regards sur sa robe…"></textarea>
+        <button class="btn-brut" id="btn-brut" onclick="analyseBrut()"><span>⚡</span> <span id="btn-brut-label">Extraire l'émotion dominante</span></button>
+      </div>
+    </div>
+
+    <!-- DROITE -->
+    <div class="panel-right">
+      <div class="empty-state" id="empty-state">
+        <div class="empty-icon">◈</div>
+        <div class="empty-title">Ton image Y2K apparaît ici</div>
+        <div>Importe ton avatar, colle ton texte,<br>extrais l'émotion, puis génère.</div>
+      </div>
+
+      <div class="brut-result" id="brut-result" style="display:none">
+        <div class="brut-result-header">
+          <div class="brut-result-title">Mode Brut · Y2K</div>
+          <div class="brut-emotion-detected" id="brut-emotion-label">—</div>
+        </div>
+        <div class="brut-card">
+          <div class="brut-card-body">
+            <div class="brut-card-emotion" id="brut-emotion-name">—</div>
+            <div class="brut-card-intensity" id="brut-emotion-intensity">Intensité maximale · Sans filtre</div>
+            <div class="brut-card-extract" id="brut-extract">—</div>
+            <div class="meta" id="brut-cinematic-meta" style="display:none"></div>
+          </div>
+          <div class="brut-image-area" id="brut-img-area">
+            <div class="mono" style="color:var(--txt3);font-size:11px;">Non générée</div>
+          </div>
+          <div class="brut-card-actions">
+            <button class="seq-btn primary" id="btn-gen" onclick="generateBrut()">Générer l'image brute</button>
+            <button class="seq-btn" onclick="downloadBrut()">Télécharger</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────
+let ENGINE = 'vertex';
+let API_KEY = '';
+let KIE_KEY = '';
+let avatarBase64 = null;
+let avatarMime = 'image/jpeg';
+let carouselMode = false;
+let brutData = null;
+let brutImageUrl = null;
+
+const MODEL_TEXT = 'gemini-2.5-flash';
+const MODEL_IMAGE = 'gemini-3.1-flash-image';
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+// ─── ENGINE SELECTION ────────────────────────────────────
+function selectEngine(e) {
+  ENGINE = e;
+  document.getElementById('opt-vertex').classList.toggle('active', e === 'vertex');
+  document.getElementById('opt-kie').classList.toggle('active', e === 'kie');
+  document.getElementById('vertex-key-group').style.display = e === 'vertex' ? '' : 'none';
+  document.getElementById('kie-key-group').style.display = e === 'kie' ? '' : 'none';
+}
+
+// ─── SPLASH → APP ────────────────────────────────────────
+function startApp() {
+  API_KEY = document.getElementById('api-key').value.trim();
+  KIE_KEY = document.getElementById('kie-key').value.trim();
+  if (ENGINE === 'vertex' && !API_KEY) return toast('Entre ta clé API Vertex AI', 'error');
+  if (ENGINE === 'kie' && !KIE_KEY) return toast('Entre ta clé kie.ai', 'error');
+  document.getElementById('splash').classList.add('hidden');
+  document.getElementById('app').classList.add('visible');
+  document.getElementById('engine-badge').textContent = ENGINE === 'vertex' ? 'Vertex AI' : 'kie.ai';
+}
+
+// ─── AVATAR (réduit à 1536 px max pour alléger l'envoi) ──
+function loadAvatar(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const url = URL.createObjectURL(file);
+  const im = new Image();
+  im.onload = () => {
+    const max = 1536;
+    let w = im.naturalWidth, h = im.naturalHeight;
+    const r = Math.min(1, max / Math.max(w, h));
+    w = Math.round(w * r); h = Math.round(h * r);
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    c.getContext('2d').drawImage(im, 0, 0, w, h);
+    const dataUrl = c.toDataURL('image/jpeg', 0.9);
+    URL.revokeObjectURL(url);
+    avatarMime = 'image/jpeg';
+    avatarBase64 = dataUrl.split(',')[1];
+    const zone = document.getElementById('avatar-zone');
+    zone.classList.add('has-image');
+    zone.innerHTML = '<img src="' + dataUrl + '" alt="avatar"><div class="avatar-badge">VERROUILLÉ</div>';
+    const inp = document.createElement('input');
+    inp.type = 'file'; inp.id = 'avatar-input'; inp.accept = 'image/*';
+    inp.onchange = loadAvatar;
+    zone.appendChild(inp);
+    zone.onclick = () => document.getElementById('avatar-input').click();
+  };
+  im.onerror = () => { URL.revokeObjectURL(url); toast('Image illisible', 'error'); };
+  im.src = url;
+}
+
+// ─── FORMAT ──────────────────────────────────────────────
+function toggleCarousel() {
+  carouselMode = !carouselMode;
+  document.getElementById('format-toggle').classList.toggle('active', carouselMode);
+  document.getElementById('header-format-badge').textContent = carouselMode ? 'Carrousel 4:5' : 'Story 9:16';
+  document.getElementById('format-sub-label').textContent = carouselMode ? 'Activé — Portrait 4:5 (1080×1350)' : 'Désactivé — Story 9:16 par défaut';
+  toast(carouselMode ? 'Mode Carrousel activé — format 4:5' : 'Mode Story 9:16 restauré', 'success');
+}
+
+// ─── ANALYSE TEXTE ───────────────────────────────────────
+async function callTextAnalyse(systemInstruction, userText) {
+  const endpoint = 'https://aiplatform.googleapis.com/v1/publishers/google/models/' + MODEL_TEXT + ':generateContent';
+  const resp = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': API_KEY },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: systemInstruction }] },
+      contents: [{ role: 'user', parts: [{ text: userText }] }],
+      generationConfig: { temperature: 0.3, maxOutputTokens: 4096, responseMimeType: 'application/json' }
+    })
+  });
+  const data = await resp.json();
+  if (!resp.ok) throw new Error((data.error && data.error.message) || ('Erreur Vertex ' + resp.status));
+  const parts = (((data.candidates || [])[0] || {}).content || {}).parts || [];
+  const txt = parts.map(p => p.text || '').join('');
+  if (!txt) throw new Error('Réponse vide du modèle');
+  return JSON.parse(cleanJson(txt));
+}
+
+function cleanJson(txt) {
+  txt = txt.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+  const start = txt.indexOf('{');
+  const end = txt.lastIndexOf('}');
+  if (start >= 0 && end >= 0) return txt.slice(start, end + 1);
+  return txt;
+}
+
+// ─── MODE BRUT Y2K ───────────────────────────────────────
+async function analyseBrut() {
+  const text = document.getElementById('brut-text').value.trim();
+  const imposed = document.getElementById('emotion-input').value.trim();
+  if (!text) return toast('Entre ton texte', 'error');
+  if (!avatarBase64) return toast('Importe ta photo avatar d\'abord', 'error');
+
+  const btn = document.getElementById('btn-brut');
+  const label = document.getElementById('btn-brut-label');
+  label.textContent = 'Analyse en cours…';
+  btn.disabled = true;
+
+  try {
+    const systemInstruction = `Tu es un psychologue de l'image, réalisateur de l'instant et expert en narration émotionnelle brute. Le projet : une photo brute dans l'univers des lycées américains des années 2000, ambiance teen-horror suggérée.
+
+Analyse le texte et identifie L'ÉMOTION DOMINANTE LA PLUS INTENSE — celle qui a le plus de force viscérale, celle qui ferait le plus d'électrochoc visuel.${imposed ? `
+La créatrice a choisi cette émotion : "${imposed}". Garde-la comme émotion dominante (tu peux seulement la préciser en un nom plus fort) et trouve dans le texte le passage qui l'incarne le mieux.` : ''}
+
+Réponds UNIQUEMENT en JSON valide, sans markdown :
+{
+  "emotion": "nom précis et fort (ex: Désespoir profond, Honte écrasante, Rage contenue)",
+  "category": "positif|introspectif|dynamique|relationnel",
+  "intensity": "pourquoi cette émotion est la plus forte dans ce texte — 1 phrase",
+  "extract": "la phrase du texte original qui incarne le mieux cette émotion — 1 à 3 phrases max",
+  "bodyDirective": "incarnation physique EXTRÊME : posture, visage, muscles — 2-3 phrases très précises",
+  "focus": "détail corporel révélateur pour le gros plan (ex: tempe moite, main crispée, pupille dilatée)",
+  "angle": "angle cinématographique optimal — choisir : plongée | contre-plongée | gros plan macro | angle subjectif intime",
+  "lumiere": "source lumineuse de l'époque qui amplifie l'émotion (ex: flash direct de compact numérique, néon fluorescent de couloir qui grésille, guirlandes de gymnase, lampe de chevet, phares de parking)"
+}`;
+
+    const result = await callTextAnalyse(systemInstruction, text);
+    brutData = result;
+    brutImageUrl = null;
+
+    document.getElementById('brut-emotion-label').textContent = 'Émotion dominante détectée';
+    document.getElementById('brut-emotion-name').textContent = brutData.emotion || '—';
+    document.getElementById('brut-emotion-intensity').textContent = brutData.intensity || '';
+    document.getElementById('brut-extract').textContent = '"' + (brutData.extract || '') + '"';
+    const metaEl = document.getElementById('brut-cinematic-meta');
+    if (brutData.focus) {
+      metaEl.innerHTML = '<span class="meta-tag">📐 ' + esc(brutData.angle || 'angle subjectif intime') + '</span><span class="meta-tag">🔍 ' + esc(brutData.focus) + '</span><span class="meta-tag">💡 ' + esc(brutData.lumiere || 'flash direct') + '</span>';
+      metaEl.style.display = 'flex';
+    }
+    document.getElementById('brut-img-area').innerHTML = '<div class="mono" style="color:var(--txt3);font-size:11px;">Non générée</div>';
+    document.getElementById('brut-result').style.display = 'block';
+    document.getElementById('empty-state').style.display = 'none';
+    const pr = document.querySelector('.panel-right');
+    if (pr && pr.scrollIntoView) pr.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    toast('Émotion détectée : ' + brutData.emotion, 'success');
+  } catch (err) {
+    toast('Erreur analyse : ' + err.message, 'error');
+    console.error(err);
+  } finally {
+    label.textContent = 'Extraire l\'émotion dominante';
+    btn.disabled = false;
+  }
+}
+
+async function generateBrut() {
+  if (!brutData) return toast('Lance l\'analyse d\'abord', 'error');
+  if (!avatarBase64) return toast('Photo avatar manquante', 'error');
+
+  const area = document.getElementById('brut-img-area');
+  const btn = document.getElementById('btn-gen');
+  btn.disabled = true;
+  area.innerHTML = '<div class="loading"><div class="dot"></div><div>Incarnation brute en cours…</div></div>';
+
+  try {
+    const promptText = buildY2KPrompt(brutData);
+    const imageUrl = ENGINE === 'kie' ? await generateKie(promptText) : await generateVertex(promptText);
+    brutImageUrl = imageUrl;
+    area.innerHTML = '<img src="' + imageUrl + '" alt="image brute Y2K">';
+    toast('Image brute générée ✓', 'success');
+  } catch (err) {
+    area.innerHTML = '<div class="mono" style="padding:20px;color:#ff9aa8;font-size:11px;text-align:center;">Erreur : ' + esc(err.message) + '</div>';
+    toast('Erreur génération : ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function buildY2KPrompt(brut) {
+  const lieu = (document.getElementById('lieu-input').value || '').trim();
+
+  const angleMap = {
+    'plongée': `ANGLE PLONGÉE — Appareil au-dessus du sujet, incliné vers le bas. Corps écrasé, dominé. Renforce la vulnérabilité, la honte, la défaite.`,
+    'contre-plongée': `ANGLE CONTRE-PLONGÉE — Appareil sous le sujet, regard vers le haut. Corps qui se découpe, s'impose. Renforce la fierté, la résilience, la puissance.`,
+    'gros plan macro': `GROS PLAN MACRO — L'appareil à 5 cm du détail révélateur : ${brut.focus || 'visage'}. Un fragment de corps dit tout. Secret volé. Vérité pure.`,
+    'angle subjectif intime': `ANGLE SUBJECTIF INTIME — Le spectateur à 1 mètre, comme s'il tenait lui-même un compact numérique et prenait la photo en douce. Hauteur des yeux. Intimité sans envahir.`
+  };
+  const cinematicAngle = angleMap[brut.angle] || angleMap['angle subjectif intime'];
+
+  return `[SCAN ÉMOTIONNEL ADAPTATIF — PROTOCOLE PRIORITAIRE]
+AVANT TOUTE GÉNÉRATION — SCANNER LE TEXTE SOURCE :
+FRÉQUENCE ÉMOTIONNELLE : Identifier l'intention dominante — urgence, vulnérabilité, rage, soulagement, effondrement, fierté brute. L'image doit en être la résonance exacte. Ni plus. Ni moins. À 150% d'intensité.
+CALIBRATION BRUTE : Lumière, cadrage, posture. Rien d'autre.
+BANNISSEMENT DES SYMBOLES : Zéro icône, zéro décor conceptuel. État physique réel uniquement.
+LA SIGNATURE DE L'ÂME : Publicité = ÉCHEC. Film léché moderne = ÉCHEC. Photo d'archive oubliée au fond d'un tiroir, qui force le silence = SUCCÈS.
+
+PORTRAIT PSYCHOLOGIQUE BRUT — COMPACT NUMÉRIQUE ANNÉES 2000 — ÉLECTROCHOC VISUEL
+
+═══════════════════════════════════════════
+I. LE CAPTEUR : COMPACT NUMÉRIQUE 2000-2005
+═══════════════════════════════════════════
+Simule un appareil photo compact numérique de 2000 à 2005 (3 à 5 mégapixels) : flash intégré direct plein visage, blancs légèrement cramés, ombre portée dure et nette derrière le sujet sur le mur, reflet de flash dans les yeux, couleurs un peu trop saturées, contraste dur, dominante froide et verdâtre sous les néons fluorescents, bruit numérique visible dans les ombres, netteté un peu molle, compression JPEG douce, cadrage pris à la volée légèrement de travers. Profondeur de champ large (autofocus de compact). Aucune date incrustée.
+PAS un rendu iPhone. PAS un rendu cinéma moderne. PAS une image HD lissée. PAS de flou d'arrière-plan de smartphone.
+
+TEXTURE DE PEAU ABSOLUE : Pores visibles, cernes réels, imperfections naturelles que le flash dur révèle. Zéro lissage. La peau est vivante.
+MISE AU POINT : nette sur ${brut.focus || 'le regard'}, le reste peut être légèrement mou.
+LUMIÈRE DE L'ÉPOQUE UNIQUEMENT : ${brut.lumiere || 'flash direct du compact'}, avec le flash frontal de l'appareil. Zéro éclairage de studio.
+
+═══════════════════════════════════════════
+II. CADRAGE — GRAMMAIRE DE L'ÉLECTROCHOC
+═══════════════════════════════════════════
+${cinematicAngle}
+FOCUS POINT : ${brut.focus || 'regard'} — net, révélateur, volé.
+
+═══════════════════════════════════════════
+III. IDENTITÉ — VISAGE VERROUILLÉ, TENUE ET COIFFURE D'ÉPOQUE
+═══════════════════════════════════════════
+VISAGE : la personne exacte de la photo de référence. Traits, morphologie, teint, couleur et longueur des cheveux réels. Zéro modification, zéro embellissement.
+TENUE : ne PAS reprendre la tenue de la photo de référence. Habiller le personnage en tenue authentique de 2000 à 2005, adaptée à la scène : jean taille basse, jupe plissée, top coloré ou débardeur, gilet, robe de bal un peu froissée, accessoires Y2K (pinces à cheveux, papillons, bracelets, collier ras de cou). Coiffure d'époque (mèches, pinces, lissage), en gardant la couleur et la longueur d'origine.
+Le personnage est un adulte (20 ans et plus).
+
+═══════════════════════════════════════════
+IV. DÉCOR — AMPLIFIÉ LIBREMENT, UNIVERS LYCÉE AMÉRICAIN 2000
+═══════════════════════════════════════════
+Le décor EST l'émotion. Il amplifie. Il emprisonne.
+Univers : lycée américain des années 2000 — couloir de lycée, rangée de casiers métalliques, toilettes de lycée, gymnase décoré pour un bal de promo, parking, chambre de l'époque, soirée entre étudiants, couloir désert après les cours.
+${lieu ? `Lieu de base : "${lieu}" — adapter cet espace à l'époque et à l'émotion pour l'amplifier au maximum.` : `Choisir librement, dans cet univers, le lieu qui amplifie l'émotion "${brut.emotion}" au maximum.`}
+— Colère/rage → couloir froid aux néons, casiers cabossés, tension dans l'espace
+— Désespoir/honte → toilettes ou coin de couloir, néon qui grésille, isolement
+— Joie/soulagement → gymnase de bal, guirlandes, lumière chaude du flash, espace ouvert
+— Fierté/confiance → décor qui élève, lumière dorée des projecteurs du bal
+— Peur → couloir désert, ombres longues, portes entrouvertes
+OBJETS : uniquement des objets d'époque (téléphone à clapet, appareil photo compact, lecteur CD portable, posters de l'époque). INTERDICTION des objets modernes : smartphones récents, écrans plats, vêtements actuels, éclairages LED décoratifs. Aucun logo de marque, aucun texte lisible.
+
+ATMOSPHÈRE TEEN-HORROR SUGGÉRÉE : tension sourde, lumière froide, ombres dures. Rien d'explicite : pas de sang, pas de blessure, pas d'arme, pas de gore. L'inquiétude passe par le regard, les ombres et le vide autour du personnage. Ne reproduire aucune scène ni aucun élément signature d'un film existant.
+
+═══════════════════════════════════════════
+V. ÉMOTION BRUTE : ${brut.emotion}
+═══════════════════════════════════════════
+CONTEXTE : "${brut.extract}"
+INCARNATION EXTRÊME : ${brut.bodyDirective}
+
+POUSSER À 150% — PAS DE RETENUE :
+JOIE → sourire des yeux, corps expansif | EXTASE → corps vers le haut, mains ouvertes | TRISTESSE → corps affaissé, regard vide | CHAGRIN → larmes réelles, corps effondré | COLÈRE → mâchoire serrée, poings, corps tendu | RAGE → regard brûlant, corps en tension extrême | HONTE → tête baissée, corps qui cherche à disparaître | FIERTÉ → menton levé, poitrine ouverte | DÉSESPOIR → corps au sol, repli total | SOULAGEMENT → corps qui s'ouvre, souffle retrouvé
+
+RÈGLE ABSOLUE MODE BRUT : Pousser CHAQUE signe physique à son maximum. Corps entier. Pas seulement le visage.
+Les larmes N'APPARAISSENT QUE pour : chagrin, tristesse, désespoir.
+
+═══════════════════════════════════════════
+VI. LE TEST FINAL
+═══════════════════════════════════════════
+Si l'image ressemble à une publicité ou à un film moderne léché → ÉCHEC TOTAL.
+Si l'image ressemble à une photo prise en douce avec un compact numérique de l'époque, retrouvée des années plus tard → SUCCÈS.
+
+AUCUN FILTRE BEAUTÉ. AUCUN ADOUCISSEMENT.
+La personne VIT — elle ne pose pas.
+L'authenticité prime sur tout.
+[ESTHETIC_ANCHOR: ANTI-MODERNE] : INTERDICTION de science-fiction, néons décoratifs modernes, hologrammes, objets ou vêtements actuels, effets numériques. Rendu "photo de compact 2000-2005" — flash direct, environnement de lycée réel et d'époque uniquement.
+
+[MÉTHODE GILLET — CONTRÔLE DU RÉALISME]
+LOI DE TANGIBILITÉ : Si ça n'existait pas dans la vraie vie des années 2000, ça n'existe pas dans l'image.
+SHOW, DON'T TELL : La situation humaine incarne le concept — jamais l'inverse.
+POV BRUT : Grain, cadrage imparfait, léger flou de mouvement. Photo volée, jamais construite.
+AMBIANCE ÉMOTIONNELLE : Expression du personnage + lumière de l'époque uniquement. Zéro effet spécial.
+
+PSYCHOLOGIE NARRATIVE (MÉTHODE GILLET) :
+VALIDATION DU RÉEL — Détail de vie imparfait obligatoire, d'époque : gobelet en plastique rouge, ballon dégonflé, confettis au sol, casier entrouvert, flyer de bal froissé, banderole décollée, néon qui clignote. Signature du vrai.
+CAPTURE DE L'INSTANT — Photo volée. Action sur esthétique. Pose de mannequin = ÉCHEC.
+SUBTEXT ÉMOTIONNEL — Abstractions traduites en ambiances physiques. Jamais de métaphore visuelle.
+
+═══════════════════════════════════════════
+VII. CLAUSE DE DÉPLACEMENT ÉMOTIONNEL — L'ANGLE MORT
+═══════════════════════════════════════════
+RÈGLE D'OR DE MISE EN SCÈNE — ABSOLUE ET NON NÉGOCIABLE :
+Si le texte mentionne un objet matériel déclencheur (téléphone, lettre, photo, robe, invitation, etc.), tu as l'INTERDICTION FORMELLE de centrer l'image sur l'interaction directe avec cet objet.
+
+Le drame ne se joue JAMAIS sur l'objet. Il se joue sur l'humain APRÈS l'objet.
+
+TU DOIS cadrer l'impact invisible du problème :
+— Ne montre PAS le téléphone → montre la main qui l'a lâché au sol.
+— Ne montre PAS la lettre ou l'invitation → montre le regard vide face à un casier.
+— Ne montre PAS le groupe qui rit → montre le visage de la personne seule, tournée ailleurs.
+
+L'émotion brute se trouve dans les ANGLES MORTS du lieu :
+coins de couloir, sol, contre un casier, derrière une porte, au fond d'une cabine.
+C'est là que le sujet se réfugie quand il ne peut plus faire face.
+C'est là que tu cadres.
+
+[Focus : ${brut.focus || 'regard'} / Angle : ${brut.angle || 'angle subjectif intime'} / Lumière : ${brut.lumiere || 'flash direct'}]`;
+}
+
+// ─── VERTEX AI GENERATE ──────────────────────────────────
+async function generateVertex(promptText) {
+  const endpoint = 'https://aiplatform.googleapis.com/v1/publishers/google/models/' + MODEL_IMAGE + ':generateContent';
+  const aspectRatio = carouselMode ? '4:5' : '9:16';
+
+  const parts = [];
+  if (avatarBase64) parts.push({ inlineData: { data: avatarBase64, mimeType: avatarMime } });
+  parts.push({ text: promptText });
+
+  const body = {
+    contents: [{ role: 'user', parts }],
+    generationConfig: {
+      responseModalities: ['IMAGE'],
+      imageConfig: { aspectRatio }
+    }
+  };
+
+  const waitTimes = [5000, 10000, 20000, 40000];
+  let lastErr;
+  for (let attempt = 0; attempt <= waitTimes.length; attempt++) {
+    try {
+      const resp = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': API_KEY }, body: JSON.stringify(body) });
+      let data = {};
+      try { data = await resp.json(); } catch (_) {}
+      if (!resp.ok) {
+        const msg = (data && data.error && data.error.message) || ('Erreur HTTP ' + resp.status);
+        if (resp.status === 429 && attempt < waitTimes.length) { lastErr = new Error(msg); await delay(waitTimes[attempt]); continue; }
+        throw new Error(msg);
+      }
+      const candidate = data && data.candidates && data.candidates[0];
+      if (!candidate) throw new Error('Aucune réponse du modèle');
+      if (candidate.finishReason === 'SAFETY') throw new Error('Bloqué par les filtres de sécurité');
+      const cparts = (candidate.content && candidate.content.parts) || [];
+      for (const p of cparts) {
+        if (p.inlineData && p.inlineData.data) {
+          const mimeType = p.inlineData.mimeType || 'image/png';
+          const binary = atob(p.inlineData.data);
+          const arr = new Uint8Array(binary.length);
+          for (let i = 0; i < binary.length; i++) arr[i] = binary.charCodeAt(i);
+          return URL.createObjectURL(new Blob([arr], { type: mimeType }));
+        }
+      }
+      throw new Error('Image non trouvée dans la réponse');
+    } catch (err) {
+      lastErr = err;
+      const retryable = /429|503|overloaded/i.test(err.message);
+      if (retryable && attempt < waitTimes.length) { await delay(waitTimes[attempt]); continue; }
+      throw err;
+    }
+  }
+  throw lastErr || new Error('Génération Vertex échouée');
+}
+
+// ─── KIE.AI GENERATE ─────────────────────────────────────
+async function generateKie(promptText) {
+  const width = 1080;
+  const height = carouselMode ? 1350 : 1920;
+
+  const uploadResp = await fetch('https://kieai.redpandaai.co/api/file-base64-upload', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + KIE_KEY },
+    body: JSON.stringify({ base64Data: 'data:' + avatarMime + ';base64,' + avatarBase64 })
+  });
+  if (!uploadResp.ok) throw new Error('kie.ai upload failed');
+  const uploadData = await uploadResp.json();
+  const imageUrl = uploadData.downloadUrl;
+  if (!imageUrl) throw new Error('kie.ai : pas de downloadUrl');
+
+  const taskResp = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + KIE_KEY },
+    body: JSON.stringify({ model: 'nano-banana-2', prompt: promptText, image_input: [imageUrl], width, height })
+  });
+  if (!taskResp.ok) throw new Error('kie.ai task creation failed');
+  const taskData = await taskResp.json();
+  const taskId = taskData.taskId || (taskData.data && taskData.data.taskId);
+  if (!taskId) throw new Error('kie.ai : pas de taskId');
+
+  for (let i = 0; i < 60; i++) {
+    await delay(3000);
+    const pollResp = await fetch('https://api.kie.ai/api/v1/jobs/recordInfo?taskId=' + taskId, {
+      headers: { 'Authorization': 'Bearer ' + KIE_KEY }
+    });
+    const pollData = await pollResp.json();
+    const state = (pollData.data && pollData.data.state) || pollData.state;
+    if (state === 'success') {
+      const rj = (pollData.data && pollData.data.resultJson) || pollData.resultJson;
+      const urls = rj && rj.resultUrls;
+      if (urls && urls[0]) {
+        const blobResp = await fetch(urls[0]);
+        const blob = await blobResp.blob();
+        return URL.createObjectURL(blob);
+      }
+      throw new Error('Pas d\'URL résultat');
+    }
+    if (state === 'fail') throw new Error('kie.ai génération échouée');
+  }
+  throw new Error('kie.ai timeout (180s)');
+}
+
+// ─── TÉLÉCHARGEMENT (Safari-safe) ────────────────────────
+async function safariSafeDownload(imageUrl, filename) {
+  try {
+    const res = await fetch(imageUrl);
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 8000);
+  } catch (err) {
+    window.open(imageUrl, '_blank');
+    toast('Appuie longuement sur l\'image pour enregistrer (iOS)', 'success');
+  }
+}
+
+function downloadBrut() {
+  if (!brutImageUrl) return toast('Génère l\'image d\'abord', 'error');
+  safariSafeDownload(brutImageUrl, 'studio-flash-y2k-' + slugify((brutData && brutData.emotion) || 'emotion') + '.jpg');
+}
+
+function slugify(s) {
+  return (s || 'image').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '-').slice(0, 30);
+}
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+function toast(msg, type) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (type ? ' ' + type : '');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 3500);
+}
+</script>
+</body>
+</html>
