@@ -522,12 +522,12 @@ async function lancerReconstruction(id, intention, diagText) {
       generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: apiAR, imageSize: "4K" } }
     };
 
-    const wt = [5000, 10000, 20000, 40000]; let le, imgUrl = '';
+    const wt = [5000, 10000, 20000, 40000]; let le, imgUrl = ''; let imgModel = 'gemini-nano-banana-2.1';
     for (let a = 0; a <= wt.length; a++) {
       try {
-        const data = await callProxy('gemini-nano-banana-2.1', payload);
+        const data = await callProxy(imgModel, payload);
         const cand = data?.candidates?.[0];
-        if (!cand) throw new Error("Aucune reponse.");
+        if (!cand) throw new Error(data?.error?.message ? ("Google: " + data.error.message) : "Aucune reponse.");
         if (cand.finishReason === 'SAFETY') throw new Error("Bloque par les filtres. Reformule l intention.");
         for (const p of (cand?.content?.parts || [])) { if (p.inlineData?.data) { imgUrl = `data:image/png;base64,${p.inlineData.data}`; break; } }
         if (imgUrl) break;
@@ -535,6 +535,7 @@ async function lancerReconstruction(id, intention, diagText) {
       } catch(err) {
         le = err;
         const m = String(err.message).toLowerCase();
+        if (imgModel === 'gemini-nano-banana-2.1' && (m.includes('google:') || m.includes('aucune reponse'))) { imgModel = 'gemini-3.1-flash-image'; a--; continue; }
         const retry = m.includes('429') || m.includes('502') || m.includes('503') || m.includes('overload');
         if (retry && a < wt.length) { await sleep(wt[a]); continue; }
         throw err;
