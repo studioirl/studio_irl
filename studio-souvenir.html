@@ -228,7 +228,7 @@ button,input,textarea,select{font-family:inherit;}
 
       <div class="input-group">
         <label class="label" id="keyLabel">Clé API Vertex AI Express Mode</label>
-        <input type="password" id="apiKeyInput" class="input" placeholder="AQ..." autocomplete="off">
+        <input type="password" id="apiKeyInput" class="input" placeholder="AQ..." autocomplete="off" enterkeyhint="go">
         <div class="note" id="keyNote">⚡ Gemini 3.1 Flash Image • Haute fidélité</div>
       </div>
 
@@ -509,7 +509,22 @@ function goHome(){
   document.getElementById('app').classList.remove('visible');
   document.getElementById('home').style.display='flex';
 }
-document.getElementById('apiKeyInput').addEventListener('keydown', e=>{ if(e.key==='Enter') enterApp(); });
+/* Touche Entrée : gère clavier physique ET claviers mobiles (keyCode 13 / key 'Enter' / 'Go') */
+(function(){
+  const inp = document.getElementById('apiKeyInput');
+  let lastFire = 0;
+  function onEnter(e){
+    const isEnter = e.key==='Enter' || e.code==='Enter' || e.code==='NumpadEnter' || e.keyCode===13 || e.which===13;
+    if(!isEnter) return;
+    e.preventDefault();
+    const now = Date.now();
+    if(now - lastFire < 400) return; // évite le double déclenchement keydown + keyup
+    lastFire = now;
+    enterApp();
+  }
+  inp.addEventListener('keydown', onEnter);
+  inp.addEventListener('keyup', onEnter);
+})();
 
 function updateEngineUI(){
   const badge=document.getElementById('engineBadge');
