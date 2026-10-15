@@ -1075,8 +1075,8 @@
   #fy-pane-story .sn-lieu .sn-img { min-height:120px; border:1px solid var(--sn-line); border-radius:8px; margin:8px 0; overflow:hidden; font-size:12px; }
   #fy-pane-story .sn-lieu.locked { border-color:rgba(83,211,138,.55); }
   #fy-pane-story .sn-lieu-strip { display:flex; gap:8px; flex-wrap:wrap; }
-  #fy-pane-story .sn-lieu-strip > div { width:84px; font-size:10px; color:var(--sn-txt2); }
-  #fy-pane-story .sn-lieu-strip img { width:84px; height:112px; object-fit:cover; border-radius:6px; border:1px solid var(--sn-pink); display:block; margin-bottom:2px; }
+  #fy-pane-story .sn-lieu-strip > div { width:140px; font-size:10px; color:var(--sn-txt2); }
+  #fy-pane-story .sn-lieu-strip img { width:140px; height:79px; object-fit:cover; border-radius:6px; border:1px solid var(--sn-pink); display:block; margin-bottom:2px; }
   #fy-pane-story .sn-tabs { display:flex; gap:8px; margin-bottom:12px; }
   #fy-pane-story .sn-tab { flex:1; text-align:center; padding:9px 8px; border:1px solid var(--sn-line); border-radius:10px; font-size:12px; color:var(--sn-txt2); cursor:pointer; background:var(--sn-surface2); }
   #fy-pane-story .sn-tab.active { border-color:var(--sn-pink); color:#fff; background:rgba(255,61,139,.14); }
@@ -1088,6 +1088,25 @@
   #fy-pane-story .sn-fiche { margin-top:12px; border:1px solid rgba(83,211,138,.55); border-radius:12px; padding:12px; background:var(--sn-surface2); font-size:13px; line-height:1.55; white-space:pre-wrap; }
 
   #fy-pane-story .sn-warn { background:rgba(255,190,80,.08); border:1px solid rgba(255,190,80,.35); color:var(--sn-txt); border-radius:8px; padding:9px 11px; font-size:11px; line-height:1.5; margin:8px 0; }
+
+  #fy-pane-story .sn-zwrap { position:relative; width:100%; }
+  #fy-pane-story .sn-zwrap img { width:100%; display:block; }
+  #fy-pane-story .sn-zbox { position:absolute; border:2px solid #ff6ad5; background:rgba(255,106,213,.10); pointer-events:none; box-sizing:border-box; }
+  #fy-pane-story .sn-zbox span { position:absolute; top:2px; left:2px; background:#ff6ad5; color:#12040f; font-weight:700; font-size:11px; padding:1px 6px; border-radius:4px; }
+  #fy-pane-story .sn-zrow { display:flex; gap:8px; align-items:flex-start; margin:6px 0; }
+  #fy-pane-story .sn-zbadge { flex:none; width:24px; height:24px; border-radius:6px; background:var(--sn-pink); color:#12040f; font-weight:700; display:flex; align-items:center; justify-content:center; font-size:12px; }
+  #fy-pane-story .sn-crop { margin-top:10px; border-top:1px solid var(--sn-line); padding-top:8px; }
+  #fy-pane-story .sn-crop summary { cursor:pointer; font-size:12px; font-weight:600; }
+  #fy-pane-story .sn-cropstage { position:relative; width:100%; touch-action:none; user-select:none; -webkit-user-select:none; cursor:crosshair; border:1px solid var(--sn-line); border-radius:8px; overflow:hidden; margin-top:8px; }
+  #fy-pane-story .sn-cropstage img { width:100%; display:block; pointer-events:none; }
+  #fy-pane-story .sn-croprect { position:absolute; border:2px solid #53d38a; box-shadow:0 0 0 9999px rgba(0,0,0,.55); box-sizing:border-box; pointer-events:none; }
+  #fy-pane-story .sn-cuts { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+  #fy-pane-story .sn-cut { width:150px; font-size:10px; color:var(--sn-txt2); }
+  #fy-pane-story .sn-cut img { width:100%; border-radius:6px; border:1px solid var(--sn-pink); display:block; margin-bottom:2px; }
+
+  #fy-pane-story .sn-cut { cursor:pointer; }
+  #fy-pane-story .sn-cut.on img, #fy-pane-story .sn-cut.on .sn-cutnone { border-color:#53d38a; box-shadow:0 0 0 2px rgba(83,211,138,.55); }
+  #fy-pane-story .sn-cutnone { aspect-ratio:16/9; border:1px dashed var(--sn-line); border-radius:6px; display:flex; align-items:center; justify-content:center; text-align:center; margin-bottom:2px; }
 
   #app-flash .fy-tabs { display:flex; gap:8px; padding:10px 18px; border-bottom:1px solid var(--fy-line); }
   #app-flash .fy-tab { flex:1; max-width:260px; text-align:center; padding:9px 12px; border:1px solid var(--fy-line); border-radius:10px; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--fy-txt2); cursor:pointer; background:var(--fy-surface); }
@@ -2881,7 +2900,8 @@ function fyDownload() {
 // ═══════════════════════════════════════════════════════════
 const SN_MAX_CHARS = 4;
 let snLieux = [];
-function snNewLieu(k) { return { id: 'l' + (k + 1), text: '', ref: null, img: null }; }
+function snNewLieu(k) { return { id: 'l' + (k + 1), text: '', ref: null, img: null, imgOrig: null, del: {}, add: {}, cuts: [], crop: null }; }
+let snCutSeq = 0;
 let snChars = [];
 let snValid = { lieux: false, chars: false, tenues: false };
 let snFiche = null;
@@ -3018,9 +3038,12 @@ function snRenderLieux() {
         '<label class="sn-up">＋ Photo de référence (optionnel)<input type="file" accept="image/*" onchange="snLoadLieuRef(' + k + ',event)"></label>' +
         (l.ref ? '<img class="sn-thumb" src="' + l.ref.dataUrl + '" alt="">' : '') +
       '</div>' +
-      '<div class="sn-img" id="sn-lieu-img-' + k + '">' + (l.img ? '<img src="' + l.img.url + '" alt="lieu ' + (k + 1) + '">' : 'Lieu non généré') + '</div>' +
+      '<div class="sn-img" id="sn-lieu-img-' + k + '">' + snLieuImgHtml(l, k) + '</div>' +
       '<button class="sn-btn2 primary" id="sn-lieu-gen-' + k + '" onclick="snGenLieu(' + k + ')">' + (l.img ? 'Régénérer ce lieu' : 'Générer ce lieu') + '</button>' +
+      '<div id="sn-lieu-panel-' + k + '"></div>' +
     '</div>').join('');
+  snLieux.forEach((l, k) => snRenderLieuPanel(k));
+  snRefreshAllCuts();
 }
 async function snLoadLieuRef(k, e) {
   const f = e.target.files[0];
@@ -3056,11 +3079,12 @@ async function snGenLieu(k) {
     const refs = l.ref ? [{ label: 'Photo de référence du lieu (à reproduire fidèlement) :', mime: l.ref.mime, b64: l.ref.b64 }] : [];
     const prompt = snBuildLieuPrompt(l, k);
     l.carto = null; l.cartoText = '';
-    l.img = ENGINE === 'kie' ? await snGenKie(prompt, refs) : await snGenVertex(prompt, refs, 'Génère UNE photo d\'un lieu vide, sans aucune personne.');
+    l.img = ENGINE === 'kie' ? await snGenKie(prompt, refs, '16:9') : await snGenVertex(prompt, refs, 'Génère UNE photo d\'un lieu vide, sans aucune personne.', '16:9');
+    l.imgOrig = null; l.del = {}; l.add = {}; l.cuts = []; l.crop = null;
     snValid.lieux = false; snSetStep(1, false); snRefreshGate();
-    area.innerHTML = '<img src="' + l.img.url + '" alt="lieu ' + (k + 1) + '">';
-    btn.textContent = 'Régénérer ce lieu';
+    snRenderLieux();
     toast('Lieu ' + (k + 1) + ' généré ✓', 'success');
+    await snAnalyseLieu(k);
   } catch (err) {
     area.innerHTML = '<div style="padding:16px;color:#ff9aa8;font-size:11px;">Erreur : ' + snEsc(err.message) + '</div>';
     toast('Lieu ' + (k + 1) + ' : ' + err.message, 'error');
@@ -3371,6 +3395,203 @@ async function snCallText(system, user, images) {
 }
 
 
+// ─── LIEU : ZONES, SUPPRESSION, DÉCOUPE 16:9 ─────────────
+function snLieuImgHtml(l, k) {
+  if (!l.img) return 'Lieu non généré';
+  const zs = (l.showZones !== false && l.carto && Array.isArray(l.carto.zones)) ? l.carto.zones.filter(z => z.box) : [];
+  return '<div style="width:100%"><div class="sn-zwrap"><img src="' + l.img.url + '" alt="lieu ' + (k + 1) + '">' +
+    zs.map(z => '<div class="sn-zbox" style="left:' + (z.box[1] / 10) + '%;top:' + (z.box[0] / 10) + '%;width:' + ((z.box[3] - z.box[1]) / 10) + '%;height:' + ((z.box[2] - z.box[0]) / 10) + '%"><span>' + snEsc(z.id) + '</span></div>').join('') +
+    '</div>' + snDimLabel(l.img) + '</div>';
+}
+function snRefreshLieuImg(k) { const a = snEl('sn-lieu-img-' + k), l = snLieux[k]; if (a && l) a.innerHTML = snLieuImgHtml(l, k); }
+function snToggleZones(k) { const l = snLieux[k]; l.showZones = l.showZones === false; snRefreshLieuImg(k); }
+function snSetAdd(k, id, v) { const l = snLieux[k]; l.add = l.add || {}; l.add[id] = v; }
+function snSetDel(k, id, v) { const l = snLieux[k]; l.del = l.del || {}; l.del[id] = v; }
+function snDownloadLieu(k) {
+  const l = snLieux[k]; if (!l || !l.img) return;
+  safariSafeDownload(l.img.url, 'lieu-' + (k + 1) + '-' + slugify(l.text || 'decor') + (/jpe?g/.test(l.img.mime) ? '.jpg' : '.png'));
+}
+function snRenderLieuPanel(k) {
+  const el = snEl('sn-lieu-panel-' + k), l = snLieux[k];
+  if (!el || !l) return;
+  if (!l.img) { el.innerHTML = ''; return; }
+  const zs = (l.carto && Array.isArray(l.carto.zones)) ? l.carto.zones : [];
+  let h = '<div class="sn-row" style="margin:8px 0">' +
+    '<button class="sn-btn2" onclick="snDownloadLieu(' + k + ')">⬇ Télécharger le lieu</button>' +
+    (zs.some(z => z.box) ? '<button class="sn-btn2" onclick="snToggleZones(' + k + ')">▢ Afficher / masquer les zones</button>' : '') +
+    (l.imgOrig ? '<button class="sn-btn2" onclick="snRevertLieu(' + k + ')">↩ Revenir à l\'image d\'origine</button>' : '') +
+  '</div>';
+  if (l.analysing) { el.innerHTML = h + '<div class="sn-loading"><div class="sn-dot"></div><div>Détection des zones du lieu…</div></div>'; return; }
+  if (!zs.length) { el.innerHTML = h + '<div class="sn-hint">Les zones n\'ont pas été détectées.</div><button class="sn-btn2" onclick="snAnalyseLieu(' + k + ')">🔍 Détecter les zones</button>'; return; }
+  h += '<div class="sn-cont-name" style="margin-top:6px">Zones du lieu — supprimer ou ajouter quelque chose (optionnel)</div><div class="sn-hint">Laisse vide pour garder l\'image telle quelle. Pour ajouter, décris précisément l\'objet (forme, taille, couleur, matière, état) et où il se trouve dans la zone.</div>' +
+    zs.map(z => '<div class="sn-zrow"><div class="sn-zbadge">' + snEsc(z.id) + '</div><div style="flex:1;min-width:0"><div style="font-size:12px"><b>' + snEsc(z.nom || '') + '</b>' + (z.position ? ' — ' + snEsc(z.position) : '') + '</div>' +
+      '<input class="sn-input" placeholder="Supprimer à cet endroit (optionnel) : ex. le panier de basket" value="' + snEsc((l.del || {})[z.id] || '') + '" oninput="snSetDel(' + k + ',\'' + z.id + '\',this.value)">' +
+      '<textarea class="sn-textarea" style="margin-top:4px;min-height:52px" placeholder="Ajouter à cet endroit (optionnel) : ex. un seau en métal gris accroché au plafond, au-dessus du centre de l\'estrade, penché" oninput="snSetAdd(' + k + ',\'' + z.id + '\',this.value)">' + snEsc((l.add || {})[z.id] || '') + '</textarea></div></div>').join('') +
+    '<button class="sn-btn2" id="sn-del-' + k + '" onclick="snApplyDel(' + k + ')">🧹 Appliquer les modifications</button>';
+  const boxed = zs.filter(z => z.box);
+  h += '<details class="sn-crop"' + (l.cropOpen ? ' open' : '') + ' ontoggle="snLieux[' + k + '].cropOpen=this.open"><summary>✂ Découper une partie du lieu (optionnel, format 16/9)</summary>' +
+    '<div class="sn-hint">Choisis une zone, ou clique / touche l\'image, ou fais glisser le cadre vert. Le curseur règle le zoom. Tu peux aussi décrire la partie par écrit.</div>' +
+    '<div class="sn-chips">' + boxed.map(z => '<button class="sn-chipbtn" onclick="snCropZone(' + k + ',\'' + z.id + '\')">' + snEsc(z.id) + ' — ' + snEsc(z.nom || '') + '</button>').join('') +
+      '<button class="sn-chipbtn" onclick="snCropAll(' + k + ')">Tout le lieu</button></div>' +
+    '<div class="sn-cropstage" id="sn-cs-' + k + '" onpointerdown="snCropDown(' + k + ',event)"><img src="' + l.img.url + '" alt=""><div class="sn-croprect" id="sn-cr-' + k + '"></div></div>' +
+    '<div class="sn-row" style="margin-top:6px"><span style="font-size:11px">Zoom</span><input type="range" min="10" max="100" id="sn-cz-' + k + '" style="flex:1" oninput="snCropZoom(' + k + ',this.value)"><span id="sn-cd-' + k + '" style="font-size:10px;color:var(--sn-txt3)"></span></div>' +
+    '<div class="sn-row" style="margin-top:6px"><input class="sn-input" id="sn-cf-' + k + '" placeholder="Ou décris la partie : ex. l\'estrade et le fond" style="flex:1"><button class="sn-btn2" id="sn-cfb-' + k + '" onclick="snCropFind(' + k + ')">Trouver</button></div>' +
+    '<div class="sn-row" style="margin-top:6px"><input class="sn-input" id="sn-cn-' + k + '" placeholder="Nom de la découpe (ex. Estrade)" style="flex:1"><button class="sn-btn2 primary" onclick="snCropSave(' + k + ')">✂ Enregistrer la découpe</button></div>' +
+    '<div class="sn-cuts">' + (l.cuts || []).map(c => '<div class="sn-cut"><img src="' + c.img.url + '" alt=""><div>' + snEsc(c.name) + '</div><div class="sn-row"><button class="sn-btn2" onclick="snDownloadCut(' + k + ',\'' + c.id + '\')">⬇</button><button class="sn-btn2" onclick="snDelCut(' + k + ',\'' + c.id + '\')">✕</button></div></div>').join('') + '</div>' +
+  '</details>';
+  el.innerHTML = h;
+  snCropUpdate(k);
+}
+function snResetLieuState(l) { l.del = {}; l.add = {}; l.cuts = []; l.crop = null; l.carto = null; l.cartoText = ''; }
+async function snApplyDel(k) {
+  const l = snLieux[k], zs = (l.carto && l.carto.zones) || [];
+  const where = z => 'Zone ' + z.id + ' (' + (z.nom || '') + (z.position ? ', ' + z.position : '') +
+    (z.box ? ' ; environ à ' + Math.round((z.box[1] + z.box[3]) / 20) + ' % depuis la gauche et ' + Math.round((z.box[0] + z.box[2]) / 20) + ' % depuis le haut de l\'image' : '') + ')';
+  const dels = zs.filter(z => ((l.del || {})[z.id] || '').trim()).map(z => where(z) + ' : supprimer ' + l.del[z.id].trim());
+  const adds = zs.filter(z => ((l.add || {})[z.id] || '').trim()).map(z => where(z) + ' : ajouter ' + l.add[z.id].trim());
+  if (!dels.length && !adds.length) return toast('Écris ce qu\'il faut supprimer ou ajouter dans au moins une zone', 'error');
+  const btn = snEl('sn-del-' + k);
+  btn.disabled = true; btn.textContent = 'Retouche du lieu…';
+  try {
+    const prompt = `RETOUCHE DU DÉCOR
+L'image jointe est un lieu vide.
+${dels.length ? 'À SUPPRIMER (chaque élément à l\'endroit indiqué ; reconstitue naturellement ce qui se trouvait derrière) :\n' + dels.map(x => '- ' + x).join('\n') + '\n' : ''}${adds.length ? 'À AJOUTER (exactement tel que décrit, à l\'endroit indiqué, bien visible, intégré naturellement avec la lumière, l\'échelle, la perspective et le grain du lieu) :\n' + adds.map(x => '- ' + x).join('\n') + '\n' : ''}TOUT LE RESTE DE L'IMAGE RESTE STRICTEMENT IDENTIQUE : même cadrage, même architecture, mêmes objets, mêmes couleurs, même lumière, même grain d'appareil photo 2000-2005. Ne fais que les modifications listées ci-dessus, ne déplace rien d'autre, aucune personne.`;
+    const refs = [{ label: 'IMAGE DU LIEU À RETOUCHER :', mime: l.img.mime, b64: l.img.b64 }];
+    const img = ENGINE === 'kie' ? await snGenKie(prompt, refs, '16:9') : await snGenVertex(prompt, refs, 'Retouche cette image du lieu : applique uniquement les modifications demandées, tout le reste reste identique.', '16:9');
+    if (!l.imgOrig) l.imgOrig = l.img;
+    l.img = img; snResetLieuState(l);
+    snValid.lieux = false; snSetStep(1, false); snRefreshGate();
+    snRenderLieux();
+    toast('Modifications appliquées ✓ (les découpes sont à refaire)', 'success');
+    await snAnalyseLieu(k);
+  } catch (err) {
+    toast('Retouche du lieu : ' + err.message, 'error');
+    btn.disabled = false; btn.textContent = '🧹 Appliquer les modifications';
+  }
+}
+async function snRevertLieu(k) {
+  const l = snLieux[k];
+  if (!l.imgOrig) return;
+  l.img = l.imgOrig; l.imgOrig = null; snResetLieuState(l);
+  snValid.lieux = false; snSetStep(1, false); snRefreshGate();
+  snRenderLieux();
+  await snAnalyseLieu(k);
+}
+
+// découpe 16:9 : l.crop = { x, y, w } en fractions de l'image (w = largeur, hauteur déduite du 16:9)
+function snImgWH(l) { const d = l.img && l.img.b64 ? snDims(l.img.b64) : null; return d && d[0] > 0 && d[1] > 0 ? d : [1920, 1080]; }
+function snCropWmax(l) { const d = snImgWH(l); return Math.min(1, (16 / 9) * d[1] / d[0]); }
+function snCropHf(l) { const d = snImgWH(l); return l.crop.w * (9 / 16) * d[0] / d[1]; }
+function snCropClamp(l) {
+  l.crop.w = Math.max(0.1, Math.min(snCropWmax(l), l.crop.w));
+  const hf = snCropHf(l);
+  l.crop.x = Math.max(0, Math.min(1 - l.crop.w, l.crop.x));
+  l.crop.y = Math.max(0, Math.min(1 - hf, l.crop.y));
+}
+function snCropInit(l) { if (!l.crop) { l.crop = { x: 0, y: 0, w: Math.min(snCropWmax(l), 0.6) }; snCropCenter(l, 0.5, 0.5); } }
+function snCropCenter(l, cx, cy) { l.crop.x = cx - l.crop.w / 2; l.crop.y = cy - snCropHf(l) / 2; snCropClamp(l); }
+function snCropUpdate(k) {
+  const l = snLieux[k], r = snEl('sn-cr-' + k);
+  if (!r || !l.img) return;
+  snCropInit(l);
+  const hf = snCropHf(l), d = snImgWH(l);
+  r.style.left = (l.crop.x * 100) + '%'; r.style.top = (l.crop.y * 100) + '%';
+  r.style.width = (l.crop.w * 100) + '%'; r.style.height = (hf * 100) + '%';
+  const z = snEl('sn-cz-' + k); if (z) z.value = Math.round(l.crop.w * 100);
+  const t = snEl('sn-cd-' + k); if (t) t.textContent = Math.round(l.crop.w * d[0]) + '×' + Math.round(l.crop.w * d[0] * 9 / 16) + ' px';
+}
+function snCropFit(k, box) {
+  const l = snLieux[k], d = snImgWH(l);
+  snCropInit(l);
+  const bw = (box[3] - box[1]) / 1000, bh = (box[2] - box[0]) / 1000;
+  l.crop.w = Math.max(bw * 1.12, bh * 1.12 * (16 / 9) * d[1] / d[0]);
+  snCropClamp(l);
+  snCropCenter(l, (box[1] + box[3]) / 2000, (box[0] + box[2]) / 2000);
+  snCropUpdate(k);
+}
+function snCropZone(k, id) {
+  const z = ((snLieux[k].carto || {}).zones || []).find(x => x.id === id);
+  if (!z || !z.box) return;
+  snCropFit(k, z.box);
+  const n = snEl('sn-cn-' + k); if (n && !n.value) n.value = z.nom || ('Zone ' + id);
+}
+function snCropAll(k) { const l = snLieux[k]; snCropInit(l); l.crop.w = snCropWmax(l); snCropCenter(l, 0.5, 0.5); snCropUpdate(k); }
+function snCropZoom(k, v) {
+  const l = snLieux[k]; snCropInit(l);
+  const cx = l.crop.x + l.crop.w / 2, cy = l.crop.y + snCropHf(l) / 2;
+  l.crop.w = Number(v) / 100; snCropClamp(l); snCropCenter(l, cx, cy); snCropUpdate(k);
+}
+function snCropDown(k, ev) {
+  ev.preventDefault();
+  const l = snLieux[k], st = snEl('sn-cs-' + k);
+  if (!st || !l.img) return;
+  snCropInit(l);
+  const rc = st.getBoundingClientRect();
+  const px = (ev.clientX - rc.left) / rc.width, py = (ev.clientY - rc.top) / rc.height;
+  const hf = snCropHf(l);
+  if (px < l.crop.x || px > l.crop.x + l.crop.w || py < l.crop.y || py > l.crop.y + hf) { snCropCenter(l, px, py); snCropUpdate(k); }
+  const sx = ev.clientX, sy = ev.clientY, ox = l.crop.x, oy = l.crop.y;
+  if (st.setPointerCapture && ev.pointerId != null) { try { st.setPointerCapture(ev.pointerId); } catch (_) {} }
+  const mv = e => { l.crop.x = ox + (e.clientX - sx) / rc.width; l.crop.y = oy + (e.clientY - sy) / rc.height; snCropClamp(l); snCropUpdate(k); };
+  const up = () => { st.removeEventListener('pointermove', mv); st.removeEventListener('pointerup', up); st.removeEventListener('pointercancel', up); };
+  st.addEventListener('pointermove', mv); st.addEventListener('pointerup', up); st.addEventListener('pointercancel', up);
+}
+async function snCropFind(k) {
+  const l = snLieux[k], q = (snEl('sn-cf-' + k).value || '').trim();
+  if (!q) return toast('Décris la partie à découper', 'error');
+  const btn = snEl('sn-cfb-' + k); btn.disabled = true; btn.textContent = '…';
+  try {
+    const r = await snCallText('Tu repères une partie précise sur une image de lieu. Réponds UNIQUEMENT en JSON valide : { "trouve": true, "box_2d": [ymin, xmin, ymax, xmax] } avec des entiers de 0 à 1000 sur l\'image, qui englobent la partie décrite (et un peu d\'espace autour) ; si elle n\'est pas visible : { "trouve": false }.', 'Partie à repérer : « ' + q + ' ».', [{ mime: l.img.mime, b64: l.img.b64 }]);
+    const box = r && r.trouve !== false ? snBox(r.box_2d) : null;
+    if (!box) toast('Je ne trouve pas cette partie sur l\'image', 'error');
+    else { snCropFit(k, box); const n = snEl('sn-cn-' + k); if (n && !n.value) n.value = q.slice(0, 40); }
+  } catch (err) { toast('Recherche : ' + err.message, 'error'); }
+  finally { btn.disabled = false; btn.textContent = 'Trouver'; }
+}
+function snLoadImg(src) { return new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error('Image illisible')); im.src = src; }); }
+async function snCropSave(k) {
+  const l = snLieux[k];
+  if (!l.img) return;
+  try {
+    snCropInit(l);
+    const d = snImgWH(l);
+    const sx = Math.round(l.crop.x * d[0]), sy = Math.round(l.crop.y * d[1]);
+    const sw = Math.min(Math.round(l.crop.w * d[0]), d[0] - sx);
+    const sh = Math.min(Math.round(sw * 9 / 16), d[1] - sy);
+    const im = await snLoadImg('data:' + l.img.mime + ';base64,' + l.img.b64);
+    const cv = document.createElement('canvas'); cv.width = sw; cv.height = sh;
+    cv.getContext('2d').drawImage(im, sx, sy, sw, sh, 0, 0, sw, sh);
+    const dataUrl = cv.toDataURL('image/jpeg', 0.95);
+    const nm = (snEl('sn-cn-' + k).value || '').trim() || ('Découpe ' + ((l.cuts || []).length + 1));
+    l.cuts = l.cuts || [];
+    l.cuts.push({ id: 'c' + (++snCutSeq), name: nm, img: { url: dataUrl, b64: dataUrl.split(',')[1], mime: 'image/jpeg' } });
+    l.cropOpen = true;
+    snRenderLieuPanel(k); snRefreshAllCuts();
+    toast('Découpe « ' + nm + ' » enregistrée ✓', 'success');
+  } catch (err) { toast('Découpe : ' + err.message, 'error'); }
+}
+function snDownloadCut(k, id) {
+  const c = ((snLieux[k] || {}).cuts || []).find(x => x.id === id);
+  if (c) safariSafeDownload(c.img.url, 'lieu' + (k + 1) + '-' + slugify(c.name) + '.jpg');
+}
+function snDelCut(k, id) { const l = snLieux[k]; l.cuts = (l.cuts || []).filter(c => c.id !== id); snRenderLieuPanel(k); snRefreshAllCuts(); }
+
+// découpe choisie pour un plan (optionnelle)
+function snCutOf(plan) { const L = snLieuOf(plan); return (L.cuts || []).find(c => c.id === plan.cut); }
+function snPickCut(i, id) { snEdit(i, 'cut', id); snRefreshCut(i); }
+function snRefreshAllCuts() { if (snBoard) snBoard.plans.forEach((p, i) => snRefreshCut(i)); }
+function snRefreshCut(i) {
+  const p = snBoard.plans[i], L = snLieuOf(p);
+  const z = snEl('sn-zone-' + i); if (z) z.setAttribute('list', 'sn-zl-' + L.id);
+  const box = snEl('sn-cutbox-' + i); if (!box) return;
+  const cuts = L.cuts || [];
+  if (p.cut && !cuts.some(c => c.id === p.cut)) p.cut = '';
+  box.innerHTML = '<div class="sn-label">Partie du lieu pour ce plan (optionnel — clique pour choisir)</div>' + (cuts.length
+    ? '<div class="sn-cuts"><div class="sn-cut' + (!p.cut ? ' on' : '') + '" onclick="snPickCut(' + i + ',\'\')"><div class="sn-cutnone">Lieu entier</div></div>' +
+      cuts.map(c => '<div class="sn-cut' + (c.id === p.cut ? ' on' : '') + '" onclick="snPickCut(' + i + ',\'' + c.id + '\')"><img src="' + c.img.url + '" alt=""><div>' + snEsc(c.name) + '</div></div>').join('') + '</div>'
+    : '<div class="sn-hint">Aucune découpe enregistrée pour ce lieu : crée-en à l\'étape 1 (Lieux → « Découper une partie du lieu »), elles apparaîtront ici.</div>');
+}
+
 // ─── CARTOGRAPHIE SPATIALE DES LIEUX ─────────────────────
 const SN_CARTO_FIELDS = ['zone', 'positions', 'elements_fixes_visibles', 'direction_regard', 'point_de_vue_camera'];
 const SN_CARTO_SYSTEM = `Tu es un chef décorateur et un repéreur de lieux de tournage. On te donne l'image d'un lieu VERROUILLÉ (et, s'il y en a une, la photo de référence du même lieu : plusieurs photos = un seul et même espace). Tu en dresses la CARTE SPATIALE, qui servira de mémoire du décor pour toutes les scènes.
@@ -3378,13 +3599,13 @@ const SN_CARTO_SYSTEM = `Tu es un chef décorateur et un repéreur de lieux de t
 A. CARTOGRAPHIER LE LIEU : identifie la forme générale et les dimensions relatives, les entrées et sorties, les murs, le sol, le mobilier, les éléments fixes, les volumes surélevés, les zones ouvertes, les éléments suspendus, les sources de lumière, et la position relative de chaque élément dans l'espace.
 B. DÉCOUPER EN ZONES FONCTIONNELLES : pour chaque zone utile à une scène, donne son nom, ses éléments fixes, sa position dans le lieu (par rapport aux murs, aux entrées et aux autres zones), sa relation avec les autres zones, les points de vue possibles depuis lesquels on la voit, et ce qui reste hors champ quand on la cadre.
 
-RÈGLES : décris uniquement ce qui est visible sur l'image ou écrit dans la description du lieu ; n'invente aucune structure ; ne corrige ni n'embellis. Un élément indiqué par la description mais invisible sur l'image est noté « (indiqué par la description) ». Entre 2 et 6 zones.
+RÈGLES : décris uniquement ce qui est visible sur l'image ou écrit dans la description du lieu ; n'invente aucune structure ; ne corrige ni n'embellis. Un élément indiqué par la description mais invisible sur l'image est noté « (indiqué par la description) ». Découpe la pièce en 4 à 8 zones qui COUVRENT tout le lieu (partie gauche, partie droite, milieu, devant / avant-plan, fond…) et ajoute une zone dédiée à chaque élément important (estrade, table de buffet, gradins, lit, bureau…). Les zones peuvent se chevaucher. Pour chacune, donne son cadre sur l'image 1 dans "box_2d".
 
 Réponds UNIQUEMENT en JSON valide, sans markdown :
 {
   "resume": "forme générale, dimensions relatives, entrées/sorties, sources de lumière — 2 à 3 phrases",
   "elements_fixes_globaux": [ "élément fixe du lieu avec sa position (ex. : « mur du fond : … »)" ],
-  "zones": [ { "id": "z1", "nom": "nom court de la zone", "position": "où elle est dans le lieu", "elements_fixes": [ "…" ], "relations": "lien avec les autres zones", "points_de_vue": [ "depuis où on peut la cadrer" ], "hors_champ": [ "ce qui reste à son emplacement réel hors cadre" ] } ]
+  "zones": [ { "id": "A", "nom": "nom court de la zone", "box_2d": [ymin, xmin, ymax, xmax en entiers de 0 à 1000 sur l'image 1], "position": "où elle est dans le lieu", "elements_fixes": [ "…" ], "relations": "lien avec les autres zones", "points_de_vue": [ "depuis où on peut la cadrer" ], "hors_champ": [ "ce qui reste à son emplacement réel hors cadre" ] } ]
 }`;
 function snCartoToText(c) {
   if (!c) return '';
@@ -3392,7 +3613,7 @@ function snCartoToText(c) {
   let t = (c.resume ? c.resume + '\n' : '');
   if (arr(c.elements_fixes_globaux).length) t += 'ÉLÉMENTS FIXES : ' + arr(c.elements_fixes_globaux).join(' ; ') + '\n';
   (Array.isArray(c.zones) ? c.zones : []).forEach(z => {
-    t += 'ZONE « ' + (z.nom || z.id) + ' » — position : ' + (z.position || '—') +
+    t += 'ZONE ' + z.id + ' « ' + (z.nom || z.id) + ' » — position : ' + (z.position || '—') +
       (arr(z.elements_fixes).length ? ' ; éléments fixes : ' + arr(z.elements_fixes).join(', ') : '') +
       (z.relations ? ' ; relations : ' + z.relations : '') +
       (arr(z.points_de_vue).length ? ' ; points de vue : ' + arr(z.points_de_vue).join(', ') : '') +
@@ -3400,24 +3621,45 @@ function snCartoToText(c) {
   });
   return t.trim();
 }
-function snZonesOf(l) { return ((l && l.carto && Array.isArray(l.carto.zones)) ? l.carto.zones : []).map(z => String(z.nom || z.id)); }
+function snZonesOf(l) { return ((l && l.carto && Array.isArray(l.carto.zones)) ? l.carto.zones : []).map(z => 'Zone ' + z.id + ' — ' + String(z.nom || '')); }
+function snBox(b) {
+  if (!Array.isArray(b) || b.length !== 4) return null;
+  const v = b.map(x => Math.max(0, Math.min(1000, Math.round(Number(x)))));
+  if (v.some(x => isNaN(x)) || v[2] - v[0] < 20 || v[3] - v[1] < 20) return null;
+  return v;
+}
+async function snAnalyseLieu(k) {
+  const l = snLieux[k];
+  if (!l || !l.img) return false;
+  l.analysing = true; snRenderLieuPanel(k);
+  let ok = false;
+  try {
+    const imgs = [{ mime: l.img.mime, b64: l.img.b64 }];
+    if (l.ref) imgs.push({ mime: l.ref.mime, b64: l.ref.b64 });
+    const els = snElementsList();
+    const c = await snCallText(SN_CARTO_SYSTEM, 'Lieu « ' + (l.text || 'voir les images') + ' ».' + (els.length ? '\nÉléments permanents imposés : ' + els.join(' ; ') + '.' : '') + '\nImage 1 : le lieu verrouillé.' + (l.ref ? '\nImage 2 : photo de référence du même lieu.' : ''), imgs);
+    const zs = (c && Array.isArray(c.zones) ? c.zones : []).slice(0, 8).map((z, idx) => Object.assign({}, z, { id: String.fromCharCode(65 + idx), box: snBox(z.box_2d) }));
+    l.carto = Object.assign({}, c || {}, { zones: zs });
+    l.cartoText = snCartoToText(l.carto);
+    l.showZones = true; ok = true;
+  } catch (err) {
+    console.error(err);
+    toast('Zones du lieu ' + (k + 1) + ' non détectées : ' + err.message, 'error');
+  } finally {
+    l.analysing = false;
+    const a = snEl('sn-lieu-img-' + k);
+    if (a && l.img) a.innerHTML = snLieuImgHtml(l, k);
+    snRenderLieuPanel(k);
+  }
+  return ok;
+}
 async function snEnsureCartos(btn) {
   for (let k = 0; k < snLieux.length; k++) {
     const l = snLieux[k];
     if (l.carto || !l.img) continue;
     if (btn) btn.textContent = 'Cartographie du lieu ' + (k + 1) + '…';
-    const imgs = [{ mime: l.img.mime, b64: l.img.b64 }];
-    if (l.ref) imgs.push({ mime: l.ref.mime, b64: l.ref.b64 });
-    const els = snElementsList();
-    try {
-      const c = await snCallText(SN_CARTO_SYSTEM, 'Lieu « ' + (l.text || 'voir les images') + ' ».' + (els.length ? '\nÉléments permanents imposés : ' + els.join(' ; ') + '.' : '') + '\nImage 1 : le lieu verrouillé.' + (l.ref ? '\nImage 2 : photo de référence du même lieu.' : ''), imgs);
-      l.carto = c && typeof c === 'object' ? c : { resume: '', zones: [] };
-      l.cartoText = snCartoToText(l.carto);
-    } catch (err) {
-      console.error(err);
-      toast('Cartographie du lieu ' + (k + 1) + ' impossible (' + err.message + ') — le storyboard continue sans', 'error');
-      l.carto = { resume: '', zones: [] }; l.cartoText = '';
-    }
+    const ok = await snAnalyseLieu(k);
+    if (!ok) { l.carto = { resume: '', zones: [] }; l.cartoText = ''; }
   }
 }
 function snCartosForUser() {
@@ -3483,7 +3725,7 @@ RÈGLES
 - MISE EN SCÈNE (tu raisonnes en réalisateur et en storyboard artist) : pour chaque plan, comprends l'ÉVÉNEMENT qui se produit, qui y participe, quels ÉLÉMENTS MATÉRIELS sont nécessaires pour le comprendre (objets, accessoires, témoins), OÙ chaque personnage et chaque objet se trouve dans l'espace, ce que le spectateur doit COMPRENDRE et RESSENTIR, et quel cadrage raconte le mieux ce moment. Tu anticipes les besoins visuels de la scène au lieu de te limiter aux mots du récit. Le cadrage découle de l'intention narrative, jamais d'une préférence pour les portraits : un gros plan pour une réaction intime, un plan moyen pour une interaction, un plan large quand il faut voir une humiliation publique, une confrontation ou un groupe. Si un objet est indispensable à l'action (ex. un seau qui se déverse), il est visible et son origine se comprend ; si des témoins donnent son sens à la scène, ils sont dans la composition, avec des réactions différentes selon leur rôle dans le récit (jamais une foule qui affiche toute la même expression). Ne sacrifie jamais la logique à l'esthétique : une image belle mais narrativement fausse est un échec.
 - ANGLES, à choisir parmi exactement : niveau des yeux (neutre, témoin) | plongée (vulnérabilité, exposition, défaite) | contre-plongée (fierté, résilience, domination) | gros plan macro (détail volé) | angle subjectif intime (spectateur à 1 m) | vue d'ensemble (point de vue d'un témoin dans l'espace, pour voir la scène et son public). Choisis selon l'intention du plan.
 - LUMIÈRE : sources de l'époque (années 2000) cohérentes avec le lieu : flash direct de compact numérique, néons fluorescents, lampe de chevet, guirlandes, etc.
-- PERSONNAGES : ne cite que les identifiants fournis, uniquement ceux visibles dans le plan (au moins un par plan).
+- PERSONNAGES : ne cite que les identifiants fournis. Dans chaque plan, liste TOUS les personnages fournis qui sont présents à ce moment du récit (ne te limite jamais au premier : si le récit les met ensemble, ils sont tous dans le plan), et seulement eux (au moins un par plan).
 - Tous les personnages sont adultes (20 ans et plus). Pas de gore, pas d'arme, rien de sexuel.
 - FIGURANTS RÉCURRENTS : si le récit fait intervenir d'autres personnes (élèves, invités, foule…), définis UNE FOIS chacune dans "figurants" : un id, une description précise et fixe (morphologie, cheveux, visage, tenue complète 2000-2005 avec accessoires). 5 figurants maximum, regroupe la foule en quelques individus identifiables. Dans chaque plan, liste ceux qui sont visibles dans "figurants_presents". Leur apparence ne change jamais d'un plan à l'autre.
 - ÉLÉMENTS PERMANENTS : reprends ceux imposés par l'élève, et ajoute ceux que le récit installe durablement (trace au sol, objet tombé, vêtement abîmé, désordre…). Ils restent présents et identiques dans tous les plans suivants, jamais oubliés.
@@ -3599,7 +3841,7 @@ function snRenderBoard() {
   snEl('sn-empty').style.display = 'none';
   snEl('sn-board').style.display = 'block';
   snRenderProgress();
-  b.plans.forEach((p, i) => { snRenderChips(i); snRenderFigs(i); if (snFrames[i]) snShowFrame(i); });
+  b.plans.forEach((p, i) => { snRenderChips(i); snRenderFigs(i); snRefreshCut(i); if (snFrames[i]) snShowFrame(i); });
 }
 
 function snPlanHtml(p, i) {
@@ -3607,8 +3849,9 @@ function snPlanHtml(p, i) {
     '<div class="sn-plan-head"><span class="sn-plan-n">Plan ' + (i + 1) + '</span><span class="sn-tag">' + snEsc(p.cadrage || 'plan moyen') + '</span></div>' +
     '<div class="sn-plan-body">' +
       '<div class="sn-label">Moment de l\'histoire</div><textarea class="sn-textarea" oninput="snEdit(' + i + ',\'moment\',this.value)">' + snEsc(p.moment) + '</textarea>' +
-      '<div class="sn-label">Lieu de ce plan</div><select class="sn-select" onchange="snEdit(' + i + ',\'lieu\',this.value)">' + snLieux.map((l, k) => '<option value="' + l.id + '"' + (l.id === p.lieu ? ' selected' : '') + '>Lieu ' + (k + 1) + ' — ' + snEsc((l.text || 'photo').slice(0, 40)) + '</option>').join('') + '</select>' +
-      '<div class="sn-label">Zone du lieu cadrée</div><input class="sn-input" list="sn-zl-' + p.lieu + '" value="' + snEsc(p.zone) + '" oninput="snEdit(' + i + ',\'zone\',this.value)">' +
+      '<div class="sn-label">Lieu de ce plan</div><select class="sn-select" onchange="snEdit(' + i + ',\'lieu\',this.value);snEdit(' + i + ',\'cut\',\'\');snRefreshCut(' + i + ')">' + snLieux.map((l, k) => '<option value="' + l.id + '"' + (l.id === p.lieu ? ' selected' : '') + '>Lieu ' + (k + 1) + ' — ' + snEsc((l.text || 'photo').slice(0, 40)) + '</option>').join('') + '</select>' +
+      '<div id="sn-cutbox-' + i + '"></div>' +
+      '<div class="sn-label">Zone du lieu cadrée</div><input class="sn-input" id="sn-zone-' + i + '" list="sn-zl-' + p.lieu + '" value="' + snEsc(p.zone) + '" oninput="snEdit(' + i + ',\'zone\',this.value)">' +
       '<div class="sn-label">Émotion</div><input class="sn-input" value="' + snEsc(p.emotion) + '" oninput="snEdit(' + i + ',\'emotion\',this.value);snRenderProgress()">' +
       '<div class="sn-label">Ce que le spectateur doit comprendre</div><textarea class="sn-textarea" oninput="snEdit(' + i + ',\'intention\',this.value)">' + snEsc(p.intention) + '</textarea>' +
       '<div class="sn-label">Action visible</div><textarea class="sn-textarea" oninput="snEdit(' + i + ',\'action\',this.value)">' + snEsc(p.action) + '</textarea>' +
@@ -3682,7 +3925,7 @@ function snBuildPrompt(plan, i) {
   const figs = (plan.figurants_presents || []).map(id => snBoard.figurants.find(f => f.id === id)).filter(Boolean);
   const elements = (snBoard.elements || '').split('\n').map(x => x.trim()).filter(Boolean);
   const lieu = L.text ? '"' + L.text + '"' : 'le lieu de l\'image de référence jointe';
-  const persos = present.map(c => '— ' + c.nom + ' : visage, traits, morphologie, teint, couleur et longueur des cheveux EXACTS de l\'image « PHOTO D\'IDENTITÉ de ' + c.nom + ' » jointe (personne reconnaissable au premier regard ; ses vêtements sur cette photo sont à IGNORER). TENUE (identique sur tous les plans) : ' + snTenueOf(c) + '.').join('\n');
+  const persos = present.map((c, n) => '— PERSONNAGE ' + (n + 1) + ' sur ' + present.length + ' : ' + c.nom + ' : visage, traits, morphologie, teint, couleur et longueur des cheveux EXACTS de l\'image « PHOTO D\'IDENTITÉ de ' + c.nom + ' » jointe (personne reconnaissable au premier regard ; ses vêtements sur cette photo sont à IGNORER). TENUE (identique sur tous les plans) : ' + snTenueOf(c) + '.').join('\n');
 
   const angleMap = {
     'plongée': `ANGLE PLONGÉE — Appareil au-dessus du sujet, incliné vers le bas. Corps écrasé, dominé. Renforce la vulnérabilité, la honte, la défaite.`,
@@ -3726,14 +3969,14 @@ FOCUS POINT : ${plan.focus || 'regard'} — net, révélateur, volé.
 III. IDENTITÉS ET TENUES — VERROUILLÉES À 100%
 ═══════════════════════════════════════════
 ${persos}
-Zéro modification, zéro embellissement, zéro idéalisation. Les personnes telles qu'elles sont, imperfections comprises. Tous les personnages sont des adultes (20 ans et plus). Seuls les personnages listés ci-dessus apparaissent dans l'image.
+Zéro modification, zéro embellissement, zéro idéalisation. Les personnes telles qu'elles sont, imperfections comprises. Tous les personnages sont des adultes (20 ans et plus). Il y a EXACTEMENT ${present.length} personne${present.length > 1 ? 's' : ''} principale${present.length > 1 ? 's' : ''} dans l'image : ${present.map(c => c.nom).join(', ')}. Chacune a SA photo d'identité jointe ; n'invente aucune autre personne principale, ne fusionne pas deux personnages, ne donne le visage de l'un à l'autre. Seuls les personnages listés ci-dessus apparaissent dans l'image.
 
 ${figs.length ? '═══════════════════════════════════════════\nIII bis. PERSONNES SECONDAIRES — IDENTIQUES SUR TOUS LES PLANS\n═══════════════════════════════════════════\n' + figs.map(f => '— ' + f.id + ' : ' + f.description).join('\n') + '\nCes personnes ont EXACTEMENT le même visage, la même coiffure et les mêmes vêtements que sur les plans précédents. Seules elles apparaissent en plus des personnages principaux.\n\n' : ''}═══════════════════════════════════════════
 IV. LIEU VERROUILLÉ — DÉCOR FIGÉ
 ═══════════════════════════════════════════
 Décor : ${lieu}
 RÈGLE PRIORITAIRE — RESPECT DU DÉCOR VERROUILLÉ : l'image du lieu jointe est le décor EXACT et la référence absolue de ce plan (murs, sol, mobilier, lumière, ambiance). Le lieu est un espace unique et permanent : on fait évoluer l'action DANS ce décor existant, on ne le recrée jamais pour la scène. Il est INTERDIT d'ajouter, de déplacer, de supprimer ou de réinventer une structure (plateforme, estrade, mur, porte, escalier, mobilier, élément suspendu) ; tout objet fixe garde sa position réelle, vu de face, de côté ou d'en haut. Les éléments hors cadre existent quand même à leur emplacement réel. Ce qui peut changer d'un plan à l'autre : la foule, les expressions, les gestes, la caméra, la lumière dynamique. Ce qui ne change jamais : l'architecture et les éléments fixes. Un objet mobile ne bouge que si l'action le justifie. En cas de doute, reste fidèle à l'image du lieu jointe.
-${L.cartoText ? 'CARTOGRAPHIE DU LIEU (structure fixe) :\n' + L.cartoText + '\n' : ''}${plan.zone ? 'ZONE DU LIEU CADRÉE DANS CE PLAN : ' + plan.zone + ' — on cadre cette zone du lieu existant, on ne reconstruit pas le lieu.\n' : ''}${plan.positions ? 'POSITIONS EXACTES DES PERSONNAGES DANS LA ZONE : ' + plan.positions + '\n' : ''}${plan.elements_fixes_visibles ? 'ÉLÉMENTS FIXES VISIBLES DANS LE CADRE (à leur place réelle) : ' + plan.elements_fixes_visibles + '\n' : ''}${plan.direction_regard ? 'DIRECTION DES REGARDS ET DES MOUVEMENTS : ' + plan.direction_regard + '\n' : ''}${plan.point_de_vue_camera ? 'POINT DE VUE DE LA CAMÉRA : ' + plan.point_de_vue_camera + ' (le cadrage ne change que ce qu\'on voit de la zone, jamais la géométrie du lieu).\n' : ''}
+${L.cartoText ? 'CARTOGRAPHIE DU LIEU (structure fixe) :\n' + L.cartoText + '\n' : ''}${snCutOf(plan) ? 'CADRAGE SUR UNE PARTIE DU LIEU : la caméra ne montre que la partie « ' + snCutOf(plan).name + ' » du décor (image de découpe jointe). Le cadre de l\'image finale correspond à cette partie du lieu existant : mêmes éléments, mêmes positions, même lumière.\n' : ''}${plan.zone ? 'ZONE DU LIEU CADRÉE DANS CE PLAN : ' + plan.zone + ' — on cadre cette zone du lieu existant, on ne reconstruit pas le lieu.\n' : ''}${plan.positions ? 'POSITIONS EXACTES DES PERSONNAGES DANS LA ZONE : ' + plan.positions + '\n' : ''}${plan.elements_fixes_visibles ? 'ÉLÉMENTS FIXES VISIBLES DANS LE CADRE (à leur place réelle) : ' + plan.elements_fixes_visibles + '\n' : ''}${plan.direction_regard ? 'DIRECTION DES REGARDS ET DES MOUVEMENTS : ' + plan.direction_regard + '\n' : ''}${plan.point_de_vue_camera ? 'POINT DE VUE DE LA CAMÉRA : ' + plan.point_de_vue_camera + ' (le cadrage ne change que ce qu\'on voit de la zone, jamais la géométrie du lieu).\n' : ''}
 PRÉSENCE DANS LE LIEU À CE MOMENT (selon le récit uniquement) : ${plan.presence || 'rien d\'autre que le décor et les personnages listés'}. Les autres personnes visibles sont uniquement celles décrites dans « personnes secondaires ».
 ÉLÉMENTS PERMANENTS — PRÉSENTS DANS CHAQUE SCÈNE, IDENTIQUES D'UN PLAN À L'AUTRE : ${elements.length ? elements.join(' ; ') : 'aucun imposé'}. Ils sont visibles dès que le cadrage le permet, même position, même état ; en gros plan, au moins un fragment ou leur trace reste visible. Ne jamais les faire disparaître, ne jamais en changer l'aspect. Objets et mobilier d'époque uniquement (années 2000) ; INTERDICTION des objets modernes : smartphones récents, écrans plats, vêtements actuels. Aucun logo de marque, aucun texte lisible.
 
@@ -3794,31 +4037,34 @@ L'image doit être compréhensible : si un objet est indispensable pour comprend
 
 // ─── RÉFÉRENCES JOINTES À CHAQUE PLAN ────────────────────
 function snRefsFor(plan, i) {
-  const refs = [];
-  snPlanChars(plan).forEach(c => {
-    if (c.avatar) refs.push({ label: 'PHOTO D\'IDENTITÉ de ' + c.nom + ' — le visage, les traits, la peau, les cheveux et la morphologie de cette personne sont à reproduire à l\'identique, elle doit être reconnaissable au premier regard. IGNORE totalement les vêtements portés sur cette photo : seule l\'image « Tenue de ' + c.nom + ' » définit ses vêtements :', mime: c.avatar.mime, b64: c.avatar.b64 });
-    if (c.tenueImg) refs.push({ label: 'Tenue de ' + c.nom + ' — VÊTEMENTS UNIQUEMENT, portés par ' + c.nom + ' et par personne d\'autre, à reproduire à l\'identique (ignore le visage et le corps de la personne sur cette image) :', mime: c.tenueImg.mime, b64: c.tenueImg.b64 });
+  const refs = [], idRefs = [];
+  const chars = snPlanChars(plan);
+  chars.forEach((c, n) => {
+    if (c.avatar) idRefs.push({ label: 'PHOTO D\'IDENTITÉ n°' + (n + 1) + ' sur ' + chars.length + ' — ' + c.nom + ' — le visage, les traits, la peau, les cheveux et la morphologie de cette personne sont à reproduire à l\'identique, elle doit être reconnaissable au premier regard. IGNORE totalement les vêtements portés sur cette photo : seule l\'image « Tenue de ' + c.nom + ' » définit ses vêtements :', mime: c.avatar.mime, b64: c.avatar.b64 });
+    if (c.tenueImg) idRefs.push({ label: 'Tenue de ' + c.nom + ' — VÊTEMENTS UNIQUEMENT, portés par ' + c.nom + ' et par personne d\'autre, à reproduire à l\'identique (ignore le visage et le corps de la personne sur cette image) :', mime: c.tenueImg.mime, b64: c.tenueImg.b64 });
   });
   const L = snLieuOf(plan);
   if (L.img) refs.push({ label: 'LIEU VERROUILLÉ de ce plan (décor exact et permanent : place les personnages dedans, n\'ajoute, ne déplace ni ne supprime aucune structure) :', mime: L.img.mime, b64: L.img.b64 });
+  const cut = snCutOf(plan);
+  if (cut) refs.push({ label: 'DÉCOUPE DU LIEU POUR CE PLAN — partie exacte du décor sur laquelle la caméra se concentre : compose l\'image dans CETTE partie, mêmes éléments, mêmes positions, même lumière, sans reconstruire le lieu :', mime: cut.img.mime, b64: cut.img.b64 });
   const prevs = [];
   for (let k = i - 1; k >= 0 && prevs.length < 2; k--) if (snFrames[k]) prevs.push(k);
   prevs.forEach(k => {
     const same = snBoard.plans[k].lieu === plan.lieu;
     refs.push({ label: (same
-      ? 'PLAN ' + (k + 1) + ' DÉJÀ GÉNÉRÉ dans le même lieu — continuité seulement : personnes secondaires, objets et traces au sol. Si un visage ou un vêtement diffère des photos d\'identité et de tenue, ce sont les photos d\'identité et de tenue qui ont raison :'
-      : 'PLAN ' + (k + 1) + ' DÉJÀ GÉNÉRÉ dans un AUTRE lieu — continuité seulement des personnes secondaires, ignore son décor. Si un visage ou un vêtement diffère des photos d\'identité et de tenue, ce sont les photos d\'identité et de tenue qui ont raison :'), mime: snFrames[k].mime, b64: snFrames[k].b64 });
+      ? 'PLAN ' + (k + 1) + ' DÉJÀ GÉNÉRÉ dans le même lieu — continuité seulement : personnes secondaires, objets et traces au sol. Ce plan ne montre pas forcément tous les personnages de ce plan-ci et peut contenir des erreurs : ne copie AUCUN visage ni vêtement depuis lui, les visages et vêtements viennent uniquement des photos d\'identité et de tenue :'
+      : 'PLAN ' + (k + 1) + ' DÉJÀ GÉNÉRÉ dans un AUTRE lieu — continuité seulement des personnes secondaires, ignore son décor. Ce plan ne montre pas forcément tous les personnages de ce plan-ci et peut contenir des erreurs : ne copie AUCUN visage ni vêtement depuis lui, les visages et vêtements viennent uniquement des photos d\'identité et de tenue :'), mime: snFrames[k].mime, b64: snFrames[k].b64 });
   });
   const first = snFrames[0];
   if (first && i > 0 && !prevs.includes(0)) refs.push({ label: 'PREMIER PLAN de la séquence (référence de continuité : personnes, vêtements, objets) :', mime: first.mime, b64: first.b64 });
-  return refs;
+  return refs.concat(idRefs);
 }
 
 // ─── GÉNÉRATION D'IMAGE (Vertex / kie.ai) ────────────────
-async function snGenVertex(promptText, refs, preamble) {
+async function snGenVertex(promptText, refs, preamble, ratio) {
   let endpoint = 'https://aiplatform.googleapis.com/v1/publishers/google/models/' + FY_MODEL_IMAGE + ':generateContent';
   let fallbackUsed = false;
-  const aspectRatio = snCarousel ? '4:5' : '9:16';
+  const aspectRatio = ratio || (snCarousel ? '4:5' : '9:16');
 
   const parts = [{ text: preamble || 'Génère UNE photo. PRIORITÉ ABSOLUE : les photos d\'identité (visages) et les photos de tenue (vêtements) priment sur toute autre image jointe. Les autres images définissent le lieu et la continuité.' }];
   refs.forEach(r => { parts.push({ text: r.label }); parts.push({ inlineData: { data: r.b64, mimeType: r.mime } }); });
@@ -3862,9 +4108,10 @@ async function snGenVertex(promptText, refs, preamble) {
   throw lastErr || new Error('Génération Vertex échouée');
 }
 
-async function snGenKie(promptText, refs) {
-  const width = 1080;
-  const height = snCarousel ? 1350 : 1920;
+async function snGenKie(promptText, refs, ratio) {
+  const wide = ratio === '16:9';
+  const width = wide ? 1920 : 1080;
+  const height = wide ? 1080 : (snCarousel ? 1350 : 1920);
   const urls = [];
   for (const r of refs) {
     const up = await fetch('https://kieai.redpandaai.co/api/file-base64-upload', {
@@ -3880,7 +4127,7 @@ async function snGenKie(promptText, refs) {
   const taskResp = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + KIE_KEY },
-    body: JSON.stringify({ model: 'nano-banana-2', prompt: (refs.length ? 'IMAGES DE RÉFÉRENCE JOINTES, dans l\'ordre :\n' + refs.map((r, k) => (k + 1) + ' = ' + r.label.replace(/ :$/, '')).join('\n') + '\nLes photos d\'identité et de tenue priment sur toutes les autres images.\n\n' : '') + promptText, image_input: urls, width, height, resolution: '4K', aspect_ratio: snCarousel ? '4:5' : '9:16' })
+    body: JSON.stringify({ model: 'nano-banana-2', prompt: (refs.length ? 'IMAGES DE RÉFÉRENCE JOINTES, dans l\'ordre :\n' + refs.map((r, k) => (k + 1) + ' = ' + r.label.replace(/ :$/, '')).join('\n') + '\nLes photos d\'identité et de tenue priment sur toutes les autres images.\n\n' : '') + promptText, image_input: urls, width, height, resolution: '4K', aspect_ratio: wide ? '16:9' : (snCarousel ? '4:5' : '9:16') })
   });
   if (!taskResp.ok) throw new Error('kie.ai task creation failed');
   const taskData = await taskResp.json();
