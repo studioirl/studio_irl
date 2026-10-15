@@ -306,7 +306,7 @@ const MODES = [
 ];
 
 const SIDE_NOTES = {
-  RACONTER: "L'identité et l'âge de la personne sur la photo de référence sont toujours préservés. Aucune projection d'âge n'est proposée par cet outil.",
+  RACONTER: "L'identité de la personne sur la photo de référence est préservée. Renseigne l'année du souvenir et son âge sur la photo : son âge à l'époque est calculé automatiquement et l'image est générée à cet âge.",
   RESTAURATION: "La restauration nettoie taches, déchirures et décoloration, et colorise si besoin — sans jamais changer l'âge, l'identité ou les traits de la ou des personnes présentes sur la photo."
 };
 
@@ -351,6 +351,7 @@ let oldPhoto = null;   // Restauration: photo ancienne à restaurer
 
 let year        = '';
 let lieu        = '';
+let refAge      = '';  // âge de la personne sur la photo de référence (photo actuelle)
 let description = '';
 let aspectRatio = '4:3';
 let quality     = '1K';
@@ -413,7 +414,7 @@ function saveSettings(){
   try{
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
       activeEngine, activeMode, currentView,
-      year, location: lieu, description, aspectRatio, quality,
+      year, location: lieu, refAge, description, aspectRatio, quality,
       restoreIntensity, colorize, repairDamage
     }));
   }catch(e){}
@@ -444,7 +445,7 @@ async function loadState(){
       activeEngine = s.activeEngine ?? activeEngine;
       activeMode   = s.activeMode   ?? activeMode;
       currentView  = s.currentView  ?? currentView;
-      year=s.year??year; lieu=s.location??lieu; description=s.description??description;
+      year=s.year??year; lieu=s.location??lieu; refAge=s.refAge??refAge; description=s.description??description;
       aspectRatio=s.aspectRatio??aspectRatio; quality=s.quality??quality;
       restoreIntensity=s.restoreIntensity??restoreIntensity;
       colorize=(s.colorize!==undefined)?s.colorize:colorize;
@@ -675,7 +676,11 @@ function renderRaconterForm(){
         : `<div class="up-emoji">📸</div><div class="up-label">Ajouter une photo de style</div><div class="up-sub">PNG / JPG / WEBP</div>`}
       <input type="file" accept="image/*" onchange="handleUpload(event,'ref')">
     </label>
-    <p class="small-note">Sert uniquement de repère de style et d'ambiance — pas de projection d'âge.</p>
+    <div class="ctrl">
+      <div class="ctrl-title">Âge sur la photo de référence</div>
+      <input type="text" inputmode="numeric" class="text-input" value="${escapeHtml(refAge)}" placeholder="Âge actuel de la personne (ex: 36)" oninput="setRefAge(this.value)">
+      <p class="small-note" id="ageInfo">${ageInfoText()}</p>
+    </div>
     ${renderFormatQuality()}
   `;
 }
@@ -771,8 +776,27 @@ function renderOutput(){
 /* ══════════════════════════════════════════════════════════════════
    CONTRÔLES
 ══════════════════════════════════════════════════════════════════ */
-function setYear(v){ year=v; saveSettings(); }
+/* Âge au moment du souvenir = âge sur la photo (prise cette année) − (année actuelle − année du souvenir) */
+function computeMemoryAge(){
+  const a = parseInt(refAge, 10);
+  const y = parseInt(year, 10);
+  if(isNaN(a) || isNaN(y)) return null;
+  return a - (new Date().getFullYear() - y);
+}
+function ageInfoText(){
+  const nowYear = new Date().getFullYear();
+  const m = computeMemoryAge();
+  if(m===null) return `Renseigne l'année du souvenir et l'âge sur la photo : l'âge au moment du souvenir est calculé automatiquement (photo considérée prise en ${nowYear}).`;
+  if(m < 0) return `⚠️ Le souvenir (${parseInt(year,10)}) est antérieur à la naissance de la personne : vérifie l'année ou l'âge.`;
+  return `Âge calculé au moment du souvenir (${parseInt(year,10)}) : ${m} an${m>1?'s':''}. L'image sera générée à cet âge.`;
+}
+function updateAgeInfo(){
+  const el = document.getElementById('ageInfo');
+  if(el) el.textContent = ageInfoText();
+}
+function setYear(v){ year=v; saveSettings(); updateAgeInfo(); }
 function setLocation(v){ lieu=v; saveSettings(); }
+function setRefAge(v){ refAge=v; saveSettings(); updateAgeInfo(); }
 function setDescription(v){ description=v; saveSettings(); }
 function setAspect(v){ aspectRatio=v; saveSettings(); renderLab(); }
 function setQuality(v){ quality=v; saveSettings(); renderLab(); }
@@ -809,7 +833,7 @@ MODE : RACONTER UN SOUVENIR
 Époque : ${year || 'non précisée'}
 Lieu : ${lieu || 'non précisé'}
 Récit : ${description || 'aucun détail supplémentaire fourni'}
-${refPhoto ? "Utiliser la photo de référence fournie uniquement comme repère de style, d'ambiance et de tonalité de l'époque (grain, couleurs, lumière) — pas comme sujet à transformer en une autre personne ou un autre âge." : "Aucune photo de référence : composer librement une scène crédible de l'époque et du lieu indiqués."}
+${refPhoto ? `Utiliser la photo de référence fournie pour l'identité de la personne (traits reconnaissables) et comme repère de style, d'ambiance et de tonalité de l'époque (grain, couleurs, lumière).${(()=>{ const m=computeMemoryAge(); return (m!==null && m>=0) ? ` La personne a ${refAge} ans sur la photo de référence, mais le souvenir date de ${year} : elle avait alors ${m} ans. Régénérer entièrement la personne à l'âge de ${m} ans (visage, corps, proportions, allure d'une personne de ${m} ans), tout en restant reconnaissable comme la même personne. Ne pas copier l'âge apparent de la photo de référence.` : ''; })()}` : "Aucune photo de référence : composer librement une scène crédible de l'époque et du lieu indiqués."}
 Respecter fidèlement l'ambiance et le contexte historique décrits.
 ${common}`.trim();
   }
