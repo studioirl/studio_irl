@@ -1108,6 +1108,11 @@
   #fy-pane-story .sn-cut.on img, #fy-pane-story .sn-cut.on .sn-cutnone { border-color:#53d38a; box-shadow:0 0 0 2px rgba(83,211,138,.55); }
   #fy-pane-story .sn-cutnone { aspect-ratio:16/9; border:1px dashed var(--sn-line); border-radius:6px; display:flex; align-items:center; justify-content:center; text-align:center; margin-bottom:2px; }
 
+  #fy-pane-story .sn-chk { display:flex; gap:8px; align-items:flex-start; font-size:12px; color:var(--sn-txt2); margin:10px 0; cursor:pointer; }
+  #fy-pane-story .sn-chk input { margin-top:2px; flex:none; }
+
+  #fy-pane-story .sn-placerect { position:absolute; display:none; border:2px solid #ff3b6b; background:rgba(255,59,107,.22); box-sizing:border-box; pointer-events:none; }
+
   #app-flash .fy-tabs { display:flex; gap:8px; padding:10px 18px; border-bottom:1px solid var(--fy-line); }
   #app-flash .fy-tab { flex:1; max-width:260px; text-align:center; padding:9px 12px; border:1px solid var(--fy-line); border-radius:10px; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--fy-txt2); cursor:pointer; background:var(--fy-surface); }
   #app-flash .fy-tab.active { border-color:var(--fy-pink); color:#fff; background:rgba(255,61,139,.14); }
@@ -1399,9 +1404,15 @@
           <div class="sn-label">Combien d'images dans ton storyboard ?</div>
           <div class="sn-nb" id="sn-nb">
             <button onclick="snSetNb(1)" data-n="1">1</button>
+            <button onclick="snSetNb(2)" data-n="2">2</button>
             <button onclick="snSetNb(3)" data-n="3">3</button>
             <button class="active" onclick="snSetNb(4)" data-n="4">4</button>
+            <button onclick="snSetNb(5)" data-n="5">5</button>
             <button onclick="snSetNb(6)" data-n="6">6</button>
+            <button onclick="snSetNb(7)" data-n="7">7</button>
+            <button onclick="snSetNb(8)" data-n="8">8</button>
+            <button onclick="snSetNb(9)" data-n="9">9</button>
+            <button onclick="snSetNb(10)" data-n="10">10</button>
           </div>
           <div class="sn-label">Dans combien de lieux ça se passe ? (1 = tout au même endroit)</div>
           <div class="sn-nb" id="sn-nbl"></div>
@@ -1471,6 +1482,18 @@
             </div>
             <div id="sn-fiche"></div>
           </div>
+          <label class="sn-chk"><input type="checkbox" id="sn-carrie" onchange="snToggleCarrie()"> 🎬 Mode film « Carrie » : adapter mon histoire à un moment précis du film</label>
+          <div id="sn-carrie-box" style="display:none">
+            <div class="sn-label">Version du film</div>
+            <select class="sn-select" id="sn-carrie-ver"><option value="1976">Carrie (1976, Brian De Palma) — ambiance fin des années 70</option><option value="2002">Carrie (2002, téléfilm) — ambiance années 2000</option></select>
+            <div class="sn-label">Moment du film</div>
+            <select class="sn-select" id="sn-carrie-moment"></select>
+            <div class="sn-label">Qui joue qui ? (optionnel — ex. Léa = Carrie, Zoé = Sue)</div>
+            <input class="sn-input" id="sn-carrie-roles" placeholder="Léa = Carrie, Zoé = Sue…">
+            <div class="sn-label">Précision sur le moment (optionnel)</div>
+            <textarea class="sn-textarea" id="sn-carrie-more" placeholder="Ex. : la scène où ils montent sur l'estrade pour le couronnement, juste avant que le seau tombe"></textarea>
+          </div>
+          <label class="sn-chk"><input type="checkbox" id="sn-strict"> Mode strict : l'IA n'ajoute aucun élément, objet ni personne qui n'est pas dans mon histoire</label>
           <button class="sn-btn" id="sn-btn-board" onclick="snGenerateBoard()" disabled>🎞️ Générer le storyboard</button>
           <div class="sn-gate" id="sn-gate">Verrouille les lieux, valide les personnages et les vêtements (étapes 1 à 3).</div>
         </div>
@@ -2080,7 +2103,6 @@ ${seq.category === 'introspectif' || seq.category === 'dynamique' ?
 ROUE DES ÉMOTIONS — APPLIQUER PRÉCISÉMENT :
 JOIE → sourire des yeux, joues relevées, corps ouvert et expansif | EXTASE → sourire total, corps vers le haut, mains ouvertes | SÉRÉNITÉ → visage doux, respiration visible | CONFIANCE → menton levé, regard direct, épaules droites | PEUR → yeux écarquillés, corps rigide qui recule | TERREUR → visage figé, bouche ouverte, corps pétrifié | SURPRISE → sourcils levés haut, bouche en O | TRISTESSE → regard baissé, corps affaissé | CHAGRIN → larmes réelles, yeux rouges, corps effondré | MÉLANCOLIE → regard lointain, posture intérieure | COLÈRE → mâchoire serrée, sourcils froncés, corps tendu | RAGE → veines visibles, regard brûlant, corps en tension extrême | HONTE → tête baissée, corps qui cherche à disparaître | FIERTÉ → menton levé, poitrine ouverte, posture d'assurance | DÉSARROI → regard perdu, corps hésitant | RÉSIGNATION → corps qui lâche doucement, épaules tombantes
 
-RÈGLE ABSOLUE : Les larmes N'APPARAISSENT QUE pour chagrin, tristesse profonde, désespoir. Pas pour les autres émotions.
 ZÉRO CLICHÉ : Pas de sourires de pub. Pas de mains sur les tempes génériques. La vérité sale et belle.
 
 [ESTHETIC_ANCHOR: ANTI-FUTURISTIC]
@@ -2398,7 +2420,6 @@ POUSSER À 150% — PAS DE RETENUE :
 JOIE → sourire des yeux, corps expansif | EXTASE → corps vers le haut, mains ouvertes | TRISTESSE → corps affaissé, regard vide | CHAGRIN → larmes réelles, corps effondré | COLÈRE → mâchoire serrée, poings, corps tendu | RAGE → veines visibles, regard brûlant | HONTE → tête baissée, corps qui cherche à disparaître | FIERTÉ → menton levé, poitrine ouverte | DÉSESPOIR → corps au sol, repli total | SOULAGEMENT → corps qui s'ouvre, souffle retrouvé
 
 RÈGLE ABSOLUE MODE BRUT : Pousser CHAQUE signe physique à son maximum. Corps entier. Pas seulement le visage.
-Les larmes N'APPARAISSENT QUE pour : chagrin, tristesse, désespoir.
 
 ═══════════════════════════════════════════
 VI. LE TEST FINAL
@@ -2736,7 +2757,6 @@ POUSSER À 150% — PAS DE RETENUE :
 JOIE → sourire des yeux, corps expansif | EXTASE → corps vers le haut, mains ouvertes | TRISTESSE → corps affaissé, regard vide | CHAGRIN → larmes réelles, corps effondré | COLÈRE → mâchoire serrée, poings, corps tendu | RAGE → regard brûlant, corps en tension extrême | HONTE → tête baissée, corps qui cherche à disparaître | FIERTÉ → menton levé, poitrine ouverte | DÉSESPOIR → corps au sol, repli total | SOULAGEMENT → corps qui s'ouvre, souffle retrouvé
 
 RÈGLE ABSOLUE MODE BRUT : Pousser CHAQUE signe physique à son maximum. Corps entier. Pas seulement le visage.
-Les larmes N'APPARAISSENT QUE pour : chagrin, tristesse, désespoir.
 
 ═══════════════════════════════════════════
 VI. LE TEST FINAL
@@ -2900,7 +2920,7 @@ function fyDownload() {
 // ═══════════════════════════════════════════════════════════
 const SN_MAX_CHARS = 4;
 let snLieux = [];
-function snNewLieu(k) { return { id: 'l' + (k + 1), text: '', ref: null, img: null, imgOrig: null, del: {}, add: {}, cuts: [], crop: null }; }
+function snNewLieu(k) { return { id: 'l' + (k + 1), text: '', ref: null, img: null, imgOrig: null, del: {}, add: {}, cuts: [], crop: null, place: null, placeText: '' }; }
 let snCutSeq = 0;
 let snChars = [];
 let snValid = { lieux: false, chars: false, tenues: false };
@@ -3080,7 +3100,7 @@ async function snGenLieu(k) {
     const prompt = snBuildLieuPrompt(l, k);
     l.carto = null; l.cartoText = '';
     l.img = ENGINE === 'kie' ? await snGenKie(prompt, refs, '16:9') : await snGenVertex(prompt, refs, 'Génère UNE photo d\'un lieu vide, sans aucune personne.', '16:9');
-    l.imgOrig = null; l.del = {}; l.add = {}; l.cuts = []; l.crop = null;
+    l.imgOrig = null; l.place = null; l.placeText = ''; l.del = {}; l.add = {}; l.cuts = []; l.crop = null;
     snValid.lieux = false; snSetStep(1, false); snRefreshGate();
     snRenderLieux();
     toast('Lieu ' + (k + 1) + ' généré ✓', 'success');
@@ -3428,6 +3448,11 @@ function snRenderLieuPanel(k) {
       '<input class="sn-input" placeholder="Supprimer à cet endroit (optionnel) : ex. le panier de basket" value="' + snEsc((l.del || {})[z.id] || '') + '" oninput="snSetDel(' + k + ',\'' + z.id + '\',this.value)">' +
       '<textarea class="sn-textarea" style="margin-top:4px;min-height:52px" placeholder="Ajouter à cet endroit (optionnel) : ex. un seau en métal gris accroché au plafond, au-dessus du centre de l\'estrade, penché" oninput="snSetAdd(' + k + ',\'' + z.id + '\',this.value)">' + snEsc((l.add || {})[z.id] || '') + '</textarea></div></div>').join('') +
     '<button class="sn-btn2" id="sn-del-' + k + '" onclick="snApplyDel(' + k + ')">🧹 Appliquer les modifications</button>';
+  h += '<details class="sn-crop"' + (l.placeOpen ? ' open' : '') + ' ontoggle="snLieux[' + k + '].placeOpen=this.open"><summary>📍 Placer un objet à un endroit précis (optionnel)</summary>' +
+    '<div class="sn-hint">Dessine un cadre sur l\'image à l\'endroit EXACT où l\'objet doit apparaître (la taille du cadre = la taille de l\'objet), ou clique pour un petit cadre. Puis décris l\'objet.</div>' +
+    '<div class="sn-cropstage" id="sn-ps-' + k + '" onpointerdown="snPlaceDown(' + k + ',event)"><img src="' + l.img.url + '" alt=""><div class="sn-placerect" id="sn-pr-' + k + '"></div></div>' +
+    '<textarea class="sn-textarea" style="margin-top:6px;min-height:60px" id="sn-pt-' + k + '" placeholder="Décris l\'objet : ex. un seau en métal rouge rempli de sang, suspendu au plafond par une corde, penché vers l\'estrade" oninput="snLieux[' + k + '].placeText=this.value">' + snEsc(l.placeText || '') + '</textarea>' +
+    '<div class="sn-row" style="margin-top:6px"><button class="sn-btn2 primary" id="sn-pb-' + k + '" onclick="snApplyPlace(' + k + ')">📍 Placer l\'objet ici</button><button class="sn-btn2" onclick="snPlaceClear(' + k + ')">Effacer le cadre</button></div></details>';
   const boxed = zs.filter(z => z.box);
   h += '<details class="sn-crop"' + (l.cropOpen ? ' open' : '') + ' ontoggle="snLieux[' + k + '].cropOpen=this.open"><summary>✂ Découper une partie du lieu (optionnel, format 16/9)</summary>' +
     '<div class="sn-hint">Choisis une zone, ou clique / touche l\'image, ou fais glisser le cadre vert. Le curseur règle le zoom. Tu peux aussi décrire la partie par écrit.</div>' +
@@ -3440,9 +3465,9 @@ function snRenderLieuPanel(k) {
     '<div class="sn-cuts">' + (l.cuts || []).map(c => '<div class="sn-cut"><img src="' + c.img.url + '" alt=""><div>' + snEsc(c.name) + '</div><div class="sn-row"><button class="sn-btn2" onclick="snDownloadCut(' + k + ',\'' + c.id + '\')">⬇</button><button class="sn-btn2" onclick="snDelCut(' + k + ',\'' + c.id + '\')">✕</button></div></div>').join('') + '</div>' +
   '</details>';
   el.innerHTML = h;
-  snCropUpdate(k);
+  snCropUpdate(k); snPlaceUpdate(k);
 }
-function snResetLieuState(l) { l.del = {}; l.add = {}; l.cuts = []; l.crop = null; l.carto = null; l.cartoText = ''; }
+function snResetLieuState(l) { l.place = null; l.placeText = ''; l.del = {}; l.add = {}; l.cuts = []; l.crop = null; l.carto = null; l.cartoText = ''; }
 async function snApplyDel(k) {
   const l = snLieux[k], zs = (l.carto && l.carto.zones) || [];
   const where = z => 'Zone ' + z.id + ' (' + (z.nom || '') + (z.position ? ', ' + z.position : '') +
@@ -3467,6 +3492,79 @@ ${dels.length ? 'À SUPPRIMER (chaque élément à l\'endroit indiqué ; reconst
   } catch (err) {
     toast('Retouche du lieu : ' + err.message, 'error');
     btn.disabled = false; btn.textContent = '🧹 Appliquer les modifications';
+  }
+}
+// placement visuel d'un objet : cadre dessiné sur l'image
+function snPlaceUpdate(k) {
+  const l = snLieux[k], r = snEl('sn-pr-' + k);
+  if (!r) return;
+  if (!l.place) { r.style.display = 'none'; return; }
+  const p = l.place;
+  r.style.display = 'block';
+  r.style.left = (Math.min(p.x0, p.x1) * 100) + '%'; r.style.top = (Math.min(p.y0, p.y1) * 100) + '%';
+  r.style.width = (Math.abs(p.x1 - p.x0) * 100) + '%'; r.style.height = (Math.abs(p.y1 - p.y0) * 100) + '%';
+}
+function snPlaceClear(k) { snLieux[k].place = null; snPlaceUpdate(k); }
+function snPlaceDown(k, ev) {
+  ev.preventDefault();
+  const l = snLieux[k], st = snEl('sn-ps-' + k);
+  if (!st || !l.img) return;
+  const rc = st.getBoundingClientRect();
+  const nx = e => Math.max(0, Math.min(1, (e.clientX - rc.left) / rc.width)), ny = e => Math.max(0, Math.min(1, (e.clientY - rc.top) / rc.height));
+  const x0 = nx(ev), y0 = ny(ev);
+  l.place = { x0, y0, x1: x0, y1: y0 }; snPlaceUpdate(k);
+  if (st.setPointerCapture && ev.pointerId != null) { try { st.setPointerCapture(ev.pointerId); } catch (_) {} }
+  const mv = e => { l.place.x1 = nx(e); l.place.y1 = ny(e); snPlaceUpdate(k); };
+  const up = () => {
+    st.removeEventListener('pointermove', mv); st.removeEventListener('pointerup', up); st.removeEventListener('pointercancel', up);
+    const p = l.place;
+    if (Math.abs(p.x1 - p.x0) < 0.015 && Math.abs(p.y1 - p.y0) < 0.015) {   // simple clic : petit cadre carré en pixels
+      const d = snImgWH(l), w = 0.1, h = w * d[0] / d[1];
+      p.x0 = Math.max(0, Math.min(1 - w, x0 - w / 2)); p.x1 = p.x0 + w;
+      p.y0 = Math.max(0, Math.min(1 - h, y0 - h / 2)); p.y1 = p.y0 + h;
+    }
+    snPlaceUpdate(k);
+  };
+  st.addEventListener('pointermove', mv); st.addEventListener('pointerup', up); st.addEventListener('pointercancel', up);
+}
+async function snApplyPlace(k) {
+  const l = snLieux[k];
+  const txt = ((snEl('sn-pt-' + k) || {}).value || l.placeText || '').trim();
+  if (!l.place) return toast('Dessine d\'abord un cadre sur l\'image, à l\'endroit exact', 'error');
+  if (!txt) return toast('Décris l\'objet à placer', 'error');
+  const btn = snEl('sn-pb-' + k);
+  btn.disabled = true; btn.textContent = 'Placement en cours…';
+  try {
+    const p = l.place, d = snImgWH(l);
+    const x0 = Math.min(p.x0, p.x1), x1 = Math.max(p.x0, p.x1), y0 = Math.min(p.y0, p.y1), y1 = Math.max(p.y0, p.y1);
+    // même image, avec un cadre rouge à l'endroit voulu (réduite à 2048 px pour rester légère)
+    const im = await snLoadImg('data:' + l.img.mime + ';base64,' + l.img.b64);
+    const sc = Math.min(1, 2048 / Math.max(d[0], d[1]));
+    const cv = document.createElement('canvas'); cv.width = Math.round(d[0] * sc); cv.height = Math.round(d[1] * sc);
+    const cx = cv.getContext('2d');
+    cx.drawImage(im, 0, 0, cv.width, cv.height);
+    cx.strokeStyle = '#ff0000'; cx.lineWidth = Math.max(4, Math.round(cv.width / 250));
+    cx.strokeRect(x0 * cv.width, y0 * cv.height, (x1 - x0) * cv.width, (y1 - y0) * cv.height);
+    const marked = cv.toDataURL('image/jpeg', 0.9);
+    const px = Math.round((x0 + x1) * 50), py = Math.round((y0 + y1) * 50);
+    const prompt = `AJOUT D'UN OBJET À UN ENDROIT PRÉCIS
+Objet à ajouter : ${txt}.
+EMPLACEMENT : EXACTEMENT à l'intérieur du cadre rouge de l'image 2 (centre à environ ${px} % depuis la gauche et ${py} % depuis le haut de l'image). L'objet occupe la taille du cadre. Il tient physiquement (accroché, suspendu ou posé selon la description), est bien visible, et s'intègre avec la lumière, l'échelle, la perspective et le grain du lieu.
+Le résultat est l'IMAGE 1 modifiée : le cadre rouge n'apparaît PAS dans le résultat. TOUT LE RESTE reste STRICTEMENT IDENTIQUE : cadrage, architecture, objets, couleurs, lumière, grain d'appareil photo 2000-2005. N'ajoute rien d'autre, ne déplace rien, aucune personne.`;
+    const refs = [
+      { label: 'IMAGE 1 — le lieu à conserver tel quel (version propre, sans repère) :', mime: l.img.mime, b64: l.img.b64 },
+      { label: 'IMAGE 2 — la MÊME image avec un CADRE ROUGE qui marque l\'emplacement exact et la taille de l\'objet à ajouter :', mime: 'image/jpeg', b64: marked.split(',')[1] }
+    ];
+    const img = ENGINE === 'kie' ? await snGenKie(prompt, refs, '16:9') : await snGenVertex(prompt, refs, 'Ajoute l\'objet décrit exactement à l\'emplacement du cadre rouge, sur l\'image 1. Le cadre rouge ne doit pas apparaître dans le résultat.', '16:9');
+    if (!l.imgOrig) l.imgOrig = l.img;
+    l.img = img; snResetLieuState(l);
+    snValid.lieux = false; snSetStep(1, false); snRefreshGate();
+    snRenderLieux();
+    toast('Objet placé ✓ (les découpes sont à refaire)', 'success');
+    await snAnalyseLieu(k);
+  } catch (err) {
+    toast('Placement : ' + err.message, 'error');
+    btn.disabled = false; btn.textContent = '📍 Placer l\'objet ici';
   }
 }
 async function snRevertLieu(k) {
@@ -3704,6 +3802,34 @@ function snCartoNoteHtml() {
   return h;
 }
 
+// ─── MODE FILM « CARRIE » (optionnel) ────────────────────
+const SN_CARRIE_MOMENTS = [
+  ['prep', 'Avant le bal : Carrie se prépare', 'Carrie, timide, dans sa robe rose, se regarde ou est regardée avant de partir : hésitation, fragilité, premiers sourires incertains ; la tension avec sa mère très sévère et religieuse en arrière-plan.'],
+  ['arrive', 'L\'arrivée au bal et la première danse', 'Carrie arrive au bal au bras de son cavalier ; la salle décorée, les regards sur elle ; sa méfiance qui fond ; première danse lente, émerveillement, premier vrai moment de bonheur.'],
+  ['couronnement', 'Le couronnement : roi et reine du bal', 'Carrie et son cavalier sont élus roi et reine du bal ; ils montent sur l\'estrade sous les applaudissements ; incrédulité puis joie qui monte ; on leur remet la couronne : c\'est le sommet du bonheur de Carrie.'],
+  ['piege', 'Le piège : le seau suspendu', 'Pendant le couronnement, des élèves cachés tiennent la corde reliée au seau de sang suspendu au-dessus de l\'endroit où Carrie se tient ; une élève qui a compris essaie de les arrêter ; tension entre le bonheur visible de Carrie et le danger qu\'elle ne voit pas.'],
+  ['seau', 'Le seau de sang se renverse sur Carrie', 'Le seau se renverse sur Carrie en pleine gloire, sur l\'estrade : elle est couverte de sang de la tête aux pieds, la robe rose devient rouge ; sidération, silence, le monde s\'arrête.'],
+  ['rire', 'Le silence puis les rires : la honte', 'Après le choc : silence, puis rires et regards de la foule ; honte brûlante, Carrie immobile et couverte de sang pendant que tout tourne autour d\'elle.'],
+  ['bascule', 'Le basculement de Carrie', 'Carrie passe de la honte à une colère froide, le regard fixe ; la foule recule et panique. Aucun acte violent n\'est montré : seulement son visage, ses mains et les réactions des autres.'],
+  ['autre', 'Autre moment (je le précise ci-dessous)', '']
+];
+function snToggleCarrie() {
+  const on = snEl('sn-carrie').checked;
+  snEl('sn-carrie-box').style.display = on ? 'block' : 'none';
+  const s = snEl('sn-carrie-moment');
+  if (on && !s.options.length) s.innerHTML = SN_CARRIE_MOMENTS.map(m => '<option value="' + m[0] + '">' + m[1] + '</option>').join('');
+}
+function snCarrieBlock() {
+  const cb = snEl('sn-carrie');
+  if (!cb || !cb.checked) return '';
+  const ver = snEl('sn-carrie-ver').value === '2002' ? 'Carrie (2002, téléfilm)' : 'Carrie (1976, Brian De Palma)';
+  const m = SN_CARRIE_MOMENTS.find(x => x[0] === snEl('sn-carrie-moment').value) || SN_CARRIE_MOMENTS[0];
+  const roles = (snEl('sn-carrie-roles').value || '').trim(), more = (snEl('sn-carrie-more').value || '').trim();
+  return '\n\nMODE FILM — « ' + ver + ' » (PRIORITÉ SUR LA RÈGLE DE FIDÉLITÉ POUR L\'ENCHAÎNEMENT DES ACTIONS) :\n' +
+    'Tu connais parfaitement ce film. L\'élève veut reproduire un moment précis du film avec SES personnages. Moment choisi : ' + m[1] + '.' + (m[2] ? '\nRepères : ' + m[2] : '') + (more ? '\nPrécision de l\'élève : ' + more : '') + (roles ? '\nRôles : ' + roles + '.' : '') +
+    '\nLes plans reprennent fidèlement ce moment du film : les actions, les positions des personnages dans l\'espace, la mise en scène, le rythme et les émotions, tels qu\'ils se déroulent dans cette version. Adapte l\'histoire de l\'élève à ce moment : garde ses personnages, son lieu et ses détails, mais l\'enchaînement des actions suit le film. N\'écris aucun dialogue du film et ne cherche pas à imiter le visage des acteurs : les personnages sont ceux fournis. Les costumes, coiffures, accessoires et l\'ambiance sont ceux de l\'époque de la version choisie.';
+}
+
 async function snGenerateBoard() {
   if (!(snValid.lieux && snValid.chars && snValid.tenues)) return toast('Termine les étapes 1 à 3 d\'abord', 'error');
   const story = snEl('sn-story').value.trim();
@@ -3714,14 +3840,15 @@ async function snGenerateBoard() {
   try {
     await snEnsureCartos(btn);
     btn.textContent = 'Le studio construit ton storyboard…';
-    const system = `Tu es un réalisateur de l'instant, un psychologue de l'image et un expert en narration émotionnelle brute. Ta mission : METTRE EN IMAGES l'histoire racontée par l'élève — jamais en inventer une autre.
+    const strict = !!(snEl('sn-strict') && snEl('sn-strict').checked);
+    const system = (strict ? `MODE STRICT — PRIORITÉ ABSOLUE : tu n'ajoutes RIEN. Aucun figurant, aucun élément permanent, aucune structure, aucun objet, aucun personnage qui ne soit pas écrit dans le récit de l'élève ou imposé par lui. "figurants" reste vide sauf si le récit cite explicitement d'autres personnes (une foule citée peut être regroupée en 1 à 3 figurants) ; "elements_permanents" ne reprend que ceux de l'élève ; "presence" ne dit que ce que le récit dit ; "structures_a_valider" reste vide.\n\n` : '') + `Tu es un réalisateur de l'instant, un psychologue de l'image et un expert en narration émotionnelle brute. Ta mission : METTRE EN IMAGES l'histoire racontée par l'élève — jamais en inventer une autre.
 
 RÈGLES
 - FIDÉLITÉ : chaque plan correspond à un moment réel du récit (événements, relations, ressentis, objets, paroles). N'ajoute aucun événement, aucun personnage, aucun lieu absent du récit. Si le récit est court, amplifie l'émotion et le détail physique, jamais l'intrigue.
 - Les LIEUX, les PERSONNAGES et leurs TENUES sont déjà définis et verrouillés : tu n'en changes aucun et tu n'en inventes aucun. Chaque plan se déroule dans UN des lieux fournis (champ "lieu" = son identifiant). Les plans suivent l'ordre du récit : choisis pour chaque plan le lieu où se passe réellement ce moment de l'histoire. Si plusieurs lieux sont fournis, utilise chacun d'eux au moins une fois, dans l'ordre où l'histoire les traverse ; s'il y a un seul lieu, tous les plans s'y passent.
 - DANS LE LIEU : pour chaque plan, indique ce qui se trouve dans le lieu à ce moment et que le récit mentionne (objets, foule, autres élèves, bruit, lumière), dans "presence". N'ajoute rien que le récit ne dise pas.
 - DÉCOUPAGE : exactement ${snNb} plan(s), complémentaires et variés (échelle de plan, angle, point de vue), qui suivent le déroulement réel du récit et la progression émotionnelle (l'émotion monte, change, explose ou s'effondre). Aucun plan ne double un autre. Le cadrage (large, moyen, rapproché…) est choisi par l'intention narrative de chaque plan, sans préférence pour les portraits. N'applique aucun découpage-type : construis-le pour CETTE histoire. Si un seul plan est demandé : le moment le plus intense du récit.
-- ÉMOTION BRUTE : traduis l'émotion en expressions, réactions et gestes concrets et visibles. Pas de pose de mannequin, pas d'enjolivement, pas de symboles, pas de métaphore visuelle : la vérité sale et belle. Les larmes seulement pour chagrin, tristesse profonde, désespoir.
+- ÉMOTION BRUTE : traduis l'émotion en expressions, réactions et gestes concrets et visibles. Pas de pose de mannequin, pas d'enjolivement, pas de symboles, pas de métaphore visuelle : la vérité sale et belle.
 - MISE EN SCÈNE (tu raisonnes en réalisateur et en storyboard artist) : pour chaque plan, comprends l'ÉVÉNEMENT qui se produit, qui y participe, quels ÉLÉMENTS MATÉRIELS sont nécessaires pour le comprendre (objets, accessoires, témoins), OÙ chaque personnage et chaque objet se trouve dans l'espace, ce que le spectateur doit COMPRENDRE et RESSENTIR, et quel cadrage raconte le mieux ce moment. Tu anticipes les besoins visuels de la scène au lieu de te limiter aux mots du récit. Le cadrage découle de l'intention narrative, jamais d'une préférence pour les portraits : un gros plan pour une réaction intime, un plan moyen pour une interaction, un plan large quand il faut voir une humiliation publique, une confrontation ou un groupe. Si un objet est indispensable à l'action (ex. un seau qui se déverse), il est visible et son origine se comprend ; si des témoins donnent son sens à la scène, ils sont dans la composition, avec des réactions différentes selon leur rôle dans le récit (jamais une foule qui affiche toute la même expression). Ne sacrifie jamais la logique à l'esthétique : une image belle mais narrativement fausse est un échec.
 - ANGLES, à choisir parmi exactement : niveau des yeux (neutre, témoin) | plongée (vulnérabilité, exposition, défaite) | contre-plongée (fierté, résilience, domination) | gros plan macro (détail volé) | angle subjectif intime (spectateur à 1 m) | vue d'ensemble (point de vue d'un témoin dans l'espace, pour voir la scène et son public). Choisis selon l'intention du plan.
 - LUMIÈRE : sources de l'époque (années 2000) cohérentes avec le lieu : flash direct de compact numérique, néons fluorescents, lampe de chevet, guirlandes, etc.
@@ -3730,7 +3857,7 @@ RÈGLES
 - FIGURANTS RÉCURRENTS : si le récit fait intervenir d'autres personnes (élèves, invités, foule…), définis UNE FOIS chacune dans "figurants" : un id, une description précise et fixe (morphologie, cheveux, visage, tenue complète 2000-2005 avec accessoires). 5 figurants maximum, regroupe la foule en quelques individus identifiables. Dans chaque plan, liste ceux qui sont visibles dans "figurants_presents". Leur apparence ne change jamais d'un plan à l'autre.
 - ÉLÉMENTS PERMANENTS : reprends ceux imposés par l'élève, et ajoute ceux que le récit installe durablement (trace au sol, objet tombé, vêtement abîmé, désordre…). Ils restent présents et identiques dans tous les plans suivants, jamais oubliés.
 - TENUES : pour chaque personnage dont la tenue n'est pas fournie, propose UNE tenue authentique 2000-2005, adaptée au récit et au lieu, dans "tenues_proposees". Elle sera identique sur tous les plans.
-- CARTOGRAPHIE ET ZONES (principe : on sélectionne une zone du lieu existant, puis on cadre cette zone ; on ne reconstruit pas le lieu à chaque scène) : la cartographie de chaque lieu est fournie. Pour chaque plan, (1) choisis dans "zone" la zone de la carte où se joue l'action ; (2) donne dans "positions" la place exacte de chaque personnage par rapport aux éléments fixes de la zone ; (3) liste dans "elements_fixes_visibles" les éléments fixes de la carte qui sont dans le cadre ; (4) indique "direction_regard" (vers où regardent et se déplacent les personnages) ; (5) indique "point_de_vue_camera" (d'où la caméra regarde la zone). Le cadrage (large, gros plan, plongée…) change seulement ce qu'on voit de la zone, JAMAIS la géométrie du lieu. Tu n'utilises que les structures présentes sur la carte : n'invente ni plateforme, ni estrade, ni mur, ni porte, ni mobilier absent. Si le récit exige une structure absente de la carte, ne la crée pas : note-la dans "structures_a_valider" et place l'action dans la zone existante la plus proche. Un objet fixe garde sa place d'un plan à l'autre, même vu d'un autre angle ; un objet mobile ne bouge que si l'action le justifie ; ce qui est hors cadre reste à son emplacement réel.
+- CARTOGRAPHIE ET ZONES (principe : on sélectionne une zone du lieu existant, puis on cadre cette zone ; on ne reconstruit pas le lieu à chaque scène) : la cartographie de chaque lieu est fournie. Pour chaque plan, (1) choisis dans "zone" la zone de la carte où se joue l'action ; (2) donne dans "positions" la place exacte de chaque personnage par rapport aux éléments fixes de la zone ; (3) liste dans "elements_fixes_visibles" les éléments fixes de la carte qui sont dans le cadre ; (4) indique "direction_regard" (vers où regardent et se déplacent les personnages) ; (5) indique "point_de_vue_camera" (d'où la caméra regarde la zone). Le cadrage (large, gros plan, plongée…) change seulement ce qu'on voit de la zone, JAMAIS la géométrie du lieu. Tu n'utilises que les structures présentes sur la carte : n'invente ni plateforme, ni estrade, ni mur, ni porte, ni mobilier absent. Si le récit exige une structure absente de la carte, ne la crée pas : note-la dans "structures_a_valider" et place l'action dans la zone existante la plus proche. Si le récit nomme un endroit précis du lieu (estrade, scène, table, lit…), le plan se passe SUR cet endroit lui-même — jamais à côté, ni sur ses accès (escalier, marches, rebord) — et zone, positions et point de vue le disent clairement. Un objet fixe garde sa place d'un plan à l'autre, même vu d'un autre angle ; un objet mobile ne bouge que si l'action le justifie ; ce qui est hors cadre reste à son emplacement réel.
 - CONTINUITÉ : pour chaque plan, indique ce qui reste identique et ce qui évolue (geste, posture, expression, lumière) par rapport au plan précédent.
 
 Réponds UNIQUEMENT en JSON valide, sans markdown :
@@ -3771,7 +3898,7 @@ Réponds UNIQUEMENT en JSON valide, sans markdown :
     const user = (imposed.length ? 'ÉLÉMENTS PERMANENTS IMPOSÉS PAR L\'ÉLÈVE (à garder tels quels, visibles dans toutes les scènes) :\n' + imposed.map(x => '- ' + x).join('\n') + '\n\n' : '') + 'LIEUX VERROUILLÉS (images déjà générées, à utiliser tels quels) :\n' + snLieux.map(l => '- id "' + l.id + '" : ' + (l.text || '(décor de la photo de référence)')).join('\n') +
       '\n\nPERSONNAGES :\n' + snChars.map(c => '- id "' + c.id + '" : ' + c.nom + ' — tenue : ' + (((c.tenue || '').trim()) || (c.tenueImg ? '(définie par une photo de tenue)' : '(non fournie, à proposer)'))).join('\n') +
       '\n\nNOMBRE DE PLANS : ' + snNb + '\nFORMAT : ' + (snCarousel ? 'portrait 4:5' : 'portrait 9:16') +
-      (snFiche ? '\n\nFICHE NARRATIVE VALIDÉE PAR L\'ÉLÈVE (base de travail : respecte ses événements, ses relations de cause à effet et sa progression émotionnelle) :\n' + snFicheToText(snFiche) : '') + '\n\nHISTOIRE RACONTÉE PAR L\'ÉLÈVE (telle quelle, peut être dictée) :\n' + story;
+      (snFiche ? '\n\nFICHE NARRATIVE VALIDÉE PAR L\'ÉLÈVE (base de travail : respecte ses événements, ses relations de cause à effet et sa progression émotionnelle) :\n' + snFicheToText(snFiche) : '') + snCarrieBlock() + '\n\nHISTOIRE RACONTÉE PAR L\'ÉLÈVE (telle quelle, peut être dictée) :\n' + story;
 
     const res = await snCallText(system, user + snCartosForUser());
     const plans = Array.isArray(res.plans) ? res.plans : [];
@@ -3797,6 +3924,7 @@ Réponds UNIQUEMENT en JSON valide, sans markdown :
     plans.forEach(p => { p.figurants_presents = (Array.isArray(p.figurants_presents) ? p.figurants_presents : []).filter(id => fids.includes(id)); });
     const els = (Array.isArray(res.elements_permanents) ? res.elements_permanents : []).map(x => String(x).trim()).filter(Boolean);
     imposed.slice().reverse().forEach(x => { if (!els.some(e => e.toLowerCase() === x.toLowerCase())) els.unshift(x); });
+    if (strict) els.length = 0, imposed.forEach(x => els.push(x));
     snBoard = { titre: res.titre || 'Storyboard', plans: plans.slice(0, snNb), figurants: figs, elements: els.join('\n'), structures: (Array.isArray(res.structures_a_valider) ? res.structures_a_valider : []).filter(s => s && s.structure && String(s.structure).trim()).map(s => ({ plan: s.plan, structure: String(s.structure) })), verif: [] };
     btn.textContent = 'Vérification de la continuité spatiale…';
     await snVerifyBoard();
@@ -3868,9 +3996,11 @@ function snPlanHtml(p, i) {
         SN_ANGLES_LIST.map(a => '<option value="' + a + '"' + (a === p.angle ? ' selected' : '') + '>' + a + '</option>').join('') + '</select>' +
       '<div class="sn-label">Personnages dans ce plan</div><div class="sn-chips" id="sn-chips-' + i + '"></div>' +
       (snBoard.figurants.length ? '<div class="sn-label">Personnes secondaires visibles</div><div class="sn-chips" id="sn-figs-' + i + '"></div>' : '') +
-      '<div class="sn-more"><details><summary>Focus, lumière, continuité, animation</summary>' +
-        '<p>📍 ' + snEsc(p.presence || '—') + '</p><p>🔍 ' + snEsc(p.focus) + '</p><p>💡 ' + snEsc(p.lumiere) + '</p><p>🔗 ' + snEsc(p.continuite) + '</p>' +
-        '</details></div>' +
+      '<div class="sn-label">Ce qui se trouve dans le lieu à ce moment (présence)</div><textarea class="sn-textarea" oninput="snEdit(' + i + ',\'presence\',this.value)">' + snEsc(p.presence) + '</textarea>' +
+      '<div class="sn-label">Continuité avec le plan précédent</div><textarea class="sn-textarea" oninput="snEdit(' + i + ',\'continuite\',this.value)">' + snEsc(p.continuite) + '</textarea>' +
+      '<div class="sn-label">Focus (détail net)</div><input class="sn-input" value="' + snEsc(p.focus) + '" oninput="snEdit(' + i + ',\'focus\',this.value)">' +
+      '<div class="sn-label">Lumière</div><input class="sn-input" value="' + snEsc(p.lumiere) + '" oninput="snEdit(' + i + ',\'lumiere\',this.value)">' +
+      '<label class="sn-chk"><input type="checkbox"' + (p.noRef ? ' checked' : '') + ' onchange="snEdit(' + i + ',\'noRef\',this.checked)"> Ne pas utiliser les autres plans comme référence (seuls le lieu, la découpe et les photos des personnages comptent)</label>' +
     '</div>' +
     '<div class="sn-img" id="sn-img-' + i + '">Non générée</div>' +
     '<div class="sn-actions">' +
@@ -4003,7 +4133,6 @@ POUSSER À 150% — PAS DE RETENUE :
 JOIE → sourire des yeux, corps expansif | EXTASE → corps vers le haut, mains ouvertes | TRISTESSE → corps affaissé, regard vide | CHAGRIN → larmes réelles, corps effondré | COLÈRE → mâchoire serrée, poings, corps tendu | RAGE → veines visibles, regard brûlant | HONTE → tête baissée, corps qui cherche à disparaître | FIERTÉ → menton levé, poitrine ouverte | DÉSESPOIR → corps au sol, repli total | SOULAGEMENT → corps qui s'ouvre, souffle retrouvé
 
 RÈGLE ABSOLUE MODE BRUT : Pousser CHAQUE signe physique à son maximum. Corps entier. Pas seulement le visage.
-Les larmes N'APPARAISSENT QUE pour : chagrin, tristesse, désespoir.
 
 ═══════════════════════════════════════════
 VIII. CONTINUITÉ — PLAN ${i + 1}/${total}
@@ -4048,7 +4177,7 @@ function snRefsFor(plan, i) {
   const cut = snCutOf(plan);
   if (cut) refs.push({ label: 'DÉCOUPE DU LIEU POUR CE PLAN — partie exacte du décor sur laquelle la caméra se concentre : compose l\'image dans CETTE partie, mêmes éléments, mêmes positions, même lumière, sans reconstruire le lieu :', mime: cut.img.mime, b64: cut.img.b64 });
   const prevs = [];
-  for (let k = i - 1; k >= 0 && prevs.length < 2; k--) if (snFrames[k]) prevs.push(k);
+  if (!plan.noRef) for (let k = i - 1; k >= 0 && prevs.length < 2; k--) if (snFrames[k]) prevs.push(k);
   prevs.forEach(k => {
     const same = snBoard.plans[k].lieu === plan.lieu;
     refs.push({ label: (same
@@ -4056,7 +4185,7 @@ function snRefsFor(plan, i) {
       : 'PLAN ' + (k + 1) + ' DÉJÀ GÉNÉRÉ dans un AUTRE lieu — continuité seulement des personnes secondaires, ignore son décor. Ce plan ne montre pas forcément tous les personnages de ce plan-ci et peut contenir des erreurs : ne copie AUCUN visage ni vêtement depuis lui, les visages et vêtements viennent uniquement des photos d\'identité et de tenue :'), mime: snFrames[k].mime, b64: snFrames[k].b64 });
   });
   const first = snFrames[0];
-  if (first && i > 0 && !prevs.includes(0)) refs.push({ label: 'PREMIER PLAN de la séquence (référence de continuité : personnes, vêtements, objets) :', mime: first.mime, b64: first.b64 });
+  if (first && i > 0 && !plan.noRef && !prevs.includes(0)) refs.push({ label: 'PREMIER PLAN de la séquence (référence de continuité : personnes, vêtements, objets) :', mime: first.mime, b64: first.b64 });
   return refs.concat(idRefs);
 }
 
