@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Studio Prompt</title>
+<style>
+:root{
+  --bg:#0f0b1a; --card:#1a1429; --card2:#221a36; --line:#34294f;
+  --accent:#8b5cf6; --accent2:#d946ef; --text:#f1ecff; --muted:#9d93b8; --ok:#34d399; --err:#f87171;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;line-height:1.5;min-height:100vh;padding:20px 16px 60px}
+.wrap{max-width:720px;margin:0 auto}
+header{text-align:center;margin:10px 0 26px}
+h1{font-size:30px;font-weight:800;letter-spacing:-.5px;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+header p{color:var(--muted);font-size:14px;margin-top:4px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:16px}
+.card h2{font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:12px;font-weight:700}
+label{font-size:13px;color:var(--muted);display:block;margin-bottom:6px}
+input[type=password],input[type=text],textarea{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:12px;color:var(--text);font-size:15px;font-family:inherit;outline:none}
+input:focus,textarea:focus{border-color:var(--accent)}
+textarea{resize:vertical;min-height:70px}
+.keyrow{display:flex;gap:8px}
+.keyrow input{flex:1}
+.btn{border:none;border-radius:10px;padding:12px 16px;font-size:15px;font-weight:700;cursor:pointer;color:#fff;background:var(--card2);border:1px solid var(--line)}
+.btn.main{background:linear-gradient(90deg,var(--accent),var(--accent2));border:none;width:100%;padding:15px;font-size:16px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.drop{border:2px dashed var(--line);border-radius:14px;padding:26px 12px;text-align:center;color:var(--muted);cursor:pointer;font-size:14px;transition:.2s}
+.drop.over{border-color:var(--accent);background:var(--card2)}
+.drop b{color:var(--text)}
+.thumbs{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
+.thumb{position:relative;aspect-ratio:3/4;border-radius:10px;overflow:hidden;border:1px solid var(--line);background:var(--card2)}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb button{position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:50%;border:none;background:rgba(0,0,0,.7);color:#fff;font-size:14px;cursor:pointer;line-height:1}
+.thumb span{position:absolute;bottom:4px;left:4px;background:rgba(0,0,0,.7);color:#fff;font-size:11px;font-weight:700;padding:1px 7px;border-radius:8px}
+.count{font-size:12px;color:var(--muted);margin-top:8px;text-align:right}
+.status{font-size:13px;margin-top:12px;text-align:center;min-height:18px;color:var(--muted)}
+.status.err{color:var(--err)}
+.result{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+.result .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px}
+.result .head strong{font-size:14px}
+.result .head .btn{padding:7px 12px;font-size:13px}
+.result pre{white-space:pre-wrap;word-wrap:break-word;font-family:inherit;font-size:14.5px;line-height:1.6}
+.result.error pre{color:var(--err)}
+.hidden{display:none}
+@media(max-width:480px){.thumbs{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Studio Prompt</h1>
+    <p>Screenshot Instagram → prompt de poses et de point de vue</p>
+  </header>
+
+  <div class="card">
+    <h2>Clé Vertex</h2>
+    <label for="key">Clé API Vertex (AQ…)</label>
+    <div class="keyrow">
+      <input type="password" id="key" placeholder="AQ.…" autocomplete="off" spellcheck="false">
+      <button class="btn" id="eye" type="button">Voir</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Photos de référence (4 max)</h2>
+    <div class="drop" id="drop"><b>Touche ici</b> ou glisse tes screenshots</div>
+    <input type="file" id="file" accept="image/*" multiple class="hidden">
+    <div class="thumbs" id="thumbs"></div>
+    <div class="count" id="count">0 / 4</div>
+  </div>
+
+  <div class="card">
+    <h2>Consigne (optionnel)</h2>
+    <textarea id="note" placeholder="Ex : décris aussi les vêtements de chaque personne"></textarea>
+  </div>
+
+  <button class="btn main" id="go" type="button">Générer le prompt</button>
+  <div class="status" id="status"></div>
+
+  <div id="results" style="margin-top:16px"></div>
+</div>
+
+<script>
+(function(){
+  var MODEL = "gemini-2.5-flash";
+  var ENDPOINT = "https://aiplatform.googleapis.com/v1/publishers/google/models/" + MODEL + ":generateContent";
+  var MAX = 4;
+  var images = []; // {data, mime, url}
+
+  var $ = function(id){return document.getElementById(id)};
+  var keyEl = $("key"), drop = $("drop"), fileEl = $("file"), thumbs = $("thumbs"),
+      countEl = $("count"), noteEl = $("note"), goEl = $("go"), statusEl = $("status"), resultsEl = $("results");
+
+  try{ var saved = localStorage.getItem("studio_prompt_key"); if(saved) keyEl.value = saved; }catch(e){}
+  keyEl.addEventListener("change", function(){ try{ localStorage.setItem("studio_prompt_key", keyEl.value.trim()); }catch(e){} });
+  $("eye").addEventListener("click", function(){
+    var h = keyEl.type === "password";
+    keyEl.type = h ? "text" : "password";
+    this.textContent = h ? "Cacher" : "Voir";
+  });
+
+  drop.addEventListener("click", function(){ fileEl.click(); });
+  fileEl.addEventListener("change", function(){ addFiles(fileEl.files); fileEl.value = ""; });
+  ["dragover","dragenter"].forEach(function(ev){ drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.add("over"); }); });
+  ["dragleave","drop"].forEach(function(ev){ drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.remove("over"); }); });
+  drop.addEventListener("drop", function(e){ addFiles(e.dataTransfer.files); });
+
+  function setStatus(t, err){ statusEl.textContent = t || ""; statusEl.className = "status" + (err ? " err" : ""); }
+
+  function addFiles(list){
+    var arr = Array.prototype.slice.call(list).filter(function(f){ return f.type.indexOf("image/") === 0; });
+    var room = MAX - images.length;
+    if(arr.length > room) setStatus("Maximum " + MAX + " photos.", true); else setStatus("");
+    arr.slice(0, room).forEach(function(f){
+      resize(f).then(function(o){ images.push(o); render(); }).catch(function(){ setStatus("Image illisible.", true); });
+    });
+  }
+
+  function resize(file){
+    return new Promise(function(res, rej){
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function(){
+        var s = Math.min(1, 1600 / Math.max(img.width, img.height));
+        var c = document.createElement("canvas");
+        c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        var dataUrl = c.toDataURL("image/jpeg", 0.9);
+        URL.revokeObjectURL(url);
+        res({ data: dataUrl.split(",")[1], mime: "image/jpeg", url: dataUrl });
+      };
+      img.onerror = function(){ URL.revokeObjectURL(url); rej(); };
+      img.src = url;
+    });
+  }
+
+  function render(){
+    thumbs.innerHTML = "";
+    images.forEach(function(im, i){
+      var d = document.createElement("div"); d.className = "thumb";
+      d.innerHTML = '<img alt=""><button type="button">×</button><span>' + (i+1) + '</span>';
+      d.querySelector("img").src = im.url;
+      d.querySelector("button").addEventListener("click", function(){ images.splice(i, 1); render(); });
+      thumbs.appendChild(d);
+    });
+    countEl.textContent = images.length + " / " + MAX;
+  }
+
+  var SYSTEM =
+"Tu es un analyste visuel spécialisé dans la lecture de poses et de points de vue. Tu reçois un screenshot Instagram. Il te sert uniquement à analyser. Ta sortie est un prompt textuel, rédigé en français, qui permettra de reproduire la même scène avec d'autres personnes.\n\n" +
+"CE QUE TU DÉCRIS (uniquement ce qui est visible dans l'image, rien d'inventé) :\n" +
+"- Le point de vue de la prise de vue : qui prend la photo (selfie, selfie miroir, photo prise par une tierce personne, point de vue subjectif, trépied…), hauteur et angle de l'appareil (plongée, contre-plongée, niveau des yeux), distance, cadrage (plan large, taille, gros plan…), orientation (portrait/paysage), position de l'appareil par rapport aux personnes.\n" +
+"- Le nombre de personnes présentes, numérotées « Personne 1 », « Personne 2 », etc., de gauche à droite dans le cadre. Un bébé ou un enfant est simplement désigné comme tel.\n" +
+"- Pour chaque personne : sa position dans le cadre, la posture du corps (debout, assise, allongée, penchée…), l'orientation du corps et de la tête, la direction du regard, la position précise des bras, des mains, des jambes, ce qu'elle fait.\n" +
+"- Les interactions entre les personnes : distances, contacts, qui tient qui, qui regarde qui.\n" +
+"- Les objets ou supports uniquement lorsqu'ils conditionnent la pose (assise sur un canapé, main posée sur une table, tenant un téléphone…), sans décrire leur style.\n\n" +
+"CE QUE TU NE DÉCRIS JAMAIS :\n" +
+"- L'aspect physique : visage, expression, cheveux, corpulence, peau, âge apparent, etc.\n" +
+"- Les vêtements et accessoires portés, sauf si la consigne de l'utilisateur te le demande explicitement.\n" +
+"- Le décor, la déco, la lumière, les couleurs, sauf si la consigne de l'utilisateur te le demande.\n" +
+"- Les textes, emojis, sous-titres, interface Instagram, logos, filtres.\n\n" +
+"RÈGLES DE FORME :\n" +
+"- Tu n'écris JAMAIS les mots « photo de référence », « image de référence », « screenshot », « capture » ni aucune formule qui renvoie à une image source. Le prompt doit se lire comme une instruction autonome qui décrit directement la scène à produire.\n" +
+"- Tu écris à l'impératif ou au présent descriptif, sans phrase d'introduction ni de conclusion, sans markdown, sans astérisques.\n" +
+"- Structure : une ligne « Point de vue : … », une ligne « Cadrage : … », puis un paragraphe par personne (« Personne 1 : … »), puis une ligne « Interaction : … » s'il y a plusieurs personnes.\n" +
+"- Sois précis et concret sur les positions (gauche/droite, devant/derrière, haut/bas, degrés d'inclinaison approximatifs quand c'est utile).\n" +
+"- N'ajoute rien qui ne soit pas visible. Ne rajoute aucune consigne de style, de qualité ou de sécurité.";
+
+  function sleep(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
+
+  function callModel(im, note, attempt){
+    attempt = attempt || 0;
+    var userText = "Analyse cette image et écris le prompt." + (note ? "\n\nConsigne de l'utilisateur : " + note : "");
+    var body = {
+      systemInstruction: { parts: [{ text: SYSTEM }] },
+      contents: [{ role: "user", parts: [ { inlineData: { mimeType: im.mime, data: im.data } }, { text: userText } ] }],
+      generationConfig: { temperature: 0.3, maxOutputTokens: 2048 }
+    };
+    return fetch(ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": keyEl.value.trim() },
+      body: JSON.stringify(body)
+    }).then(function(r){
+      if(r.status === 429 && attempt < 4){
+        return sleep(Math.pow(2, attempt) * 1500).then(function(){ return callModel(im, note, attempt + 1); });
+      }
+      return r.json().then(function(j){
+        if(!r.ok){ throw new Error((j && j.error && j.error.message) || ("Erreur " + r.status)); }
+        var p = j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts;
+        var t = p ? p.map(function(x){ return x.text || ""; }).join("").trim() : "";
+        if(!t) throw new Error("Réponse vide.");
+        return t;
+      });
+    });
+  }
+
+  function copy(text, btn){
+    function done(){ var o = btn.textContent; btn.textContent = "Copié ✓"; setTimeout(function(){ btn.textContent = o; }, 1500); }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(done).catch(fallback);
+    } else fallback();
+    function fallback(){
+      var ta = document.createElement("textarea"); ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.focus(); ta.select();
+      try{ document.execCommand("copy"); done(); }catch(e){}
+      document.body.removeChild(ta);
+    }
+  }
+
+  function addResult(label, text, isErr){
+    var d = document.createElement("div"); d.className = "result" + (isErr ? " error" : "");
+    d.innerHTML = '<div class="head"><strong></strong></div><pre></pre>';
+    d.querySelector("strong").textContent = label;
+    d.querySelector("pre").textContent = text;
+    if(!isErr){
+      var b = document.createElement("button"); b.type = "button"; b.className = "btn"; b.textContent = "Copier";
+      b.addEventListener("click", function(){ copy(text, b); });
+      d.querySelector(".head").appendChild(b);
+    }
+    resultsEl.appendChild(d);
+  }
+
+  goEl.addEventListener("click", function(){
+    if(!keyEl.value.trim()){ setStatus("Entre ta clé Vertex.", true); return; }
+    if(!images.length){ setStatus("Ajoute au moins une photo.", true); return; }
+    try{ localStorage.setItem("studio_prompt_key", keyEl.value.trim()); }catch(e){}
+    var note = noteEl.value.trim();
+    goEl.disabled = true; resultsEl.innerHTML = "";
+    var chain = Promise.resolve();
+    images.forEach(function(im, i){
+      chain = chain.then(function(){
+        setStatus("Analyse " + (i+1) + " / " + images.length + "…");
+        return callModel(im, note).then(function(t){ addResult("Prompt " + (i+1), t, false); })
+          .catch(function(e){ addResult("Photo " + (i+1), e.message, true); });
+      });
+    });
+    chain.then(function(){ setStatus("Terminé."); goEl.disabled = false; });
+  });
+})();
+</script>
+</body>
+</html>
