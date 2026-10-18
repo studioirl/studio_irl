@@ -2727,7 +2727,10 @@ async function pdfAnalyseDuration(){
   v.innerHTML = '<span class="spinner"></span> Le réalisateur vérifie si ' + dureeSelectionnee + ' s suffisent pour ' + sel.length + ' plan' + (sel.length > 1 ? 's' : '') + '…';
   setStatus(st, '');
   try{
-    var r = await callAI([{ text: "PLANS COCHÉS (dans l'ordre) :\n\n" + pdfBuildText() + (document.getElementById('dialoguesInput').value.trim() ? "\n\nDIALOGUES À INTÉGRER (comptent dans le temps, ≈ 2,5 mots par seconde) :\n" + document.getElementById('dialoguesInput').value.trim() : "") }], pdfDurationSystem(), PDF_DURATION_SCHEMA, 0.3, 2048);
+    var r; var callArgs = [[{ text: "PLANS COCHÉS (dans l'ordre) :\n\n" + pdfBuildText() + (document.getElementById('dialoguesInput').value.trim() ? "\n\nDIALOGUES À INTÉGRER (comptent dans le temps, ≈ 2,5 mots par seconde) :\n" + document.getElementById('dialoguesInput').value.trim() : "") }], pdfDurationSystem(), PDF_DURATION_SCHEMA, 0.3, 16384];
+    try{ r = await callAI.apply(null, callArgs); }
+    catch(e1){ if(e1 && e1 instanceof SyntaxError){ r = await callAI.apply(null, callArgs); } else { throw e1; } }
+    
     pdfShowVerdict(r);
   }catch(err){
     pdfHideVerdict();
