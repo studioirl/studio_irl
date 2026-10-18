@@ -482,14 +482,21 @@ body{font-family:'Inter', system-ui, sans-serif;}
 #screen-realisateur button.secondary.modify:hover{background:rgba(241,196,15,0.12);}
 #screen-realisateur .action-row{display:flex;gap:12px;margin-top:18px;}
 #screen-realisateur .small-note{font-size:0.78rem;color:var(--muted);margin-top:6px;}
-#screen-realisateur .pdf-import{border:1px dashed var(--border);border-radius:10px;padding:12px 14px;margin:4px 0 16px;background:var(--panel2);}
-#screen-realisateur .pdf-import label{margin-top:0;}
-#screen-realisateur .pdf-import input[type=file]{width:100%;padding:8px;font-size:0.85rem;}
-#screen-realisateur .pdf-pick-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0 6px;font-size:0.82rem;color:var(--muted);}
-#screen-realisateur .pdf-pick-head button{width:auto;padding:5px 10px;font-size:0.78rem;}
 #screen-realisateur .pdf-plan-row{display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-top:1px solid var(--border);font-size:0.85rem;cursor:pointer;}
 #screen-realisateur .pdf-plan-row input{width:auto;margin-top:3px;}
 #screen-realisateur .pdf-plan-row small{display:block;color:var(--muted);font-size:0.75rem;}
+#screen-realisateur #pdfCard input[type=file]{width:100%;padding:8px;font-size:0.85rem;}
+#screen-realisateur .pdf-pick-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0 6px;font-size:0.82rem;color:var(--muted);}
+#screen-realisateur .pdf-pick-head button{width:auto;padding:5px 10px;font-size:0.78rem;}
+#screen-realisateur details.card > summary{cursor:pointer;font-size:0.85rem;color:var(--muted);}
+#screen-realisateur details.card[open] > summary{margin-bottom:12px;}
+#screen-realisateur .pdf-verdict{border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin:12px 0;background:var(--panel2);font-size:0.88rem;line-height:1.5;}
+#screen-realisateur .pdf-verdict.ok{border-color:var(--green);}
+#screen-realisateur .pdf-verdict.warn{border-color:#f1c40f;}
+#screen-realisateur .pdf-verdict h3{margin:0 0 6px;font-size:0.95rem;}
+#screen-realisateur .pdf-verdict ul{margin:6px 0 10px;padding-left:18px;color:var(--muted);font-size:0.8rem;}
+#screen-realisateur .pdf-verdict .pdf-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+#screen-realisateur .pdf-verdict .pdf-actions button{width:auto;padding:8px 14px;}
 
 #screen-realisateur #status, #screen-realisateur #status2{margin-top:14px;font-size:0.9rem;color:var(--accent2);min-height:20px;}
 #screen-realisateur #status.error, #screen-realisateur #status2.error{color:var(--accent);}
@@ -719,6 +726,17 @@ body{font-family:'Inter', system-ui, sans-serif;}
 
   <button type="button" class="back-btn" id="backToStoryBtn">← Retour à Studio Story</button>
 
+  <div class="card" id="pdfCard">
+    <h2>Storyboard écrit (PDF)</h2>
+    <p class="small-note" style="margin-top:0;">Importe ici le PDF du storyboard écrit (plan par plan), puis coche les plans que tu veux faire tourner dans cette vidéo. Le studio vérifiera ensuite si la durée choisie suffit.</p>
+    <input type="file" id="pdfImportInput" accept="application/pdf,.pdf">
+    <div class="small-note" id="pdfImportStatus"></div>
+    <div id="pdfPlanPicker" class="hidden">
+      <div class="pdf-pick-head"><span id="pdfPickCount"></span><button type="button" class="secondary" id="pdfPickAll">Tout cocher</button><button type="button" class="secondary" id="pdfPickNone">Tout décocher</button></div>
+      <div id="pdfPlanList"></div>
+    </div>
+  </div>
+
   <div class="card">
     <h2>1. Scénario</h2>
     <label>Titre</label>
@@ -797,29 +815,21 @@ body{font-family:'Inter', system-ui, sans-serif;}
     </div>
   </div>
 
-  <div class="card" id="preAnalyzedCard">
-    <h2>Données pré-analysées (optionnel)</h2>
+  <details class="card" id="preAnalyzedCard">
+    <summary>Avancé — texte des plans repris du storyboard (rempli automatiquement, rien à faire ici)</summary>
     <p class="small-note" style="margin-bottom:10px;">Si l'analyse des images et la continuité ont déjà été générées par un autre studio (ex. Studio Story), colle-les ici. Le Dossier de réalisation les reprendra telles quelles au lieu de les régénérer.</p>
-    <div class="pdf-import" id="pdfImportBox">
-      <label>📄 Importer le storyboard écrit (PDF)</label>
-      <p class="small-note" style="margin-top:0;">Choisis le PDF du storyboard écrit (plan par plan) généré par Studio Narratif / Studio Flash. Il est lu dans ton navigateur : coche ensuite les plans à utiliser, ils se remplissent dans « Plans / continuité déjà construits » ci-dessous.</p>
-      <input type="file" id="pdfImportInput" accept="application/pdf,.pdf">
-      <div class="small-note" id="pdfImportStatus"></div>
-      <div id="pdfPlanPicker" class="hidden">
-        <div class="pdf-pick-head"><span id="pdfPickCount"></span><button type="button" class="secondary" id="pdfPickAll">Tout cocher</button><button type="button" class="secondary" id="pdfPickNone">Tout décocher</button></div>
-        <div id="pdfPlanList"></div>
-      </div>
-    </div>
     <label>Analyse des images déjà réalisée</label>
     <textarea id="preAnalyzedImages" placeholder="Ex : Image 1 — personnage : ..., lieu : ..., action : ..., ambiance : ...  (laisser vide si non applicable)"></textarea>
     <label>Plans / continuité déjà construits</label>
     <p class="small-note" style="margin-top:0;">Si tu remplis ce champ, le champ Histoire ci-dessus devient inutile — ne remplis qu'un des deux.</p>
     <textarea id="preAnalyzedPlans" placeholder="Ex : [AVANT] ... / [PENDANT] ... / [APRÈS] ...  (laisser vide si non applicable)"></textarea>
-  </div>
+  </details>
 
   <div class="card">
     <h2>2. Génération</h2>
     <div class="small-note" id="realisateurKeyStatus">Clé API connectée depuis l'écran d'entrée de Studio Production.</div>
+    <div id="pdfVerdict" class="hidden"></div>
+    <button type="button" class="secondary hidden" id="pdfAnalyseBtn">🔎 Vérifier si la durée convient aux plans cochés</button>
     <button class="primary" id="generateDossierBtn">Générer le dossier de réalisation</button>
     <div id="status"></div>
   </div>
@@ -2137,6 +2147,7 @@ document.getElementById("generateDossierBtn").addEventListener("click", async fu
   var hasPreAnalyzedPlans = preAnalyzedPlans.length > 0;
   var statusEl = document.getElementById("status");
   var btn = document.getElementById("generateDossierBtn");
+  if(typeof pdfGateBeforeGenerate === "function" && pdfGateBeforeGenerate()) return;
 
   if(!PRODUCTION_API_KEY){ setStatus(statusEl,"⚠️ Clé API manquante — retourne à l'écran d'entrée de Studio Production.",true); return; }
   if(!titre){ setStatus(statusEl,"⚠️ Merci de remplir au moins le titre.",true); return; }
@@ -2347,6 +2358,7 @@ function sendToRealisateur(){
 
   // 4. Histoire vide : les plans de continuité priment déjà dans la logique de Réalisateur
   document.getElementById('histoire').value = '';
+  document.getElementById('preAnalyzedCard').open = true;
 
   // 5. Images de référence + émotions par image, slot par slot
   for(var i=0;i<4;i++){
@@ -2462,7 +2474,15 @@ function pdfBuildText(){
   return out.join('\n\n');
 }
 
+function pdfSelected(){ return pdfImportPlans.filter(function(p){ return p.on; }); }
+var pdfCheckedKey = '';
+function pdfCurKey(){
+  return [dureeSelectionnee, modeleSelectionne, modeSelectionne, pdfSelected().map(function(p){ return p.n; }).join(',')].join('|');
+}
+
 function pdfRefreshFromPicker(){
+  if(typeof pdfHideVerdict === 'function') pdfHideVerdict();
+  document.getElementById('pdfAnalyseBtn').classList.toggle('hidden', pdfSelected().length === 0);
   var n = pdfImportPlans.filter(function(p){ return p.on; }).length;
   document.getElementById('pdfPickCount').textContent = n + ' plan' + (n > 1 ? 's' : '') + ' coché' + (n > 1 ? 's' : '') + ' sur ' + pdfImportPlans.length;
   document.getElementById('preAnalyzedPlans').value = n ? pdfBuildText() : '';
@@ -2506,6 +2526,138 @@ document.getElementById('pdfImportInput').addEventListener('change', async funct
 });
 document.getElementById('pdfPickAll').addEventListener('click', function(){ pdfImportPlans.forEach(function(p){ p.on = true; }); pdfRenderPicker(); });
 document.getElementById('pdfPickNone').addEventListener('click', function(){ pdfImportPlans.forEach(function(p){ p.on = false; }); pdfRenderPicker(); });
+
+
+var PDF_DURATION_SCHEMA = {
+  type:'OBJECT',
+  properties:{
+    verdict:{ type:'STRING', enum:['ok','trop_court','trop_long'] },
+    duree_recommandee:{ type:'INTEGER' },
+    temps_par_plan:{ type:'ARRAY', items:{ type:'OBJECT', properties:{ plan:{type:'INTEGER'}, secondes:{type:'NUMBER'}, raison:{type:'STRING'} }, required:['plan','secondes','raison'] } },
+    explication:{ type:'STRING' },
+    repartition_conseillee:{ type:'STRING' }
+  },
+  required:['verdict','duree_recommandee','temps_par_plan','explication','repartition_conseillee']
+};
+
+function pdfDurationSystem(){
+  return "Tu es le réalisateur de Studio Production. Un élève veut transformer des plans d'un storyboard écrit en UNE seule vidéo (modèle : " + modeleSelectionne + ", mode de réalisation : " + modeSelectionne + ", durée choisie : " + dureeSelectionnee + " secondes).\n\n" +
+    "Tu ne génères aucun prompt. Tu évalues uniquement si la durée choisie permet de réaliser TOUS les plans cochés, dans l'ordre, avec une action lisible par plan.\n\n" +
+    "Règles d'estimation : un plan simple (réaction, regard, gros plan, insert) demande au moins 2 secondes ; un plan avec déplacement, geste enchaîné ou interaction entre plusieurs personnages demande 3 à 4 secondes ; ajoute le temps des dialogues s'il y en a. La durée recommandée est la plus petite durée possible parmi 5, 8, 10, 12 ou 15 secondes qui permette de tout montrer sans précipitation.\n\n" +
+    "Une vidéo ne dépasse jamais 15 secondes. Si les plans ne tiennent pas dans 15 secondes, mets duree_recommandee à 15 et indique dans repartition_conseillee comment les répartir en plusieurs vidéos (quels numéros de plans dans chaque vidéo). Sinon laisse repartition_conseillee vide.\n\n" +
+    "Tu ne supprimes, ne modifies et n'inventes aucun plan. verdict = ok si la durée choisie convient, trop_court si elle est insuffisante, trop_long si elle est nettement plus longue que nécessaire. temps_par_plan donne, pour chaque plan coché, les secondes estimées et une raison courte. explication : 2 à 3 phrases simples en français.";
+}
+
+function pdfSetDuration(sec){
+  var b = document.querySelector('#dureeGrid .option-btn[data-value="' + sec + '"]');
+  if(b) b.click();
+}
+
+function pdfAddBtn(box, label, fn, primary){
+  var b = document.createElement('button');
+  b.type = 'button'; b.textContent = label;
+  if(!primary) b.className = 'secondary';
+  b.addEventListener('click', fn);
+  box.appendChild(b);
+}
+
+function pdfHideVerdict(){
+  var v = document.getElementById('pdfVerdict');
+  v.innerHTML = ''; v.className = 'hidden';
+}
+
+function pdfShowVerdict(r){
+  var sel = pdfSelected();
+  var cur = parseInt(dureeSelectionnee, 10);
+  var rec = parseInt(r.duree_recommandee, 10) || cur;
+  var okNow = r.verdict === 'ok' || rec === cur;
+  var v = document.getElementById('pdfVerdict');
+  v.innerHTML = '';
+  v.className = 'pdf-verdict ' + (okNow ? 'ok' : 'warn');
+  var s = sel.length + ' plan' + (sel.length > 1 ? 's' : '');
+  var h = document.createElement('h3');
+  h.textContent = okNow
+    ? '✅ ' + cur + ' s conviennent pour ces ' + s
+    : '⚠️ ' + cur + ' s ' + (r.verdict === 'trop_court' ? 'sont trop courtes' : 'sont plus longues que nécessaire') + ' pour ces ' + s + ' — durée conseillée : ' + rec + ' s';
+  v.appendChild(h);
+  var p = document.createElement('div');
+  p.textContent = r.explication || '';
+  v.appendChild(p);
+  if(r.repartition_conseillee && String(r.repartition_conseillee).trim()){
+    var rp = document.createElement('div');
+    rp.style.marginTop = '6px';
+    rp.textContent = 'Répartition conseillée : ' + r.repartition_conseillee;
+    v.appendChild(rp);
+  }
+  if(Array.isArray(r.temps_par_plan) && r.temps_par_plan.length){
+    var ul = document.createElement('ul');
+    r.temps_par_plan.forEach(function(t){
+      var li = document.createElement('li');
+      li.textContent = 'Plan ' + t.plan + ' : ~' + t.secondes + ' s — ' + (t.raison || '');
+      ul.appendChild(li);
+    });
+    v.appendChild(ul);
+  }
+  var act = document.createElement('div');
+  act.className = 'pdf-actions';
+  var key = pdfCurKey();
+  if(okNow){
+    pdfAddBtn(act, 'Continuer avec ' + cur + ' s', function(){
+      pdfCheckedKey = key;
+      pdfHideVerdict();
+      setStatus(document.getElementById('status'), '✓ Durée validée (' + cur + ' s). Tu peux générer le dossier de réalisation.', false);
+    }, true);
+  }else{
+    pdfAddBtn(act, 'Passer à ' + rec + ' s', function(){
+      pdfSetDuration(String(rec));
+      pdfCheckedKey = pdfCurKey();
+      pdfHideVerdict();
+      setStatus(document.getElementById('status'), '✓ Durée réglée sur ' + rec + ' s. Tu peux générer le dossier de réalisation.', false);
+    }, true);
+    pdfAddBtn(act, 'Lancer quand même avec ' + cur + ' s', function(){
+      pdfCheckedKey = key;
+      pdfHideVerdict();
+      document.getElementById('generateDossierBtn').click();
+    }, false);
+    pdfAddBtn(act, 'Choisir une autre durée moi-même', function(){
+      pdfHideVerdict();
+      document.getElementById('dureeGrid').scrollIntoView({behavior:'smooth', block:'center'});
+    }, false);
+  }
+  v.appendChild(act);
+}
+
+async function pdfAnalyseDuration(){
+  var v = document.getElementById('pdfVerdict');
+  var st = document.getElementById('status');
+  if(!PRODUCTION_API_KEY){ setStatus(st, "⚠️ Clé API manquante — retourne à l'écran d'entrée de Studio Production.", true); return; }
+  var sel = pdfSelected();
+  if(!sel.length){ setStatus(st, '⚠️ Coche au moins un plan.', true); return; }
+  var btn = document.getElementById('pdfAnalyseBtn');
+  btn.disabled = true;
+  v.className = 'pdf-verdict';
+  v.innerHTML = '<span class="spinner"></span> Le réalisateur vérifie si ' + dureeSelectionnee + ' s suffisent pour ' + sel.length + ' plan' + (sel.length > 1 ? 's' : '') + '…';
+  setStatus(st, '');
+  try{
+    var r = await callAI([{ text: "PLANS COCHÉS (dans l'ordre) :\n\n" + pdfBuildText() }], pdfDurationSystem(), PDF_DURATION_SCHEMA, 0.3, 2048);
+    pdfShowVerdict(r);
+  }catch(err){
+    pdfHideVerdict();
+    setStatus(st, '❌ Vérification de la durée impossible : ' + (err && err.message ? err.message : err), true);
+  }finally{ btn.disabled = false; }
+}
+
+function pdfGateBeforeGenerate(){
+  if(!pdfSelected().length) return false;
+  if(pdfCheckedKey === pdfCurKey()) return false;
+  pdfAnalyseDuration();
+  return true;
+}
+
+document.getElementById('pdfAnalyseBtn').addEventListener('click', pdfAnalyseDuration);
+['dureeGrid', 'modeleGrid', 'modeGrid'].forEach(function(id){
+  document.getElementById(id).addEventListener('click', function(){ pdfHideVerdict(); });
+});
 
 document.getElementById('pbStepStory').addEventListener('click', function(){ pbGoTo('story'); validateForm(); });
 document.getElementById('pbStepRealisateur').addEventListener('click', function(){ pbGoTo('realisateur'); });
