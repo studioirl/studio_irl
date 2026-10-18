@@ -737,6 +737,12 @@ body{font-family:'Inter', system-ui, sans-serif;}
     </div>
   </div>
 
+  <div class="card" id="dialoguesCard">
+    <h2>Dialogues à intégrer</h2>
+    <p class="small-note" style="margin-top:0;">Écris ici les répliques que tu veux dans la vidéo, avec le plan concerné si tu veux. Elles seront reprises mot pour mot dans le dossier (section 8) et dans le prompt final. Laisse vide s'il n'y a pas de dialogue.</p>
+    <textarea id="dialoguesInput" rows="4" placeholder="Ex : Plan 1 — Voix hors champ depuis l'estrade : « Et le roi et la reine de la promo 2000 sont… Soléa et Yann ! »"></textarea>
+  </div>
+
   <div class="card">
     <h2>1. Scénario</h2>
     <label>Titre</label>
@@ -2246,6 +2252,11 @@ document.getElementById("generateDossierBtn").addEventListener("click", async fu
     userText += "\nHISTOIRE : " + histoire;
   }
 
+  var dialoguesFournis = document.getElementById("dialoguesInput").value.trim();
+  if(dialoguesFournis){
+    userText += "\n\nDIALOGUES FOURNIS PAR L'ÉLÈVE (à reprendre MOT POUR MOT dans la section 8, sans les modifier ni en ajouter d'autres ; place chaque réplique dans le plan indiqué, ou dans le plan le plus logique si aucun n'est indiqué ; ajoute seulement la réaction visible qui l'accompagne) :\n" + dialoguesFournis;
+  }
+
   if(imageEmotionsText){
     userText += "\n\nÉMOTIONS PAR IMAGE (à traduire individuellement en actions observables) :\n" + imageEmotionsText;
   }
@@ -2554,7 +2565,7 @@ function pdfBuildText(){
 function pdfSelected(){ return pdfImportPlans.filter(function(p){ return p.on; }); }
 var pdfCheckedKey = '';
 function pdfCurKey(){
-  return [dureeSelectionnee, modeleSelectionne, modeSelectionne, pdfSelected().map(function(p){ return p.n; }).join(',')].join('|');
+  return [dureeSelectionnee, modeleSelectionne, modeSelectionne, pdfSelected().map(function(p){ return p.n; }).join(','), document.getElementById('dialoguesInput').value.trim()].join('|');
 }
 
 function pdfRefreshFromPicker(){
@@ -2716,7 +2727,7 @@ async function pdfAnalyseDuration(){
   v.innerHTML = '<span class="spinner"></span> Le réalisateur vérifie si ' + dureeSelectionnee + ' s suffisent pour ' + sel.length + ' plan' + (sel.length > 1 ? 's' : '') + '…';
   setStatus(st, '');
   try{
-    var r = await callAI([{ text: "PLANS COCHÉS (dans l'ordre) :\n\n" + pdfBuildText() }], pdfDurationSystem(), PDF_DURATION_SCHEMA, 0.3, 2048);
+    var r = await callAI([{ text: "PLANS COCHÉS (dans l'ordre) :\n\n" + pdfBuildText() + (document.getElementById('dialoguesInput').value.trim() ? "\n\nDIALOGUES À INTÉGRER (comptent dans le temps, ≈ 2,5 mots par seconde) :\n" + document.getElementById('dialoguesInput').value.trim() : "") }], pdfDurationSystem(), PDF_DURATION_SCHEMA, 0.3, 2048);
     pdfShowVerdict(r);
   }catch(err){
     pdfHideVerdict();
