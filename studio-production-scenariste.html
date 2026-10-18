@@ -482,6 +482,15 @@ body{font-family:'Inter', system-ui, sans-serif;}
 #screen-realisateur button.secondary.modify:hover{background:rgba(241,196,15,0.12);}
 #screen-realisateur .action-row{display:flex;gap:12px;margin-top:18px;}
 #screen-realisateur .small-note{font-size:0.78rem;color:var(--muted);margin-top:6px;}
+#screen-realisateur .pdf-import{border:1px dashed var(--border);border-radius:10px;padding:12px 14px;margin:4px 0 16px;background:var(--panel2);}
+#screen-realisateur .pdf-import label{margin-top:0;}
+#screen-realisateur .pdf-import input[type=file]{width:100%;padding:8px;font-size:0.85rem;}
+#screen-realisateur .pdf-pick-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0 6px;font-size:0.82rem;color:var(--muted);}
+#screen-realisateur .pdf-pick-head button{width:auto;padding:5px 10px;font-size:0.78rem;}
+#screen-realisateur .pdf-plan-row{display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-top:1px solid var(--border);font-size:0.85rem;cursor:pointer;}
+#screen-realisateur .pdf-plan-row input{width:auto;margin-top:3px;}
+#screen-realisateur .pdf-plan-row small{display:block;color:var(--muted);font-size:0.75rem;}
+
 #screen-realisateur #status, #screen-realisateur #status2{margin-top:14px;font-size:0.9rem;color:var(--accent2);min-height:20px;}
 #screen-realisateur #status.error, #screen-realisateur #status2.error{color:var(--accent);}
 #screen-realisateur .hidden{display:none !important;}
@@ -791,6 +800,16 @@ body{font-family:'Inter', system-ui, sans-serif;}
   <div class="card" id="preAnalyzedCard">
     <h2>Données pré-analysées (optionnel)</h2>
     <p class="small-note" style="margin-bottom:10px;">Si l'analyse des images et la continuité ont déjà été générées par un autre studio (ex. Studio Story), colle-les ici. Le Dossier de réalisation les reprendra telles quelles au lieu de les régénérer.</p>
+    <div class="pdf-import" id="pdfImportBox">
+      <label>📄 Importer le storyboard écrit (PDF)</label>
+      <p class="small-note" style="margin-top:0;">Choisis le PDF du storyboard écrit (plan par plan) généré par Studio Narratif / Studio Flash. Il est lu dans ton navigateur : coche ensuite les plans à utiliser, ils se remplissent dans « Plans / continuité déjà construits » ci-dessous.</p>
+      <input type="file" id="pdfImportInput" accept="application/pdf,.pdf">
+      <div class="small-note" id="pdfImportStatus"></div>
+      <div id="pdfPlanPicker" class="hidden">
+        <div class="pdf-pick-head"><span id="pdfPickCount"></span><button type="button" class="secondary" id="pdfPickAll">Tout cocher</button><button type="button" class="secondary" id="pdfPickNone">Tout décocher</button></div>
+        <div id="pdfPlanList"></div>
+      </div>
+    </div>
     <label>Analyse des images déjà réalisée</label>
     <textarea id="preAnalyzedImages" placeholder="Ex : Image 1 — personnage : ..., lieu : ..., action : ..., ambiance : ...  (laisser vide si non applicable)"></textarea>
     <label>Plans / continuité déjà construits</label>
@@ -2348,6 +2367,145 @@ function sendToRealisateur(){
   pbGoTo('realisateur');
   setStatus(document.getElementById('status'), '📥 Dossier pré-rempli depuis Studio Story — vérifie les champs puis génère le dossier de réalisation.', false);
 }
+
+
+/* ===================================================================
+   IMPORT D'UN STORYBOARD ÉCRIT (PDF) -> « Plans / continuité déjà construits »
+=================================================================== */
+var PDFJS_BASE = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+var pdfImportPlans = [];
+var pdfImportHeader = '';
+
+function pdfLoadLib(){
+  if(window.pdfjsLib && window.pdfjsLib.__ready) return Promise.resolve(window.pdfjsLib);
+  return new Promise(function(resolve, reject){
+    function ready(){
+      fetch(PDFJS_BASE + 'pdf.worker.min.js').then(function(r){
+        if(!r.ok) throw new Error('worker');
+        return r.text();
+      }).then(function(t){
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(new Blob([t], {type:'text/javascript'}));
+        window.pdfjsLib.__ready = true;
+        resolve(window.pdfjsLib);
+      }).catch(function(){ reject(new Error('Lecteur PDF indisponible (vérifie ta connexion).')); });
+    }
+    if(window.pdfjsLib){ ready(); return; }
+    var sc = document.createElement('script');
+    sc.src = PDFJS_BASE + 'pdf.min.js';
+    sc.onload = ready;
+    sc.onerror = function(){ reject(new Error('Lecteur PDF indisponible (vérifie ta connexion).')); };
+    document.head.appendChild(sc);
+  });
+}
+
+async function pdfExtractLines(file){
+  var lib = await pdfLoadLib();
+  var doc = await lib.getDocument({data: await file.arrayBuffer()}).promise;
+  var lines = [];
+  for(var p = 1; p <= doc.numPages; p++){
+    var page = await doc.getPage(p);
+    var tc = await page.getTextContent();
+    var cur = '', lastY = null;
+    tc.items.forEach(function(it){
+      if(typeof it.str !== 'string') return;
+      var y = it.transform ? it.transform[5] : 0;
+      if(lastY !== null && Math.abs(y - lastY) > 2){ lines.push(cur); cur = ''; }
+      cur += it.str;
+      lastY = y;
+      if(it.hasEOL){ lines.push(cur); cur = ''; lastY = null; }
+    });
+    if(cur) lines.push(cur);
+  }
+  return lines;
+}
+
+function pdfNrm(s){
+  return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[’‘`]/g, "'")
+    .replace(/\s*\(.*\)\s*$/, '').replace(/\s+/g, ' ').trim();
+}
+var PDF_LABELS = {};
+["moment de l'histoire","lieu de ce plan","lieu","zone du lieu cadree","emotion","ce que le spectateur doit comprendre","action visible","mise en scene","positions exactes des personnages dans la zone","positions exactes des personnages","elements fixes visibles dans le cadre","direction des regards / mouvements","direction des regards et mouvements","point de vue de la camera","incarnation du corps","reactions des autres","cadrage","angle","personnages dans ce plan","personnages","personnes secondaires visibles","personnes secondaires","ce qui se trouve dans le lieu a ce moment","presence dans le lieu","continuite avec le plan precedent","continuite","focus","lumiere"].forEach(function(k){ PDF_LABELS[k] = true; });
+
+function pdfParseStoryboard(rawLines){
+  var lines = rawLines.map(function(l){ return l.replace(/\s+/g, ' ').trim(); }).filter(function(l){
+    return l && !/^page\s+\d+(\s*\/\s*\d+)?$/i.test(l) && !/^\d+\s*\/\s*\d+$/.test(l);
+  });
+  var planRe = /^plan\s+(\d+)\s*(?:[—–-]\s*(.*))?$/i;
+  var firstPlan = lines.findIndex(function(l){ return planRe.test(l); });
+  if(firstPlan < 0) return null;
+  var head = lines.slice(0, firstPlan);
+  var title = '';
+  if(head.length && !/^storyboard écrit/i.test(head[0])){ title = head[0]; head = head.slice(1); }
+  head = head.filter(function(l){ return !/^storyboard écrit/i.test(l) && !/texte uniquement/i.test(l); });
+  var plans = [], cur = null, field = null;
+  lines.slice(firstPlan).forEach(function(l){
+    var m = planRe.exec(l);
+    if(m){ cur = {n: parseInt(m[1], 10), emotion: (m[2] || '').trim(), fields: [], on: true}; plans.push(cur); field = null; return; }
+    if(PDF_LABELS[pdfNrm(l)]){
+      field = [l.charAt(0).toUpperCase() + l.slice(1).toLowerCase(), ''];
+      cur.fields.push(field);
+      return;
+    }
+    if(field) field[1] = (field[1] ? field[1] + ' ' : '') + l;
+    else if(cur) { field = ['Note', l]; cur.fields.push(field); }
+  });
+  plans.forEach(function(p){ p.fields = p.fields.filter(function(f){ return f[1]; }); });
+  return {title: title, header: head.join('\n'), plans: plans};
+}
+
+function pdfBuildText(){
+  var out = [];
+  if(pdfImportHeader.trim()) out.push('CONTEXTE DU STORYBOARD (valable pour tous les plans)\n' + pdfImportHeader.trim());
+  pdfImportPlans.filter(function(p){ return p.on; }).forEach(function(p){
+    out.push('PLAN ' + p.n + (p.emotion ? ' — ' + p.emotion : '') + '\n' + p.fields.map(function(f){ return f[0] + ' : ' + f[1]; }).join('\n'));
+  });
+  return out.join('\n\n');
+}
+
+function pdfRefreshFromPicker(){
+  var n = pdfImportPlans.filter(function(p){ return p.on; }).length;
+  document.getElementById('pdfPickCount').textContent = n + ' plan' + (n > 1 ? 's' : '') + ' coché' + (n > 1 ? 's' : '') + ' sur ' + pdfImportPlans.length;
+  document.getElementById('preAnalyzedPlans').value = n ? pdfBuildText() : '';
+}
+
+function pdfRenderPicker(){
+  var list = document.getElementById('pdfPlanList');
+  list.innerHTML = '';
+  pdfImportPlans.forEach(function(p, i){
+    var row = document.createElement('label');
+    row.className = 'pdf-plan-row';
+    var cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.checked = p.on;
+    cb.addEventListener('change', function(){ p.on = cb.checked; pdfRefreshFromPicker(); });
+    var txt = document.createElement('div');
+    var moment = (p.fields.filter(function(f){ return /^moment/i.test(f[0]); })[0] || ['', ''])[1];
+    txt.innerHTML = '<b>Plan ' + p.n + '</b>' + (p.emotion ? ' — ' + escapeHtml(p.emotion) : '') + (moment ? '<small>' + escapeHtml(moment.length > 140 ? moment.slice(0, 140) + '…' : moment) + '</small>' : '');
+    row.appendChild(cb); row.appendChild(txt);
+    list.appendChild(row);
+  });
+  document.getElementById('pdfPlanPicker').classList.remove('hidden');
+  pdfRefreshFromPicker();
+}
+
+document.getElementById('pdfImportInput').addEventListener('change', async function(e){
+  var file = e.target.files[0];
+  var st = document.getElementById('pdfImportStatus');
+  if(!file) return;
+  setStatus(st, 'Lecture du PDF…', false);
+  try{
+    var parsed = pdfParseStoryboard(await pdfExtractLines(file));
+    if(!parsed || !parsed.plans.length) throw new Error('Aucun plan trouvé : choisis le PDF du storyboard écrit (avec « Plan 1 », « Plan 2 »…).');
+    pdfImportPlans = parsed.plans;
+    pdfImportHeader = parsed.header;
+    if(parsed.title && !document.getElementById('titre').value.trim()) document.getElementById('titre').value = parsed.title;
+    pdfRenderPicker();
+    setStatus(st, '✓ ' + parsed.plans.length + ' plan' + (parsed.plans.length > 1 ? 's' : '') + ' lu' + (parsed.plans.length > 1 ? 's' : '') + '. Une vidéo dure 15 s maximum : coche les plans de cette vidéo.', false);
+  }catch(err){
+    setStatus(st, '⚠️ ' + (err && err.message ? err.message : 'PDF illisible'), true);
+  }
+});
+document.getElementById('pdfPickAll').addEventListener('click', function(){ pdfImportPlans.forEach(function(p){ p.on = true; }); pdfRenderPicker(); });
+document.getElementById('pdfPickNone').addEventListener('click', function(){ pdfImportPlans.forEach(function(p){ p.on = false; }); pdfRenderPicker(); });
 
 document.getElementById('pbStepStory').addEventListener('click', function(){ pbGoTo('story'); validateForm(); });
 document.getElementById('pbStepRealisateur').addEventListener('click', function(){ pbGoTo('realisateur'); });
