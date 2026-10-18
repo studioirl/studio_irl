@@ -2248,6 +2248,9 @@ document.getElementById("generateDossierBtn").addEventListener("click", async fu
 
   if(hasPreAnalyzedPlans){
     userText += "\n\nPLANS / CONTINUITÉ DÉJÀ CONSTRUITS (base de l'histoire, à reprendre dans l'ordre, ne pas réinventer) :\n" + preAnalyzedPlans;
+    if(typeof pdfSelected === "function" && pdfSelected().length){
+      userText += "\n\nPÉRIMÈTRE STRICT : cette vidéo ne contient QUE les " + pdfSelected().length + " plan(s) listés ci-dessus (" + pdfSelected().map(function(p){ return "plan " + p.n; }).join(", ") + "). N'écris rien sur les autres plans ou sur la suite de l'histoire. N'ajoute aucun objet, liquide, accessoire ou événement qui n'est pas écrit dans ces plans, dans les dialogues fournis ou visible sur les images de référence.";
+    }
   } else {
     userText += "\nHISTOIRE : " + histoire;
   }
@@ -2553,9 +2556,36 @@ function pdfParseStoryboard(rawLines){
   return {title: title, header: head.join('\n'), plans: plans};
 }
 
+/* En-tête du PDF filtré : on enlève la progression émotionnelle de TOUT le film
+   et les personnages qui n'apparaissent dans aucun plan coché. */
+function pdfFilteredHeader(){
+  var h = pdfImportHeader || '';
+  var cut = h.search(/progression [ée]motionnelle/i);
+  if(cut >= 0) h = h.slice(0, cut);
+  var lines = h.split('\n').map(function(l){ return l.trim(); }).filter(Boolean);
+  var idx = -1;
+  lines.forEach(function(l, i){ if(/^personnes secondaires/i.test(l)) idx = i; });
+  if(idx < 0) return lines.join('\n');
+  var head = lines.slice(0, idx + 1);
+  var sel = pdfSelected().map(function(p){ return p.n; });
+  var entries = lines.slice(idx + 1).join(' ').split(/\s(?=f\d+\s*[—–-])/);
+  entries.forEach(function(e){
+    e = e.trim(); if(!e) return;
+    var m = /Appara[iî]t aux? plans?\s+([\d\s,et&]+)\.?/i.exec(e);
+    if(m){
+      var nums = (m[1].match(/\d+/g) || []).map(Number);
+      if(!nums.some(function(n){ return sel.indexOf(n) >= 0; })) return;
+      e = e.replace(m[0], '').trim();
+    }
+    head.push(e);
+  });
+  return head.join('\n');
+}
+
 function pdfBuildText(){
   var out = [];
-  if(pdfImportHeader.trim()) out.push('CONTEXTE DU STORYBOARD (valable pour tous les plans)\n' + pdfImportHeader.trim());
+  var hdr = pdfFilteredHeader();
+  if(hdr.trim()) out.push('CONTEXTE DU STORYBOARD (personnages)\n' + hdr.trim());
   pdfImportPlans.filter(function(p){ return p.on; }).forEach(function(p){
     out.push('PLAN ' + p.n + (p.emotion ? ' — ' + p.emotion : '') + '\n' + p.fields.map(function(f){ return f[0] + ' : ' + f[1]; }).join('\n'));
   });
