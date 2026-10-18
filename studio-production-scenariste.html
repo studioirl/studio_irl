@@ -763,6 +763,7 @@ body{font-family:'Inter', system-ui, sans-serif;}
       <div class="option-btn active" data-value="Seedance">Seedance<small>prompt découpé en plans</small></div>
       <div class="option-btn" data-value="Omni">Omni<small>Kling 3.0 Omni · storyboard multi-plans</small></div>
       <div class="option-btn" data-value="Veo 3">Veo 3<small>Veo 3.1 · prose + audio natif, clips de 8s</small></div>
+      <div class="option-btn" data-value="Grok">Grok<small>Grok Imagine · 1 paragraphe, image de départ + audio</small></div>
     </div>
     <label>Mode de réalisation</label>
     <div class="option-grid mode-grid" id="modeGrid">
@@ -1587,7 +1588,7 @@ generateBtn.addEventListener('click', async ()=>{
 let dureeSelectionnee = "8";
 let formatSelectionne = "9:16";
 let modeSelectionne = "Vlog";
-let modeleSelectionne = "Seedance"; // "Seedance" | "Omni" (Kling 3.0 Omni) | "Veo 3" (Veo 3.1)
+let modeleSelectionne = "Seedance"; // "Seedance" | "Omni" (Kling 3.0 Omni) | "Veo 3" (Veo 3.1) | "Grok" (Grok Imagine)
 
 function wireOptionGrid(gridId, setter){
   document.querySelectorAll("#"+gridId+" .option-btn").forEach(function(btn){
@@ -2138,20 +2139,77 @@ function buildVeo3TargetNote(){
   return "\n\nMODÈLE CIBLE : VEO 3 (Veo 3.1, audio natif, clips de 8s maximum)\nImages de référence fournies : " + n + " (Veo en accepte 3 maximum).\nAdaptation Veo 3 : prose cinématographique avec ligne Audio ; ne décris jamais l'apparence physique ni les vêtements (portés par les images) ; si la durée dépasse 8s, découpe en CLIP N de 8s maximum ; dialogues ancrés par position dans le cadre.";
 }
 
+var PROMPT_GROK_SYSTEM_INSTRUCTION = `AGENT : STUDIO RÉALISATEUR — PHASE 2 : PROMPT GROK (Grok Imagine Video)
+
+Le dossier a été validé. Tu génères le prompt final pour Grok Imagine Video, en français, prêt à coller.
+
+PRINCIPES GROK
+- Grok génère UN clip continu de 1 à 15 secondes à partir d'UN paragraphe de prose. Il n'y a pas de storyboard multi-plans natif : les changements de plan sont décrits dans le texte, enchaînés avec « puis ».
+- Mode par défaut : IMAGE DE DÉPART. L'image 1 devient la première image de la vidéo. Le prompt ne décrit donc JAMAIS l'apparence, les vêtements ni le décor déjà visibles : uniquement le mouvement, la caméra, l'émotion visible et le son.
+- Mode optionnel : IMAGES DE RÉFÉRENCE (2 à 7 images, résolution limitée à 720p). Chaque image est désignée dans le texte par <IMAGE_1>, <IMAGE_2>, etc. Utilise ce mode uniquement si plusieurs images de référence ont été fournies et qu'aucune n'est une image de départ évidente.
+- L'audio est généré nativement avec synchronisation labiale : dialogues, bruitages et ambiance doivent être écrits dans le prompt.
+- Grok ne comprend pas les consignes négatives : décris toujours ce que l'on voit et entend, jamais ce qu'il faut éviter.
+
+FORMAT DE SORTIE (texte brut, sans markdown)
+
+RÉFÉRENCES À CHARGER
+Image de départ : [image 1 — rôle]   (ou, en mode références : <IMAGE_1> : rôle, <IMAGE_2> : rôle…)
+
+RÉGLAGES
+Durée : [X s, entre 1 et 15] / Format : [format] / Résolution : 720p ou 1080p (720p si images de référence) / Audio : activé
+
+PROMPT
+Un seul paragraphe fluide par clip, qui enchaîne dans cet ordre : cadrage et mouvement de caméra, action du sujet (verbes de mouvement concrets), enchaînement des actions avec « puis », ambiance et lumière, réplique éventuelle entre guillemets, ligne « Audio : », dernière image du clip.
+
+RÈGLES
+1. DURÉE : le clip dure exactement la durée demandée, sans dépasser 15s. Au-delà, découpe en clips autonomes séparés par une ligne « CLIP N — durée Xs » ; le clip 2 et suivants commencent par « Dans la continuité du dernier frame du clip précédent, » et reprennent position, cadrage et action de ce dernier frame (ce dernier frame est ensuite chargé comme image de départ du clip suivant).
+2. PLANS : si le dossier contient plusieurs plans, enchaîne-les dans le même paragraphe avec des transitions écrites (« puis la caméra coupe sur… », « puis plan serré sur… »), en indiquant la durée approximative de chacun entre parenthèses. Maximum 4 changements de plan par clip.
+3. MODES : applique strictement le mode de réalisation du dossier. En mode Film, privilégie un langage de cinéma (échelle de plan, mouvement de caméra lent, profondeur de champ, suspense par le rythme) et le grain Y2K du dossier.
+4. ÉMOTIONS : jamais nommées, toujours en comportements visibles (regard, souffle, sourire, gestes).
+5. DIALOGUES : conserve intégralement ceux du dossier, entre guillemets français, attribués à la personne qui parle et ancrés par sa position dans le cadre (« la femme à gauche du cadre dit, voix basse : « … » »). Respecte ≈ 2,5 mots par seconde.
+6. AUDIO : termine chaque clip par une ligne « Audio : » avec dialogue, bruitages précis (pas, tissu, objets) et ambiance sonore du lieu. Si le dossier ne prévoit pas de musique, écris : « Audio : uniquement les voix et les bruits du lieu. »
+7. NOURRITURE : si un aliment est présent, décris texture, morsure, son et réaction du visage avec une précision sensorielle maximale.
+8. FORMULATION SÛRE : vocabulaire neutre et descriptif.
+9. DERNIÈRE IMAGE : la dernière phrase de chaque clip décrit précisément le dernier frame visible.
+10. LONGUEUR : le paragraphe d'un clip reste sous 3 500 caractères.
+
+RÈGLE ABSOLUE FINALE
+Ne change jamais l'histoire. Préserve l'histoire, les personnages, les dialogues et les émotions du dossier. N'invente rien d'absent des images ou du dossier. Texte brut, pas de markdown, pas de commentaire avant ou après.`;
+
+var CONTINUITY_GROK_SYSTEM_INSTRUCTION = `AGENT : STUDIO RÉALISATEUR — MODE CONTINUITÉ — GROK (Grok Imagine Video)
+
+La scène suivante repart EXACTEMENT du dernier instant du clip précédent. Mêmes personnages, même mode, même format de sortie que le prompt Grok principal (RÉFÉRENCES À CHARGER / RÉGLAGES / PROMPT) et mêmes règles : un seul paragraphe par clip de 15s maximum, aucune description d'apparence, émotions en comportements visibles, dialogues entre guillemets ancrés par position dans le cadre, ligne « Audio : » en fin de clip, aucune consigne négative.
+
+CONTINUITÉ DANS GROK
+- Image de départ : le dernier frame du clip précédent (à extraire de la vidéo et à charger comme image de départ). Indique-le en tête de la section RÉFÉRENCES À CHARGER.
+- Le prompt commence par : « Dans la continuité du dernier frame du clip précédent, » puis reprend exactement position, cadrage, lumière et action de ce dernier frame avant de les faire évoluer.
+- Le dernier instant du clip précédent est lisible à la fin du prompt précédent fourni.
+La scène suivante fait avancer l'histoire (nouvelle action, nouvelle réaction) sans répéter la précédente.
+
+FORMAT : texte brut, commence par [CONTINUITÉ — SCÈNE SUIVANTE], sans titres markdown, sans commentaire avant ou après.`;
+
+function buildGrokTargetNote(){
+  var n = referenceImages.filter(function(i){ return i!==null; }).length;
+  return "\n\nMODÈLE CIBLE : GROK (Grok Imagine Video, audio natif, clips de 1 à 15s)\nImages fournies : " + n + ".\nAdaptation Grok : un seul paragraphe de prose par clip ; mode image de départ par défaut (l'image 1 est la première image, le prompt ne décrit que mouvement, caméra et son) ; mode références <IMAGE_N> (2 à 7, 720p) seulement si aucune image de départ évidente ; plans enchaînés avec « puis » ; aucune consigne négative ; ligne Audio en fin de clip ; ne décris jamais l'apparence physique ni les vêtements.";
+}
+
 /* Routage selon le modèle cible */
 function getPromptInstruction(){
   if(modeleSelectionne === "Omni") return PROMPT_OMNI_SYSTEM_INSTRUCTION;
   if(modeleSelectionne === "Veo 3") return PROMPT_VEO3_SYSTEM_INSTRUCTION;
+  if(modeleSelectionne === "Grok") return PROMPT_GROK_SYSTEM_INSTRUCTION;
   return PROMPT_SYSTEM_INSTRUCTION;
 }
 function getContinuityInstruction(){
   if(modeleSelectionne === "Omni") return CONTINUITY_OMNI_SYSTEM_INSTRUCTION;
   if(modeleSelectionne === "Veo 3") return CONTINUITY_VEO3_SYSTEM_INSTRUCTION;
+  if(modeleSelectionne === "Grok") return CONTINUITY_GROK_SYSTEM_INSTRUCTION;
   return CONTINUITY_SYSTEM_INSTRUCTION;
 }
 function getTargetNote(){
   if(modeleSelectionne === "Omni") return buildOmniTargetNote();
   if(modeleSelectionne === "Veo 3") return buildVeo3TargetNote();
+  if(modeleSelectionne === "Grok") return buildGrokTargetNote();
   return "";
 }
 
