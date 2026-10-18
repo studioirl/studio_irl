@@ -1006,6 +1006,7 @@ async function callAI(parts, systemInstructionText, schema, temperature, maxOutp
     if(!candidate || !candidate.content || !candidate.content.parts){ throw new Error(extractApiErrorVertex(data)); }
     var text = candidate.content.parts.map(function(p){ return p.text || ''; }).join('').trim();
     if(!text){ throw new Error(extractApiErrorVertex(data)); }
+    if(!schema && candidate.finishReason === 'MAX_TOKENS'){ throw new Error('La réponse de l’IA a été coupée avant la fin. Relance la génération.'); }
     return schema ? safeJsonParse(text) : text;
   }
 
@@ -2250,7 +2251,7 @@ document.getElementById("generateDossierBtn").addEventListener("click", async fu
   if(hasPreAnalyzedPlans){
     userText += "\n\nPLANS / CONTINUITÉ DÉJÀ CONSTRUITS (base de l'histoire, à reprendre dans l'ordre, ne pas réinventer) :\n" + preAnalyzedPlans;
     if(typeof pdfSelected === "function" && pdfSelected().length){
-      userText += "\n\nPÉRIMÈTRE STRICT : cette vidéo ne contient QUE les " + pdfSelected().length + " plan(s) listés ci-dessus (" + pdfSelected().map(function(p){ return "plan " + p.n; }).join(", ") + "). N'écris rien sur les autres plans ou sur la suite de l'histoire. N'ajoute aucun objet, liquide, accessoire ou événement qui n'est pas écrit dans ces plans, dans les dialogues fournis ou visible sur les images de référence. Si l'émotion dominante ou le titre évoque un événement absent de ces plans (humiliation, chute, choc…), ignore-le : la vidéo s'arrête là où s'arrête le dernier plan listé.";
+      userText += "\n\nPÉRIMÈTRE STRICT : cette vidéo ne contient QUE les " + pdfSelected().length + " plan(s) listés ci-dessus (" + pdfSelected().map(function(p){ return "plan " + p.n; }).join(", ") + "). N'écris rien sur les autres plans ou sur la suite de l'histoire. NOMBRE DE PLANS : la section TEMPS FORTS et le prompt final contiennent exactement un plan par plan coché, soit " + pdfSelected().length + " plan(s) au total, ni plus ni moins (ignore le nombre de temps forts habituel de la durée choisie). N'ajoute aucun objet, liquide, accessoire ou événement qui n'est pas écrit dans ces plans, dans les dialogues fournis ou visible sur les images de référence. Si l'émotion dominante ou le titre évoque un événement absent de ces plans (humiliation, chute, choc…), ignore-le : la vidéo s'arrête là où s'arrête le dernier plan listé.";
     }
   } else {
     userText += "\nHISTOIRE : " + histoire;
@@ -2273,7 +2274,7 @@ document.getElementById("generateDossierBtn").addEventListener("click", async fu
   var parts=[{text:userText}].concat(buildImageParts());
 
   try{
-    var text = await callAI(parts, hasPreAnalyzed ? (DOSSIER_SYSTEM_INSTRUCTION + DOSSIER_PREANALYZED_ADDENDUM) : DOSSIER_SYSTEM_INSTRUCTION, null, 0.9, 8192);
+    var text = await callAI(parts, hasPreAnalyzed ? (DOSSIER_SYSTEM_INSTRUCTION + DOSSIER_PREANALYZED_ADDENDUM) : DOSSIER_SYSTEM_INSTRUCTION, null, 0.9, 32768);
     lastDossierText=text;
     document.getElementById("resultOutput").textContent=text;
     renderDossier(text);
@@ -2342,7 +2343,7 @@ document.getElementById("generatePromptBtn").addEventListener("click", async fun
   userText += getTargetNote();
   var parts=[{text:userText}].concat(buildImageParts());
   try{
-    var text = await callAI(parts, getPromptInstruction(), null, 0.9, 4096);
+    var text = await callAI(parts, getPromptInstruction(), null, 0.9, 32768);
     promptContent.textContent=text;
     promptOutput.classList.remove("hidden");
     document.getElementById("continuityZone").classList.remove("hidden");
@@ -2378,7 +2379,7 @@ document.getElementById("generateContinuityBtn").addEventListener("click", async
   userText += getTargetNote();
   var parts=[{text:userText}].concat(buildImageParts());
   try{
-    var text = await callAI(parts, getContinuityInstruction(), null, 0.9, 4096);
+    var text = await callAI(parts, getContinuityInstruction(), null, 0.9, 32768);
     outputEl.textContent=text; outputEl.classList.remove("hidden");
     copyBtn.classList.remove("hidden"); statusEl.textContent="✅ Scène suivante générée.";
   }catch(err){statusEl.textContent="❌ Erreur : "+err.message;statusEl.classList.add("error");}
