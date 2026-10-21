@@ -162,7 +162,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);border-c
   </div>
   <label>Modèles de billet (optionnels)</label>
   <div class="refs" id="ticketRefs"></div>
-  <p class="hint" style="margin-top:6px">Une photo bien à plat et de face d'un vrai billet (papier) ou d'une capture d'écran (billet sur téléphone). Seule la mise en page est reprise : tout le texte, le nom, les numéros et le logo viennent des champs du vol.</p>
+  <p class="hint" style="margin-top:6px">Une photo bien à plat et de face d'un vrai billet (papier) ou d'une capture d'écran (billet sur téléphone). Le billet est reproduit à l'identique (support, couleurs, polices, logo, disposition) ; seules les informations (noms, vol, villes, dates, heures, siège…) viennent des champs du vol.</p>
   <label>Afficher le billet et les infos du vol dans les scènes</label>
   <div class="seg" id="ticketShowSeg">
     <button type="button" data-v="1" class="on">Activé</button>
@@ -559,7 +559,7 @@ function buildContext(){
   const vol=$('vol').value.trim()||(pick(['XQ','TV','LN','ZR'])+rnd(100,9999));
   const depTime=$('depTime').value||pick(['07:25','09:40','11:05','14:30','18:15','22:50']);
   const arrTime=$('arrTime').value||'';
-  const dateTxt=fmtDate($('date').value)||'une date plausible dans le mois à venir';
+  const dateTxt=fmtDate($('date').value)||fmtDate(new Date(Date.now()+14*864e5).toISOString().slice(0,10));
   const gate=$('gate').value.trim()||(pick(['A','B','C','D','E','K','L','M'])+rnd(1,48));
   const terminal=$('terminal').value.trim()||pick(['1','2','2E','2F','3']);
   const classe=$('classe').value;
@@ -568,7 +568,7 @@ function buildContext(){
   const pnr=Array.from({length:6},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[rnd(0,31)]).join('');
   const seq0=rnd(18,140);
   const pax=pres.map((x,k)=>({
-    name: fmtName(x.a.name)||'un nom de passager plausible au format NOM/PRÉNOM',
+    name: fmtName(x.a.name)||['MARTIN/CLAIRE','BERNARD/PAUL','DUBOIS/LÉA','MOREAU/LUCAS','LAURENT/INÈS','SIMON/HUGO'][k%6],
     seat: seats[k].seat, pos: seats[k].pos, seq: String(seq0+k).padStart(3,'0')
   }));
   const refNote = (k)=> state.refs[k] ? true : false;
@@ -601,13 +601,14 @@ function ticketBlock(c){
   const legs=c.escale?(c.ticketType==='papier'
     ? ` Le billet comporte deux coupons par passager, un par tronçon : tronçon 1 de ${c.dep} vers l'aéroport d'escale (n'afficher que le nom et le code de cet aéroport), tronçon 2 de cet aéroport d'escale vers ${c.arr}, avec un second numéro de vol et des heures cohérentes avec la correspondance.`
     : ` La carte affichée est celle du premier tronçon, de ${c.dep} vers l'aéroport d'escale (n'afficher que le nom et le code de cet aéroport).`):'';
-  const who=c.pax.map((p,i)=>`personnage ${i+1} : nom « ${p.name} », siège ${p.seat}, numéro de séquence ${p.seq}`).join(' ; ');
   const support = c.ticketType==='papier'
     ? `Carte d'embarquement papier authentique, comme celles imprimées par les compagnies (carton ou papier thermique, souche détachable, code-barres PDF417)`
     : `Carte d'embarquement électronique authentique affichée sur l'écran d'un iPhone 16 Pro Max (bords fins, Dynamic Island), comme dans l'application d'une compagnie ou le Wallet, avec un QR code`;
   const hasModel=c.ticketType==='papier'?!!state.refs.ticketPapier:!!state.refs.ticketEcran;
-  const modele=hasModel?` Un modèle de billet est fourni en image de référence : reprendre uniquement sa mise en page, sa police, la disposition de ses champs, son code-barres et l'aspect du support ; remplacer tout son texte, son nom de passager, ses numéros, ses codes et son logo par les informations ci-dessous.`:'';
-  return `${support}.${modele} Informations affichées : ${common}.${legs} Une carte par personnage : ${who}. Tout le texte du billet est net, lisible et orthographié exactement comme indiqué.`;
+  const modele=hasModel?` Un modèle de billet est fourni en image de référence : reproduire exactement ce même billet, à l'identique (même support, mêmes couleurs, mêmes polices, même logo, mêmes intitulés de champs en anglais, même disposition, même code-barres, même souche), en remplaçant uniquement les valeurs (nom, vol, villes, dates, heures, siège, séquence, codes) par celles ci-dessous.`:'';
+  const route2=c.escale?`${c.dep} → ${c.escale} → ${c.arr}`:`${c.dep} → ${c.arr}`;
+  const cards=c.pax.map((p,i)=>`Billet du personnage ${i+1} — NOM DU PASSAGER : ${p.name} ; VOL : ${c.vol} (${c.airlineTxt}) ; DE : ${c.dep} ; À : ${c.escale?c.escale+' (premier tronçon)':c.arr} ; DATE : ${c.dateTxt} ; EMBARQUEMENT : ${c.boardTime} ; DÉPART : ${c.depTime}${c.arrTime?` ; ARRIVÉE : ${c.arrTime}`:''} ; TERMINAL : ${c.terminal} ; PORTE : ${c.gate} ; CLASSE : ${c.classe} ; SIÈGE : ${p.seat} ; SÉQUENCE : ${p.seq} ; RÉFÉRENCE (PNR) : ${c.pnr}`).join('\n');
+  return `${support}.${modele}\nTrajet : ${route2}. Chaque billet affiche les codes IATA réels à trois lettres des aéroports.${legs}\n${cards}\nChaque champ du billet est rempli avec la valeur exacte indiquée ci-dessus, recopiée telle quelle, nette et lisible. Aucun texte entre crochets, aucun texte générique, aucun nom de fichier ou d'image : seulement ces valeurs.`;
 }
 function seatLayout(c){
   const L=c.pax.map(p=>p.seat.slice(-1));
@@ -867,7 +868,7 @@ function refList(scene,c){
   if(scene.drink&&state.refs.drink) L.push({label:"Image de référence de la boisson (uniquement pour la boisson, ignorer les personnes) :",img:state.refs.drink});
   if(scene.ticket&&c.showTicket){
     const tm=c.ticketType==='papier'?state.refs.ticketPapier:state.refs.ticketEcran;
-    if(tm) L.push({label:"Modèle de billet (uniquement pour la mise en page, la police, la disposition des champs et le code-barres ; ignorer tout son texte, son nom, ses numéros et son logo) :",img:tm});
+    if(tm) L.push({label:"Modèle de billet à reproduire à l'identique (même support, couleurs, polices, logo, intitulés et disposition ; seules les valeurs changent) :",img:tm});
   }
   const bi=bagInfo(scene,c);
   if(bi.cab&&state.refs.bagCabine) L.push({label:'Image de référence du bagage cabine :',img:state.refs.bagCabine});
