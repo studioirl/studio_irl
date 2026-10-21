@@ -160,6 +160,9 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);border-c
     <button type="button" data-v="elec" class="on">📱 Électronique (iPhone 16 Pro Max)</button>
     <button type="button" data-v="papier">🎫 Papier</button>
   </div>
+  <label>Modèles de billet (optionnels)</label>
+  <div class="refs" id="ticketRefs"></div>
+  <p class="hint" style="margin-top:6px">Une photo bien à plat et de face d'un vrai billet (papier) ou d'une capture d'écran (billet sur téléphone). Seule la mise en page est reprise : tout le texte, le nom, les numéros et le logo viennent des champs du vol.</p>
   <label>Afficher le billet et les infos du vol dans les scènes</label>
   <div class="seg" id="ticketShowSeg">
     <button type="button" data-v="1" class="on">Activé</button>
@@ -410,7 +413,7 @@ const SCENES = [
 /* ============ État ============ */
 const state = {
   avatars: Array.from({length:6}, ()=>({img:null, name:'', present:true})),
-  refs: {dep:null, arr:null, cabine:null, avionExt:null, seat:null, screen:null, meal:null, drink:null, bagCabine:null, bagSoute:null},
+  refs: {dep:null, arr:null, cabine:null, avionExt:null, seat:null, screen:null, ticketPapier:null, ticketEcran:null, meal:null, drink:null, bagCabine:null, bagSoute:null},
   showTicket:true, showBag:true, engine:'vertex', format:'9:16',
   ticketType:'elec',
   selected: new Set(),
@@ -470,8 +473,8 @@ function buildAvatars(){
   });
 }
 function buildRefs(){
-  const defs=[['refs','dep','Aéroport de départ'],['refs','arr','Aéroport d\'arrivée'],['refs','cabine','Intérieur de l\'avion'],['refs','avionExt','Avion (extérieur)'],['refs','seat','Sièges de l\'avion'],['refs','screen','Écran de télé de l\'avion'],['mealRefs','meal','Plateau-repas'],['mealRefs','drink','Boisson'],['bagRefs','bagCabine','Bagage cabine'],['bagRefs','bagSoute','Bagage en soute']];
-  $('refs').innerHTML='';$('mealRefs').innerHTML='';$('bagRefs').innerHTML='';
+  const defs=[['refs','dep','Aéroport de départ'],['refs','arr','Aéroport d\'arrivée'],['refs','cabine','Intérieur de l\'avion'],['refs','avionExt','Avion (extérieur)'],['refs','seat','Sièges de l\'avion'],['refs','screen','Écran de télé de l\'avion'],['ticketRefs','ticketPapier','Modèle billet papier'],['ticketRefs','ticketEcran','Modèle billet sur écran'],['mealRefs','meal','Plateau-repas'],['mealRefs','drink','Boisson'],['bagRefs','bagCabine','Bagage cabine'],['bagRefs','bagSoute','Bagage en soute']];
+  $('refs').innerHTML='';$('ticketRefs').innerHTML='';$('mealRefs').innerHTML='';$('bagRefs').innerHTML='';
   defs.forEach(([boxId,k,t])=>{
     const v=state.refs[k];
     const d=document.createElement('div');d.className='slot';
@@ -592,12 +595,18 @@ function buildContext(){
 
 /* ============ Prompts ============ */
 function ticketBlock(c){
-  const common=`vol ${c.vol} ${c.airlineTxt}, de ${c.dep} vers ${c.arr}${c.escale?`, via ${c.escale}`:''}, date ${c.dateTxt}, heure de départ ${c.depTime}, heure d'embarquement ${c.boardTime}${c.arrTime?`, heure d'arrivée ${c.arrTime}`:''}, terminal ${c.terminal}, porte ${c.gate}, classe ${c.classe}, référence de réservation (PNR) ${c.pnr}, avec les codes IATA réels à trois lettres des aéroports`;
+  const route=`de ${c.dep} vers ${c.arr}${c.escale?`, avec escale (« ${c.escale} »)`:''}`;
+  const common=`vol ${c.vol} ${c.airlineTxt}, ${route}, date ${c.dateTxt}, heure de départ ${c.depTime}, heure d'embarquement ${c.boardTime}${c.arrTime?`, heure d'arrivée ${c.arrTime}`:''}, terminal ${c.terminal}, porte ${c.gate}, classe ${c.classe}, référence de réservation (PNR) ${c.pnr}, avec les codes IATA réels à trois lettres des aéroports`;
+  const legs=c.escale?(c.ticketType==='papier'
+    ? ` Le billet comporte deux coupons par passager, un par tronçon : tronçon 1 de ${c.dep} vers l'aéroport d'escale (n'afficher que le nom et le code de cet aéroport), tronçon 2 de cet aéroport d'escale vers ${c.arr}, avec un second numéro de vol et des heures cohérentes avec la correspondance.`
+    : ` La carte affichée est celle du premier tronçon, de ${c.dep} vers l'aéroport d'escale (n'afficher que le nom et le code de cet aéroport).`):'';
   const who=c.pax.map((p,i)=>`personnage ${i+1} : nom « ${p.name} », siège ${p.seat}, numéro de séquence ${p.seq}`).join(' ; ');
   const support = c.ticketType==='papier'
     ? `Carte d'embarquement papier authentique, comme celles imprimées par les compagnies (carton ou papier thermique, souche détachable, code-barres PDF417)`
     : `Carte d'embarquement électronique authentique affichée sur l'écran d'un iPhone 16 Pro Max (bords fins, Dynamic Island), comme dans l'application d'une compagnie ou le Wallet, avec un QR code`;
-  return `${support}. Informations affichées : ${common}. Une carte par personnage : ${who}. Tout le texte du billet est net, lisible et orthographié exactement comme indiqué.`;
+  const hasModel=c.ticketType==='papier'?!!state.refs.ticketPapier:!!state.refs.ticketEcran;
+  const modele=hasModel?` Un modèle de billet est fourni en image de référence : reprendre uniquement sa mise en page, sa police, la disposition de ses champs, son code-barres et l'aspect du support ; remplacer tout son texte, son nom de passager, ses numéros, ses codes et son logo par les informations ci-dessous.`:'';
+  return `${support}.${modele} Informations affichées : ${common}.${legs} Une carte par personnage : ${who}. Tout le texte du billet est net, lisible et orthographié exactement comme indiqué.`;
 }
 function seatLayout(c){
   const L=c.pax.map(p=>p.seat.slice(-1));
@@ -855,6 +864,10 @@ function refList(scene,c){
   if(scene.id==='ecran'&&state.refs.screen) L.push({label:"Image de référence de l'écran de télé de l'avion (ce qui s'affiche à l'écran) :",img:state.refs.screen});
   if(scene.meal&&state.refs.meal) L.push({label:"Image de référence du plateau-repas (uniquement pour le repas, ignorer les personnes) :",img:state.refs.meal});
   if(scene.drink&&state.refs.drink) L.push({label:"Image de référence de la boisson (uniquement pour la boisson, ignorer les personnes) :",img:state.refs.drink});
+  if(scene.ticket&&c.showTicket){
+    const tm=c.ticketType==='papier'?state.refs.ticketPapier:state.refs.ticketEcran;
+    if(tm) L.push({label:"Modèle de billet (uniquement pour la mise en page, la police, la disposition des champs et le code-barres ; ignorer tout son texte, son nom, ses numéros et son logo) :",img:tm});
+  }
   const bi=bagInfo(scene,c);
   if(bi.cab&&state.refs.bagCabine) L.push({label:'Image de référence du bagage cabine :',img:state.refs.bagCabine});
   if(bi.soute&&state.refs.bagSoute) L.push({label:'Image de référence du bagage en soute :',img:state.refs.bagSoute});
