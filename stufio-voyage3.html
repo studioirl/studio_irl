@@ -179,7 +179,18 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);border-c
 </section>
 
 <section>
-  <h2><span class="n">6</span> Direction de scène (optionnel)</h2>
+  <h2><span class="n">6</span> Caméra</h2>
+  <p class="hint">Choisis où se place la caméra : le choix s'applique à toutes les scènes sélectionnées (les angles de l'avion seulement aux scènes dans l'avion). Automatique = c'est la scène qui décide. Tu peux combiner plusieurs familles.</p>
+  <div class="grid g2" id="camera"></div>
+  <label>Qui tient le téléphone (selfie, photo du billet)</label>
+  <select id="holder">
+    <option value="1">Voyageur 1</option><option value="2">Voyageur 2</option><option value="3">Voyageur 3</option>
+    <option value="4">Voyageur 4</option><option value="5">Voyageur 5</option><option value="6">Voyageur 6</option>
+  </select>
+</section>
+
+<section>
+  <h2><span class="n">7</span> Direction de scène (optionnel)</h2>
   <p class="hint">Tes consignes sont appliquées à toutes les images générées.</p>
   <textarea id="direction" placeholder="ex. ambiance matin tôt, ils sont fatigués mais souriants, lumière naturelle..."></textarea>
 </section>
@@ -207,6 +218,94 @@ const PHASES = [
   {id:'avion', title:'💺 Dans l\'avion'},
   {id:'arr', title:'🛬 Arrivée'}
 ];
+/* ============ Bibliothèque de caméra : [valeur, libellé, description] ============ */
+const CAMERA = [
+  {id:'hauteur', label:'Hauteur de la caméra', items:[
+    ['yeux','Niveau des yeux',"la caméra est à hauteur des yeux, vue naturelle"],
+    ['plongee','Plongée',"la caméra est au-dessus du sujet et regarde vers le bas, le sujet paraît plus petit"],
+    ['zenithale','Vue du dessus (zénithale)',"la caméra est juste au-dessus et regarde droit vers le bas"],
+    ['contre','Contre-plongée',"la caméra est en dessous du sujet et regarde vers le haut, le sujet paraît plus imposant"],
+    ['sol','Au ras du sol',"la caméra est posée au sol, très basse"],
+    ['taille','Hauteur de la taille',"la caméra est tenue au niveau du ventre, rendu spontané"]]},
+  {id:'position', label:'Position par rapport au sujet', items:[
+    ['face','De face',"le sujet est face à la caméra"],
+    ['trois_quarts','Trois-quarts face',"le sujet est légèrement tourné par rapport à la caméra, l'angle le plus naturel"],
+    ['profil','De profil',"la caméra voit le sujet de côté"],
+    ['trois_quarts_dos','Trois-quarts dos',"on voit surtout le dos du sujet et un peu son côté"],
+    ['dos','De dos',"la caméra est derrière le sujet"],
+    ['penche','Angle penché (hollandais)',"l'horizon est incliné pour un effet dynamique"]]},
+  {id:'plan', label:'Taille du plan', items:[
+    ['ensemble','Plan d\'ensemble',"on voit tout le lieu, les personnages sont petits dans le décor"],
+    ['large','Plan large',"les personnages en entier avec beaucoup de décor autour"],
+    ['americain','Plan américain',"cadré à mi-cuisses"],
+    ['moyen','Plan moyen',"cadré à la taille"],
+    ['rapproche','Plan rapproché',"cadré à la poitrine"],
+    ['gros','Gros plan',"cadré serré sur le sujet ou l'objet principal"],
+    ['detail','Très gros plan / détail',"un seul détail occupe le cadre (main, billet, verre...)"]]},
+  {id:'pov', label:'Point de vue', items:[
+    ['epaule','Par-dessus l\'épaule',"la caméra est derrière quelqu'un et regarde ce qu'il regarde"],
+    ['subjectif','Point de vue subjectif (POV)',"on voit ce que voit le personnage, sans le voir lui"],
+    ['regard_cam','Regard caméra',"le sujet regarde l'objectif"],
+    ['regard_hors','Regard hors caméra',"le sujet regarde ailleurs, comme pris sur le vif"],
+    ['travers','À travers un élément du décor',"cadré à travers une vitre, une porte ou un objet flou au premier plan"],
+    ['reflet','Dans un reflet',"la scène est vue dans un miroir, une vitre ou une surface brillante"],
+    ['diagonale','Plan en diagonale',"la composition suit une diagonale, effet de mouvement"],
+    ['symetrique','Plan symétrique',"caméra au centre d'un couloir, perspective qui fuit vers un point central"],
+    ['coin','Plan de coin',"la caméra est placée dans l'angle de la pièce"],
+    ['cache','Plan caché / voyeur',"cadré derrière des gens ou des objets, comme une photo volée"]]},
+  {id:'optique', label:'Optique', items:[
+    ['ultra','Ultra grand-angle',"très large, déformation sur les bords, espace serré"],
+    ['grand','Grand-angle',"large et naturel, rendu smartphone"],
+    ['normal','Focale normale',"proche de la vision humaine"],
+    ['tele','Téléobjectif',"plans écrasés, fond flou"],
+    ['fisheye','Fisheye',"déformation ronde très marquée"],
+    ['flou','Faible profondeur de champ',"sujet net, fond flou"],
+    ['net','Grande profondeur de champ',"tout est net, du premier plan au fond"]]},
+  {id:'avion', label:'Angle dans l\'avion (scènes dans l\'avion seulement)', only:['avion'], items:[
+    ['allee_avant','Depuis l\'allée vers l\'avant',"caméra dans l'allée centrale, on voit les rangées s'éloigner vers l'avant de l'avion"],
+    ['allee_arriere','Depuis l\'allée vers l\'arrière',"caméra dans l'allée centrale, on voit les rangées s'éloigner vers l'arrière de l'avion"],
+    ['siege_derriere','Depuis le siège de derrière',"caméra derrière les personnages, au-dessus des dossiers"],
+    ['siege_face','Depuis le siège d\'en face de l\'allée',"vue de côté, l'allée entre la caméra et les sièges"],
+    ['hublot_dedans','Depuis le hublot vers l\'intérieur',"la caméra est près du hublot et regarde vers l'intérieur de la cabine"],
+    ['hublot_dehors','Par le hublot',"on voit dehors avec le bord du hublot dans le cadre"]]},
+  {id:'mode', label:'Qui prend la photo', items:[
+    ['vif','Sur le vif',"photo spontanée prise par un proche, appareil non visible"],
+    ['autre','Prise par quelqu\'un d\'autre',"photo prise par un autre voyageur ou un inconnu, le photographe et son appareil ne sont pas visibles"],
+    ['selfie','Selfie bras tendu',"{H} tient le téléphone à bout de bras pour se photographier avec les autres, le téléphone n'est pas visible, le bras peut apparaître dans le cadre"],
+    ['miroir','Selfie au miroir',"{H} se photographie dans un miroir, le téléphone est visible dans le reflet"],
+    ['pose','Téléphone posé / retardateur',"photo posée, personnages face à l'appareil, le téléphone n'est pas visible"],
+    ['surv','Caméra de surveillance',"vue haute en grand-angle, rendu de vidéosurveillance"],
+    ['action','Action cam',"très grand-angle, caméra fixée sur un point, légèrement déformé"]]}
+];
+function buildCamera(){
+  const box=$('camera'); box.innerHTML='';
+  CAMERA.forEach(f=>{
+    const d=document.createElement('div');
+    const opts=f.items.map(it=>`<option value="${it[0]}">${it[1]}</option>`).join('');
+    d.innerHTML=`<label>${f.label}</label><select id="cam_${f.id}"><option value="auto">Automatique (selon la scène)</option>${opts}</select><div class="small" style="margin-top:4px"></div>`;
+    box.appendChild(d);
+    d.querySelector('select').onchange=e=>{
+      const it=f.items.find(x=>x[0]===e.target.value);
+      d.querySelector('.small').textContent=it?it[2].replace('{H}','le voyageur choisi'):'';
+    };
+  });
+}
+function cameraBlock(scene,c){
+  const parts=[];
+  CAMERA.forEach(f=>{
+    const v=c.cam&&c.cam[f.id];
+    if(!v||v==='auto')return;
+    if(f.only&&!f.only.includes(scene.phase))return;
+    if(f.id==='mode'&&scene.noPeople)return;
+    const it=f.items.find(x=>x[0]===v); if(!it)return;
+    const lab=f.id==='avion'?'Angle dans l\'avion':f.label;
+    parts.push(`${lab} : ${it[1]} (${it[2].replace('{H}',c.holderTxt)})`);
+  });
+  return parts.length?`Caméra : ${parts.join(' ; ')}. Ce placement de la caméra est prioritaire sur le cadrage décrit dans la scène.`:'';
+}
+function capF(t){return t.charAt(0).toUpperCase()+t.slice(1);}
+function tObj(c){return c.ticketType==='papier'?"une carte d'embarquement papier":"un iPhone 16 Pro Max dont l'écran affiche clairement la carte d'embarquement électronique";}
+
 const SCENES = [
   // ---- Départ
   {id:'arrivee', phase:'dep', label:'Arrivée devant l\'aéroport', txt:c=>`Arrivée devant l'entrée du terminal de ${c.dep}, avec des valises et un chariot à bagages, ambiance de départ en voyage.`},
@@ -215,9 +314,13 @@ const SCENES = [
   {id:'comptoir', info:true, phase:'dep', label:'Comptoir d\'enregistrement (check-in)', txt:c=>`Au comptoir d'enregistrement de la compagnie, face à un(e) agent(e) de la compagnie en uniforme, passeports posés sur le comptoir, écran d'ordinateur côté agent.`},
   {id:'pesee', phase:'dep', label:'Dépôt et pesée des bagages', txt:c=>`Dépôt d'une valise sur la balance du comptoir d'enregistrement, l'écran affichant le poids en kg, l'agent(e) colle l'étiquette bagage, tapis roulant des bagages derrière le comptoir.${c.n>1?" Chaque personnage dépose sa propre valise à tour de rôle sur la balance.":""}`},
   {id:'remise', phase:'dep', label:'Remise de la carte d\'embarquement', ticket:true, txt:c=>`L'agent(e) du comptoir remet ${c.ticketType==='papier'?'les cartes d\'embarquement papier':'les cartes d\'embarquement (consultables ensuite sur téléphone)'} avec les passeports, étiquettes bagages visibles.`},
-  {id:'billet', phase:'dep', label:'Le billet (par-dessus l\'épaule)', ticket:true, txt:c=> c.ticketType==='papier'
-     ? `Photo prise par-dessus l'épaule du personnage 1 dont la main tient une carte d'embarquement papier, bien lisible au premier plan ; en arrière-plan l'intérieur de l'aéroport de ${c.dep}.`
-     : `Photo prise par-dessus l'épaule du personnage 1 dont la main tient un iPhone 16 Pro Max ; l'écran affiche clairement la carte d'embarquement électronique, bien lisible au premier plan ; en arrière-plan l'intérieur de l'aéroport de ${c.dep}.`},
+  {id:'billet', phase:'dep', ticket:true, label:'Billet : par-dessus l\'épaule', txt:c=>`Photo prise par-dessus l'épaule ${c.holderDe}, dont la main tient ${tObj(c)}, bien lisible au premier plan ; en arrière-plan l'intérieur de l'aéroport de ${c.dep}.`},
+  {id:'billet_autre', phase:'dep', ticket:true, label:'Billet : tenu d\'une main (photo par quelqu\'un d\'autre)', txt:c=>`Photo prise par quelqu'un d'autre. ${capF(c.holderTxt)} tient d'une seule main ${tObj(c)}, devant soi, et le regarde, l'autre main libre, dans le hall de l'aéroport de ${c.dep}. Le photographe n'est pas visible.`},
+  {id:'billet_face', phase:'dep', ticket:true, label:'Billet : montré face caméra', txt:c=>`${capF(c.holderTxt)} tend ${tObj(c)} vers la caméra pour le montrer, ${c.ticketType==='papier'?'la carte':'l\'écran'} tourné vers l'objectif et bien lisible au premier plan, dans l'aéroport de ${c.dep}.`},
+  {id:'billet_gros', phase:'dep', ticket:true, label:'Billet : gros plan sur les mains', txt:c=>`Gros plan sur les mains ${c.holderDe} qui tiennent ${tObj(c)}, bien lisible, fond d'aéroport flou.`},
+  {id:'billet_surface', phase:'dep', ticket:true, label:'Billet : posé sur le comptoir avec les passeports', txt:c=>`Plan de détail : ${c.ticketType==='papier'?"la carte d'embarquement papier posée":"un iPhone 16 Pro Max posé à plat, écran affichant la carte d'embarquement électronique,"} sur le comptoir d'enregistrement à côté des passeports, bien lisible.`},
+  {id:'billet_passeport', phase:'dep', ticket:true, label:'Billet : passeport et billet en main', txt:c=>`Les mains ${c.holderDe} tiennent un passeport ${c.ticketType==='papier'?"avec la carte d'embarquement papier glissée dedans":"et un iPhone 16 Pro Max dont l'écran affiche la carte d'embarquement électronique"}, bien lisible, prêts à être présentés.`},
+  {id:'billet_partage', phase:'dep', ticket:true, label:'Billet : montré à un autre voyageur', txt:c=>c.n>1?`${capF(c.holderTxt)} montre ${tObj(c)} au ${c.holderNum===1?'personnage 2':'personnage 1'} qui se penche pour le regarder, dans le hall de l'aéroport de ${c.dep}.`:`${capF(c.holderTxt)} tient d'une seule main ${tObj(c)}, devant soi, et le regarde, dans le hall de l'aéroport de ${c.dep}.`},
   {id:'securite_depot', phase:'dep', label:'Sécurité : dépôt sur le tapis', txt:c=>`Au contrôle de sécurité, dépôt des affaires dans des bacs gris sur le tapis roulant du scanner à rayons X : sacs, ordinateur portable, téléphone, ceinture, veste. ${c.n>1?"Chaque personnage a son propre bac et fait son propre geste (l'un sort son ordinateur, un autre retire sa ceinture, un autre vide ses poches...), les uns à la suite des autres le long du tapis, jamais face à face. ":""}Agents de sécurité autour, file de passagers derrière.`},
   {id:'portique', phase:'dep', label:'Sécurité : passage sous le portique', txt:c=>`Passage sous le portique de détection de métaux au contrôle de sécurité, ${c.n>1?"un seul personnage sous le portique à la fois, les autres attendent derrière leur tour, ":""}agent de sécurité à côté, bacs qui défilent sur le tapis à côté.`},
   {id:'recup_bacs', phase:'dep', label:'Sécurité : récupération des affaires', txt:c=>`Récupération des affaires dans les bacs à la sortie du tapis roulant de sécurité, remise des chaussures et des sacs.${c.n>1?" Chaque personnage récupère ses propres affaires dans son propre bac, avec son propre geste, répartis le long du tapis.":""}`},
@@ -444,6 +547,8 @@ function buildContext(){
   };
   c.airlineTxt = airline ? `de la compagnie ${airline}` : `d'une compagnie aérienne fictive (nom et logo génériques inventés)`;
   c.persList = n===1 ? 'le personnage 1' : `les personnages 1 à ${n}`;
+  c.cam={}; CAMERA.forEach(f=>{ c.cam[f.id]=($('cam_'+f.id)&&$('cam_'+f.id).value)||'auto'; });
+  { let hk=parseInt($('holder').value)||1; if(hk>c.n) hk=1; c.holderNum=hk; c.holderTxt='le personnage '+hk; c.holderDe='du personnage '+hk; }
   c.cabinLook=`sièges ${pick(['bleu marine','gris anthracite','bordeaux','vert foncé','gris clair'])} avec appuie-têtes à housse ${pick(['blanche','grise','bleu clair'])}, parois et compartiments à bagages blancs, tapis ${pick(['gris','bleu'])} dans l'allée`;
   return c;
 }
@@ -530,6 +635,7 @@ function buildPrompt(scene,c){
   if(scene.phase==='arr' && c.arrRef) L.push(`Le décor est celui de l'aéroport d'arrivée de l'image de référence du lieu d'arrivée.`);
   const bg=bagInfo(scene,c).text; if(bg) L.push(bg);
   L.push(lightBlock(scene,c));
+  const cb=cameraBlock(scene,c); if(cb) L.push(cb);
   if(c.direction) L.push(`Direction de scène à respecter : ${c.direction}`);
   return L.join('\n');
 }
@@ -670,7 +776,7 @@ $('addCustom').onclick=()=>{
   state.custom.push({id,phase:'custom',label:t.length>40?t.slice(0,38)+'…':t,txt:()=>t});
   state.selected.add(id); $('customTxt').value=''; buildScenes();
 };
-buildAvatars();buildRefs();buildScenes();
+buildAvatars();buildRefs();buildScenes();buildCamera();
 </script>
 </body>
 </html>
