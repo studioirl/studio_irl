@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Studio Voyage — Studio IRL</title>
+<style>
+:root{
+  --bg1:#071a3a;--bg2:#0c2d63;--card:#10264f;--card2:#16346b;--line:#2a4a85;
+  --txt:#eaf2ff;--muted:#9db6e0;--accent:#38bdf8;--accent2:#fbbf24;--ok:#34d399;--err:#f87171;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:var(--txt);
+  background:linear-gradient(180deg,var(--bg1),var(--bg2) 60%,#0a2147);min-height:100vh}
+.wrap{max-width:980px;margin:0 auto;padding:18px 14px 80px}
+header{text-align:center;padding:22px 8px 6px}
+header h1{margin:0;font-size:30px;letter-spacing:.5px}
+header h1 span{color:var(--accent)}
+header p{margin:6px 0 0;color:var(--muted);font-size:14px}
+section{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-top:16px}
+section h2{margin:0 0 4px;font-size:17px;display:flex;align-items:center;gap:8px}
+section h2 .n{background:var(--accent);color:#06213f;width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+.hint{color:var(--muted);font-size:12.5px;margin:0 0 12px}
+label{display:block;font-size:12.5px;color:var(--muted);margin:10px 0 4px}
+input[type=text],input[type=password],input[type=date],input[type=time],select,textarea{
+  width:100%;background:#0b1d3f;color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:15px;font-family:inherit}
+textarea{min-height:80px;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);border-color:transparent}
+.grid{display:grid;gap:10px}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+@media(max-width:640px){.g2,.g3{grid-template-columns:1fr}}
+.avatars{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:640px){.avatars{grid-template-columns:repeat(2,1fr)}}
+.slot{background:var(--card2);border:1px dashed var(--line);border-radius:12px;padding:8px;text-align:center}
+.slot .thumb{aspect-ratio:1/1;border-radius:8px;background:#0b1d3f center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;cursor:pointer;position:relative;overflow:hidden}
+.slot .thumb.has{color:transparent}
+.slot .rm{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.65);color:#fff;border:0;border-radius:50%;width:24px;height:24px;font-size:14px;cursor:pointer;display:none}
+.slot .thumb.has .rm{display:block}
+.slot input[type=text]{margin-top:6px;padding:7px 9px;font-size:13px}
+.slot .pres{display:flex;align-items:center;justify-content:center;gap:6px;font-size:12px;color:var(--muted);margin-top:6px}
+.slot .ttl{font-size:12.5px;font-weight:600;margin-bottom:6px}
+.refs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:640px){.refs{grid-template-columns:1fr 1fr}}
+.seg{display:flex;gap:8px}
+.seg button{flex:1;padding:11px;border-radius:10px;border:1px solid var(--line);background:#0b1d3f;color:var(--txt);font-size:14px;cursor:pointer}
+.seg button.on{background:var(--accent);color:#06213f;border-color:var(--accent);font-weight:700}
+.phase{margin-top:14px}
+.phase h3{margin:0 0 8px;font-size:14px;color:var(--accent2)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:#0b1d3f;color:var(--txt);padding:8px 11px;border-radius:999px;font-size:13px;cursor:pointer;user-select:none}
+.chip.on{background:var(--accent);color:#06213f;border-color:var(--accent);font-weight:600}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{background:var(--accent);color:#06213f;border:0;border-radius:12px;padding:13px 18px;font-size:15px;font-weight:700;cursor:pointer}
+.btn.sec{background:#0b1d3f;color:var(--txt);border:1px solid var(--line);font-weight:600}
+.btn.warn{background:var(--err);color:#fff}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.sticky{position:sticky;bottom:0;background:linear-gradient(0deg,#0a2147 70%,transparent);padding:14px 0 10px;margin-top:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.sticky .info{color:var(--muted);font-size:13px;flex:1;min-width:140px}
+#results{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:12px}
+@media(max-width:640px){#results{grid-template-columns:1fr}}
+.res{background:var(--card2);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.res .imgbox{min-height:180px;display:flex;align-items:center;justify-content:center;background:#0b1d3f;color:var(--muted);font-size:13px;text-align:center;padding:8px}
+.res img{width:100%;display:block}
+.res .meta{padding:10px}
+.res .meta b{display:block;font-size:13.5px;margin-bottom:6px}
+.res .st{font-size:12px;color:var(--muted);margin-bottom:8px;word-break:break-word}
+.res .st.err{color:var(--err)}.res .st.ok{color:var(--ok)}
+.res .acts{display:flex;gap:8px}
+.res .acts .btn{padding:8px 12px;font-size:13px;flex:1}
+.spin{width:26px;height:26px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:sp 1s linear infinite;margin:auto}
+@keyframes sp{to{transform:rotate(360deg)}}
+.small{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>✈️ Studio <span>Voyage</span></h1>
+  <p>Simule un vrai voyage en avion, de l'enregistrement à l'arrivée — Studio IRL</p>
+</header>
+
+<section>
+  <h2><span class="n">0</span> Clé API</h2>
+  <p class="hint">Clé Vertex AI (commence par AQ). Elle reste uniquement dans ton navigateur.</p>
+  <input type="password" id="apiKey" placeholder="AQ...">
+</section>
+
+<section>
+  <h2><span class="n">1</span> Avatars (jusqu'à 6)</h2>
+  <p class="hint">Ajoute les photos de référence. Le nom est optionnel : il s'affiche sur le billet. Décoche « Présent » pour qu'un avatar n'apparaisse pas dans les scènes.</p>
+  <div class="avatars" id="avatars"></div>
+</section>
+
+<section>
+  <h2><span class="n">2</span> Lieux de référence (optionnels)</h2>
+  <p class="hint">Photo de l'aéroport de départ, de l'aéroport d'arrivée, et de l'intérieur de l'avion.</p>
+  <div class="refs" id="refs"></div>
+  <div style="margin-top:14px">
+    <button class="btn sec" id="genCabine" type="button">✈️ Générer l'intérieur de l'avion (référence)</button>
+    <p class="hint" style="margin-top:6px">À faire en premier : génère la cabine, vérifie-la, puis « Verrouiller ce lieu ». Toutes les scènes dans l'avion se passeront alors dans cette même cabine.</p>
+    <div id="cabineRes"></div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">3</span> Le vol</h2>
+  <p class="hint">Tout ce qui est laissé vide est complété automatiquement de façon crédible (porte, siège, référence de réservation, numéro de séquence...).</p>
+  <div class="grid g2">
+    <div><label>Compagnie aérienne (optionnel)</label><input type="text" id="airline" placeholder="Si vide : compagnie fictive générique"></div>
+    <div><label>Numéro de vol</label><input type="text" id="vol" placeholder="ex. AB1234"></div>
+    <div><label>Ville / aéroport de départ *</label><input type="text" id="dep" placeholder="ex. Paris Charles de Gaulle (CDG)"></div>
+    <div><label>Ville / aéroport d'arrivée *</label><input type="text" id="arr" placeholder="ex. Denpasar Bali (DPS)"></div>
+    <div><label>Escale (optionnel)</label><input type="text" id="escale" placeholder="ex. Doha (DOH), 2 h 30 d'escale"></div>
+    <div><label>Date du vol</label><input type="date" id="date"></div>
+    <div><label>Heure de départ</label><input type="time" id="depTime"></div>
+    <div><label>Heure d'arrivée (optionnel)</label><input type="time" id="arrTime"></div>
+    <div><label>Terminal (optionnel)</label><input type="text" id="terminal" placeholder="ex. 2E"></div>
+    <div><label>Porte d'embarquement (optionnel)</label><input type="text" id="gate" placeholder="ex. K42"></div>
+    <div><label>Classe</label>
+      <select id="classe">
+        <option>Économique</option><option>Premium économique</option><option>Affaires</option><option>Première</option>
+      </select></div>
+    <div><label>Côté du siège</label>
+      <select id="side">
+        <option value="auto">Automatique</option><option value="hublot">Côté hublot</option>
+        <option value="couloir">Côté couloir</option><option value="milieu">Milieu</option>
+      </select></div>
+    <div><label>Numéro de siège (optionnel)</label><input type="text" id="seat" placeholder="ex. 23A — les autres avatars sont placés à côté"></div>
+    <div><label>Lumière (jour / nuit)</label>
+      <select id="light">
+        <option value="auto">Automatique (d'après l'heure)</option><option value="jour">Jour</option><option value="nuit">Nuit</option>
+      </select></div>
+  </div>
+  <label>Type de billet</label>
+  <div class="seg" id="ticketSeg">
+    <button type="button" data-v="elec" class="on">📱 Électronique (iPhone 16 Pro Max)</button>
+    <button type="button" data-v="papier">🎫 Papier</button>
+  </div>
+  <label>Afficher le billet et les infos du vol dans les scènes</label>
+  <div class="seg" id="ticketShowSeg">
+    <button type="button" data-v="1" class="on">Activé</button>
+    <button type="button" data-v="0">Désactivé</button>
+  </div>
+  <p class="hint" style="margin-top:6px">Le billet n'apparaît que dans les scènes où il a du sens (remise de la carte, scan, embarquement, photo du billet). Les infos du vol n'apparaissent que sur les écrans ou panneaux concernés. Désactivé : aucun billet ni texte du vol.</p>
+</section>
+
+<section>
+  <h2><span class="n">4</span> Bagages</h2>
+  <p class="hint">Les valises en soute apparaissent à l'enregistrement, à la pesée et au tapis à bagages ; le bagage cabine reste avec eux jusqu'au compartiment en hauteur.</p>
+  <div class="grid g2">
+    <div><label>Valises en soute (par personnage)</label>
+      <select id="bagSoute"><option value="0">Aucune</option><option value="1" selected>1 valise</option><option value="2">2 valises</option></select></div>
+    <div><label>Bagage cabine</label>
+      <select id="bagCabine"><option value="none">Aucun</option><option value="sac">Sac à dos ou sac à main</option><option value="valise" selected>Valise cabine</option><option value="both">Valise cabine + sac</option></select></div>
+    <div><label>Poids affiché à la pesée (optionnel)</label><input type="text" id="bagPoids" placeholder="ex. 23 kg — si vide : poids crédible"></div>
+    <div><label>Description des bagages (optionnel)</label><input type="text" id="bagDesc" placeholder="ex. valises rigides bleues, étiquettes colorées"></div>
+  </div>
+  <label>Afficher les bagages dans les scènes</label>
+  <div class="seg" id="bagShowSeg">
+    <button type="button" data-v="1" class="on">Activé</button>
+    <button type="button" data-v="0">Désactivé</button>
+  </div>
+  <label>Références des bagages (optionnelles)</label>
+  <div class="refs" id="bagRefs"></div>
+</section>
+
+<section>
+  <h2><span class="n">5</span> Scènes à générer</h2>
+  <p class="hint">Sélectionne autant de scènes que tu veux : une image par scène, avec le même vol, les mêmes sièges et la même référence de réservation.</p>
+  <div id="phases"></div>
+  <div class="phase">
+    <h3>➕ Ta propre scène</h3>
+    <div class="row">
+      <input type="text" id="customTxt" placeholder="Décris une scène à ajouter à la liste" style="flex:1;min-width:200px">
+      <button class="btn sec" id="addCustom" type="button">Ajouter</button>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">6</span> Direction de scène (optionnel)</h2>
+  <p class="hint">Tes consignes sont appliquées à toutes les images générées.</p>
+  <textarea id="direction" placeholder="ex. ambiance matin tôt, ils sont fatigués mais souriants, lumière naturelle..."></textarea>
+</section>
+
+<div class="sticky">
+  <div class="info" id="info">0 scène sélectionnée</div>
+  <button class="btn warn" id="stopBtn" type="button" style="display:none">Arrêter</button>
+  <button class="btn" id="goBtn" type="button">✈️ Générer</button>
+</div>
+
+<div id="results"></div>
+</div>
+
+<script>
+/* ============ Constantes ============ */
+const MODEL_IMAGE = 'gemini-3.1-flash-image';
+const IMAGE_SIZE = '4K';
+const ENDPOINT = m => `https://aiplatform.googleapis.com/v1/publishers/google/models/${m}:generateContent`;
+
+/* ============ Catalogue de scènes ============ */
+/* phase : dep | esc | avion | arr | custom ; ticket:true => bloc billet ajouté au prompt */
+const PHASES = [
+  {id:'dep', title:'🛫 Aéroport de départ'},
+  {id:'esc', title:'🔁 Escale'},
+  {id:'avion', title:'💺 Dans l\'avion'},
+  {id:'arr', title:'🛬 Arrivée'}
+];
+const SCENES = [
+  // ---- Départ
+  {id:'arrivee', phase:'dep', label:'Arrivée devant l\'aéroport', txt:c=>`Arrivée devant l'entrée du terminal de ${c.dep}, avec des valises et un chariot à bagages, ambiance de départ en voyage.`},
+  {id:'hall', phase:'dep', label:'Hall des départs', txt:c=>`Dans le grand hall des départs de ${c.dep}, panneaux d'information, comptoirs d'enregistrement et voyageurs en arrière-plan, valises à côté.`},
+  {id:'borne', info:true, phase:'dep', label:'Borne d\'enregistrement', txt:c=>`Enregistrement en libre-service devant une borne d'enregistrement de l'aéroport, écran de la borne visible, passeports en main.`},
+  {id:'comptoir', info:true, phase:'dep', label:'Comptoir d\'enregistrement (check-in)', txt:c=>`Au comptoir d'enregistrement de la compagnie, face à un(e) agent(e) de la compagnie en uniforme, passeports posés sur le comptoir, écran d'ordinateur côté agent.`},
+  {id:'pesee', phase:'dep', label:'Dépôt et pesée des bagages', txt:c=>`Dépôt d'une valise sur la balance du comptoir d'enregistrement, l'écran affichant le poids en kg, l'agent(e) colle l'étiquette bagage, tapis roulant des bagages derrière le comptoir.${c.n>1?" Chaque personnage dépose sa propre valise à tour de rôle sur la balance.":""}`},
+  {id:'remise', phase:'dep', label:'Remise de la carte d\'embarquement', ticket:true, txt:c=>`L'agent(e) du comptoir remet ${c.ticketType==='papier'?'les cartes d\'embarquement papier':'les cartes d\'embarquement (consultables ensuite sur téléphone)'} avec les passeports, étiquettes bagages visibles.`},
+  {id:'billet', phase:'dep', label:'Le billet (par-dessus l\'épaule)', ticket:true, txt:c=> c.ticketType==='papier'
+     ? `Photo prise par-dessus l'épaule du personnage 1 dont la main tient une carte d'embarquement papier, bien lisible au premier plan ; en arrière-plan l'intérieur de l'aéroport de ${c.dep}.`
+     : `Photo prise par-dessus l'épaule du personnage 1 dont la main tient un iPhone 16 Pro Max ; l'écran affiche clairement la carte d'embarquement électronique, bien lisible au premier plan ; en arrière-plan l'intérieur de l'aéroport de ${c.dep}.`},
+  {id:'securite_depot', phase:'dep', label:'Sécurité : dépôt sur le tapis', txt:c=>`Au contrôle de sécurité, dépôt des affaires dans des bacs gris sur le tapis roulant du scanner à rayons X : sacs, ordinateur portable, téléphone, ceinture, veste. ${c.n>1?"Chaque personnage a son propre bac et fait son propre geste (l'un sort son ordinateur, un autre retire sa ceinture, un autre vide ses poches...), les uns à la suite des autres le long du tapis, jamais face à face. ":""}Agents de sécurité autour, file de passagers derrière.`},
+  {id:'portique', phase:'dep', label:'Sécurité : passage sous le portique', txt:c=>`Passage sous le portique de détection de métaux au contrôle de sécurité, ${c.n>1?"un seul personnage sous le portique à la fois, les autres attendent derrière leur tour, ":""}agent de sécurité à côté, bacs qui défilent sur le tapis à côté.`},
+  {id:'recup_bacs', phase:'dep', label:'Sécurité : récupération des affaires', txt:c=>`Récupération des affaires dans les bacs à la sortie du tapis roulant de sécurité, remise des chaussures et des sacs.${c.n>1?" Chaque personnage récupère ses propres affaires dans son propre bac, avec son propre geste, répartis le long du tapis.":""}`},
+  {id:'passeport_dep', phase:'dep', label:'Contrôle des passeports', txt:c=>`Au contrôle des passeports, devant la cabine de la police aux frontières, passeport tendu à l'agent.${c.n>1?" Un seul personnage devant la cabine à la fois, les autres attendent derrière la ligne de courtoisie.":""}`},
+  {id:'scan_portillon', phase:'dep', label:'Scan du billet au portillon', ticket:true, txt:c=> c.ticketType==='papier'
+     ? `Passage d'un portillon automatique : la carte d'embarquement papier est posée sur le lecteur de code-barres du portillon, voyant lumineux du lecteur visible.${c.n>1?" Chaque personnage scanne son propre billet à tour de rôle, les autres attendent derrière.":""}`
+     : `Passage d'un portillon automatique : l'écran de l'iPhone 16 Pro Max affichant le QR code de la carte d'embarquement est posé sur le lecteur du portillon, voyant lumineux du lecteur visible.${c.n>1?" Chaque personnage scanne son propre billet à tour de rôle, les autres attendent derrière.":""}`},
+  {id:'duty_free', phase:'dep', label:'Duty free', txt:c=>`Dans la boutique duty free de l'aéroport, rayons de parfums, chocolats et alcools, produits en main ou dans un panier, enseignes lumineuses.`},
+  {id:'boutique', phase:'dep', label:'Boutiques / librairie', txt:c=>`Devant les boutiques de l'aéroport, achat d'un magazine, d'un coussin de voyage et de souvenirs.`},
+  {id:'cafe', phase:'dep', label:'Café / restaurant de l\'aéroport', txt:c=>`Assis à une table d'un café de l'aéroport en attendant l'embarquement, boissons et viennoiseries sur la table, valises cabine à côté.`},
+  {id:'salon', phase:'dep', label:'Salon (lounge)', txt:c=>`Dans un salon d'aéroport confortable, fauteuils, buffet et boissons, baie vitrée avec vue sur les avions.`},
+  {id:'ecrans', info:true, phase:'dep', label:'Écrans des départs', txt:c=>`Devant les grands écrans d'affichage des départs, cherchant leur vol et leur porte d'embarquement, valises cabine à côté.`},
+  {id:'attente_porte', info:true, phase:'dep', label:'Attente à la porte d\'embarquement', txt:c=>`Assis dans la zone d'embarquement devant la porte, grandes baies vitrées donnant sur l'avion sur le tarmac, valises cabine à côté.`},
+  {id:'baie', phase:'dep', label:'Devant la baie vitrée (avion derrière)', txt:c=>`Debout devant la grande baie vitrée de l'aéroport, avion garé à la porte visible derrière eux, photo souvenir.`},
+  {id:'embarquement', info:true, phase:'dep', label:'Embarquement : scan à la porte', ticket:true, txt:c=>`À la porte d'embarquement, file des passagers, un(e) agent(e) de la compagnie scanne ${c.ticketType==='papier'?'la carte d\'embarquement papier':'l\'écran de l\'iPhone 16 Pro Max'} sur le lecteur.${c.n>1?" Chaque personnage présente son propre billet à tour de rôle, les autres attendent derrière.":""}`},
+  {id:'passerelle', phase:'dep', label:'Dans la passerelle d\'embarquement', txt:c=>`Marche dans la passerelle d'embarquement qui mène à l'avion, la porte de l'avion visible au bout.`},
+  {id:'escalier', phase:'dep', label:'Montée par l\'escalier sur le tarmac', txt:c=>`Montée par l'escalier extérieur de l'avion sur le tarmac, avion visible, personnel au sol et véhicules de piste en arrière-plan.`},
+  {id:'accueil', phase:'dep', label:'Accueil par l\'hôtesse à l\'entrée', txt:c=>`À l'entrée de l'avion, accueillis par une hôtesse de l'air et un steward en uniforme qui sourient et indiquent le chemin.`},
+  // ---- Escale
+  {id:'esc_transit', phase:'esc', label:'Correspondance : course dans le terminal', txt:c=>`Course dans les couloirs du terminal de l'aéroport de ${c.escaleTxt} pour attraper leur correspondance, panneaux « Transfer » / « Correspondances » visibles.`},
+  {id:'esc_attente', phase:'esc', label:'Attente pendant l\'escale', txt:c=>`Longue attente pendant l'escale dans l'aéroport de ${c.escaleTxt}, assis par terre ou sur des fauteuils près d'une prise, valises et téléphones en charge.`},
+  // ---- Avion
+  {id:'cabine_vue', phase:'avion', noPeople:true, label:'Vue de l\'intérieur de la cabine', txt:c=>`Vue d'ensemble de l'intérieur de la cabine de l'avion, prise depuis l'allée centrale en regardant vers l'avant, rangées de sièges de chaque côté, compartiments à bagages en hauteur, éclairage de cabine, de nombreux passagers inconnus assis dans les rangées, presque tous les sièges occupés. Aucun personnage de référence dans cette image.`},
+  {id:'siege_trouver', phase:'avion', label:'Chercher son siège dans l\'allée', txt:c=>`Avancée dans l'allée centrale de l'avion en cherchant leurs sièges, numéros de rangées visibles au-dessus, autres passagers qui s'installent.`},
+  {id:'ranger', phase:'avion', label:'Ranger le bagage cabine en hauteur', txt:c=>`Rangement d'un bagage cabine dans le compartiment à bagages au-dessus des sièges, bras levé, autres passagers dans l'allée.`},
+  {id:'assis', phase:'avion', label:'Assis à sa place, ceinture bouclée', txt:c=>`Assis à leurs places, ceinture de sécurité attachée, installés dans leurs sièges, vue de la cabine autour.`},
+  {id:'hublot', phase:'avion', label:'Photo côté hublot', txt:c=>`Assis côté hublot, regardant par le hublot, lumière du dehors sur le visage, cabine visible autour.`},
+  {id:'vue_hublot', phase:'avion', label:'Vue par le hublot', txt:c=>`Vue par le hublot de l'avion : aile, nuages et ciel, avec le bord du hublot et le rebord intérieur de la cabine visibles.`},
+  {id:'demo_securite', phase:'avion', label:'Démonstration de sécurité des hôtesses', txt:c=>`Les hôtesses et stewards font la démonstration de sécurité dans l'allée (gilet de sauvetage, masque à oxygène, sorties de secours) pendant que les passagers regardent depuis leurs sièges.`},
+  {id:'decollage', phase:'avion', label:'Décollage', txt:c=>`Pendant le décollage, assis, ceinture attachée, regardant dehors, cabine légèrement inclinée.`},
+  {id:'appel', phase:'avion', label:'Appeler l\'hôtesse', txt:c=>`Un des personnages appuie sur le bouton d'appel au-dessus du siège, le voyant s'allume, une hôtesse arrive dans l'allée.`},
+  {id:'chariot', phase:'avion', label:'Chariot de service dans l\'allée', txt:c=>`Le chariot de service avance dans l'allée, poussé par deux hôtesses, les passagers sont assis à leurs places.`},
+  {id:'repas', phase:'avion', label:'Service du repas par l\'hôtesse', txt:c=>`Une hôtesse sert un plateau-repas aux passagers, tablettes baissées, plateaux avec barquette chaude, petit pain, dessert et couverts emballés.`},
+  {id:'boisson', phase:'avion', label:'Demander à boire', txt:c=>`Une hôtesse verse une boisson (jus, eau ou soda) dans un gobelet pour un des personnages, chariot de service à côté.`},
+  {id:'manger', phase:'avion', label:'Manger son plateau-repas', txt:c=>`En train de manger leur plateau-repas sur la tablette, verres et couverts en plastique, ambiance de vol de nuit.`},
+  {id:'ecran', phase:'avion', label:'Regarder un film sur l\'écran', txt:c=>`Devant l'écran de divertissement du dossier de devant qui affiche un film, casque sur les oreilles, télécommande dans la main.`},
+  {id:'dormir', phase:'avion', label:'Dormir dans l\'avion', txt:c=>`Endormis dans leurs sièges inclinés, couverture et coussin de voyage, masque sur les yeux, lumière de cabine tamisée, hublots fermés.`},
+  {id:'lecture', phase:'avion', label:'Lecture / téléphone / tablette', txt:c=>`Occupés pendant le vol : lecture, tablette, écouteurs sur les oreilles, verre d'eau sur la tablette.`},
+  {id:'allee', phase:'avion', label:'Se dégourdir les jambes dans l\'allée', txt:c=>`Debout dans l'allée de l'avion pour se dégourdir les jambes, passagers endormis autour, lumière de cabine tamisée.`},
+  {id:'selfie_cabine', phase:'avion', label:'Selfie souvenir en cabine', txt:c=>`Selfie souvenir pris à bout de bras dans la cabine de l'avion, sièges et allée derrière.`},
+  {id:'atterrissage', phase:'avion', label:'Atterrissage', txt:c=>`Pendant la descente et l'atterrissage, assis ceinture attachée, regardant par le hublot la piste et la ville qui approchent.`},
+  // ---- Arrivée
+  {id:'debarquement', phase:'arr', label:'Sortie de l\'avion', txt:c=>`Sortie de l'avion, saluée par l'hôtesse à la porte de la cabine, sacs sur l'épaule.`},
+  {id:'couloirs', phase:'arr', label:'Couloirs de l\'aéroport d\'arrivée', txt:c=>`Marche dans les couloirs de l'aéroport de ${c.arr}, panneaux de direction « Arrivals » visibles.`},
+  {id:'passeport_arr', phase:'arr', label:'Contrôle des passeports à l\'arrivée', txt:c=>`Au contrôle des passeports à l'arrivée à ${c.arr}, file d'attente devant les cabines de contrôle, passeports en main.${c.n>1?" Un seul personnage devant chaque cabine à la fois, les autres attendent derrière la ligne de courtoisie.":""}`},
+  {id:'tapis_bagages', phase:'arr', label:'Récupération des valises (tapis à bagages)', txt:c=>`Devant le carrousel à bagages de l'aéroport de ${c.arr}, attente puis récupération des valises sur le tapis.`},
+  {id:'sortie', phase:'arr', label:'Sortie du hall d\'arrivée', txt:c=>`Sortie du hall d'arrivée de l'aéroport de ${c.arr} avec leurs valises, personnes qui attendent derrière la barrière, panneaux d'accueil.`},
+  {id:'panneau', phase:'arr', label:'Photo devant le panneau d\'arrivée', txt:c=>`Photo souvenir devant le panneau de bienvenue de l'aéroport de ${c.arr}, valises à leurs pieds, joie d'être arrivés.`},
+  {id:'transfert', phase:'arr', label:'Taxi / transfert', txt:c=>`Devant l'aéroport de ${c.arr}, chargement des valises dans un taxi ou une voiture de transfert.`}
+];
+
+/* ============ État ============ */
+const state = {
+  avatars: Array.from({length:6}, ()=>({img:null, name:'', present:true})),
+  refs: {dep:null, arr:null, cabine:null, bagCabine:null, bagSoute:null},
+  showTicket:true, showBag:true,
+  ticketType:'elec',
+  selected: new Set(),
+  custom: [],
+  running:false, stop:false
+};
+
+/* ============ Utilitaires ============ */
+const $ = id => document.getElementById(id);
+const rnd = (a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const pick = arr => arr[Math.floor(Math.random()*arr.length)];
+function lsGet(k){try{return localStorage.getItem(k)||''}catch(e){return ''}}
+function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+
+function readImage(file){
+  return new Promise((res,rej)=>{
+    const fr = new FileReader();
+    fr.onload = ()=>{
+      const img = new Image();
+      img.onload = ()=>{
+        const M=1280; let w=img.width,h=img.height; const s=Math.min(1,M/Math.max(w,h));
+        w=Math.round(w*s);h=Math.round(h*s);
+        const c=document.createElement('canvas');c.width=w;c.height=h;
+        c.getContext('2d').drawImage(img,0,0,w,h);
+        res(c.toDataURL('image/jpeg',0.88));
+      };
+      img.onerror=rej; img.src=fr.result;
+    };
+    fr.onerror=rej; fr.readAsDataURL(file);
+  });
+}
+function pickFile(cb){
+  const i=document.createElement('input');i.type='file';i.accept='image/*';
+  i.onchange=async()=>{ if(i.files[0]){ try{ cb(await readImage(i.files[0])) }catch(e){ alert('Image illisible') } } };
+  i.click();
+}
+function b64ToBlob(b64,mime){
+  const bin=atob(b64);const u=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
+  return new Blob([u],{type:mime||'image/png'});
+}
+
+/* ============ UI : avatars & références ============ */
+function buildAvatars(){
+  const box=$('avatars');box.innerHTML='';
+  state.avatars.forEach((a,i)=>{
+    const d=document.createElement('div');d.className='slot';
+    d.innerHTML=`<div class="ttl">Avatar ${i+1}</div>
+      <div class="thumb ${a.img?'has':''}" style="${a.img?`background-image:url(${a.img})`:''}">+ Photo<button class="rm" type="button">×</button></div>
+      <input type="text" placeholder="Nom (optionnel)" value="${a.name.replace(/"/g,'&quot;')}">
+      <label class="pres"><input type="checkbox" ${a.present?'checked':''}> Présent</label>`;
+    const th=d.querySelector('.thumb');
+    th.onclick=e=>{ if(e.target.classList.contains('rm')){ a.img=null;buildAvatars();return; } pickFile(img=>{a.img=img;buildAvatars();}); };
+    d.querySelector('input[type=text]').oninput=e=>{a.name=e.target.value};
+    d.querySelector('input[type=checkbox]').onchange=e=>{a.present=e.target.checked};
+    box.appendChild(d);
+  });
+}
+function buildRefs(){
+  const defs=[['refs','dep','Aéroport de départ'],['refs','arr','Aéroport d\'arrivée'],['refs','cabine','Intérieur de l\'avion'],['bagRefs','bagCabine','Bagage cabine'],['bagRefs','bagSoute','Bagage en soute']];
+  $('refs').innerHTML='';$('bagRefs').innerHTML='';
+  defs.forEach(([boxId,k,t])=>{
+    const v=state.refs[k];
+    const d=document.createElement('div');d.className='slot';
+    d.innerHTML=`<div class="ttl">${t}</div><div class="thumb ${v?'has':''}" style="${v?`background-image:url(${v})`:''}">+ Photo<button class="rm" type="button">×</button></div>`;
+    d.querySelector('.thumb').onclick=e=>{ if(e.target.classList.contains('rm')){state.refs[k]=null;buildRefs();return;} pickFile(img=>{state.refs[k]=img;buildRefs();}); };
+    $(boxId).appendChild(d);
+  });
+}
+
+/* ============ UI : scènes ============ */
+function allScenes(){
+  return SCENES.concat(state.custom);
+}
+function buildScenes(){
+  const box=$('phases');box.innerHTML='';
+  const list=allScenes();
+  PHASES.concat(state.custom.length?[{id:'custom',title:'⭐ Tes scènes'}]:[]).forEach(p=>{
+    const sc=list.filter(s=>s.phase===p.id);
+    if(!sc.length)return;
+    const d=document.createElement('div');d.className='phase';
+    d.innerHTML=`<h3>${p.title}</h3><div class="chips"></div>`;
+    const chips=d.querySelector('.chips');
+    sc.forEach(s=>{
+      const c=document.createElement('div');c.className='chip'+(state.selected.has(s.id)?' on':'');
+      c.textContent=s.label;
+      c.onclick=()=>{ state.selected.has(s.id)?state.selected.delete(s.id):state.selected.add(s.id); c.classList.toggle('on'); updateInfo(); };
+      chips.appendChild(c);
+    });
+    box.appendChild(d);
+  });
+  updateInfo();
+}
+function updateInfo(){
+  const n=state.selected.size;
+  $('info').textContent = n+' scène'+(n>1?'s':'')+' sélectionnée'+(n>1?'s':'');
+}
+
+/* ============ Contexte du vol ============ */
+function fmtName(raw){
+  raw=(raw||'').trim();
+  if(!raw)return null;
+  const p=raw.split(/\s+/);
+  if(p.length===1)return p[0].toUpperCase();
+  const last=p[p.length-1].toUpperCase();
+  const first=p.slice(0,-1).join(' ').toUpperCase();
+  return last+'/'+first;
+}
+function computeSeats(n, side, manual){
+  const L=['A','B','C','D','E','F'];
+  let row,start;
+  const m=(manual||'').trim().toUpperCase().match(/^(\d{1,2})\s*([A-F])$/);
+  if(m){row=+m[1];start=L.indexOf(m[2]);}
+  else{
+    row=rnd(10,35);
+    if(side==='hublot')start=0;
+    else if(side==='couloir')start=2;
+    else if(side==='milieu')start=1;
+    else start=rnd(0,Math.max(0,6-n));
+  }
+  if(start+n>6)start=Math.max(0,6-n);
+  const pos=l=>(l==='A'||l==='F')?'hublot':(l==='C'||l==='D')?'couloir':'milieu';
+  return Array.from({length:n},(_,i)=>{const l=L[start+i];return {seat:row+l,pos:pos(l)};});
+}
+function fmtDate(v){
+  if(!v)return null;
+  const d=new Date(v+'T12:00:00');
+  return d.toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+}
+function minusMin(t,m){
+  if(!t)return null;
+  const [h,mi]=t.split(':').map(Number);
+  let tot=h*60+mi-m; if(tot<0)tot+=1440;
+  return String(Math.floor(tot/60)).padStart(2,'0')+':'+String(tot%60).padStart(2,'0');
+}
+function buildContext(){
+  const pres=state.avatars.map((a,i)=>({a,i})).filter(x=>x.a.img&&x.a.present);
+  const n=pres.length;
+  const dep=$('dep').value.trim(), arr=$('arr').value.trim();
+  const escale=$('escale').value.trim();
+  const airline=$('airline').value.trim();
+  const vol=$('vol').value.trim()||(pick(['XQ','TV','LN','ZR'])+rnd(100,9999));
+  const depTime=$('depTime').value||pick(['07:25','09:40','11:05','14:30','18:15','22:50']);
+  const arrTime=$('arrTime').value||'';
+  const dateTxt=fmtDate($('date').value)||'une date plausible dans le mois à venir';
+  const gate=$('gate').value.trim()||(pick(['A','B','C','D','E','K','L','M'])+rnd(1,48));
+  const terminal=$('terminal').value.trim()||pick(['1','2','2E','2F','3']);
+  const classe=$('classe').value;
+  const side=$('side').value;
+  const seats=computeSeats(n,side,$('seat').value);
+  const pnr=Array.from({length:6},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[rnd(0,31)]).join('');
+  const seq0=rnd(18,140);
+  const pax=pres.map((x,k)=>({
+    name: fmtName(x.a.name)||'un nom de passager plausible au format NOM/PRÉNOM',
+    seat: seats[k].seat, pos: seats[k].pos, seq: String(seq0+k).padStart(3,'0')
+  }));
+  const refNote = (k)=> state.refs[k] ? true : false;
+  const c={
+    n, pres, dep, arr, escale, escaleTxt: escale||'l\'aéroport de correspondance',
+    airline, vol, depTime, arrTime, dateTxt, gate, terminal, classe, pnr, pax,
+    boardTime: minusMin(depTime,40),
+    ticketType: state.ticketType,
+    direction: $('direction').value.trim(),
+    depRef: !!state.refs.dep, arrRef: !!state.refs.arr, cabRef: !!state.refs.cabine,
+    showTicket: state.showTicket, showBag: state.showBag, light: $('light').value,
+    bagCabRef: !!state.refs.bagCabine, bagSouRef: !!state.refs.bagSoute,
+    bagSoute: +$('bagSoute').value, bagCabine: $('bagCabine').value,
+    bagPoids: $('bagPoids').value.trim(), bagDesc: $('bagDesc').value.trim().replace(/[.\s]+$/,'')
+  };
+  c.airlineTxt = airline ? `de la compagnie ${airline}` : `d'une compagnie aérienne fictive (nom et logo génériques inventés)`;
+  c.persList = n===1 ? 'le personnage 1' : `les personnages 1 à ${n}`;
+  c.cabinLook=`sièges ${pick(['bleu marine','gris anthracite','bordeaux','vert foncé','gris clair'])} avec appuie-têtes à housse ${pick(['blanche','grise','bleu clair'])}, parois et compartiments à bagages blancs, tapis ${pick(['gris','bleu'])} dans l'allée`;
+  return c;
+}
+
+/* ============ Prompts ============ */
+function ticketBlock(c){
+  const common=`vol ${c.vol} ${c.airlineTxt}, de ${c.dep} vers ${c.arr}${c.escale?`, via ${c.escale}`:''}, date ${c.dateTxt}, heure de départ ${c.depTime}, heure d'embarquement ${c.boardTime}${c.arrTime?`, heure d'arrivée ${c.arrTime}`:''}, terminal ${c.terminal}, porte ${c.gate}, classe ${c.classe}, référence de réservation (PNR) ${c.pnr}, avec les codes IATA réels à trois lettres des aéroports`;
+  const who=c.pax.map((p,i)=>`personnage ${i+1} : nom « ${p.name} », siège ${p.seat}, numéro de séquence ${p.seq}`).join(' ; ');
+  const support = c.ticketType==='papier'
+    ? `Carte d'embarquement papier authentique, comme celles imprimées par les compagnies (carton ou papier thermique, souche détachable, code-barres PDF417)`
+    : `Carte d'embarquement électronique authentique affichée sur l'écran d'un iPhone 16 Pro Max (bords fins, Dynamic Island), comme dans l'application d'une compagnie ou le Wallet, avec un QR code`;
+  return `${support}. Informations affichées : ${common}. Une carte par personnage : ${who}. Tout le texte du billet est net, lisible et orthographié exactement comme indiqué.`;
+}
+function seatLayout(c){
+  const L=c.pax.map(p=>p.seat.slice(-1));
+  const left=L.every(l=>'ABC'.includes(l)), right=L.every(l=>'DEF'.includes(l));
+  const ordre=c.pax.map((p,i)=>`personnage ${i+1} (${p.seat})`).join(', ');
+  const side=left?"du côté gauche de l'allée (le hublot à leur gauche, l'allée à leur droite)":right?"du côté droit de l'allée (l'allée à leur gauche, le hublot à leur droite)":"de part et d'autre de l'allée centrale";
+  const ordreTxt=left?`, dans l'ordre du hublot vers l'allée : ${ordre}`:right?`, dans l'ordre de l'allée vers le hublot : ${ordre}`:'';
+  return `${c.n>1?"Les personnages sont assis côte à côte dans la même rangée, épaule contre épaule, jamais l'un derrière l'autre. ":''}Disposition fixe, vue en regardant vers l'avant de l'avion : les personnages sont assis ${side}${ordreTxt}. Cette disposition ne change jamais d'une image à l'autre.`;
+}
+function cabinBlock(c,nums,noPeople){
+  const cls={
+    'Économique':`cabine de classe économique standard : sièges en rangées, tablettes rabattables, écrans de dossier, compartiments à bagages en hauteur`,
+    'Premium économique':`cabine premium économique : sièges plus larges avec repose-jambes et plus d'espace entre les rangées`,
+    'Affaires':`cabine de classe affaires : sièges larges pouvant se transformer en lit, grand écran, rangements privés`,
+    'Première':`cabine de première classe : suite privée avec porte coulissante, grand fauteuil-lit, écran large, service raffiné`
+  }[c.classe];
+  const look=(state.refs.cabine&&!noPeople)?'':` Décor de cabine à garder identique d'une image à l'autre : ${c.cabinLook}.`;
+  if(noPeople)return `Cabine : ${cls}.${look}`;
+  const seats=c.pax.map((p,i)=>nums?`personnage ${i+1} siège ${p.seat} (${p.pos})`:`personnage ${i+1} côté ${p.pos}`).join(', ');
+  return `Cabine : ${cls}.${look} Places : ${seats}. Respecter ces places et le côté (hublot / couloir) indiqués. ${seatLayout(c)}`;
+}
+function isNightTime(t){
+  const [h,m]=t.split(':').map(Number);
+  const x=h+(m||0)/60;
+  return x<6||x>=20;
+}
+function lightFor(scene,c){
+  if(c.light==='jour')return 'jour';
+  if(c.light==='nuit')return 'nuit';
+  const useArr=scene.phase==='arr'||scene.id==='atterrissage';
+  const t=(useArr&&c.arrTime)?c.arrTime:c.depTime;
+  return isNightTime(t)?'nuit':'jour';
+}
+function lightBlock(scene,c){
+  const n=lightFor(scene,c)==='nuit';
+  if(scene.phase==='avion'){
+    return n?`Il fait nuit : les hublots donnent sur la nuit noire, éclairage de cabine artificiel et tamisé, aucune lumière du jour.`
+            :`Il fait jour : lumière du jour par les hublots.`;
+  }
+  return n?`Il fait nuit : nuit noire à l'extérieur et derrière les baies vitrées, éclairage artificiel.`
+          :`Il fait jour : lumière du jour.`;
+}
+const BAG_PRE=['arrivee','hall','borne','comptoir','pesee'];
+const BAG_POST=['tapis_bagages','sortie','panneau','transfert'];
+function bagInfo(scene,c){
+  const none={text:'',cab:false,soute:false};
+  if(!c.showBag||scene.phase==='custom')return none;
+  if(scene.phase==='avion' && !['ranger','siege_trouver'].includes(scene.id))return none;
+  const cabTxt={none:'',sac:'un sac à dos ou sac à main par personnage',valise:'une valise cabine par personnage',both:'une valise cabine et un sac par personnage'}[c.bagCabine];
+  const hasSoute=c.bagSoute>0&&(BAG_PRE.includes(scene.id)||BAG_POST.includes(scene.id));
+  const parts=[];
+  if(hasSoute)parts.push(`${c.bagSoute} valise${c.bagSoute>1?'s':''} en soute par personnage`+(c.bagSouRef?" (comme sur l'image de référence du bagage en soute)":''));
+  if(cabTxt)parts.push('bagage cabine : '+cabTxt+(c.bagCabRef?" (comme sur l'image de référence du bagage cabine)":''));
+  if(!parts.length)return none;
+  let t='Bagages : '+parts.join(' ; ')+'.';
+  if(scene.id==='pesee'&&c.bagSoute>0)t+=` Poids affiché sur l'écran de la balance : ${c.bagPoids||'un poids crédible sous la limite autorisée'}.`;
+  if(c.bagDesc)t+=` ${c.bagDesc}.`;
+  return {text:t,cab:!!cabTxt,soute:hasSoute};
+}
+function infoBlock(c){
+  return `Infos du vol à afficher sur l'écran ou le panneau visible dans la scène : vol ${c.vol} ${c.airlineTxt}, de ${c.dep} vers ${c.arr}, ${c.dateTxt}, départ ${c.depTime}, porte ${c.gate}. Texte net, lisible et orthographié exactement.`;
+}
+function buildPrompt(scene,c){
+  const L=[];
+  L.push(`Photographie réaliste et authentique, prise sur le vif pendant un vrai voyage en avion.`);
+  if(!scene.noPeople) L.push(`Personnages dans la scène : ${c.persList}, conserver strictement leur identité d'après leurs images de référence.`);
+  L.push(`Scène : ${scene.txt(c)}`);
+  if(scene.ticket && c.showTicket) L.push(ticketBlock(c));
+  if(scene.info && c.showTicket) L.push(infoBlock(c));
+  if(scene.phase==='avion'){ L.push(cabinBlock(c, scene.id==='siege_trouver', !!scene.noPeople)); if(!scene.noPeople) L.push(`Les autres sièges de l'avion sont occupés par d'autres passagers.`); if(scene.id!=='ranger') L.push(`Les compartiments à bagages en hauteur sont tous fermés.`); if(state.refs.cabine && !scene.noPeople) L.push(`L'intérieur de l'avion est celui de l'image de référence de la cabine : même cabine, mêmes sièges, même disposition. Ne reprendre de cette image que le lieu, jamais les personnes qui y apparaissent : les personnages sont uniquement ceux de leurs images de référence.`); }
+  if(scene.phase==='dep' && c.depRef) L.push(`Le décor est celui de l'aéroport de départ de l'image de référence du lieu de départ.`);
+  if(scene.phase==='arr' && c.arrRef) L.push(`Le décor est celui de l'aéroport d'arrivée de l'image de référence du lieu d'arrivée.`);
+  const bg=bagInfo(scene,c).text; if(bg) L.push(bg);
+  L.push(lightBlock(scene,c));
+  if(c.direction) L.push(`Direction de scène à respecter : ${c.direction}`);
+  return L.join('\n');
+}
+
+/* ============ API Vertex ============ */
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+async function callImage(parts,key){
+  const body={contents:[{role:'user',parts}],
+    generationConfig:{responseModalities:['TEXT','IMAGE'],imageConfig:{imageSize:IMAGE_SIZE}}};
+  let lastErr='';
+  for(let a=0;a<4;a++){
+    const r=await fetch(ENDPOINT(MODEL_IMAGE),{method:'POST',
+      headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify(body)});
+    if(r.status===429||r.status===503){ lastErr='Quota / surcharge ('+r.status+')'; await sleep(2500*Math.pow(2,a)); continue; }
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok) throw new Error((j.error&&j.error.message)||('Erreur '+r.status));
+    const cand=(j.candidates||[])[0];
+    const ps=(cand&&cand.content&&cand.content.parts)||[];
+    const im=ps.find(p=>p.inlineData||p.inline_data);
+    if(im){const d=im.inlineData||im.inline_data;return {mime:d.mimeType||d.mime_type||'image/png',data:d.data};}
+    const txt=ps.map(p=>p.text||'').join(' ').trim();
+    throw new Error('Aucune image reçue'+(cand&&cand.finishReason?' ('+cand.finishReason+')':'')+(txt?' : '+txt.slice(0,160):''));
+  }
+  throw new Error(lastErr||'Échec');
+}
+function buildParts(prompt,c,scene){
+  const parts=[];
+  (scene&&scene.noPeople?[]:c.pres).forEach((x,k)=>{
+    parts.push({text:`Image de référence du personnage ${k+1} :`});
+    parts.push({inlineData:{mimeType:'image/jpeg',data:x.a.img.split(',')[1]}});
+  });
+  const refs=[['dep','Image de référence du lieu de départ (uniquement pour le décor, ignorer les personnes) :'],['arr','Image de référence du lieu d\'arrivée (uniquement pour le décor, ignorer les personnes) :'],['cabine','Image de référence de la cabine de l\'avion (uniquement pour le décor, ignorer les personnes) :']];
+  refs.forEach(([k,t])=>{ if(state.refs[k] && !(k==='cabine'&&scene&&scene.noPeople)){ parts.push({text:t}); parts.push({inlineData:{mimeType:'image/jpeg',data:state.refs[k].split(',')[1]}}); } });
+  const bi=bagInfo(scene,c);
+  if(bi.cab&&state.refs.bagCabine){ parts.push({text:'Image de référence du bagage cabine :'}); parts.push({inlineData:{mimeType:'image/jpeg',data:state.refs.bagCabine.split(',')[1]}}); }
+  if(bi.soute&&state.refs.bagSoute){ parts.push({text:'Image de référence du bagage en soute :'}); parts.push({inlineData:{mimeType:'image/jpeg',data:state.refs.bagSoute.split(',')[1]}}); }
+  parts.push({text:prompt});
+  return parts;
+}
+
+/* ============ Génération ============ */
+function makeCard(scene,boxId){
+  const d=document.createElement('div');d.className='res';
+  d.innerHTML=`<div class="imgbox"><div class="spin"></div></div>
+    <div class="meta"><b></b><div class="st">En attente…</div>
+    <div class="acts"><button class="btn sec re" type="button" disabled>↻ Refaire</button><button class="btn dl" type="button" disabled>⬇ Télécharger</button></div><div class="acts" style="margin-top:8px"><button class="btn sec lk" type="button" style="display:none">📌 Verrouiller ce lieu</button></div></div>`;
+  d.querySelector('b').textContent=scene.label;
+  $(boxId||'results').appendChild(d);
+  return d;
+}
+function lockKeyFor(scene){
+  if(scene.phase==='avion')return 'cabine';
+  if(scene.phase==='dep')return 'dep';
+  if(scene.phase==='arr')return 'arr';
+  return null;
+}
+async function runScene(scene,c,card){
+  const key=$('apiKey').value.trim();
+  const st=card.querySelector('.st'), box=card.querySelector('.imgbox');
+  const re=card.querySelector('.re'), dl=card.querySelector('.dl'), lk=card.querySelector('.lk');
+  re.disabled=true; dl.disabled=true; lk.disabled=true; lk.style.display='none';
+  box.innerHTML='<div class="spin"></div>'; st.className='st'; st.textContent='Génération en cours…';
+  let blob=null;
+  try{
+    const prompt=buildPrompt(scene,c);
+    const out=await callImage(buildParts(prompt,c,scene),key);
+    blob=b64ToBlob(out.data,out.mime);
+    const url=URL.createObjectURL(blob);
+    box.innerHTML=''; const img=new Image(); img.src=url; box.appendChild(img);
+    st.className='st ok'; st.textContent='Terminé';
+    dl.disabled=false;
+    dl.onclick=()=>{const a=document.createElement('a');a.href=url;a.download='studio-voyage-'+scene.id+'.png';document.body.appendChild(a);a.click();a.remove();};
+    const lockKey=lockKeyFor(scene);
+    if(lockKey){
+      lk.style.display=''; lk.disabled=false;
+      const b=blob;
+      lk.onclick=async()=>{
+        try{ state.refs[lockKey]=await readImage(b); state.autoRef=false; buildRefs(); st.className='st ok'; st.textContent='Terminé · lieu verrouillé (référence utilisée pour les prochaines images)'; }
+        catch(e){ st.className='st err'; st.textContent='Verrouillage impossible'; }
+      };
+    }
+  }catch(e){
+    blob=null; box.innerHTML='Échec'; st.className='st err'; st.textContent=e.message;
+  }
+  re.disabled=false;
+  re.onclick=()=>runScene(scene,c,card);
+  return blob;
+}
+async function generate(){
+  if(state.running)return;
+  const key=$('apiKey').value.trim();
+  if(!key){alert('Ajoute ta clé API.');return;}
+  lsSet('studio_voyage_key',key);
+  const c=buildContext();
+  if(!c.n){alert('Ajoute au moins un avatar avec une photo (et « Présent » coché).');return;}
+  if(!c.dep||!c.arr){alert('Renseigne l\'aéroport de départ et l\'aéroport d\'arrivée.');return;}
+  const list=allScenes().filter(s=>state.selected.has(s.id));
+  if(!list.length){alert('Sélectionne au moins une scène.');return;}
+  state.running=true;state.stop=false;
+  $('goBtn').disabled=true;$('stopBtn').style.display='';
+  $('results').innerHTML='';
+  if(state.autoRef){state.refs.cabine=null;state.autoRef=false;buildRefs();}
+  const cards=list.map(sc=>makeCard(sc));
+  for(let i=0;i<list.length;i++){
+    if(state.stop){cards[i].querySelector('.st').textContent='Arrêté';cards[i].querySelector('.imgbox').innerHTML='—';continue;}
+    const blob=await runScene(list[i],c,cards[i]);
+  }
+  state.running=false;$('goBtn').disabled=false;$('stopBtn').style.display='none';
+}
+
+/* ============ Init ============ */
+$('apiKey').value=lsGet('studio_voyage_key');
+$('goBtn').onclick=generate;
+$('stopBtn').onclick=()=>{state.stop=true;};
+document.querySelectorAll('#ticketSeg button').forEach(b=>{
+  b.onclick=()=>{document.querySelectorAll('#ticketSeg button').forEach(x=>x.classList.remove('on'));b.classList.add('on');state.ticketType=b.dataset.v;};
+});
+function bindToggle(id,key){
+  document.querySelectorAll('#'+id+' button').forEach(b=>{
+    b.onclick=()=>{document.querySelectorAll('#'+id+' button').forEach(x=>x.classList.remove('on'));b.classList.add('on');state[key]=b.dataset.v==='1';};
+  });
+}
+bindToggle('ticketShowSeg','showTicket');
+bindToggle('bagShowSeg','showBag');
+$('genCabine').onclick=async()=>{
+  const key=$('apiKey').value.trim();
+  if(!key){alert('Ajoute ta clé API.');return;}
+  lsSet('studio_voyage_key',key);
+  const c=buildContext();
+  const scene=SCENES.find(x=>x.id==='cabine_vue');
+  $('cabineRes').innerHTML='';
+  const card=makeCard(scene,'cabineRes');
+  await runScene(scene,c,card);
+};
+$('addCustom').onclick=()=>{
+  const t=$('customTxt').value.trim(); if(!t)return;
+  const id='custom_'+Date.now();
+  state.custom.push({id,phase:'custom',label:t.length>40?t.slice(0,38)+'…':t,txt:()=>t});
+  state.selected.add(id); $('customTxt').value=''; buildScenes();
+};
+buildAvatars();buildRefs();buildScenes();
+</script>
+</body>
+</html>
