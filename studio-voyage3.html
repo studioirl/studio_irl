@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -417,6 +418,12 @@ const SCENES = [
   {id:'lecture', phase:'avion', label:'Lecture / téléphone / tablette', txt:c=>`Occupés pendant le vol : lecture, tablette, écouteurs sur les oreilles, verre d'eau sur la tablette.`},
   {id:'allee', phase:'avion', label:'Se dégourdir les jambes dans l\'allée', txt:c=>`Debout dans l'allée de l'avion pour se dégourdir les jambes, passagers endormis autour, lumière de cabine tamisée.`},
   {id:'selfie_cabine', phase:'avion', label:'Selfie souvenir en cabine', txt:c=>`Selfie souvenir pris à bout de bras dans la cabine de l'avion, sièges et allée derrière.`},
+  {id:'baiser_siege', phase:'avion', label:'🔥 Baiser complice entre les sièges', txt:c=>c.n>1?`Le personnage 1 et le personnage 2 s'embrassent tendrement entre leurs deux sièges, visages tout proches, mains sur la joue ou dans le cou, discrets, les autres passagers autour somnolent ou regardent ailleurs.`:`Assis à sa place, sourire complice et regard vers le siège voisin, lumière douce de la cabine.`},
+  {id:'baiser_couverture', phase:'avion', label:'🔥 Sous la même couverture', txt:c=>c.n>1?`Le personnage 1 et le personnage 2 sont blottis l'un contre l'autre sous la même couverture, front contre front, sur le point de s'embrasser, mains entrelacées, cabine à la lumière tamisée, passagers endormis autour.`:`Blotti sous sa couverture dans son siège, lumière tamisée de la cabine, regard doux.`},
+  {id:'chuchote', phase:'avion', label:'🔥 Chuchoter à l\'oreille', txt:c=>c.n>1?`Le personnage 1 chuchote quelque chose à l'oreille du personnage 2, bouche tout près de son oreille, sourire espiègle, le personnage 2 sourit en baissant les yeux, ambiance complice et un peu coquine dans la cabine.`:`Sourire espiègle, regard complice vers l'objectif, ambiance coquine dans la cabine.`},
+  {id:'baiser_allee', phase:'avion', label:'🔥 Baiser volé près des toilettes', txt:c=>c.n>1?`Dans le petit espace près des toilettes et de l'office de l'avion, devant le rideau, le personnage 1 et le personnage 2 s'embrassent à la dérobée pendant que la cabine dort, lumière tamisée.`:`Dans le petit espace près des toilettes de l'avion, devant le rideau, lumière tamisée de la nuit.`},
+  {id:'toilettes_baiser', phase:'avion', lavatory:true, label:'🔥 Baiser dans les toilettes de l\'avion', txt:c=>c.n>1?`Dans les toilettes de l'avion, une cabine minuscule avec lavabo en inox, miroir, papier et éclairage blanc cru, le personnage 1 et le personnage 2 sont serrés l'un contre l'autre et s'embrassent passionnément, dos contre la porte ou contre le lavabo, complices et un peu essoufflés.`:`Dans les toilettes de l'avion, une cabine minuscule avec lavabo en inox, miroir et éclairage blanc cru, face au miroir, sourire complice.`},
+  {id:'toilettes_miroir', phase:'avion', lavatory:true, label:'🔥 Selfie miroir dans les toilettes', txt:c=>c.n>1?`Selfie dans le miroir des toilettes de l'avion, cabine minuscule avec lavabo en inox et éclairage blanc cru : le personnage 1 et le personnage 2 serrés l'un contre l'autre, l'un embrasse l'autre dans le cou ou sur la joue en regardant le miroir, sourires complices, le téléphone visible dans le reflet.`:`Selfie dans le miroir des toilettes de l'avion, cabine minuscule avec lavabo en inox et éclairage blanc cru, le téléphone visible dans le reflet, sourire complice.`},
   {id:'atterrissage', phase:'avion', label:'Atterrissage', txt:c=>`Pendant la descente et l'atterrissage, assis ceinture attachée, regardant par le hublot la piste et la ville qui approchent.`},
   // ---- Arrivée
   {id:'debarquement', phase:'arr', label:'Sortie de l\'avion', txt:c=>`Sortie de l'avion, saluée par l'hôtesse à la porte de la cabine, sacs sur l'épaule.`},
@@ -719,7 +726,7 @@ function buildPrompt(scene,c){
   L.push(`Scène : ${scene.txt(c)}`);
   if(scene.ticket && c.showTicket) L.push(ticketBlock(c));
   if(scene.info && c.showTicket) L.push(infoBlock(c));
-  if(scene.phase==='avion'){ L.push(cabinBlock(c, scene.id==='siege_trouver', !!scene.noPeople)); if(!scene.noPeople) L.push(`Les autres sièges de l'avion sont occupés par d'autres passagers.`); L.push(scene.id==='ranger'?BINS_RANGER:BINS_CLOSED); if(state.refs.cabine && !scene.noPeople) L.push(`L'intérieur de l'avion est celui de l'image de référence de la cabine : même cabine, mêmes sièges, même disposition, mais les compartiments à bagages sont fermés dans la nouvelle image même s'ils sont ouverts sur la référence. Ne reprendre de cette image que le lieu, jamais les personnes qui y apparaissent : les personnages sont uniquement ceux de leurs images de référence.`); }
+  if(scene.phase==='avion'&&!scene.lavatory){ L.push(cabinBlock(c, scene.id==='siege_trouver', !!scene.noPeople)); if(!scene.noPeople) L.push(`Les autres sièges de l'avion sont occupés par d'autres passagers.`); L.push(scene.id==='ranger'?BINS_RANGER:BINS_CLOSED); if(state.refs.cabine && !scene.noPeople) L.push(`L'intérieur de l'avion est celui de l'image de référence de la cabine : même cabine, mêmes sièges, même disposition, mais les compartiments à bagages sont fermés dans la nouvelle image même s'ils sont ouverts sur la référence. Ne reprendre de cette image que le lieu, jamais les personnes qui y apparaissent : les personnages sont uniquement ceux de leurs images de référence.`); }
   if(scene.phase==='dep' && c.depRef && !scene.outdoor) L.push(`Le décor est celui de l'aéroport de départ de l'image de référence du lieu de départ.`);
   if(scene.phase==='arr' && c.arrRef) L.push(`Le décor est celui de l'aéroport d'arrivée de l'image de référence du lieu d'arrivée.`);
   if(scene.planeExt && state.refs.avionExt) L.push(`L'avion est celui de l'image de référence de l'avion vu de l'extérieur : même appareil, mêmes couleurs, même aspect. Ne reprendre de cette image que l'avion, jamais les personnes.`);
@@ -733,7 +740,7 @@ function buildPrompt(scene,c){
   if(c.direction) L.push(`Direction de scène à respecter : ${c.direction}`);
   if(!scene.noPeople){ L.push(REALISM); L.push(FINAL_TEXTURE); }
   L.push(GEN_LINE);
-  if(scene.phase==='avion' && scene.id!=='ranger') L.push('RAPPEL : '+BINS_CLOSED);
+  if(scene.phase==='avion' && scene.id!=='ranger' && !scene.lavatory) L.push('RAPPEL : '+BINS_CLOSED);
   return L.join('\n');
 }
 
@@ -896,7 +903,7 @@ function refList(scene,c){
                ['arr','arr','Image de référence du lieu d\'arrivée (uniquement pour le décor, ignorer les personnes) :'],
                ['avion','cabine','Image de référence de la cabine de l\'avion (uniquement pour le décor, ignorer les personnes) :']];
   if(state.refs.lieu) L.push({label:"Image de référence du lieu de la scène (c'est ici que se passe la scène ; uniquement pour le décor, ignorer les personnes) :",img:state.refs.lieu});
-  place.forEach(([ph,k,t])=>{ if(!state.refs.lieu && scene.phase===ph && !(ph==='dep'&&scene.outdoor) && state.refs[k] && !(k==='cabine'&&scene.noPeople)) L.push({label:t,img:state.refs[k]}); });
+  place.forEach(([ph,k,t])=>{ if(!state.refs.lieu && !scene.lavatory && scene.phase===ph && !(ph==='dep'&&scene.outdoor) && state.refs[k] && !(k==='cabine'&&scene.noPeople)) L.push({label:t,img:state.refs[k]}); });
   if(scene.planeExt&&state.refs.avionExt) L.push({label:"Image de référence de l'avion, vu de l'extérieur (uniquement pour l'avion, ignorer les personnes) :",img:state.refs.avionExt});
   if(scene.phase==='avion'&&scene.id!=='vue_hublot'&&state.refs.seat) L.push({label:"Image de référence des sièges de l'avion (uniquement pour le modèle de siège, ignorer les personnes) :",img:state.refs.seat});
   if(scene.id==='ecran'&&state.refs.screen) L.push({label:"Image de référence de l'écran de télé de l'avion (ce qui s'affiche à l'écran) :",img:state.refs.screen});
