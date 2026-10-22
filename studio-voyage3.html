@@ -217,6 +217,9 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);border-c
 
 <section>
   <h2><span class="n">7</span> Direction de scène (optionnel)</h2>
+  <label>Lieu de référence de la scène (optionnel)</label>
+  <div class="refs" id="lieuRefs"></div>
+  <p class="hint" style="margin-top:6px">Une photo d'un lieu : toutes les scènes sélectionnées se passent directement dans ce lieu (à la place des lieux de départ, d'arrivée ou de la cabine). Change-la entre deux générations pour changer de lieu.</p>
   <p class="hint">Tes consignes sont appliquées à toutes les images générées.</p>
   <textarea id="direction" placeholder="ex. ambiance matin tôt, ils sont fatigués mais souriants, lumière naturelle..."></textarea>
 </section>
@@ -339,7 +342,14 @@ function cameraBlock(scene,c){
   return parts.length?`Caméra : ${parts.join(' ; ')}. Ce placement de la caméra est prioritaire sur le cadrage décrit dans la scène.`:'';
 }
 function capF(t){return t.charAt(0).toUpperCase()+t.slice(1);}
-function tObj(c){return c.ticketType==='papier'?"une carte d'embarquement papier":"un iPhone 16 Pro Max dont l'écran affiche clairement la carte d'embarquement électronique";}
+function tObj(c){
+  if(c.escale)return c.ticketType==='papier'?"deux cartes d'embarquement papier (une par tronçon : avant et après l'escale)":"un iPhone 16 Pro Max dont l'écran affiche clairement les deux cartes d'embarquement électroniques empilées (une par tronçon : avant et après l'escale)";
+  return c.ticketType==='papier'?"une carte d'embarquement papier":"un iPhone 16 Pro Max dont l'écran affiche clairement la carte d'embarquement électronique";
+}
+function tPer(c){
+  if(c.escale)return c.ticketType==='papier'?"ses deux cartes d'embarquement papier (une par tronçon, avant et après l'escale)":"son propre iPhone 16 Pro Max dont l'écran affiche ses deux cartes d'embarquement électroniques empilées (une par tronçon, avant et après l'escale)";
+  return c.ticketType==='papier'?"sa propre carte d'embarquement papier":"son propre iPhone 16 Pro Max dont l'écran affiche sa propre carte d'embarquement électronique";
+}
 
 const SCENES = [
   // ---- Départ
@@ -353,9 +363,9 @@ const SCENES = [
   {id:'billet_autre', phase:'dep', ticket:true, label:'Billet : tenu d\'une main (photo par quelqu\'un d\'autre)', txt:c=>`Photo prise par quelqu'un d'autre. ${capF(c.holderTxt)} tient d'une seule main ${tObj(c)}, devant soi, et le regarde, l'autre main libre, dans le hall de l'aéroport de ${c.dep}. Le photographe n'est pas visible.`},
   {id:'billet_face', phase:'dep', ticket:true, label:'Billet : montré face caméra', txt:c=>`${capF(c.holderTxt)} tend ${tObj(c)} vers la caméra pour le montrer, ${c.ticketType==='papier'?'la carte':'l\'écran'} tourné vers l'objectif et bien lisible au premier plan, dans l'aéroport de ${c.dep}.`},
   {id:'billet_gros', phase:'dep', ticket:true, label:'Billet : gros plan sur les mains', txt:c=>`Gros plan sur les mains ${c.holderDe} qui tiennent ${tObj(c)}, bien lisible, fond d'aéroport flou.`},
-  {id:'billet_duo', phase:'dep', ticket:true, label:'Billet : duo, chacun tient le sien (même point de vue)', txt:c=>c.n>1?`Photo à la première personne, prise du même point de vue, vers le bas : les mains du personnage 1 et du personnage 2 tiennent chacune ${c.ticketType==='papier'?"sa propre carte d'embarquement papier":"son propre iPhone 16 Pro Max dont l'écran affiche sa propre carte d'embarquement électronique"}, côte à côte, légèrement superposées, toutes deux bien lisibles au premier plan et chacune au nom de son personnage. Assis dans la salle d'embarquement de l'aéroport de ${c.dep}, fond flou.`:`Gros plan sur les mains ${c.holderDe} qui tiennent ${tObj(c)}, bien lisible, fond d'aéroport flou.`},
-  {id:'billet_surface', phase:'dep', ticket:true, label:'Billet : posé sur le comptoir avec les passeports', txt:c=>`Plan de détail : ${c.ticketType==='papier'?"la carte d'embarquement papier posée":"un iPhone 16 Pro Max posé à plat, écran affichant la carte d'embarquement électronique,"} sur le comptoir d'enregistrement à côté des passeports, bien lisible.`},
-  {id:'billet_passeport', phase:'dep', ticket:true, label:'Billet : passeport et billet en main', txt:c=>`Les mains ${c.holderDe} tiennent un passeport ${c.ticketType==='papier'?"avec la carte d'embarquement papier glissée dedans":"et un iPhone 16 Pro Max dont l'écran affiche la carte d'embarquement électronique"}, bien lisible, prêts à être présentés.`},
+  {id:'billet_duo', phase:'dep', ticket:true, label:'Billet : duo, chacun tient le sien (même point de vue)', txt:c=>c.n>1?`Photo à la première personne, prise du même point de vue, vers le bas : les mains du personnage 1 et du personnage 2 tiennent chacune ${tPer(c)}, côte à côte, légèrement superposés, tous bien lisibles au premier plan et chacun au nom de son personnage. Assis dans la salle d'embarquement de l'aéroport de ${c.dep}, fond flou.`:`Gros plan sur les mains ${c.holderDe} qui tiennent ${tObj(c)}, bien lisible, fond d'aéroport flou.`},
+  {id:'billet_surface', phase:'dep', ticket:true, label:'Billet : posé sur le comptoir avec les passeports', txt:c=>`Plan de détail : ${c.ticketType==='papier'?(c.escale?"les deux cartes d'embarquement papier (une par tronçon) posées":"la carte d'embarquement papier posée"):(c.escale?"un iPhone 16 Pro Max posé à plat, écran affichant les deux cartes d'embarquement électroniques empilées (une par tronçon),":"un iPhone 16 Pro Max posé à plat, écran affichant la carte d'embarquement électronique,")} sur le comptoir d'enregistrement à côté des passeports, bien lisible.`},
+  {id:'billet_passeport', phase:'dep', ticket:true, label:'Billet : passeport et billet en main', txt:c=>`Les mains ${c.holderDe} tiennent un passeport ${c.ticketType==='papier'?(c.escale?"avec les deux cartes d'embarquement papier (une par tronçon) glissées dedans":"avec la carte d'embarquement papier glissée dedans"):(c.escale?"et un iPhone 16 Pro Max dont l'écran affiche les deux cartes d'embarquement électroniques empilées (une par tronçon)":"et un iPhone 16 Pro Max dont l'écran affiche la carte d'embarquement électronique")}, bien lisible, prêts à être présentés.`},
   {id:'billet_partage', phase:'dep', ticket:true, label:'Billet : montré à un autre voyageur', txt:c=>c.n>1?`${capF(c.holderTxt)} montre ${tObj(c)} au ${c.holderNum===1?'personnage 2':'personnage 1'} qui se penche pour le regarder, dans le hall de l'aéroport de ${c.dep}.`:`${capF(c.holderTxt)} tient d'une seule main ${tObj(c)}, devant soi, et le regarde, dans le hall de l'aéroport de ${c.dep}.`},
   {id:'securite_depot', phase:'dep', label:'Sécurité : dépôt sur le tapis', txt:c=>`Au contrôle de sécurité, dépôt des affaires dans des bacs gris sur le tapis roulant du scanner à rayons X : sacs, ordinateur portable, téléphone, ceinture, veste. ${c.n>1?"Chaque personnage a son propre bac et fait son propre geste (l'un sort son ordinateur, un autre retire sa ceinture, un autre vide ses poches...), les uns à la suite des autres le long du tapis, jamais face à face. ":""}Agents de sécurité autour, file de passagers derrière.`},
   {id:'portique', phase:'dep', label:'Sécurité : passage sous le portique', txt:c=>`Passage sous le portique de détection de métaux au contrôle de sécurité, ${c.n>1?"un seul personnage sous le portique à la fois, les autres attendent derrière leur tour, ":""}agent de sécurité à côté, bacs qui défilent sur le tapis à côté.`},
@@ -414,7 +424,7 @@ const SCENES = [
 /* ============ État ============ */
 const state = {
   avatars: Array.from({length:6}, ()=>({img:null, name:'', present:true})),
-  refs: {dep:null, arr:null, cabine:null, avionExt:null, seat:null, screen:null, ticketPapier:null, ticketEcran:null, meal:null, drink:null, bagCabine:null, bagSoute:null},
+  refs: {dep:null, arr:null, cabine:null, avionExt:null, seat:null, screen:null, ticketPapier:null, ticketEcran:null, lieu:null, meal:null, drink:null, bagCabine:null, bagSoute:null},
   showTicket:true, showBag:true, engine:'vertex', format:'9:16',
   ticketType:'elec',
   selected: new Set(),
@@ -474,8 +484,8 @@ function buildAvatars(){
   });
 }
 function buildRefs(){
-  const defs=[['refs','dep','Aéroport de départ'],['refs','arr','Aéroport d\'arrivée'],['refs','cabine','Intérieur de l\'avion'],['refs','avionExt','Avion (extérieur)'],['refs','seat','Sièges de l\'avion'],['refs','screen','Écran de télé de l\'avion'],['ticketRefs','ticketPapier','Modèle billet papier'],['ticketRefs','ticketEcran','Modèle billet sur écran'],['mealRefs','meal','Plateau-repas'],['mealRefs','drink','Boisson'],['bagRefs','bagCabine','Bagage cabine'],['bagRefs','bagSoute','Bagage en soute']];
-  $('refs').innerHTML='';$('ticketRefs').innerHTML='';$('mealRefs').innerHTML='';$('bagRefs').innerHTML='';
+  const defs=[['refs','dep','Aéroport de départ'],['refs','arr','Aéroport d\'arrivée'],['refs','cabine','Intérieur de l\'avion'],['refs','avionExt','Avion (extérieur)'],['refs','seat','Sièges de l\'avion'],['refs','screen','Écran de télé de l\'avion'],['lieuRefs','lieu','Lieu de la scène'],['ticketRefs','ticketPapier','Modèle billet papier'],['ticketRefs','ticketEcran','Modèle billet sur écran'],['mealRefs','meal','Plateau-repas'],['mealRefs','drink','Boisson'],['bagRefs','bagCabine','Bagage cabine'],['bagRefs','bagSoute','Bagage en soute']];
+  $('refs').innerHTML='';$('lieuRefs').innerHTML='';$('ticketRefs').innerHTML='';$('mealRefs').innerHTML='';$('bagRefs').innerHTML='';
   defs.forEach(([boxId,k,t])=>{
     const v=state.refs[k];
     const d=document.createElement('div');d.className='slot';
@@ -584,6 +594,15 @@ function buildContext(){
     bagSoute: +$('bagSoute').value, bagCabine: $('bagCabine').value,
     bagPoids: $('bagPoids').value.trim(), bagDesc: $('bagDesc').value.trim().replace(/[.\s]+$/,'')
   };
+  if(escale){
+    const addMin=(t,m)=>{const [h,mi]=t.split(':').map(Number);const tot=(h*60+mi+m)%1440;return String(Math.floor(tot/60)).padStart(2,'0')+':'+String(tot%60).padStart(2,'0');};
+    c.vol2=(vol.match(/^[A-Za-z]+/)||['AF'])[0].toUpperCase()+rnd(100,9999);
+    c.arr1=addMin(depTime,rnd(240,420));
+    c.dep2=addMin(c.arr1,150);
+    c.board2=minusMin(c.dep2,40);
+    c.arr2=arrTime||addMin(c.dep2,rnd(360,540));
+    c.gate2=pick(['A','B','C','D','E'])+rnd(1,48);
+  }
   c.airlineTxt = airline ? `de la compagnie ${airline}` : `d'une compagnie aérienne fictive (nom et logo génériques inventés)`;
   c.persList = n===1 ? 'le personnage 1' : `les personnages 1 à ${n}`;
   c.cam={}; CAMERA.forEach(f=>{ c.cam[f.id]=($('cam_'+f.id)&&$('cam_'+f.id).value)||'auto'; });
@@ -607,8 +626,12 @@ function ticketBlock(c){
   const hasModel=c.ticketType==='papier'?!!state.refs.ticketPapier:!!state.refs.ticketEcran;
   const modele=hasModel?` Un modèle de billet est fourni en image de référence : reproduire exactement ce même billet, à l'identique (même support, mêmes couleurs, mêmes polices, même logo, mêmes intitulés de champs en anglais, même disposition, même code-barres, même souche), en remplaçant uniquement les valeurs (nom, vol, villes, dates, heures, siège, séquence, codes) par celles ci-dessous.`:'';
   const route2=c.escale?`${c.dep} → ${c.escale} → ${c.arr}`:`${c.dep} → ${c.arr}`;
-  const cards=c.pax.map((p,i)=>`Billet du personnage ${i+1} — NOM DU PASSAGER : ${p.name} ; VOL : ${c.vol} (${c.airlineTxt}) ; DE : ${c.dep} ; À : ${c.escale?c.escale+' (premier tronçon)':c.arr} ; DATE : ${c.dateTxt} ; EMBARQUEMENT : ${c.boardTime} ; DÉPART : ${c.depTime}${c.arrTime?` ; ARRIVÉE : ${c.arrTime}`:''} ; TERMINAL : ${c.terminal} ; PORTE : ${c.gate} ; CLASSE : ${c.classe} ; SIÈGE : ${p.seat} ; SÉQUENCE : ${p.seq} ; RÉFÉRENCE (PNR) : ${c.pnr}`).join('\n');
-  return `${support}.${modele}\nTrajet : ${route2}. Chaque billet affiche les codes IATA réels à trois lettres des aéroports.${legs}\n${cards}\nChaque champ du billet est rempli avec la valeur exacte indiquée ci-dessus, recopiée telle quelle, nette et lisible. Aucun texte entre crochets, aucun texte générique, aucun nom de fichier ou d'image : seulement ces valeurs.`;
+  const cards=c.pax.map((p,i)=>{
+    const base=`NOM DU PASSAGER : ${p.name} ; DATE : ${c.dateTxt} ; TERMINAL : ${c.terminal} ; CLASSE : ${c.classe} ; SIÈGE : ${p.seat} ; SÉQUENCE : ${p.seq} ; RÉFÉRENCE (PNR) : ${c.pnr}`;
+    if(!c.escale)return `Billet du personnage ${i+1} — ${base} ; VOL : ${c.vol} (${c.airlineTxt}) ; DE : ${c.dep} ; À : ${c.arr} ; EMBARQUEMENT : ${c.boardTime} ; DÉPART : ${c.depTime}${c.arrTime?` ; ARRIVÉE : ${c.arrTime}`:''} ; PORTE : ${c.gate}`;
+    return `Billets du personnage ${i+1} (deux billets, un par tronçon, même passager) :\n  Billet 1 — ${base} ; VOL : ${c.vol} (${c.airlineTxt}) ; DE : ${c.dep} ; À : ${c.escale} ; EMBARQUEMENT : ${c.boardTime} ; DÉPART : ${c.depTime} ; ARRIVÉE : ${c.arr1} ; PORTE : ${c.gate}\n  Billet 2 — ${base} ; VOL : ${c.vol2} (${c.airlineTxt}) ; DE : ${c.escale} ; À : ${c.arr} ; EMBARQUEMENT : ${c.board2} ; DÉPART : ${c.dep2} ; ARRIVÉE : ${c.arr2} ; PORTE : ${c.gate2}`;
+  }).join('\n');
+  return `${support}.${modele}\nTrajet : ${route2}.${c.escale?" Pour l'escale, n'afficher que le nom de l'aéroport et son code à trois lettres.":''} Chaque billet affiche les codes IATA réels à trois lettres des aéroports.\n${cards}\nChaque champ du billet est rempli avec la valeur exacte indiquée ci-dessus, recopiée telle quelle, nette et lisible. L'heure d'embarquement est toujours 40 minutes avant l'heure de départ, exactement comme indiqué (jamais l'inverse, jamais arrondie). Aucun texte entre crochets, aucun texte générique, aucun nom de fichier ou d'image : seulement ces valeurs.`;
 }
 function seatLayout(c){
   const L=c.pax.map(p=>p.seat.slice(-1));
@@ -695,6 +718,7 @@ function buildPrompt(scene,c){
   const bg=bagInfo(scene,c).text; if(bg) L.push(bg);
   L.push(lightBlock(scene,c));
   const cb=cameraBlock(scene,c); if(cb) L.push(cb);
+  if(state.refs.lieu) L.push(`La scène se déroule dans le lieu de l'image de référence du lieu de la scène : même décor, même architecture, même ambiance.`);
   if(c.direction) L.push(`Direction de scène à respecter : ${c.direction}`);
   if(!scene.noPeople){ L.push(REALISM); L.push(FINAL_TEXTURE); }
   L.push(GEN_LINE);
@@ -860,7 +884,8 @@ function refList(scene,c){
   const place=[['dep','dep','Image de référence du lieu de départ (uniquement pour le décor, ignorer les personnes) :'],
                ['arr','arr','Image de référence du lieu d\'arrivée (uniquement pour le décor, ignorer les personnes) :'],
                ['avion','cabine','Image de référence de la cabine de l\'avion (uniquement pour le décor, ignorer les personnes) :']];
-  place.forEach(([ph,k,t])=>{ if(scene.phase===ph && !(ph==='dep'&&scene.outdoor) && state.refs[k] && !(k==='cabine'&&scene.noPeople)) L.push({label:t,img:state.refs[k]}); });
+  if(state.refs.lieu) L.push({label:"Image de référence du lieu de la scène (c'est ici que se passe la scène ; uniquement pour le décor, ignorer les personnes) :",img:state.refs.lieu});
+  place.forEach(([ph,k,t])=>{ if(!state.refs.lieu && scene.phase===ph && !(ph==='dep'&&scene.outdoor) && state.refs[k] && !(k==='cabine'&&scene.noPeople)) L.push({label:t,img:state.refs[k]}); });
   if(scene.planeExt&&state.refs.avionExt) L.push({label:"Image de référence de l'avion, vu de l'extérieur (uniquement pour l'avion, ignorer les personnes) :",img:state.refs.avionExt});
   if(scene.phase==='avion'&&scene.id!=='vue_hublot'&&state.refs.seat) L.push({label:"Image de référence des sièges de l'avion (uniquement pour le modèle de siège, ignorer les personnes) :",img:state.refs.seat});
   if(scene.id==='ecran'&&state.refs.screen) L.push({label:"Image de référence de l'écran de télé de l'avion (ce qui s'affiche à l'écran) :",img:state.refs.screen});
