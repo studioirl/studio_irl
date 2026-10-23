@@ -82,7 +82,7 @@ textarea{min-height:90px;resize:vertical}
   <div class="top">
     <div>
       <h1>Studio <span>Voiture</span></h1>
-      <p class="sub">Les passagers en voiture, côté volant respecté, 4K réaliste. <b style="color:var(--blue2)">v7 · miroir</b></p>
+      <p class="sub">Les passagers en voiture, côté volant respecté, 4K réaliste. <b style="color:var(--blue2)">v9 · miroir</b></p>
     </div>
     <button class="lnk" id="keyReset">Changer de clé</button>
   </div>
@@ -138,12 +138,7 @@ textarea{min-height:90px;resize:vertical}
   <div class="card">
     <h2>4 · Direction de scène (optionnel)</h2>
     <textarea id="dir" placeholder="Ex : la passagère avant prend un selfie, le conducteur rit en regardant la route…"></textarea>
-    <label for="arm" style="margin-top:10px">Selfie : bras qui tient le téléphone</label>
-    <select id="arm">
-      <option value="out">Hors cadre (recommandé)</option>
-      <option value="in">Visible</option>
-    </select>
-    <div class="hint">Ceinture toujours attachée pour tout le monde, sauf si tu l'indiques ici. Le réglage du bras ne s'applique que si la direction de scène contient « selfie ».</div>
+    <div class="hint">Ceinture toujours attachée pour tout le monde, sauf si tu l'indiques ici.</div>
   </div>
 
   <button class="btn" id="go">Générer en 4K</button>
@@ -313,10 +308,6 @@ function buildParts(){
   } else {
     sideRule = "STEERING WHEEL POSITION: left-hand-drive vehicle. The steering wheel and the driver's seat are on the LEFT side of the cabin (occupants' point of view, facing forward); the front passenger is on the RIGHT. Mandatory and unmistakable.";
   }
-  const isSelfie = /selfie|bout de bras|self-portrait/i.test(dir);
-  const selfieRule = !isSelfie ? "" : ($("arm").value==="out"
-    ? "\n\nSELFIE FRAMING (MANDATORY): the arm holding the phone is NOT visible in the image. It is cropped out by the edge of the frame; at most a small part of the shoulder shows. No arm, forearm or hand stretches across the foreground. The framing is tight and natural, like a normal smartphone selfie, no ultra-wide or fisheye distortion."
-    : "\n\nSELFIE ANATOMY (MANDATORY): the phone is held at a normal distance from the face, with the arm in a natural selfie position but without maximum extension. The elbow is clearly bent and stays relatively close to the body, the forearm rises toward the phone at a natural angle. The hand stays close to the head, at a realistic distance from the face. The arm does not cross the foreground and does not stretch toward the bottom of the image. Short, natural perspective, without any wide-angle effect that lengthens the arm. The apparent length of the arm remains proportional to the body.");
   const noText = mirror ? "\n\nBACKGROUND: avoid any readable signs, shop fronts with lettering, license plates or text anywhere in the frame." : "";
 
   const cosyItems = COSYS.map(c=>({c, seat:state.cosy[c.id].seat, kid:state.cosy[c.id].kid})).filter(o=>o.seat||o.kid);
@@ -330,8 +321,8 @@ function buildParts(){
   }
 
   const carRule = state.car
-    ? "VEHICLE: use exactly the vehicle interior shown in the car reference photo (same model, dashboard, materials, colors, steering wheel)."
-    : `VEHICLE: no car reference was provided. Choose a plausible, everyday, slightly used car typical of ${loc||"the location"}, with a believable interior.`;
+    ? "VEHICLE (MANDATORY): the car is EXACTLY the vehicle shown in the CAR INTERIOR REFERENCE photo, which is provided first. Reproduce the same model, the same dashboard and center console, the same steering wheel, the same seats, upholstery, colors, materials and trim. Do not invent or substitute another car. Take only the vehicle from that photo, not any person."
+    : `VEHICLE: no car reference was provided. Choose a plausible, everyday, well-kept car typical of ${loc||"the location"}, with a believable interior.`;
 
   const intro = `Create ONE ultra-realistic photograph taken inside a car, in native 4K quality, indistinguishable from a real photo (natural light, real lens behavior, fine skin texture, no plastic look, no CGI, no illustration).
 
@@ -345,14 +336,18 @@ SEATBELTS (MANDATORY): every occupant wears a fastened seatbelt, clearly visible
 
 LOCATION: ${loc?`The car is in ${loc}. Show the surroundings through the windows with local, accurate vegetation, architecture, road type and light typical of ${loc}.`:"Choose a natural everyday road setting with visible vegetation outside the windows."} Visible vegetation outside must be natural and slightly out of focus through the glass.
 
-REALISTIC DETAILS: traces of real life inside the car — a lightly dusty dashboard, small fingerprints on the glass, a phone mount or sunglasses, a bottle or a few receipts, lightly worn upholstery, natural reflections on the windshield, tiny imperfections. Nothing staged or showroom-clean.
+REALISTIC DETAILS: traces of real life inside the car — a lightly dusty dashboard, small fingerprints on the glass, a phone mount or sunglasses, a bottle or a few receipts, natural reflections on the windshield. The car stays intact and in good condition: seats and upholstery whole and clean, no tears, no stains, no damage, no wreck.
 
 SCENE DIRECTION: ${dir?dir+" (follow this precisely; it takes priority for poses and actions, but keep the steering wheel position rule.)":"a natural, candid, relaxed moment during a drive, nobody posing at the camera unless it feels natural."}
 
-Never add text, logos, watermarks or captions.${noText}${selfieRule}
+Never add text, logos, watermarks or captions.${noText}
 
 Reference photos follow, in order:`;
   parts.push({text:intro});
+  if(state.car){
+    parts.push({text:"CAR INTERIOR REFERENCE — this is the exact vehicle to reproduce (same dashboard, seats, materials, colors):"});
+    parts.push({inlineData:{mimeType:"image/jpeg",data:mirror?state.car.flipB64:state.car.b64}});
+  }
 
   used.forEach((r,i)=>{
     parts.push({text:`REFERENCE ${i+1} — ${r.desc}:`});
@@ -370,10 +365,6 @@ Reference photos follow, in order:`;
       parts.push({inlineData:{mimeType:"image/jpeg",data:mirror?o.kid.flipB64:o.kid.b64}});
     }
   });
-  if(state.car){
-    parts.push({text:"CAR INTERIOR REFERENCE (use this exact vehicle and its steering wheel position as shown):"});
-    parts.push({inlineData:{mimeType:"image/jpeg",data:mirror?state.car.flipB64:state.car.b64}});
-  }
   return parts;
 }
 
