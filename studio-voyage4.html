@@ -725,12 +725,12 @@ function bagInfo(scene,c){
   const cabTxt={none:'',sac:'un sac à dos ou sac à main par personnage',valise:'une valise cabine par personnage',both:'une valise cabine et un sac par personnage'}[c.bagCabine];
   const hasSoute=c.bagSoute>0&&(BAG_PRE.includes(scene.id)||BAG_POST.includes(scene.id));
   const parts=[];
-  if(hasSoute)parts.push(`${c.bagSoute} valise${c.bagSoute>1?'s':''} en soute par personnage`+(c.bagSouRef?" (comme sur l'image de référence du bagage en soute)":''));
-  if(cabTxt)parts.push('bagage cabine : '+cabTxt+(c.bagCabRef?" (comme sur l'image de référence du bagage cabine)":''));
+  if(hasSoute)parts.push(`${c.bagSoute} valise${c.bagSoute>1?'s':''} en soute par personnage`+(c.bagSouRef?" — exactement la valise de l'image de référence du bagage en soute : même modèle, même couleur, même taille, même coque, mêmes roulettes et poignées, mêmes étiquettes, aucune autre valise inventée":''));
+  if(cabTxt)parts.push('bagage cabine : '+cabTxt+(c.bagCabRef?" — exactement le bagage de l'image de référence du bagage cabine : même modèle, même couleur, même taille, mêmes détails, aucun autre bagage inventé":''));
   if(!parts.length)return none;
   let t='Bagages : '+parts.join(' ; ')+'.';
   if(scene.id==='pesee'&&c.bagSoute>0)t+=` Poids affiché sur l'écran de la balance : ${c.bagPoids||'un poids crédible sous la limite autorisée'}.`;
-  if(c.bagDesc)t+=` ${c.bagDesc}.`;
+  if(c.bagDesc&&!(c.bagCabRef||c.bagSouRef))t+=` ${c.bagDesc}.`;
   return {text:t,cab:!!cabTxt,soute:hasSoute};
 }
 function infoBlock(c){
@@ -942,8 +942,8 @@ function refList(scene,c){
     if(tm) L.push({label:"Modèle de billet à reproduire à l'identique (même support, couleurs, polices, logo, intitulés et disposition ; seules les valeurs changent) :",img:tm});
   }
   const bi=bagInfo(scene,c);
-  if(bi.cab&&state.refs.bagCabine) L.push({label:'Image de référence du bagage cabine :',img:state.refs.bagCabine});
-  if(bi.soute&&state.refs.bagSoute) L.push({label:'Image de référence du bagage en soute :',img:state.refs.bagSoute});
+  if(bi.cab&&state.refs.bagCabine) L.push({label:'Image de référence du bagage cabine, à reproduire à l\'identique (même modèle, couleur, taille et détails ; uniquement pour le bagage, ignorer les personnes) :',img:state.refs.bagCabine});
+  if(bi.soute&&state.refs.bagSoute) L.push({label:'Image de référence du bagage en soute, à reproduire à l\'identique (même modèle, couleur, taille et détails ; uniquement pour le bagage, ignorer les personnes) :',img:state.refs.bagSoute});
   return L;
 }
 function orderLine(refs){
