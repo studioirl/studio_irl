@@ -57,8 +57,8 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);border-c
 .btn:disabled{opacity:.5;cursor:not-allowed}
 .sticky{position:sticky;bottom:0;background:linear-gradient(0deg,#0a2147 70%,transparent);padding:14px 0 10px;margin-top:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .sticky .info{color:var(--muted);font-size:13px;flex:1;min-width:140px}
-#results{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:12px}
-@media(max-width:640px){#results{grid-template-columns:1fr}}
+#results,#hist{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:12px}
+@media(max-width:640px){#results,#hist{grid-template-columns:1fr}}
 .res{background:var(--card2);border:1px solid var(--line);border-radius:14px;overflow:hidden}
 .res .imgbox{min-height:180px;display:flex;align-items:center;justify-content:center;background:#0b1d3f;color:var(--muted);font-size:13px;text-align:center;padding:8px}
 .res img{width:100%;display:block}
@@ -81,9 +81,30 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);border-c
 </header>
 
 <section>
-  <h2><span class="n">0</span> Clé API</h2>
-  <p class="hint">Clé Vertex AI (commence par AQ). Elle reste uniquement dans ton navigateur.</p>
+  <h2><span class="n">0</span> Clés API &amp; réglages</h2>
+  <p class="hint">Les clés sont enregistrées dans ce navigateur : tu n'as pas à les remettre à chaque fois.</p>
+  <label>Clé API Vertex AI (Express Mode)</label>
   <input type="password" id="apiKey" placeholder="AQ...">
+  <label>Clé API kie.ai</label>
+  <input type="password" id="kieKey" placeholder="Clé kie.ai">
+  <label>Moteur de génération</label>
+  <div class="seg" id="engineSeg">
+    <button type="button" data-v="vertex" class="on">VERTEX AI</button>
+    <button type="button" data-v="kie">KIE.AI</button>
+  </div>
+  <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="autoFallback" checked> Basculer automatiquement sur kie.ai si Vertex échoue (429 / quota)</label>
+  <label>Format de sortie</label>
+  <div class="seg" id="fmtSeg">
+    <button type="button" data-v="9:16" class="on">9:16</button>
+    <button type="button" data-v="1:1">1:1</button>
+    <button type="button" data-v="4:5">4:5</button>
+    <button type="button" data-v="16:9">16:9</button>
+  </div>
+  <div class="row" style="margin-top:12px">
+    <button class="btn sec" id="saveKeys" type="button">💾 Enregistrer</button>
+    <button class="btn sec" id="clearKeys" type="button">🗑 Effacer</button>
+  </div>
+  <div class="small" id="keysStatus" style="margin-top:6px"></div>
 </section>
 
 <section>
@@ -94,8 +115,15 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);border-c
 
 <section>
   <h2><span class="n">2</span> Lieux de référence (optionnels)</h2>
-  <p class="hint">Photo de l'aéroport de départ, de l'aéroport d'arrivée, et de l'intérieur de l'avion.</p>
+  <p class="hint">Photo de l'aéroport de départ, de l'aéroport d'arrivée, de l'intérieur de l'avion, de l'extérieur de l'avion, des sièges et de l'écran de télé de l'avion. Toutes sont optionnelles et ne servent que dans les scènes concernées.</p>
   <div class="refs" id="refs"></div>
+  <label>Repas (optionnel)</label>
+  <div class="refs" id="mealRefs"></div>
+  <div style="margin-top:14px">
+    <button class="btn sec" id="genCabine" type="button">✈️ Générer l'intérieur de l'avion (référence)</button>
+    <p class="hint" style="margin-top:6px">À faire en premier : génère la cabine, vérifie-la, puis « Verrouiller ce lieu ». Toutes les scènes dans l'avion se passeront alors dans cette même cabine.</p>
+    <div id="cabineRes"></div>
+  </div>
 </section>
 
 <section>
@@ -122,12 +150,25 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);border-c
         <option value="couloir">Côté couloir</option><option value="milieu">Milieu</option>
       </select></div>
     <div><label>Numéro de siège (optionnel)</label><input type="text" id="seat" placeholder="ex. 23A — les autres avatars sont placés à côté"></div>
+    <div><label>Lumière (jour / nuit)</label>
+      <select id="light">
+        <option value="auto">Automatique (d'après l'heure)</option><option value="jour">Jour</option><option value="nuit">Nuit</option>
+      </select></div>
   </div>
   <label>Type de billet</label>
   <div class="seg" id="ticketSeg">
     <button type="button" data-v="elec" class="on">📱 Électronique (iPhone 16 Pro Max)</button>
     <button type="button" data-v="papier">🎫 Papier</button>
   </div>
+  <label>Modèles de billet (optionnels)</label>
+  <div class="refs" id="ticketRefs"></div>
+  <p class="hint" style="margin-top:6px">Une photo bien à plat et de face d'un vrai billet (papier) ou d'une capture d'écran (billet sur téléphone). Le billet est reproduit à l'identique (support, couleurs, polices, logo, disposition) ; seules les informations (noms, vol, villes, dates, heures, siège…) viennent des champs du vol.</p>
+  <label>Afficher le billet et les infos du vol dans les scènes</label>
+  <div class="seg" id="ticketShowSeg">
+    <button type="button" data-v="1" class="on">Activé</button>
+    <button type="button" data-v="0">Désactivé</button>
+  </div>
+  <p class="hint" style="margin-top:6px">Le billet n'apparaît que dans les scènes où il a du sens (remise de la carte, scan, embarquement, photo du billet). Les infos du vol n'apparaissent que sur les écrans ou panneaux concernés. Désactivé : aucun billet ni texte du vol.</p>
 </section>
 
 <section>
@@ -141,6 +182,13 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);border-c
     <div><label>Poids affiché à la pesée (optionnel)</label><input type="text" id="bagPoids" placeholder="ex. 23 kg — si vide : poids crédible"></div>
     <div><label>Description des bagages (optionnel)</label><input type="text" id="bagDesc" placeholder="ex. valises rigides bleues, étiquettes colorées"></div>
   </div>
+  <label>Afficher les bagages dans les scènes</label>
+  <div class="seg" id="bagShowSeg">
+    <button type="button" data-v="1" class="on">Activé</button>
+    <button type="button" data-v="0">Désactivé</button>
+  </div>
+  <label>Références des bagages (optionnelles)</label>
+  <div class="refs" id="bagRefs"></div>
 </section>
 
 <section>
@@ -157,7 +205,28 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);border-c
 </section>
 
 <section>
-  <h2><span class="n">6</span> Direction de scène (optionnel)</h2>
+  <h2><span class="n">6</span> Caméra</h2>
+  <p class="hint">Choisis où se place la caméra : le choix s'applique à toutes les scènes sélectionnées (les angles de l'avion seulement aux scènes dans l'avion). Automatique = c'est la scène qui décide. Tu peux combiner plusieurs familles.</p>
+  <div class="grid g2" id="camera"></div>
+  <label>Qui tient le téléphone (selfie, photo du billet)</label>
+  <select id="holder">
+    <option value="1">Voyageur 1</option><option value="2">Voyageur 2</option><option value="3">Voyageur 3</option>
+    <option value="4">Voyageur 4</option><option value="5">Voyageur 5</option><option value="6">Voyageur 6</option>
+  </select>
+  <label>Qui prend la photo (optionnel)</label>
+  <select id="photographer">
+    <option value="0">Personne (photo prise par quelqu'un d'extérieur)</option>
+    <option value="1">Voyageur 1</option><option value="2">Voyageur 2</option><option value="3">Voyageur 3</option>
+    <option value="4">Voyageur 4</option><option value="5">Voyageur 5</option><option value="6">Voyageur 6</option>
+  </select>
+  <p class="hint" style="margin-top:6px">La caméra représente les yeux de cette personne : on ne la voit jamais en entier, seulement une partie de son corps (mains, bras, jambes) selon le cadrage.</p>
+</section>
+
+<section>
+  <h2><span class="n">7</span> Direction de scène (optionnel)</h2>
+  <label>Lieu de référence de la scène (optionnel)</label>
+  <div class="refs" id="lieuRefs"></div>
+  <p class="hint" style="margin-top:6px">Une photo d'un lieu : toutes les scènes sélectionnées se passent directement dans ce lieu (à la place des lieux de départ, d'arrivée ou de la cabine). Change-la entre deux générations pour changer de lieu.</p>
   <p class="hint">Tes consignes sont appliquées à toutes les images générées.</p>
   <textarea id="direction" placeholder="ex. ambiance matin tôt, ils sont fatigués mais souriants, lumière naturelle..."></textarea>
 </section>
@@ -169,12 +238,21 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);border-c
 </div>
 
 <div id="results"></div>
+<section id="histSec" style="display:none">
+  <h2>🕘 Dernières scènes (gardées dans ce navigateur)</h2>
+  <p class="hint">Les 5 dernières images générées restent ici, même si tu fermes la page.</p>
+  <div id="hist"></div>
+</section>
 </div>
 
 <script>
 /* ============ Constantes ============ */
-const MODEL_IMAGE = 'gemini-3-pro-image';
+const MODEL_IMAGE = 'gemini-3.1-flash-image';
 const IMAGE_SIZE = '4K';
+const KIE_UPLOAD_URL='https://kieai.redpandaai.co/api/file-base64-upload';
+const KIE_TASK_URL='https://api.kie.ai/api/v1/jobs/createTask';
+const KIE_POLL_URL='https://api.kie.ai/api/v1/jobs/recordInfo';
+const KIE_MODEL='nano-banana-2';
 const ENDPOINT = m => `https://aiplatform.googleapis.com/v1/publishers/google/models/${m}:generateContent`;
 
 /* ============ Catalogue de scènes ============ */
@@ -185,39 +263,143 @@ const PHASES = [
   {id:'avion', title:'💺 Dans l\'avion'},
   {id:'arr', title:'🛬 Arrivée'}
 ];
+/* ============ Bibliothèque de caméra : [valeur, libellé, description] ============ */
+const CAMERA = [
+  {id:'hauteur', label:'Hauteur de la caméra', items:[
+    ['yeux','Niveau des yeux',"la caméra est à hauteur des yeux, vue naturelle"],
+    ['plongee','Plongée',"la caméra est au-dessus du sujet et regarde vers le bas, le sujet paraît plus petit"],
+    ['zenithale','Vue du dessus (zénithale)',"la caméra est juste au-dessus et regarde droit vers le bas"],
+    ['contre','Contre-plongée',"la caméra est en dessous du sujet et regarde vers le haut, le sujet paraît plus imposant"],
+    ['sol','Au ras du sol',"la caméra est posée au sol, très basse"],
+    ['taille','Hauteur de la taille',"la caméra est tenue au niveau du ventre, rendu spontané"]]},
+  {id:'position', label:'Position par rapport au sujet', items:[
+    ['face','De face',"le sujet est face à la caméra"],
+    ['trois_quarts','Trois-quarts face',"le sujet est légèrement tourné par rapport à la caméra, l'angle le plus naturel"],
+    ['profil','De profil',"la caméra voit le sujet de côté"],
+    ['trois_quarts_dos','Trois-quarts dos',"on voit surtout le dos du sujet et un peu son côté"],
+    ['dos','De dos',"la caméra est derrière le sujet"],
+    ['penche','Angle penché (hollandais)',"l'horizon est incliné pour un effet dynamique"]]},
+  {id:'plan', label:'Taille du plan', items:[
+    ['ensemble','Plan d\'ensemble',"on voit tout le lieu, les personnages sont petits dans le décor"],
+    ['large','Plan large',"les personnages en entier avec beaucoup de décor autour"],
+    ['americain','Plan américain',"cadré à mi-cuisses"],
+    ['moyen','Plan moyen',"cadré à la taille"],
+    ['rapproche','Plan rapproché',"cadré à la poitrine"],
+    ['gros','Gros plan',"cadré serré sur le sujet ou l'objet principal"],
+    ['detail','Très gros plan / détail',"un seul détail occupe le cadre (main, billet, verre...)"]]},
+  {id:'pov', label:'Point de vue', items:[
+    ['epaule','Par-dessus l\'épaule',"la caméra est derrière quelqu'un et regarde ce qu'il regarde"],
+    ['subjectif','Point de vue subjectif (POV)',"on voit ce que voit le personnage, sans le voir lui"],
+    ['regard_cam','Regard caméra',"le sujet regarde l'objectif"],
+    ['regard_hors','Regard hors caméra',"le sujet regarde ailleurs, comme pris sur le vif"],
+    ['travers','À travers un élément du décor',"cadré à travers une vitre, une porte ou un objet flou au premier plan"],
+    ['reflet','Dans un reflet',"la scène est vue dans un miroir, une vitre ou une surface brillante"],
+    ['diagonale','Plan en diagonale',"la composition suit une diagonale, effet de mouvement"],
+    ['symetrique','Plan symétrique',"caméra au centre d'un couloir, perspective qui fuit vers un point central"],
+    ['coin','Plan de coin',"la caméra est placée dans l'angle de la pièce"],
+    ['cache','Plan caché / voyeur',"cadré derrière des gens ou des objets, comme une photo volée"]]},
+  {id:'optique', label:'Optique', items:[
+    ['ultra','Ultra grand-angle',"très large, déformation sur les bords, espace serré"],
+    ['grand','Grand-angle',"large et naturel, rendu smartphone"],
+    ['normal','Focale normale',"proche de la vision humaine"],
+    ['tele','Téléobjectif',"plans écrasés, fond flou"],
+    ['fisheye','Fisheye',"déformation ronde très marquée"],
+    ['flou','Faible profondeur de champ',"sujet net, fond flou"],
+    ['net','Grande profondeur de champ',"tout est net, du premier plan au fond"]]},
+  {id:'avion', label:'Angle dans l\'avion (scènes dans l\'avion seulement)', only:['avion'], items:[
+    ['allee_avant','Depuis l\'allée vers l\'avant',"caméra dans l'allée centrale, on voit les rangées s'éloigner vers l'avant de l'avion"],
+    ['allee_arriere','Depuis l\'allée vers l\'arrière',"caméra dans l'allée centrale, on voit les rangées s'éloigner vers l'arrière de l'avion"],
+    ['siege_derriere','Depuis le siège de derrière',"caméra derrière les personnages, au-dessus des dossiers"],
+    ['siege_face','Depuis le siège d\'en face de l\'allée',"vue de côté, l'allée entre la caméra et les sièges"],
+    ['hublot_dedans','Depuis le hublot vers l\'intérieur',"la caméra est près du hublot et regarde vers l'intérieur de la cabine"],
+    ['hublot_dehors','Par le hublot',"on voit dehors avec le bord du hublot dans le cadre"]]},
+  {id:'mode', label:'Qui prend la photo', items:[
+    ['vif','Sur le vif',"photo spontanée prise par un proche, appareil non visible"],
+    ['autre','Prise par quelqu\'un d\'autre',"photo prise par un autre voyageur ou un inconnu, le photographe et son appareil ne sont pas visibles"],
+    ['selfie','Selfie bras tendu',"{H} tient le téléphone à bout de bras pour se photographier avec les autres, le téléphone n'est pas visible, le bras peut apparaître dans le cadre"],
+    ['miroir','Selfie au miroir',"{H} se photographie dans un miroir, le téléphone est visible dans le reflet"],
+    ['pose','Téléphone posé / retardateur',"photo posée, personnages face à l'appareil, le téléphone n'est pas visible"],
+    ['surv','Caméra de surveillance',"vue haute en grand-angle, rendu de vidéosurveillance"],
+    ['action','Action cam',"très grand-angle, caméra fixée sur un point, légèrement déformé"]]}
+];
+function buildCamera(){
+  const box=$('camera'); box.innerHTML='';
+  CAMERA.forEach(f=>{
+    const d=document.createElement('div');
+    const opts=f.items.map(it=>`<option value="${it[0]}">${it[1]}</option>`).join('');
+    d.innerHTML=`<label>${f.label}</label><select id="cam_${f.id}"><option value="auto">Automatique (selon la scène)</option>${opts}</select><div class="small" style="margin-top:4px"></div>`;
+    box.appendChild(d);
+    d.querySelector('select').onchange=e=>{
+      const it=f.items.find(x=>x[0]===e.target.value);
+      d.querySelector('.small').textContent=it?it[2].replace('{H}','le voyageur choisi'):'';
+    };
+  });
+}
+function cameraBlock(scene,c){
+  const parts=[];
+  CAMERA.forEach(f=>{
+    const v=c.cam&&c.cam[f.id];
+    if(!v||v==='auto')return;
+    if(f.only&&!f.only.includes(scene.phase))return;
+    if(f.id==='mode'&&scene.noPeople)return;
+    const it=f.items.find(x=>x[0]===v); if(!it)return;
+    const lab=f.id==='avion'?'Angle dans l\'avion':f.label;
+    parts.push(`${lab} : ${it[1]} (${it[2].replace('{H}',c.holderTxt)})`);
+  });
+  return parts.length?`Caméra : ${parts.join(' ; ')}. Ce placement de la caméra est prioritaire sur le cadrage décrit dans la scène.`:'';
+}
+function capF(t){return t.charAt(0).toUpperCase()+t.slice(1);}
+function tObj(c){
+  if(c.escale)return c.ticketType==='papier'?"deux cartes d'embarquement papier (une par tronçon : avant et après l'escale)":"un iPhone 16 Pro Max dont l'écran affiche clairement les deux cartes d'embarquement électroniques empilées (une par tronçon : avant et après l'escale)";
+  return c.ticketType==='papier'?"une carte d'embarquement papier":"un iPhone 16 Pro Max dont l'écran affiche clairement la carte d'embarquement électronique";
+}
+function tPer(c){
+  if(c.escale)return c.ticketType==='papier'?"ses deux cartes d'embarquement papier (une par tronçon, avant et après l'escale)":"son propre iPhone 16 Pro Max dont l'écran affiche ses deux cartes d'embarquement électroniques empilées (une par tronçon, avant et après l'escale)";
+  return c.ticketType==='papier'?"sa propre carte d'embarquement papier":"son propre iPhone 16 Pro Max dont l'écran affiche sa propre carte d'embarquement électronique";
+}
+
 const SCENES = [
   // ---- Départ
   {id:'arrivee', phase:'dep', label:'Arrivée devant l\'aéroport', txt:c=>`Arrivée devant l'entrée du terminal de ${c.dep}, avec des valises et un chariot à bagages, ambiance de départ en voyage.`},
   {id:'hall', phase:'dep', label:'Hall des départs', txt:c=>`Dans le grand hall des départs de ${c.dep}, panneaux d'information, comptoirs d'enregistrement et voyageurs en arrière-plan, valises à côté.`},
-  {id:'borne', phase:'dep', label:'Borne d\'enregistrement', txt:c=>`Enregistrement en libre-service devant une borne d'enregistrement de l'aéroport, écran de la borne visible, passeports en main.`},
-  {id:'comptoir', phase:'dep', label:'Comptoir d\'enregistrement (check-in)', txt:c=>`Au comptoir d'enregistrement de la compagnie, face à un(e) agent(e) de la compagnie en uniforme, passeports posés sur le comptoir, écran d'ordinateur côté agent.`},
-  {id:'pesee', phase:'dep', label:'Dépôt et pesée des bagages', txt:c=>`Dépôt d'une valise sur la balance du comptoir d'enregistrement, l'écran affichant le poids en kg, l'agent(e) colle l'étiquette bagage, tapis roulant des bagages derrière le comptoir.`},
+  {id:'borne', info:true, phase:'dep', label:'Borne d\'enregistrement', txt:c=>`Enregistrement en libre-service devant une borne d'enregistrement de l'aéroport, écran de la borne visible, passeports en main.`},
+  {id:'comptoir', info:true, phase:'dep', label:'Comptoir d\'enregistrement (check-in)', txt:c=>`Au comptoir d'enregistrement de la compagnie, face à un(e) agent(e) de la compagnie en uniforme, passeports posés sur le comptoir, écran d'ordinateur côté agent.`},
+  {id:'pesee', phase:'dep', label:'Dépôt et pesée des bagages', txt:c=>`Dépôt d'une valise sur la balance du comptoir d'enregistrement, l'écran affichant le poids en kg, l'agent(e) colle l'étiquette bagage, tapis roulant des bagages derrière le comptoir.${c.n>1?" Chaque personnage dépose sa propre valise à tour de rôle sur la balance.":""}`},
   {id:'remise', phase:'dep', label:'Remise de la carte d\'embarquement', ticket:true, txt:c=>`L'agent(e) du comptoir remet ${c.ticketType==='papier'?'les cartes d\'embarquement papier':'les cartes d\'embarquement (consultables ensuite sur téléphone)'} avec les passeports, étiquettes bagages visibles.`},
-  {id:'billet', phase:'dep', label:'Le billet (par-dessus l\'épaule)', ticket:true, txt:c=> c.ticketType==='papier'
-     ? `Photo prise par-dessus l'épaule du personnage 1 dont la main tient une carte d'embarquement papier, bien lisible au premier plan ; en arrière-plan l'intérieur de l'aéroport de ${c.dep}.`
-     : `Photo prise par-dessus l'épaule du personnage 1 dont la main tient un iPhone 16 Pro Max ; l'écran affiche clairement la carte d'embarquement électronique, bien lisible au premier plan ; en arrière-plan l'intérieur de l'aéroport de ${c.dep}.`},
-  {id:'securite_depot', phase:'dep', label:'Sécurité : dépôt sur le tapis', txt:c=>`Au contrôle de sécurité, dépôt des affaires dans des bacs gris sur le tapis roulant du scanner à rayons X : sacs, ordinateur portable, téléphone, ceinture, veste. Agents de sécurité autour, file de passagers derrière.`},
-  {id:'portique', phase:'dep', label:'Sécurité : passage sous le portique', txt:c=>`Passage sous le portique de détection de métaux au contrôle de sécurité, agent de sécurité à côté, bacs qui défilent sur le tapis à côté.`},
-  {id:'recup_bacs', phase:'dep', label:'Sécurité : récupération des affaires', txt:c=>`Récupération des affaires dans les bacs à la sortie du tapis roulant de sécurité, remise des chaussures et des sacs.`},
-  {id:'passeport_dep', phase:'dep', label:'Contrôle des passeports', txt:c=>`Au contrôle des passeports, devant la cabine de la police aux frontières, passeport tendu à l'agent.`},
+  {id:'billet', phase:'dep', ticket:true, label:'Billet : par-dessus l\'épaule', txt:c=>`Photo prise par-dessus l'épaule ${c.holderDe}, dont la main tient ${tObj(c)}, bien lisible au premier plan ; en arrière-plan l'intérieur de l'aéroport de ${c.dep}.`},
+  {id:'billet_autre', phase:'dep', ticket:true, label:'Billet : tenu d\'une main (photo par quelqu\'un d\'autre)', txt:c=>`Photo prise par quelqu'un d'autre. ${capF(c.holderTxt)} tient d'une seule main ${tObj(c)}, devant soi, et le regarde, l'autre main libre, dans le hall de l'aéroport de ${c.dep}. Le photographe n'est pas visible.`},
+  {id:'billet_face', phase:'dep', ticket:true, label:'Billet : montré face caméra', txt:c=>`${capF(c.holderTxt)} tend ${tObj(c)} vers la caméra pour le montrer, ${c.ticketType==='papier'?'la carte':'l\'écran'} tourné vers l'objectif et bien lisible au premier plan, dans l'aéroport de ${c.dep}.`},
+  {id:'billet_gros', phase:'dep', ticket:true, label:'Billet : gros plan sur les mains', txt:c=>`Gros plan sur les mains ${c.holderDe} qui tiennent ${tObj(c)}, bien lisible, fond d'aéroport flou.`},
+  {id:'billet_duo', phase:'dep', ticket:true, label:'Billet : duo, chacun tient le sien (même point de vue)', txt:c=>c.n>1?`Photo à la première personne, prise du même point de vue, vers le bas : les mains du personnage 1 et du personnage 2 tiennent chacune ${tPer(c)}, côte à côte, légèrement superposés, tous bien lisibles au premier plan et chacun au nom de son personnage. Assis dans la salle d'embarquement de l'aéroport de ${c.dep}, fond flou.`:`Gros plan sur les mains ${c.holderDe} qui tiennent ${tObj(c)}, bien lisible, fond d'aéroport flou.`},
+  {id:'billet_surface', phase:'dep', ticket:true, label:'Billet : posé sur le comptoir avec les passeports', txt:c=>`Plan de détail : ${c.ticketType==='papier'?(c.escale?"les deux cartes d'embarquement papier (une par tronçon) posées":"la carte d'embarquement papier posée"):(c.escale?"un iPhone 16 Pro Max posé à plat, écran affichant les deux cartes d'embarquement électroniques empilées (une par tronçon),":"un iPhone 16 Pro Max posé à plat, écran affichant la carte d'embarquement électronique,")} sur le comptoir d'enregistrement à côté des passeports, bien lisible.`},
+  {id:'billet_passeport', phase:'dep', ticket:true, label:'Billet : passeport et billet en main', txt:c=>`Les mains ${c.holderDe} tiennent un passeport ${c.ticketType==='papier'?(c.escale?"avec les deux cartes d'embarquement papier (une par tronçon) glissées dedans":"avec la carte d'embarquement papier glissée dedans"):(c.escale?"et un iPhone 16 Pro Max dont l'écran affiche les deux cartes d'embarquement électroniques empilées (une par tronçon)":"et un iPhone 16 Pro Max dont l'écran affiche la carte d'embarquement électronique")}, bien lisible, prêts à être présentés.`},
+  {id:'billet_partage', phase:'dep', ticket:true, label:'Billet : montré à un autre voyageur', txt:c=>c.n>1?`${capF(c.holderTxt)} montre ${tObj(c)} au ${c.holderNum===1?'personnage 2':'personnage 1'} qui se penche pour le regarder, dans le hall de l'aéroport de ${c.dep}.`:`${capF(c.holderTxt)} tient d'une seule main ${tObj(c)}, devant soi, et le regarde, dans le hall de l'aéroport de ${c.dep}.`},
+  {id:'securite_depot', phase:'dep', label:'Sécurité : dépôt sur le tapis', txt:c=>`Au contrôle de sécurité, dépôt des affaires dans des bacs gris sur le tapis roulant du scanner à rayons X : sacs, ordinateur portable, téléphone, ceinture, veste. ${c.n>1?"Chaque personnage a son propre bac et fait son propre geste (l'un sort son ordinateur, un autre retire sa ceinture, un autre vide ses poches...), les uns à la suite des autres le long du tapis, jamais face à face. ":""}Agents de sécurité autour, file de passagers derrière.`},
+  {id:'portique', phase:'dep', label:'Sécurité : passage sous le portique', txt:c=>`Passage sous le portique de détection de métaux au contrôle de sécurité, ${c.n>1?"un seul personnage sous le portique à la fois, les autres attendent derrière leur tour, ":""}agent de sécurité à côté, bacs qui défilent sur le tapis à côté.`},
+  {id:'recup_bacs', phase:'dep', label:'Sécurité : récupération des affaires', txt:c=>`Récupération des affaires dans les bacs à la sortie du tapis roulant de sécurité, remise des chaussures et des sacs.${c.n>1?" Chaque personnage récupère ses propres affaires dans son propre bac, avec son propre geste, répartis le long du tapis.":""}`},
+  {id:'passeport_dep', phase:'dep', label:'Contrôle des passeports', txt:c=>`Au contrôle des passeports, devant la cabine de la police aux frontières, passeport tendu à l'agent.${c.n>1?" Un seul personnage devant la cabine à la fois, les autres attendent derrière la ligne de courtoisie.":""}`},
   {id:'scan_portillon', phase:'dep', label:'Scan du billet au portillon', ticket:true, txt:c=> c.ticketType==='papier'
-     ? `Passage d'un portillon automatique : la carte d'embarquement papier est posée sur le lecteur de code-barres du portillon, voyant lumineux du lecteur visible.`
-     : `Passage d'un portillon automatique : l'écran de l'iPhone 16 Pro Max affichant le QR code de la carte d'embarquement est posé sur le lecteur du portillon, voyant lumineux du lecteur visible.`},
+     ? `Passage d'un portillon automatique : la carte d'embarquement papier est posée sur le lecteur de code-barres du portillon, voyant lumineux du lecteur visible.${c.n>1?" Chaque personnage scanne son propre billet à tour de rôle, les autres attendent derrière.":""}`
+     : `Passage d'un portillon automatique : l'écran de l'iPhone 16 Pro Max affichant le QR code de la carte d'embarquement est posé sur le lecteur du portillon, voyant lumineux du lecteur visible.${c.n>1?" Chaque personnage scanne son propre billet à tour de rôle, les autres attendent derrière.":""}`},
+  {id:'escalator', phase:'dep', label:'Escalator (montant)', txt:c=>`Dans l'aéroport, montée d'un escalator mécanique vers l'étage des portes d'embarquement, ${c.n>1?"chaque personnage est debout sur sa propre marche, les uns derrière les autres, ":"debout sur une marche, "}une main sur la rampe, leurs bagages posés sur la marche à côté d'eux. Panneau d'indication des portes d'embarquement au-dessus, escalators voisins visibles.`},
+  {id:'tapis_plat', phase:'dep', label:'Tapis roulant plat (escalator plat)', txt:c=>`Dans un long couloir de l'aéroport, sur un tapis roulant plat (escalator plat) qui avance vers les portes d'embarquement, ${c.n>1?"les personnages sont debout côte à côte ou l'un derrière l'autre, ":"debout, "}une main sur la rampe, leurs bagages à côté d'eux. Panneau d'indication des portes d'embarquement au plafond, couloir en perspective.`},
   {id:'duty_free', phase:'dep', label:'Duty free', txt:c=>`Dans la boutique duty free de l'aéroport, rayons de parfums, chocolats et alcools, produits en main ou dans un panier, enseignes lumineuses.`},
   {id:'boutique', phase:'dep', label:'Boutiques / librairie', txt:c=>`Devant les boutiques de l'aéroport, achat d'un magazine, d'un coussin de voyage et de souvenirs.`},
   {id:'cafe', phase:'dep', label:'Café / restaurant de l\'aéroport', txt:c=>`Assis à une table d'un café de l'aéroport en attendant l'embarquement, boissons et viennoiseries sur la table, valises cabine à côté.`},
   {id:'salon', phase:'dep', label:'Salon (lounge)', txt:c=>`Dans un salon d'aéroport confortable, fauteuils, buffet et boissons, baie vitrée avec vue sur les avions.`},
-  {id:'ecrans', phase:'dep', label:'Écrans des départs', txt:c=>`Devant les grands écrans d'affichage des départs, cherchant leur vol et leur porte d'embarquement, valises cabine à côté.`},
-  {id:'attente_porte', phase:'dep', label:'Attente à la porte d\'embarquement', txt:c=>`Assis dans la zone d'embarquement devant la porte, grandes baies vitrées donnant sur l'avion sur le tarmac, valises cabine à côté.`},
-  {id:'baie', phase:'dep', label:'Devant la baie vitrée (avion derrière)', txt:c=>`Debout devant la grande baie vitrée de l'aéroport, avion garé à la porte visible derrière eux, photo souvenir.`},
-  {id:'embarquement', phase:'dep', label:'Embarquement : scan à la porte', ticket:true, txt:c=>`À la porte d'embarquement, file des passagers, un(e) agent(e) de la compagnie scanne ${c.ticketType==='papier'?'la carte d\'embarquement papier':'l\'écran de l\'iPhone 16 Pro Max'} sur le lecteur.`},
+  {id:'ecrans', info:true, phase:'dep', label:'Écrans des départs', txt:c=>`Devant les grands écrans d'affichage des départs, cherchant leur vol et leur porte d'embarquement, valises cabine à côté.`},
+  {id:'attente_porte', info:true, planeExt:true, phase:'dep', label:'Attente à la porte d\'embarquement', txt:c=>`Assis dans la zone d'embarquement devant la porte, grandes baies vitrées donnant sur l'avion sur le tarmac, valises cabine à côté.`},
+  {id:'baie', planeExt:true, phase:'dep', label:'Devant la baie vitrée (avion derrière)', txt:c=>`Debout devant la grande baie vitrée de l'aéroport, avion garé à la porte visible derrière eux, photo souvenir.`},
+  {id:'embarquement', info:true, phase:'dep', label:'Embarquement : scan à la porte', ticket:true, txt:c=>`À la porte d'embarquement, file des passagers, un(e) agent(e) de la compagnie scanne ${c.ticketType==='papier'?'la carte d\'embarquement papier':'l\'écran de l\'iPhone 16 Pro Max'} sur le lecteur.${c.n>1?" Chaque personnage présente son propre billet à tour de rôle, les autres attendent derrière.":""}`},
   {id:'passerelle', phase:'dep', label:'Dans la passerelle d\'embarquement', txt:c=>`Marche dans la passerelle d'embarquement qui mène à l'avion, la porte de l'avion visible au bout.`},
-  {id:'escalier', phase:'dep', label:'Montée par l\'escalier sur le tarmac', txt:c=>`Montée par l'escalier extérieur de l'avion sur le tarmac, avion visible, personnel au sol et véhicules de piste en arrière-plan.`},
+  {id:'tarmac_file', planeExt:true, outdoor:true, phase:'dep', label:'Tarmac : file au pied de l\'avion (vue de dos)', txt:c=>`Sur le tarmac, au pied de l'escalier d'embarquement, file de passagers qui attendent de monter dans l'avion. ${capF(c.persList)} ${c.n>1?'sont':'est'} au premier plan, ${c.n>1?'vus':'vu'} de dos ou de trois-quarts dos, et d'autres passagers inconnus sont à côté ${c.n>1?"d'eux":'de lui'} dans la file et attendent aussi de monter. L'avion et l'escalier d'embarquement couvert sont devant ${c.n>1?'eux':'lui'}, véhicules de piste et ciel au fond.`},
+  {id:'escalier', planeExt:true, outdoor:true, phase:'dep', label:'Montée par l\'escalier sur le tarmac', txt:c=>`Montée par l'escalier extérieur de l'avion sur le tarmac, avion visible, personnel au sol et véhicules de piste en arrière-plan.`},
   {id:'accueil', phase:'dep', label:'Accueil par l\'hôtesse à l\'entrée', txt:c=>`À l'entrée de l'avion, accueillis par une hôtesse de l'air et un steward en uniforme qui sourient et indiquent le chemin.`},
   // ---- Escale
   {id:'esc_transit', phase:'esc', label:'Correspondance : course dans le terminal', txt:c=>`Course dans les couloirs du terminal de l'aéroport de ${c.escaleTxt} pour attraper leur correspondance, panneaux « Transfer » / « Correspondances » visibles.`},
   {id:'esc_attente', phase:'esc', label:'Attente pendant l\'escale', txt:c=>`Longue attente pendant l'escale dans l'aéroport de ${c.escaleTxt}, assis par terre ou sur des fauteuils près d'une prise, valises et téléphones en charge.`},
   // ---- Avion
+  {id:'cabine_vue', phase:'avion', noPeople:true, label:'Vue de l\'intérieur de la cabine', txt:c=>`Vue d'ensemble de l'intérieur de la cabine de l'avion, prise depuis l'allée centrale en regardant vers l'avant, rangées de sièges de chaque côté, compartiments à bagages fermés au-dessus des sièges, éclairage de cabine, de nombreux passagers inconnus assis dans les rangées, presque tous les sièges occupés. Aucun personnage de référence dans cette image.`},
   {id:'siege_trouver', phase:'avion', label:'Chercher son siège dans l\'allée', txt:c=>`Avancée dans l'allée centrale de l'avion en cherchant leurs sièges, numéros de rangées visibles au-dessus, autres passagers qui s'installent.`},
   {id:'ranger', phase:'avion', label:'Ranger le bagage cabine en hauteur', txt:c=>`Rangement d'un bagage cabine dans le compartiment à bagages au-dessus des sièges, bras levé, autres passagers dans l'allée.`},
   {id:'assis', phase:'avion', label:'Assis à sa place, ceinture bouclée', txt:c=>`Assis à leurs places, ceinture de sécurité attachée, installés dans leurs sièges, vue de la cabine autour.`},
@@ -226,20 +408,26 @@ const SCENES = [
   {id:'demo_securite', phase:'avion', label:'Démonstration de sécurité des hôtesses', txt:c=>`Les hôtesses et stewards font la démonstration de sécurité dans l'allée (gilet de sauvetage, masque à oxygène, sorties de secours) pendant que les passagers regardent depuis leurs sièges.`},
   {id:'decollage', phase:'avion', label:'Décollage', txt:c=>`Pendant le décollage, assis, ceinture attachée, regardant dehors, cabine légèrement inclinée.`},
   {id:'appel', phase:'avion', label:'Appeler l\'hôtesse', txt:c=>`Un des personnages appuie sur le bouton d'appel au-dessus du siège, le voyant s'allume, une hôtesse arrive dans l'allée.`},
-  {id:'chariot', phase:'avion', label:'Chariot de service dans l\'allée', txt:c=>`Le chariot de service avance dans l'allée, poussé par deux hôtesses, les passagers sont assis à leurs places.`},
-  {id:'repas', phase:'avion', label:'Service du repas par l\'hôtesse', txt:c=>`Une hôtesse sert un plateau-repas aux passagers, tablettes baissées, plateaux avec barquette chaude, petit pain, dessert et couverts emballés.`},
-  {id:'boisson', phase:'avion', label:'Demander à boire', txt:c=>`Une hôtesse verse une boisson (jus, eau ou soda) dans un gobelet pour un des personnages, chariot de service à côté.`},
-  {id:'manger', phase:'avion', label:'Manger son plateau-repas', txt:c=>`En train de manger leur plateau-repas sur la tablette, verres et couverts en plastique, ambiance de vol de nuit.`},
-  {id:'ecran', phase:'avion', label:'Regarder un film sur l\'écran', txt:c=>`Devant l'écran de divertissement du dossier de devant qui affiche un film, casque sur les oreilles, télécommande dans la main.`},
+  {id:'chariot', meal:true, drink:true, phase:'avion', label:'Chariot de service dans l\'allée', txt:c=>`Le chariot de service avance dans l'allée, poussé par deux hôtesses, les passagers sont assis à leurs places.`},
+  {id:'repas', meal:true, phase:'avion', label:'Service du repas par l\'hôtesse', txt:c=>`Une hôtesse sert un plateau-repas aux passagers, tablettes baissées, plateaux avec barquette chaude, petit pain, dessert et couverts emballés.`},
+  {id:'boisson', drink:true, phase:'avion', label:'Demander à boire', txt:c=>`Une hôtesse verse une boisson (jus, eau ou soda) dans un gobelet pour un des personnages, chariot de service à côté.`},
+  {id:'manger', meal:true, drink:true, phase:'avion', label:'Manger son plateau-repas', txt:c=>`En train de manger leur plateau-repas sur la tablette, verres et couverts en plastique.`},
+  {id:'ecran', phase:'avion', label:'Regarder un film sur l\'écran', txt:c=>`Assis à leurs places, devant l'écran de divertissement du dossier de devant qui affiche un film, casque sur les oreilles, télécommande dans la main.`},
   {id:'dormir', phase:'avion', label:'Dormir dans l\'avion', txt:c=>`Endormis dans leurs sièges inclinés, couverture et coussin de voyage, masque sur les yeux, lumière de cabine tamisée, hublots fermés.`},
   {id:'lecture', phase:'avion', label:'Lecture / téléphone / tablette', txt:c=>`Occupés pendant le vol : lecture, tablette, écouteurs sur les oreilles, verre d'eau sur la tablette.`},
   {id:'allee', phase:'avion', label:'Se dégourdir les jambes dans l\'allée', txt:c=>`Debout dans l'allée de l'avion pour se dégourdir les jambes, passagers endormis autour, lumière de cabine tamisée.`},
   {id:'selfie_cabine', phase:'avion', label:'Selfie souvenir en cabine', txt:c=>`Selfie souvenir pris à bout de bras dans la cabine de l'avion, sièges et allée derrière.`},
+  {id:'baiser_siege', phase:'avion', label:'🔥 Baiser complice entre les sièges', txt:c=>c.n>1?`Le personnage 1 et le personnage 2 s'embrassent tendrement entre leurs deux sièges, visages tout proches, mains sur la joue ou dans le cou, discrets, les autres passagers autour somnolent ou regardent ailleurs.`:`Assis à sa place, sourire complice et regard vers le siège voisin, lumière douce de la cabine.`},
+  {id:'baiser_couverture', phase:'avion', label:'🔥 Sous la même couverture', txt:c=>c.n>1?`Le personnage 1 et le personnage 2 sont blottis l'un contre l'autre sous la même couverture, front contre front, sur le point de s'embrasser, mains entrelacées, cabine à la lumière tamisée, passagers endormis autour.`:`Blotti sous sa couverture dans son siège, lumière tamisée de la cabine, regard doux.`},
+  {id:'chuchote', phase:'avion', label:'🔥 Chuchoter à l\'oreille', txt:c=>c.n>1?`Le personnage 1 chuchote quelque chose à l'oreille du personnage 2, bouche tout près de son oreille, sourire espiègle, le personnage 2 sourit en baissant les yeux, ambiance complice et un peu coquine dans la cabine.`:`Sourire espiègle, regard complice vers l'objectif, ambiance coquine dans la cabine.`},
+  {id:'baiser_allee', phase:'avion', label:'🔥 Baiser volé près des toilettes', txt:c=>c.n>1?`Dans le petit espace près des toilettes et de l'office de l'avion, devant le rideau, le personnage 1 et le personnage 2 s'embrassent à la dérobée pendant que la cabine dort, lumière tamisée.`:`Dans le petit espace près des toilettes de l'avion, devant le rideau, lumière tamisée de la nuit.`},
+  {id:'toilettes_baiser', phase:'avion', lavatory:true, label:'🔥 Baiser dans les toilettes de l\'avion', txt:c=>c.n>1?`Dans les toilettes de l'avion, une cabine minuscule avec lavabo en inox, miroir, papier et éclairage blanc cru, le personnage 1 et le personnage 2 sont serrés l'un contre l'autre et s'embrassent passionnément, dos contre la porte ou contre le lavabo, complices et un peu essoufflés.`:`Dans les toilettes de l'avion, une cabine minuscule avec lavabo en inox, miroir et éclairage blanc cru, face au miroir, sourire complice.`},
+  {id:'toilettes_miroir', phase:'avion', lavatory:true, label:'🔥 Selfie miroir dans les toilettes', txt:c=>c.n>1?`Selfie dans le miroir des toilettes de l'avion, cabine minuscule avec lavabo en inox et éclairage blanc cru : le personnage 1 et le personnage 2 serrés l'un contre l'autre, l'un embrasse l'autre dans le cou ou sur la joue en regardant le miroir, sourires complices, le téléphone visible dans le reflet.`:`Selfie dans le miroir des toilettes de l'avion, cabine minuscule avec lavabo en inox et éclairage blanc cru, le téléphone visible dans le reflet, sourire complice.`},
   {id:'atterrissage', phase:'avion', label:'Atterrissage', txt:c=>`Pendant la descente et l'atterrissage, assis ceinture attachée, regardant par le hublot la piste et la ville qui approchent.`},
   // ---- Arrivée
   {id:'debarquement', phase:'arr', label:'Sortie de l\'avion', txt:c=>`Sortie de l'avion, saluée par l'hôtesse à la porte de la cabine, sacs sur l'épaule.`},
   {id:'couloirs', phase:'arr', label:'Couloirs de l\'aéroport d\'arrivée', txt:c=>`Marche dans les couloirs de l'aéroport de ${c.arr}, panneaux de direction « Arrivals » visibles.`},
-  {id:'passeport_arr', phase:'arr', label:'Contrôle des passeports à l\'arrivée', txt:c=>`Au contrôle des passeports à l'arrivée à ${c.arr}, file d'attente devant les cabines de contrôle, passeports en main.`},
+  {id:'passeport_arr', phase:'arr', label:'Contrôle des passeports à l\'arrivée', txt:c=>`Au contrôle des passeports à l'arrivée à ${c.arr}, file d'attente devant les cabines de contrôle, passeports en main.${c.n>1?" Un seul personnage devant chaque cabine à la fois, les autres attendent derrière la ligne de courtoisie.":""}`},
   {id:'tapis_bagages', phase:'arr', label:'Récupération des valises (tapis à bagages)', txt:c=>`Devant le carrousel à bagages de l'aéroport de ${c.arr}, attente puis récupération des valises sur le tapis.`},
   {id:'sortie', phase:'arr', label:'Sortie du hall d\'arrivée', txt:c=>`Sortie du hall d'arrivée de l'aéroport de ${c.arr} avec leurs valises, personnes qui attendent derrière la barrière, panneaux d'accueil.`},
   {id:'panneau', phase:'arr', label:'Photo devant le panneau d\'arrivée', txt:c=>`Photo souvenir devant le panneau de bienvenue de l'aéroport de ${c.arr}, valises à leurs pieds, joie d'être arrivés.`},
@@ -248,8 +436,10 @@ const SCENES = [
 
 /* ============ État ============ */
 const state = {
-  avatars: Array.from({length:6}, ()=>({img:null, name:'', present:true})),
-  refs: {dep:null, arr:null, cabine:null},
+  avatars: Array.from({length:6}, ()=>({img:null, name:'', present:true, place:'auto', seatNo:''})),
+  fix: {},
+  refs: {dep:null, arr:null, cabine:null, avionExt:null, seat:null, screen:null, ticketPapier:null, ticketEcran:null, lieu:null, mealP0:null, mealP1:null, mealP2:null, mealP3:null, mealP4:null, mealP5:null, meal:null, drink:null, bagCabine:null, bagSoute:null},
+  showTicket:true, showBag:true, engine:'vertex', format:'9:16',
   ticketType:'elec',
   selected: new Set(),
   custom: [],
@@ -269,11 +459,11 @@ function readImage(file){
     fr.onload = ()=>{
       const img = new Image();
       img.onload = ()=>{
-        const M=1280; let w=img.width,h=img.height; const s=Math.min(1,M/Math.max(w,h));
+        const M=2048; let w=img.width,h=img.height; const s=Math.min(1,M/Math.max(w,h));
         w=Math.round(w*s);h=Math.round(h*s);
         const c=document.createElement('canvas');c.width=w;c.height=h;
         c.getContext('2d').drawImage(img,0,0,w,h);
-        res(c.toDataURL('image/jpeg',0.88));
+        res(c.toDataURL('image/jpeg',0.92));
       };
       img.onerror=rej; img.src=fr.result;
     };
@@ -299,23 +489,28 @@ function buildAvatars(){
     d.innerHTML=`<div class="ttl">Avatar ${i+1}</div>
       <div class="thumb ${a.img?'has':''}" style="${a.img?`background-image:url(${a.img})`:''}">+ Photo<button class="rm" type="button">×</button></div>
       <input type="text" placeholder="Nom (optionnel)" value="${a.name.replace(/"/g,'&quot;')}">
+      <select class="plc"><option value="auto">Place : auto</option><option value="hublot">Hublot</option><option value="milieu">Milieu</option><option value="couloir">Couloir</option></select>
+      <input type="text" class="sno" placeholder="Siège ex. 23A (optionnel)" value="${(a.seatNo||'').replace(/"/g,'&quot;')}">
       <label class="pres"><input type="checkbox" ${a.present?'checked':''}> Présent</label>`;
+    d.querySelector('.plc').value=a.place||'auto';
+    d.querySelector('.plc').onchange=e=>{a.place=e.target.value};
+    d.querySelector('.sno').oninput=e=>{a.seatNo=e.target.value};
     const th=d.querySelector('.thumb');
     th.onclick=e=>{ if(e.target.classList.contains('rm')){ a.img=null;buildAvatars();return; } pickFile(img=>{a.img=img;buildAvatars();}); };
-    d.querySelector('input[type=text]').oninput=e=>{a.name=e.target.value};
+    d.querySelector('input[type=text]:not(.sno)').oninput=e=>{a.name=e.target.value};
     d.querySelector('input[type=checkbox]').onchange=e=>{a.present=e.target.checked};
     box.appendChild(d);
   });
 }
 function buildRefs(){
-  const defs=[['dep','Aéroport de départ'],['arr','Aéroport d\'arrivée'],['cabine','Intérieur de l\'avion']];
-  const box=$('refs');box.innerHTML='';
-  defs.forEach(([k,t])=>{
+  const defs=[['refs','dep','Aéroport de départ'],['refs','arr','Aéroport d\'arrivée'],['refs','cabine','Intérieur de l\'avion'],['refs','avionExt','Avion (extérieur)'],['refs','seat','Sièges de l\'avion'],['refs','screen','Écran de télé de l\'avion'],['lieuRefs','lieu','Lieu de la scène'],['ticketRefs','ticketPapier','Modèle billet papier'],['ticketRefs','ticketEcran','Modèle billet sur écran'],['mealRefs','meal','Plat (tous)'],['mealRefs','mealP0','Plat voyageur 1'],['mealRefs','mealP1','Plat voyageur 2'],['mealRefs','mealP2','Plat voyageur 3'],['mealRefs','mealP3','Plat voyageur 4'],['mealRefs','mealP4','Plat voyageur 5'],['mealRefs','mealP5','Plat voyageur 6'],['mealRefs','drink','Boisson'],['bagRefs','bagCabine','Bagage cabine'],['bagRefs','bagSoute','Bagage en soute']];
+  $('refs').innerHTML='';$('lieuRefs').innerHTML='';$('ticketRefs').innerHTML='';$('mealRefs').innerHTML='';$('bagRefs').innerHTML='';
+  defs.forEach(([boxId,k,t])=>{
     const v=state.refs[k];
     const d=document.createElement('div');d.className='slot';
     d.innerHTML=`<div class="ttl">${t}</div><div class="thumb ${v?'has':''}" style="${v?`background-image:url(${v})`:''}">+ Photo<button class="rm" type="button">×</button></div>`;
     d.querySelector('.thumb').onclick=e=>{ if(e.target.classList.contains('rm')){state.refs[k]=null;buildRefs();return;} pickFile(img=>{state.refs[k]=img;buildRefs();}); };
-    box.appendChild(d);
+    $(boxId).appendChild(d);
   });
 }
 
@@ -384,25 +579,46 @@ function minusMin(t,m){
   let tot=h*60+mi-m; if(tot<0)tot+=1440;
   return String(Math.floor(tot/60)).padStart(2,'0')+':'+String(tot%60).padStart(2,'0');
 }
+function fixed(key,fn){ if(!(key in state.fix)) state.fix[key]=fn(); return state.fix[key]; }
+function applyPersonSeats(seats,pres){
+  const L=['A','B','C','D','E','F'];
+  const posOf=l=>(l==='A'||l==='F')?'hublot':(l==='C'||l==='D')?'couloir':'milieu';
+  const want=pres.map(x=>({place:x.a.place||'auto',no:((x.a.seatNo||'').trim().toUpperCase().match(/^(\d{1,2})\s*([A-F])$/))}));
+  if(!want.some(w=>w.no||w.place!=='auto'))return seats;
+  const baseRow=seats[0].seat.replace(/[A-F]$/,'');
+  const used=new Set(want.filter(w=>w.no).map(w=>w.no[2]));
+  const firstExp=want.find(w=>w.no);
+  const row=firstExp?firstExp.no[1]:baseRow;
+  const left=firstExp?'ABC'.includes(firstExp.no[2]):'ABC'.includes(seats[0].seat.slice(-1));
+  const sideL=left?['A','B','C']:['D','E','F'];
+  const pref={hublot:left?['A','F']:['F','A'],milieu:left?['B','E']:['E','B'],couloir:left?['C','D']:['D','C']};
+  return want.map((w,i)=>{
+    if(w.no)return {seat:w.no[1]+w.no[2],pos:posOf(w.no[2])};
+    let cand=(w.place!=='auto'?pref[w.place]:sideL).filter(l=>!used.has(l));
+    if(!cand.length) cand=sideL.concat(L).filter(l=>!used.has(l));
+    const l=cand[0]; used.add(l);
+    return {seat:row+l,pos:posOf(l)};
+  });
+}
 function buildContext(){
   const pres=state.avatars.map((a,i)=>({a,i})).filter(x=>x.a.img&&x.a.present);
   const n=pres.length;
   const dep=$('dep').value.trim(), arr=$('arr').value.trim();
   const escale=$('escale').value.trim();
   const airline=$('airline').value.trim();
-  const vol=$('vol').value.trim()||(pick(['XQ','TV','LN','ZR'])+rnd(100,9999));
-  const depTime=$('depTime').value||pick(['07:25','09:40','11:05','14:30','18:15','22:50']);
+  const vol=$('vol').value.trim()||fixed('vol',()=>pick(['XQ','TV','LN','ZR'])+rnd(100,9999));
+  const depTime=$('depTime').value||fixed('depTime',()=>pick(['07:25','09:40','11:05','14:30','18:15','22:50']));
   const arrTime=$('arrTime').value||'';
-  const dateTxt=fmtDate($('date').value)||'une date plausible dans le mois à venir';
-  const gate=$('gate').value.trim()||(pick(['A','B','C','D','E','K','L','M'])+rnd(1,48));
-  const terminal=$('terminal').value.trim()||pick(['1','2','2E','2F','3']);
+  const dateTxt=fmtDate($('date').value)||fmtDate(new Date(Date.now()+14*864e5).toISOString().slice(0,10));
+  const gate=$('gate').value.trim()||fixed('gate',()=>pick(['A','B','C','D','E','K','L','M'])+rnd(1,48));
+  const terminal=$('terminal').value.trim()||fixed('terminal',()=>pick(['1','2','2E','2F','3']));
   const classe=$('classe').value;
   const side=$('side').value;
-  const seats=computeSeats(n,side,$('seat').value);
-  const pnr=Array.from({length:6},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[rnd(0,31)]).join('');
-  const seq0=rnd(18,140);
+  const seats=applyPersonSeats(fixed('seats|'+n+'|'+side+'|'+$('seat').value.trim().toUpperCase(),()=>computeSeats(n,side,$('seat').value)),pres);
+  const pnr=fixed('pnr',()=>Array.from({length:6},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[rnd(0,31)]).join(''));
+  const seq0=fixed('seq0',()=>rnd(18,140));
   const pax=pres.map((x,k)=>({
-    name: fmtName(x.a.name)||'un nom de passager plausible au format NOM/PRÉNOM',
+    name: fmtName(x.a.name)||['MARTIN/CLAIRE','BERNARD/PAUL','DUBOIS/LÉA','MOREAU/LUCAS','LAURENT/INÈS','SIMON/HUGO'][k%6],
     seat: seats[k].seat, pos: seats[k].pos, seq: String(seq0+k).padStart(3,'0')
   }));
   const refNote = (k)=> state.refs[k] ? true : false;
@@ -413,133 +629,381 @@ function buildContext(){
     ticketType: state.ticketType,
     direction: $('direction').value.trim(),
     depRef: !!state.refs.dep, arrRef: !!state.refs.arr, cabRef: !!state.refs.cabine,
+    showTicket: state.showTicket, showBag: state.showBag, light: $('light').value,
+    bagCabRef: !!state.refs.bagCabine, bagSouRef: !!state.refs.bagSoute,
     bagSoute: +$('bagSoute').value, bagCabine: $('bagCabine').value,
     bagPoids: $('bagPoids').value.trim(), bagDesc: $('bagDesc').value.trim().replace(/[.\s]+$/,'')
   };
+  if(escale){
+    const addMin=(t,m)=>{const [h,mi]=t.split(':').map(Number);const tot=(h*60+mi+m)%1440;return String(Math.floor(tot/60)).padStart(2,'0')+':'+String(tot%60).padStart(2,'0');};
+    c.vol2=fixed('vol2|'+vol,()=>(vol.match(/^[A-Za-z]+/)||['AF'])[0].toUpperCase()+rnd(100,9999));
+    c.arr1=addMin(depTime,fixed('d1',()=>rnd(240,420)));
+    c.dep2=addMin(c.arr1,150);
+    c.board2=minusMin(c.dep2,40);
+    c.arr2=arrTime||addMin(c.dep2,fixed('d2',()=>rnd(360,540)));
+    c.gate2=fixed('gate2',()=>pick(['A','B','C','D','E'])+rnd(1,48));
+  }
   c.airlineTxt = airline ? `de la compagnie ${airline}` : `d'une compagnie aérienne fictive (nom et logo génériques inventés)`;
   c.persList = n===1 ? 'le personnage 1' : `les personnages 1 à ${n}`;
+  { const pk=parseInt($('photographer').value)||0; if(pk>=1&&pk<=n){ const o=[]; for(let i=1;i<=n;i++) if(i!==pk) o.push(i); c.persList=o.length?(o.length===1?`le personnage ${o[0]}`:`les personnages ${o.join(', ')}`):'aucun personnage visible en entier'; } }
+  c.cam={}; CAMERA.forEach(f=>{ c.cam[f.id]=($('cam_'+f.id)&&$('cam_'+f.id).value)||'auto'; });
+  { let hk=parseInt($('holder').value)||1; if(hk>c.n) hk=1; c.holderNum=hk; c.holderTxt='le personnage '+hk; c.holderDe='du personnage '+hk; }
+  { let pk=parseInt($('photographer').value)||0; if(pk>c.n) pk=0; c.photo=pk; }
+  { const sc=pick(['bleu marine','gris anthracite','bordeaux','vert foncé','gris clair']), hc=pick(['blanche','grise','bleu clair']), cc=pick(['gris','bleu']);
+    c.cabinLook=`sièges ${sc} avec appuie-têtes à housse ${hc}, parois et compartiments à bagages blancs, tapis ${cc} dans l'allée`;
+    c.cabinLookNoSeat=`parois et compartiments à bagages blancs, tapis ${cc} dans l'allée`; }
   return c;
 }
 
 /* ============ Prompts ============ */
 function ticketBlock(c){
-  const common=`vol ${c.vol} ${c.airlineTxt}, de ${c.dep} vers ${c.arr}${c.escale?`, via ${c.escale}`:''}, date ${c.dateTxt}, heure de départ ${c.depTime}, heure d'embarquement ${c.boardTime}${c.arrTime?`, heure d'arrivée ${c.arrTime}`:''}, terminal ${c.terminal}, porte ${c.gate}, classe ${c.classe}, référence de réservation (PNR) ${c.pnr}, avec les codes IATA réels à trois lettres des aéroports`;
-  const who=c.pax.map((p,i)=>`personnage ${i+1} : nom « ${p.name} », siège ${p.seat}, numéro de séquence ${p.seq}`).join(' ; ');
+  const route=`de ${c.dep} vers ${c.arr}${c.escale?`, avec escale (« ${c.escale} »)`:''}`;
+  const common=`vol ${c.vol} ${c.airlineTxt}, ${route}, date ${c.dateTxt}, heure de départ ${c.depTime}, heure d'embarquement ${c.boardTime}${c.arrTime?`, heure d'arrivée ${c.arrTime}`:''}, terminal ${c.terminal}, porte ${c.gate}, classe ${c.classe}, référence de réservation (PNR) ${c.pnr}, avec les codes IATA réels à trois lettres des aéroports`;
+  const legs=c.escale?(c.ticketType==='papier'
+    ? ` Le billet comporte deux coupons par passager, un par tronçon : tronçon 1 de ${c.dep} vers l'aéroport d'escale (n'afficher que le nom et le code de cet aéroport), tronçon 2 de cet aéroport d'escale vers ${c.arr}, avec un second numéro de vol et des heures cohérentes avec la correspondance.`
+    : ` La carte affichée est celle du premier tronçon, de ${c.dep} vers l'aéroport d'escale (n'afficher que le nom et le code de cet aéroport).`):'';
   const support = c.ticketType==='papier'
     ? `Carte d'embarquement papier authentique, comme celles imprimées par les compagnies (carton ou papier thermique, souche détachable, code-barres PDF417)`
     : `Carte d'embarquement électronique authentique affichée sur l'écran d'un iPhone 16 Pro Max (bords fins, Dynamic Island), comme dans l'application d'une compagnie ou le Wallet, avec un QR code`;
-  return `${support}. Informations affichées : ${common}. Une carte par personnage : ${who}. Tout le texte du billet est net, lisible et orthographié exactement comme indiqué.`;
+  const hasModel=c.ticketType==='papier'?!!state.refs.ticketPapier:!!state.refs.ticketEcran;
+  const modele=hasModel?` Un modèle de billet est fourni en image de référence : reproduire exactement ce même billet, à l'identique (même support, mêmes couleurs, mêmes polices, même logo, mêmes intitulés de champs en anglais, même disposition, même code-barres, même souche), en remplaçant uniquement les valeurs (nom, vol, villes, dates, heures, siège, séquence, codes) par celles ci-dessous.`:'';
+  const route2=c.escale?`${c.dep} → ${c.escale} → ${c.arr}`:`${c.dep} → ${c.arr}`;
+  const cards=c.pax.map((p,i)=>{
+    const base=`NOM DU PASSAGER : ${p.name} ; DATE : ${c.dateTxt} ; TERMINAL : ${c.terminal} ; CLASSE : ${c.classe} ; SIÈGE : ${p.seat} ; SÉQUENCE : ${p.seq} ; RÉFÉRENCE (PNR) : ${c.pnr}`;
+    if(!c.escale)return `Billet du personnage ${i+1} — ${base} ; VOL : ${c.vol} (${c.airlineTxt}) ; DE : ${c.dep} ; À : ${c.arr} ; EMBARQUEMENT : ${c.boardTime} ; DÉPART : ${c.depTime}${c.arrTime?` ; ARRIVÉE : ${c.arrTime}`:''} ; PORTE : ${c.gate}`;
+    return `Billets du personnage ${i+1} (deux billets, un par tronçon, même passager) :\n  Billet 1 — ${base} ; VOL : ${c.vol} (${c.airlineTxt}) ; DE : ${c.dep} ; À : ${c.escale} ; EMBARQUEMENT : ${c.boardTime} ; DÉPART : ${c.depTime} ; ARRIVÉE : ${c.arr1} ; PORTE : ${c.gate}\n  Billet 2 — ${base} ; VOL : ${c.vol2} (${c.airlineTxt}) ; DE : ${c.escale} ; À : ${c.arr} ; EMBARQUEMENT : ${c.board2} ; DÉPART : ${c.dep2} ; ARRIVÉE : ${c.arr2} ; PORTE : ${c.gate2}`;
+  }).join('\n');
+  return `${support}.${modele}\nTrajet : ${route2}.${c.escale?" Pour l'escale, n'afficher que le nom de l'aéroport et son code à trois lettres.":''} Chaque billet affiche les codes IATA réels à trois lettres des aéroports.\n${cards}\nChaque champ du billet est rempli avec la valeur exacte indiquée ci-dessus, recopiée telle quelle, nette et lisible. L'heure d'embarquement est toujours 40 minutes avant l'heure de départ, exactement comme indiqué (jamais l'inverse, jamais arrondie). Aucun texte entre crochets, aucun texte générique, aucun nom de fichier ou d'image : seulement ces valeurs.`;
 }
-function cabinBlock(c){
+function seatLayout(c){
+  const L=c.pax.map(p=>p.seat.slice(-1));
+  const left=L.every(l=>'ABC'.includes(l)), right=L.every(l=>'DEF'.includes(l));
+  const ordre=c.pax.map((p,i)=>({t:`personnage ${i+1} (${p.seat})`,l:p.seat.slice(-1)})).sort((a,b)=>a.l.localeCompare(b.l)).map(x=>x.t).join(', ');
+  const side=left?"du côté gauche de l'allée (le hublot à leur gauche, l'allée à leur droite)":right?"du côté droit de l'allée (l'allée à leur gauche, le hublot à leur droite)":"de part et d'autre de l'allée centrale";
+  const ordreTxt=left?`, dans l'ordre du hublot vers l'allée : ${ordre}`:right?`, dans l'ordre de l'allée vers le hublot : ${ordre}`:'';
+  return `${c.n>1?"Les personnages sont assis côte à côte dans la même rangée, épaule contre épaule, jamais l'un derrière l'autre. ":''}Disposition fixe, vue en regardant vers l'avant de l'avion : les personnages sont assis ${side}${ordreTxt}. Cette disposition ne change jamais d'une image à l'autre.`;
+}
+function cabinBlock(c,nums,noPeople){
   const cls={
-    'Économique':`cabine de classe économique standard : sièges en rangées, tablettes rabattables, écrans de dossier, compartiments à bagages en hauteur`,
+    'Économique':`cabine de classe économique standard : sièges en rangées, tablettes rabattables, écrans de dossier, compartiments à bagages fermés au-dessus des sièges`,
     'Premium économique':`cabine premium économique : sièges plus larges avec repose-jambes et plus d'espace entre les rangées`,
     'Affaires':`cabine de classe affaires : sièges larges pouvant se transformer en lit, grand écran, rangements privés`,
     'Première':`cabine de première classe : suite privée avec porte coulissante, grand fauteuil-lit, écran large, service raffiné`
   }[c.classe];
-  const seats=c.pax.map((p,i)=>`personnage ${i+1} siège ${p.seat} (${p.pos})`).join(', ');
-  return `Cabine : ${cls}. Places : ${seats}. Respecter ces places et le côté (hublot / couloir) indiqués.`;
+  const look=((state.refs.cabine&&!noPeople)||state.refs.lieu)?'':` Décor de cabine à garder identique d'une image à l'autre : ${state.refs.seat?c.cabinLookNoSeat:c.cabinLook}.`;
+  if(noPeople)return `Cabine : ${cls}.${look}`;
+  const seats=c.pax.map((p,i)=>nums?`personnage ${i+1} siège ${p.seat} (${p.pos})`:`personnage ${i+1} côté ${p.pos}`).join(', ');
+  return `Cabine : ${cls}.${look} Places : ${seats}. Respecter ces places et le côté (hublot / couloir) indiqués. ${seatLayout(c)}`;
+}
+function isNightTime(t){
+  const [h,m]=t.split(':').map(Number);
+  const x=h+(m||0)/60;
+  return x<6||x>=20;
+}
+function lightFor(scene,c){
+  if(c.light==='jour')return 'jour';
+  if(c.light==='nuit')return 'nuit';
+  const useArr=scene.phase==='arr'||scene.id==='atterrissage';
+  const t=(useArr&&c.arrTime)?c.arrTime:c.depTime;
+  return isNightTime(t)?'nuit':'jour';
+}
+function lightBlock(scene,c){
+  const n=lightFor(scene,c)==='nuit';
+  if(scene.phase==='avion'){
+    return n?`Il fait nuit : les hublots donnent sur la nuit noire, éclairage de cabine artificiel et tamisé, aucune lumière du jour.`
+            :`Il fait jour : lumière du jour par les hublots.`;
+  }
+  return n?`Il fait nuit : nuit noire à l'extérieur et derrière les baies vitrées, éclairage artificiel.`
+          :`Il fait jour : lumière du jour.`;
 }
 const BAG_PRE=['arrivee','hall','borne','comptoir','pesee'];
 const BAG_POST=['tapis_bagages','sortie','panneau','transfert'];
-function bagBlock(scene,c){
-  if(scene.phase==='custom')return '';
-  if(scene.phase==='avion' && !['ranger','siege_trouver'].includes(scene.id))return '';
-  const cab={none:'',sac:'un sac à dos ou sac à main par personnage',valise:'une valise cabine par personnage',both:'une valise cabine et un sac par personnage'}[c.bagCabine];
-  const soute=c.bagSoute>0?`${c.bagSoute} valise${c.bagSoute>1?'s':''} en soute par personnage`:'';
+function bagInfo(scene,c){
+  const none={text:'',cab:false,soute:false};
+  if(!c.showBag||scene.phase==='custom')return none;
+  if(scene.phase==='avion' && !['ranger','siege_trouver'].includes(scene.id))return none;
+  const cabTxt={none:'',sac:'un sac à dos ou sac à main par personnage',valise:'une valise cabine par personnage',both:'une valise cabine et un sac par personnage'}[c.bagCabine];
+  const hasSoute=c.bagSoute>0&&(BAG_PRE.includes(scene.id)||BAG_POST.includes(scene.id));
   const parts=[];
-  if(soute&&(BAG_PRE.includes(scene.id)||BAG_POST.includes(scene.id)))parts.push(soute);
-  if(cab)parts.push('bagage cabine : '+cab);
-  if(!parts.length)return '';
+  if(hasSoute)parts.push(`${c.bagSoute} valise${c.bagSoute>1?'s':''} en soute par personnage`+(c.bagSouRef?" — exactement la valise de l'image de référence du bagage en soute : même modèle, même couleur, même taille, même coque, mêmes roulettes et poignées, mêmes étiquettes, aucune autre valise inventée":''));
+  if(cabTxt)parts.push('bagage cabine : '+cabTxt+(c.bagCabRef?" — exactement le bagage de l'image de référence du bagage cabine : même modèle, même couleur, même taille, mêmes détails, aucun autre bagage inventé":''));
+  if(!parts.length)return none;
   let t='Bagages : '+parts.join(' ; ')+'.';
   if(scene.id==='pesee'&&c.bagSoute>0)t+=` Poids affiché sur l'écran de la balance : ${c.bagPoids||'un poids crédible sous la limite autorisée'}.`;
-  if(c.bagDesc)t+=` ${c.bagDesc}.`;
-  return t;
+  if(c.bagDesc&&!(c.bagCabRef||c.bagSouRef))t+=` ${c.bagDesc}.`;
+  return {text:t,cab:!!cabTxt,soute:hasSoute};
 }
+function infoBlock(c){
+  return `Infos du vol à afficher sur l'écran ou le panneau visible dans la scène : vol ${c.vol} ${c.airlineTxt}, de ${c.dep} vers ${c.arr}, ${c.dateTxt}, départ ${c.depTime}, porte ${c.gate}. Texte net, lisible et orthographié exactement.`;
+}
+const BINS_CLOSED="Les compartiments à bagages au-dessus des sièges sont tous fermés : panneaux blancs lisses refermés, clapets verrouillés, jamais ouverts, aucun bagage visible à l'intérieur.";
+const BINS_RANGER="Un seul compartiment à bagages, celui où le bagage est rangé, est ouvert ; tous les autres compartiments au-dessus des sièges sont fermés.";
+const REALISM=`RÉALISME HUMAIN EXTRÊME (s'applique à toute peau ou visage visible dans le cadre) :
+Rendu 4K ultra réaliste, format RAW, aucun filtre beauté, aucun lissage de peau, aucun aérographe, aucune retouche, aucune peau CGI, cireuse, plastique ou de texture IA, aucune brillance artificielle. Peau photographiée comme au format macro : pores visibles répartis de façon aléatoire avec variations naturelles de taille, grain de peau visible, fin duvet naturel captant la lumière, pigmentation naturellement irrégulière, micro-imperfections et petites taches parfaitement intégrées, texture des lèvres avec fines lignes naturelles, micro-ridules autour des yeux, légères rougeurs naturelles. Yeux réalistes avec fibres visibles dans l'iris, texture de la sclère, humidité naturelle, cils individuels à espacement naturel, sourcils composés de poils individuels. Cheveux avec mèches individuelles visibles, ligne capillaire réaliste, transition naturelle avec le cuir chevelu. Maquillage discret uniquement si pertinent à la scène, sans jamais masquer la texture de peau. Anatomie et proportions faciales fidèles à la réalité, profondeur de champ optique crédible — impossible à distinguer d'une véritable photographie.`;
+const FINAL_TEXTURE=`RAPPEL FINAL — PRIORITÉ ABSOLUE DE TEXTURE : peau et cheveux doivent être rendus avec un niveau de détail macro maximal, jamais lissés. Pores visibles sur toute la peau, grain net, fin duvet capté par la lumière, mèches de cheveux individuelles distinctes (pas de masse compacte), racines et cuir chevelu naturels. Traite cette image comme une vraie photo RAW haute résolution, pas comme un rendu synthétique poli. Zéro lissage, zéro flou de peau, zéro effet plastique.`;
+const GEN_LINE=`Génère une seule image intégrant fidèlement les références fournies, en respectant strictement toutes les règles ci-dessus.`;
 function buildPrompt(scene,c){
   const L=[];
-  L.push(`Photographie réaliste et authentique, prise sur le vif pendant un vrai voyage en avion.`);
-  L.push(`Personnages dans la scène : ${c.persList}, conserver strictement leur identité d'après leurs images de référence.`);
+  L.push(`Photographie réaliste prise sur le vif pendant un vrai voyage en avion, rendu naturel de photo de smartphone : lumière crédible, légères imperfections naturelles, jamais un rendu publicitaire, artificiel ou sur-retouché. Cohérence anatomique stricte (visages, mains, doigts, bras, jambes). Environnement traité comme un lieu réel : dimensions, mobilier, lumière et profondeur cohérents.`);
+  if(!scene.noPeople) L.push(`Personnages dans la scène : ${c.persList}, conserver strictement leur identité d'après leurs images de référence.`);
+  if(c.photo&&!scene.noPeople) L.push(`Le personnage ${c.photo} prend la photo : la caméra représente ses yeux, c'est un point de vue à la première personne. Il n'apparaît jamais en entier et son visage n'est jamais visible : seule une partie de son corps peut entrer dans le champ (mains, avant-bras, jambes, épaule) selon ce que la photo cadre naturellement.`);
+  if(state.refs.lieu) L.push(`LIEU IMPOSÉ : la scène se passe exactement dans le lieu de l'image de référence du lieu de la scène (même décor, même architecture, mêmes matériaux, même ambiance). Tout autre lieu mentionné dans la description de la scène ci-dessous est remplacé par ce lieu.`);
+  else if(scene.phase==='avion'&&state.refs.cabine&&!scene.noPeople) L.push(`DÉCOR IMPOSÉ : la cabine est identique à l'image de référence de la cabine (mêmes sièges avec la même couleur, le même tissu et les mêmes appuie-têtes, même moquette, mêmes parois et hublots, même éclairage, même rangée). Seul l'angle de la caméra change.`);
   L.push(`Scène : ${scene.txt(c)}`);
-  if(scene.ticket) L.push(ticketBlock(c));
-  if(scene.phase==='avion'){ L.push(cabinBlock(c)); if(c.cabRef) L.push(`L'intérieur de l'avion ressemble à l'image de référence de la cabine.`); }
-  if(scene.phase==='dep' && c.depRef) L.push(`Le décor est celui de l'aéroport de départ de l'image de référence du lieu de départ.`);
+  if(scene.ticket && c.showTicket) L.push(ticketBlock(c));
+  if(scene.info && c.showTicket) L.push(infoBlock(c));
+  if(scene.phase==='avion'&&!scene.lavatory){ L.push(cabinBlock(c, scene.id==='siege_trouver', !!scene.noPeople)); if(!scene.noPeople) L.push(`Les autres sièges de l'avion sont occupés par d'autres passagers.`); L.push(scene.id==='ranger'?BINS_RANGER:BINS_CLOSED); if(state.refs.cabine && !scene.noPeople) L.push(`L'intérieur de l'avion est celui de l'image de référence de la cabine : même cabine, mêmes sièges, même disposition, mais les compartiments à bagages sont fermés dans la nouvelle image même s'ils sont ouverts sur la référence. Ne reprendre de cette image que le lieu, jamais les personnes qui y apparaissent : les personnages sont uniquement ceux de leurs images de référence.`); }
+  if(scene.phase==='dep' && c.depRef && !scene.outdoor) L.push(`Le décor est celui de l'aéroport de départ de l'image de référence du lieu de départ.`);
   if(scene.phase==='arr' && c.arrRef) L.push(`Le décor est celui de l'aéroport d'arrivée de l'image de référence du lieu d'arrivée.`);
-  const bg=bagBlock(scene,c); if(bg) L.push(bg);
-  L.push(`Voyage : vol ${c.vol} ${c.airlineTxt}, de ${c.dep} vers ${c.arr}${c.escale?`, avec escale à ${c.escale}`:''}, ${c.dateTxt}.`);
+  if(scene.planeExt && state.refs.avionExt) L.push(`L'avion est celui de l'image de référence de l'avion vu de l'extérieur : même appareil, mêmes couleurs, même aspect. Ne reprendre de cette image que l'avion, jamais les personnes.`);
+  if(scene.phase==='avion' && scene.id!=='vue_hublot' && state.refs.seat) L.push(`Les sièges de l'avion sont du modèle de l'image de référence des sièges : même forme, même matière, même couleur. Ne reprendre de cette image que les sièges, jamais les personnes.`);
+  if(scene.id==='ecran' && state.refs.screen) L.push(`L'écran de divertissement du dossier de devant affiche exactement l'image de référence de l'écran de télé, reproduite fidèlement.`);
+  if(scene.meal && c.pres.some((x,k)=>state.refs['mealP'+k]||state.refs.meal)) L.push(`Chaque personnage a devant lui le repas de son image de référence de plat : même contenu, mêmes barquettes, même présentation. Ne reprendre de ces images que les repas, jamais les personnes.`);
+  if(scene.drink && state.refs.drink) L.push(`La boisson est celle de l'image de référence de la boisson.`);
+  const bg=bagInfo(scene,c).text; if(bg) L.push(bg);
+  L.push(lightBlock(scene,c));
+  const cb=cameraBlock(scene,c); if(cb) L.push(cb);
   if(c.direction) L.push(`Direction de scène à respecter : ${c.direction}`);
+  if(!scene.noPeople){ L.push(REALISM); L.push(FINAL_TEXTURE); }
+  L.push(GEN_LINE);
+  if(scene.phase==='avion' && scene.id!=='ranger' && !scene.lavatory) L.push('RAPPEL : '+BINS_CLOSED);
   return L.join('\n');
 }
 
 /* ============ API Vertex ============ */
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
-async function callImage(parts,key){
-  const body={contents:[{role:'user',parts}],
-    generationConfig:{responseModalities:['TEXT','IMAGE'],imageConfig:{imageSize:IMAGE_SIZE}}};
-  let lastErr='';
-  for(let a=0;a<4;a++){
-    const r=await fetch(ENDPOINT(MODEL_IMAGE),{method:'POST',
-      headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify(body)});
-    if(r.status===429||r.status===503){ lastErr='Quota / surcharge ('+r.status+')'; await sleep(2500*Math.pow(2,a)); continue; }
-    const j=await r.json().catch(()=>({}));
-    if(!r.ok) throw new Error((j.error&&j.error.message)||('Erreur '+r.status));
-    const cand=(j.candidates||[])[0];
-    const ps=(cand&&cand.content&&cand.content.parts)||[];
-    const im=ps.find(p=>p.inlineData||p.inline_data);
-    if(im){const d=im.inlineData||im.inline_data;return {mime:d.mimeType||d.mime_type||'image/png',data:d.data};}
-    const txt=ps.map(p=>p.text||'').join(' ').trim();
-    throw new Error('Aucune image reçue'+(cand&&cand.finishReason?' ('+cand.finishReason+')':'')+(txt?' : '+txt.slice(0,160):''));
-  }
-  throw new Error(lastErr||'Échec');
-}
-function buildParts(prompt,c){
-  const parts=[];
-  c.pres.forEach((x,k)=>{
-    parts.push({text:`Image de référence du personnage ${k+1} :`});
-    parts.push({inlineData:{mimeType:'image/jpeg',data:x.a.img.split(',')[1]}});
+function fetchWithBackoff(url,opts,tries){
+  tries=tries||0;
+  return fetch(url,opts).then(res=>{
+    if(res.status===429&&tries<5) return sleep(1000*Math.pow(2,tries)).then(()=>fetchWithBackoff(url,opts,tries+1));
+    return res;
   });
-  const refs=[['dep','Image de référence du lieu de départ :'],['arr','Image de référence du lieu d\'arrivée :'],['cabine','Image de référence de la cabine de l\'avion :']];
-  refs.forEach(([k,t])=>{ if(state.refs[k]){ parts.push({text:t}); parts.push({inlineData:{mimeType:'image/jpeg',data:state.refs[k].split(',')[1]}}); } });
+}
+async function callVertex(prompt,refs){
+  const key=$('apiKey').value.trim();
+  if(!key)throw new Error('Clé Vertex AI manquante — renseigne-la en haut de la page.');
+  const parts=[];
+  refs.forEach(r=>{parts.push({text:r.label});parts.push({inlineData:{mimeType:'image/jpeg',data:r.img.split(',')[1]}});});
   parts.push({text:prompt});
-  return parts;
+  const body={contents:[{role:'user',parts}],
+    generationConfig:{responseModalities:['IMAGE'],imageConfig:{aspectRatio:state.format,imageSize:IMAGE_SIZE}}};
+  let res,data={};
+  for(let a=0;a<2;a++){
+    res=await fetch(ENDPOINT(MODEL_IMAGE),{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify(body)});
+    data={}; try{data=await res.json();}catch(_){}
+    if(res.status===503&&a===0){await sleep(3000);continue;}
+    break;
+  }
+  if(!res.ok){
+    const msg=(data&&data.error&&data.error.message)||('Erreur HTTP '+res.status);
+    if(res.status===401)throw new Error('Clé Vertex invalide. Vérifie ta clé Express Mode (commence par AQ...).');
+    if(res.status===403)throw new Error('Accès refusé — vérifie que ta clé Vertex AI Express Mode est active.');
+    if(res.status===429){const err=new Error('429 RESOURCE_EXHAUSTED : '+msg);err.code=429;throw err;}
+    throw new Error('Erreur Vertex '+res.status+' : '+msg);
+  }
+  const cand=data&&data.candidates&&data.candidates[0];
+  if(!cand)throw new Error('Aucune réponse du modèle Vertex.');
+  if(cand.finishReason==='SAFETY')throw new Error('Génération bloquée par les filtres de sécurité.');
+  const ps=(cand.content&&cand.content.parts)||[];
+  for(const p of ps){
+    const d=p.inlineData||p.inline_data;
+    if(d&&d.data)return 'data:'+(d.mimeType||d.mime_type||'image/png')+';base64,'+d.data;
+  }
+  const txt=ps.map(p=>p.text||'').join(' ').trim();
+  throw new Error('Aucune image dans la réponse Vertex'+(cand.finishReason?' ('+cand.finishReason+')':'')+(txt?' : '+txt.slice(0,160):''));
+}
+async function callKie(prompt,refs,setS){
+  const key=$('kieKey').value.trim();
+  if(!key)throw new Error('Clé kie.ai manquante — renseigne-la en haut de la page.');
+  const urls=[];
+  for(let i=0;i<refs.length;i++){
+    setS('Upload des références vers kie.ai… ('+(i+1)+'/'+refs.length+')');
+    const up=await fetchWithBackoff(KIE_UPLOAD_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+      body:JSON.stringify({base64Data:refs[i].img,uploadPath:'images/studio-voyage'})});
+    const ud=await up.json();
+    const u=ud&&ud.data&&ud.data.downloadUrl;
+    if(!u)throw new Error('Échec upload kie.ai (image '+(i+1)+') : '+((ud&&ud.msg)||'réponse invalide'));
+    urls.push(u);
+  }
+  const tr=await fetchWithBackoff(KIE_TASK_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+    body:JSON.stringify({model:KIE_MODEL,input:{prompt:orderLine(refs)+prompt,aspect_ratio:state.format,resolution:'4K',output_format:'png',image_input:urls}})});
+  const td=await tr.json();
+  if(td.code&&td.code!==200){
+    const msg=td.msg||td.message||'erreur inconnue';
+    if(td.code===401)throw new Error('Clé kie.ai invalide.');
+    if(td.code===403)throw new Error('Accès refusé kie.ai — vérifie tes crédits.');
+    if(td.code===429){const err=new Error('Trop de requêtes kie.ai.');err.code=429;throw err;}
+    throw new Error('Erreur kie.ai : '+msg);
+  }
+  const taskId=td&&td.data&&td.data.taskId;
+  if(!taskId)throw new Error('kie.ai : pas de taskId retourné');
+  for(let i=0;i<60;i++){
+    await sleep(5000);
+    const pr=await fetchWithBackoff(KIE_POLL_URL+'?taskId='+taskId,{headers:{'Authorization':'Bearer '+key}});
+    const pd=await pr.json();
+    const stt=pd&&pd.data&&pd.data.state;
+    setS('kie.ai · statut : '+(stt||'en attente')+' ('+((i+1)*5)+'s)');
+    if(stt==='fail')throw new Error('kie.ai : échec — '+((pd.data&&pd.data.failMsg)||'raison inconnue'));
+    if(stt==='success'){
+      let imageUrl=null;
+      try{const r=JSON.parse(pd.data.resultJson||'{}');imageUrl=(r.resultUrls&&r.resultUrls[0])||(r.images&&r.images[0]&&r.images[0].url)||r.url;}catch(_){}
+      if(!imageUrl)throw new Error('kie.ai : succès mais aucune URL exploitable.');
+      const blob=await (await fetch(imageUrl)).blob();
+      return await new Promise((resolve,reject)=>{const fr=new FileReader();fr.onloadend=()=>resolve(fr.result);fr.onerror=reject;fr.readAsDataURL(blob);});
+    }
+  }
+  throw new Error('kie.ai : timeout de polling');
+}
+async function generateImage(prompt,refs,st){
+  const setS=m=>{st.className='st';st.textContent=m;};
+  if(state.engine==='vertex'){
+    try{ return {url:await callVertex(prompt,refs),engine:'vertex'}; }
+    catch(err){
+      if(err.code===429 && $('autoFallback').checked && $('kieKey').value.trim()){
+        setS('Vertex saturé (429) — bascule automatique sur kie.ai…');
+        return {url:await callKie(prompt,refs,setS),engine:'kie'};
+      }
+      throw err;
+    }
+  }
+  return {url:await callKie(prompt,refs,setS),engine:'kie'};
+}
+function saveKeysNow(){ lsSet('sv_vertex_key',$('apiKey').value.trim()); lsSet('sv_kie_key',$('kieKey').value.trim()); }
+function checkKeys(){
+  if(state.engine==='vertex'&&!$('apiKey').value.trim()){alert('Ajoute ta clé Vertex AI.');return false;}
+  if(state.engine==='kie'&&!$('kieKey').value.trim()){alert('Ajoute ta clé kie.ai.');return false;}
+  saveKeysNow(); return true;
+}
+
+/* ============ Dernières scènes gardées en local (IndexedDB, 5 max) ============ */
+const MAX_RENDERS=5;
+let idb=null;
+function openIDB(){
+  return new Promise(resolve=>{
+    try{
+      const r=indexedDB.open('studio_voyage_db',1);
+      r.onupgradeneeded=e=>{const d=e.target.result; if(!d.objectStoreNames.contains('renders'))d.createObjectStore('renders',{keyPath:'id'});};
+      r.onsuccess=e=>{idb=e.target.result;resolve(idb);};
+      r.onerror=()=>resolve(null); r.onblocked=()=>resolve(null);
+    }catch(e){resolve(null);}
+  });
+}
+function idbAll(){return new Promise((res,rej)=>{const q=idb.transaction('renders','readonly').objectStore('renders').getAll();q.onsuccess=()=>res(q.result||[]);q.onerror=()=>rej(q.error);});}
+function idbPut(rec){return new Promise((res,rej)=>{const tx=idb.transaction('renders','readwrite');tx.objectStore('renders').put(rec);tx.oncomplete=()=>res(true);tx.onerror=()=>rej(tx.error);});}
+function idbDel(id){return new Promise((res,rej)=>{const tx=idb.transaction('renders','readwrite');tx.objectStore('renders').delete(id);tx.oncomplete=()=>res(true);tx.onerror=()=>rej(tx.error);});}
+async function saveRender(label,dataUrl){
+  try{
+    if(!idb)await openIDB(); if(!idb)return;
+    const rec={id:Date.now()+'_'+Math.random().toString(36).slice(2,6),label,dataUrl,ts:Date.now()};
+    try{ await idbPut(rec); }
+    catch(e){ const old=(await idbAll()).sort((a,b)=>a.ts-b.ts); for(const r of old.slice(0,2))await idbDel(r.id); await idbPut(rec); }
+    const all=(await idbAll()).sort((a,b)=>a.ts-b.ts);
+    for(const r of all.slice(0,Math.max(0,all.length-MAX_RENDERS)))await idbDel(r.id);
+    await renderHist();
+  }catch(e){}
+}
+async function renderHist(){
+  let all=[];
+  try{ if(!idb)await openIDB(); all=idb?await idbAll():[]; }catch(e){}
+  all.sort((a,b)=>b.ts-a.ts);
+  $('histSec').style.display=all.length?'':'none';
+  const box=$('hist'); box.innerHTML='';
+  all.forEach(r=>{
+    const d=document.createElement('div');d.className='res';
+    d.innerHTML='<div class="imgbox"></div><div class="meta"><b></b><div class="st"></div><div class="acts"><button class="btn dl" type="button">⬇ Télécharger</button></div></div>';
+    const img=new Image();img.src=r.dataUrl;d.querySelector('.imgbox').appendChild(img);
+    d.querySelector('b').textContent=r.label;
+    d.querySelector('.st').textContent=new Date(r.ts).toLocaleString('fr-FR');
+    d.querySelector('.dl').onclick=async()=>{
+      const blob=await (await fetch(r.dataUrl)).blob(); const u=URL.createObjectURL(blob);
+      const a=document.createElement('a');a.href=u;a.download='studio-voyage-'+r.ts+'.png';document.body.appendChild(a);a.click();a.remove();
+      setTimeout(()=>URL.revokeObjectURL(u),4000);
+    };
+    box.appendChild(d);
+  });
+}
+function refList(scene,c){
+  const L=[];
+  (scene.noPeople?[]:c.pres).forEach((x,k)=>L.push({label:c.photo===k+1?`Image de référence du personnage ${k+1}, qui prend la photo (ne jamais l'afficher en entier : uniquement pour ses mains, bras ou jambes qui peuvent entrer dans le cadre) :`:`Image de référence du personnage ${k+1} :`,img:x.a.img}));
+  const place=[['dep','dep','Image de référence du lieu de départ (uniquement pour le décor, ignorer les personnes) :'],
+               ['arr','arr','Image de référence du lieu d\'arrivée (uniquement pour le décor, ignorer les personnes) :'],
+               ['avion','cabine','Image de référence de la cabine de l\'avion (uniquement pour le décor, ignorer les personnes) :']];
+  if(state.refs.lieu) L.push({label:"Image de référence du lieu de la scène (c'est ici que se passe la scène ; uniquement pour le décor, ignorer les personnes) :",img:state.refs.lieu});
+  place.forEach(([ph,k,t])=>{ if(!state.refs.lieu && !scene.lavatory && scene.phase===ph && !(ph==='dep'&&scene.outdoor) && state.refs[k] && !(k==='cabine'&&scene.noPeople)) L.push({label:t,img:state.refs[k]}); });
+  if(scene.planeExt&&state.refs.avionExt) L.push({label:"Image de référence de l'avion, vu de l'extérieur (uniquement pour l'avion, ignorer les personnes) :",img:state.refs.avionExt});
+  if(scene.phase==='avion'&&scene.id!=='vue_hublot'&&state.refs.seat) L.push({label:"Image de référence des sièges de l'avion (uniquement pour le modèle de siège, ignorer les personnes) :",img:state.refs.seat});
+  if(scene.id==='ecran'&&state.refs.screen) L.push({label:"Image de référence de l'écran de télé de l'avion (ce qui s'affiche à l'écran) :",img:state.refs.screen});
+  if(scene.meal){
+    c.pres.forEach((x,k)=>{ const m=state.refs['mealP'+k]||state.refs.meal; if(m) L.push({label:`Image de référence du plat du personnage ${k+1} (uniquement pour son repas, ignorer les personnes) :`,img:m}); });
+  }
+  if(scene.drink&&state.refs.drink) L.push({label:"Image de référence de la boisson (uniquement pour la boisson, ignorer les personnes) :",img:state.refs.drink});
+  if(scene.ticket&&c.showTicket){
+    const tm=c.ticketType==='papier'?state.refs.ticketPapier:state.refs.ticketEcran;
+    if(tm) L.push({label:"Modèle de billet à reproduire à l'identique (même support, couleurs, polices, logo, intitulés et disposition ; seules les valeurs changent) :",img:tm});
+  }
+  const bi=bagInfo(scene,c);
+  if(bi.cab&&state.refs.bagCabine) L.push({label:'Image de référence du bagage cabine, à reproduire à l\'identique (même modèle, couleur, taille et détails ; uniquement pour le bagage, ignorer les personnes) :',img:state.refs.bagCabine});
+  if(bi.soute&&state.refs.bagSoute) L.push({label:'Image de référence du bagage en soute, à reproduire à l\'identique (même modèle, couleur, taille et détails ; uniquement pour le bagage, ignorer les personnes) :',img:state.refs.bagSoute});
+  return L;
+}
+function orderLine(refs){
+  if(!refs.length)return '';
+  return 'Images de référence fournies dans cet ordre : '+refs.map((r,i)=>`${i+1}) ${r.label.replace(/\s*:\s*$/,'')}`).join(' ; ')+'.\n';
 }
 
 /* ============ Génération ============ */
-function makeCard(scene){
+function makeCard(scene,boxId){
   const d=document.createElement('div');d.className='res';
   d.innerHTML=`<div class="imgbox"><div class="spin"></div></div>
     <div class="meta"><b></b><div class="st">En attente…</div>
-    <div class="acts"><button class="btn sec re" type="button" disabled>↻ Refaire</button><button class="btn dl" type="button" disabled>⬇ Télécharger</button></div></div>`;
+    <div class="acts"><button class="btn sec re" type="button" disabled>↻ Refaire</button><button class="btn dl" type="button" disabled>⬇ Télécharger</button></div><div class="acts" style="margin-top:8px"><button class="btn sec lk" type="button" style="display:none">📌 Verrouiller ce lieu</button></div></div>`;
   d.querySelector('b').textContent=scene.label;
-  $('results').appendChild(d);
+  $(boxId||'results').appendChild(d);
   return d;
+}
+function lockKeyFor(scene){
+  if(scene.phase==='avion')return 'cabine';
+  if(scene.phase==='dep')return 'dep';
+  if(scene.phase==='arr')return 'arr';
+  return null;
 }
 async function runScene(scene,c,card){
   const key=$('apiKey').value.trim();
   const st=card.querySelector('.st'), box=card.querySelector('.imgbox');
-  const re=card.querySelector('.re'), dl=card.querySelector('.dl');
-  re.disabled=true; dl.disabled=true;
+  const re=card.querySelector('.re'), dl=card.querySelector('.dl'), lk=card.querySelector('.lk');
+  re.disabled=true; dl.disabled=true; lk.disabled=true; lk.style.display='none';
   box.innerHTML='<div class="spin"></div>'; st.className='st'; st.textContent='Génération en cours…';
+  let blob=null;
   try{
     const prompt=buildPrompt(scene,c);
-    const out=await callImage(buildParts(prompt,c),key);
-    const blob=b64ToBlob(out.data,out.mime);
+    const refs=refList(scene,c);
+    const gen=await generateImage(prompt,refs,st);
+    blob=await (await fetch(gen.url)).blob();
     const url=URL.createObjectURL(blob);
     box.innerHTML=''; const img=new Image(); img.src=url; box.appendChild(img);
-    st.className='st ok'; st.textContent='Terminé';
+    st.className='st ok'; st.textContent='Terminé · '+(gen.engine==='vertex'?'Vertex AI':'kie.ai');
+    saveRender(scene.label,gen.url);
     dl.disabled=false;
     dl.onclick=()=>{const a=document.createElement('a');a.href=url;a.download='studio-voyage-'+scene.id+'.png';document.body.appendChild(a);a.click();a.remove();};
+    const lockKey=lockKeyFor(scene);
+    if(lockKey){
+      lk.style.display=''; lk.disabled=false;
+      const b=blob;
+      lk.onclick=async()=>{
+        try{ state.refs[lockKey]=await readImage(b); state.autoRef=false; buildRefs(); st.className='st ok'; st.textContent='Terminé · lieu verrouillé (référence utilisée pour les prochaines images)'; }
+        catch(e){ st.className='st err'; st.textContent='Verrouillage impossible'; }
+      };
+    }
   }catch(e){
-    box.innerHTML='Échec'; st.className='st err'; st.textContent=e.message;
+    blob=null; box.innerHTML='Échec'; st.className='st err'; st.textContent=e.message;
   }
   re.disabled=false;
   re.onclick=()=>runScene(scene,c,card);
+  return blob;
 }
 async function generate(){
   if(state.running)return;
-  const key=$('apiKey').value.trim();
-  if(!key){alert('Ajoute ta clé API.');return;}
-  lsSet('studio_voyage_key',key);
+  if(!checkKeys())return;
   const c=buildContext();
   if(!c.n){alert('Ajoute au moins un avatar avec une photo (et « Présent » coché).');return;}
   if(!c.dep||!c.arr){alert('Renseigne l\'aéroport de départ et l\'aéroport d\'arrivée.');return;}
@@ -548,28 +1012,56 @@ async function generate(){
   state.running=true;state.stop=false;
   $('goBtn').disabled=true;$('stopBtn').style.display='';
   $('results').innerHTML='';
-  const cards=list.map(makeCard);
+  if(state.autoRef){state.refs.cabine=null;state.autoRef=false;buildRefs();}
+  const cards=list.map(sc=>makeCard(sc));
   for(let i=0;i<list.length;i++){
     if(state.stop){cards[i].querySelector('.st').textContent='Arrêté';cards[i].querySelector('.imgbox').innerHTML='—';continue;}
-    await runScene(list[i],c,cards[i]);
+    const blob=await runScene(list[i],c,cards[i]);
   }
   state.running=false;$('goBtn').disabled=false;$('stopBtn').style.display='none';
 }
 
 /* ============ Init ============ */
-$('apiKey').value=lsGet('studio_voyage_key');
+$('apiKey').value=lsGet('sv_vertex_key')||lsGet('studio_voyage_key')||lsGet('sl_vertex_key')||lsGet('sp_vertex_key');
+$('kieKey').value=lsGet('sv_kie_key')||lsGet('sl_kie_key')||lsGet('sp_kie_key');
+state.format=lsGet('sv_format')||'9:16';
+function bindSeg(id,cb,initial){
+  document.querySelectorAll('#'+id+' button').forEach(b=>{
+    if(initial!==undefined)b.classList.toggle('on',b.dataset.v===initial);
+    b.onclick=()=>{document.querySelectorAll('#'+id+' button').forEach(x=>x.classList.remove('on'));b.classList.add('on');cb(b.dataset.v);};
+  });
+}
+bindSeg('engineSeg',v=>{state.engine=v;});
+bindSeg('fmtSeg',v=>{state.format=v;lsSet('sv_format',v);},state.format);
+$('saveKeys').onclick=()=>{saveKeysNow();$('keysStatus').textContent='✔ Clés enregistrées dans ce navigateur.';setTimeout(()=>{$('keysStatus').textContent='';},3000);};
+$('clearKeys').onclick=()=>{['sv_vertex_key','sv_kie_key','studio_voyage_key','sl_vertex_key','sl_kie_key','sp_vertex_key','sp_kie_key'].forEach(k=>{try{localStorage.removeItem(k)}catch(e){}});$('apiKey').value='';$('kieKey').value='';$('keysStatus').textContent='🗑 Clés effacées.';};
 $('goBtn').onclick=generate;
 $('stopBtn').onclick=()=>{state.stop=true;};
 document.querySelectorAll('#ticketSeg button').forEach(b=>{
   b.onclick=()=>{document.querySelectorAll('#ticketSeg button').forEach(x=>x.classList.remove('on'));b.classList.add('on');state.ticketType=b.dataset.v;};
 });
+function bindToggle(id,key){
+  document.querySelectorAll('#'+id+' button').forEach(b=>{
+    b.onclick=()=>{document.querySelectorAll('#'+id+' button').forEach(x=>x.classList.remove('on'));b.classList.add('on');state[key]=b.dataset.v==='1';};
+  });
+}
+bindToggle('ticketShowSeg','showTicket');
+bindToggle('bagShowSeg','showBag');
+$('genCabine').onclick=async()=>{
+  if(!checkKeys())return;
+  const c=buildContext();
+  const scene=SCENES.find(x=>x.id==='cabine_vue');
+  $('cabineRes').innerHTML='';
+  const card=makeCard(scene,'cabineRes');
+  await runScene(scene,c,card);
+};
 $('addCustom').onclick=()=>{
   const t=$('customTxt').value.trim(); if(!t)return;
   const id='custom_'+Date.now();
   state.custom.push({id,phase:'custom',label:t.length>40?t.slice(0,38)+'…':t,txt:()=>t});
   state.selected.add(id); $('customTxt').value=''; buildScenes();
 };
-buildAvatars();buildRefs();buildScenes();
+buildAvatars();buildRefs();buildScenes();buildCamera();openIDB().then(renderHist);
 </script>
 </body>
 </html>
