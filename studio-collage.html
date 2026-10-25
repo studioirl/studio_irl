@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Studio Collage — Studio IRL</title>
+<style>
+:root{--bg:#0f0d12;--card:#1a1720;--line:#2c2733;--txt:#f4f1f6;--mut:#9a93a6;--a:#ff6b4a;--b:#ffb347;--ok:#4ade80;--ko:#f87171}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:18px 14px 80px}
+h1{margin:0;font-size:26px;background:linear-gradient(90deg,var(--a),var(--b));-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:var(--mut);margin:2px 0 18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}
+.card h2{margin:0 0 10px;font-size:16px;display:flex;align-items:center;gap:8px}
+.card h2 span.n{background:linear-gradient(135deg,var(--a),var(--b));color:#1a1010;border-radius:50%;width:24px;height:24px;display:inline-grid;place-items:center;font-size:13px;font-weight:700}
+label{display:block;font-size:12.5px;color:var(--mut);margin:10px 0 4px}
+input[type=text],input[type=password],select,textarea{width:100%;background:#120f16;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:10px;font:inherit}
+textarea{min-height:64px;resize:vertical}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+button{background:#2a2531;color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font:inherit;cursor:pointer}
+button:hover{border-color:var(--a)}
+button.main{background:linear-gradient(90deg,var(--a),var(--b));color:#1a0d08;font-weight:700;border:0}
+button:disabled{opacity:.5;cursor:default}
+.drop{border:2px dashed var(--line);border-radius:14px;padding:22px;text-align:center;color:var(--mut);cursor:pointer}
+.drop.on{border-color:var(--a);color:var(--txt)}
+.people{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px;margin-top:12px}
+.p{position:relative;aspect-ratio:3/4;border-radius:10px;overflow:hidden;border:1px solid var(--line);background:#000}
+.p img{width:100%;height:100%;object-fit:cover;display:block}
+.p .num{position:absolute;left:4px;top:4px;background:rgba(0,0,0,.65);border-radius:8px;font-size:11px;padding:1px 6px}
+.p .ctl{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;background:rgba(0,0,0,.6)}
+.p .ctl button{border:0;background:none;padding:3px 7px;font-size:13px;border-radius:0}
+.info{font-size:13px;color:var(--mut);margin-top:8px}
+.info b{color:var(--txt)}
+.plan{position:relative;width:100%;background:#000;border-radius:10px;overflow:hidden;border:1px solid var(--line);margin-top:10px}
+.cell{position:absolute;border:1px solid rgba(255,255,255,.18);overflow:hidden;background:#17131c;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--mut);cursor:default}
+.cell img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.cell .tag{position:relative;z-index:2;background:rgba(0,0,0,.6);border-radius:8px;padding:2px 8px;color:#fff;text-align:center;line-height:1.3}
+.cell.run{outline:2px solid var(--b);outline-offset:-2px}
+.cell.err{outline:2px solid var(--ko);outline-offset:-2px}
+.cell.done{outline:1px solid var(--ok);outline-offset:-1px}
+.cell button.re{position:absolute;z-index:3;right:3px;bottom:3px;padding:2px 7px;font-size:12px;background:rgba(0,0,0,.65)}
+.bar{height:6px;background:#120f16;border-radius:4px;overflow:hidden;margin-top:10px}
+.bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--a),var(--b));transition:width .3s}
+.log{font-size:12.5px;color:var(--mut);margin-top:8px;max-height:120px;overflow:auto;white-space:pre-wrap}
+.log .e{color:var(--ko)}
+.final img{width:100%;border-radius:12px;display:block}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.pl{display:none;margin-top:10px}
+.pl img{max-width:100%;max-height:200px;border-radius:10px;border:1px solid var(--line)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Studio Collage</h1>
+  <p class="sub">Jusqu’à 30 personnes sur une seule image, sans perte de qualité : chaque petit groupe est généré en haute définition, puis assemblé.</p>
+
+  <div class="card">
+    <h2><span class="n">1</span> Les personnes</h2>
+    <div class="drop" id="drop">Touche ici ou glisse tes photos (jusqu’à <b id="maxn">30</b>)<br><small>Une photo par personne, visage bien visible. L’ordre = ordre de gauche à droite puis de haut en bas.</small></div>
+    <input type="file" id="file" accept="image/*" multiple hidden>
+    <div class="people" id="people"></div>
+    <div class="btns"><button id="shuffle">Mélanger l’ordre</button><button id="clear">Tout vider</button></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="n">2</span> Composition</h2>
+    <div class="row">
+      <div><label>Type de rendu</label>
+        <select id="mode">
+          <option value="fondu">Photo de groupe (fondu invisible)</option>
+          <option value="mosaique">Collage mosaïque (cases visibles)</option>
+        </select></div>
+      <div><label>Format de l’image finale</label>
+        <select id="format">
+          <optgroup label="Vertical">
+            <option value="0.5625" selected>Vertical 9:16</option>
+            <option value="0.8">Vertical 4:5</option>
+            <option value="0.75">Vertical 3:4</option>
+            <option value="0.6667">Vertical 2:3</option>
+          </optgroup>
+          <optgroup label="Horizontal">
+            <option value="1.7778">Horizontal 16:9</option>
+            <option value="1.5">Horizontal 3:2</option>
+            <option value="1.3333">Horizontal 4:3</option>
+            <option value="1.25">Horizontal 5:4</option>
+            <option value="2.3333">Panoramique 21:9</option>
+          </optgroup>
+          <optgroup label="Carré"><option value="1">Carré 1:1</option></optgroup>
+        </select></div>
+      <div><label>Cadrage des personnes</label>
+        <select id="cadrage">
+          <option value="0.42">En pied</option>
+          <option value="0.55">À mi-cuisses</option>
+          <option value="0.7" selected>À la taille</option>
+          <option value="1">Plan poitrine</option>
+        </select></div>
+      <div><label>Personnes par génération</label>
+        <select id="perCell"></select></div>
+      <div><label>Taille de l’image finale (côté long)</label>
+        <select id="outSize">
+          <option value="3840" selected>4K — 3840 px</option>
+          <option value="5760">Très grand — 5760 px</option>
+          <option value="7680">Ultra — 7680 px (ordinateur)</option>
+        </select></div>
+      <div><label>Résolution de chaque génération</label>
+        <select id="resolution"><option value="4K" selected>4K</option><option value="2K">2K</option></select></div>
+    </div>
+    <div class="info" id="planInfo"></div>
+    <div class="plan" id="plan"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="n">3</span> Lieu et ambiance</h2>
+    <label>Photo du lieu (optionnel)</label>
+    <input type="file" id="decorFile" accept="image/*">
+    <div class="pl" id="decorPrev"><img id="decorImg" alt=""></div>
+    <label>Ou décris le lieu (optionnel)</label>
+    <input type="text" id="decorText" placeholder="ex. grande terrasse de mariage au coucher du soleil">
+    <label>Direction de scène (optionnel)</label>
+    <textarea id="sceneText" placeholder="ex. photo de famille joyeuse, tout le monde regarde l’objectif"></textarea>
+    <label>Couleur de fond du collage (mosaïque)</label>
+    <input type="text" id="bgColor" value="#0f0d12">
+  </div>
+
+  <div class="card">
+    <h2><span class="n">4</span> Génération</h2>
+    <label>Clé API Vertex (AQ…)</label>
+    <input type="password" id="apiKey" placeholder="AQ.…" autocomplete="off">
+    <div class="btns">
+      <button class="main" id="go">Générer le collage</button>
+      <button id="stop" disabled>Arrêter</button>
+      <button id="redoAll">Tout régénérer</button>
+      <button id="assembleBtn">Assembler</button>
+    </div>
+    <div class="bar"><i id="bar"></i></div>
+    <div class="log" id="log"></div>
+  </div>
+
+  <div class="card final" id="finalCard" style="display:none">
+    <h2>Résultat</h2>
+    <img id="finalImg" alt="Collage final">
+    <div class="info" id="finalInfo"></div>
+    <div class="btns"><button class="main" id="dlPng">Télécharger PNG</button><button id="dlJpg">Télécharger JPEG</button></div>
+  </div>
+</div>
+
+<script>
+/* ===== Réglages faciles à modifier ===== */
+const MODEL_IMAGE = 'gemini-3-pro-image';            // modèle image (4K) — ne pas passer en -preview
+const ENDPOINT = m => `https://aiplatform.googleapis.com/v1/publishers/google/models/${m}:generateContent`;
+const MAX_PEOPLE = 30;
+const MAX_PER_CELL = 8;
+const CONCURRENCY = 2;
+const SUPPORTED = [["1:1",1],["2:3",2/3],["3:2",1.5],["3:4",.75],["4:3",4/3],["4:5",.8],["5:4",1.25],["9:16",9/16],["16:9",16/9],["21:9",21/9]];
+const CADRAGES = {"0.42":"en pied","0.55":"à mi-cuisses","0.7":"à la taille","1":"plan poitrine"};
+
+const $ = id => document.getElementById(id);
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const S = { people: [], cells: [], results: {}, plate: null, decor: null, running: false, abort: null, finalBlob: null, finalW: 0, finalH: 0 };
+$('maxn').textContent = MAX_PEOPLE;
+
+/* ===== IndexedDB ===== */
+const idb = {
+  open(){ return new Promise((res,rej)=>{ const r = indexedDB.open('studio_collage',1); r.onupgradeneeded=()=>r.result.createObjectStore('kv'); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); },
+  async get(k){ try{ const db=await this.open(); return await new Promise(res=>{ const q=db.transaction('kv').objectStore('kv').get(k); q.onsuccess=()=>res(q.result); q.onerror=()=>res(null); }); }catch(e){ return null; } },
+  async set(k,v){ try{ const db=await this.open(); await new Promise(res=>{ const t=db.transaction('kv','readwrite'); t.objectStore('kv').put(v,k); t.oncomplete=res; t.onerror=res; }); }catch(e){} }
+};
+
+/* ===== Utilitaires ===== */
+function log(msg, err){ const d=document.createElement('div'); if(err) d.className='e'; d.textContent=msg; $('log').appendChild(d); $('log').scrollTop=1e9; }
+function nearestRatio(a){ let best=SUPPORTED[0], bd=1e9; for(const s of SUPPORTED){ const d=Math.abs(Math.log(a/s[1])); if(d<bd){ bd=d; best=s; } } return best; }
+function loadImg(src){ return new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=src; }); }
+async function fileToJpeg(file, max=1024){
+  const url = URL.createObjectURL(file);
+  try{
+    const img = await loadImg(url);
+    const sc = Math.min(1, max/Math.max(img.naturalWidth, img.naturalHeight));
+    const c = document.createElement('canvas'); c.width=Math.round(img.naturalWidth*sc); c.height=Math.round(img.naturalHeight*sc);
+    c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+    return c.toDataURL('image/jpeg',.9);
+  } finally { URL.revokeObjectURL(url); }
+}
+const b64 = d => d.split(',')[1];
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+
+/* ===== Réglages persistés ===== */
+const FIELDS = ['mode','format','cadrage','perCell','outSize','resolution','decorText','sceneText','bgColor','apiKey'];
+function saveSettings(){ const o={}; FIELDS.forEach(f=>o[f]=$(f).value); try{ localStorage.setItem('studio_collage',JSON.stringify(o)); }catch(e){} }
+function loadSettings(){ try{ const o=JSON.parse(localStorage.getItem('studio_collage')||'{}'); FIELDS.forEach(f=>{ if(o[f]!=null) $(f).value=o[f]; }); }catch(e){} }
+for(let i=1;i<=MAX_PER_CELL;i++){ const o=document.createElement('option'); o.value=i; o.textContent = i + (i>5?' (fidélité visages moindre)':'') + (i==5?' (recommandé)':''); if(i==5) o.selected=true; $('perCell').appendChild(o); }
+loadSettings();
+
+/* ===== Personnes ===== */
+async function addFiles(files){
+  for(const f of files){
+    if(S.people.length>=MAX_PEOPLE){ log(`Maximum ${MAX_PEOPLE} personnes atteint.`,true); break; }
+    if(!f.type.startsWith('image/')) continue;
+    try{ S.people.push({ id: Math.random().toString(36).slice(2), data: await fileToJpeg(f) }); }catch(e){ log('Image illisible : '+f.name,true); }
+  }
+  peopleChanged();
+}
+function peopleChanged(){ S.results={}; S.plate=null; idb.set('people',S.people); renderPeople(); refreshPlan(); }
+function renderPeople(){
+  const box=$('people'); box.innerHTML='';
+  S.people.forEach((p,i)=>{
+    const d=document.createElement('div'); d.className='p';
+    d.innerHTML=`<img src="${p.data}" alt=""><span class="num">${i+1}</span><div class="ctl"><button data-a="l">◀</button><button data-a="x">✕</button><button data-a="r">▶</button></div>`;
+    d.querySelectorAll('button').forEach(b=>b.onclick=()=>{
+      const a=b.dataset.a;
+      if(a==='x') S.people.splice(i,1);
+      else if(a==='l'&&i>0) [S.people[i-1],S.people[i]]=[S.people[i],S.people[i-1]];
+      else if(a==='r'&&i<S.people.length-1) [S.people[i+1],S.people[i]]=[S.people[i],S.people[i+1]];
+      peopleChanged();
+    });
+    box.appendChild(d);
+  });
+}
+$('drop').onclick=()=>$('file').click();
+$('file').onchange=e=>{ addFiles([...e.target.files]); e.target.value=''; };
+$('drop').ondragover=e=>{ e.preventDefault(); $('drop').classList.add('on'); };
+$('drop').ondragleave=()=>$('drop').classList.remove('on');
+$('drop').ondrop=e=>{ e.preventDefault(); $('drop').classList.remove('on'); addFiles([...e.dataTransfer.files]); };
+$('shuffle').onclick=()=>{ for(let i=S.people.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [S.people[i],S.people[j]]=[S.people[j],S.people[i]]; } peopleChanged(); };
+$('clear').onclick=()=>{ if(confirm('Vider toutes les personnes ?')){ S.people=[]; peopleChanged(); } };
+$('decorFile').onchange=async e=>{
+  const f=e.target.files[0]; if(!f){ S.decor=null; $('decorPrev').style.display='none'; return; }
+  S.decor=await fileToJpeg(f,1280); $('decorImg').src=S.decor; $('decorPrev').style.display='block'; S.plate=null; S.results={}; refreshPlan();
+};
+
+/* ===== Plan de la composition ===== */
+function dims(){
+  const R=+$('format').value; let L=+$('outSize').value;
+  let W,H; if(R<1){ H=L; W=Math.round(L*R); } else { W=L; H=Math.round(L/R); }
+  const cap = isIOS ? 16e6 : 100e6;
+  if(W*H>cap){ const s=Math.sqrt(cap/(W*H)); W=Math.round(W*s); H=Math.round(H*s); }
+  return {W,H,R};
+}
+function plan(){
+  const n=S.people.length; if(!n) return null;
+  const {W,H,R}=dims();
+  const k=Math.min(+$('perCell').value, MAX_PER_CELL);
+  const mosaic=$('mode').value==='mosaique';
+  const pa=+$('cadrage').value;
+  const nc=Math.ceil(n/k);
+  const avg=n/nc;
+  let best=null;
+  for(let rows=1;rows<=nc;rows++){
+    const cols=Math.ceil(nc/rows);
+    const asp=R*rows/cols;
+    let sc=Math.abs(Math.log(asp/(avg*pa)));
+    if(asp>2.4) sc+=Math.log(asp/2.4)*1.5;
+    if(asp<0.45) sc+=Math.log(0.45/asp)*1.5;
+    if(nc%rows) sc+=0.6;
+    if(!best||sc<best.sc) best={rows,sc};
+  }
+  const rows=best.rows, base=Math.floor(nc/rows), rem=nc%rows;
+  const cells=[]; let pi=0, ci=0;
+  const q=Math.floor(n/nc), r2=n%nc;
+  for(let r=0;r<rows;r++){
+    const cnt=base+(r<rem?1:0);
+    for(let c=0;c<cnt;c++){
+      const x0=c/cnt, x1=(c+1)/cnt, y0=r/rows, y1=(r+1)/rows;
+      const size=q+(ci<r2?1:0);
+      const idx=[]; for(let i=0;i<size;i++) idx.push(pi++);
+      let ex0=x0,ex1=x1,ey0=y0,ey1=y1;
+      if(!mosaic){
+        const ox=0.08/cnt, oy=0.12/rows;
+        if(c>0) ex0=x0-ox; if(c<cnt-1) ex1=x1+ox;
+        if(r>0) ey0=y0-oy; if(r<rows-1) ey1=y1+oy;
+      }
+      cells.push({id:ci,row:r,col:c,cnt,rows,x0,x1,y0,y1,ex0,ex1,ey0,ey1,idx,
+        ovL:x0-ex0, ovT:y0-ey0});
+      ci++;
+    }
+  }
+  const gap = mosaic ? 0.004*Math.min(W,H) : 0;
+  cells.forEach(c=>{
+    const w=(c.ex1-c.ex0)*W-gap*2, h=(c.ey1-c.ey0)*H-gap*2;
+    c.asp=w/h; c.ratio=nearestRatio(c.asp);
+  });
+  return {W,H,R,cells,rows,nc,k,mosaic,gap};
+}
+function refreshPlan(){
+  saveSettings();
+  const P=plan(); const box=$('plan');
+  if(!P){ $('planInfo').textContent='Ajoute des personnes pour voir la composition.'; box.style.display='none'; S.cells=[]; return; }
+  box.style.display='block'; S.cells=P.cells; S.P=P;
+  const n=S.people.length;
+  box.style.aspectRatio=`${P.W} / ${P.H}`;
+  $('planInfo').innerHTML=`<b>${n}</b> personne${n>1?'s':''} → <b>${P.nc}</b> génération${P.nc>1?'s':''} (${P.rows} rangée${P.rows>1?'s':''}) · image finale <b>${P.W}×${P.H}</b> px`+(P.k>5?'<br>Au-delà de 5 personnes par génération, la fidélité des visages peut baisser.':'');
+  box.innerHTML='';
+  P.cells.forEach(c=>{
+    const d=document.createElement('div'); d.className='cell'; d.id='cell'+c.id;
+    d.style.left=c.x0*100+'%'; d.style.top=c.y0*100+'%'; d.style.width=(c.x1-c.x0)*100+'%'; d.style.height=(c.y1-c.y0)*100+'%';
+    const res=S.results[c.id];
+    if(res){ const im=document.createElement('img'); im.src=res.url; d.appendChild(im); d.classList.add('done'); }
+    const t=document.createElement('div'); t.className='tag'; t.textContent=`${c.idx[0]+1}–${c.idx[c.idx.length-1]+1}`; if(res) t.style.display='none'; d.appendChild(t);
+    if(res){ const b=document.createElement('button'); b.className='re'; b.textContent='↻'; b.onclick=()=>regenCell(c.id); d.appendChild(b); }
+    box.appendChild(d);
+  });
+}
+FIELDS.forEach(f=>{ $(f).addEventListener('change',()=>{ if(['mode','format','cadrage','perCell'].includes(f)){ S.results={}; S.plate=null; } refreshPlan(); }); });
+$('decorText').addEventListener('input',saveSettings); $('sceneText').addEventListener('input',saveSettings); $('apiKey').addEventListener('input',saveSettings);
+
+/* ===== Appels Vertex ===== */
+async function callImage(parts, ratioStr, signal){
+  const key=$('apiKey').value.trim(); if(!key) throw new Error('Clé API manquante.');
+  const body={ contents:[{role:'user',parts}], generationConfig:{ responseModalities:['IMAGE'], imageConfig:{ aspectRatio:ratioStr, imageSize:$('resolution').value } } };
+  let lastErr;
+  for(let a=0;a<5;a++){
+    if(signal.aborted) throw new Error('Arrêté.');
+    try{
+      const r=await fetch(ENDPOINT(MODEL_IMAGE),{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify(body),signal});
+      if(r.status===429||r.status>=500){ lastErr=new Error('Erreur '+r.status); await sleep(2000*Math.pow(2,a)+Math.random()*800); continue; }
+      const j=await r.json();
+      if(!r.ok) throw new Error((j.error&&j.error.message)||('Erreur '+r.status));
+      const ps=(j.candidates&&j.candidates[0]&&j.candidates[0].content&&j.candidates[0].content.parts)||[];
+      const im=ps.find(p=>p.inlineData||p.inline_data);
+      if(!im){ lastErr=new Error('Aucune image renvoyée (réponse filtrée ou vide).'); await sleep(1500); continue; }
+      const d=im.inlineData||im.inline_data;
+      return `data:${d.mimeType||d.mime_type||'image/png'};base64,${d.data}`;
+    }catch(e){ if(e.name==='AbortError') throw new Error('Arrêté.'); lastErr=e; if(/Clé API|API key|permission|PERMISSION/i.test(e.message)) throw e; await sleep(1500); }
+  }
+  throw lastErr||new Error('Échec.');
+}
+function dataToBlobUrl(d){ const [h,b]=d.split(','); const mime=h.match(/:(.*?);/)[1]; const bin=atob(b); const u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i); return URL.createObjectURL(new Blob([u],{type:mime})); }
+
+function buildPrompt(cell, hasPlate){
+  const k=cell.idx.length;
+  const cad=CADRAGES[$('cadrage').value];
+  const decorText=$('decorText').value.trim(), scene=$('sceneText').value.trim();
+  let t = k>1
+    ? `Photo de groupe réaliste, rendu photographique ultra net et très détaillé. Elle réunit ${k} personnes côte à côte, de gauche à droite dans l’ordre des images de référence (Personne 1 à Personne ${k}). Chaque personne est fidèle à sa propre image de référence.`
+    : `Portrait réaliste, rendu photographique ultra net et très détaillé. La personne est fidèle à son image de référence.`;
+  if(hasPlate) t+=` Le lieu est celui de l’image « Décor » : même endroit, même lumière, même ambiance.`;
+  else if(decorText) t+=` Lieu : ${decorText}.`;
+  if(scene) t+=` ${scene}`;
+  t+=` Cadrage ${cad}. ${k>1?'Toutes les personnes sont entièrement visibles':'La personne est entièrement visible'} dans le cadre, bien réparties, aucune coupée sur les bords, visages nets et détaillés.`;
+  return t;
+}
+async function ensurePlate(signal){
+  if(S.decor) return S.decor;
+  if(S.plate) return S.plate;
+  const P=S.P, mosaic=P.mosaic, decorText=$('decorText').value.trim();
+  if(mosaic && !decorText) return null;
+  const txt = decorText || 'fond de studio photo neutre, gris clair, uni';
+  log('Création du décor commun…');
+  const d=await callImage([{text:`Photographie réaliste d’un lieu vide, sans aucune personne : ${txt}. Lumière naturelle cohérente, rendu photographique ultra net.`}], P.cells[0].ratio[0], signal);
+  S.plate=d; return d;
+}
+async function genCell(cell, plate, signal){
+  const parts=[];
+  cell.idx.forEach((pi,j)=>{ parts.push({text:`Personne ${j+1} :`}); parts.push({inlineData:{mimeType:'image/jpeg',data:b64(S.people[pi].data)}}); });
+  if(plate){ parts.push({text:'Décor :'}); parts.push({inlineData:{mimeType:'image/jpeg',data:b64(plate)}}); }
+  parts.push({text:buildPrompt(cell,!!plate)});
+  const d=await callImage(parts, cell.ratio[0], signal);
+  if(S.results[cell.id]) URL.revokeObjectURL(S.results[cell.id].url);
+  S.results[cell.id]={url:dataToBlobUrl(d)};
+}
+function cellState(id,cls){ const el=$('cell'+id); if(!el) return; el.classList.remove('run','err','done'); if(cls) el.classList.add(cls); }
+function setBar(){ const done=S.cells.filter(c=>S.results[c.id]).length; $('bar').style.width=(S.cells.length?done/S.cells.length*100:0)+'%'; }
+
+async function runCells(ids){
+  if(S.running) return;
+  if(!S.people.length){ log('Ajoute des personnes d’abord.',true); return; }
+  S.running=true; S.abort=new AbortController(); const sig=S.abort.signal;
+  $('go').disabled=true; $('stop').disabled=false;
+  try{
+    const plate=await ensurePlate(sig);
+    const queue=S.cells.filter(c=>ids.includes(c.id));
+    let next=0, fail=0;
+    log(`Génération de ${queue.length} case${queue.length>1?'s':''}…`);
+    const worker=async()=>{
+      while(next<queue.length && !sig.aborted){
+        const c=queue[next++];
+        cellState(c.id,'run');
+        try{ await genCell(c,plate,sig); log(`Case ${c.id+1}/${S.cells.length} terminée.`); refreshPlan(); }
+        catch(e){ fail++; cellState(c.id,'err'); log(`Case ${c.id+1} : ${e.message}`,true); }
+        setBar();
+      }
+    };
+    await Promise.all(Array.from({length:CONCURRENCY},worker));
+    refreshPlan(); setBar();
+    if(!sig.aborted && S.cells.every(c=>S.results[c.id])){ log('Toutes les cases sont prêtes — assemblage…'); await assemble(); }
+    else if(!sig.aborted) log(`${fail} case(s) en échec : relance « Générer » pour les refaire.`,true);
+  }catch(e){ log(e.message,true); }
+  S.running=false; $('go').disabled=false; $('stop').disabled=true;
+}
+$('go').onclick=()=>{ if(!S.cells.length){ log('Ajoute des personnes d’abord.',true); return; } runCells(S.cells.filter(c=>!S.results[c.id]).map(c=>c.id)); };
+$('redoAll').onclick=()=>{ S.results={}; S.plate=null; refreshPlan(); runCells(S.cells.map(c=>c.id)); };
+$('stop').onclick=()=>{ if(S.abort) S.abort.abort(); };
+function regenCell(id){ delete S.results[id]; refreshPlan(); runCells([id]); }
+$('assembleBtn').onclick=()=>assemble();
+
+/* ===== Assemblage ===== */
+function drawCover(ctx,img,w,h,ay){
+  const s=Math.max(w/img.naturalWidth,h/img.naturalHeight);
+  const dw=img.naturalWidth*s, dh=img.naturalHeight*s;
+  ctx.drawImage(img,(w-dw)/2,(h-dh)*ay,dw,dh);
+}
+async function assemble(){
+  const P=S.P; if(!P||!S.cells.every(c=>S.results[c.id])){ log('Il manque des cases : génère-les d’abord.',true); return; }
+  const {W,H,mosaic,gap}=P;
+  const cv=document.createElement('canvas'); cv.width=W; cv.height=H;
+  const ctx=cv.getContext('2d'); ctx.fillStyle=$('bgColor').value||'#000'; ctx.fillRect(0,0,W,H);
+  ctx.imageSmoothingQuality='high';
+  for(const c of P.cells){
+    const img=await loadImg(S.results[c.id].url);
+    const rx=Math.round(c.ex0*W)+gap, ry=Math.round(c.ey0*H)+gap;
+    const rw=Math.round((c.ex1-c.ex0)*W-gap*2), rh=Math.round((c.ey1-c.ey0)*H-gap*2);
+    const t=document.createElement('canvas'); t.width=rw; t.height=rh; const tc=t.getContext('2d');
+    tc.imageSmoothingQuality='high';
+    drawCover(tc,img,rw,rh,0.35);
+    if(!mosaic){
+      tc.globalCompositeOperation='destination-in';
+      if(c.ovL>0){ const f=Math.min(rw,2*c.ovL*W); const g=tc.createLinearGradient(0,0,f,0); g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,1)'); tc.fillStyle=g; tc.fillRect(0,0,rw,rh); }
+      if(c.ovT>0){ const f=Math.min(rh,2*c.ovT*H); const g=tc.createLinearGradient(0,0,0,f); g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,1)'); tc.fillStyle=g; tc.fillRect(0,0,rw,rh); }
+      ctx.drawImage(t,rx,ry);
+    } else {
+      const rad=Math.min(rw,rh)*0.03;
+      ctx.save(); ctx.beginPath();
+      if(ctx.roundRect) ctx.roundRect(rx,ry,rw,rh,rad); else ctx.rect(rx,ry,rw,rh);
+      ctx.clip(); ctx.drawImage(t,rx,ry); ctx.restore();
+    }
+  }
+  const blob=await new Promise(res=>cv.toBlob(res,'image/png'));
+  if(!blob){ log('Image trop grande pour ce navigateur : choisis « 4K — 3840 px ».',true); return; }
+  S.finalBlob=blob; S.finalW=W; S.finalH=H; S.finalCanvas=cv;
+  if(S.finalUrl) URL.revokeObjectURL(S.finalUrl);
+  S.finalUrl=URL.createObjectURL(blob);
+  $('finalImg').src=S.finalUrl; $('finalCard').style.display='block';
+  $('finalInfo').textContent=`${W}×${H} px — ${S.people.length} personnes`;
+  $('finalCard').scrollIntoView({behavior:'smooth'});
+  log('Collage prêt.');
+}
+function download(blob,name){
+  const u=URL.createObjectURL(blob);
+  if(isIOS){ window.open(u,'_blank'); setTimeout(()=>URL.revokeObjectURL(u),60000); return; }
+  const a=document.createElement('a'); a.href=u; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),10000);
+}
+$('dlPng').onclick=()=>{ if(S.finalBlob) download(S.finalBlob,'studio-collage.png'); };
+$('dlJpg').onclick=()=>{ if(!S.finalCanvas) return; S.finalCanvas.toBlob(b=>download(b,'studio-collage.jpg'),'image/jpeg',0.95); };
+
+/* ===== Démarrage ===== */
+(async()=>{ const p=await idb.get('people'); if(Array.isArray(p)) S.people=p.slice(0,MAX_PEOPLE); renderPeople(); refreshPlan(); })();
+</script>
+</body>
+</html>
