@@ -1215,7 +1215,9 @@ Réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks :
 }
 
 async function callTextAnalyse(systemInstruction, userText) {
-  const endpoint = 'https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-2.5-flash:generateContent';
+  if (ENGINE === 'kie') return callTextAnalyseKie(systemInstruction, userText);
+
+  const endpoint = 'https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-3.8-flash:generateContent';
   const resp = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': API_KEY },
@@ -1230,6 +1232,30 @@ async function callTextAnalyse(systemInstruction, userText) {
   const txt = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
   if (!txt) throw new Error('Réponse vide du modèle');
   return JSON.parse(cleanJson(txt));
+}
+
+// Analyse texte via kie.ai (mode 100% kie.ai — pas de dépendance à une clé Vertex)
+async function callTextAnalyseKie(systemInstruction, userText) {
+  const endpoint = 'https://api.kie.ai/gemini-3-flash/v1/chat/completions';
+  const resp = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${KIE_KEY}` },
+    body: JSON.stringify({
+      messages: [
+        { role: 'system', content: systemInstruction },
+        { role: 'user', content: userText }
+      ]
+    })
+  });
+  const data = await resp.json();
+  if (!resp.ok) throw new Error(data.error?.message || `Erreur kie.ai ${resp.status}`);
+  const txt = data.choices?.[0]?.message?.content || data.choices?.[0]?.message?.reasoning_content || '';
+  if (!txt) throw new Error('Réponse vide du modèle — réponse brute : ' + JSON.stringify(data).slice(0, 300));
+  try {
+    return JSON.parse(cleanJson(txt));
+  } catch(e) {
+    throw new Error('JSON invalide renvoyé par kie.ai : ' + txt.slice(0, 300));
+  }
 }
 
 function cleanJson(txt) {
@@ -1376,6 +1402,9 @@ async function generateSingle(idx) {
       imageUrl = await generateVertex(promptText);
     }
     area.innerHTML = `<img src="${imageUrl}" alt="séquence ${idx+1}" />`;
+    if (sequences[idx].imageUrl && sequences[idx].imageUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(sequences[idx].imageUrl);
+    }
     sequences[idx].imageUrl = imageUrl;
     card.classList.remove('generating');
   } catch(err) {
@@ -1578,7 +1607,7 @@ async function generateVertex(promptText) {
       if (!candidate) throw new Error('Aucune réponse du modèle');
       if (candidate.finishReason === 'SAFETY') throw new Error('Bloqué par les filtres de sécurité');
       for (const p of (candidate?.content?.parts || [])) {
-        if (p.inlineData?.data) return `data:image/png;base64,${p.inlineData.data}`;
+        if (p.inlineData?.data) return base64ToBlobUrl(p.inlineData.data, 'image/png');
       }
       throw new Error('Image non trouvée dans la réponse');
     } catch(err) {
@@ -1593,35 +1622,38 @@ async function generateVertex(promptText) {
 
 // ─── KIE.AI GENERATE ─────────────────────────────────────
 async function generateKie(promptText) {
-  // MODIFICATION 3 : dimensions selon le mode
-  const width = carouselMode ? 1080 : 1080;
-  const height = carouselMode ? 1350 : 1920;
+  // MODIFICATION 3 : aspect ratio selon le mode
+  const aspectRatio = carouselMode ? '4:5' : '9:16';
 
   const uploadResp = await fetch('https://kieai.redpandaai.co/api/file-base64-upload', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${KIE_KEY}` },
-    body: JSON.stringify({ base64Data: `data:${avatarMime};base64,${avatarBase64}` })
+    body: JSON.stringify({ base64Data: `data:${avatarMime};base64,${avatarBase64}`, uploadPath: 'images/studio-narratif' })
   });
-  if (!uploadResp.ok) throw new Error('kie.ai upload failed');
-  const uploadData = await uploadResp.json();
-  const imageUrl = uploadData.downloadUrl;
-  if (!imageUrl) throw new Error('kie.ai : pas de downloadUrl');
+  let uploadData = {};
+  try { uploadData = await uploadResp.json(); } catch(_) {}
+  if (!uploadResp.ok) throw new Error(`kie.ai upload HTTP ${uploadResp.status} : ${uploadData.msg || 'erreur inconnue'}`);
+  const imageUrl = uploadData.data?.downloadUrl || uploadData.downloadUrl;
+  if (!imageUrl) throw new Error('kie.ai upload : pas de downloadUrl — réponse : ' + JSON.stringify(uploadData).slice(0, 200));
 
   const taskResp = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${KIE_KEY}` },
     body: JSON.stringify({
       model: 'nano-banana-2',
-      prompt: promptText,
-      image_input: [imageUrl],
-      width,
-      height
+      input: {
+        prompt: promptText,
+        image_input: [imageUrl],
+        aspect_ratio: aspectRatio,
+        resolution: '2K',
+        output_format: 'png'
+      }
     })
   });
   if (!taskResp.ok) throw new Error('kie.ai task creation failed');
   const taskData = await taskResp.json();
-  const taskId = taskData.taskId || taskData.data?.taskId;
-  if (!taskId) throw new Error('kie.ai : pas de taskId');
+  const taskId = taskData.data?.taskId || taskData.taskId;
+  if (!taskId) throw new Error('kie.ai : pas de taskId — ' + (taskData.msg || JSON.stringify(taskData)));
 
   for (let i = 0; i < 60; i++) {
     await delay(3000);
@@ -1631,7 +1663,12 @@ async function generateKie(promptText) {
     const pollData = await pollResp.json();
     const state = pollData.data?.state || pollData.state;
     if (state === 'success') {
-      const urls = pollData.data?.resultJson?.resultUrls || pollData.resultJson?.resultUrls;
+      const rawResult = pollData.data?.resultJson || pollData.resultJson;
+      let urls;
+      try {
+        const parsed = typeof rawResult === 'string' ? JSON.parse(rawResult) : rawResult;
+        urls = parsed?.resultUrls;
+      } catch(_) { urls = null; }
       if (urls && urls[0]) {
         const blobResp = await fetch(urls[0]);
         const blob = await blobResp.blob();
@@ -1639,7 +1676,7 @@ async function generateKie(promptText) {
       }
       throw new Error('Pas d\'URL résultat');
     }
-    if (state === 'fail') throw new Error('kie.ai génération échouée');
+    if (state === 'fail') throw new Error('kie.ai génération échouée : ' + (pollData.data?.failMsg || pollData.failMsg || 'raison inconnue'));
   }
   throw new Error('kie.ai timeout (180s)');
 }
@@ -1717,6 +1754,7 @@ async function generateBrut() {
     } else {
       imageUrl = await generateVertex(promptText);
     }
+    if (brutImageUrl && brutImageUrl.startsWith('blob:')) URL.revokeObjectURL(brutImageUrl);
     brutImageUrl = imageUrl;
     area.innerHTML = `<img src="${imageUrl}" alt="mode brut" />`;
     toast('Image brute générée ✓', 'success');
@@ -1829,56 +1867,57 @@ ARRIÈRE-PLAN VIVANT :
 TECHNIQUE : 4K ultra-réaliste, Sony A7R IV, 85mm f/1.4, lumière naturelle crue, grain argentique présent, couleurs désaturées et profondes. Photojournalisme de l'intime.`;
 }
 
-function downloadBrut() {
-  if (!brutImageUrl) return toast('Génère l\'image d\'abord', 'error');
+function triggerImageDownload(imageUrl, filename) {
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (isIOS) {
+    // L'attribut "download" n'est pas fiable sur Safari iOS : on ouvre l'image
+    // pour permettre l'enregistrement natif par appui long.
+    window.open(imageUrl, '_blank');
+    toast('Appuie longuement sur l\'image puis "Enregistrer l\'image"', 'success');
+    return;
+  }
   const a = document.createElement('a');
-  if (brutImageUrl.startsWith('blob:') || brutImageUrl.startsWith('data:')) {
-    a.href = brutImageUrl;
-    a.download = `studio-narratif-brut-${slugify(brutData?.emotion || 'emotion')}.jpg`;
+  if (imageUrl.startsWith('blob:') || imageUrl.startsWith('data:')) {
+    a.href = imageUrl;
+    a.download = filename;
     a.click();
   } else {
-    fetch(brutImageUrl).then(r => r.blob()).then(blob => {
+    fetch(imageUrl).then(r => r.blob()).then(blob => {
       const url = URL.createObjectURL(blob);
       a.href = url;
-      a.download = `studio-narratif-brut-${slugify(brutData?.emotion || 'emotion')}.jpg`;
+      a.download = filename;
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 5000);
     }).catch(() => {
-      window.open(brutImageUrl, '_blank');
-      toast('iOS : Appuie longuement pour enregistrer', 'success');
+      window.open(imageUrl, '_blank');
+      toast('Appuie longuement sur l\'image pour l\'enregistrer', 'success');
     });
   }
+}
+
+function downloadBrut() {
+  if (!brutImageUrl) return toast('Génère l\'image d\'abord', 'error');
+  triggerImageDownload(brutImageUrl, `studio-narratif-brut-${slugify(brutData?.emotion || 'emotion')}.jpg`);
 }
 
 // ─── DOWNLOAD (séquences normales) ───────────────────────
 function downloadImage(idx) {
   const seq = sequences[idx];
   if (!seq || !seq.imageUrl) return toast('Génère l\'image d\'abord', 'error');
-
-  const a = document.createElement('a');
-  if (seq.imageUrl.startsWith('blob:') || seq.imageUrl.startsWith('data:')) {
-    a.href = seq.imageUrl;
-    a.download = `studio-narratif-s${String(idx+1).padStart(2,'0')}-${slugify(seq.emotion)}.jpg`;
-    a.click();
-  } else {
-    fetch(seq.imageUrl)
-      .then(r => r.blob())
-      .then(blob => {
-        const url = URL.createObjectURL(blob);
-        a.href = url;
-        a.download = `studio-narratif-s${String(idx+1).padStart(2,'0')}-${slugify(seq.emotion)}.jpg`;
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(url), 5000);
-      })
-      .catch(() => {
-        window.open(seq.imageUrl, '_blank');
-        toast('iOS : Appuie longuement sur l\'image pour l\'enregistrer', 'success');
-      });
-  }
+  triggerImageDownload(seq.imageUrl, `studio-narratif-s${String(idx+1).padStart(2,'0')}-${slugify(seq.emotion)}.jpg`);
 }
 
 function slugify(s) {
   return (s || 'image').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'-').slice(0,30);
+}
+
+function base64ToBlobUrl(base64, mimeType) {
+  const byteChars = atob(base64);
+  const byteNumbers = new Array(byteChars.length);
+  for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+  const byteArray = new Uint8Array(byteNumbers);
+  const blob = new Blob([byteArray], { type: mimeType });
+  return URL.createObjectURL(blob);
 }
 
 function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
