@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Studio Vlog — The AI Vlog Director</title>
+<style>
+:root{
+  --bg:#111116; --bg2:#191920; --card:#202029; --line:#2e2e3a;
+  --v:#875CE5; --vl:#B89AFF; --tx:#F5F3F8; --tx2:#A5A0AE; --ok:#36B982; --err:#E56B75;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--tx);font-family:Inter,-apple-system,"Segoe UI",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+body{min-height:100vh}
+button,input,select,textarea{font:inherit;color:inherit}
+.wrap{max-width:1040px;margin:0 auto;padding:24px 20px 80px}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:36px;height:36px;border-radius:9px;background:var(--v);display:grid;place-items:center}
+.brand h1{font-size:18px;margin:0;line-height:1.1}
+.brand small{color:var(--tx2);font-size:12px}
+.steps{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:22px}
+.step{flex:1;min-width:150px;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--bg2);cursor:pointer;text-align:left;color:var(--tx2);transition:.15s}
+.step b{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--tx2)}
+.step span{font-size:14px}
+.step.on{border-color:var(--v);background:rgba(135,92,229,.12);color:var(--tx)}
+.step.on b{color:var(--vl)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:16px}
+.card h2{margin:0 0 4px;font-size:16px}
+.hint{color:var(--tx2);font-size:13px;margin:0 0 14px;line-height:1.45}
+label.l{display:block;font-size:13px;font-weight:600;margin:0 0 6px}
+input[type=text],input[type=number],input[type=password],select,textarea{width:100%;background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:9px 11px;font-size:14px}
+textarea{resize:vertical;min-height:70px;line-height:1.5}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--v);box-shadow:0 0 0 3px rgba(135,92,229,.25)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:9px 16px;border-radius:9px;border:1px solid var(--line);background:transparent;cursor:pointer;font-size:14px;font-weight:500;transition:.15s}
+.btn:hover{background:var(--bg2)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.p{background:var(--v);border-color:var(--v);color:#fff}
+.btn.p:hover{background:#7a50d6}
+.btn.d{color:var(--err);border-color:rgba(229,107,117,.5)}
+.btn.s{padding:6px 11px;font-size:13px}
+.row{display:grid;gap:14px}
+.g2{grid-template-columns:1fr 1fr}
+.g3{grid-template-columns:repeat(3,1fr)}
+@media(max-width:720px){.g2,.g3{grid-template-columns:1fr}}
+.drop{border:2px dashed var(--line);border-radius:14px;padding:30px;text-align:center;color:var(--tx2);cursor:pointer;transition:.15s;background:var(--bg2)}
+.drop.over,.drop:hover{border-color:var(--v);color:var(--tx)}
+.refs{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;margin-top:16px}
+.ref{background:var(--bg2);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.ref img{width:100%;height:170px;object-fit:cover;display:block;background:#000}
+.ref .b{padding:12px;display:grid;gap:8px}
+.tag{display:inline-block;background:rgba(135,92,229,.2);color:var(--vl);border-radius:999px;padding:2px 9px;font-size:12px;font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--bg2);font-size:12px;cursor:pointer;color:var(--tx2)}
+.chip.on{border-color:var(--v);background:rgba(135,92,229,.2);color:var(--tx)}
+.opt{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg2);cursor:pointer}
+.opt.on{border-color:var(--v);background:rgba(135,92,229,.12)}
+.opt b{display:block;font-size:14px}
+.opt span{font-size:12px;color:var(--tx2)}
+.seq{border:1px solid var(--line);border-radius:14px;background:var(--card);margin-bottom:16px;overflow:hidden}
+.seq>.h{display:flex;gap:10px;align-items:center;padding:12px 16px;background:var(--bg2);border-bottom:1px solid var(--line)}
+.seq>.h input{background:transparent;border:1px solid transparent;font-weight:600;font-size:15px}
+.seq>.h input:hover{border-color:var(--line)}
+.seq>.c{padding:16px;display:grid;gap:14px}
+.prompt{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;min-height:220px}
+.ctl{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.muted{color:var(--tx2);font-size:12px}
+.note{border-left:3px solid var(--v);background:var(--bg2);padding:10px 14px;border-radius:0 9px 9px 0;font-size:13px;line-height:1.5;color:var(--tx2);white-space:pre-wrap}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--card);border:1px solid var(--line);padding:11px 18px;border-radius:10px;font-size:14px;z-index:99;box-shadow:0 8px 30px rgba(0,0,0,.5);max-width:92vw}
+.toast.err{border-color:var(--err);color:var(--err)}
+.toast.ok{border-color:var(--ok);color:var(--ok)}
+.spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;display:inline-block}
+@keyframes sp{to{transform:rotate(360deg)}}
+details summary{cursor:pointer;color:var(--vl);font-size:13px}
+.empty{text-align:center;color:var(--tx2);padding:26px;font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script>
+"use strict";
+/* ================= Constantes ================= */
+const FIRST_LINE = "No text overlays, no captions, no subtitles, no on-screen titles, and no added graphics.";
+const TEXT_MODEL = "gemini-3.8-flash";
+const ENDPOINT = m => "https://aiplatform.googleapis.com/v1/publishers/google/models/" + m + ":generateContent";
+
+const REF_TYPES = ["Personnage","Visage / portrait","Tenue","Chaussures","Accessoire","Lieu","Hôtel / logement","Restaurant","Véhicule","Objet","Paysage","Environnement","Autre"];
+const PERSON_TYPES = ["Personnage","Visage / portrait"];
+const SHOTS = ["","Selfie","Plan du partenaire","POV","Détail","Plan posé","Moment spontané"];
+const CUTS = ["","Jump cut","Plan continu"];
+
+const EQUIP = {
+  smartphone:{label:"Smartphone (iPhone / Android)",methods:["Selfie caméra frontale","Caméra arrière tenue à la main","Selfie de couple","Partenaire filmant son partenaire","POV","Téléphone posé sur une table","Téléphone posé sur un meuble","Mirror selfie","Plans de détails"]},
+  insta360:{label:"Insta360 (caméra 360°)",methods:["Capture immersive 360°","Point de vue à 360°","Capture en mouvement","Capture immersive de voyage"]},
+  gopro:{label:"GoPro (action cam)",methods:["POV sportif","Capture à la main","Caméra fixée au corps","Activités extérieures","Sports et aventures"]},
+  osmo:{label:"DJI Osmo Pocket",methods:["Vlog stabilisé à main levée","Promenade","Découverte","Capture de couple","Présentation de lieux"]},
+  hybride:{label:"Appareil hybride / DSLR",methods:["Portraits","Plans de détails","Plans de paysage","Captures de voyage","Plans avec profondeur de champ"]},
+  drone:{label:"Drone",methods:["Plans aériens","Découverte de paysages","Plans de localisation","Plans de transition"]}
+};
+
+/* ================= État ================= */
+const blank = () => ({
+  step:1,
+  refs:[],
+  settings:{mode:"mixed",equip:"smartphone",out:"global",count:0,duration:15,idea:"",lockId:true,lockOutfit:true,lockPlace:true},
+  analysis:"",
+  warning:"",
+  story:{title:"",text:""},
+  global:{prompts:[],cur:0,note:""},
+  seqs:[]
+});
+let S = blank();
+let busy = {plan:false, seq:{}, all:false, glob:false};
+let apiKey = localStorage.getItem("svlog_key") || "";
+const uid = () => Math.random().toString(36).slice(2,9);
+const esc = s => String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const refN = id => S.refs.findIndex(r=>r.id===id)+1;
+const refById = id => S.refs.find(r=>r.id===id);
+
+/* ================= IndexedDB ================= */
+let dbp;
+function db(){
+  if(!dbp) dbp = new Promise((res,rej)=>{
+    const q = indexedDB.open("studio_vlog",1);
+    q.onupgradeneeded = () => q.result.createObjectStore("kv");
+    q.onsuccess = () => res(q.result);
+    q.onerror = () => rej(q.error);
+  });
+  return dbp;
+}
+async function idbGet(k){ try{const d=await db();return await new Promise((r,j)=>{const q=d.transaction("kv").objectStore("kv").get(k);q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error)})}catch(e){return undefined} }
+async function idbSet(k,v){ try{const d=await db();await new Promise((r,j)=>{const t=d.transaction("kv","readwrite");t.objectStore("kv").put(v,k);t.oncomplete=r;t.onerror=()=>j(t.error)})}catch(e){console.warn("Sauvegarde impossible",e)} }
+let saveT; const save = () => { clearTimeout(saveT); saveT=setTimeout(()=>idbSet("state",S),400); };
+
+/* ================= Utilitaires ================= */
+function toast(msg,type){
+  const t=document.createElement("div"); t.className="toast "+(type||""); t.textContent=msg;
+  document.body.appendChild(t); setTimeout(()=>t.remove(),type==="err"?6000:2500);
+}
+function download(name,blob){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href=url; a.download=name; document.body.appendChild(a); a.click();
+  setTimeout(()=>{a.remove();URL.revokeObjectURL(url)},1500);
+}
+async function copyText(t){
+  try{ await navigator.clipboard.writeText(t); }
+  catch(e){ const x=document.createElement("textarea"); x.value=t; x.style.position="fixed"; x.style.opacity="0"; document.body.appendChild(x); x.select(); document.execCommand("copy"); x.remove(); }
+  toast("Copié","ok");
+}
+function readImage(file,max=1024){
+  return new Promise((res,rej)=>{
+    const fr=new FileReader();
+    fr.onerror=()=>rej(new Error("Lecture impossible : "+file.name));
+    fr.onload=()=>{
+      const im=new Image();
+      im.onerror=()=>rej(new Error("Image illisible : "+file.name));
+      im.onload=()=>{
+        const k=Math.min(1,max/Math.max(im.width,im.height));
+        const c=document.createElement("canvas"); c.width=Math.round(im.width*k); c.height=Math.round(im.height*k);
+        c.getContext("2d").drawImage(im,0,0,c.width,c.height);
+        res(c.toDataURL("image/jpeg",0.85));
+      };
+      im.src=fr.result;
+    };
+    fr.readAsDataURL(file);
+  });
+}
+const b64 = d => d.split(",")[1];
+
+/* ================= Appel Gemini (Vertex) ================= */
+async function gemini(parts,system,json){
+  if(!apiKey) throw new Error("Ajoutez votre clé Vertex AI à l'étape 2.");
+  const body = {
+    systemInstruction:{parts:[{text:system}]},
+    contents:[{role:"user",parts}],
+    generationConfig:{temperature:0.8,responseMimeType:json?"application/json":"text/plain"}
+  };
+  let last;
+  for(let i=0;i<4;i++){
+    const r = await fetch(ENDPOINT(TEXT_MODEL),{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":apiKey},body:JSON.stringify(body)});
+    if(r.ok){
+      const j = await r.json();
+      const t = j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts;
+      const txt = t ? t.map(p=>p.text||"").join("") : "";
+      if(!txt) throw new Error("Réponse vide de l'IA. Réessayez.");
+      return txt;
+    }
+    last = r.status + " " + (await r.text()).slice(0,200);
+    if(r.status===429||r.status===503){ await new Promise(s=>setTimeout(s,1500*Math.pow(2,i))); continue; }
+    break;
+  }
+  throw new Error("Erreur IA : "+last);
+}
+function parseJSON(t){
+  try{return JSON.parse(t)}catch(e){
+    const m=t.match(/\{[\s\S]*\}/); if(m){try{return JSON.parse(m[0])}catch(_){}}
+    throw new Error("Réponse IA illisible. Réessayez.");
+  }
+}
+function refParts(ids){
+  const parts=[];
+  ids.forEach(id=>{
+    const r=refById(id); if(!r) return;
+    parts.push({text:"@image"+refN(id)+" — type : "+r.type+(r.name?" — nom : "+r.name:"")});
+    parts.push({inlineData:{mimeType:"image/jpeg",data:b64(r.dataUrl)}});
+  });
+  return parts;
+}
+
+/* ================= Étape 3 : analyse + découpage ================= */
+async function runPlan(){
+  if(!S.refs.length) return toast("Ajoutez d'abord des images de référence (étape 1).","err");
+  busy.plan=true; render();
+  try{
+    const st=S.settings;
+    const equipList=Object.keys(EQUIP).map(k=>k+" ("+EQUIP[k].methods.join(" | ")+")").join("\n");
+    const system =
+"Tu es le directeur de réalisation d'un studio de vlogs. L'utilisatrice apporte ses propres images de référence, numérotées @image1, @image2… Tu ne crées jamais de nouvelle référence visuelle.\n"+
+"Travail demandé : analyser ce qui est RÉELLEMENT VISIBLE sur chaque image (rien d'inventé ; si c'est incertain, écris « incertain »), puis proposer UNE histoire de vlog (si l'utilisatrice a fourni une histoire, pars d'elle), puis la découper en moments ordonnés en ne retenant que ceux qui méritent d'être filmés.\n"+
+"Règles :\n"+
+"- Ne décris jamais l'aspect physique des personnes (visage, cheveux, expression) ni leurs vêtements : seulement leur présence et leurs actions.\n"+
+"- N'invente pas de chronologie certaine à partir de suppositions visuelles. Distingue ce qui est observé, ce qui vient de l'utilisatrice, et tes hypothèses.\n"+
+"- Chaque séquence a une origine de prise de vue physiquement crédible : une personne présente filme, ou l'appareil est posé, etc. Jamais de plan sans justification.\n"+
+"- Varie les équipements et les méthodes quand c'est pertinent ; n'utilise pas « téléphone posé » dans toutes les séquences.\n"+
+"- Sélection : ne fais pas de chaque image un plan distinct. Retiens seulement les moments narratifs qui méritent d'être filmés (actions importantes, interactions humaines, moments spontanés). Une image peut n'être qu'une référence (personnage, lieu, tenue) sans devenir un plan.\n"+
+"- Durée : adapte le nombre de moments à la durée demandée, sans surcharger. Donne à chaque moment une durée en secondes physiquement crédible ; la somme ne dépasse pas la durée totale. Si le scénario contient trop d'actions, simplifie-le et explique dans « avertissement » ce que tu as retiré, ou propose de répartir sur plusieurs clips. N'accélère jamais les personnages.\n"+
+"- Filmeur : un filmeur principal quand c'est pertinent ; il ne change que si c'est physiquement justifié. Pour chaque moment : où il se trouve et comment il tient ou pose l'appareil, ce que la caméra filme, comment elle bouge, comment le plan se termine.\n"+
+"- Rythme : alterne les types de plan (selfie, partenaire, POV, détail, posé, spontané) ; jump cut quand il sert le rythme, plan continu quand l'interaction humaine compte.\n"+
+"- Aucun gore. Les émotions humaines ne sont jamais limitées.\n"+
+"- Rédige en français.\n"+
+"Équipements (clé puis méthodes autorisées) :\n"+equipList+"\n"+
+"Réponds uniquement en JSON : {\"analyse\":\"texte court : ce qui est visible par image, hypothèses marquées\",\"histoire\":{\"titre\":\"\",\"synopsis\":\"4 à 8 phrases en français racontant le vlog, sans apparence ni vêtements des personnes\"},\"avertissement\":\"chaîne vide, ou ce que tu as simplifié / proposé de répartir sur plusieurs clips\",\"sequences\":[{\"titre\":\"\",\"resume\":\"actions de la séquence, sans apparence ni vêtements\",\"references\":[numéros des @image utilisées],\"equipement\":\"clé\",\"methode\":\"une des méthodes de cet équipement\",\"filme\":\"qui filme / comment le point de vue existe\",\"duree\":nombre de secondes,\"type_plan\":\"Selfie | Plan du partenaire | POV | Détail | Plan posé | Moment spontané\",\"enchainement\":\"Jump cut | Plan continu\",\"camera\":{\"position\":\"où est le filmeur et comment il tient ou pose l'appareil\",\"cadre\":\"ce que la caméra filme\",\"mouvement\":\"comment elle se déplace\",\"fin\":\"comment le plan se termine\"}}]}";
+    const parts = refParts(S.refs.map(r=>r.id));
+    let ask = (st.count>0?"Propose exactement "+st.count+" moments.":"Propose le nombre de moments adapté à la durée et à l'histoire.")+(st.out==="global"?" La vidéo finale dure "+st.duration+" secondes au total.":" Chaque séquence dure environ "+st.duration+" secondes.");
+    ask += " Chaque action doit avoir un temps physiquement crédible : si le scénario en contient trop pour la durée, simplifie ou propose une répartition sur plusieurs clips (champ avertissement).";
+    if(st.idea.trim()) ask += "\nInformations fournies par l'utilisatrice (à respecter) :\n"+st.idea.trim();
+    if(st.mode==="manual") ask += "\nÉquipement imposé pour toutes les séquences : "+st.equip+" (choisis seulement la méthode).";
+    else if(st.mode==="mixed") ask += "\nÉquipement par défaut si rien de mieux : "+st.equip+". Tes choix seront modifiables.";
+    else ask += "\nChoisis librement les équipements.";
+    parts.push({text:ask});
+    const out = parseJSON(await gemini(parts,system,true));
+    const list = Array.isArray(out.sequences)?out.sequences:[];
+    if(!list.length) throw new Error("Aucune séquence proposée. Réessayez.");
+    S.analysis = out.analyse||"";
+    S.warning = String(out.avertissement||"");
+    S.story = {title:(out.histoire&&out.histoire.titre)||"",text:(out.histoire&&out.histoire.synopsis)||""};
+    S.global = {prompts:[],cur:0,note:""};
+    S.seqs = list.map(q=>{
+      let eq = EQUIP[q.equipement]?q.equipement:st.equip;
+      if(st.mode==="manual") eq = st.equip;
+      const methods = EQUIP[eq].methods;
+      return {
+        id:uid(), title:q.titre||"Séquence", summary:q.resume||"",
+        refs:(q.references||[]).map(n=>S.refs[n-1]&&S.refs[n-1].id).filter(Boolean),
+        equip:eq, method:methods.includes(q.methode)?q.methode:methods[0], filmer:q.filme||"",
+        dur:q.duree?String(q.duree):"", shot:SHOTS.includes(q.type_plan)?q.type_plan:"", cut:CUTS.includes(q.enchainement)?q.enchainement:"",
+        camPos:(q.camera&&q.camera.position)||"", camSees:(q.camera&&q.camera.cadre)||"", camMove:(q.camera&&q.camera.mouvement)||"", camEnd:(q.camera&&q.camera.fin)||"",
+        dialogue:"", prompts:[], cur:0, end:"", locked:false, note:""
+      };
+    });
+    toast("Découpage proposé — modifiez ce que vous voulez","ok");
+  }catch(e){ toast(e.message,"err"); }
+  busy.plan=false; save(); render();
+}
+
+/* ================= Prompt Seedance ================= */
+const DIRECTOR_SYSTEM = G =>
+"Tu es un réalisateur audiovisuel spécialisé dans le réalisme humain, le vlog filmé par les personnages eux-mêmes et les prompts vidéo Seedance. Tu écris UN prompt vidéo pour "+(G?"UN VLOG COMPLET : une seule vidéo qui raconte l'histoire fournie à travers tous les moments donnés, dans l'ordre, sur la durée totale.":"UNE séquence.")+"\n\n"+
+"FORMAT : réponds en JSON {\"prompt\":\"...\",\"continuite_fin\":\"...\"}. Le prompt est rédigé en français. Ne commence PAS par une phrase de consignes sur le texte à l'écran (elle est ajoutée automatiquement). Le prompt est du texte brut continu, sans markdown.\n\n"+
+"RÉFÉRENCES : les images fournies sont désignées uniquement par leur identifiant (@image1, @image2…). Pour les personnes, écris « la personne de @imageN » : ne décris jamais leur visage, leurs cheveux, leur expression ni leurs vêtements, seulement leur présence et leurs actions. Pour les lieux, tenues, objets : renvoie à @imageN sans rien inventer qui ne soit visible sur l'image. N'utilise que les identifiants fournis pour cette séquence.\n\n"+
+"CONTENU À COUVRIR, dans cet ordre logique :\n"+
+"1. Verrous demandés (identité, tenue, lieu) formulés brièvement avec les @image concernées.\n"+
+"2. Le lieu et son environnement.\n"+
+"3. L'équipement, qui filme, comment l'appareil est tenu ou posé, et pourquoi ce point de vue existe. Aucun plan sans origine physique ; l'appareil n'apparaît à l'image que s'il est justifié (ex. miroir).\n"+
+(G?"4. La chronologie complète, moment par moment, avec des repères de temps répartis sur la durée totale (ex. « 0–4 s : … »), rythme de Reel monté, jump cuts possibles, durées de plans variables. Chaque moment indique qui filme et avec quel appareil ; les changements de lieu ou d'équipement sont justifiés physiquement.\n":"4. La chronologie des actions avec repères de temps adaptés à la durée (ex. « 0–3 s : … »), rythme de Reel monté, jump cuts possibles, durées de plans variables.\n")+
+"5. Mouvements de caméra qui suivent les actions (marche, rire qui fait bouger le cadre, retourner le téléphone vers l'autre…), micro-tremblements, autofocus, variations d'exposition, flou de mouvement, imperfections de cadrage, stabilisation propre au matériel.\n"+
+"6. Comportements humains naturels : clignements, respiration, regards, hésitations, gestes spontanés, langage corporel, proximité. Pour chaque émotion, explique comment elle se voit physiquement (visible même sans le son). Toutes les émotions humaines sont permises. Pas de gestes romantiques imposés si la situation ne s'y prête pas ; tout baiser est réciproque et anatomiquement crédible.\n"+
+"7. Ce que le spectateur doit ressentir.\n"+
+"8. Les sons authentiques de l'environnement (vent, pas, tissu, respiration, circulation, vagues, restaurant, hôtel…) selon le lieu.\n"+
+"9. Dialogues : voir la règle ci-dessous.\n"+
+(G?"10. Cohérence entre tous les moments (déplacements, objets, ambiance).\n":"10. Continuité avec la séquence précédente.\n")+
+"11. Contraintes anatomiques et visuelles : mains et doigts corrects, proportions naturelles, pas de déformation, pas de personnage en trop.\n\n"+
+"RÉALISATION DU VLOG (obligatoire) :\n"+
+"- Temps crédible : adapte le nombre de plans à la durée. Chaque action a un temps physiquement crédible ; ne surcharge pas le clip et n'accélère jamais les personnages pour tout faire tenir. S'il y a trop d'actions pour la durée, garde les plus importantes et laisse le reste de côté.\n"+
+"- Filmeur : un filmeur principal par "+(G?"vlog":"séquence")+" quand c'est pertinent ; il ne change que si c'est physiquement justifié. Pour chaque plan, précise : qui filme, où se trouve le filmeur, comment il tient ou pose l'appareil, ce que la caméra filme, comment elle se déplace, comment le plan se termine.\n"+
+"- Jeu : micro-comportements (gestes, regards, expressions, réactions) plutôt que réactions exagérées ; les personnages réagissent les uns aux autres au lieu d'exécuter des actions indépendantes.\n"+
+"- Rythme : alterne selfies, plans du partenaire, POV, détails, plans posés et moments spontanés ; jump cuts quand ils servent le rythme, plan continu quand l'interaction humaine compte ; pas de changement de plan à intervalle régulier.\n\n"+
+"DIALOGUES : si des paroles sont fournies, écris-les mot pour mot, telles quelles, avec le nom du locuteur et, si une voix est indiquée, sa description. N'ajoute, ne reformule et n'invente AUCUNE autre réplique. Si aucune parole n'est fournie, la séquence est silencieuse : uniquement respirations, bruits de vêtements et sons ambiants, aucune parole ni murmure.\n\n"+
+"Évite : travellings cinéma injustifiés, personnages théâtraux, sourires artificiels, regards permanents caméra, affection forcée. Aucun gore.\n\n"+
+"« continuite_fin » : "+(G?"chaîne vide.":"2 à 4 phrases résumant la situation à la fin de la séquence (lieu, qui est où, ce qui a été fait, ambiance, état du matériel) pour la séquence suivante, sans décrire l'apparence ni les vêtements.");
+
+const QC_SYSTEM =
+"Tu es le contrôleur qualité d'un studio de vlogs. Tu reçois le contexte d'une demande, un prompt Seedance brouillon et les images de référence (@imageN). Vérifie point par point :\n"+
+"1. Nombre d'actions adapté à la durée (temps physiquement crédible, aucune accélération artificielle).\n"+
+"2. Logique physique de chaque caméra (qui filme, où, comment l'appareil est tenu ou posé).\n"+
+"3. Cohérence des filmeurs (changement seulement si justifié).\n"+
+"4. Continuité des personnages.\n"+
+"5. Continuité des vêtements (renvoie aux références @imageN, sans décrire les vêtements).\n"+
+"6. Réalisme des interactions.\n"+
+"7. Crédibilité des émotions (visibles physiquement).\n"+
+"8. Rythme naturel du montage.\n"+
+"9. Cohérence sonore.\n"+
+"Si un point est faible, corrige le prompt : simplifie, reformule, réordonne. Ne modifie pas les paroles exactes (mot pour mot), n'en ajoute aucune, n'invente aucune référence, ne décris ni l'apparence des personnes ni leurs vêtements, ne mentionne aucun format. Le prompt reste en français, en texte brut continu, sans la phrase d'ouverture sur le texte à l'écran.\n"+
+"Réponds en JSON : {\"corrections\":[\"problème trouvé et corrigé, en une phrase\"],\"prompt\":\"prompt final complet\"}. Si tout est correct, corrections est vide et prompt reprend le brouillon tel quel.";
+
+async function qcPass(ids,context,draft){
+  try{
+    const parts=refParts(ids);
+    parts.push({text:"CONTEXTE DE LA DEMANDE :\n"+context+"\n\nPROMPT BROUILLON À CONTRÔLER :\n"+draft});
+    const out=parseJSON(await gemini(parts,QC_SYSTEM,true));
+    let p=String(out.prompt||"").trim();
+    if(p.startsWith(FIRST_LINE)) p=p.slice(FIRST_LINE.length).trim();
+    if(!p) throw new Error("réponse vide");
+    return {text:p,qc:Array.isArray(out.corrections)?out.corrections.map(String).filter(Boolean):[],done:true};
+  }catch(e){
+    toast("Contrôle qualité non effectué ("+e.message+") : prompt brut conservé.","err");
+    return {text:draft,qc:[],done:false};
+  }
+}
+function camLines(q,ind){
+  const l=[];
+  if(q.dur) l.push("Durée : "+q.dur+" s");
+  if(q.shot) l.push("Type de plan : "+q.shot);
+  if(q.cut) l.push("Enchaînement : "+q.cut);
+  if(q.camPos) l.push("Position du filmeur / tenue de l'appareil : "+q.camPos);
+  if(q.camSees) l.push("La caméra filme : "+q.camSees);
+  if(q.camMove) l.push("Mouvement : "+q.camMove);
+  if(q.camEnd) l.push("Fin du plan : "+q.camEnd);
+  return l.map(x=>(ind||"")+x+"\n").join("");
+}
+function lockLines(){
+  const st=S.settings, l=[];
+  if(st.lockId) l.push("Verrou d'identité : préserver l'identité des personnages de référence.");
+  if(st.lockOutfit) l.push("Verrou de tenue : préserver tenues, chaussures et accessoires de référence.");
+  if(st.lockPlace) l.push("Verrou de lieu : préserver l'identité visuelle du lieu de référence.");
+  return l;
+}
+function voiceLines(ids){
+  return ids.map(id=>refById(id)).filter(r=>r&&r.voice&&PERSON_TYPES.includes(r.type)).map(r=>"@image"+refN(r.id)+" : "+r.voice);
+}
+const refLabel = id => "@image"+refN(id)+" ("+refById(id).type+(refById(id).name?" : "+refById(id).name:"")+")";
+
+async function genSeq(id,instruction){
+  const i = S.seqs.findIndex(q=>q.id===id); if(i<0) return;
+  const q = S.seqs[i], st = S.settings;
+  busy.seq[id]=true; render();
+  try{
+    const prev = i>0 ? S.seqs[i-1].end : "";
+    const ids = q.refs.filter(refById);
+    const parts = refParts(ids);
+    const locks = lockLines();
+    const voices = voiceLines(ids);
+    let t = "SÉQUENCE "+(i+1)+"/"+S.seqs.length+" — « "+q.title+" »\n"+
+      "Durée visée : "+st.duration+" secondes.\n"+
+      (S.story.text?"Histoire d'ensemble : "+S.story.text+"\n":"")+
+      "Références utilisées : "+(ids.map(refLabel).join(", ")||"aucune")+"\n"+
+      "Actions prévues : "+q.summary+"\n"+
+      "Équipement : "+EQUIP[q.equip].label+"\nMéthode de capture : "+q.method+"\nQui filme / origine du point de vue : "+(q.filmer||"à déterminer de façon crédible")+"\n"+camLines(q)+
+      (locks.length?"Verrous :\n- "+locks.join("\n- ")+"\n":"Aucun verrou demandé.\n")+
+      (voices.length?"Voix indiquées :\n- "+voices.join("\n- ")+"\n":"")+
+      "Continuité de la séquence précédente : "+(prev||"aucune (première séquence ou rupture claire)")+"\n"+
+      (q.dialogue.trim()?"PAROLES EXACTES À RESPECTER MOT POUR MOT :\n"+q.dialogue.trim()+"\n":"Aucune parole : séquence silencieuse.\n");
+    if(instruction && q.prompts[q.cur]){
+      t += "\nPrompt actuel à modifier :\n"+q.prompts[q.cur].text.replace(FIRST_LINE,"").trim()+"\n\nModification demandée : "+instruction+"\nNe change rien d'autre : garde la même continuité, les mêmes références et les mêmes dialogues.";
+    }
+    parts.push({text:t});
+    const out = parseJSON(await gemini(parts,DIRECTOR_SYSTEM(false),true));
+    let p = String(out.prompt||"").trim();
+    if(!p) throw new Error("Prompt vide. Réessayez.");
+    if(p.startsWith(FIRST_LINE)) p = p.slice(FIRST_LINE.length).trim();
+    const qc = await qcPass(ids, t, p);
+    q.prompts.push({text:FIRST_LINE+"\n\n"+qc.text, at:Date.now(), qc:qc.qc, qcDone:qc.done});
+    q.cur = q.prompts.length-1;
+    q.end = String(out.continuite_fin||q.end||"");
+  }catch(e){ toast(e.message,"err"); }
+  delete busy.seq[id]; save(); render();
+}
+async function genGlobal(instruction){
+  if(!S.seqs.length) return toast("Analysez d'abord les images pour proposer l'histoire.","err");
+  busy.glob=true; render();
+  try{
+    const st=S.settings;
+    const used=[...new Set(S.seqs.flatMap(q=>q.refs))].filter(refById);
+    const ids=used.length?used:S.refs.map(r=>r.id);
+    const parts=refParts(ids);
+    const locks=lockLines(), voices=voiceLines(ids);
+    let t="VLOG COMPLET — « "+(S.story.title||"Sans titre")+" »\n"+
+      "Durée totale visée : "+st.duration+" secondes.\n"+
+      "Histoire à raconter : "+(S.story.text||"à déduire des moments ci-dessous")+"\n"+
+      "Références disponibles : "+ids.map(refLabel).join(", ")+"\n\n"+
+      "MOMENTS DANS L'ORDRE :\n"+S.seqs.map((q,i)=>
+        "Moment "+(i+1)+" — « "+q.title+" »\n"+
+        "  Références : "+(q.refs.filter(refById).map(id=>"@image"+refN(id)).join(", ")||"aucune")+"\n"+
+        "  Actions : "+q.summary+"\n"+
+        "  Équipement : "+EQUIP[q.equip].label+" · Méthode : "+q.method+"\n"+
+        "  Qui filme / origine du point de vue : "+(q.filmer||"à déterminer de façon crédible")+"\n"+camLines(q,"  ")+
+        "  "+(q.dialogue.trim()?"PAROLES EXACTES À RESPECTER MOT POUR MOT :\n"+q.dialogue.trim():"Aucune parole : moment silencieux.")
+      ).join("\n")+"\n\n"+
+      (locks.length?"Verrous :\n- "+locks.join("\n- ")+"\n":"Aucun verrou demandé.\n")+
+      (voices.length?"Voix indiquées :\n- "+voices.join("\n- ")+"\n":"");
+    const g=S.global, curp=g.prompts[g.cur];
+    if(instruction && curp){
+      t+="\nPrompt actuel à modifier :\n"+curp.text.replace(FIRST_LINE,"").trim()+"\n\nModification demandée : "+instruction+"\nNe change rien d'autre : mêmes références, mêmes moments, mêmes dialogues.";
+    }
+    parts.push({text:t});
+    const out=parseJSON(await gemini(parts,DIRECTOR_SYSTEM(true),true));
+    let p=String(out.prompt||"").trim();
+    if(!p) throw new Error("Prompt vide. Réessayez.");
+    if(p.startsWith(FIRST_LINE)) p=p.slice(FIRST_LINE.length).trim();
+    const qc=await qcPass(ids,t,p);
+    g.prompts.push({text:FIRST_LINE+"\n\n"+qc.text,at:Date.now(),qc:qc.qc,qcDone:qc.done});
+    g.cur=g.prompts.length-1;
+  }catch(e){ toast(e.message,"err"); }
+  busy.glob=false; save(); render();
+}
+async function genAll(){
+  busy.all=true; render();
+  for(const q of S.seqs){ if(q.locked&&q.prompts.length) continue; await genSeq(q.id); }
+  busy.all=false; render();
+}
+
+/* ================= Export ================= */
+const curText = q => (q.prompts[q.cur]||{}).text||"";
+function crc32(buf){ let c,crc=-1; for(let n=0;n<buf.length;n++){ c=(crc^buf[n])&255; for(let k=0;k<8;k++) c=c&1?(c>>>1)^0xEDB88320:c>>>1; crc=(crc>>>8)^c; } return (crc^-1)>>>0; }
+function makeZip(files){
+  const enc=new TextEncoder(), chunks=[], central=[]; let off=0;
+  const u16=v=>[v&255,v>>8&255], u32=v=>[v&255,v>>8&255,v>>16&255,v>>24&255];
+  files.forEach(f=>{
+    const name=enc.encode(f.name), data=enc.encode(f.content), crc=crc32(data);
+    const head=new Uint8Array([0x50,0x4b,3,4,20,0,0,8,0,0,0,0,0,0,...u32(crc),...u32(data.length),...u32(data.length),...u16(name.length),0,0]);
+    chunks.push(head,name,data);
+    central.push({name,crc,len:data.length,off});
+    off+=head.length+name.length+data.length;
+  });
+  const cstart=off;
+  central.forEach(c=>{
+    const h=new Uint8Array([0x50,0x4b,1,2,20,0,20,0,0,8,0,0,0,0,0,0,...u32(c.crc),...u32(c.len),...u32(c.len),...u16(c.name.length),0,0,0,0,0,0,0,0,0,0,0,0,...u32(c.off)]);
+    chunks.push(h,c.name); off+=h.length+c.name.length;
+  });
+  const end=new Uint8Array([0x50,0x4b,5,6,0,0,0,0,...u16(central.length),...u16(central.length),...u32(off-cstart),...u32(cstart),0,0]);
+  chunks.push(end);
+  return new Blob(chunks,{type:"application/zip"});
+}
+function manifest(){
+  return S.refs.map(r=>({id:"@image"+refN(r.id),type:r.type,name:r.name,voice:r.voice||""}));
+}
+const curG = () => (S.global.prompts[S.global.cur]||{}).text||"";
+function exportAs(kind){
+  const items=[]; const g=curG();
+  if(g) items.push({title:"Prompt global — "+(S.story.title||"Vlog complet"),text:g,file:"prompt-global"});
+  S.seqs.forEach((q,i)=>{ if(curText(q)) items.push({title:"Séquence "+(i+1)+" — "+q.title,text:curText(q),file:"sequence-"+String(i+1).padStart(2,"0"),meta:q.method+" · "+EQUIP[q.equip].label}); });
+  if(!items.length) return toast("Aucun prompt à exporter.","err");
+  const day=new Date().toISOString().slice(0,10);
+  if(kind==="txt") download("studio-vlog-"+day+".txt",new Blob([items.map(x=>"=== "+x.title.toUpperCase()+" ===\n\n"+x.text).join("\n\n\n")],{type:"text/plain"}));
+  if(kind==="md") download("studio-vlog-"+day+".md",new Blob(["# Studio Vlog\n\n"+(S.story.text?"## Histoire\n"+(S.story.title?"**"+S.story.title+"**\n\n":"")+S.story.text+"\n\n":"")+"## Références\n"+manifest().map(m=>"- "+m.id+" : "+m.type+(m.name?" — "+m.name:"")).join("\n")+"\n\n"+items.map(x=>"## "+x.title+"\n\n"+(x.meta?x.meta+"\n\n":"")+"```\n"+x.text+"\n```").join("\n\n")],{type:"text/markdown"}));
+  if(kind==="json") download("studio-vlog-"+day+".json",new Blob([JSON.stringify({references:manifest(),note:"Les fichiers image ne sont pas inclus dans cet export.",reglages:S.settings,histoire:S.story,prompt_global:g,sequences:S.seqs.map((q,i)=>({ordre:i+1,titre:q.title,resume:q.summary,equipement:q.equip,methode:q.method,filme:q.filmer,references:q.refs.map(id=>"@image"+refN(id)),dialogue:q.dialogue,continuite_fin:q.end,prompt:curText(q)}))},null,2)],{type:"application/json"}));
+  if(kind==="zip"){
+    const files=[{name:"references.json",content:JSON.stringify({note:"Les fichiers image ne sont pas inclus.",references:manifest()},null,2)}];
+    items.forEach(x=>files.push({name:x.file+".txt",content:x.text}));
+    download("studio-vlog-"+day+".zip",makeZip(files));
+  }
+}
+
+/* ================= Rendu ================= */
+function render(){
+  const a=document.getElementById("app");
+  const y=window.scrollY;
+  a.innerHTML = header()+stepsNav()+(S.step===1?viewRefs():S.step===2?viewSettings():viewSeqs());
+  window.scrollTo(0,y);
+}
+function header(){
+  return '<header class="top"><div class="brand"><div class="logo"><svg width="18" height="18" viewBox="0 0 18 18"><path d="M5 3v12l10-6z" fill="#F5F3F8"/></svg></div><div><h1>Studio Vlog</h1><small>The AI Vlog Director</small></div></div><button class="btn s d" data-act="reset">Nouveau projet</button></header>';
+}
+function stepsNav(){
+  const L=[["Étape 1","Références"],["Étape 2","Réglages"],["Étape 3","Séquences et prompts"]];
+  return '<div class="steps">'+L.map((s,i)=>'<button class="step'+(S.step===i+1?" on":"")+'" data-act="step" data-v="'+(i+1)+'"><b>'+s[0]+'</b><span>'+s[1]+'</span></button>').join("")+'</div>';
+}
+function viewRefs(){
+  return '<div class="card"><h2>Vos images de référence</h2><p class="hint">Importez vos propres images (JPG, PNG, WEBP) : personnages, lieux, tenues, objets… Studio Vlog ne génère pas d\'images, il les transforme en prompts vidéo. Chaque image reçoit un identifiant @image utilisé dans les prompts.</p>'+
+  '<div class="drop" id="drop" data-act="pick"><b>Glissez vos images ici</b><br><span class="muted">ou cliquez pour les choisir</span></div><input type="file" id="file" accept="image/jpeg,image/png,image/webp" multiple hidden>'+
+  (S.refs.length?'<div class="refs">'+S.refs.map((r,i)=>
+    '<div class="ref"><img src="'+r.dataUrl+'" alt=""><div class="b"><div class="ctl" style="justify-content:space-between"><span class="tag">@image'+(i+1)+'</span><button class="btn s d" data-act="delref" data-id="'+r.id+'">Supprimer</button></div>'+
+    '<select data-ref="'+r.id+'" data-f="type">'+REF_TYPES.map(t=>'<option'+(t===r.type?" selected":"")+'>'+t+'</option>').join("")+'</select>'+
+    '<input type="text" placeholder="Nom (ex. Aria, Chambre d\'hôtel)" value="'+esc(r.name)+'" data-ref="'+r.id+'" data-f="name">'+
+    (PERSON_TYPES.includes(r.type)?'<input type="text" placeholder="Voix (facultatif : accent, hauteur, ton, débit)" value="'+esc(r.voice)+'" data-ref="'+r.id+'" data-f="voice">':'')+
+    '</div></div>').join("")+'</div>':'<div class="empty">Aucune image pour le moment.</div>')+
+  '</div><div class="ctl" style="justify-content:flex-end"><button class="btn p" data-act="step" data-v="2">Suivant</button></div>';
+}
+function viewSettings(){
+  const s=S.settings;
+  const modes=[["mixed","Mixte","L'IA propose, vous modifiez (par défaut)."],["auto","Automatique","L'IA choisit les équipements."],["manual","Manuel","Vous choisissez l'équipement."]];
+  return '<div class="card"><h2>Votre histoire (facultatif)</h2><p class="hint">Si vous ne mettez rien, l\'IA analyse toutes vos images et propose elle-même l\'histoire du vlog. Sinon, indiquez lieu, moment, ordre des événements : elle partira de là.</p>'+
+  '<textarea data-set="idea" placeholder="Ex. : voyage à deux, arrivée à l\'hôtel puis dîner au restaurant…">'+esc(s.idea)+'</textarea></div>'+
+  '<div class="card"><h2>Type de prompt</h2><div class="row g2" style="margin-top:12px">'+
+  '<div class="opt'+(s.out==="global"?" on":"")+'" data-act="out" data-v="global"><div><b>Un prompt global</b><span>Une histoire qui utilise toutes les images, un seul prompt pour toute la vidéo.</span></div></div>'+
+  '<div class="opt'+(s.out==="seq"?" on":"")+'" data-act="out" data-v="seq"><div><b>Un prompt par séquence</b><span>Optionnel : un prompt séparé pour chaque séquence.</span></div></div></div>'+
+  '<div class="row g2" style="margin-top:14px"><div><label class="l">Nombre de moments (0 = l\'IA décide)</label><input type="number" min="0" max="20" value="'+s.count+'" data-set="count"></div><div><label class="l">'+(s.out==="global"?"Durée totale de la vidéo (secondes)":"Durée par séquence (secondes)")+'</label><input type="number" min="3" max="'+(s.out==="global"?120:30)+'" value="'+s.duration+'" data-set="duration"></div></div></div>'+
+  '<div class="card"><h2>Équipement de tournage</h2><p class="hint">Chaque séquence peut avoir son propre équipement, modifiable à l\'étape 3.</p><div class="row g3">'+
+  modes.map(m=>'<div class="opt'+(s.mode===m[0]?" on":"")+'" data-act="mode" data-v="'+m[0]+'"><div><b>'+m[1]+'</b><span>'+m[2]+'</span></div></div>').join("")+'</div>'+
+  '<div style="margin-top:14px"><label class="l">Équipement par défaut</label><select data-set="equip">'+Object.keys(EQUIP).map(k=>'<option value="'+k+'"'+(s.equip===k?" selected":"")+'>'+EQUIP[k].label+'</option>').join("")+'</select></div></div>'+
+  '<div class="card"><h2>Verrous</h2><div class="chips" style="margin-top:10px">'+
+  [["lockId","Identité"],["lockOutfit","Tenues et accessoires"],["lockPlace","Lieu"]].map(l=>'<span class="chip'+(s[l[0]]?" on":"")+'" data-act="lock" data-v="'+l[0]+'">'+l[1]+'</span>').join("")+'</div></div>'+
+  '<div class="card"><h2>Clé Vertex AI</h2><p class="hint">Utilisée pour analyser vos images et écrire les prompts. Elle reste dans votre navigateur.</p><input type="password" id="key" placeholder="Clé API Vertex AI" value="'+esc(apiKey)+'" autocomplete="off"></div>'+
+  '<div class="ctl" style="justify-content:space-between"><button class="btn" data-act="step" data-v="1">Précédent</button><button class="btn p" data-act="step" data-v="3">Suivant</button></div>';
+}
+function viewSeqs(){
+  const G=S.settings.out==="global";
+  let h='<div class="card"><h2>Histoire et découpage</h2><p class="hint">L\'IA analyse vos images, retient les moments qui méritent d\'être filmés (toutes les images ne deviennent pas un plan), propose l\'histoire et la découpe en moments. Tout reste modifiable.</p><div class="ctl"><button class="btn p" data-act="plan"'+(busy.plan?" disabled":"")+'>'+(busy.plan?'<span class="spin"></span> Analyse en cours…':(S.seqs.length?"Relancer l\'analyse (remplace l\'histoire et les moments)":"Analyser les images et proposer l\'histoire"))+'</button><button class="btn" data-act="addseq">+ Ajouter un moment</button></div>'+
+    (S.analysis?'<details style="margin-top:14px"><summary>Analyse des images</summary><div class="note" style="margin-top:8px">'+esc(S.analysis)+'</div></details>':'')+'</div>';
+  if(!S.seqs.length) return h+'<div class="empty">Aucune histoire pour le moment.</div>';
+  h+='<div class="card"><h2>L\'histoire du vlog</h2><div style="margin-top:12px;display:grid;gap:12px"><div><label class="l">Titre</label><input type="text" value="'+esc(S.story.title)+'" data-story="title"></div><div><label class="l">Histoire</label><textarea data-story="text" style="min-height:120px">'+esc(S.story.text)+'</textarea></div></div></div>';
+  h+=warnBox(G);
+  h+=S.seqs.map((q,i)=>seqCard(q,i,!G)).join("");
+  if(G) h+=globalCard();
+  h+='<div class="card"><h2>'+(G?"Exporter":"Générer et exporter")+'</h2><div class="ctl">'+
+    (G?'':'<button class="btn p" data-act="genall"'+(busy.all?" disabled":"")+'>'+(busy.all?'<span class="spin"></span> Génération + contrôle qualité…':"Générer tous les prompts")+'</button>')+
+    ["txt","md","json","zip"].map(k=>'<button class="btn" data-act="export" data-v="'+k+'">Exporter '+k.toUpperCase()+'</button>').join("")+'</div><p class="muted" style="margin:10px 0 0">Les exports contiennent les prompts et la liste des références, pas les fichiers image.</p></div>';
+  return h;
+}
+function qcBox(p){
+  if(!p||p.qcDone===undefined) return "";
+  if(p.qcDone===false) return '<div class="note" style="margin-top:10px">Contrôle qualité non effectué pour cette version.</div>';
+  const c=p.qc||[];
+  return '<details style="margin-top:10px"><summary>Contrôle qualité : '+(c.length?c.length+" correction(s) appliquée(s)":"aucun problème détecté")+'</summary>'+(c.length?'<div class="note" style="margin-top:8px">'+c.map(x=>"• "+esc(x)).join("\n")+'</div>':'')+'</details>';
+}
+function warnBox(G){
+  const w=[];
+  if(S.warning) w.push(S.warning);
+  if(G){
+    const sum=S.seqs.reduce((a,q)=>a+(+q.dur||0),0);
+    if(sum>S.settings.duration) w.push("Les durées des moments totalisent "+sum+" s pour une vidéo de "+S.settings.duration+" s : retirez des moments, raccourcissez-les ou allongez la durée totale. Les personnages ne seront jamais accélérés.");
+  }
+  return w.length?'<div class="card" style="border-color:var(--v)"><h2>Attention à la durée</h2><div class="note" style="margin-top:10px">'+w.map(x=>esc(x)).join("\n\n")+'</div></div>':"";
+}
+function globalCard(){
+  const b=busy.glob, g=S.global, cur=g.prompts[g.cur];
+  return '<div class="card"><h2>Prompt global</h2><p class="hint">Un seul prompt qui raconte toute l\'histoire avec toutes vos images, sur la durée totale.</p>'+
+  '<div class="ctl"><button class="btn p" data-act="genglobal"'+(b?" disabled":"")+'>'+(b?'<span class="spin"></span> Génération + contrôle qualité…':(cur?"Générer une nouvelle version":"Générer le prompt global"))+'</button>'+(cur?'<button class="btn" data-act="copyglobal">Copier</button>':'')+'</div>'+
+  (cur?'<div class="ctl" style="margin-top:14px"><select data-glob="cur" style="max-width:220px">'+g.prompts.map((p,n)=>'<option value="'+n+'"'+(n===g.cur?" selected":"")+'>Version '+(n+1)+' · '+new Date(p.at).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})+'</option>').join("")+'</select></div>'+
+   '<textarea class="prompt" style="margin-top:10px;min-height:340px" data-glob="prompttext">'+esc(cur.text)+'</textarea>'+qcBox(cur)+
+   '<div class="ctl" style="margin-top:10px"><input type="text" style="flex:1;min-width:200px" placeholder="Modification souhaitée (ex. rendre le rythme plus lent)" data-glob="note" value="'+esc(g.note)+'"><button class="btn" data-act="regenglobal"'+(b?" disabled":"")+'>Régénérer avec cette modification</button></div>':'')+
+  '</div>';
+}
+function seqCard(q,i,full){
+  const b=!!busy.seq[q.id];
+  const methods=EQUIP[q.equip].methods;
+  const cur=q.prompts[q.cur];
+  return '<div class="seq"><div class="h"><span class="tag">'+(i+1)+'</span><input type="text" value="'+esc(q.title)+'" data-seq="'+q.id+'" data-f="title" aria-label="Titre"><button class="btn s" data-act="up" data-id="'+q.id+'"'+(i===0?" disabled":"")+'>↑</button><button class="btn s" data-act="down" data-id="'+q.id+'"'+(i===S.seqs.length-1?" disabled":"")+'>↓</button><button class="btn s d" data-act="delseq" data-id="'+q.id+'">Supprimer</button></div><div class="c">'+
+  '<div><label class="l">Actions</label><textarea data-seq="'+q.id+'" data-f="summary">'+esc(q.summary)+'</textarea></div>'+
+  '<div><label class="l">Références utilisées</label><div class="chips">'+(S.refs.length?S.refs.map((r,n)=>'<span class="chip'+(q.refs.includes(r.id)?" on":"")+'" data-act="tref" data-id="'+q.id+'" data-r="'+r.id+'">@image'+(n+1)+(r.name?" · "+esc(r.name):"")+'</span>').join(""):'<span class="muted">Aucune référence</span>')+'</div></div>'+
+  '<div class="row g3"><div><label class="l">Équipement</label><select data-seq="'+q.id+'" data-f="equip">'+Object.keys(EQUIP).map(k=>'<option value="'+k+'"'+(q.equip===k?" selected":"")+'>'+EQUIP[k].label+'</option>').join("")+'</select></div>'+
+  '<div><label class="l">Méthode de capture</label><select data-seq="'+q.id+'" data-f="method">'+methods.map(m=>'<option'+(m===q.method?" selected":"")+'>'+m+'</option>').join("")+'</select></div>'+
+  '<div><label class="l">Qui filme</label><input type="text" value="'+esc(q.filmer)+'" data-seq="'+q.id+'" data-f="filmer"></div></div>'+
+  '<div class="row g3"><div><label class="l">Durée (secondes)</label><input type="number" min="1" max="60" value="'+esc(q.dur)+'" data-seq="'+q.id+'" data-f="dur"></div>'+
+  '<div><label class="l">Type de plan</label><select data-seq="'+q.id+'" data-f="shot">'+SHOTS.map(s=>'<option value="'+esc(s)+'"'+(s===(q.shot||"")?" selected":"")+'>'+(s||"Au choix de l\'IA")+'</option>').join("")+'</select></div>'+
+  '<div><label class="l">Enchaînement</label><select data-seq="'+q.id+'" data-f="cut">'+CUTS.map(s=>'<option value="'+esc(s)+'"'+(s===(q.cut||"")?" selected":"")+'>'+(s||"Au choix de l\'IA")+'</option>').join("")+'</select></div></div>'+
+  '<details'+((q.camPos||q.camSees||q.camMove||q.camEnd)?" open":"")+'><summary>Direction caméra du plan</summary><div style="margin-top:10px;display:grid;gap:10px">'+
+  [["camPos","Où se trouve le filmeur et comment il tient / pose l'appareil"],["camSees","Ce que la caméra filme"],["camMove","Comment elle se déplace"],["camEnd","Comment le plan se termine"]].map(f=>'<div><label class="l">'+f[1]+'</label><input type="text" value="'+esc(q[f[0]])+'" data-seq="'+q.id+'" data-f="'+f[0]+'"></div>').join("")+'</div></details>'+
+  '<div><label class="l">Paroles exactes (facultatif)</label><textarea data-seq="'+q.id+'" data-f="dialogue" placeholder="Laissez vide pour une séquence silencieuse. Les paroles saisies sont reprises mot pour mot, rien n\'est ajouté.">'+esc(q.dialogue)+'</textarea></div>'+
+  (!full?'':'<div class="ctl"><button class="btn p" data-act="gen" data-id="'+q.id+'"'+(b||busy.all?" disabled":"")+'>'+(b?'<span class="spin"></span> Génération + contrôle qualité…':(cur?"Générer une nouvelle version":"Générer le prompt"))+'</button>'+
+  (cur?'<button class="btn" data-act="copy" data-id="'+q.id+'">Copier</button><button class="btn" data-act="lockseq" data-id="'+q.id+'">'+(q.locked?"🔒 Verrouillé":"Verrouiller")+'</button>':'')+'</div>')+
+  (full&&cur?'<div class="ctl"><select data-seq="'+q.id+'" data-f="cur" style="max-width:220px">'+q.prompts.map((p,n)=>'<option value="'+n+'"'+(n===q.cur?" selected":"")+'>Version '+(n+1)+' · '+new Date(p.at).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})+'</option>').join("")+'</select></div>'+
+   '<textarea class="prompt" data-seq="'+q.id+'" data-f="prompttext">'+esc(cur.text)+'</textarea>'+qcBox(cur)+
+   '<div class="ctl"><input type="text" style="flex:1;min-width:200px" placeholder="Modification souhaitée (ex. rendre le rythme plus lent)" data-seq="'+q.id+'" data-f="note" value="'+esc(q.note)+'"><button class="btn" data-act="regen" data-id="'+q.id+'"'+(b||busy.all?" disabled":"")+'>Régénérer sans changer la continuité</button></div>'+
+   (q.end?'<details><summary>Continuité transmise à la séquence suivante</summary><div class="note" style="margin-top:8px">'+esc(q.end)+'</div></details>':''):'')+
+  '</div></div>';
+}
+
+/* ================= Événements ================= */
+document.addEventListener("click",async e=>{
+  const el=e.target.closest("[data-act]"); if(!el) return;
+  const act=el.dataset.act, id=el.dataset.id, v=el.dataset.v;
+  const q=S.seqs.find(x=>x.id===id);
+  if(act==="step"){ S.step=+v; save(); render(); }
+  else if(act==="pick"){ document.getElementById("file").click(); }
+  else if(act==="delref"){
+    if(S.seqs.some(s=>s.refs.includes(id)) && !confirm("Cette image est utilisée dans des séquences. La supprimer ?")) return;
+    S.refs=S.refs.filter(r=>r.id!==id); S.seqs.forEach(s=>s.refs=s.refs.filter(r=>r!==id)); save(); render();
+  }
+  else if(act==="mode"){ S.settings.mode=v; save(); render(); }
+  else if(act==="out"){ S.settings.out=v; save(); render(); }
+  else if(act==="genglobal"){ genGlobal(); }
+  else if(act==="regenglobal"){ genGlobal((S.global.note||"").trim()); }
+  else if(act==="copyglobal"){ copyText(curG()); }
+  else if(act==="lock"){ S.settings[v]=!S.settings[v]; save(); render(); }
+  else if(act==="plan"){
+    if((S.seqs.some(s=>s.prompts.length)||S.global.prompts.length) && !confirm("Relancer l'analyse remplacera l'histoire, les moments et les prompts actuels. Continuer ?")) return;
+    runPlan();
+  }
+  else if(act==="addseq"){ S.seqs.push({id:uid(),title:"Nouveau moment",summary:"",refs:[],equip:S.settings.equip,method:EQUIP[S.settings.equip].methods[0],filmer:"",dialogue:"",prompts:[],cur:0,end:"",locked:false,note:""}); S.step=3; save(); render(); }
+  else if(act==="delseq"){ if(confirm("Supprimer ce moment ?")){ S.seqs=S.seqs.filter(s=>s.id!==id); save(); render(); } }
+  else if(act==="up"||act==="down"){ const i=S.seqs.indexOf(q), j=act==="up"?i-1:i+1; if(S.seqs[j]){ [S.seqs[i],S.seqs[j]]=[S.seqs[j],S.seqs[i]]; save(); render(); } }
+  else if(act==="tref"){ const r=el.dataset.r; q.refs=q.refs.includes(r)?q.refs.filter(x=>x!==r):[...q.refs,r]; save(); render(); }
+  else if(act==="gen"){ genSeq(id); }
+  else if(act==="regen"){ genSeq(id,(q.note||"").trim()); }
+  else if(act==="genall"){ genAll(); }
+  else if(act==="copy"){ copyText(curText(q)); }
+  else if(act==="lockseq"){ q.locked=!q.locked; save(); render(); }
+  else if(act==="export"){ exportAs(v); }
+  else if(act==="reset"){ if(confirm("Effacer le projet en cours (images, séquences, prompts) ?")){ S=blank(); save(); render(); } }
+});
+document.addEventListener("input",e=>{
+  const t=e.target;
+  if(t.id==="key"){ apiKey=t.value.trim(); localStorage.setItem("svlog_key",apiKey); return; }
+  if(t.dataset.set){ const k=t.dataset.set; if(t.type==="number"){ const mn=t.min!==""?+t.min:1, mx=t.max!==""?+t.max:99; let n=+t.value; if(isNaN(n)) n=mn; S.settings[k]=Math.max(mn,Math.min(mx,n)); } else S.settings[k]=t.value; save(); return; }
+  if(t.dataset.story){ S.story[t.dataset.story]=t.value; save(); return; }
+  if(t.dataset.glob){ const f=t.dataset.glob; if(f==="cur") return; if(f==="prompttext"){ if(S.global.prompts[S.global.cur]) S.global.prompts[S.global.cur].text=t.value; } else S.global[f]=t.value; save(); return; }
+  if(t.dataset.ref){ const r=refById(t.dataset.ref); r[t.dataset.f]=t.value; save(); return; }
+  if(t.dataset.seq){
+    const q=S.seqs.find(x=>x.id===t.dataset.seq), f=t.dataset.f; if(!q||f==="equip"||f==="cur"||f==="method") return;
+    if(f==="prompttext"){ if(q.prompts[q.cur]) q.prompts[q.cur].text=t.value; } else q[f]=t.value;
+    save();
+  }
+});
+document.addEventListener("change",e=>{
+  const t=e.target;
+  if(t.dataset.set==="equip"){ S.settings.equip=t.value; save(); return; }
+  if(t.dataset.glob==="cur"){ S.global.cur=+t.value; save(); render(); return; }
+  if(t.dataset.ref&&t.dataset.f==="type"){ refById(t.dataset.ref).type=t.value; save(); render(); return; }
+  if(t.dataset.seq){
+    const q=S.seqs.find(x=>x.id===t.dataset.seq), f=t.dataset.f;
+    if(f==="equip"){ q.equip=t.value; q.method=EQUIP[t.value].methods[0]; save(); render(); }
+    else if(f==="method"){ q.method=t.value; save(); }
+    else if(f==="cur"){ q.cur=+t.value; save(); render(); }
+    else if(f==="shot"||f==="cut"){ q[f]=t.value; save(); }
+  }
+  if(t.id==="file") addFiles(t.files);
+});
+document.addEventListener("dragover",e=>{ const d=e.target.closest("#drop"); if(d){ e.preventDefault(); d.classList.add("over"); } });
+document.addEventListener("dragleave",e=>{ const d=e.target.closest("#drop"); if(d) d.classList.remove("over"); });
+document.addEventListener("drop",e=>{ const d=e.target.closest("#drop"); if(d){ e.preventDefault(); d.classList.remove("over"); addFiles(e.dataTransfer.files); } });
+
+async function addFiles(files){
+  const ok=["image/jpeg","image/png","image/webp"];
+  const list=[...files].filter(f=>ok.includes(f.type));
+  if(list.length<files.length) toast("Seuls les JPG, PNG et WEBP sont acceptés.","err");
+  for(const f of list){
+    try{ S.refs.push({id:uid(),type:"Personnage",name:"",voice:"",dataUrl:await readImage(f)}); }
+    catch(err){ toast(err.message,"err"); }
+  }
+  save(); render();
+}
+
+/* ================= Démarrage ================= */
+(async function init(){
+  const saved = await idbGet("state");
+  if(saved && saved.refs){ S=Object.assign(blank(),saved); S.settings=Object.assign(blank().settings,saved.settings||{}); S.story=Object.assign({title:"",text:""},saved.story||{}); S.global=Object.assign({prompts:[],cur:0,note:""},saved.global||{}); }
+  render();
+})();
+</script>
+</body>
+</html>
