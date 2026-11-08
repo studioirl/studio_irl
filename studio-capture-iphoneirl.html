@@ -1200,6 +1200,8 @@
     <div class="chips" id="mtBgs"></div>
     <div class="mt-label">Cadrage</div>
     <div class="chips" id="mtFits"></div>
+    <div class="mt-label">Bordure</div>
+    <div class="chips" id="mtBorders"></div>
     <canvas id="mtCanvas" width="10" height="10"></canvas>
     <div class="mt-status" id="mtStatus"></div>
     <div class="key-actions">
@@ -2249,6 +2251,10 @@ function identityRule(n) {
 }
 
 // Rappel placé en toute fin de prompt (là où le modèle pèse le plus) : le visage ne dérive pas, quel que soit le rendu
+function selfieReminder() {
+  if (captureMode !== 'selfie') return '';
+  return `RAPPEL FINAL — SELFIE : le téléphone qui prend la photo est hors champ et n'est jamais dessiné : aucun téléphone, écran, étui ni objectif d'appareil visible dans l'image, y compris dans la main tendue. Le bras tendu peut entrer dans le cadre, mais il est coupé par le bord du cadre avant la main, ou la main reste hors champ.`;
+}
 function identityReminder(n) {
   if (!n) return '';
   return `RAPPEL FINAL — IDENTITÉ : toutes les personnes visibles sur les références sont présentes dans l'image, y compris quand une même référence en montre plusieurs ; chaque visage doit rester strictement identique à sa référence PERSONNE k (forme du visage, yeux, nez, bouche, sourcils, mâchoire, carnation, grain de peau). Aucun lissage, rajeunissement, embellissement ni changement de traits, quels que soient l'éclairage, le filtre, le noir et blanc, le flou, l'angle ou l'expression.`;
@@ -2369,7 +2375,7 @@ async function callVertexAPI(subject, opts = {}) {
   const povSpecs = sceneSettingsBlock();
 
   const burstNote = burstNoteText(opts.burstIndex, opts.burstTotal, opts.retake);
-  const promptText = `${subject}\n${povSpecs}\nPhoto POV réaliste, rendu propre, détails humains crédibles, scène naturelle, qualité premium 4K.${burstNote ? '\n' + burstNote : ''}${avatarImages.length ? '\n' + identityReminder(Math.min(avatarImages.length, 6)) : ''}`;
+  const promptText = `${subject}\n${povSpecs}\nPhoto POV réaliste, rendu propre, détails humains crédibles, scène naturelle, qualité premium 4K.${burstNote ? '\n' + burstNote : ''}${avatarImages.length ? '\n' + identityReminder(Math.min(avatarImages.length, 6)) : ''}${selfieReminder() ? '\n' + selfieReminder() : ''}`;
 
   const parts = [];
   avatarImages.slice(0, 6).forEach((img, i) => {
@@ -2490,7 +2496,7 @@ async function callKieAPI(subject, opts = {}) {
   let prompt = `${systemContext}\n${subject}\n${povSpecs}\nPhoto POV réaliste, rendu propre, détails humains crédibles, scène naturelle, qualité premium 4K.${locationSentence}${burstSuffix}`;
 
   if (avatarImages.length > 0) {
-    prompt = `${systemContext}\nPreserve exact facial identity from reference image(s) — same face, same skin tone, same morphology.\n${identityRule(Math.min(avatarImages.length, 6))}\n${subject}\n${povSpecs}\nSame face as reference. Authentic posture, no beauty filter, no AI smoothing. Photo POV réaliste, qualité premium 4K.${locationSentence}${burstSuffix}\n${identityReminder(Math.min(avatarImages.length, 6))}`;
+    prompt = `${systemContext}\nPreserve exact facial identity from reference image(s) — same face, same skin tone, same morphology.\n${identityRule(Math.min(avatarImages.length, 6))}\n${subject}\n${povSpecs}\nSame face as reference. Authentic posture, no beauty filter, no AI smoothing. Photo POV réaliste, qualité premium 4K.${locationSentence}${burstSuffix}\n${identityReminder(Math.min(avatarImages.length, 6))}${selfieReminder() ? '\n' + selfieReminder() : ''}`;
   }
 
   // Uploader les images de référence vers kie.ai
@@ -2894,7 +2900,8 @@ const MONTAGE_LAYOUTS = {
 };
 const MONTAGE_FORMATS = { '9:16': [1080, 1920], '4:5': [1080, 1350], '1:1': [1080, 1080], '3:4': [1080, 1440], '16:9': [1920, 1080] };
 const MONTAGE_GAPS = { 0: 'Aucun', 6: 'Fin', 16: 'Moyen', 32: 'Large' };
-let montageLayout = 'grid4', montageFormat = '9:16', montageGap = 0, montageBg = 'white', montageFit = 'cover';
+let montageLayout = 'grid4', montageFormat = '9:16', montageGap = 0, montageBg = 'white', montageFit = 'cover', montageBorder = 'none';
+const MONTAGE_BORDERS = { none: 'Aucune', film: 'Pellicule', booth: 'Photomaton', polaroid: 'Polaroid', thin: 'Cadre fin' };
 let montageSel = [];
 const montageImgCache = {};
 let montageToken = 0;
@@ -2914,15 +2921,33 @@ async function drawMontage(canvas, W, H, placeholder) {
   const imgs = await Promise.all(ids.map(id => { const r = results.find(x => x.id === id); return r ? loadMontageImg(r) : null; }));
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = montageBg === 'black' ? '#000000' : '#ffffff';
+  const sc = W / 1080;
+  let L = 0, T = 0, R = 0, B = 0;
+  let bg = montageBg === 'black' ? '#000000' : '#ffffff';
+  let gap = montageGap * sc;
+  let band = 0, horiz = W >= H;
+  if (montageBorder === 'film') {
+    bg = '#0b0b0c'; band = Math.round(Math.min(W, H) * 0.085);
+    const m = Math.round(band * 0.35);
+    if (horiz) { T = B = band; L = R = m; } else { L = R = band; T = B = m; }
+    gap = Math.max(gap, 10 * sc);
+  } else if (montageBorder === 'booth') {
+    bg = '#f3eee4'; L = R = T = Math.round(W * 0.06); B = Math.round(W * 0.12);
+    gap = Math.max(gap, 14 * sc);
+  } else if (montageBorder === 'polaroid') {
+    bg = '#fbfaf7'; L = R = T = Math.round(W * 0.06); B = Math.round(W * 0.2);
+  } else if (montageBorder === 'thin') {
+    L = R = T = B = Math.round(W * 0.035);
+  }
+  ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
-  const g = montageGap * W / 1080;
-  const ax = g / 2, ay = g / 2, aw = W - g, ah = H - g;
+  const g = gap;
+  const ax = L + g / 2, ay = T + g / 2, aw = W - L - R - g, ah = H - T - B - g;
   slots.forEach((s, i) => {
     const x = ax + s[0] * aw + g / 2, y = ay + s[1] * ah + g / 2, w = s[2] * aw - g, h = s[3] * ah - g;
     const im = imgs[i];
     if (!im) {
-      if (placeholder) { ctx.fillStyle = montageBg === 'black' ? '#1e293b' : '#e2e8f0'; ctx.fillRect(x, y, w, h); }
+      if (placeholder) { ctx.fillStyle = (montageBg === 'black' || montageBorder === 'film') ? '#26262a' : '#e2e8f0'; ctx.fillRect(x, y, w, h); }
       return;
     }
     ctx.save();
@@ -2931,7 +2956,19 @@ async function drawMontage(canvas, W, H, placeholder) {
     const dw = im.width * k, dh = im.height * k;
     ctx.drawImage(im, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
     ctx.restore();
+    if (montageBorder === 'booth') { ctx.strokeStyle = '#1c1c1c'; ctx.lineWidth = 3 * sc; ctx.strokeRect(x, y, w, h); }
+    if (montageBorder === 'polaroid') { ctx.strokeStyle = 'rgba(0,0,0,.12)'; ctx.lineWidth = 2 * sc; ctx.strokeRect(x, y, w, h); }
   });
+  if (montageBorder === 'film') {
+    const hh = band * 0.36, hw = band * 0.26, pitch = band * 0.66, r = band * 0.07;
+    ctx.fillStyle = '#efece4';
+    const hole = (x, y) => { ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x, y, hw, hh, r); else ctx.rect(x, y, hw, hh); ctx.fill(); };
+    if (horiz) {
+      for (let x = pitch / 2; x < W - hw; x += pitch) { hole(x, (band - hh) / 2); hole(x, H - band + (band - hh) / 2); }
+    } else {
+      for (let y = pitch / 2; y < H - hh; y += pitch) { hole((band - hw) / 2, y); hole(W - band + (band - hw) / 2, y); }
+    }
+  }
 }
 function mtChipRow(containerId, group, items, current) {
   const box = document.getElementById(containerId);
@@ -2966,6 +3003,7 @@ function renderMontageUI() {
   mtChipRow('mtFormats', 'format', Object.keys(MONTAGE_FORMATS).map(k => [k, k]), montageFormat);
   mtChipRow('mtGaps', 'gap', Object.entries(MONTAGE_GAPS), montageGap);
   mtChipRow('mtBgs', 'bg', [['white', 'Blanc'], ['black', 'Noir']], montageBg);
+  mtChipRow('mtBorders', 'border', Object.entries(MONTAGE_BORDERS), montageBorder);
   mtChipRow('mtFits', 'fit', [['cover', 'Recadrer (remplit)'], ['contain', 'Photo entière']], montageFit);
   renderMontagePreview();
 }
@@ -2986,6 +3024,7 @@ function setMontage(group, v) {
   if (group === 'gap') montageGap = Number(v);
   if (group === 'bg') montageBg = v;
   if (group === 'fit') montageFit = v;
+  if (group === 'border') montageBorder = v;
   renderMontageUI();
 }
 function toggleMontagePhoto(id) {
