@@ -1980,7 +1980,7 @@ async function generate(retakeFrom) {
   if (loading) return;
   const isRetake = !!(retakeFrom && retakeFrom.dataUrl);
   const subject = document.getElementById('subjectInput').value.trim();
-  if (!subject) { showError("Définis le contexte émotionnel de la scène."); return; }
+  if (!subject && !isRetake) { showError("Définis le contexte émotionnel de la scène."); return; }
   if (!apiKey) { showError("Ajoute d'abord ta clé API."); return; }
 
   hideError();
@@ -2257,6 +2257,10 @@ function selfieReminder() {
   if (captureMode !== 'selfie') return '';
   return `RAPPEL FINAL — SELFIE : le téléphone qui prend la photo est hors champ et n'est jamais dessiné : aucun téléphone, écran, étui ni objectif d'appareil visible dans l'image, y compris dans la main tendue. Le bras tendu peut entrer dans le cadre, mais il est coupé par le bord du cadre avant la main, ou la main reste hors champ.`;
 }
+function placeLine() {
+  if (locationImage || !avatarImages.length) return '';
+  return `LIEU DE LA SCÈNE : sauf si la description ci-dessous nomme explicitement un endroit, la scène se passe dans le lieu visible sur la photo de référence PERSONNE 1 (même pièce, même décor). Un objet cité (sac de plage, maillot...) n'est pas un lieu : il n'amène ni plage ni extérieur.\n`;
+}
 function identityReminder(n) {
   if (!n) return '';
   return `RAPPEL FINAL — LIEU : sans endroit nommé dans la description ni image de lieu, la scène se passe dans le lieu de la photo de référence de la personne, jamais ailleurs ; un objet cité (sac de plage...) ne change pas le lieu.\n\nRAPPEL FINAL — IDENTITÉ : toutes les personnes visibles sur les références sont présentes dans l'image, y compris quand une même référence en montre plusieurs ; chaque visage doit rester strictement identique à sa référence PERSONNE k (forme du visage, yeux, nez, bouche, sourcils, mâchoire, carnation, grain de peau). Aucun lissage, rajeunissement, embellissement ni changement de traits, quels que soient l'éclairage, le filtre, le noir et blanc, le flou, l'angle ou l'expression.`;
@@ -2377,11 +2381,11 @@ async function callVertexAPI(subject, opts = {}) {
   const povSpecs = sceneSettingsBlock();
 
   const burstNote = burstNoteText(opts.burstIndex, opts.burstTotal, opts.retake);
-  const promptText = `${subject}\n${povSpecs}\nPhoto POV réaliste, rendu propre, détails humains crédibles, scène naturelle, qualité premium 4K.${burstNote ? '\n' + burstNote : ''}${avatarImages.length ? '\n' + identityReminder(Math.min(avatarImages.length, 6)) : ''}${selfieReminder() ? '\n' + selfieReminder() : ''}`;
+  const promptText = `${opts.retake ? '' : placeLine()}${subject}\n${povSpecs}\nPhoto POV réaliste, rendu propre, détails humains crédibles, scène naturelle, qualité premium 4K.${burstNote ? '\n' + burstNote : ''}${avatarImages.length ? '\n' + identityReminder(Math.min(avatarImages.length, 6)) : ''}${selfieReminder() ? '\n' + selfieReminder() : ''}`;
 
   const parts = [];
   avatarImages.slice(0, 6).forEach((img, i) => {
-    parts.push({ text: `PERSONNE ${i + 1} (REF ${i + 1}) :` });
+    parts.push({ text: `PERSONNE ${i + 1} (REF ${i + 1})${i === 0 && !locationImage ? ' — le décor visible sur cette photo est le lieu de la scène, sauf endroit nommé dans la description' : ''} :` });
     parts.push({ inlineData: { data: img.split(',')[1], mimeType: 'image/jpeg' } });
   });
   if (opts.prevImage) {
@@ -2498,7 +2502,7 @@ async function callKieAPI(subject, opts = {}) {
   let prompt = `${systemContext}\n${subject}\n${povSpecs}\nPhoto POV réaliste, rendu propre, détails humains crédibles, scène naturelle, qualité premium 4K.${locationSentence}${burstSuffix}`;
 
   if (avatarImages.length > 0) {
-    prompt = `${systemContext}\nPreserve exact facial identity from reference image(s) — same face, same skin tone, same morphology.\n${identityRule(Math.min(avatarImages.length, 6))}\n${subject}\n${povSpecs}\nSame face as reference. Authentic posture, no beauty filter, no AI smoothing. Photo POV réaliste, qualité premium 4K.${locationSentence}${burstSuffix}\n${identityReminder(Math.min(avatarImages.length, 6))}${selfieReminder() ? '\n' + selfieReminder() : ''}`;
+    prompt = `${systemContext}\nPreserve exact facial identity from reference image(s) — same face, same skin tone, same morphology.\n${identityRule(Math.min(avatarImages.length, 6))}\n${opts.retake ? '' : placeLine()}${subject}\n${povSpecs}\nSame face as reference. Authentic posture, no beauty filter, no AI smoothing. Photo POV réaliste, qualité premium 4K.${locationSentence}${burstSuffix}\n${identityReminder(Math.min(avatarImages.length, 6))}${selfieReminder() ? '\n' + selfieReminder() : ''}`;
   }
 
   // Uploader les images de référence vers kie.ai
