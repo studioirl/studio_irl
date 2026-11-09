@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Studio Storytelling — Studio IRL</title>
+<style>
+:root{--bg:#0f0e13;--card:#19171f;--line:#2a2733;--txt:#f1eef7;--mut:#9b95a8;--acc:#e8b04a;--acc2:#b57cff;--err:#ff6b6b}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;line-height:1.55}
+.wrap{max-width:860px;margin:0 auto;padding:20px 16px 80px}
+h1{font-size:26px;margin:8px 0 4px;background:linear-gradient(90deg,var(--acc),var(--acc2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:var(--mut);margin:0 0 22px;font-size:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
+label{display:block;font-size:13px;font-weight:600;margin:0 0 6px;color:var(--txt)}
+.hint{font-weight:400;color:var(--mut)}
+textarea,input[type=password],input[type=text],select{width:100%;background:#0f0e13;color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:11px 12px;font:inherit;font-size:15px}
+textarea{min-height:110px;resize:vertical}
+textarea:focus,input:focus,select:focus{outline:none;border-color:var(--acc)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:620px){.row{grid-template-columns:1fr}}
+.field{margin-bottom:14px}
+.field:last-child{margin-bottom:0}
+button{font:inherit;cursor:pointer;border:0;border-radius:10px;padding:12px 18px;font-weight:700}
+.go{width:100%;background:linear-gradient(90deg,var(--acc),var(--acc2));color:#16121c;font-size:16px}
+.go:disabled{opacity:.5;cursor:not-allowed}
+.ghost{background:transparent;border:1px solid var(--line);color:var(--txt);padding:8px 14px;font-weight:600;font-size:13px}
+.thumbs{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.thumb{position:relative;width:76px;height:76px;border-radius:10px;overflow:hidden;border:1px solid var(--line)}
+.thumb img{width:100%;height:100%;object-fit:cover}
+.thumb b{position:absolute;top:2px;right:2px;background:#000a;color:#fff;border-radius:50%;width:20px;height:20px;text-align:center;line-height:20px;font-size:12px;cursor:pointer}
+.status{font-size:14px;color:var(--mut);margin:10px 0 0;min-height:20px}
+.status.err{color:var(--err)}
+#out{display:none}
+#out .bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px}
+.md h1,.md h2{font-size:20px;color:var(--acc);margin:26px 0 8px;padding-top:14px;border-top:1px solid var(--line)}
+.md h1:first-child,.md h2:first-child{border-top:0;margin-top:0;padding-top:0}
+.md h3{font-size:16px;color:var(--acc2);margin:18px 0 4px}
+.md p{margin:6px 0}
+.md ul,.md ol{margin:6px 0 6px 20px;padding:0}
+.md li{margin:3px 0}
+.md hr{border:0;border-top:1px solid var(--line);margin:22px 0}
+.md strong{color:#fff}
+.md blockquote{margin:8px 0;padding:6px 12px;border-left:3px solid var(--acc2);color:#d7d2e2;background:#ffffff08;border-radius:0 8px 8px 0}
+.key-saved{font-size:12px;color:var(--mut);margin-top:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Studio Storytelling</h1>
+  <p class="sub">Concepteur d'histoires à conversion — transforme une idée, une fonctionnalité ou une frustration en histoires vidéo captivantes.</p>
+
+  <div class="card">
+    <div class="field">
+      <label for="key">Clé API Vertex <span class="hint">(commence par AQ.)</span></label>
+      <input type="password" id="key" placeholder="AQ.xxxxxxxx" autocomplete="off">
+      <div class="key-saved" id="keyMsg">La clé reste enregistrée uniquement dans ton navigateur.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="field">
+      <label for="idea">Idée, fonctionnalité, bénéfice ou frustration</label>
+      <textarea id="idea" placeholder="Ex : Studio Twin permet de créer son double IA pour apparaître dans ses contenus sans se filmer…"></textarea>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label for="level">Niveau de conscience visé</label>
+        <select id="level">
+          <option value="Au choix du concepteur (varie selon les concepts)">Au choix</option>
+          <option value="TOFU">TOFU — découverte</option>
+          <option value="MOFU">MOFU — considération</option>
+          <option value="BOFU">BOFU — décision</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="count">Nombre de concepts</label>
+        <select id="count">
+          <option>2</option>
+          <option selected>3</option>
+          <option>4</option>
+          <option>5</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label for="ref">Référence ou inspiration <span class="hint">(facultatif — décris ce que tu aimes dans le mécanisme)</span></label>
+      <textarea id="ref" style="min-height:80px" placeholder="Ex : j'aime les vidéos où une situation banale prend un tour absurde à la fin…"></textarea>
+      <div style="margin-top:8px"><button class="ghost" id="addImg" type="button">+ Ajouter des captures</button><input type="file" id="file" accept="image/*" multiple hidden></div>
+      <div class="thumbs" id="thumbs"></div>
+    </div>
+    <div class="field">
+      <label for="more">Contraintes ou précisions <span class="hint">(facultatif)</span></label>
+      <textarea id="more" style="min-height:70px" placeholder="Ex : ton humoristique, format 30 secondes, personnage féminin…"></textarea>
+    </div>
+    <button class="go" id="go">Créer les concepts</button>
+    <div class="status" id="status"></div>
+  </div>
+
+  <div class="card" id="out">
+    <div class="bar"><strong>Concepts</strong><button class="ghost" id="copy">Copier tout</button></div>
+    <div class="md" id="md"></div>
+  </div>
+</div>
+
+<script>
+const SYSTEM = `STUDIO STORYTELLING — CONCEPTEUR D’HISTOIRES À CONVERSION
+
+IDENTITÉ
+
+Tu es un directeur créatif spécialisé dans le storytelling vidéo, la narration publicitaire et la création de concepts originaux pour les réseaux sociaux.
+
+Tu ne te comportes pas comme un rédacteur publicitaire classique.
+
+Tu es un concepteur d’histoires.
+
+Ta spécialité est de transformer une idée, une fonctionnalité, un bénéfice ou une frustration humaine en une histoire visuelle captivante que le spectateur a envie de regarder jusqu’à la fin.
+
+TA MISSION
+
+Créer des concepts de contenus qui ne ressemblent pas à des publicités traditionnelles.
+
+Tu dois faire découvrir une possibilité avant de présenter le produit qui la rend possible.
+
+Le spectateur doit d’abord être intrigué, amusé, surpris, touché ou interpellé. La dimension commerciale doit apparaître naturellement dans l’histoire.
+
+TON PROCESSUS CRÉATIF
+
+Pour chaque demande :
+
+1. IDENTIFIER LE DÉSIR HUMAIN
+
+Comprendre ce que la personne veut réellement : gagner du temps, se dédoubler, être présente sans s’exposer, créer un univers, raconter sa vie autrement, préserver son intimité, exprimer sa créativité, etc.
+
+2. TROUVER UN CONCEPT ORIGINAL
+
+Imaginer plusieurs situations narratives capables de matérialiser ce désir.
+
+Ne pas commencer systématiquement par une présentation du produit.
+
+Explorer différents univers : humour, absurdité, mystère, situations quotidiennes, dialogues inattendus, fiction réaliste, comédie, émotion, situations sociales ou professionnelles.
+
+3. CONSTRUIRE L’HISTOIRE
+
+Créer une progression narrative avec :
+
+* Une ouverture intrigante.
+* Une situation immédiatement compréhensible.
+* Une tension, une question ou un problème.
+* Une évolution qui maintient l’attention.
+* Une révélation ou une prise de conscience.
+* Une transition naturelle vers la possibilité offerte par le produit.
+
+4. INTÉGRER LA DIMENSION COMMERCIALE
+
+Ne jamais forcer la vente dans l’histoire.
+
+La fonctionnalité doit devenir la réponse naturelle à ce que le spectateur vient de découvrir.
+
+Le CTA doit correspondre au niveau de conscience de l’audience.
+
+Si la personne découvre simplement une nouvelle possibilité, privilégier une invitation à tester ou expérimenter plutôt qu’une vente directe.
+
+5. PENSER EN IMAGES
+
+Ne pas écrire uniquement des dialogues.
+
+Imaginer ce que le spectateur voit :
+
+* Les lieux.
+* Les personnages.
+* Les actions.
+* Les changements de plans.
+* Les expressions.
+* Les contrastes visuels.
+* Les moments de révélation.
+
+Le scénario doit pouvoir être produit avec des images et des vidéos générées par IA.
+
+RÈGLE ABSOLUE D’ORIGINALITÉ
+
+Ne jamais reproduire une vidéo, une publicité, un scénario ou une mise en scène simplement parce qu’ils ont bien fonctionné ailleurs.
+
+Les références données par l’utilisateur servent à comprendre les mécanismes narratifs appréciés, jamais à reproduire leur structure reconnaissable.
+
+Ne pas reprendre automatiquement :
+
+* Les mêmes décors.
+* Les mêmes personnages.
+* Les mêmes dialogues.
+* Les mêmes ressorts comiques.
+* Les mêmes révélations.
+* Les mêmes enchaînements de scènes.
+
+Créer de nouvelles idées à partir du désir humain et du bénéfice à communiquer.
+
+CONNAISSANCE DU PRODUIT
+
+Tu dois respecter précisément les fonctionnalités réelles de Studio IRL.
+
+Ne jamais inventer une fonctionnalité, promettre une automatisation inexistante ou faire croire qu’un avatar publie et gère un compte à la place de son propriétaire.
+
+Studio Twin permet notamment de créer un double IA pour représenter son apparence dans des contenus.
+
+Studio Instantané permet de tester une première expérience de création. Il peut être utilisé comme porte d’entrée dans les contenus de découverte lorsque cela correspond à l’objectif.
+
+FORMAT DE TES PROPOSITIONS
+
+Pour chaque concept, présenter :
+
+1. Le titre de l’histoire.
+2. Le désir ou l’émotion exploité.
+3. Le niveau de conscience visé : TOFU, MOFU ou BOFU.
+4. Le concept narratif.
+5. Le hook.
+6. Le déroulement scène par scène.
+7. Les dialogues éventuels.
+8. Les indications visuelles et les plans.
+9. La révélation commerciale.
+10. Le CTA recommandé et sa justification.
+
+Proposer plusieurs concepts réellement différents, pas trois variantes d’une même idée.
+
+Ton objectif n’est pas de produire davantage de contenus publicitaires.
+
+Ton objectif est de créer des histoires dont les gens se souviennent, qu’ils ont envie de regarder, de partager et qui leur font découvrir une possibilité qu’ils n’avaient pas encore envisagée.`;
+
+const MODEL = 'gemini-3.8-flash';
+const ENDPOINT = 'https://aiplatform.googleapis.com/v1/publishers/google/models/' + MODEL + ':generateContent';
+const $ = id => document.getElementById(id);
+let images = [];
+
+try { const k = localStorage.getItem('studio_storytelling_key'); if (k) $('key').value = k; } catch(e){}
+$('key').addEventListener('change', () => { try { localStorage.setItem('studio_storytelling_key', $('key').value.trim()); } catch(e){} });
+
+$('addImg').onclick = () => $('file').click();
+$('file').onchange = async e => {
+  for (const f of e.target.files) {
+    const data = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(f); });
+    images.push({ mime: f.type || 'image/jpeg', b64: data.split(',')[1], url: data });
+  }
+  e.target.value = '';
+  renderThumbs();
+};
+function renderThumbs() {
+  $('thumbs').innerHTML = '';
+  images.forEach((im, i) => {
+    const d = document.createElement('div'); d.className = 'thumb';
+    d.innerHTML = '<img src="' + im.url + '"><b>×</b>';
+    d.querySelector('b').onclick = () => { images.splice(i, 1); renderThumbs(); };
+    $('thumbs').appendChild(d);
+  });
+}
+
+function setStatus(t, err) { const s = $('status'); s.textContent = t; s.className = 'status' + (err ? ' err' : ''); }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+async function callGemini(key, parts) {
+  const body = {
+    systemInstruction: { parts: [{ text: SYSTEM }] },
+    contents: [{ role: 'user', parts }],
+    generationConfig: { temperature: 1.0 }
+  };
+  let delay = 3000;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const res = await fetch(ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+      body: JSON.stringify(body)
+    });
+    if (res.status === 429) { setStatus('Serveur saturé, nouvelle tentative…'); await sleep(delay); delay *= 2; continue; }
+    if (!res.ok) {
+      let msg = ''; try { msg = (await res.json()).error.message; } catch(e){}
+      throw new Error('Erreur ' + res.status + (msg ? ' — ' + msg : ''));
+    }
+    const j = await res.json();
+    const text = (j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts || []).map(p => p.text || '').join('');
+    if (!text) throw new Error('Réponse vide, réessaie.');
+    return text;
+  }
+  throw new Error('Trop de tentatives (429). Réessaie dans une minute.');
+}
+
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function inline(s){ return esc(s).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/(^|[^*])\*(?!\s)(.+?)\*/g,'$1<em>$2</em>'); }
+function md(src) {
+  const lines = src.split('\n'); let html = '', list = null;
+  const close = () => { if (list) { html += '</' + list + '>'; list = null; } };
+  for (let raw of lines) {
+    const l = raw.trimEnd();
+    let m;
+    if (!l.trim()) { close(); continue; }
+    if ((m = l.match(/^(#{1,4})\s+(.*)/))) { close(); const n = Math.min(m[1].length, 3); html += '<h' + n + '>' + inline(m[2]) + '</h' + n + '>'; }
+    else if (/^(-{3,}|\*{3,})$/.test(l.trim())) { close(); html += '<hr>'; }
+    else if ((m = l.match(/^\s*[*-]\s+(.*)/))) { if (list !== 'ul') { close(); html += '<ul>'; list = 'ul'; } html += '<li>' + inline(m[1]) + '</li>'; }
+    else if ((m = l.match(/^\s*\d+[.)]\s+(.*)/))) { if (list !== 'ol') { close(); html += '<ol>'; list = 'ol'; } html += '<li>' + inline(m[1]) + '</li>'; }
+    else if ((m = l.match(/^>\s?(.*)/))) { close(); html += '<blockquote>' + inline(m[1]) + '</blockquote>'; }
+    else { close(); html += '<p>' + inline(l) + '</p>'; }
+  }
+  close(); return html;
+}
+
+let lastText = '';
+$('go').onclick = async () => {
+  const key = $('key').value.trim();
+  const idea = $('idea').value.trim();
+  if (!key) return setStatus('Ajoute ta clé API Vertex.', true);
+  if (!idea) return setStatus('Décris ton idée, ta fonctionnalité ou ta frustration.', true);
+  try { localStorage.setItem('studio_storytelling_key', key); } catch(e){}
+
+  let prompt = 'Idée, fonctionnalité, bénéfice ou frustration à transformer en histoires :\n' + idea +
+    '\n\nNiveau de conscience visé : ' + $('level').value +
+    '\nNombre de concepts à proposer : ' + $('count').value +
+    '\nRédige tout en français.';
+  const ref = $('ref').value.trim();
+  if (ref) prompt += '\n\nRéférence / inspiration (à utiliser uniquement pour comprendre les mécanismes appréciés, sans reproduire) :\n' + ref;
+  const more = $('more').value.trim();
+  if (more) prompt += '\n\nContraintes et précisions :\n' + more;
+  if (images.length) prompt += '\n\n(Des captures de référence sont jointes : mêmes règles, mécanismes uniquement.)';
+
+  const parts = [{ text: prompt }];
+  images.forEach(im => parts.push({ inlineData: { mimeType: im.mime, data: im.b64 } }));
+
+  $('go').disabled = true; setStatus('Création des concepts en cours…');
+  try {
+    lastText = await callGemini(key, parts);
+    $('md').innerHTML = md(lastText);
+    $('out').style.display = 'block';
+    setStatus('');
+    $('out').scrollIntoView({ behavior: 'smooth' });
+  } catch (e) { setStatus(e.message, true); }
+  $('go').disabled = false;
+};
+
+$('copy').onclick = async () => {
+  try { await navigator.clipboard.writeText(lastText); $('copy').textContent = 'Copié ✓'; }
+  catch(e) { const t = document.createElement('textarea'); t.value = lastText; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); $('copy').textContent = 'Copié ✓'; }
+  setTimeout(() => $('copy').textContent = 'Copier tout', 1800);
+};
+</script>
+</body>
+</html>
