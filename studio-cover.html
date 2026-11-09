@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Studio Couverture</title>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo+Black&family=Bebas+Neue&family=Bodoni+Moda:ital,wght@1,700&family=Cinzel:wght@700&family=Great+Vibes&family=Kaushan+Script&family=Oswald:wght@500;700&family=Permanent+Marker&family=Playball&family=Playfair+Display:ital,wght@1,800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0d10;--card:#17171c;--line:#2a2a33;--txt:#f2f2f5;--mut:#9a9aa8;--acc:#e8e8ee}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:16px;max-width:760px;margin:auto}
+h1{font-size:20px;margin:4px 0 14px}
+.preview{display:flex;justify-content:center;background:#000;border-radius:14px;padding:10px;border:1px solid var(--line)}
+canvas{max-width:100%;max-height:62vh;width:auto;height:auto;border-radius:8px;touch-action:none;cursor:grab}
+.hint{font-size:12px;color:var(--mut);text-align:center;margin:8px 0 14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.card h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--acc);margin:0 0 10px}
+label{display:block;font-size:12px;color:var(--mut);margin:10px 0 4px}
+input[type=text],select{width:100%;background:#0f0f13;color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:11px;font-size:16px}
+input[type=range]{width:100%;accent-color:#fff}
+input[type=color]{width:100%;height:46px;border:1px solid var(--line);border-radius:10px;background:#0f0f13;padding:3px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+button{background:var(--acc);color:#111;border:0;border-radius:12px;padding:14px;font-size:16px;font-weight:700;width:100%;cursor:pointer}
+button.sec{background:#26262e;color:var(--txt);font-weight:600}
+.btns{display:grid;gap:10px;margin-top:4px}
+.file{display:block;text-align:center;border:2px dashed var(--line);border-radius:12px;padding:16px;color:var(--mut);cursor:pointer}
+.file input{display:none}
+.chips{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.chip{background:#0f0f13;color:var(--txt);border:2px solid var(--line);border-radius:12px;padding:13px 8px;font-size:15px;font-weight:600}
+.chip.on{border-color:#fff;background:#23232b}
+.chk{display:flex;align-items:center;gap:10px;margin-top:12px;font-size:14px;color:var(--txt)}
+.chk input{width:20px;height:20px;accent-color:#fff}
+</style>
+</head>
+<body>
+<h1>Studio Couverture</h1>
+
+<div class="preview"><canvas id="cv"></canvas></div>
+<div class="hint">Glisse la photo dans l'aperçu pour la recadrer</div>
+
+<div class="card">
+  <h2>Style de couverture</h2>
+  <input type="hidden" id="tpl" value="classique">
+  <div class="chips" id="chips"></div>
+</div>
+
+<div class="card">
+  <h2>Photo</h2>
+  <label class="file"><input type="file" id="photo" accept="image/*">📷 Choisir la photo de couverture</label>
+  <label>Zoom</label><input type="range" id="zoom" min="1" max="3" step="0.01" value="1">
+  <label>Format</label>
+  <select id="fmt">
+    <option value="1080x1920">Reel / Story 9:16 (1080×1920)</option>
+    <option value="1080x1350">Post 4:5 (1080×1350)</option>
+    <option value="1080x1080">Carré 1:1 (1080×1080)</option>
+  </select>
+</div>
+
+<div class="card">
+  <h2>Textes</h2>
+  <label>Petit titre (épisode)</label><input type="text" id="label" value="ÉPISODE 12">
+  <label>Titre principal</label><input type="text" id="l1" value="DON'T FALL">
+  <label>Fin de titre (en script)</label><input type="text" id="l2" value="For Him">
+  <label>Sous-titre (optionnel)</label><input type="text" id="sub" value="">
+  <label class="chk"><input type="checkbox" id="caps" checked> Titre en MAJUSCULES</label>
+  <div class="btns" style="margin-top:12px"><button class="sec" id="next">Épisode suivant (+1)</button></div>
+</div>
+
+<div class="card">
+  <h2>Couleurs et polices</h2>
+  <div class="row">
+    <div><label>Petit titre</label><input type="color" id="c0" value="#ffffff"></div>
+    <div><label>Titre</label><input type="color" id="c1" value="#ffffff"></div>
+  </div>
+  <div class="row">
+    <div><label>Fin de titre</label><input type="color" id="c2" value="#ffffff"></div>
+    <div><label>Fin de titre (2e couleur, dégradé)</label><input type="color" id="c3" value="#ffffff"></div>
+  </div>
+  <label>Couleur du cadre / fond (Polaroïd)</label><input type="color" id="cbg" value="#f6f3ec">
+  <div class="row">
+    <div><label>Police du titre</label><select id="f1"></select></div>
+    <div><label>Police de la fin de titre</label><select id="f2"></select></div>
+  </div>
+  <label>Position verticale du texte</label><input type="range" id="posY" min="0.1" max="0.95" step="0.01" value="0.72">
+  <label>Taille du texte</label><input type="range" id="size" min="0.5" max="1.4" step="0.01" value="1">
+</div>
+
+<div class="card">
+  <h2>Ambiance photo</h2>
+  <label>Chaleur (ton chaud)</label><input type="range" id="warm" min="0" max="0.8" step="0.01" value="0">
+  <label>Assombrir le bas</label><input type="range" id="grad" min="0" max="1" step="0.01" value="0.5">
+  <label>Vignette</label><input type="range" id="vig" min="0" max="1" step="0.01" value="0">
+  <label>Grain</label><input type="range" id="grain" min="0" max="0.5" step="0.01" value="0">
+</div>
+
+<div class="btns">
+  <button id="dl">⬇️ Télécharger en PNG</button>
+  <button class="sec" id="share">Partager / Enregistrer dans Photos</button>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const cv=$('cv'),ctx=cv.getContext('2d');
+let img=null,offX=0,offY=0,noise=null;
+
+const FONTS={'Anton':'','Bebas Neue':'','Oswald':'700','Cinzel':'700','Archivo Black':'','Playfair Display':'italic 800','Bodoni Moda':'italic 700','Permanent Marker':'','Playball':'','Kaushan Script':'','Great Vibes':''};
+const fnt=(n,s)=>`${FONTS[n]} ${s}px "${n}"`.trim();
+const fntL=s=>`500 ${s}px "Oswald"`;
+
+// Styles : valeurs de départ (modifiables ensuite librement)
+const TPL={
+  classique:{name:'Classique',f1:'Anton',f2:'Playball',c0:'#ffffff',c1:'#ffffff',c2:'#ffffff',c3:'#ffffff',cbg:'#f6f3ec',pos:.72,caps:true},
+  cinema:{name:'Cinéma',f1:'Cinzel',f2:'Playfair Display',c0:'#ffffff',c1:'#ffffff',c2:'#e4e4ea',c3:'#bfc3cf',cbg:'#f6f3ec',pos:.78,caps:true},
+  magazine:{name:'Magazine',f1:'Playfair Display',f2:'Great Vibes',c0:'#ffffff',c1:'#ffffff',c2:'#ff4d5e',c3:'#ff4d5e',cbg:'#f6f3ec',pos:.74,caps:true},
+  neon:{name:'Néon',f1:'Bebas Neue',f2:'Kaushan Script',c0:'#ffffff',c1:'#ffffff',c2:'#ff2d95',c3:'#8a5cff',cbg:'#f6f3ec',pos:.55,caps:true},
+  polaroid:{name:'Polaroïd',f1:'Permanent Marker',f2:'Kaushan Script',c0:'#77737a',c1:'#1c1c1f',c2:'#1c1c1f',c3:'#1c1c1f',cbg:'#f6f3ec',pos:.5,caps:false},
+  impact:{name:'Impact',f1:'Anton',f2:'Playball',c0:'#ffffff',c1:'#ffffff',c2:'#ff3b30',c3:'#ff8a00',cbg:'#f6f3ec',pos:.78,caps:true},
+  numero:{name:'Numéro géant',f1:'Archivo Black',f2:'Great Vibes',c0:'#ffffff',c1:'#ffffff',c2:'#ffffff',c3:'#d9d9e3',cbg:'#f6f3ec',pos:.78,caps:true},
+  minimal:{name:'Minimal',f1:'Oswald',f2:'Playfair Display',c0:'#ffffff',c1:'#ffffff',c2:'#ffffff',c3:'#ffffff',cbg:'#f6f3ec',pos:.88,caps:true}
+};
+const IDS=['tpl','label','l1','l2','sub','c0','c1','c2','c3','cbg','f1','f2','posY','size','zoom','warm','grad','vig','grain','fmt'];
+
+// ---------- UI ----------
+['f1','f2'].forEach(id=>{$(id).innerHTML=Object.keys(FONTS).map(n=>`<option>${n}</option>`).join('');});
+function buildChips(){
+  $('chips').innerHTML=Object.keys(TPL).map(k=>`<button class="chip ${$('tpl').value===k?'on':''}" data-k="${k}">${TPL[k].name}</button>`).join('');
+  document.querySelectorAll('.chip').forEach(b=>b.addEventListener('click',()=>{
+    const k=b.dataset.k,t=TPL[k];$('tpl').value=k;
+    ['f1','f2','c0','c1','c2','c3','cbg'].forEach(i=>$(i).value=t[i]);
+    $('posY').value=t.pos;$('caps').checked=t.caps;
+    buildChips();save();render();
+  }));
+}
+
+function setSize(){const [w,h]=$('fmt').value.split('x').map(Number);cv.width=w;cv.height=h;}
+function makeNoise(){
+  const n=document.createElement('canvas');n.width=n.height=256;
+  const c=n.getContext('2d'),d=c.createImageData(256,256);
+  for(let i=0;i<d.data.length;i+=4){const v=Math.random()*255;d.data[i]=d.data[i+1]=d.data[i+2]=v;d.data[i+3]=255;}
+  c.putImageData(d,0,0);noise=ctx.createPattern(n,'repeat');
+}
+
+// ---------- outils texte ----------
+function shadow(on,col='rgba(0,0,0,.6)',b=28,oy=6){ctx.shadowColor=on?col:'transparent';ctx.shadowBlur=on?b:0;ctx.shadowOffsetY=on?oy:0;ctx.shadowOffsetX=0;}
+function fitF(text,name,base,maxW,sp=0){
+  ctx.font=fnt(name,base);
+  const w=ctx.measureText(text).width+sp*base*([...text].length-1);
+  return w>maxW?base*maxW/w:base;
+}
+function msp(text,font,size,sp){
+  ctx.font=font;
+  return [...text].reduce((a,c)=>a+ctx.measureText(c).width,0)+sp*size*([...text].length-1);
+}
+// dessine un texte avec espacement (sp en em), retourne la largeur
+function sd(text,x,y,size,font,sp,align,stroke){
+  ctx.font=font;ctx.textBaseline='middle';
+  if(!sp){
+    ctx.textAlign=align;
+    stroke?ctx.strokeText(text,x,y):ctx.fillText(text,x,y);
+    return ctx.measureText(text).width;
+  }
+  const chars=[...text],ws=chars.map(c=>ctx.measureText(c).width),gap=sp*size;
+  const total=ws.reduce((a,b)=>a+b,0)+gap*(chars.length-1);
+  let cx=align==='center'?x-total/2:align==='right'?x-total:x;
+  ctx.textAlign='left';
+  chars.forEach((c,i)=>{stroke?ctx.strokeText(c,cx,y):ctx.fillText(c,cx,y);cx+=ws[i]+gap;});
+  return total;
+}
+
+// ---------- photo + effets (dans un rectangle) ----------
+function paintPhoto(x,y,w,h){
+  ctx.save();
+  ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();
+  ctx.fillStyle='#000';ctx.fillRect(x,y,w,h);
+  if(img){
+    const z=+$('zoom').value,sc=Math.max(w/img.width,h/img.height)*z;
+    const iw=img.width*sc,ih=img.height*sc;
+    ctx.drawImage(img,x+w/2-iw/2+offX*w,y+h/2-ih/2+offY*h,iw,ih);
+  }else{
+    const g=ctx.createLinearGradient(x,y,x+w,y+h);g.addColorStop(0,'#2a2a30');g.addColorStop(1,'#08080a');
+    ctx.fillStyle=g;ctx.fillRect(x,y,w,h);
+    ctx.fillStyle='rgba(255,255,255,.35)';ctx.font='42px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('Ajoute une photo',x+w/2,y+h*0.3);
+  }
+  const warm=+$('warm').value;
+  if(warm>0){ctx.globalCompositeOperation='soft-light';ctx.fillStyle=`rgba(255,140,30,${warm})`;ctx.fillRect(x,y,w,h);ctx.globalCompositeOperation='source-over';}
+  const gr=+$('grad').value;
+  if(gr>0){const g=ctx.createLinearGradient(0,y+h*0.3,0,y+h);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,`rgba(0,0,0,${gr})`);ctx.fillStyle=g;ctx.fillRect(x,y,w,h);}
+  const vg=+$('vig').value;
+  if(vg>0){const g=ctx.createRadialGradient(x+w/2,y+h/2,Math.min(w,h)*0.35,x+w/2,y+h/2,Math.max(w,h)*0.75);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,`rgba(0,0,0,${vg})`);ctx.fillStyle=g;ctx.fillRect(x,y,w,h);}
+  const gn=+$('grain').value;
+  if(gn>0&&noise){ctx.globalCompositeOperation='overlay';ctx.globalAlpha=gn;ctx.fillStyle=noise;ctx.fillRect(x,y,w,h);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';}
+  ctx.restore();
+}
+
+// ---------- valeurs courantes ----------
+function vals(){
+  const W=cv.width,H=cv.height,caps=$('caps').checked;
+  return {W,H,k:+$('size').value,pos:+$('posY').value*H,
+    f1:$('f1').value,f2:$('f2').value,
+    c0:$('c0').value,c1:$('c1').value,c2:$('c2').value,c3:$('c3').value,cbg:$('cbg').value,
+    label:$('label').value.trim().toUpperCase(),
+    l1:caps?$('l1').value.trim().toUpperCase():$('l1').value.trim(),
+    l2:$('l2').value.trim(),
+    sub:$('sub').value.trim().toUpperCase()};
+}
+const G=(V,y0,y1)=>{const g=ctx.createLinearGradient(0,y0,0,y1);g.addColorStop(0,V.c2);g.addColorStop(1,V.c3);return g;};
+const rad=d=>d*Math.PI/180;
+
+// ---------- STYLES ----------
+function tClassique(V){
+  const W=V.W,maxW=W*.84;
+  const s1=V.l1?fitF(V.l1,V.f1,200*V.k,maxW):0;
+  const s2=V.l2?fitF(V.l2,V.f2,260*V.k,maxW*.95):0;
+  const labelH=V.label?46:0,gap=V.label?26:0,subH=V.sub?64:0;
+  const total=labelH+gap+s1*.92+s2*.72+subH;
+  let y=V.pos-total/2;
+  shadow(1);
+  if(V.label){
+    const cy=y+labelH/2;ctx.fillStyle=V.c0;
+    const tw=sd(V.label,W/2,cy,44,fntL(44),.18,'center');
+    shadow(0);ctx.fillRect(W/2-tw/2-120,cy-1,90,3);ctx.fillRect(W/2+tw/2+30,cy-1,90,3);shadow(1);
+    y+=labelH+gap;
+  }
+  if(V.l1){ctx.fillStyle=V.c1;sd(V.l1,W/2,y+s1*.46,s1,fnt(V.f1,s1),0,'center');y+=s1*.92;}
+  if(V.l2){
+    const cy=y+s2*.12;ctx.save();ctx.translate(W/2,cy);ctx.rotate(rad(-4));
+    ctx.fillStyle=G(V,-s2*.5,s2*.5);sd(V.l2,0,0,s2,fnt(V.f2,s2),0,'center');ctx.restore();y+=s2*.72;
+  }
+  if(V.sub){ctx.fillStyle='rgba(255,255,255,.88)';sd(V.sub,W/2,y+50,34,fntL(34),.18,'center');}
+}
+
+function tCinema(V){
+  const W=V.W,maxW=W*.8;
+  const s1=V.l1?fitF(V.l1,V.f1,160*V.k,maxW,.12):0;
+  const s2=V.l2?fitF(V.l2,V.f2,100*V.k,maxW*.7):0;
+  const total=(V.label?70:0)+s1*1.05+(V.l2?s2*1.1+10:0)+(V.sub?70:0);
+  let y=V.pos-total/2;
+  shadow(1,'rgba(0,0,0,.7)',30,4);
+  if(V.label){
+    ctx.fillStyle=V.c0;sd(V.label,W/2,y+18,32,fntL(32),.5,'center');
+    shadow(0);ctx.fillRect(W/2-70,y+50,140,2);shadow(1,'rgba(0,0,0,.7)',30,4);y+=70;
+  }
+  if(V.l1){ctx.fillStyle=V.c1;sd(V.l1,W/2,y+s1*.5,s1,fnt(V.f1,s1),.12,'center');y+=s1*1.05;}
+  if(V.l2){ctx.fillStyle=G(V,y,y+s2);sd(V.l2,W/2,y+s2*.55,s2,fnt(V.f2,s2),0,'center');y+=s2*1.1+10;}
+  if(V.sub){ctx.fillStyle='rgba(255,255,255,.85)';sd(V.sub,W/2,y+36,28,fntL(28),.4,'center');}
+}
+
+function tMagazine(V){
+  const W=V.W,H=V.H,x=90;
+  shadow(0);ctx.strokeStyle=V.c0;ctx.lineWidth=5;ctx.strokeRect(36,36,W-72,H-72);
+  const words=V.l1.split(/\s+/).filter(Boolean);
+  let s=Infinity;words.forEach(w=>{s=Math.min(s,fitF(w,V.f1,260*V.k,W*.78));});if(!words.length)s=0;
+  const s2=V.l2?fitF(V.l2,V.f2,210*V.k,W*.78):0;
+  const total=(V.label?80:0)+words.length*s*.9+(V.l2?s2*.8:0)+(V.sub?70:0);
+  let y=V.pos-total/2;
+  if(V.label){
+    const tw=msp(V.label,fntL(34),34,.15);
+    shadow(0);ctx.fillStyle=V.c0;ctx.fillRect(x,y,tw+44,56);
+    ctx.fillStyle='#000';sd(V.label,x+22,y+29,34,fntL(34),.15,'left');y+=84;
+  }
+  shadow(1,'rgba(0,0,0,.55)',30,6);
+  words.forEach(w=>{ctx.fillStyle=V.c1;sd(w,x,y+s*.45,s,fnt(V.f1,s),0,'left');y+=s*.9;});
+  if(V.l2){
+    ctx.save();ctx.translate(x,y+s2*.2);ctx.rotate(rad(-3));
+    ctx.fillStyle=G(V,-s2*.5,s2*.5);sd(V.l2,0,0,s2,fnt(V.f2,s2),0,'left');ctx.restore();y+=s2*.8;
+  }
+  if(V.sub){ctx.fillStyle='rgba(255,255,255,.9)';sd(V.sub,x,y+36,32,fntL(32),.2,'left');}
+}
+
+function tNeon(V){
+  const W=V.W;
+  const s1=V.l1?fitF(V.l1,V.f1,230*V.k,W*.84,.03):0;
+  const s2=V.l2?fitF(V.l2,V.f2,230*V.k,W*.84):0;
+  const total=(V.label?70:0)+s1*.95+(V.l2?s2*.8:0)+(V.sub?70:0);
+  let y=V.pos-total/2;
+  if(V.label){shadow(1,V.c0,22,0);ctx.fillStyle=V.c0;sd(V.label,W/2,y+22,38,fntL(38),.4,'center');y+=70;}
+  if(V.l1){[70,26].forEach(b=>{shadow(1,V.c2,b,0);ctx.fillStyle=V.c1;sd(V.l1,W/2,y+s1*.46,s1,fnt(V.f1,s1),.03,'center');});y+=s1*.95;}
+  if(V.l2){
+    ctx.save();ctx.translate(W/2,y+s2*.1);ctx.rotate(rad(-4));
+    [70,26].forEach(b=>{shadow(1,V.c2,b,0);ctx.fillStyle=G(V,-s2*.5,s2*.5);sd(V.l2,0,0,s2,fnt(V.f2,s2),0,'center');});
+    ctx.restore();y+=s2*.8;
+  }
+  if(V.sub){shadow(1,V.c0,18,0);ctx.fillStyle=V.c0;sd(V.sub,W/2,y+36,30,fntL(30),.35,'center');}
+}
+
+function tImpact(V){
+  const W=V.W;
+  const words=V.l1.split(/\s+/).filter(Boolean);
+  const sizes=words.map(w=>fitF(w,V.f1,330*V.k,W*.9));
+  const s2=V.l2?fitF(V.l2,V.f2,300*V.k,W*.88):0;
+  const total=sizes.reduce((a,s)=>a+s*.88,0)+(V.l2?s2*.5:0)+(V.sub?80:0);
+  let y=V.pos-total/2;
+  shadow(1,'rgba(0,0,0,.55)',30,8);
+  if(V.label){ctx.fillStyle=V.c0;sd(V.label,W/2,110,42,fntL(42),.35,'center');}
+  words.forEach((w,i)=>{ctx.fillStyle=V.c1;sd(w,W/2,y+sizes[i]*.46,sizes[i],fnt(V.f1,sizes[i]),0,'center');y+=sizes[i]*.88;});
+  if(V.l2){
+    y-=s2*.12;ctx.save();ctx.translate(W/2,y+s2*.35);ctx.rotate(rad(-6));
+    ctx.fillStyle=G(V,-s2*.5,s2*.5);sd(V.l2,0,0,s2,fnt(V.f2,s2),0,'center');ctx.restore();y+=s2*.62;
+  }
+  if(V.sub){ctx.fillStyle='rgba(255,255,255,.9)';sd(V.sub,W/2,y+36,32,fntL(32),.3,'center');}
+}
+
+function tNumero(V){
+  const W=V.W;
+  const m=V.label.match(/\d+/),num=m?m[0]:V.label,word=m?V.label.replace(m[0],'').trim():'';
+  const sb=fitF(num,'Anton',760*V.k,W*.9);
+  const s1=V.l1?fitF(V.l1,V.f1,170*V.k,W*.86):0;
+  const s2=V.l2?fitF(V.l2,V.f2,200*V.k,W*.8):0;
+  const titleH=s1*.95+(V.l2?s2*.7:0)+(V.sub?70:0);
+  let y=V.pos-titleH/2;
+  const cyNum=Math.max(sb*.5+90,y-sb*.45-10);
+  shadow(0);
+  ctx.fillStyle=V.c0;ctx.globalAlpha=.12;sd(num,W/2,cyNum,sb,fnt('Anton',sb),0,'center');
+  ctx.globalAlpha=.95;ctx.strokeStyle=V.c0;ctx.lineWidth=6;sd(num,W/2,cyNum,sb,fnt('Anton',sb),0,'center',true);
+  ctx.globalAlpha=1;
+  if(word){shadow(1);ctx.fillStyle=V.c0;sd(word,W/2,Math.max(90,cyNum-sb*.5-36),46,fntL(46),.4,'center');}
+  shadow(1);
+  if(V.l1){ctx.fillStyle=V.c1;sd(V.l1,W/2,y+s1*.46,s1,fnt(V.f1,s1),0,'center');y+=s1*.95;}
+  if(V.l2){
+    ctx.save();ctx.translate(W/2,y+s2*.1);ctx.rotate(rad(-4));
+    ctx.fillStyle=G(V,-s2*.5,s2*.5);sd(V.l2,0,0,s2,fnt(V.f2,s2),0,'center');ctx.restore();y+=s2*.7;
+  }
+  if(V.sub){ctx.fillStyle='rgba(255,255,255,.88)';sd(V.sub,W/2,y+36,32,fntL(32),.3,'center');}
+}
+
+function tMinimal(V){
+  const W=V.W,x=90;
+  const s1=V.l1?fitF(V.l1,V.f1,120*V.k,W*.8,.05):0;
+  const s2=V.l2?fitF(V.l2,V.f2,100*V.k,W*.7):0;
+  const total=(V.label?50:0)+30+s1+(V.l2?s2*.9:0)+(V.sub?64:0);
+  let y=V.pos-total/2;
+  shadow(1,'rgba(0,0,0,.6)',24,4);
+  if(V.label){ctx.fillStyle=V.c0;sd(V.label,x,y+20,30,fntL(30),.4,'left');y+=50;}
+  shadow(0);ctx.fillStyle=V.c0;ctx.fillRect(x,y,90,3);y+=30;shadow(1,'rgba(0,0,0,.6)',24,4);
+  if(V.l1){ctx.fillStyle=V.c1;sd(V.l1,x,y+s1*.5,s1,fnt(V.f1,s1),.05,'left');y+=s1;}
+  if(V.l2){ctx.fillStyle=G(V,y,y+s2);sd(V.l2,x,y+s2*.45,s2,fnt(V.f2,s2),0,'left');y+=s2*.9;}
+  if(V.sub){ctx.fillStyle='rgba(255,255,255,.85)';sd(V.sub,x,y+34,28,fntL(28),.3,'left');}
+}
+
+function tPolaroid(V){
+  const W=V.W,H=V.H;
+  ctx.fillStyle='#17171b';ctx.fillRect(0,0,W,H);
+  ctx.save();ctx.translate(W/2,H/2);ctx.rotate(rad(-2));ctx.translate(-W/2,-H/2);
+  const cx=60,cy=60,cw=W-120,ch=H-120;
+  shadow(1,'rgba(0,0,0,.65)',50,20);ctx.fillStyle=V.cbg;ctx.fillRect(cx,cy,cw,ch);shadow(0);
+  const px=cx+36,py=cy+36,pw=cw-72,b=Math.max(320,ch*.2),ph=ch-36-b;
+  paintPhoto(px,py,pw,ph);
+  const s1=V.l1?fitF(V.l1,V.f1,120*V.k,pw*.92):0;
+  const s2=V.l2?fitF(V.l2,V.f2,90*V.k,pw*.8):0;
+  const total=(V.label?44:0)+s1+(V.l2?s2*.95:0)+(V.sub?44:0);
+  let y=py+ph+Math.max(10,(b-36-total)/2);
+  if(V.label){ctx.fillStyle=V.c0;sd(V.label,W/2,y+16,28,fntL(28),.3,'center');y+=44;}
+  if(V.l1){ctx.fillStyle=V.c1;sd(V.l1,W/2,y+s1*.5,s1,fnt(V.f1,s1),0,'center');y+=s1;}
+  if(V.l2){ctx.fillStyle=G(V,y,y+s2);sd(V.l2,W/2,y+s2*.45,s2,fnt(V.f2,s2),0,'center');y+=s2*.95;}
+  if(V.sub){ctx.fillStyle=V.c0;sd(V.sub,W/2,y+24,26,fntL(26),.3,'center');}
+  ctx.restore();
+}
+
+const DRAW={classique:tClassique,cinema:tCinema,magazine:tMagazine,neon:tNeon,impact:tImpact,numero:tNumero,minimal:tMinimal};
+
+function render(){
+  const W=cv.width,H=cv.height,V=vals(),t=$('tpl').value;
+  ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;shadow(0);
+  if(t==='polaroid'){tPolaroid(V);return;}
+  paintPhoto(0,0,W,H);
+  ctx.textBaseline='middle';
+  (DRAW[t]||tClassique)(V);
+  shadow(0);ctx.globalAlpha=1;
+}
+
+async function loadFonts(){
+  try{await Promise.all([...Object.keys(FONTS).map(n=>document.fonts.load(fnt(n,40))),document.fonts.load(fntL(40))]);}catch(e){}
+  render();
+}
+
+// ---------- mémoire des réglages ----------
+function save(){try{const o={caps:$('caps').checked};IDS.forEach(i=>{if(i!=='zoom')o[i]=$(i).value});localStorage.setItem('studio_couverture_v2',JSON.stringify(o));}catch(e){}}
+function restore(){try{
+  const o=JSON.parse(localStorage.getItem('studio_couverture_v2')||'{}');
+  IDS.forEach(i=>{if(o[i]!==undefined&&$(i))$(i).value=o[i]});
+  if(o.caps!==undefined)$('caps').checked=o.caps;
+  if(!TPL[$('tpl').value])$('tpl').value='classique';
+}catch(e){}}
+
+IDS.filter(i=>i!=='tpl').forEach(i=>$(i).addEventListener('input',()=>{if(i==='fmt')setSize();save();render();}));
+$('caps').addEventListener('change',()=>{save();render();});
+
+$('photo').addEventListener('change',e=>{
+  const f=e.target.files[0];if(!f)return;
+  const im=new Image();im.onload=()=>{img=im;offX=offY=0;$('zoom').value=1;render();};
+  im.src=URL.createObjectURL(f);
+});
+
+$('next').addEventListener('click',()=>{
+  $('label').value=$('label').value.replace(/\d+/,n=>(+n+1));
+  save();render();
+});
+
+// glisser pour recadrer
+let drag=null;
+cv.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY};cv.setPointerCapture(e.pointerId);cv.style.cursor='grabbing';});
+cv.addEventListener('pointermove',e=>{
+  if(!drag)return;
+  const r=cv.getBoundingClientRect();
+  offX+=(e.clientX-drag.x)/r.width;offY+=(e.clientY-drag.y)/r.height;
+  drag={x:e.clientX,y:e.clientY};render();
+});
+['pointerup','pointercancel'].forEach(t=>cv.addEventListener(t,()=>{drag=null;cv.style.cursor='grab';}));
+
+function fname(){const n=($('label').value.match(/\d+/)||[''])[0];return `couverture${n?'-ep'+n:''}.png`;}
+function blob(){return new Promise(r=>cv.toBlob(r,'image/png'));}
+$('dl').addEventListener('click',async()=>{
+  const b=await blob(),a=document.createElement('a');
+  a.href=URL.createObjectURL(b);a.download=fname();document.body.appendChild(a);a.click();a.remove();
+});
+$('share').addEventListener('click',async()=>{
+  const b=await blob(),f=new File([b],fname(),{type:'image/png'});
+  if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f]});}catch(e){}}
+  else $('dl').click();
+});
+
+restore();setSize();makeNoise();buildChips();render();loadFonts();
+</script>
+</body>
+</html>
