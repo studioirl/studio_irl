@@ -262,7 +262,7 @@ function showModeGrid() {
         <div class="s-card-title">🏠 Pièce</div>
         <div class="room-cats" id="roomCats"></div>
         <div class="room-grid" id="roomGrid"></div>
-        <div class="subtype-row" id="cuisineSubtype"><select class="s-select" onchange="setSubtype(this.value)"><option value="">Zone cuisine complète</option><option value="cuisine_plan_travail">Plan de travail</option><option value="cuisine_plaques_cuisson">Plaques de cuisson</option><option value="cuisine_a_table">À table (Cuisine)</option></select></div>
+        <div class="subtype-row" id="cuisineSubtype"><select class="s-select" onchange="setSubtype(this.value)"><option value="">Zone cuisine complète</option><option value="cuisine_plan_travail">Plan de travail</option><option value="cuisine_plaques_cuisson">Plaques de cuisson</option><option value="cuisine_four">Four</option><option value="cuisine_a_table">À table (Cuisine)</option></select></div>
         <div class="subtype-row" id="chambreSubtype"><select class="s-select" onchange="setSubtype(this.value)" id="chambreSubtypeSelect"></select></div>
         <div class="subtype-row" id="bureauSubtype"><select class="s-select" onchange="setSubtype(this.value)"><option value="">Type d'ordinateur</option><option value="ordinateur_portable">Ordinateur portable</option><option value="ordinateur_bureau">Ordinateur de bureau</option></select></div>
         <label class="uploader" id="roomImgUploader" style="margin-top:12px;min-height:100px;cursor:pointer;display:flex">
@@ -272,6 +272,23 @@ function showModeGrid() {
           <div class="uploader-overlay"><button type="button" class="remove-img-btn" id="roomImgRemoveBtn">✕</button></div>
         </label>
         <div class="kie-warning" id="kieRoomNote" style="display:none"></div>
+      </div>
+
+      <div class="s-card" id="dishConfig" style="display:none">
+        <div class="s-card-title" style="color:#facc15">🍲 <span id="dishConfigTitle">Photo du plat</span></div>
+        <div class="uploader" id="dishImgUploader" style="min-height:90px">
+          <div class="uploader-icon">🍽️</div>
+          <div class="uploader-label" id="dishImgLabel">Photo du plat *</div>
+          <input type="file" accept="image/*" onchange="handleUpload(event,'dishImg')">
+          <div class="uploader-overlay"><button class="remove-img-btn" onclick="removeImg(event,'dishImg')" type="button">✕</button></div>
+        </div>
+        <div id="dishStoryboardFields" style="margin-top:10px">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#facc15;margin-bottom:6px">📋 Storyboard de préparation (optionnel — 3 photos si rempli)</div>
+          <input type="text" class="s-select" style="margin-bottom:8px" placeholder="Étape 1 — Préparation (ex: éplucher les pommes de terre)" oninput="state.dishStep1=this.value">
+          <input type="text" class="s-select" style="margin-bottom:8px" placeholder="Étape 2 — Cuisson (ex: pommes de terre dorées à la poêle)" oninput="state.dishStep2=this.value">
+          <input type="text" class="s-select" style="margin-bottom:8px" placeholder="Étape 3 — Plat final (ex: gratin gratiné doré, dans le plat à four)" oninput="state.dishStep3=this.value">
+          <div style="padding:8px 10px;background:rgba(250,204,21,0.08);border:1px solid rgba(250,204,21,0.2);border-radius:10px;font-size:10px;color:#fde68a;line-height:1.5">Laisse les 3 champs vides pour générer directement le plat final. Remplis-en un pour obtenir le storyboard en 3 photos (préparation → cuisson → plat final). L'étape 3 reste toujours fidèle à la photo de référence, même avec une description.</div>
+        </div>
       </div>
 
       <div class="s-card">
@@ -426,7 +443,7 @@ function showModeGrid() {
         <div class="ar-btns">
           <div class="ar-btn active" id="ar916" onclick="setAR('9:16')">9:16<br>Portrait</div>
           <div class="ar-btn" id="ar169" onclick="setAR('16:9')">16:9<br>Paysage</div>
-          <div class="ar-btn" id="ar11" onclick="setAR('1:1')">1:1<br>Carré</div>
+          <div class="ar-btn" id="ar45" onclick="setAR('4:5')">4:5<br>Carrousel Insta</div>
         </div>
         <label style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.2em;color:var(--text3);display:block;margin-bottom:6px">Description additionnelle</label>
         <textarea class="s-textarea" id="freeText" placeholder="Ambiance, détails supplémentaires..." rows="3" oninput="state.freeText=this.value"></textarea>
@@ -488,7 +505,7 @@ const state = {
   whatsappContact:'',whatsappCallType:'video',babyRef:'',carrierImg:'',bbqRef:'',strollerRef:'',strollerBaby:'',
   interphonePortal:'',interphoneVisitor:'',interphoneInterior:'',interphonePortalOpen:'',interphoneStep:1,
   menageToolImg:'',menageToolType:'passer_aspirateur',
-  dressingOutfits:[],tondeuseImg:'',
+  dressingOutfits:[],tondeuseImg:'',dishImg:'',dishStep1:'',dishStep2:'',dishStep3:'',
   chaosEmotionAdult:'',chaosEmotionChild:'',chaosEmotionBaby:''
 };
 
@@ -660,16 +677,27 @@ function selectRoom(key,label){
   const bbqRow=document.getElementById('bbqModeRow');if(bbqRow)bbqRow.style.display=['jardin','terrace','balcon'].includes(key)?'flex':'none';
   const piscineRow=document.getElementById('piscineModeRow');if(piscineRow)piscineRow.style.display=key==='piscine'?'flex':'none';
   if(key!=='piscine'&&state.piscine){state.piscine=false;const el=document.getElementById('togglePiscine');if(el)el.className='toggle-sw';const cfg=document.getElementById('piscineConfig');if(cfg)cfg.style.display='none';}
+  updateDishConfig();
   updateActions();
 }
-function setSubtype(v){state.roomSubtype=v;updateActions();}
+function setSubtype(v){state.roomSubtype=v;updateDishConfig();updateActions();}
+function updateDishConfig(){
+  const card=document.getElementById('dishConfig');if(!card)return;
+  const v=state.roomSubtype;
+  const isFour=v==='cuisine_four';
+  const isPlaques=v==='cuisine_plaques_cuisson';
+  card.style.display=(isFour||isPlaques)?'block':'none';
+  if(!isFour&&!isPlaques)return;
+  document.getElementById('dishConfigTitle').textContent=isFour?'Photo du plat à mettre au four':'Photo du plat à cuisiner';
+  document.getElementById('dishImgLabel').textContent=isFour?'Photo du plat *':'Photo du plat (optionnel)';
+}
 function updateActions(){const sel=document.getElementById('actionSelect');const key=state.room?.key||'';const actions=ACTIONS[key]||ACTIONS.default;sel.innerHTML='<option value="">Sélectionner une action...</option>'+actions.map(a=>`<option value="${a}">${a}</option>`).join('');state.action='';}
 
 // ==================== ENERGY ====================
 function setEnergy(e){state.energy=e;document.getElementById('energyCalmBtn').className='energy-btn'+(e==='calm'?' active-calm':'');document.getElementById('energyChaosBtn').className='energy-btn'+(e==='chaos'?' active-chaos':'');const chaosBlock=document.getElementById('chaosEmotionsBlock');if(chaosBlock)chaosBlock.style.display=e==='chaos'?'block':'none';}
 
 // ==================== AR ====================
-function setAR(ar){state.aspectRatio=ar;document.getElementById('ar916').className='ar-btn'+(ar==='9:16'?' active':'');document.getElementById('ar169').className='ar-btn'+(ar==='16:9'?' active':'');document.getElementById('ar11').className='ar-btn'+(ar==='1:1'?' active':'');}
+function setAR(ar){state.aspectRatio=ar;document.getElementById('ar916').className='ar-btn'+(ar==='9:16'?' active':'');document.getElementById('ar169').className='ar-btn'+(ar==='16:9'?' active':'');document.getElementById('ar45').className='ar-btn'+(ar==='4:5'?' active':'');}
 
 // ==================== MODES ====================
 function toggleMode(m){
@@ -826,22 +854,47 @@ async function generate(){
   if(state.bbq&&!state.bbqRef){showError('Photo du barbecue obligatoire !');return;}
   if(state.poussette&&(!state.strollerRef||!state.strollerBaby)){showError('Photos Poussette + Bébé obligatoires !');return;}
   if(state.interphone&&(!state.interphonePortal||!state.interphoneVisitor)){showError('Étape Interphone 1 : photo du portail fermé et du visiteur obligatoires !');return;}
+  if(state.roomSubtype==='cuisine_four'&&!state.dishImg){showError('Photo du plat à mettre au four obligatoire !');return;}
   // Sync whatsappCallType depuis le select
   const callTypeSel=document.getElementById('whatsappCallTypeSelect');
   if(callTypeSel)state.whatsappCallType=callTypeSel.value;
+  const dishPhotoPresent=(state.roomSubtype==='cuisine_four'||state.roomSubtype==='cuisine_plaques_cuisson')&&!!state.dishImg;
+  const storyboardActive=dishPhotoPresent&&((state.dishStep1&&state.dishStep1.trim()!=='')||(state.dishStep2&&state.dishStep2.trim()!=='')||(state.dishStep3&&state.dishStep3.trim()!==''));
   setLoading(true);
   try{
-    let result;
-    if(selectedEngine==='kie'){result=await callKie();}
-    else{result=await callVertex();}
-    showResult(result,selectedEngine);
+    if(storyboardActive){
+      await generateDishStoryboard();
+    } else {
+      let result;
+      if(selectedEngine==='kie'){result=await callKie();}
+      else{result=await callVertex();}
+      showResult(result,selectedEngine);
+    }
   }catch(e){showError(e.message||'Erreur de génération.');}
   finally{setLoading(false);}
 }
 
+// ─── Storyboard Plat (Four / Plaques de cuisson) ────────────────────────────────
+async function generateDishStoryboard(){
+  const steps=[
+    {label:'Étape 1 — Préparation',fr:state.dishStep1||'Préparation des ingrédients, gros plan sur les mains en action.',en:state.dishStep1||'Preparing the raw ingredients, close-up on hands in action.',final:false},
+    {label:'Étape 2 — Cuisson',fr:state.dishStep2||'Cuisson en cours, plat pas encore terminé.',en:state.dishStep2||'Cooking in progress, dish not yet finished.',final:false},
+    {label:'Étape 3 — Plat final',fr:state.dishStep3?`${state.dishStep3} — le plat doit rester identique à la photo de référence jointe.`:'Photo finale du plat, identique à la photo de référence jointe, prêt à servir, fumant, posé dans la scène.',en:state.dishStep3?`${state.dishStep3} — the dish must remain identical to the reference photo provided.`:'Final photo of the dish, identical to the reference photo provided, ready to serve, steaming, placed in the scene.',final:true}
+  ];
+  const results=[];
+  for(let i=0;i<steps.length;i++){
+    updateLoadingStep(`${steps[i].label}...`);
+    let dataUrl;
+    if(selectedEngine==='kie'){dataUrl=await callKie(steps[i].en,steps[i].final);}
+    else{dataUrl=await callVertex(steps[i].fr,steps[i].final);}
+    results.push({label:steps[i].label,dataUrl});
+  }
+  showResultStoryboard(results,selectedEngine);
+}
+
 // ─── Vertex ────────────────────────────────────────────────────────────────────
-async function callVertex(){
-  const prompt=buildPrompt();
+async function callVertex(actionOverride,isFinalStep){
+  const prompt=buildPrompt(actionOverride,isFinalStep);
   const parts=[];
   parts.push({text:SYSTEM_PROMPT+'\n\n'+prompt});
   if(state.mainAvatar)parts.push(makeImagePart(state.mainAvatar));
@@ -859,6 +912,7 @@ async function callVertex(){
   if(state.tondeuse&&state.tondeuseImg){parts.push({text:'TONDEUSE DE RÉFÉRENCE :'});parts.push(makeImagePart(state.tondeuseImg));}
   if(state.interphone){if(state.interphonePortal){parts.push({text:'PORTAIL RÉFÉRENCE :'});parts.push(makeImagePart(state.interphonePortal));}if(state.interphoneVisitor){parts.push({text:'VISITEUR (DNA) :'});parts.push(makeImagePart(state.interphoneVisitor));}if(state.interphoneStep===2&&state.interphoneInterior){parts.push({text:'ÉCRAN INTERPHONE INTÉRIEUR :'});parts.push(makeImagePart(state.interphoneInterior));}if(state.interphoneStep===3&&state.interphonePortalOpen){parts.push({text:'PORTAIL OUVERT :'});parts.push(makeImagePart(state.interphonePortalOpen));}}
   if(state.dressing){state.dressingOutfits.forEach(o=>{if(o.source==='image'&&o.image){parts.push({text:`TENUE POUR ${o.label.toUpperCase()} :`});parts.push(makeImagePart(o.image));}});}
+  if(state.dishImg){parts.push({text:'PHOTO DE RÉFÉRENCE DU PLAT :'});parts.push(makeImagePart(state.dishImg));}
 
   const body={contents:[{role:'user',parts}],generationConfig:{responseModalities:['IMAGE'],imageConfig:{aspectRatio:state.aspectRatio,imageSize:'4K'}}};
   const endpoint=`https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-3.1-flash-image:generateContent?key=${encodeURIComponent(state.apiKey)}`;
@@ -892,7 +946,7 @@ async function uploadImageToKie(base64DataUri){
   return data.data.downloadUrl;
 }
 
-async function callKie(){
+async function callKie(actionOverride,isFinalStep){
   updateLoadingStep('Envoi de l\'avatar vers kie.ai...');
   let imageUrls=[];
   if(state.mainAvatar){
@@ -903,6 +957,7 @@ async function callKie(){
   }
   const optionalImages=[
     state.roomImg||null,
+    state.dishImg||null,
     state.partner&&state.partner!=='pending'?state.partner:null,
     ...state.children,
     ...state.guests
@@ -912,7 +967,7 @@ async function callKie(){
       try{const u=await uploadImageToKie(img);imageUrls.push(u);}catch(_){}
     }
   }
-  const prompt=buildKiePrompt();
+  const prompt=buildKiePrompt(actionOverride,isFinalStep);
   updateLoadingStep('Création de la tâche Nano Banana 2...');
   const taskBody={
     model:'nano-banana-2',
@@ -978,10 +1033,15 @@ async function callKie(){
 }
 
 // ─── Prompt kie.ai (CORRIGÉ) ─────────────────────────────────────────────────
-function buildKiePrompt(){
+function buildKiePrompt(actionOverride,isFinalStep){
   const p=[];
   p.push('Ultra-realistic 4K lifestyle photography. Preserve exact facial identity and physical characteristics from reference image(s): same face, same skin tone, same morphology. No beautification, no AI smoothing.');
   p.push(`Scene type: ${state.appMode==='SOLO'?'solo person':'family scene'}.`);
+  if(actionOverride){
+    p.push(`Storyboard step: ${actionOverride}.`);
+    if(isFinalStep)p.push('Final dish instruction: reproduce the dish from the reference photo provided exactly — same presentation, same ingredients, same cooking — placed/served within the scene.');
+    else p.push('Storyboard instruction: do NOT show the finished dish at this stage. Focus only on the described action: hands, gestures, ingredients as they are at this precise stage of preparation.');
+  }
   const participants=[];
   participants.push('main avatar (reference provided)');
   if(state.partner&&state.partner!=='pending')participants.push('partner/spouse');
@@ -992,7 +1052,8 @@ function buildKiePrompt(){
   if(state.room)p.push(`Location: ${state.room.label}${state.roomSubtype?' / '+state.roomSubtype:''}.`);
   if(state.roomImg)p.push('Room decor matches the reference photo provided.');
   else if(state.room)p.push(`Realistic ${state.room.label}, natural lived-in decor.`);
-  if(state.action)p.push(`Action: ${state.action}.`);
+  if(!actionOverride&&state.action)p.push(`Action: ${state.action}.`);
+  if(!actionOverride&&state.dishImg)p.push('Dish instruction: the dish visible in the scene must be identical to the dish reference photo provided (same presentation, same ingredients, ready to serve).');
   p.push(`Season: ${state.season}. Weather: ${state.weather}. Time of day: ${state.dayMoment}.`);
   p.push(`Camera angle: ${state.cameraAngle}.`);
   p.push(state.energy==='chaos'?'Mood: slightly chaotic, authentic, lived-in family moment.':'Mood: calm, serene, natural.');
@@ -1035,11 +1096,16 @@ function buildKiePrompt(){
 }
 
 // ─── Prompt Vertex (CORRIGÉ) ───────────────────────────────────────────────────
-function buildPrompt(){
+function buildPrompt(actionOverride,isFinalStep){
   const p=[];
   p.push('FRESH HUMAN CAPTURE V11.');p.push('Technical: RAW 4K, Matte skin, Clean sensor, NO BEAUTY FILTERS.');p.push('');
   p.push(`MODE : ${state.appMode==='SOLO'?'SOLO':'FAMILLE'}`);
-  if(state.action)p.push(`ACTION : ${state.action}`);
+  if(actionOverride){
+    p.push(`ACTION (STORYBOARD PLAT) : ${actionOverride}`);
+    if(isFinalStep)p.push('CONSIGNE PLAT FINAL : Reproduire fidèlement le plat de la photo de référence jointe — même présentation, mêmes ingrédients, même cuisson — posé/servi dans le contexte de la scène.');
+    else p.push('CONSIGNE STORYBOARD : NE PAS montrer le plat fini à cette étape. Se concentrer uniquement sur l\'action décrite : mains, gestes, ingrédients tels qu\'ils sont à ce stade précis de la préparation.');
+  } else if(state.action)p.push(`ACTION : ${state.action}`);
+  if(!actionOverride&&state.dishImg)p.push('CONSIGNE PLAT : Le plat visible dans la scène doit être identique à la photo de référence du plat jointe (même présentation, mêmes ingrédients, prêt à servir).');
   p.push(`SAISON : ${state.season} | MÉTÉO : ${state.weather} | MOMENT : ${state.dayMoment}`);
   p.push(`ÉNERGIE : ${state.energy==='chaos'?'CHAOS — Maison vivante, légèrement désordonnée.':'CALME — Atmosphère sereine.'}`);
   if(state.room)p.push(`PIÈCE : ${state.room.label}${state.roomSubtype?' / '+state.roomSubtype:''}`);
@@ -1112,6 +1178,35 @@ function showResult(dataUrl, engine){
   const dl=document.createElement('button');dl.className='dl-btn';dl.textContent='⬇ Télécharger';
   dl.onclick=()=>downloadResult(dataUrl);
   panel.appendChild(dl);
+}
+
+function showResultStoryboard(results,engine){
+  const panel=document.getElementById('outputPanel');
+  document.getElementById('outputEmpty').style.display='none';
+  const old=panel.querySelector('.output-img');if(old)old.remove();
+  const oldDl=panel.querySelector('.dl-btn');if(oldDl)oldDl.remove();
+  const oldBadge=panel.querySelector('.result-engine-badge');if(oldBadge)oldBadge.remove();
+  const oldBoard=panel.querySelector('.dish-storyboard');if(oldBoard)oldBoard.remove();
+  const badge=document.createElement('span');
+  badge.className='result-engine-badge '+(engine==='kie'?'kie':'vertex');
+  badge.textContent=(engine==='kie'?'NANO BANANA 2 · KIE.AI':'GEMINI · VERTEX AI')+' · STORYBOARD PLAT';
+  panel.appendChild(badge);
+  const board=document.createElement('div');
+  board.className='dish-storyboard';
+  board.style.cssText='display:flex;flex-direction:column;gap:14px;width:100%';
+  results.forEach(r=>{
+    const block=document.createElement('div');
+    block.style.cssText='display:flex;flex-direction:column;gap:6px';
+    const lbl=document.createElement('div');
+    lbl.textContent=r.label;
+    lbl.style.cssText='font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#facc15';
+    const img=document.createElement('img');img.className='output-img';img.src=r.dataUrl;img.style.width='100%';
+    const dl=document.createElement('button');dl.className='dl-btn';dl.textContent='⬇ Télécharger '+r.label;
+    dl.onclick=()=>downloadResult(r.dataUrl);
+    block.appendChild(lbl);block.appendChild(img);block.appendChild(dl);
+    board.appendChild(block);
+  });
+  panel.appendChild(board);
 }
 
 function downloadResult(dataUrl){
