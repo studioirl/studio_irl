@@ -89,6 +89,11 @@
   .scene-item:hover{border-color:var(--line-strong);}
   .scene-item.checked{border-color:var(--flash);background:rgba(255,78,42,.06);}
   .scene-item.disabled{opacity:.35;cursor:not-allowed;}
+  .custom-box{display:none;margin-top:-2px;border:1px solid var(--flash);border-top:none;background:rgba(255,78,42,.04);padding:12px 14px;}
+  .custom-box.show{display:block;}
+  .custom-box textarea{width:100%;min-height:90px;resize:vertical;background:var(--bg2);border:1px solid var(--line-strong);color:var(--text);padding:12px;font-size:14px;font-family:'IBM Plex Sans',sans-serif;border-radius:2px;}
+  .custom-box textarea:focus{outline:none;border-color:var(--flash);}
+  .custom-box .hint{font-size:12px;color:var(--muted);margin-top:6px;}
   .checkbox{width:18px;height:18px;border:1px solid var(--line-strong);flex:none;margin-top:2px;position:relative;}
   .scene-item.checked .checkbox{border-color:var(--flash);background:var(--flash);}
   .scene-item.checked .checkbox::after{content:"";position:absolute;left:5px;top:1px;width:5px;height:9px;border:solid #161210;border-width:0 2px 2px 0;transform:rotate(45deg);}
@@ -142,6 +147,8 @@
   #gate p.lead b{color:var(--flash);font-weight:600;}
   #gate input[type=email]{width:100%;background:var(--bg2);border:1px solid var(--line-strong);color:var(--text);padding:14px 14px;font-size:15px;font-family:'IBM Plex Sans',sans-serif;border-radius:2px;margin-bottom:12px;}
   #gate input[type=email]:focus{outline:none;border-color:var(--flash);}
+  #gate input[type=text]{width:100%;background:var(--bg2);border:1px solid var(--line-strong);color:var(--text);padding:14px 14px;font-size:20px;letter-spacing:.3em;text-align:center;font-family:'IBM Plex Mono',monospace;border-radius:2px;margin-bottom:12px;}
+  #gate input[type=text]:focus{outline:none;border-color:var(--flash);}
   #gate .btn{width:100%;justify-content:center;}
   #gateErr{display:none;margin-top:12px;font-size:13px;color:#ffb69f;}
   #gateErr.show{display:block;}
@@ -158,11 +165,17 @@
 <div id="gate">
   <div class="gate-box">
     <div class="brand" style="margin-bottom:34px;"><span class="dot"></span><span>STUDIO INSTANTANÉ</span></div>
-    <h1>Des photos qui n'ont<br>l'air de rien.</h1>
+    <h1>Des photos prises<br>sur le vif.</h1>
     <p class="lead">Entre ton adresse email pour accéder au studio. <b>2 images offertes</b>, utilisables à tout moment.</p>
     <div id="gateForm">
       <input type="email" id="emailIn" placeholder="ton@email.com" autocomplete="email">
       <button class="btn" id="accessBtn" type="button">Accéder au studio</button>
+    </div>
+    <div id="codeForm" style="display:none;">
+      <p class="lead" style="margin-bottom:14px;">Un code vient d'être envoyé à <b id="codeMail"></b>. Entre-le ci-dessous (pense à regarder les spams).</p>
+      <input type="text" id="codeIn" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="Code reçu par email">
+      <button class="btn" id="verifyBtn" type="button">Valider le code</button>
+      <button class="btn" id="resendBtn" type="button" style="margin-top:8px;background:transparent;color:var(--muted);border:1px solid var(--line-strong);">Changer d'adresse / renvoyer le code</button>
     </div>
     <div id="gateErr"></div>
     <div id="gateBlocked"><b>Accès expiré.</b><br>Tu as utilisé tes 2 images offertes.<br>Merci d'avoir testé Studio Instantané.</div>
@@ -178,7 +191,7 @@
 
   <div class="hero">
     <div class="kicker mono">FREEBIE · SCÈNES LIFESTYLE</div>
-    <h1>Des photos qui n'ont<br>l'air de rien.</h1>
+    <h1>Des photos prises<br>sur le vif.</h1>
     <p>Uploade un avatar, choisis une catégorie de scènes du quotidien, et génère 1 à 3 photos façon instantané smartphone — imparfaites, jamais posées.</p>
   </div>
 
@@ -233,21 +246,26 @@
 /* ---------------------------------------------------------
    STUDIO INSTANTANÉ — données scènes
 --------------------------------------------------------- */
-const STYLE_SUFFIX = "Rendu photo réaliste non retouché, comme prise sur le vif au smartphone : angle légèrement imparfait, exposition naturelle non maîtrisée, léger flou de mouvement ou grain discret, décor réel et pas mis en scène, aucune pose ni regard caméra franc — l'aspect brut d'un instantané, pas d'une photo professionnelle. Contraintes de crédibilité : les vêtements, canapés, tapis et mobilier sont propres, entiers et en bon état, simplement un peu froissés ou en désordre ; chaque objet ou aliment mentionné apparaît en un seul exemplaire, jamais multiplié ou dupliqué.";
+const STYLE_SUFFIX = "Rendu photo réaliste non retouché, instant volé : la personne n'a aucune conscience d'être photographiée, elle est absorbée par son action et son regard reste tourné vers ce qu'elle fait, jamais vers l'objectif, l'appareil photo restant hors champ : angle légèrement imparfait, exposition naturelle non maîtrisée, léger flou de mouvement ou grain discret, décor réel et pas mis en scène, aucune pose ni regard caméra franc — l'aspect brut d'un instantané, pas d'une photo professionnelle. Contraintes de crédibilité : les vêtements, canapés, coussins, plaids et mobilier ressemblent à des articles de magasin presque neufs : tissus nets et lisses, coutures et ourlets réguliers, surfaces propres et uniformes, simplement un peu froissés ou en désordre ; chaque objet ou aliment mentionné apparaît en un seul exemplaire, jamais multiplié ou dupliqué.";
 
+/* Chaque génération laisse l'IA improviser un moment différent de la même situation */
+function spontaneNote(){
+  const tirage = Math.floor(Math.random() * 100000);
+  return " Pour cette photo, choisis toi-même un moment précis, une action, un lieu et un angle spontanés et inattendus, comme n'importe quel instant de la vie réelle qui peut arriver dans cette situation, différents à chaque tirage (tirage n°" + tirage + ").";
+}
 const CATEGORIES = [
   {
     id: "maison",
     name: "Maison / intérieur",
     desc: "Chez soi, sans filtre",
     scenes: [
-      {id:"cafe_matin", label:"Café du matin en pyjama", prompt:"Photo candide prise au smartphone, angle légèrement de travers comme tenue d'une main, [AVATAR] assis(e) à une table de cuisine en pyjama froissé, cheveux pas coiffés, tenant une tasse de café à deux mains, regard baissé vers la tasse ou perdu dans le vague. Lumière du matin naturelle et un peu dure venant d'une fenêtre latérale, légère surexposition par endroits. Arrière-plan de cuisine réel et un peu encombré (vaisselle, objets du quotidien flous)."},
-      {id:"canape_cocooning", label:"Canapé, soirée cocooning", prompt:"Photo prise au téléphone dans une pièce faiblement éclairée en soirée, [AVATAR] affalé(e) dans un canapé sous un plaid, une jambe repliée, lumière chaude et jaune d'une lampe hors champ créant des ombres douces, léger bruit numérique dû au faible éclairage. Cadrage imparfait, légèrement de biais. Reflet d'écran ou de lampe visible en arrière-plan."},
-      {id:"cuisine_repas", label:"Cuisine, préparation de repas", prompt:"Photo smartphone prise en hauteur ou de côté pendant que [AVATAR] cuisine, mains occupées (coupe, mélange), regard tourné vers la tâche et non vers l'objectif. Plan de travail légèrement en désordre (ingrédients éparpillés, torchon posé). Lumière de cuisine standard, un peu froide, ombres marquées. Flou de mouvement léger sur les mains."},
-      {id:"reveil_lit", label:"Réveil, lit défait", prompt:"Photo prise au réveil, [AVATAR] assis(e) au bord du lit ou encore allongé(e), yeux mi-clos, drap et oreillers en désordre autour. Lumière du matin filtrée par un rideau, tons doux mais légèrement surexposés. Cadrage serré et pas centré, angle qui suggère un selfie pris à bout de bras sans se regarder dans l'écran."},
-      {id:"menage_chaotique", label:"Ménage, maison chaotique", prompt:"Photo prise pendant une pause ménage, [AVATAR] tenant un aspirateur ou une serpillière, cheveux attachés à la va-vite ou en bandana, expression fatiguée. Pièce en arrière-plan volontairement en bazar : jouets d'enfants éparpillés au sol, coussins de canapé pas rangés, un panier de linge qui déborde dans un coin, poussière visible dans un rayon de lumière. Lumière naturelle crue de fenêtre, cadrage pas centré."},
+      {id:"cafe_matin", label:"Café du matin en pyjama", prompt:"Photo candide spontanée, angle légèrement de travers, [AVATAR] assis(e) à une table de cuisine en pyjama froissé, cheveux pas coiffés, tenant une tasse de café à deux mains, regard baissé vers la tasse ou perdu dans le vague. Lumière du matin naturelle et un peu dure venant d'une fenêtre latérale, légère surexposition par endroits. Arrière-plan de cuisine réel et un peu encombré (vaisselle, objets du quotidien flous)."},
+      {id:"canape_cocooning", label:"Canapé, soirée cocooning", prompt:"Photo spontanée prise dans une pièce faiblement éclairée en soirée, [AVATAR] affalé(e) dans un canapé sous un plaid, une jambe repliée, lumière chaude et jaune d'une lampe hors champ créant des ombres douces, léger bruit numérique dû au faible éclairage. Cadrage imparfait, légèrement de biais. Reflet d'écran ou de lampe visible en arrière-plan."},
+      {id:"cuisine_repas", label:"Cuisine, préparation de repas", prompt:"Photo spontanée prise en hauteur ou de côté pendant que [AVATAR] cuisine, mains occupées (coupe, mélange), regard tourné vers la tâche et non vers l'objectif. Plan de travail légèrement en désordre (ingrédients éparpillés, torchon posé). Lumière de cuisine standard, un peu froide, ombres marquées. Flou de mouvement léger sur les mains."},
+      {id:"reveil_lit", label:"Réveil, lit défait", prompt:"Photo volée au réveil, [AVATAR] assis(e) au bord du lit ou encore allongé(e), yeux mi-clos, regard dans le vague, cheveux en bataille, marque d'oreiller sur la joue, drap et oreillers en désordre autour. Lumière du matin filtrée par un rideau, tons doux mais légèrement surexposés. Cadrage serré et pas centré, angle de travers."},
+      {id:"menage_chaotique", label:"Ménage, maison chaotique", prompt:"Photo volée en plein ménage, [AVATAR] en mouvement, en train de passer l'aspirateur ou la serpillière, penché(e) sur sa tâche, regard sur le sol ou sur ce qu'il/elle nettoie, cheveux attachés à la va-vite ou en bandana, expression fatiguée. Pièce en arrière-plan volontairement en bazar : jouets d'enfants éparpillés au sol, coussins de canapé pas rangés, un panier de linge qui déborde dans un coin, poussière visible dans un rayon de lumière. Lumière naturelle crue de fenêtre, cadrage pas centré."},
       {id:"machine_laver", label:"Machine à laver / linge", prompt:"Photo prise accroupi(e) ou penché(e) devant la machine à laver ouverte, [AVATAR] en train d'y enfourner du linge, à côté d'un panier à linge déjà bien rempli et un peu renversé sur le côté (chaussettes ou vêtements tombés au sol). Reflet du hublot visible, sol de buanderie ou salle de bain légèrement sale, lumière artificielle un peu froide et directe. Cadrage bas, angle naturel comme pris en se relevant."},
-      {id:"canape_epuisement", label:"Écroulé(e) sur le canapé, épuisement", prompt:"Photo prise à bout de bras ou par quelqu'un à côté, [AVATAR] complètement avachi(e) sur le canapé, jambes écartées ou repliées sans grâce, tête en arrière ou de travers contre un coussin, yeux fermés ou mi-clos, traits tirés, cheveux en bataille, expression du visage relâchée et pas flatteuse (bouche entrouverte, air épuisé). Éclairage de fin de journée, un peu terne, coussins et plaid en désordre autour."},
+      {id:"canape_epuisement", label:"Écroulé(e) sur le canapé, épuisement", prompt:"Photo volée, [AVATAR] complètement avachi(e) sur le canapé, jambes écartées ou repliées sans grâce, tête en arrière ou de travers contre un coussin, yeux fermés ou mi-clos, traits tirés, cheveux en bataille, expression du visage relâchée et pas flatteuse (bouche entrouverte, air épuisé). Éclairage doux de fin de journée, canapé en tissu uni propre et net, coussins et plaid propres posés en désordre autour."},
       {id:"selfie_miroir_sdb", label:"Selfie miroir, salle de bain", prompt:"Photo selfie prise face à un miroir de salle de bain avec le téléphone visible dans le reflet, [AVATAR] dans une pose plus travaillée et esthétique (posture droite, léger angle flatteur, main sur la hanche ou tenant le téléphone à hauteur de visage). Arrière-plan de salle de bain réaliste et pas parfaitement rangé (produits de beauté sur le rebord du lavabo, serviette pendue de travers, traces sur le miroir). Lumière de salle de bain, mélange de lumière chaude et de reflet froid du miroir."}
     ]
   },
@@ -256,9 +274,9 @@ const CATEGORIES = [
     name: "Extérieur / rue",
     desc: "Dehors, en mouvement",
     scenes: [
-      {id:"marche_ville", label:"Marche en ville", prompt:"Photo prise en marchant, tenue à bout de bras ou par-dessus l'épaule, [AVATAR] de dos ou de trois-quarts, sac à l'épaule, en mouvement dans une rue urbaine réelle (trottoir, façades, passants flous en arrière-plan). Légère distorsion grand-angle de smartphone, lumière de jour naturelle et changeante, horizon légèrement penché."},
-      {id:"attente_terrasse", label:"Attente (terrasse, arrêt de bus)", prompt:"Photo candide, [AVATAR] assis(e) à une table de café en terrasse ou sur un banc d'arrêt de bus, un coude posé, regard sur son téléphone ou dans le vide, posture relâchée et pas travaillée. Environnement urbain identifiable en arrière-plan (mobilier urbain, autres personnes floues). Lumière naturelle changeante, ombres portées réalistes."},
-      {id:"courses", label:"Courses", prompt:"Photo prise au smartphone d'une main pendant que [AVATAR] tient des sacs de courses de l'autre, en mouvement sur un trottoir ou sortant d'un magasin. Angle bas ou légèrement penché, léger flou de mouvement, lumière de jour naturelle, arrière-plan de rue ou parking flou."},
+      {id:"marche_ville", label:"Marche en ville", prompt:"Photo volée en marchant, [AVATAR] de dos ou de trois-quarts, sac à l'épaule, cheveux décoiffés par le vent, en mouvement dans une rue urbaine réelle (trottoir, façades, passants flous en arrière-plan). Légère distorsion grand-angle, lumière de jour naturelle et changeante, horizon légèrement penché."},
+      {id:"attente_terrasse", label:"Attente (terrasse, arrêt de bus)", prompt:"Photo volée, [AVATAR] assis(e) à une table de café en terrasse ou sur un banc d'arrêt de bus, un coude posé, regard sur son téléphone ou dans le vide, cheveux décoiffés, tenue de tous les jours un peu froissée, posture relâchée et pas travaillée. Environnement urbain identifiable en arrière-plan (mobilier urbain, autres personnes floues). Lumière naturelle changeante, ombres portées réalistes."},
+      {id:"courses", label:"Courses", prompt:"Photo spontanée prise rapidement pendant que [AVATAR] tient des sacs de courses de l'autre, en mouvement sur un trottoir ou sortant d'un magasin. Angle bas ou légèrement penché, léger flou de mouvement, lumière de jour naturelle, arrière-plan de rue ou parking flou."},
       {id:"marche_marche", label:"Faire le marché", prompt:"Photo prise en marchant entre les étals, [AVATAR] tenant un sac en tissu ou un cabas à moitié rempli (légumes qui dépassent, sachet plastique noué à la va-vite), regard tourné vers un étal ou vers le contenu du sac plutôt que vers l'objectif. Sol un peu sale (feuilles de légumes tombées, caisses en bois), lumière extérieure dure de milieu de journée, léger flou de mouvement, arrière-plan de marché réaliste et encombré."},
       {id:"depart_vacances", label:"Départ en vacances chaotique", prompt:"Photo prise dans l'entrée ou le coffre de la voiture, [AVATAR] entouré(e) de valises pas bien fermées, sacs qui débordent, un vêtement qui dépasse d'une fermeture éclair. Expression un peu stressée ou pressée, cheveux pas coiffés, tenue confortable de voyage. Lumière du matin, cadrage pas centré, angle pris rapidement entre deux allers-retours, léger flou de mouvement."}
     ]
@@ -279,10 +297,10 @@ const CATEGORIES = [
     name: "Détente",
     desc: "Moments off",
     scenes: [
-      {id:"lecture_parc", label:"Lecture, balcon ou parc", prompt:"Photo prise en extérieur, [AVATAR] assis(e) avec un livre, lumière naturelle douce filtrée (arbres, ombre partielle), posture détendue et naturelle, regard sur le livre. Arrière-plan réel (balcon, herbe, banc), léger flou d'arrière-plan type profondeur de smartphone."},
-      {id:"jogging_exterieur", label:"Jogging en extérieur", prompt:"Photo prise en pause pendant un jogging en extérieur, [AVATAR] légèrement essoufflé(e), une main sur la hanche ou en train de s'étirer le mollet, tenue de course, transpiration légère visible. Décor extérieur réaliste (parc, trottoir, piste cyclable), sol de bitume, de terre ou d'herbe, avec seulement une gourde et des écouteurs. Lumière naturelle de plein jour, cadrage pris rapidement par un tiers ou en mode retardateur, pas de pose figée."},
-      {id:"salle_sport", label:"Sport en salle", prompt:"Photo prise en pause dans une salle de sport, [AVATAR] à côté ou en train d'utiliser un équipement de musculation réaliste (banc, haltères, machine), serviette autour du cou ou sur l'épaule, légère transpiration visible. Décor de salle de sport identifiable (miroirs, sol en caoutchouc, autres machines floues en arrière-plan). Lumière artificielle de salle, cadrage pris sur le vif, pas de pose figée."},
-      {id:"yoga", label:"Yoga", prompt:"Photo prise en pause pendant une séance de yoga, [AVATAR] assis(e) ou en légère posture d'étirement sur un tapis de yoga posé au sol, tenue de sport, expression calme et concentrée. Lieu cohérent avec la pratique (salon, chambre, ou coin calme d'un parc/jardin) — le tapis n'apparaît que si le lieu s'y prête réellement. Lumière naturelle douce, cadrage pris rapidement, pas de pose figée."}
+      {id:"lecture_parc", label:"Lecture, balcon ou parc", prompt:"Photo volée en extérieur, [AVATAR] assis(e) avec un livre, cheveux pas coiffés, tenue de tous les jours froissée, lumière naturelle douce filtrée (arbres, ombre partielle), posture détendue et naturelle, regard absorbé dans le livre. Arrière-plan réel (balcon, herbe, banc), léger flou d'arrière-plan type profondeur de smartphone."},
+      {id:"jogging_exterieur", label:"Jogging en extérieur", prompt:"Photo volée pendant un jogging en extérieur, [AVATAR] en mouvement, essoufflé(e), une main sur la hanche ou en train de s'étirer le mollet, tenue de course, visage et front luisants de sueur, mèches de cheveux collées par la transpiration, peau rougie par l'effort. Décor extérieur réaliste (parc, trottoir, piste cyclable), sol de bitume, de terre ou d'herbe, avec seulement une gourde et des écouteurs. Lumière naturelle de plein jour, cadrage pris rapidement, [AVATAR] ne regarde pas l'objectif."},
+      {id:"salle_sport", label:"Sport en salle", prompt:"Photo volée dans une salle de sport, [AVATAR] en train d'utiliser un équipement de musculation réaliste (banc, haltères, machine), serviette autour du cou ou sur l'épaule, visage et front luisants de sueur, mèches de cheveux collées par la transpiration, peau rougie par l'effort. Décor de salle de sport identifiable (miroirs, sol en caoutchouc, autres machines floues en arrière-plan). Lumière artificielle de salle, cadrage pris sur le vif, [AVATAR] concentré(e) sur son effort et ne regarde pas l'objectif."},
+      {id:"yoga", label:"Yoga", prompt:"Photo volée en pleine séance de yoga, [AVATAR] en posture d'étirement sur un tapis de yoga posé au sol, tenue de sport ordinaire, cheveux attachés en vrac, expression concentrée, yeux fermés ou baissés. Lieu cohérent avec la pratique (salon, chambre, ou coin calme d'un parc/jardin) — le tapis n'apparaît que si le lieu s'y prête réellement. Lumière naturelle douce, cadrage pris rapidement."}
     ]
   },
   {
@@ -292,8 +310,8 @@ const CATEGORIES = [
     needsPartner: true,
     scenes: [
       {id:"moment_taquin", label:"Moment taquin / complicité", prompt:"Photo prise sur le vif, [AVATAR] en train de rire aux éclats ou de se faire chatouiller/taquiner par [PARTNER], les deux visibles dans le cadre, expressions naturelles et spontanées (bouche ouverte, yeux plissés de rire), corps en mouvement (recul, geste de défense, bras qui repousse). Cadrage un peu flou ou de travers, comme pris par surprise au milieu de l'action. Décor du quotidien en arrière-plan, lumière naturelle, aucune pose."},
-      {id:"diner_resto", label:"Dîner en tête-à-tête au restaurant", prompt:"Photo prise à table dans un restaurant, [AVATAR] et [PARTNER] assis face à face ou côte à côte, en pleine conversation ou petit rire partagé, un verre et une assiette chacun visibles sur la table. Lumière tamisée de restaurant, cadrage pris à bout de bras ou par quelqu'un à côté, angle légèrement de travers, pas de pose figée."},
-      {id:"verre_bar", label:"Verre au bar", prompt:"Photo prise dans un bar, [AVATAR] et [PARTNER] en train de trinquer ou de discuter autour d'un verre chacun, ambiance de bar réaliste en arrière-plan (autres clients flous, lumière tamisée et chaude). Cadrage pris sur le vif, angle imparfait, pas de pose figée."},
+      {id:"diner_resto", label:"Dîner en tête-à-tête au restaurant", prompt:"Photo volée à table dans un restaurant, [AVATAR] et [PARTNER] assis face à face ou côte à côte, regards tournés l'un vers l'autre, en pleine conversation ou petit rire partagé, mèches en désordre, un verre et une assiette chacun visibles sur la table. Lumière tamisée de restaurant, angle légèrement de travers, ni l'un ni l'autre ne regarde l'objectif."},
+      {id:"verre_bar", label:"Verre au bar", prompt:"Photo volée dans un bar, [AVATAR] et [PARTNER] en train de trinquer ou de discuter autour d'un verre chacun, regards tournés l'un vers l'autre, rires pas maîtrisés, ambiance de bar réaliste en arrière-plan (autres clients flous, lumière tamisée et chaude). Cadrage pris sur le vif, angle imparfait, personne ne regarde l'objectif."},
       {id:"grosse_dispute", label:"Grosse dispute", prompt:"Photo prise sur le vif au milieu d'une dispute, [AVATAR] et [PARTNER] avec des expressions tendues ou fâchées, bras croisés ou geste de frustration, distance physique marquée entre les deux. Décor du quotidien réaliste en arrière-plan (salon ou cuisine), lumière naturelle ou intérieure normale, cadrage pris rapidement, aucune mise en scène."}
     ]
   }
@@ -315,9 +333,10 @@ let selectedScenes = [];   // array of scene ids, max 3
 --------------------------------------------------------- */
 const SUPA_URL = 'https://tygonygpqrgoarucbfcd.supabase.co';
 const SUPA_KEY = 'sb_publishable_716Slp2LQdU-Nasf7jJ9aw_PGOR3CZS';
-const PROXY_URL = 'https://storyshoot-proxy-832392183464.europe-west1.run.app';
-const FREEBIE_CODE = 'INSTANTANE';
-const IMAGE_SIZE = '4K';
+const KIE_KEY = 'b8466021cd010b7f7f50fabd232f1b8a';
+const KIE_MODEL = 'nano-banana-2';
+const KIE_RESOLUTION = '4K';
+const KIE_POLL_MS = 5000;
 const MAX_FREE = 2;
 const EMAIL_PREFIX = '';
 
@@ -360,11 +379,75 @@ async function decrementGen(){
 function showGateErr(m){ const e = document.getElementById("gateErr"); e.textContent = m; e.classList.add("show"); }
 function hideGateErr(){ document.getElementById("gateErr").classList.remove("show"); }
 
-async function accessStudio(){
+function normEmail(e){
+  e = e.trim().toLowerCase();
+  const [local, domain] = e.split("@");
+  if(domain === "gmail.com" || domain === "googlemail.com"){
+    return local.split("+")[0].replace(/\./g, "") + "@gmail.com";
+  }
+  return e;
+}
+
+let typedEmail = "";
+
+async function authFetch(path, body){
+  const res = await fetch(`${SUPA_URL}/auth/v1/${path}`, {
+    method: "POST",
+    headers: { "apikey": SUPA_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  let d = {}; try{ d = await res.json(); }catch(e){}
+  return { ok: res.ok, status: res.status, data: d };
+}
+
+async function requestCode(){
   const email = document.getElementById("emailIn").value.trim().toLowerCase();
   if(!email || !email.includes("@") || !email.includes(".")){ showGateErr("Entre une adresse email valide."); return; }
   const btn = document.getElementById("accessBtn");
+  btn.disabled = true; btn.textContent = "Envoi du code...";
+  hideGateErr();
+  try{
+    const r = await authFetch("otp", { email: email, create_user: true });
+    if(!r.ok){
+      if(r.status === 429) showGateErr("Trop de demandes d'envoi pour le moment. Réessaie dans quelques minutes.");
+      else showGateErr("Envoi du code impossible : " + ((r.data && (r.data.msg || r.data.error_description || r.data.message)) || r.status));
+      return;
+    }
+    typedEmail = email;
+    document.getElementById("codeMail").textContent = email;
+    document.getElementById("gateForm").style.display = "none";
+    document.getElementById("codeForm").style.display = "block";
+    document.getElementById("codeIn").focus();
+  }catch(e){
+    showGateErr("Erreur connexion : " + (e && e.message ? e.message : e));
+  }finally{
+    btn.disabled = false; btn.textContent = "Accéder au studio";
+  }
+}
+
+async function verifyCode(){
+  const code = document.getElementById("codeIn").value.replace(/\s/g, "");
+  if(code.length < 6){ showGateErr("Entre le code reçu par email."); return; }
+  const btn = document.getElementById("verifyBtn");
   btn.disabled = true; btn.textContent = "Vérification...";
+  hideGateErr();
+  try{
+    let okRes = null;
+    for(const type of ["email", "signup", "magiclink"]){
+      const r = await authFetch("verify", { type: type, email: typedEmail, token: code });
+      if(r.ok){ okRes = r; break; }
+    }
+    if(!okRes){ showGateErr("Code incorrect ou expiré. Vérifie-le ou demande-en un nouveau."); return; }
+    await accessStudio(normEmail(typedEmail));
+  }catch(e){
+    showGateErr("Erreur connexion : " + (e && e.message ? e.message : e));
+  }finally{
+    btn.disabled = false; btn.textContent = "Valider le code";
+  }
+}
+
+async function accessStudio(email){
+  const btn = document.getElementById("verifyBtn");
   hideGateErr();
   userEmail = email;
   try{
@@ -373,6 +456,7 @@ async function accessStudio(){
       const used = existing[0].generations_utilisees || 0;
       if(used >= MAX_FREE){
         document.getElementById("gateForm").style.display = "none";
+        document.getElementById("codeForm").style.display = "none";
         document.getElementById("gateBlocked").classList.add("show");
         return;
       }
@@ -386,11 +470,19 @@ async function accessStudio(){
   }catch(e){
     showGateErr("Erreur connexion : " + (e && e.message ? e.message : e));
   }finally{
-    btn.disabled = false; btn.textContent = "Accéder au studio";
+    btn.disabled = false; btn.textContent = "Valider le code";
   }
 }
-document.getElementById("accessBtn").addEventListener("click", accessStudio);
-document.getElementById("emailIn").addEventListener("keypress", e=>{ if(e.key === "Enter") accessStudio(); });
+document.getElementById("accessBtn").addEventListener("click", requestCode);
+document.getElementById("emailIn").addEventListener("keypress", e=>{ if(e.key === "Enter") requestCode(); });
+document.getElementById("verifyBtn").addEventListener("click", verifyCode);
+document.getElementById("codeIn").addEventListener("keypress", e=>{ if(e.key === "Enter") verifyCode(); });
+document.getElementById("resendBtn").addEventListener("click", ()=>{
+  hideGateErr();
+  document.getElementById("codeIn").value = "";
+  document.getElementById("codeForm").style.display = "none";
+  document.getElementById("gateForm").style.display = "block";
+});
 
 /* ---------------------------------------------------------
    Step 1 — Avatar upload
@@ -535,6 +627,26 @@ function buildSceneList(){
     item.addEventListener("click", ()=> toggleScene(scene.id, item));
     list.appendChild(item);
   });
+  const cItem = document.createElement("div");
+  cItem.className = "scene-item";
+  cItem.innerHTML = `
+    <div class="checkbox"></div>
+    <div class="scene-txt"><b>✎ Ma propre scène</b><span>Décris la scène avec tes mots</span></div>
+  `;
+  cItem.addEventListener("click", ()=>{
+    toggleScene("custom", cItem);
+    document.getElementById("customBox").classList.toggle("show", selectedScenes.includes("custom"));
+  });
+  list.appendChild(cItem);
+  const cBox = document.createElement("div");
+  cBox.className = "custom-box";
+  cBox.id = "customBox";
+  cBox.innerHTML = `
+    <textarea id="customText" maxlength="600" placeholder="Ex : elle attend son café au comptoir d'une boulangerie, pressée, le sac à moitié ouvert..."></textarea>
+    <div class="hint">Décris ce qui se passe, le lieu et l'ambiance. Le rendu reste un instantané sur le vif.</div>
+  `;
+  list.appendChild(cBox);
+  cBox.querySelector("textarea").addEventListener("input", updateSelCount);
   updateSelCount();
 }
 
@@ -567,7 +679,9 @@ function updateSelCount(){
   document.getElementById("selMaxLabel").textContent = maxSelectable();
   const cat = CATEGORIES.find(c=>c.id === currentCategory);
   const partnerOk = !cat || !cat.needsPartner || !!partnerBase64;
-  document.getElementById("generateBtn").disabled = selectedScenes.length === 0 || !avatarBase64 || !partnerOk;
+  const ct = document.getElementById("customText");
+  const customOk = !selectedScenes.includes("custom") || (ct && ct.value.trim().length >= 5);
+  document.getElementById("generateBtn").disabled = selectedScenes.length === 0 || !avatarBase64 || !partnerOk || !customOk;
 }
 
 /* ---------------------------------------------------------
@@ -584,7 +698,12 @@ document.getElementById("generateBtn").addEventListener("click", async ()=>{
     alert("Ajoute une photo du/de la partenaire avant de générer.");
     return;
   }
-  const scenesToRun = cat.scenes.filter(s=> selectedScenes.includes(s.id)).slice(0, remaining());
+  const customScene = selectedScenes.includes("custom") ? {
+    id: "custom",
+    label: "Ma propre scène",
+    prompt: "Photo volée de la scène suivante, décrite avec les mots de la personne : « " + document.getElementById("customText").value.trim() + " ». [AVATAR] est la personne de la scène" + (cat.needsPartner ? " avec [PARTNER]." : ".")
+  } : null;
+  const scenesToRun = selectedScenes.map(id=> id === "custom" ? customScene : cat.scenes.find(s=> s.id === id)).filter(Boolean).slice(0, remaining());
 
   document.getElementById("step4").style.display = "block";
   document.getElementById("step4").scrollIntoView({behavior:"smooth", block:"start"});
@@ -607,11 +726,12 @@ document.getElementById("generateBtn").addEventListener("click", async ()=>{
     try{
       let fullPrompt = scene.prompt.replace("[AVATAR]", "la personne de gauche de l'image de référence fournie");
       if(cat.needsPartner) fullPrompt = fullPrompt.replace("[PARTNER]", "la personne de droite de l'image de référence fournie (l'image de référence montre les deux personnes côte à côte : ne pas reproduire cette mise en page)");
+      if(scene.id !== "custom") fullPrompt += spontaneNote();
       fullPrompt += " " + STYLE_SUFFIX;
       const refImages = cat.needsPartner
         ? [{data: avatarBase64, mime: avatarMime}, {data: partnerBase64, mime: partnerMime}]
         : [{data: avatarBase64, mime: avatarMime}];
-      const imgDataUrl = await generateWithProxy(fullPrompt, refImages);
+      const imgDataUrl = await generateWithKie(fullPrompt, refImages);
       await decrementGen();
       cards[scene.id].innerHTML = `
         <img src="${imgDataUrl}" alt="${scene.label}">
@@ -629,7 +749,7 @@ document.getElementById("generateBtn").addEventListener("click", async ()=>{
 });
 
 /* ---------------------------------------------------------
-   Génération via le proxy (clé de Marie)
+   Génération via KIE (clé de Marie)
 --------------------------------------------------------- */
 function loadImg(b64, mime){
   return new Promise((resolve, reject)=>{
@@ -653,28 +773,65 @@ async function mergeSideBySide(a, b){
   return { data: c.toDataURL("image/jpeg", 0.92).split(",")[1], mime: "image/jpeg" };
 }
 
-async function generateWithProxy(promptText, refImages){
-  const ref = refImages[1] ? await mergeSideBySide(refImages[0], refImages[1]) : refImages[0];
-  const body = {
-    code: FREEBIE_CODE,
-    prompt: promptText,
-    aspectRatio: '9:16',
-    imageSize: IMAGE_SIZE,
-    avatarB64: ref.data,
-    avatarMime: ref.mime
-  };
-  const res = await fetch(`${PROXY_URL}/generate-image`, {
+async function kieUpload(ref){
+  const mime = ref.mime || "image/jpeg";
+  const name = "instantane_" + Date.now() + "_" + Math.random().toString(36).slice(2,7) + (mime.includes("png") ? ".png" : ".jpg");
+  const res = await fetch("https://kieai.redpandaai.co/api/file-base64-upload", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
+    headers: { "Content-Type": "application/json", "Authorization": "Bearer " + KIE_KEY },
+    body: JSON.stringify({ base64Data: "data:" + mime + ";base64," + ref.data, uploadPath: "images/instantane", fileName: name })
   });
-  let data = {};
-  try{ data = await res.json(); }catch(e){}
-  if(!res.ok){
-    if(res.status === 429 || data.quota_exceeded) markQuotaExhausted();
-    throw new Error(data.error || `HTTP ${res.status}`);
+  let d = {}; try{ d = await res.json(); }catch(e){}
+  if(res.status === 401 || d.code === 401) throw new Error("Clé KIE refusée.");
+  if(res.status === 402 || d.code === 402) throw new Error("Plus de crédit KIE.");
+  const url = d && d.data && (d.data.downloadUrl || d.data.fileUrl || d.data.url);
+  if(!res.ok || !url) throw new Error("Envoi de l'image impossible (" + (d.msg || res.status) + ").");
+  return url;
+}
+
+async function generateWithKie(promptText, refImages){
+  const ref = refImages[1] ? await mergeSideBySide(refImages[0], refImages[1]) : refImages[0];
+  const refUrl = await kieUpload(ref);
+  const preface = "REFERENCE IMAGE: image 1 = the person(s) to reproduce — lock face, skin tone and facial features. ";
+  let fullPrompt = preface + promptText;
+  if(fullPrompt.length > 9800) fullPrompt = fullPrompt.slice(0, 9800);
+
+  let taskId = null;
+  for(let attempt = 0; attempt < 3; attempt++){
+    const cr = await fetch("https://api.kie.ai/api/v1/jobs/createTask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + KIE_KEY },
+      body: JSON.stringify({ model: KIE_MODEL, input: { prompt: fullPrompt, image_input: [refUrl], aspect_ratio: "9:16", resolution: KIE_RESOLUTION, output_format: "png" } })
+    });
+    let cd = {}; try{ cd = await cr.json(); }catch(e){}
+    if(cr.status === 401 || cd.code === 401) throw new Error("Clé KIE refusée.");
+    if(cr.status === 402 || cd.code === 402) throw new Error("Plus de crédit KIE.");
+    if((cr.status === 429 || cd.code === 429) && attempt < 2){ await new Promise(r=>setTimeout(r, 8000)); continue; }
+    taskId = cd && cd.data && cd.data.taskId;
+    if(!cr.ok || cd.code !== 200 || !taskId) throw new Error("KIE : " + (cd.msg || ("erreur " + cr.status)));
+    break;
   }
-  return blobUrlFromBase64(data.image, data.mimeType || "image/png");
+
+  for(let i = 0; i < 72; i++){
+    await new Promise(r=>setTimeout(r, KIE_POLL_MS));
+    let pd = {};
+    try{
+      const pr = await fetch("https://api.kie.ai/api/v1/jobs/recordInfo?taskId=" + encodeURIComponent(taskId), { headers: { "Authorization": "Bearer " + KIE_KEY } });
+      pd = await pr.json();
+    }catch(e){ continue; }
+    const st = pd && pd.data && pd.data.state;
+    if(st === "fail") throw new Error("KIE a échoué : " + ((pd.data && pd.data.failMsg) || "erreur inconnue"));
+    if(st === "success"){
+      let url = null;
+      try{ const rj = JSON.parse(pd.data.resultJson || "{}"); url = (rj.resultUrls && rj.resultUrls[0]) || rj.url; }catch(e){}
+      if(!url) throw new Error("KIE a terminé sans image. Réessaie.");
+      try{
+        const blob = await (await fetch(url)).blob();
+        return URL.createObjectURL(blob);
+      }catch(e){ return url; }
+    }
+  }
+  throw new Error("KIE met trop de temps. Réessaie.");
 }
 
 /* ---------------------------------------------------------
